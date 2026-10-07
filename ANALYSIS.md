@@ -1108,3 +1108,85 @@ guardrails the course only implies. Divergent: no ceiling enforcement, and the a
 
 **Not changed.** Adding a clamp to `risk_per_trade_pct` is a one-line fix, but it would silently override a
 value a user deliberately set, which is a product decision rather than a bug fix. Flagged, not applied.
+
+---
+
+## 17. Ep 27 and Ep 31 — a sample-size divergence, and a second source for §14
+
+Both read end to end. Neither introduces a new entry rule, but both state hard thresholds, and one of them
+the project's own adaptive engine does not meet.
+
+### Ep 27 — the minimum sample before you change anything
+
+> *"I only change rules when I have either **100 trades** to review or I have at least **three months** of
+> data. If you don't have 100 trades yet, you need at least **30 to 50 minimum trades** just to see anything
+> meaningful… and if you're below that threshold, below that 30 to 50 trades, **don't tweak the system at
+> all**."*
+
+> *"When you introduce a new variable into your trade plan… you have to test the entire trade plan again…
+> you want to treat it like a science, not as like an art."*
+
+**The project's backtest register clears this comfortably.** `docs/MEASURED-RULES.md` reports **7,580 filled
+samples collapsed to 7,028 unique setups**, and the whole-sample verdict rests on 614 setups — far above the
+30–100 floor. It also does the thing he asks for: it collapses overlapping re-detections of the same zone so
+one event is not counted many times. ✓
+
+**But the live adaptive engine does not.** `correction.js:389`:
+
+```js
+if (!st || trades.length < 10) return { ...base, … };
+```
+
+Ten trades, and the bot begins deriving *personalised* guardrails from that user's own history — including
+`ownCapPct`, which feeds the recommended risk cap at `:400`. The mentor's floor is 30–50, and his instruction
+below it is explicit: don't tweak at all. **The bot starts tweaking at one-fifth of the minimum.**
+
+This is the same class of finding as §14 — the code is not wrong so much as *less conservative than the
+course says to be* — but it has a sharper consequence, because a cap derived from ten trades is mostly noise,
+and it then feeds the risk sizing the user actually gets.
+
+One related observation, offered as a question rather than a claim: `rule-sweep.js` evaluates **5,149
+combinations** across those 7,028 setups and I found **no minimum-n gate** anywhere in it. Ep 27's "treat it
+like a science" would normally come with a per-combination sample floor, since with 5,149 buckets some will be
+thin. The register's headline numbers are well-powered; I have **not** checked the per-combination n
+distribution, so I am not asserting that any individual row is underpowered.
+
+### Ep 31 — a second, independent source for the §14 divergence
+
+> *"Prop firm challenges are a rule-based game… you want to focus on **A and A+ setups only**… you only want
+> to be taking the setups where you know for a fact that it's going to work out. You want to avoid all the
+> random trades that is outside of a trade plan. You don't want to force trades when the market conditions is
+> not ideal, when the price is just chopping around."*
+
+> *"Your risk per trade **should not be more than 1%** per trade. **Should not even be more than 0.5%** per
+> trade."*
+
+That is Ep 25's checklist restated in a prop-firm context, and it lands on the same two points already
+recorded:
+
+- **B and C are reported tradeable.** `setup.js:320` sets `ok: g.grade !== 'no-trade'`, so grades B (58+) and
+  C (44+) both return `ok: true`. Ep 31 says A and A+ only. There is also a labelling inconsistency worth
+  noting: the bottom band is called *"Not an A+ setup — the edge is not there"*, which implies everything
+  above it **is** an A+ setup — but B and C sit above it.
+- **The risk ceiling.** Ep 31 is *stricter* than Ep 21 ("should not even be more than 0.5%"), which makes the
+  unenforced ceiling in §16 more relevant, not less: two episodes state a ceiling and the code enforces
+  neither.
+
+Ep 31's five "numbers that define the game" — profit target, max daily loss, max overall drawdown, trading
+day, time limit — are all present as account fields (`db.js`, `routes/api.js:544`), so the challenge
+parameters can be stored. ✓
+
+### Scorecard for this pair
+
+| Rule | Course | Code | |
+|---|---|---|---|
+| Backtest sample size | 30–100 minimum | 7,028 unique setups | ✓ |
+| Dedupe overlapping detections | treat as science | collapses re-detections | ✓ |
+| **Live adaptive floor** | **30–50, else don't tweak** | **`correction.js:389` starts at 10** | ⚠ |
+| Trade only A / A+ | "A and A+ setups only" | B and C return `ok: true` | ⚠ (§14) |
+| Risk ≤ 1 %, ideally ≤ 0.5 % | stated twice | defaults correct, no ceiling | ⚠ (§16) |
+| Challenge parameters stored | 5 numbers | all present as account fields | ✓ |
+
+**Not changed.** Raising `correction.js:389` from 10 to 30 is a one-line edit, but it would silently stop
+personalised guardrails for every user with 10–29 trades, which is a product decision about how the app
+behaves for new users — not a bug fix I should make on the strength of a transcript.
