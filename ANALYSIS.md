@@ -595,21 +595,62 @@ failed zone fetch falls back to the entry chart rather than sinking the analysis
 
 The stack now reports `4h bias → 1h location → 5m trigger` on every 15m chart, matching the declaration.
 
-**This changes trade decisions — that is the point, and you should know the scale of it.** The
-premium/discount read is genuinely different on the 1h, including a sign flip on two of three markets:
+#### Correction: this fixes the *report*, not the trade decision
 
-| Market | location read on 15m | location read on 1h | |
-|---|---|---|---|
-| XAUUSD | premium @ 77.43 % | **discount** @ 44.51 % | flips |
-| EURUSD | discount @ 33.14 % | discount @ 15.61 % | same side, deeper |
-| GBPUSD | discount @ 16.24 % | **premium** @ 53.24 % | flips |
+I initially wrote that `0003` "changes trade decisions" and cited premium/discount sign flips. **That claim
+was wrong.** I had compared the *reported* zone payload between the two variants and inferred a decision
+change from it without ever measuring a decision. Measuring it directly refutes me.
 
-Full regression after the change is **unchanged: 568 checks, 0 failing**, so nothing broke — but a flipped
-premium/discount read will change which setups are graded tradeable. **I could not backtest whether this
-reproduces the independent team's positive result**; that needs the 6-major, 6-year dataset I cannot fetch
-offline. Treat it as running the configuration their backtest favoured, not as a demonstrated improvement.
-If you want to compare the two directly, the previous behaviour is exactly what you get by passing no
-`zoneSeries`.
+I ran the same 464 sampled bars across four markets through both variants — passing `zoneSeries` and not —
+and diffed every field the engine actually acts on:
+
+| field | differed on | |
+|---|---|---|
+| `direction` | 0 / 464 | identical |
+| `status` | 0 / 464 | identical |
+| `blocked` | 0 / 464 | identical |
+| `score` | 0 / 464 | identical |
+| `grade` | 0 / 464 | identical |
+| `checks` | 0 / 464 | identical |
+| setup `verdict.action` | 0 / 464 | identical |
+| setup best `grade` | 0 / 464 | identical |
+| setup best `score` | 0 / 464 | identical |
+| `layers.zone.tf` | **464 / 464** | changed |
+| `layers.zone.premium_discount` | **464 / 464** | changed |
+
+The zone payload changes on every single bar; **no decision changes on any bar.** The reason is two
+specific lines I did not trace before making the claim:
+
+- The method gate's *location* check (`topdown.js:633`) reads `biasRange.position_pct` — the **4h** range
+  position — not the zone layer at all.
+- The setup engine's premium/discount criterion (`setup.js:131`) reads `analysis.premium_discount`, which is
+  the **15m entry chart's own** SMC dealing range.
+- Nothing anywhere in `src/` reads `layers.zone.premium_discount`. The only reference outside `topdown.js` is
+  `scripts/bots-test.js:113`, which merely asserts the key exists.
+
+So the location read was **never sourced from the zone layer**, in either variant. The zone layer has been
+a display-only object since it was written, and `0003` makes that display honest — it does not wire it into
+grading.
+
+**The dead-config finding therefore stands, and is deeper than I first reported.** It is not simply "the
+1h series was never fetched". It is: the project declares a three-layer stack, fetches a location layer,
+reports it, and then grades against two *different* ranges — the 4h range for the method gate and the 15m
+range for the setup. The middle layer of the declared stack feeds nothing. Full regression after the change
+is **unchanged: 568 checks, 0 failing**, which is now a meaningful result: `0003` is behaviour-preserving by
+construction, not by luck.
+
+**What `0003` does earn.** Before it, the API reported `zone: tf=15m` on every 15m chart — a layer the table
+said was `1h`, showing you the entry chart's own range and labelling it the medium timeframe. That was a
+genuine misrepresentation of the analysis, and it is fixed. It is a reporting fix.
+
+**What it does not do.** It does not run the 4H/1H/15m configuration the independent team found profitable.
+Doing that means changing `topdown.js:633` to read the zone layer's position and `setup.js:131` to take
+premium/discount from `ctx.topdown.layers.zone` — and those *do* change trades, so they need a backtest
+before I would call them an improvement. **I could not run that backtest**; it needs the 6-major, 6-year
+dataset I cannot fetch offline. I am not shipping that change on the strength of someone else's result.
+
+If you want it, that is a one-line conversation away, but it should go in behind a test, not on the
+authority of §11.3.
 
 ---
 
@@ -635,10 +676,12 @@ rule. One attribution caveat: "CRT / right candle" is your project's vocabulary,
 confirmed independently in §11.1).
 
 **Three changes made,** all with patches that apply cleanly to the pristine zip source:
-`setup.js:141` unguarded dereference (`0001`), the killzone DST drift (`0002`), and the wired-up zone
-layer (`0003`). The first two are defect fixes; the third is a deliberate strategy change you approved,
-and it does move trade decisions (§11.4). Full regression after all three: **unchanged, 568 checks,
-0 failing.**
+`setup.js:141` unguarded dereference (`0001`), the killzone DST drift (`0002`), and the zone-layer report
+fix (`0003`). The first two are defect fixes. The third you approved as a strategy change, and **I have to
+correct that framing**: an A/B over 464 bars shows it changes the reported location layer on every bar and
+changes **no trade decision on any bar** — grading never read the zone layer to begin with (§11.4). It fixes
+a real misreporting; it does not make the bot trade the 4H/1H/15m stack. Full regression after all three:
+**unchanged, 568 checks, 0 failing.**
 
 **Not verified:** the 27 real-browser assertions (no Chromium available), and the exact figures in the four
 research reports (I reproduced the methodology and its conclusion on 5 markets, not the 24-market numbers).
