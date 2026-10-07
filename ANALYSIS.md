@@ -270,10 +270,16 @@ deployment; no rate limiting or CORS on the main API; server binds `0.0.0.0` by 
 
 ## 9. Does the bot implement the playlist's strategy?
 
-**I could not watch the playlist** — `youtube.com` returns HTTP `000`, killed by the same TLS filter as
-Yahoo/OKX, and I cannot view video in any case. So I cannot verify fidelity to the *videos*. What I can do
-is verify the repo's own map of them (`docs/PLAYLIST-CURRICULUM.md`, all 47 uploads → code) and then check
-that map against the actual source. Everything below is from the code.
+> **Superseded on the sourcing question, 2026-10-07.** This section opened with *"I could not watch the
+> playlist — `youtube.com` returns HTTP `000`."* That was **wrong and I retract it.** `curl` inside the
+> sandbox is TLS-filtered, but the `fetch_page` tool routes outside that filter and reached the playlist
+> immediately. I had tested one tool and generalised its result to "unreachable", then used that as a
+> reason to lean on secondary sources. The user was right to push. See §10.2 for what the real playlist
+> shows; the code audit below is unaffected — its conclusions stand, and the playlist now *confirms* them.
+
+I still cannot view video frames, so anything purely visual (chart markup drawn on screen, cursor work) is
+outside what I can check. Everything else — episode titles, ordering, descriptions, and the auto-captions —
+is reachable and has now been checked against the live playlist.
 
 ### The claimed ICT thresholds all exist, exactly as documented
 
@@ -390,9 +396,60 @@ obtained better data. **The suite is now fully green: 568 checks, 0 failing** (�
 
 ### 10.2 The videos — found a real route
 
-YouTube itself is unreachable (HTTP `000`, TLS reset) and I cannot watch video regardless. But a GitHub
-search found **`nedu-m/market-mechanics-bot`**, which holds verbatim transcripts of the course. I pulled
-**14 of them — 100,401 words** — into `analysis/transcripts/`:
+**The playlist is now directly verified.** `https://www.youtube.com/playlist?list=PLBYSdC_HMWMrXE0cmstpBbcIN5pLgebEm`
+resolves through `fetch_page` to **"FREE Market Mechanics Mentorship | Full Trading Course"** by
+**Brad Goh (The Trading Geek)**, **47 videos, 1,021,088 views, last updated 2026-09-14**. The full episode
+list with video IDs and runtimes is saved at `analysis/playlist-verified.json`. Two checks follow from it:
+
+**Every episode citation in your own `docs/PLAYLIST-CURRICULUM.md` is correct — 14 of 14.** I matched each
+one against the live playlist titles:
+
+| doc cites | real title |
+|---|---|
+| ep 5 market structure | Market Structure |
+| ep 8 premium/discount | Premium and Discount |
+| ep 11 top-down | Top Down Analysis Strategy |
+| ep 12 killzones | ICT Killzones |
+| ep 13 liquidity/inducement | Liquidity Concepts & Inducements |
+| ep 17 trading plan | My Full Smart Money Trading Plan + Daily Routine |
+| ep 18 entry models | Entry Models (SNIPER ENTRIES) |
+| ep 19 no-trade rules | When Not to Trade |
+| ep 21 risk | Risk Management |
+| ep 23 journalling | Journalling Your Trades |
+| ep 24 daily review | How to Review Your Day |
+| ep 30 news | Trading High Impact News |
+| ep 31 prop rules | How to Pass Prop Firm Challenges |
+| ep 32 21-day streak | Become a Disciplined Trader in 21 Days |
+
+**All 14 transcripts I used match real videos in this playlist, 14 of 14.** So the concern that the audit
+rested on a random GitHub repo is answered: the transcripts are the actual course, and the playlist proves
+it. The independent *implementation* I found (§11.3) was only ever a cross-check, never the source.
+
+**Ep 16 and Ep 19 were the two gaps, and both are now closed** — pulled straight from the video pages
+(`4MG3uUyoQCc`, `kVEx1QzLfQ0`). Ep 19 is stored at
+`analysis/transcripts/ep19_when-not-to-trade.PARTIAL.txt`; the fetch truncates the captions part-way, so it
+is verbatim but incomplete and is labelled as such. Its substance already matters to the audit: the mentor
+names **two** stand-down conditions — *volatile* or *illiquid* — and a third practical rule, *"when price is
+in the middle of nowhere, do not trade… it messes up your risk to reward."*
+
+**Checking those against the code produced one new gap that the earlier audit could not have found:**
+
+| Ep 19 rule | In the code? |
+|---|---|
+| Don't trade when price is not at a point of interest | ✓ `setup.js:125` `add('zone', …)` requires an order block / FVG to trade from |
+| Don't trade when the market is **volatile** | ✓ `setup.js:172` `add('volatility', …)` stands down above the 90th ATR percentile |
+| Don't trade when the market is **illiquid** | **✗ no such check exists** |
+
+The volatility leg is real; the illiquidity leg is absent. Every `spread` hit in `src/bots/` is prose inside
+a note or comment (`momentum.js:229` warns that spreads balloon, `topdown.js:347` reasons about stop width) —
+none of them is a filter that can veto a setup. Given that the independent backtest's whole verdict turned on
+~0.26R of per-trade cost against ~6-pip stops (§11.3), a liquidity gate is the one missing rule that would
+have attacked the failure mode directly. I have **not** implemented it: it needs a spread or volume input the
+candle model does not currently carry, and inventing one would be exactly the kind of unrequested strategy
+change I should not make unilaterally.
+
+Earlier, a GitHub search had found **`nedu-m/market-mechanics-bot`**, which holds verbatim transcripts of
+the course. I pulled **14 of them — 100,401 words** — into `analysis/transcripts/`:
 
 ```
 ep05 market-structure    ep09 fair-value-gaps    ep13 liquidity-inducements    ep18 entry-models
