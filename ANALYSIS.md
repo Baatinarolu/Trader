@@ -1428,3 +1428,63 @@ defect, but the row reads as more coverage than exists.
 **Nothing changed.** The two missing items are additive UI/schema features rather than corrections, and both
 are things you may well have scoped out deliberately — unlike the divergences in §14–§19, neither contradicts
 something the code claims to do.
+
+---
+
+## 21. Ep 24 — the daily review, and a second source for the two §20 gaps
+
+Ep 24 (*How to Review Your Day*) walks through the end-of-day view screen by screen, which makes it a direct
+specification for the app's daily surface. It also states the principle the project's grading already follows:
+
+> *"There is your outcome oriented metrics and then there is your process-oriented metrics. **When you focus
+> on the process oriented metrics, the outcome oriented metrics will take care of themselves.**"*
+
+### The daily overview, item by item
+
+| Ep 24 shows | In the app | |
+|---|---|---|
+| Net P&L | `correction.js:472` `today.realised` | ✓ |
+| Win rate | `statsOf(trades)` | ✓ |
+| **Average R multiple** | `today.avg_r` | ✓ |
+| Total trades / wins / losses | `today.trades`, `today.closed` | ✓ |
+| Did I follow my plan? (yes/no) | `setup_grade` + `correction.js` grading | ✓ |
+| **Which guardrails I violated** | `correction.js:466` `breaches[]` with a named `rule` | ✓ |
+| **Pre-market routine done?** | **absent** | ✗ |
+| **How many trades journalled** | **absent** | ✗ |
+| Best trade / worst trade | `performance.js:211-212` `best_trade` / `worst_trade`, plus `best_r` / `worst_r`; shown in `analytics.js:26` and `dashboard.js:143` | ✓ |
+
+**The two missing items are the same two §20 found.** That is worth stating plainly: Ep 23 and Ep 24
+independently list *pre-market routine completion* and *journal completeness* as part of the daily surface,
+so this is not one ambiguous mention read too literally — it is the course asking for the same two fields in
+two separate episodes. Ep 24 also gives the reason it matters:
+
+> *"There's probably like a direct correlation between whether you conducted a pre-market routine and whether
+> you actually make money on the day."*
+
+That is a testable hypothesis, and the journal is exactly the dataset that could test it — which is a mildly
+ironic gap, given Ep 27's whole thesis is that the journal exists to answer questions like that.
+
+### One nuance on best/worst trade
+
+The app picks best and worst by **P&L and R extremes** (`Math.max(...pnls)` / `Math.min(...pnls)`). He means
+best and worst *execution* — *"think about what broke"* on the worst trade. The two often differ, and that is
+precisely the distinction Ep 23 draws. The pieces to do it properly are already in the schema (`setup_grade`,
+`r_multiple`, `stop_moved`, guardrail breaches), so this is a ranking choice rather than missing data.
+
+### His four end-of-day questions, and whether the app can answer them
+
+1. *Did I follow my trading plan?* — **yes**, `setup_grade` + grading
+2. *Did I break any rules / violate guardrails?* — **yes**, named breaches
+3. *Was execution clean or messy?* — **yes**, `stop_moved`, `exit_reason`, `mae_r`/`mfe_r`
+4. *Did I do the boring work — routine and journaling — or skip it?* — **no**, neither is recorded
+
+Three of four answerable. The fourth is the same gap.
+
+### Scorecard
+
+Daily metrics, plan adherence, guardrail breaches and best/worst extremes are all present. The
+pre-market-routine flag and the journal-completeness count are absent, confirmed from two episodes.
+Best/worst is outcome-ranked where the course means process-ranked.
+
+**Nothing changed.** Same reasoning as §20: these are additive features, not contradictions of anything the
+code claims to do.
