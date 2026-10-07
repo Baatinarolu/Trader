@@ -13,7 +13,7 @@ Legend: `—` not started · `◐` partially read · `✔` all chunks read · `n
 |---|---|---|---|---|---|---|
 | 0 | IM9MYudJSxs | 20:51 | 3/3 | ✔ | How I Went From Broke to Millionaire Trader | philosophy only |
 | 1 | xwvPmhArfEY | 30:46 | 4/5 | ✔ | How to Trade Like the Top 1% | endorsed-primitive list — all 7 present |
-| 2 | wZyxxo0qkPo | 36:08 | 2/5 | ◐ | How Price Really Moves | four stages of price — consolidation absent (M25) |
+| 2 | wZyxxo0qkPo | 36:08 | 3/5 | ◐ | How Price Really Moves | four stages of price — consolidation absent (M25) |
 | 3 | vP9gmvxdFd8 | 46:37 | 0 | — | How to Trade Forex For Beginners | instrument specs |
 | 4 | FXwJ26zT8Ds | 25:32 | 0 | — | Reprogramming Your Mind | n/a |
 | 5 | waLWuc6_HC0 | 50:32 | 5/7 | ◐ | **Market Structure** | **smc.js structure** — see M1/M2/M3 |
@@ -474,3 +474,53 @@ now rests on three episodes.
 This is the *why* behind Ep 18/Ep 25's entry model and behind the anti-chase logic in `setup.js:329`.
 
 **Remaining:** Ep 2 chunks 2–4.
+
+### Ep 2 chunk 2 — liquidity locations, the timing rule, and consolidation as a no-trade
+
+**Where liquidity sits**, stated explicitly:
+
+> *"Where to spot liquidity? It's going to be **above the swing highs, below the swing lows**, and above or
+> below certain chart patterns or obvious zones or support and resistance levels."*
+
+`smc.js:379-400+` builds a `pools` array covering all three, and more:
+
+| His location | Code | |
+|---|---|---|
+| Above swing highs | `equal_highs` — clustered swing highs, `type: 'BSL'`, strength `0.4 + touches*0.2` | ✓ |
+| Below swing lows | `equal_lows` — clustered swing lows, `type: 'SSL'`, same scaling | ✓ |
+| Obvious zones / S-R | `PDH`/`PDL` (0.9), `TDH`/`TDL` (0.6), `PWH`/`PWL` (1.0) | ✓ + extra |
+
+**A match, and richer than the source** — the previous-day/week and today's-high/low pools are time-based
+levels Ep 2 does not mention. Buy-side/sell-side typing (`BSL`/`SSL`) is also present.
+
+**One nuance worth recording, not a defect:** the code requires **2+ touches** (`clusterLevels(...).filter(c =>
+c.touches >= 2)`) before a swing high/low counts as a pool. His phrasing — *"above the swing highs, below the
+swing lows"* — is looser and would include single-touch swings. The bot is **stricter**, which is a defensible
+reading of *"obvious"*, but it does mean single-touch swing liquidity is invisible to it.
+
+### The timing rule — the clearest statement in the series so far
+
+> *"When you understand this concept that the market moves from imbalance to balance, you will know that
+> **your goal as a trader is to get in during the balance phase, so that you can capture the imbalance. Your
+> goal is not to get in after the imbalance, but rather before the imbalance.**"*
+
+and the failure mode he names:
+
+> *"The reason why they fail is because they tend to **chase after price during an expansion**… It's because
+> you are not trading price. You are just trading your ego."*
+
+**This sharpens M3.** The course's anti-chase rule is **phase-based** — enter in balance, not in expansion.
+The bot's is **zone-distance-based** (`setup.js:230/235` "waiting for the retrace into the zone", `:329`
+*"Chasing here breaks the model's edge"*). Because the balance/expansion phase is never classified (M25), the
+bot cannot express the rule as stated. The two are related but not equivalent: price can be far from a zone
+*and* mid-expansion, or near a zone *and* mid-expansion.
+
+### Consolidation as a no-trade — stated a second time
+
+> *"As much as possible, if you're a beginner, you want to **stay away from trading consolidation** because
+> it's very unpredictable and it's very difficult to trade."*
+
+Ep 2 and Ep 19 both make consolidation a stand-down condition. **M25 and M10 strengthen** — this is not one
+episode's aside, and the missing chop detector is a missing *stage*, not a missing filter.
+
+**Remaining:** Ep 2 chunks 3–4.
