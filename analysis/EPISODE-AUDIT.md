@@ -16,7 +16,7 @@ Legend: `—` not started · `◐` partially read · `✔` all chunks read · `n
 | 2 | wZyxxo0qkPo | 36:08 | 0 | — | How Price Really Moves | likely (sweeps/liquidity) |
 | 3 | vP9gmvxdFd8 | 46:37 | 0 | — | How to Trade Forex For Beginners | instrument specs |
 | 4 | FXwJ26zT8Ds | 25:32 | 0 | — | Reprogramming Your Mind | n/a |
-| 5 | waLWuc6_HC0 | 50:32 | 2/7 | ◐ | **Market Structure** | **smc.js structure** — see M1/M2/M3 |
+| 5 | waLWuc6_HC0 | 50:32 | 5/7 | ◐ | **Market Structure** | **smc.js structure** — see M1/M2/M3 |
 | 6 | Dc0Z1B6jckA | 30:29 | 0 | — | Candlestick Patterns | pattern library |
 | 7 | 52aKS7HN_jI | 32:09 | 0 | — | **Institutional Supply & Demand Zones** | **smc.js zones** |
 | 8 | xR1KUjv0PB8 | 25:33 | 0 | — | **Premium and Discount** | **topdown.js P/D** |
@@ -226,3 +226,53 @@ above describes a sweep test *"checked in sweeps() and patched there"*; `:718` s
 plain BOS can be reported as an MSS is **open**, not asserted.
 
 **Still to read:** Ep 5 chunks 4–6 (bar replay on live market conditions).
+
+### Ep 5 chunks 4–5 — pullback vs reversal (5/7 read)
+
+The discriminating rule, stated twice:
+
+> *"How do we know? Well, **we don't — we don't know until price actually breaks structure**… A pullback is a
+> temporary move against the swing structure… A reversal is when the market actually shifts direction. **And a
+> reversal only happens when there is a market shift.**"*
+>
+> *"In order for the trend to shift from bullish to bearish, price needs to come down and **take out the strong
+> low**, giving us the market shift."*
+
+And the trap he names explicitly:
+
+> *"A lot of beginners tend to get trapped because they think that **every pullback is a reversal**, when in
+> reality it's just a pause in price before it can continue going up or down."*
+
+Also confirmed: *"the internal structure shifted bearish **first** before the swing structure actually shifted
+bearish"* — the sequencing rule restated with a worked example — and *"the internal low can be at the exact
+same price point as a swing low."*
+
+### How the code decides CHoCH — and why M21 has teeth
+
+`smc.js:98-119`:
+
+```js
+const broke = dir === 'up' ? c.c > s.price : c.c < s.price;
+const isChoch = !!lastEvent && (dir === 'up' ? lastEvent.dir === 'down' : lastEvent.dir === 'up');
+events.push({ type: isChoch ? 'CHoCH' : 'BOS', ..., sweptBefore: false });
+```
+
+Two things follow.
+
+**BOS matches the course.** A break is a **close** beyond the last swing (`c.c > s.price`), which is a fair
+reading of *"price take out the last structural high"`. Close-based rather than wick-based is an
+interpretation choice, not a defect — he does not specify which in this episode.
+
+**CHoCH does not implement his market shift.** His reversal requires taking out the **strong** low — the
+specific level that produced the last BOS. The code's CHoCH is purely a direction flip against the previous
+event, so *any* opposite-direction break of *any* swing qualifies. With no strong/weak labels (M21) the code
+has no way to express "the strong one". **That is the mechanism by which the trap he warns about becomes
+reachable in the bot** — a pullback that breaks an internal low can be emitted as a reversal signal.
+
+Logged as **M24 (S1)**, sequenced after M21: strong/weak has to exist before CHoCH can be gated on it.
+
+**M23 refined:** `sweptBefore` is hardcoded `false` at `:119`. The only assignments to `mss` found are `:138`
+(`e.mss = e.type === 'CHoCH'`) and `:718` (`structure.last_break.mss = true`). Whether `sweeps()` ever writes
+`sweptBefore` is **still unverified** — I have not read `sweeps()`.
+
+**Remaining:** Ep 5 chunks 5–6 (bar replay). Theory is now fully covered; what is left is application.
