@@ -135,6 +135,18 @@ sorted**, each reporting the right provider (`yahoo` / `okx`).
 The nine Prediction-view failures and the `/bots/analyse` Vercel failure were indeed network-caused — they
 all pass now.
 
+**How that 568 splits — the distinction matters, and I had blurred it.** Only **494** of those checks are
+the project's own: `api-test` 121, `bots-test` 205, `topdown-test` 66, `chart-test` 36, `now-test` 36,
+`vercel-check` 9, `smoke-test` 21 views. The remaining **74** (`probe-engine` 51, `method-check` 23) are
+**harnesses I wrote**, living in `analysis/`, not in `scripts/`. They are mine, they were written to probe
+the engine offline, and they should not be read as the project's regression suite. When I say "the project's
+tests pass", the honest number is **494, 0 failing**; 568 is project-plus-my-probes.
+
+Two invocation traps, both of which produced silent zeros before I caught them: `bots-test.js` reads
+`process.env.TJ_BASE` (defaulting to `:3000`) and **ignores argv**, while `api-test.js` takes the base URL
+**as argv**. Run `bots-test` with a positional URL and it silently fetches a dead port. The test scripts also
+exit 0 when they crash, so a suite must be judged by its stdout, never its exit code.
+
 ### The last two failures, and how each was cleared
 
 Both were fixture-coverage gaps in *my* offline data, not product defects. Closing them took real datasets
