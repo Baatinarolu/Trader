@@ -1,0 +1,141 @@
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 0007b01..82b4223 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -97,6 +97,15 @@ function specOf(symbol) {
+ const floorRR = (v) => (Number(v) > 0 ? Number(v) : 1);   // the trader's minimum R:R
+ const runRR = (v) => Math.max(2, floorRR(v));              // the setup model's 1:2 runway
+ 
++/* The stack's medium timeframe carries the location read (premium/discount,
++   fresh zone, unfilled gap). It only needs its own fetch when it differs from
++   every series already being pulled; otherwise we reuse one and save a
++   round-trip. A zone fetch that fails is non-fatal — topdown.build() falls
++   back to the entry chart, which is what the engine did before. */
++const needsOwnZone = (L, tf) => L.zone_tf !== tf && L.zone_tf !== L.bias_tf && L.zone_tf !== L.trigger_tf;
++const reuseZone = (L, entry, bias, trig) =>
++  (L.zone_tf === L.bias_tf ? bias : L.zone_tf === L.trigger_tf ? trig : entry);
++
+ async function analyse(symbol, tf = '15m', opts = {}) {
+   const sym = String(symbol || '').toUpperCase();
+   const spec = specOf(sym);
+@@ -169,7 +178,11 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+     const L2 = Momentum.topdown.layersFor(tf);
+     const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
+     const ltfRaw = L2.trigger_tf === tf ? null : await Momentum.series(sym, L2.trigger_tf, 400);
+-    const tdNow = Momentum.topdown.build({ symbol: sym, tf, series: full[0], biasSeries: full[1], triggerSeries: ltfRaw || full[0], opts: { minRR: floorRR(opts.minRR) } });
++    const trigNow = ltfRaw || full[0];
++    const zoneNow = needsOwnZone(L2, tf)
++      ? await Momentum.series(sym, L2.zone_tf, 400).catch(() => null)
++      : null;
++    const tdNow = Momentum.topdown.build({ symbol: sym, tf, series: full[0], biasSeries: full[1], triggerSeries: trigNow, zoneSeries: zoneNow || reuseZone(L2, full[0], full[1], trigNow), opts: { minRR: floorRR(opts.minRR) } });
+     replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
+   }
+   const now = Now.build({
+@@ -278,14 +291,19 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   // The same series lengths the analyse endpoint uses, so the two payloads can
+   // never disagree about the same market (they did once: the chart asked for 200
+   // higher-timeframe candles and the method read a different range from them).
+-  const [entry, bias, triggerRaw] = await Promise.all([
++  const [entry, bias, triggerRaw, zoneRaw] = await Promise.all([
+     Momentum.series(sym, tf, bars, cut),
+     Momentum.series(sym, L.bias_tf, 400, cut),
+     L.trigger_tf === tf ? Promise.resolve(null) : Momentum.series(sym, L.trigger_tf, 400, cut),
++    // The stack's medium timeframe holds the location read. Fetch it only when
++    // it is not already one of the series above, and never let a failed zone
++    // fetch sink the whole analysis — build() falls back to the entry chart.
++    needsOwnZone(L, tf) ? Momentum.series(sym, L.zone_tf, 400, cut).catch(() => null) : Promise.resolve(null),
+   ]);
+   const trig = triggerRaw || entry;
++  const zone = zoneRaw || reuseZone(L, entry, bias, trig);
+ 
+-  const td = Momentum.topdown.build({ symbol: sym, tf, series: entry, biasSeries: bias, triggerSeries: trig, opts: { minRR: floorRR(opts.minRR) } });
++  const td = Momentum.topdown.build({ symbol: sym, tf, series: entry, biasSeries: bias, triggerSeries: trig, zoneSeries: zone, opts: { minRR: floorRR(opts.minRR) } });
+   entry.smc.crt = Momentum.crtView(td, tf);
+ 
+   const biasTrend = bias.smc.structure ? bias.smc.structure.trend : 'ranging';
+diff --git a/src/bots/momentum.js b/src/bots/momentum.js
+index 2e664e5..980cc80 100644
+--- a/src/bots/momentum.js
++++ b/src/bots/momentum.js
+@@ -396,14 +396,20 @@ function regimeOf(htf) {
+ async function analyse(symbol, tf = '15m', opts = {}) {
+   const L = TD.layersFor(tf);
+   const cut = { trim: opts.trim || 0, asOf: opts.asOf || null };
+-  const [htf, mtf, ltfRaw] = await Promise.all([
++  const [htf, mtf, ltfRaw, zoneRaw] = await Promise.all([
+     series(symbol, L.bias_tf, opts.htfLimit || 400, cut),
+     series(symbol, tf, opts.limit || 600, cut),
+     L.trigger_tf === tf ? null : series(symbol, L.trigger_tf, opts.ltfLimit || 400, cut),
++    // the stack's medium timeframe carries the location read; only worth its own
++    // fetch when it is not already one of the three series above
++    (L.zone_tf !== tf && L.zone_tf !== L.bias_tf && L.zone_tf !== L.trigger_tf)
++      ? series(symbol, L.zone_tf, opts.zoneLimit || 400, cut).catch(() => null)
++      : null,
+   ]);
+   const ltf = ltfRaw || mtf;
++  const zone = zoneRaw || (L.zone_tf === L.bias_tf ? htf : L.zone_tf === L.trigger_tf ? ltf : mtf);
+ 
+-  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR } });
++  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, zoneSeries: zone, opts: { minRR: opts.minRR } });
+   const align = alignment(htf, mtf, ltf, td);
+   const mech = mechanics({ htf, mtf, ltf, align, td });
+   const read = narrative({ symbol, mtf, htf, ltf, align, mech, td });
+diff --git a/src/bots/topdown.js b/src/bots/topdown.js
+index 7870e51..34145cf 100644
+--- a/src/bots/topdown.js
++++ b/src/bots/topdown.js
+@@ -487,11 +487,20 @@ function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, zo
+   const right = found.right;
+   const biasRange = found.range;
+ 
+-  // ---- Layer 2: the zone on the trading timeframe -------------------------
++  // ---- Layer 2: the zone / location --------------------------------------
++  // The stack declares a dedicated medium timeframe for the location read (the
++  // MTF in the course's HTF → MTF → LTF). When the caller supplies it, the
++  // premium/discount read, the fresh zone and the unfilled gap are taken from
++  // there — that is the timeframe the course says to refine the dealing range
++  // on. With no zone series the engine falls back to the entry chart, which is
++  // exactly what it did before this layer was wired up.
++  const locSeries = zoneSeries || entrySeries;
++  const locTf = zoneSeries ? L.zone_tf : entryTf;
++  const locSmc = locSeries.smc || {};
+   const entrySmc = entrySeries.smc || {};
+-  const pd = entrySmc.premium_discount || null;
+-  const freshZone = (entrySmc.order_blocks || []).find((z) => !z.breached && z.distance_atr <= 4) || null;
+-  const unfilledFvg = (entrySmc.fvgs || []).filter((g) => !g.filled)[0] || null;
++  const pd = locSmc.premium_discount || null;
++  const freshZone = (locSmc.order_blocks || []).find((z) => !z.breached && z.distance_atr <= 4) || null;
++  const unfilledFvg = (locSmc.fvgs || []).filter((g) => !g.filled)[0] || null;
+   const entryCrt = (() => {
+     // the trading timeframe also gets the CRT treatment: its own newest reacting
+     // candle, read against the trigger timeframe as the confirmation series
+@@ -632,7 +641,7 @@ function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, zo
+   const steps = [
+     {
+       n: 1, title: 'Timeframe stack', done: true,
+-      text: `${L.bias_tf} decides the bias and holds the range · ${entryTf} holds the location · ${trigger.tf || L.trigger_tf} gives the trigger. Style: ${L.style}.`,
++      text: `${L.bias_tf} decides the bias and holds the range · ${locTf} holds the location · ${trigger.tf || L.trigger_tf} gives the trigger. Style: ${L.style}.`,
+     },
+     {
+       n: 2, title: 'The right candle', done: !!right,
+@@ -674,7 +683,7 @@ function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, zo
+   return {
+     method: {
+       name: 'CRT top-down (Market Mechanics)',
+-      stack: `${L.bias_tf} bias → ${entryTf} location → ${trigger.tf || L.trigger_tf} trigger`,
++      stack: `${L.bias_tf} bias → ${locTf} location → ${trigger.tf || L.trigger_tf} trigger`,
+       style: L.style,
+       steps: steps.map((s) => s.title),
+       conflict_rule: 'The higher timeframe decides direction; lower timeframes only time it. A lower-timeframe move against the higher-timeframe direction is the liquidity being taken — not a conflict. A genuine conflict (higher timeframe sweeping its own opposing extreme) means stand down and wait for the next right candle, never a split-the-difference trade.',
+@@ -694,9 +703,9 @@ function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, zo
+         bars: biasCandles.length, atr: r4(biasAtr),
+       },
+       zone: {
+-        tf: entryTf, job: 'location',
++        tf: locTf, job: 'location',
+         role_note: 'Where the entry lives: premium/discount, fresh zone, unfilled gap.',
+-        structure: entryTrend,
++        structure: (locSmc.structure && locSmc.structure.trend) || null,
+         premium_discount: pd ? { zone: pd.zone, position_pct: pd.position_pct, range: [pd.range_low, pd.range_high], ote_band: pd.ote_band || null, ote: pd.ote || null } : null,
+         fresh_zone: freshZone ? { side: freshZone.side, top: r4(freshZone.top), bottom: r4(freshZone.bottom), distance_atr: freshZone.distance_atr } : null,
+         unfilled_fvg: unfilledFvg ? { dir: unfilledFvg.dir, top: r4(unfilledFvg.top), bottom: r4(unfilledFvg.bottom) } : null,
