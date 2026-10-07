@@ -354,7 +354,9 @@ Read §9 as the first pass, corrected by §10–§11.
 
 ## 10. Follow-ups: the two failures, the videos, and the missing pairs
 
-### 10.1 The two `bots-test` failures — both are my fixtures, not your code
+### 10.1 The two `bots-test` failures — both were my fixtures, and both are now closed
+
+As first found:
 
 ```
 - the replayed chart ends on an older bar (2026-02-27T06:00:00.000Z < 2011-08-03T00:00:00.000Z)
@@ -362,13 +364,17 @@ Read §9 as the first pass, corrected by §10–§11.
 ```
 
 1. **Replay ends on an older bar.** The test replays EURUSD **1h** and compares it against the EURUSD
-   **1d** series. My 1h fixture is 2025-09 → 2026-03; my 1d fixture is 1999 → 2011. Two different decades,
-   so the comparison is meaningless. I could not find a public EURUSD daily OHLCV file covering 2025-26 —
-   every candidate was price-only (`Date,Price`) or ended in 2017.
-2. **Scanned 2 markets (2 errors).** The test scans `EURUSD,XAUUSD,BTCUSDT,ES` at 15m. I have 15m data for
-   EURUSD and XAUUSD only.
+   **1d** series. My 1h fixture was 2025-09 → 2026-03; my 1d fixture was 1999 → 2011. Two different
+   decades, so the comparison was meaningless. *I initially reported that no public EURUSD daily OHLCV
+   covering 2025-26 existed — that was wrong.* It exists in the **same repository that supplied my 1h
+   fixture** (`shahryarashiq/my-vs-code-project-/datasets/EURUSD-1d.csv`); I had simply not looked there,
+   having sourced the two files separately. **Now fixed** — see §5.
+2. **Scanned 2 markets (2 errors).** The test scans `EURUSD,XAUUSD,BTCUSDT,ES` at 15m. I had 15m data for
+   EURUSD and XAUUSD only. **Now fixed for BTCUSDT** with a coherent 5m/15m/4h set; `ES` is still absent,
+   but the test's threshold is two markets, so it passes.
 
-Neither touches your logic. They are gaps in the offline data I could obtain.
+Neither ever touched your logic — they were gaps in the offline data I had obtained, and both closed once I
+obtained better data. **The suite is now fully green: 568 checks, 0 failing** (§5).
 
 ### 10.2 The videos — found a real route
 
