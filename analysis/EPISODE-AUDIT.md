@@ -13,7 +13,7 @@ Legend: `—` not started · `◐` partially read · `✔` all chunks read · `n
 |---|---|---|---|---|---|---|
 | 0 | IM9MYudJSxs | 20:51 | 3/3 | ✔ | How I Went From Broke to Millionaire Trader | philosophy only |
 | 1 | xwvPmhArfEY | 30:46 | 4/5 | ✔ | How to Trade Like the Top 1% | endorsed-primitive list — all 7 present |
-| 2 | wZyxxo0qkPo | 36:08 | 0 | — | How Price Really Moves | likely (sweeps/liquidity) |
+| 2 | wZyxxo0qkPo | 36:08 | 2/5 | ◐ | How Price Really Moves | four stages of price — consolidation absent (M25) |
 | 3 | vP9gmvxdFd8 | 46:37 | 0 | — | How to Trade Forex For Beginners | instrument specs |
 | 4 | FXwJ26zT8Ds | 25:32 | 0 | — | Reprogramming Your Mind | n/a |
 | 5 | waLWuc6_HC0 | 50:32 | 5/7 | ◐ | **Market Structure** | **smc.js structure** — see M1/M2/M3 |
@@ -419,3 +419,58 @@ Ep 0–33. Consistent with the Ep 0 numbering note; the extra episodes are later
 **Ep 1 content complete.** The transcript ends at *"let's begin with the Market Mechanics Mentorship series…
 you are just one trade away"* followed by `Back To Top`; chunk 4 is site chrome and AI-feature listings, not
 episode content.
+
+---
+
+## Ep 2 — How Price Really Moves (2/5 chunks read, ◐)
+
+The theory episode. Core claim: *"price does not move randomly. It moves because of an **imbalance between
+buyers and sellers**… the market is always moving from imbalance to balance to imbalance to balance… the
+market always seeks **fair value**."* Efficient = balanced, inefficient = imbalance.
+
+### The four stages of price — a concrete, testable model
+
+> *"At any given moment, the price is always in one of these four stages… **This is pretty much how order flow
+> works.**"*
+
+1. **Expansion** — *"a strong move in one particular direction"*
+2. **Pullback** — *"gravity will pull price back to fair value"*
+3. **Consolidation** — *"a state of equilibrium… compression in price… indecisiveness… a stalemate"*
+4. **Continuation or reversal** — *"the market can either continue the existing trend, or it can cause this
+   existing trend to reverse entirely"*
+
+### Checking the four stages against `src/bots/`
+
+| Stage | Term hits (smc / momentum / topdown / setup) | Status |
+|---|---|---|
+| Expansion | 2 / 2 / 2 / 2 | present, via displacement |
+| Pullback | 0 / 2 / **8** / 1 | present |
+| **Consolidation** | **0 / 0 / 0 / 0** | **absent** |
+| Continuation / reversal | 1 / 0 / 0 / 0 and 1 / 1 / 5 / 0 | present, via BOS/CHoCH |
+
+`phase` and `stage` score **0** everywhere, so nothing reports which stage the market is currently in.
+`regime` exists (`momentum.js:191, 225, 228`) but is a **volatility** regime, not this order-flow phase.
+
+Logged as **M25**. The important part is the connection it makes: **this is the same gap as the missing chop
+detector noted in §18.** Ep 19's no-trade criterion *"slow/choppy, no clear bias"* is the consolidation stage,
+and Ep 2 shows consolidation is a **named stage of the framework**, not an incidental filter. That upgrades
+M10 from "add a calendar rule" to "the framework has a phase model the bot does not implement, and one of its
+stages is the no-trade condition."
+
+### Pattern-memorising rejected a third time
+
+> *"Price doesn't move because there's a freaking candlestick pattern right there. Price doesn't move because
+> Bollinger bands cross over. Price doesn't move because you see a double top. **It moves because it's
+> actively seeking fair value.**"*
+
+Ep 1, Ep 2 and Ep 6 all say the same thing. The Ep 6 verdict — pattern library computed but gating nothing —
+now rests on three episodes.
+
+### The sniper-entry rationale
+
+> *"Your goal as a retail trader is to get in **before** this big move happens… right now you are entering
+> after the market has already moved. **Your entry is way too late.**"*
+
+This is the *why* behind Ep 18/Ep 25's entry model and behind the anti-chase logic in `setup.js:329`.
+
+**Remaining:** Ep 2 chunks 2–4.
