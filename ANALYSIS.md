@@ -942,3 +942,109 @@ Two concrete options, both small, both yours to choose:
 
 I have done neither. Changing which trades the bot takes is not something I'll do on my own reading of a
 transcript.
+
+---
+
+## 15. Ep 37 read in full — the five-step entry model, and one soft divergence
+
+Ep 37 (*"How I Combine Liquidity Sweeps, Order Blocks and FVGs For SNIPER Entries"*, 952K views) is the
+course's most mechanical video: a numbered, five-step sequence with an explicit stop rule and target rule.
+Read end to end via the same route as §14.
+
+**Coverage note, stated up front:** I have Steps 3, 4 and 5 verbatim. Steps 1 and 2 (chapters 04:18 and
+04:46) I have only as the concept summary from the video's own opening — *"the liquidity sweep is the trap,
+the order block is the zone, the fair value gap is the entry"* — not word for word. Everything asserted below
+about Steps 3–5 is quoted; nothing about Steps 1–2 is.
+
+### Step 3 — identify the order block, and pick one method
+
+He gives two ways to mark it and then insists on consistency:
+
+> *"One way of identifying order block is to find the entire range before the impulsive move… you can refine
+> it by looking at the origin candle before the impulsive move… **I will highly advise you to just stick to
+> one method.** If you prefer the range method, stick to it. Don't use the candlestick method sometimes and
+> then the range method other times — you want to stick to one mechanical approach."*
+
+**The bot complies.** `smc.js:180-196` `findOrderBlocks()` walks back from the displacement bar to the last
+opposite-colour candle and takes that single candle's full high–low (`top = ob.h, bottom = ob.l`) — the
+**origin-candle** method, applied uniformly on every call. One method, consistently. ✓
+
+### Step 4 — mark the fair value gap
+
+> *"You can identify a gap by finding the high of the previous candlestick and finding the low of the next
+> candlestick… The larger the gap, the more imbalance there is."*
+
+`smc.js:241` implements exactly that construction with a ≥0.12 ATR floor. ✓
+
+### Step 5 — wait for the re-entry
+
+> *"If price is somewhere around here in the middle of nowhere, I'm not going to be entering for longs… I'm
+> going to sit on my hands and do nothing until price mitigate the zone."*
+
+> *"You can either look for confirmation or you can just enter right away once price mitigated the fair value
+> gap, which is a little bit more aggressive… **The conservative version requires you to wait for some form of
+> structural shift** like a market shift and then you actually enter."*
+
+Both variants exist: `index.js:336-339` carries `aggressive` and `safer` plans, `momentum.js:377` passes both
+through, and `now.js:158-169` picks between them on `fullRisk`. ✓
+
+**Stop placement — the bot is stricter than the course, which is the safe direction:**
+
+> *"I'm going to be placing my stop loss below the fair value gap, below the point of interest in which I'm
+> entering the trade from, and placing my take profit at 2R."*
+
+`setup.js:179-181`:
+
+```js
+const stopBase = long ? Math.min(zone.bottom, recentSweep ? recentSweep.extreme : zone.bottom)
+                      : Math.max(zone.top,    recentSweep ? recentSweep.extreme : zone.top);
+const buffer = atr * 0.18;
+const stop = long ? stopBase - buffer : stopBase + buffer;
+```
+
+It takes the **further** of the zone edge and the sweep extreme, then adds 0.18 ATR. That satisfies Ep 37's
+"below the point of interest" *and* Ep 11's "beyond the sweeping candle" simultaneously. ✓
+
+### The one soft divergence: standalone FVG entries
+
+Ep 37 is clear about where an FVG entry belongs:
+
+> *"You can never ever really go wrong if you actually enter at the fair value gap **that is within the order
+> block**. But **try not to enter at like a random fair value gap that is in the middle of nowhere**."*
+
+`setup.js:120-122` prefers an order block, and scores an OB higher when an unfilled FVG overlaps it — that is
+his rule, implemented. But when there is **no** order block at all it falls back to a standalone FVG:
+
+```js
+const zone = bestOB ? { kind: 'order_block', … }
+  : bestFvg ? { kind: 'fvg', …, overlap: null }   // ← no order block behind it
+    : null;
+```
+
+That standalone FVG then satisfies the `zone` checkpoint, which is the **hard** POI gate (cap 34 → no-trade).
+So a lone FVG can pass the course's "price must be at a high-probability point of interest" gate on its own.
+
+Measured across the four fixture markets, counting every candidate that cleared that gate:
+
+```
+order block ............ 1145
+standalone FVG .........   28     of which reported tradeable: 19
+```
+
+**Scale matters here, and it is small: 2.4 % of gated zones.** The wording is also softer than Ep 25's —
+*"try not to"* rather than *"no trade."* So this is a minor divergence, not a defect on the level of the 2R
+gate in §14. Worth recording precisely because it is easy to overstate: the fallback exists, it fires rarely,
+and the course discourages rather than forbids it.
+
+### Ep 37 scorecard
+
+| Element | Course | Bot | |
+|---|---|---|---|
+| OB method, one and consistent | origin candle or range, pick one | origin candle, uniform | ✓ |
+| FVG construction | prev high → next low | `smc.js:241`, ≥0.12 ATR | ✓ |
+| FVG nested in OB preferred | "ideally… within the order block" | `setup.js:112` overlap bonus | ✓ |
+| Standalone FVG entry | "try not to" | **allowed, passes the hard gate** | ⚠ 2.4 % |
+| Wait for mitigation | "sit on my hands" | `entry_status: 'waiting'` caps at 66 | ✓ |
+| Aggressive vs conservative | both taught | both implemented | ✓ |
+| Stop below POI and beyond sweep | "below the point of interest" | further of the two + 0.18 ATR | ✓ stricter |
+| Take profit 2R | "stick to 2R" | advisory — see §14 | ⚠ |
