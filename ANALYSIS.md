@@ -569,41 +569,47 @@ This lands in the same place your own `MEASURED-RULES` register does (0 of 5 149
 mechanical core does not survive costs.** Their caveat is the fair one — the edge, if it exists, lives in
 the discretionary ~10 % the mentor himself says he can't articulate.
 
-### 11.4 One more discrepancy — misleading config, not a live bug
+### 11.4 The dead `zone` config — found, and now wired up
 
-`STACK` in `topdown.js:70-80` declares a `zone` timeframe for every chart — for the 15m day-trader stack
-it says `zone: '1h'`. But `zone_tf` is assigned at `topdown.js:105` and **read nowhere in the project**:
-not by `index.js`, not by `momentum.js`, not by the UI. The zone layer that actually ships in the payload
-uses the *entry* timeframe instead (`topdown.js:697`, `tf: entryTf`), so the API reports `zone: tf=15m`
-where the table promises `1h`.
+`STACK` in `topdown.js:70-80` declared a `zone` timeframe for every chart — for the 15m day-trader stack,
+`zone: '1h'`. But `zone_tf` was assigned at `topdown.js:105` and **read nowhere in the project**: not by
+`index.js`, not by `momentum.js`, not by the UI. The location layer that shipped in the payload used the
+*entry* timeframe instead, so the API reported `zone: tf=15m` where the table promised `1h`. Verified
+exhaustively — `zone_tf` appeared exactly once in the entire tree, with no bracket or dynamic access.
 
-**This one is cosmetic, and I want to be precise about why.** The effective stack is `bias 4h → entry 15m
-→ trigger 5m`, and the course's own day-trader stack (independent spec §1) is **HTF 4H | MTF 15m |
-LTF 5m**. Those match. The dead `zone: '1h'` entry never influenced a trade decision — it just makes the
-table lie about what the engine does.
-
-Worth deleting or wiring up, but it is not a defect in the strategy implementation. The DST bug in §11.2
-was real; this one is not.
-
-**But it connects to §11.3 in a way worth acting on.** The independent team's *only* out-of-sample-positive
-configuration was **4H / 1H / 15m** (+0.269R train, +0.174R test). Your `STACK` table already declares
-exactly that:
+**Why it mattered beyond cosmetics.** The independent team's *only* out-of-sample-positive configuration
+was **4H / 1H / 15m** (+0.269R train, +0.174R test) — and your `STACK` table already declared exactly that:
 
 ```js
 '15m': { bias: '4h', zone: '1h', entry: '15m', trigger: '5m', style: 'day' },
 ```
 
-`bias: '4h'`, `zone: '1h'`, `entry: '15m'` — the winning stack, written down in your own source. But
-because `zone_tf` is never read, the engine actually runs **4h / 15m / 5m**: the location analysis
-(premium/discount, fresh zone, unfilled FVG) is computed on the *entry* timeframe at `topdown.js:697`
-(`tf: entryTf`) rather than on the declared 1h. Verified exhaustively — `zone_tf` appears exactly once in
-the entire tree (the assignment at `:105`), with no bracket or dynamic access anywhere.
+The winning stack, written down in your own source, but never executed: the engine actually ran
+4h / 15m / 5m.
 
-So the one configuration an independent backtest found to survive costs is **declared in your code but
-never executed.** I have not backtested whether wiring it up would reproduce their result here — that
-needs the 6-major, 6-year dataset I can't fetch offline — so treat this as a concrete, testable
-hypothesis rather than a promised improvement. It is the single most promising experiment available to
-you, and the plumbing is already named.
+**Fixed** — `analysis/0003-wire-zone-layer.patch`, applied at your instruction and now the default.
+`topdown.build()` already accepted a `zoneSeries` parameter and ignored it; it now drives the location
+read. All three call sites (`index.js` analyse, `index.js` replay, `momentum.js`) fetch the medium
+timeframe when it differs from the bias/entry/trigger series, reusing an existing series otherwise, and a
+failed zone fetch falls back to the entry chart rather than sinking the analysis.
+
+The stack now reports `4h bias → 1h location → 5m trigger` on every 15m chart, matching the declaration.
+
+**This changes trade decisions — that is the point, and you should know the scale of it.** The
+premium/discount read is genuinely different on the 1h, including a sign flip on two of three markets:
+
+| Market | location read on 15m | location read on 1h | |
+|---|---|---|---|
+| XAUUSD | premium @ 77.43 % | **discount** @ 44.51 % | flips |
+| EURUSD | discount @ 33.14 % | discount @ 15.61 % | same side, deeper |
+| GBPUSD | discount @ 16.24 % | **premium** @ 53.24 % | flips |
+
+Full regression after the change is **unchanged: 568 checks, 0 failing**, so nothing broke — but a flipped
+premium/discount read will change which setups are graded tradeable. **I could not backtest whether this
+reproduces the independent team's positive result**; that needs the 6-major, 6-year dataset I cannot fetch
+offline. Treat it as running the configuration their backtest favoured, not as a demonstrated improvement.
+If you want to compare the two directly, the previous behaviour is exactly what you get by passing no
+`zoneSeries`.
 
 ---
 
@@ -628,9 +634,11 @@ that matter, including the body-close break that the series calls its single mos
 rule. One attribution caveat: "CRT / right candle" is your project's vocabulary, not the mentor's (§10.2,
 confirmed independently in §11.1).
 
-**Two real defects found and fixed,** both with patches that apply cleanly to the pristine zip source:
-`setup.js:141` unguarded dereference (`0001`) and the killzone DST drift (`0002`) — the latter genuinely
-moved trade scores by up to 3.0 of 6 points for half the year. Full regression after both: unchanged.
+**Three changes made,** all with patches that apply cleanly to the pristine zip source:
+`setup.js:141` unguarded dereference (`0001`), the killzone DST drift (`0002`), and the wired-up zone
+layer (`0003`). The first two are defect fixes; the third is a deliberate strategy change you approved,
+and it does move trade decisions (§11.4). Full regression after all three: **unchanged, 568 checks,
+0 failing.**
 
 **Not verified:** the 27 real-browser assertions (no Chromium available), and the exact figures in the four
 research reports (I reproduced the methodology and its conclusion on 5 markets, not the 24-market numbers).
