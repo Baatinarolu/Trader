@@ -570,7 +570,7 @@ rather than a copy of your project. I fetched both documents into `analysis/inde
 | §3.5 **"No liquidity sweep, no entry"** (hard rule) | ✔ the sweep checkpoint gates the plan |
 | §5 The two entry models: market-shift and flip zone | ✔ MSS + `findBreakers()` |
 | §6 Stop beyond the protected high/low + buffer, never flush against the zone | ✔ `setup.js:175`, `+ atr * 0.18` |
-| §6 Fixed 2R, minimum acceptable 1:2, set-and-forget | ✔ min RR 2 |
+| §6 Fixed 2R, minimum acceptable 1:2, set-and-forget | ⚠ `minRR: 2` is wired but **advisory** — below 2R still returns `ok:true` at grade C (§14) |
 
 Their spec also confirms my §10.2 finding independently: **"CRT" and "right candle" appear nowhere in it.**
 They describe the same sweep-then-reverse mechanic, in the same episodes, and never use your project's
@@ -796,7 +796,7 @@ minute 15 of a video I only have the opening of is **not** verified and is marke
 | 17 | Smart Money Plan + Routine | `now.js` one dated action per market | ✓ full transcript |
 | 18 | Entry Models (SNIPER) | `setup.js` MSS + breakers; both named models | ✓ full transcript |
 | 19 | When Not to Trade | volatile ✓ / POI ✓ / **illiquid ✗** | ⚠ partial transcript |
-| 20 | Stop Loss & Take Profit | `setup.js:175` stop +0.18 ATR, 2R minimum | ✓ full transcript |
+| 20 | Stop Loss & Take Profit | `setup.js:175` stop +0.18 ATR; 2R **advisory, not a veto** | ⚠ see §14 |
 
 ### The rest of the course
 
@@ -806,7 +806,7 @@ minute 15 of a video I only have the opening of is **not** verified and is marke
 | 22 | Trading Psychology | `correction.js` tone-tagged notes | ✓ no mechanical surface |
 | 23 | Journalling Your Trades | the journal itself — this *is* the product | ✓ |
 | 24 | How to Review Your Day | daily review views | ✓ |
-| 25 | How I Find A+ Setups | Rules 1–2 verified present; **Rules 3–5 unread** | ⚠ truncated |
+| 25 | How I Find A+ Setups | all five rules read; **3 are gates, 2 are advisory** | ⚠ **divergence — §14** |
 | 26 | Review Your Trades Like a Pro | review views | ✓ |
 | 27 | Improve Your Strategy With Data | `rule-sweep.js`, `MEASURED-RULES` register | ✓ |
 | 28 | Emotional Regulation | no honest code surface | — deliberately not automated |
@@ -846,9 +846,9 @@ input anywhere in `src/bots/` that can veto a setup.
 
 ### Honest limits on this audit
 
-- **Rules 3, 4 and 5 of the A+ checklist (Ep 25) are unverified.** The caption fetch truncates around the
-  6-minute mark and those rules start at 11:32. I can see the chapter titles exist; I cannot see what they
-  say. If you paste that transcript I'll close it.
+- **Ep 25 is now fully read** — §13 originally listed its rules 3–5 as unverified because YouTube's watch
+  page truncates its caption panel. `youtubetotranscript.com` returns the complete transcript instead, and
+  reading it in full is what exposed the divergence in §14. That row is corrected above.
 - **I cannot see video frames**, so on-screen chart markup — where he draws a zone, how he places a stop on
   a specific candle — is outside anything I can check.
 - Episodes 0–4 are autobiography and mindset, and 28 is emotional regulation. Nothing in them has a
@@ -859,3 +859,86 @@ rule (the general illiquidity stand-down), **one** documentation citation error 
 and **one** dead config path (the zone layer, §11.4 — now reporting correctly but still not feeding a
 decision). Every mechanical rule I could read in full is implemented, and in most cases at the threshold the
 course states. The bot does run this strategy.
+
+---
+
+## 14. Ep 25 read in full — the bot diverges from the course on two of the five rules
+
+§13 recorded Ep 25's rules 3–5 as unverified because YouTube's own watch page truncates its caption panel
+around minute six. That was a route failure, not a dead end: **`https://youtubetotranscript.com/transcript?v=<ID>`
+returns the complete transcript, paginated.** Ep 25 is now read end to end, and it contains the single most
+auditable thing in the entire course — an explicit, ordered, all-or-nothing entry checklist.
+
+### What the mentor actually says
+
+> *"These are the five entry triggers that I check for before every single trade… if I don't check off every
+> single one of these box right here, **that's a no trade**… If I miss just one… that is not A plus setups."*
+
+His own summary of the order: *"Your bias, your point of interest, your sweep plus market shift, your
+timing, and your risk to reward."*
+
+| # | Rule | His words |
+|---|---|---|
+| 1 | **Bias alignment** | trade idea must match the immediate bias; if LTF contradicts HTF, *"stay out of the market or just wait for clarity"* |
+| 2 | **High-probability POI** | zone aligned with trend, with a liquidity sweep or available liquidity near it, and **price must be inside it** — *"not near it… it needs to actually be in it"* |
+| 3 | **Liquidity shift + market shift** | *"I always look for liquidity shift before I enter. **No liquidity shift, no entry**, as simple as that."* plus a structure shift confirming direction |
+| 4 | **Timing (killzone)** | *"if the setup appear before that window or after… and it's not within any Q zone, then I personally **will not enter** for the setup itself"* |
+| 5 | **Asymmetric risk-reward** | *"if the trade idea presents a risk to reward ratio of less than two… **no matter how confident I am, I'm going to be passing on the trade itself**"* |
+
+### How the bot actually decides
+
+`setup.js` is a **weighted score**, not a checklist. `add()` (line 92) pushes `{key, pass, weight}`, and
+line 276-278 computes `score = (earned weight / total weight) × 100`. A small number of conditions then *cap*
+the score, and a cap only becomes a hard veto if it lands below the `no-trade` band (44).
+
+Measured, every cap in the file:
+
+| cap condition | score cap | grade | blocks the trade? |
+|---|---|---|---|
+| no sweep (`hasTrigger` false) | 38 | no-trade | **yes** |
+| no zone (`hasZone` false) | 34 | no-trade | **yes** |
+| entry invalid | 20 | no-trade | **yes** |
+| news blackout | 40 | no-trade | **yes** |
+| **RR below `minRR`** | **45** | **C** | **NO — still tradeable** |
+| entry "waiting" | 66 | B | no (correctly) |
+| **outside the killzone** | **no cap exists** | — | **NO** |
+
+`ok` is computed at line 320 as `g.grade !== 'no-trade'`, so a C is reported as a tradeable setup.
+
+**So three of his five rules are hard gates and two are not.** Bias alignment is enforced by the topdown
+method gate (`setup.js:360`, which overrides any setup grade); the POI and the sweep are hard caps. But the
+2R minimum and the killzone window are advisory.
+
+### Reproduced on your own fixture data
+
+Scanning EURUSD, GBPUSD, XAUUSD and BTCUSDT 15m for setups the engine reports as tradeable:
+
+```
+EURUSD  grade=C  score=45  rr_final=1.11  ok=true   ← below the course's 2R floor
+EURUSD  grade=C  score=45  rr_final=1.50  ok=true
+EURUSD  grade=C  score=45  rr_final=1.53  ok=true
+EURUSD  grade=C  score=45  rr_final=1.94  ok=true
+GBPUSD  grade=C  score=45  rr_final=1.50  ok=true
+```
+
+A 1.11R setup is graded C, labelled *"Marginal — paper/demo or half risk at most"*, and returned with
+`ok: true`. The course says pass on it outright, whatever the confidence.
+
+### How to read this — it is a deliberate design choice, not a bug
+
+The C band exists on purpose and is honestly labelled: the author chose a graded risk ladder rather than a
+binary filter, so a marginal idea can still be shown at half risk. That is a defensible product decision.
+But it **is** a divergence from the course this project documents itself as encoding, and it is not recorded
+anywhere in `PLAYLIST-CURRICULUM.md` — which is the actual defect. §9 of this audit previously reported the
+2R minimum as faithfully implemented because `minRR: 2` is wired through the levels maths. It is wired, and
+it does cap the score — **it just doesn't veto.** I over-credited it.
+
+Two concrete options, both small, both yours to choose:
+
+- **Document it** — add a row to `PLAYLIST-CURRICULUM.md` stating that rules 4 and 5 are advisory, so the
+  divergence is a declared design choice rather than an undocumented one.
+- **Enforce it** — cap RR-below-minimum at ≤43 and add a killzone cap, making all five rules gates. This
+  changes trade decisions, so it needs a backtest before it ships, not after.
+
+I have done neither. Changing which trades the bot takes is not something I'll do on my own reading of a
+transcript.
