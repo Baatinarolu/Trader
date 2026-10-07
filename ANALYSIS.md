@@ -444,9 +444,10 @@ The volatility leg is real; the illiquidity leg is absent. Every `spread` hit in
 a note or comment (`momentum.js:229` warns that spreads balloon, `topdown.js:347` reasons about stop width) —
 none of them is a filter that can veto a setup. Given that the independent backtest's whole verdict turned on
 ~0.26R of per-trade cost against ~6-pip stops (§11.3), a liquidity gate is the one missing rule that would
-have attacked the failure mode directly. I have **not** implemented it: it needs a spread or volume input the
-candle model does not currently carry, and inventing one would be exactly the kind of unrequested strategy
-change I should not make unilaterally.
+have attacked the failure mode directly. I have **not** implemented it. ~~It needs a spread or volume input the
+candle model does not currently carry~~ — **that reasoning was wrong and is corrected in §18**: Ep 19's
+illiquidity criteria turn out to be calendar-based (Mondays, Fridays, December), so they need no data the
+engine lacks. The reason it is still not implemented stands: it changes which trades the bot takes.
 
 Earlier, a GitHub search had found **`nedu-m/market-mechanics-bot`**, which holds verbatim transcripts of
 the course. I pulled **14 of them — 100,401 words** — into `analysis/transcripts/`:
