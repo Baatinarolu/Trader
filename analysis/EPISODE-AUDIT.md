@@ -13,7 +13,7 @@ Legend: `—` not started · `◐` partially read · `✔` all chunks read · `n
 |---|---|---|---|---|---|---|
 | 0 | IM9MYudJSxs | 20:51 | 3/3 | ✔ | How I Went From Broke to Millionaire Trader | philosophy only |
 | 1 | xwvPmhArfEY | 30:46 | 4/5 | ✔ | How to Trade Like the Top 1% | endorsed-primitive list — all 7 present |
-| 2 | wZyxxo0qkPo | 36:08 | 3/5 | ◐ | How Price Really Moves | four stages of price — consolidation absent (M25) |
+| 2 | wZyxxo0qkPo | 36:08 | 4/5 | ◐ | How Price Really Moves | four stages of price — consolidation absent (M25) |
 | 3 | vP9gmvxdFd8 | 46:37 | 0 | — | How to Trade Forex For Beginners | instrument specs |
 | 4 | FXwJ26zT8Ds | 25:32 | 0 | — | Reprogramming Your Mind | n/a |
 | 5 | waLWuc6_HC0 | 50:32 | 5/7 | ◐ | **Market Structure** | **smc.js structure** — see M1/M2/M3 |
@@ -524,3 +524,54 @@ Ep 2 and Ep 19 both make consolidation a stand-down condition. **M25 and M10 str
 episode's aside, and the missing chop detector is a missing *stage*, not a missing filter.
 
 **Remaining:** Ep 2 chunks 3–4.
+
+### Ep 2 chunk 3 — the blank-chart questions, and three named retail mistakes
+
+The practical framework, given as a checklist to run on every chart:
+
+> *"From now moving forward whenever you open a chart… **Is price expanding, pulling back, or consolidating?**"*
+
+followed by a live EUR/USD 1-hour walk-through in which he narrates the phase explicitly — *"price has just
+gotten the expansion phase here"*, *"right now price is actually in the pullback phase"*, *"at this point of
+time, we were in a consolidation right here, and then price broke to the downside."* **M25 is a missing
+output the course asks for by name, on every chart.**
+
+He also reads control at **two scopes at once**, which is the Ep 5 internal/swing distinction in practice:
+
+> *"If we are looking at the overall structure, the buyers are in control… But if we are looking at right now,
+> the most recent price action, the sellers might be in control… It might be shifting bullish in the short term
+> **to facilitate the pullback**."*
+
+### Three retail mistakes — each maps to a ledger item
+
+| Mistake | His words | Ledger |
+|---|---|---|
+| 1. Chase during expansion | *"they tend to chase after price during an expansion"* | M3 |
+| 2. Panic during pullback | exits early, then *"price continue going up… and later on price went up there and hit TP"* | — (execution discipline; the bot has no open-trade management to get wrong) |
+| 3. **Enter too early on reversal** | *"Did you actually got your **confirmation** that the market is actually reversing to the upside? If the answer is no, then… you're trading your assumption of the market."* | **M24** |
+
+**Mistake 3 is M24 confirmed from a second episode.** Ep 5 said a reversal requires taking out the *strong*
+low; Ep 2 says a reversal entry without *confirmation* is trading an assumption. `smc.js:112` emits CHoCH on
+any opposite-direction break with no confirmation qualifier, which is precisely the unconfirmed reversal he
+describes.
+
+### The required sequence, stated as one sentence
+
+> *"Price often needs to rebalance. It needs to retrace. It needs to seek fair value. **It needs to grab
+> liquidity first. It needs to cause the structure to shift first before it can get the next move.**"*
+
+That is a four-step ordering: rebalance → grab liquidity → structure shift → next move. **The bot does
+implement this ordering** — `setup.js` requires a liquidity sweep before entry (the R3 gate, *"no liquidity
+shift, no entry"*) and a market shift, so the sequence is a **match** and belongs in the verified-faithful
+section rather than the ledger.
+
+### The framing worth keeping
+
+> *"A lot of traders think that they are losing because of emotions. When in reality, **they are losing because
+> they are misunderstanding the market movement**."*
+
+This is the reason the phase classifier (M25) is not cosmetic. His claim is that the emotional errors are
+*downstream* of not knowing which phase the market is in — so a bot that never classifies the phase cannot
+implement the discipline the course attributes to knowing it.
+
+**Remaining:** Ep 2 chunk 4.
