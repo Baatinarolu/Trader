@@ -12,7 +12,7 @@ Legend: `—` not started · `◐` partially read · `✔` all chunks read · `n
 | Ep | ID | Len | Chunks | Read | Title | Code surface |
 |---|---|---|---|---|---|---|
 | 0 | IM9MYudJSxs | 20:51 | 3/3 | ✔ | How I Went From Broke to Millionaire Trader | philosophy only |
-| 1 | xwvPmhArfEY | 30:46 | 0 | — | How to Trade Like the Top 1% | ? |
+| 1 | xwvPmhArfEY | 30:46 | 1/5 | ◐ | How to Trade Like the Top 1% | endorsed-primitive list — all 7 present |
 | 2 | wZyxxo0qkPo | 36:08 | 0 | — | How Price Really Moves | likely (sweeps/liquidity) |
 | 3 | vP9gmvxdFd8 | 46:37 | 0 | — | How to Trade Forex For Beginners | instrument specs |
 | 4 | FXwJ26zT8Ds | 25:32 | 0 | — | Reprogramming Your Mind | n/a |
@@ -319,3 +319,61 @@ Recorded in the ledger's *verified faithful* section rather than as an M-item.
 
 **Provisional:** chunks 1–4 unread. He promised to cover *when* and *how* to use them, so if a later chunk
 assigns patterns a role in entry confirmation, this verdict needs revisiting.
+
+---
+
+## Ep 1 — How to Trade Like the Top 1% (1/5 chunks read, ◐)
+
+Read here because the pass had wrongly jumped from Ep 0 to Ep 5. Chunk 0 is the origin of Market Mechanics,
+and it contains the most useful single passage in the series so far for this audit — an explicit list of what
+he endorses and what he discards.
+
+### The distillation thesis
+
+> *"I realize that all of these different strategies — price action, smart money, ICT concepts — there is
+> about like **30% of these concepts or lessons that are worth absorbing. And then the other 70% is just
+> fluff.**"*
+
+### His endorsed list — a direct audit checklist
+
+> *"In ICT, **displacement and order blocks** work really, really well. In smart money concepts, **liquidity,
+> imbalance** work really, really well. And then for price action, **break of structure, market structure**,
+> looking at the **momentum and the pressure of the candlestick** work really, really well."*
+
+Seven named primitives. Checking each against the code:
+
+| # | Endorsed primitive | In the code | |
+|---|---|---|---|
+| 1 | Displacement | `smc.js:156-168` — `rangeAtr >= minAtr` and `bodyRatio >= minBody` | ✓ |
+| 2 | Order blocks | `smc.js:180-196` | ✓ |
+| 3 | Liquidity | `smc.js:440+` sweep, ≥0.08 ATR + close back | ✓ |
+| 4 | Imbalance | `smc.js:241` FVG, ≥0.12 ATR | ✓ |
+| 5 | Break of structure | `smc.js:98-115`, close beyond the last swing | ✓ |
+| 6 | Market structure | `smc.js:73-96`, HH/HL/LH/LL labelling | ✓ |
+| 7 | Momentum / candle pressure | `smc.js:165-168` `bodyRatio = body / range` gated on both body ratio **and** ATR; a whole `momentum.js` layer on top | ✓ |
+
+**All seven present.** This matters because it is the first time the primitive set has been checked against
+the **primary source** rather than the independent repo's transcripts. The earlier "method audit — faithful"
+conclusion was built on a secondary source and I flagged it as possibly not surviving the real pass; on this
+evidence the primitive *coverage* does survive. The Ep 5 findings stand separately — they concern the swing
+*definitions* feeding those primitives (M1, M22), not whether the primitives exist.
+
+### He rejects pattern-memorising here too
+
+> *"They are taught these surface-level patterns. Oh, memorize this candlestick pattern… But not the real
+> mechanics behind price. And that is exactly why I created what I call market mechanics."*
+
+**This independently strengthens the Ep 6 verdict.** Two episodes now state that candlestick patterns are not
+entry signals, so the pattern library sitting in `indicators.js` and gating nothing is correct rather than an
+omission.
+
+### Sample size stated a third time
+
+> *"I wanted to see what actually worked. Not just in one trade, but across a large sample size, **across 100
+> trades, across 500 trades**."*
+
+Ep 1, Ep 26 and Ep 27 now all state a large-sample requirement. **M11 strengthens**: `correction.js:389`
+adapts guardrails at 10 trades — one-tenth of his lowest stated figure, and Ep 1 frames the whole method as
+laboratory work over hundreds of trades.
+
+**Remaining:** Ep 1 chunks 1–4.
