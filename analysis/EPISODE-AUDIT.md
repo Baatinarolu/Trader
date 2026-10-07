@@ -12,7 +12,7 @@ Legend: `—` not started · `◐` partially read · `✔` all chunks read · `n
 | Ep | ID | Len | Chunks | Read | Title | Code surface |
 |---|---|---|---|---|---|---|
 | 0 | IM9MYudJSxs | 20:51 | 3/3 | ✔ | How I Went From Broke to Millionaire Trader | philosophy only |
-| 1 | xwvPmhArfEY | 30:46 | 1/5 | ◐ | How to Trade Like the Top 1% | endorsed-primitive list — all 7 present |
+| 1 | xwvPmhArfEY | 30:46 | 4/5 | ✔ | How to Trade Like the Top 1% | endorsed-primitive list — all 7 present |
 | 2 | wZyxxo0qkPo | 36:08 | 0 | — | How Price Really Moves | likely (sweeps/liquidity) |
 | 3 | vP9gmvxdFd8 | 46:37 | 0 | — | How to Trade Forex For Beginners | instrument specs |
 | 4 | FXwJ26zT8Ds | 25:32 | 0 | — | Reprogramming Your Mind | n/a |
@@ -59,7 +59,11 @@ Legend: `—` not started · `◐` partially read · `✔` all chunks read · `n
 | T6 | NsK2uYiqPlY | 14:48 | 0 | — | EdgeScore / Discipline | grading |
 | T7 | umvflPxb0Es | 18:17 | 0 | — | Time Management (Notebook) | n/a |
 
-**Progress: 1 of 47 fully read. 10 partially read. 36 not started.**
+**Progress: 2 of 47 content-complete (Ep 0, Ep 1). 11 partially read. 34 not started.**
+
+**Rule adopted after the user's correction, and backed by the course itself** (Ep 1: *"watch in chronological
+order… not episode 5 then 10 to 12 or whatever topic that you feel like watching"*): finish every chunk of
+episode *n* before starting *n+1*. No skipping to whichever episode has the most obvious code surface.
 
 ---
 
@@ -322,7 +326,7 @@ assigns patterns a role in entry confirmation, this verdict needs revisiting.
 
 ---
 
-## Ep 1 — How to Trade Like the Top 1% (1/5 chunks read, ◐)
+## Ep 1 — How to Trade Like the Top 1% (4/5 chunks read ✔ content complete — chunk 4 is site chrome)
 
 Read here because the pass had wrongly jumped from Ep 0 to Ep 5. Chunk 0 is the origin of Market Mechanics,
 and it contains the most useful single passage in the series so far for this audit — an explicit list of what
@@ -376,4 +380,42 @@ Ep 1, Ep 26 and Ep 27 now all state a large-sample requirement. **M11 strengthen
 adapts guardrails at 10 trades — one-tenth of his lowest stated figure, and Ep 1 frames the whole method as
 laboratory work over hundreds of trades.
 
-**Remaining:** Ep 1 chunks 1–4.
+### Chunks 1–3 — the framework's stated components, and a house rule worth quoting
+
+**What Market Mechanics comprises**, in his words:
+
+> *"It is built on understanding **structural liquidity, imbalance, timing, institutional zones, execution,
+> trading psychology**."*
+
+Six components. Five map to engine code already verified above; **timing** maps to the killzone/session layer
+— which is where **M5** (DST drift) sits, so this list makes M5 a defect against a named component rather than
+an incidental bug. **Trading psychology** maps to the coach layer.
+
+**The anti-chase principle, stated as identity rather than rule:**
+
+> *"I'm not going to be chasing the market. **The market is going to be coming to a price point which I want
+> to enter and then I enter.**"*
+
+Supports **M3** — the bot does have anti-chase logic (`setup.js:329`), but keyed to zone distance rather than
+to the BOS event.
+
+**Sample size, a fourth time:** *"test it out… over a large sample size, 100 trades, 500 trades, and then
+based on data, decide what to keep in your trading plan and what to discard."*
+
+### The house rule — which is exactly the correction the user made
+
+> *"I want you to watch every single lesson from start to finish… **watch in chronological order**. So watch
+> from episode 1 to episode 2 to episode 3, **not episode 5 then 10 to 12 or whatever topic that you feel like
+> watching. No. Watch from 0 all the way to 31.**"*
+
+Recorded deliberately. This is not only the user's instruction about how to run the audit — it is the course's
+own stated method, and the reason is that the concepts build cumulatively (Ep 5 says *"every other concept is
+built on top of market structure"*). Skipping to whichever episode has obvious code surface breaks the
+dependency chain, which is precisely the error made earlier in this pass.
+
+Note also that he describes the series as **0 to 31** here and *"30-day"* in Ep 0, while the playlist carries
+Ep 0–33. Consistent with the Ep 0 numbering note; the extra episodes are later additions.
+
+**Ep 1 content complete.** The transcript ends at *"let's begin with the Market Mechanics Mentorship series…
+you are just one trade away"* followed by `Back To Top`; chunk 4 is site chrome and AI-feature listings, not
+episode content.
