@@ -16,7 +16,7 @@ Legend: `—` not started · `◐` partially read · `✔` all chunks read · `n
 | 2 | wZyxxo0qkPo | 36:08 | 0 | — | How Price Really Moves | likely (sweeps/liquidity) |
 | 3 | vP9gmvxdFd8 | 46:37 | 0 | — | How to Trade Forex For Beginners | instrument specs |
 | 4 | FXwJ26zT8Ds | 25:32 | 0 | — | Reprogramming Your Mind | n/a |
-| 5 | waLWuc6_HC0 | 50:32 | 0 | — | **Market Structure** | **smc.js structure** |
+| 5 | waLWuc6_HC0 | 50:32 | 2/7 | ◐ | **Market Structure** | **smc.js structure** — see M1/M2/M3 |
 | 6 | Dc0Z1B6jckA | 30:29 | 0 | — | Candlestick Patterns | pattern library |
 | 7 | 52aKS7HN_jI | 32:09 | 0 | — | **Institutional Supply & Demand Zones** | **smc.js zones** |
 | 8 | xR1KUjv0PB8 | 25:33 | 0 | — | **Premium and Discount** | **topdown.js P/D** |
@@ -94,3 +94,73 @@ over-leveraging blow-up, and §16 found `routes/api.js:566` stores `risk_pct` un
 Also: he describes the series as a **30-day** mentorship / boot camp, while the playlist carries episodes
 numbered 0–33 (34 episodes). Not an audit finding, just a numbering note so "Ep 33" is not mistaken for
 "day 33".
+
+---
+
+## Ep 5 — Market Structure (2/7 chunks read, ◐ — **incomplete, findings provisional**)
+
+The foundational episode: *"every other concept is built on top of market structure."* Chunks 0–1 give the
+theory and, importantly, **explicitly mechanical** definitions. Chunks 2–6 are unread and chunk 0 promised
+*"later on I'm going to go through the concept of internal structure"* — which may qualify M1 below, so this
+entry must not be treated as final.
+
+### What the course states as mechanical rules
+
+**Break of structure:** *"The break of structure happens when price take out the last structural high in a
+uptrend and when it takes out the last structural low in a downtrend."*
+
+**Swing points — stated as a rule, and the direction of the definition matters:**
+
+> *"Your swing high is the highest point that led to the swing low… the highest point that price has reached
+> before it starts pulling back. It's the peak of the mountain."*
+>
+> *"The swing low is the lowest point that creates the break of structure and lead to the swing high… **The
+> keyword here is the lowest.** So that's a mechanical rule that you can actually use."*
+
+And he explicitly rejects the intermediate lows a purely local test would accept:
+
+> *"Is this a swing low? No. Is this a swing low? No. Is this a swing low? No. Why? Because it's not the
+> lowest point that create the break of structure and led to the swing high."*
+
+**Swing range:** *"This becomes my swing range and this is the area that I want to focus on. I don't care
+about what price is doing outside of this swing range… I only care about what price is doing within the swing
+high and the swing low itself."* It is re-derived on every new BOS.
+
+**Confirmation timing:** *"I'm not able to identify my swing low until price starts pulling back… we cannot
+identify the swing high until price breaks structure."*
+
+**Pullback after BOS:** *"This is a rule I want you guys to remember… after a break of structure you want to
+expect that price is going to start retracing or pulling back… a lot of beginners tend to enter right here
+when the market has already made its move."*
+
+### What the code does
+
+`smc.js:38 findSwings(candles, strength = 2)` is a **fractal** test — *"a bar whose high is the highest of the
+`strength` bars either side of it"*. Direction-agnostic, purely local geometry. `alternate()` (`:55`) then
+keeps only alternating highs/lows, retaining the most extreme when two of a kind repeat.
+
+That is **not** the course's rule. His swing low is the single lowest point that produced the BOS; a fractal
+with `strength=2` marks every local trough. `alternate()` dedupes geometrically but never asks *"did this low
+cause the break?"*
+
+**Why this is the most consequential finding of the pass so far:** swings are the input to everything.
+`marketStructure()` (`:69-73`) labels HH/HL/LH/LL from them, `:98-115` derives BOS/CHoCH/MSS, and the file
+header (`:11`) states the chain: *"structure swing points -> HH/HL/LH/LL -> BOS / CHoCH / MSS."* If the swing
+set differs from the course's, the trend label and every event derived from it can differ too.
+
+Logged as **M1 (S1)** — but **flagged "needs measurement first"**, not "fix now", for two reasons: chunk 0
+promised an *internal structure* discussion that may reconcile the two, and any change here alters which
+trades the bot takes, so it needs an A/B over the fixture set before it is touched.
+
+**M2 (S3):** no `swing_range` construct anywhere in `src/bots/` — 0 hits. The course treats it as the working
+area that bounds everything else.
+
+**M3 (S4):** the anti-chase intent *is* present (`setup.js:230/235` "waiting for the retrace into the zone",
+`:329` *"Chasing here breaks the model's edge"*) but keyed to **distance from a zone** rather than to the
+**BOS event**. Same intent, different trigger — recorded as a nuance, not a defect.
+
+**Matches:** the BOS/CHoCH/MSS event taxonomy (`smc.js:98-115`) corresponds directly to what Ep 5 describes,
+and HH/HL/LH/LL labelling exists as stated. The divergence is in the swing *inputs*, not the event logic.
+
+**Still to read:** chunks 2–6 — internal structure, the live top-to-bottom mapping he promised, and whatever
+qualifies the above.
