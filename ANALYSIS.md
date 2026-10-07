@@ -1355,3 +1355,76 @@ stand-down conditions, and nothing in the app checks for that.
 
 **Nothing changed**, including the one-string label fix — it is a user-visible wording change and I would
 rather you approve the phrasing than have me invent it.
+
+---
+
+## 20. Ep 23 — the journal matches the course closely; two daily-stats items are absent
+
+Ep 23 (*Journalling Your Trades*) is the episode this product *is*, so it is the fairest test in the audit.
+His framing is the one the project's own docs adopt:
+
+> *"A green trade, a winning trade can be bad execution… a red trade, a losing trade could be a good trade
+> because you executed your trade plan flawlessly… if you do not journal your trades, you will never ever
+> know the difference."*
+
+**That separation is implemented, and it is the strongest single match in the whole audit.**
+`correction.js:330` scores a losing trade *"within the 1R limit, that is a good loss (+6)"*, and `:522`
+grades a C trade *"Process errors here; **the P&L is beside the point**."* Outcome and process are genuinely
+scored apart, exactly as he describes.
+
+### His daily-stats list, item by item
+
+He enumerates what the end-of-day view should show. Checking each:
+
+| Ep 23 daily stat | In the app | |
+|---|---|---|
+| P&L for all closed positions of the day | `correction.js:472` `today.realised` | ✓ |
+| How many trades taken | `today.trades` / `today.closed` | ✓ |
+| Win rate | `statsOf(trades)` | ✓ |
+| **Did you follow your trading plan?** | `setup_grade` column + `correction.js` grading | ✓ |
+| **Did you violate any guardrails?** | `correction.js:466` `breaches[]`, plus a `stop_moved` column | ✓ |
+| **Did you complete your pre-market routine?** | **no daily completion flag** | ✗ |
+| How many trades journalled so far / "gray dot = missing" | **no completeness indicator** | ✗ |
+
+His per-trade field list is fully covered and then some. `db.js` carries `entry`, `exit`, `stop`, `target`,
+`size`, `fees`, `gross_pnl`, `net_pnl`, `risk_amount`, `r_multiple`, `planned_r`, `mae_r`, `mfe_r`,
+`exit_reason`, `setup_grade` and `session TEXT` (`:264`) — he asks for P&L, instrument, direction, lot size,
+date, session, duration, entry, TP and SL. Duration is derivable from `opened_at`/`closed_at`; everything else
+is a real column.
+
+### A correction to my own method, since it changed the answer
+
+My first pass grepped for `routine|checklist|pre.?market|prep` in `db.js` and the routes, got only false
+positives from the word *"prepare"*, and I nearly reported "no routine or checklist tracking." That was a
+bad search, not a finding. A wider grep returns **67 hits**: `db.js:228` `checklist TEXT DEFAULT '[]'` — a
+JSON array of pre-trade items — plus per-strategy checklists at `:413`, `:422`, `:431` and a
+`DEFAULT_CHECKLIST` at `:436`, surfaced through `coach.js:598`.
+
+So **checklist logging does exist**, and `PLAYLIST-CURRICULUM.md:85`'s claim is accurate on that half. What is
+genuinely absent is narrower than I first thought: a **daily completion** record for the routine, and a
+**journal-completeness** indicator. Both are in his daily-stats list; neither is in the schema.
+
+### One doc-precision note on Ep 32
+
+`PLAYLIST-CURRICULUM.md:85` credits Ep 32 with *"Journal streaks / checklist logging ◐."* The checklist half
+holds. The streak half is ambiguous: the only streak in the codebase is a **consecutive-loss** streak
+(`correction.js:459-460`, feeding the `max_consecutive_losses` guardrail at `:466`). Ep 32 is
+*"Become a Disciplined Trader in 21 Days"* — a habit streak, which is a different construct, and there is no
+day-counting habit streak anywhere. `correction.js:297` only *name-drops* the episode in advice text. Not a
+defect, but the row reads as more coverage than exists.
+
+### Scorecard
+
+| | |
+|---|---|
+| Process scored apart from outcome | ✓ the strongest match in the audit |
+| Per-trade data, incl. session | ✓ exceeds his list |
+| Plan-followed / guardrail breach | ✓ |
+| Pre-trade checklist storage | ✓ `db.js:228` + per-strategy defaults |
+| **Daily routine completion flag** | **✗** |
+| **Journal-completeness indicator** | **✗** |
+| Ep 32 "journal streaks" claim | ⚠ only a loss streak exists |
+
+**Nothing changed.** The two missing items are additive UI/schema features rather than corrections, and both
+are things you may well have scoped out deliberately — unlike the divergences in §14–§19, neither contradicts
+something the code claims to do.
