@@ -1488,3 +1488,102 @@ Best/worst is outcome-ranked where the course means process-ranked.
 
 **Nothing changed.** Same reasoning as §20: these are additive features, not contradictions of anything the
 code claims to do.
+
+---
+
+## 22. Ep 26 — the five-R cadence, and a second episode converging on the 10-trade gate
+
+Ep 26 (*Review Your Trades Like a Pro*) opens with the framework the whole course builds toward:
+
+> *"Record your trades daily, review them weekly, reflect on them monthly, **refine your plan quarterly**,
+> reassess your goals annually, repeat. I call that the five R process, and honestly, that's the whole game."*
+
+And the constraint that matters most for this audit:
+
+> *"**You don't adjust your trading plan on a weekly review because you don't have enough data.** You don't
+> have a large enough sample size that tells you that this rule is not working. So you might want to adjust
+> your trading plan **only after you've done your quarterly review**."*
+
+### The five cadences, and what the app supports
+
+| Cadence | In the app | |
+|---|---|---|
+| Record daily | the journal itself | ✓ |
+| Review weekly | no weekly period series | ✗ |
+| Reflect monthly | `performance.js:305` `monthlySeries()`, surfaced at `:538` `monthly:` | ✓ |
+| **Refine quarterly** | no quarterly period series | ✗ |
+| Reassess annually | none | ✗ |
+
+Only `monthly:` exists at `performance.js:538`. There is no weekly and no quarterly aggregation, which is
+notable because **quarterly is the cadence at which he says plan changes become legitimate** — the one period
+the app cannot produce.
+
+### His weekly metric list
+
+He enumerates what the weekly review tracks: win rate, average win R, average loss R, **max drawdown**,
+**rule breaks**.
+
+- Win rate, avg win/loss R — ✓ `performance.js`
+- **Max drawdown** — ✓ `performance.js:215-216` `max_drawdown`, `max_drawdown_pct`, `current_drawdown`
+- **Rule breaks** — **not aggregated.** `correction.js:464-467` computes named breaches
+  (`max_trades_day`, `consecutive_losses`, `daily_loss_limit`) but `performance.js` has **zero** references to
+  them. They live only in the live guardrail path, so a review of last month cannot see how many rules were
+  broken. That is the one metric on his list the app computes but throws away.
+
+### The convergence that strengthens §17
+
+§17 recorded that `correction.js:389` derives adaptive guardrails — including risk sizing — from the last
+**10 trades**, against Ep 27's floor of 30–50 minimum and 100 preferred. Ep 26 independently states the same
+constraint in cadence form: no plan changes before a **quarterly** review, because a week's data cannot tell
+you a rule is failing.
+
+So this is not one episode read strictly. **Two separate episodes, one quantitative (Ep 27: 30–50 trades) and
+one temporal (Ep 26: quarterly), both put the floor far above 10 trades and well beyond a few days of trading.**
+The adaptive engine adjusts on a sample roughly one-third to one-fifth of the smallest number the course
+mentions, and on a timescale an order of magnitude shorter than the shortest cadence at which he permits
+change.
+
+That said — the same caveat as §17 applies and should not be dropped. What the engine actually modifies is
+*guardrails* (risk percentage, daily loss cap, consecutive-loss stop, cooldown, trade cap), tightening or
+loosening within bounds, rather than rewriting entry rules. That is a less dangerous object to adapt than a
+strategy parameter. The objection is to the **sample size**, not to adapting guardrails at all.
+
+### Scorecard
+
+| | |
+|---|---|
+| Daily recording | ✓ |
+| Monthly reflection | ✓ |
+| **Weekly / quarterly / annual** | **✗** — and quarterly is the one he says legitimises plan change |
+| Max drawdown | ✓ |
+| **Rule breaks aggregated into review** | **✗ computed, never persisted** |
+| 10-trade adaptive gate | ✗ contradicted by Ep 26 *and* Ep 27 |
+
+---
+
+## 23. A correction: I had the wrong video ID for Ep 32
+
+While fetching Ep 26 I also requested Ep 32 and got back *"This video is private, deleted, or doesn't exist."*
+The ID I used was not on the playlist at all. `analysis/playlist-verified.json` gives the real one:
+
+```
+Ep 22 | JxiRzhjq2t8 | 50:09 | Trading Psychology
+Ep 26 | xoUlvwdBVJ4 | 19:43 | Review Your Trades Like a Pro
+Ep 32 | TIpUnwVftgU | 20:52 | Become a Disciplined Trader in 21 Days
+Ep 33 | 3rtET_1E040 | 17:01 | Graduation - Lessons I Wish I Knew Earlier
+```
+
+Two consequences worth stating:
+
+1. **Ep 32 has not been read.** Everything said about it so far — including the note in §20 that
+   `PLAYLIST-CURRICULUM.md:85`'s *"Journal streaks / checklist logging"* claim over-reaches — rests on the
+   episode's **title** and on what the codebase contains, not on its content. The codebase finding stands on
+   its own (no day-counting habit streak exists; the only streak is consecutive losses). The characterisation
+   of what Ep 32 actually asks for is unverified and should be treated as provisional until it is read.
+2. My lookup of `playlist-verified.json` failed twice before succeeding, because I assumed a top-level list
+   keyed `videos` with numeric `ep`. The file is a dict whose list is `episodes`, and `ep` is a **string**
+   (`'0'`…`'46'`). Recorded here so the next lookup does not repeat it — and as another instance of the
+   pattern already logged in this audit: **a failed lookup is not evidence of absence.**
+
+**Nothing changed** in this section's subject matter. Ep 26 and Ep 33 remain to be reconciled with the code;
+Ep 22 and 33 are mindset episodes with little code surface.
