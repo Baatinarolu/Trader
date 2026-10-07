@@ -1250,3 +1250,108 @@ exact failure mode that killed the backtest, and it needs no new data and no cha
 **Not implemented.** I am not adding it: it changes which trades the bot takes, which is your call, and §14's
 options still stand. But I am correcting the record — I told you this needed data the engine doesn't have. It
 doesn't.
+
+---
+
+## 19. Ep 30 and Ep 16 — the news filter is stricter than the course, but its label is wrong
+
+### Ep 30 — what the course specifies
+
+He reduces news handling to three options and picks one:
+
+> *"There are simply just three ways that you can trade news. There's only three options. And for majority of
+> the traders watching this, I would advise you to stick to **option A, which is avoid it completely**."*
+
+> *"If you don't have a system that is specifically tested for news, you shouldn't be trading news at all."*
+
+Then he specifies the mechanism precisely, in the terms of his own platform:
+
+- filter to **high impact only**, and only for the currencies on your watch list
+- a **block window**, default 15 minutes, settable to 5 / 10 / 30 / 60
+- a **block behaviour**: before, after, or **before and after**
+- *"I would recommend you to at least put it at **15 minutes before and after** high impact news."*
+
+### What the bot does — faithful, and stricter
+
+`index.js:54-77` `newsCheck()`:
+
+```js
+if (!/high/i.test(e.impact || '')) return false;                        // high impact only
+if (!ccys.some((c) => ccy.includes(c))) return false;                   // watchlist currencies only
+return Math.abs(new Date(e.date).getTime() - now) <= windowMin * 60000; // ± window
+```
+
+| Spec | Course | Bot | |
+|---|---|---|---|
+| High impact only | yes | `/high/i` filter | ✓ |
+| Watchlist currencies only | yes | `currenciesOf(symbol)` | ✓ |
+| **Before and after** | *"before and after"* | `Math.abs(…)` — symmetric | ✓ |
+| Window | 15 min recommended floor | **45 min** default (`:54`, `:122`) | ✓ **3× stricter** |
+| Look-ahead calendar | "calendar view… which days are loaded" | `upcoming`, next 6h, top 4 | ✓ |
+| Hard veto | "stop you from entering trades" | `setup.js:288` cap 40 → no-trade | ✓ |
+
+I confirmed the boundary by evaluating the filter expression: an event at **+40 min blocks, −40 min blocks,
++50 min does not, −50 min does not**. Symmetric at 45.
+
+*(Method note: `newsCheck` is not exported, so I read the filter at `index.js:64` and evaluated that exact
+expression rather than calling the function. The symmetry is established by the `Math.abs`, which is
+verifiable by inspection; the numbers above are the arithmetic of that line, not a live call.)*
+
+### The bug: the label misdescribes the filter
+
+`setup.js:168`:
+
+```js
+blackout ? blackout : 'No high-impact releases due in the next 60 minutes.'
+```
+
+Two things are wrong with that sentence, and both are visible to the user on every clean read:
+
+1. **The number is wrong.** The actual default is **45** (`index.js:54` and `:122` both use 45, and nothing
+   in the tree passes a `newsWindowMin` override — the only occurrence is the default itself).
+2. **The direction is wrong.** *"due in the next"* describes a forward-looking window. The filter is
+   **symmetric** — it also stands down for 45 minutes *after* a release, which is the half that catches the
+   *"price goes up by 100 pips, and then later on price comes down by another 100 pips"* manipulation he
+   describes.
+
+So the app under-reports its own protection: it is doing more than it says, in both directions. Small, but it
+is exactly the kind of thing that makes a checklist unreadable — and the fix is one string:
+
+```js
+`No high-impact release within ±${ctx.newsWindowMin || 45} minutes.`
+```
+
+### Ep 16 — and it makes the Monday/holiday gap part of the *plan*
+
+Ep 16 defines what a trading plan must answer, and the last item is the one that connects to §18:
+
+> *"Where to place a stop loss, where to place your take profit, and **most importantly, when should I stay
+> out completely?** What are the market conditions that I want to avoid at all costs just like a plague —
+> **maybe on Mondays**… maybe doing high impact news… **maybe during holiday seasons**… If your trading plan
+> cannot answer these simple questions, **it is not strong enough**."*
+
+He also states the design goal in terms that describe this project exactly:
+
+> *"The purpose of a mechanical trading system is to remove all the discretion from trading… It's something
+> that is clearly defined and it's measurable and it's repeatable and it's scalable."*
+
+Two consequences. First, the Monday/Friday/December gap from §18 is not a stylistic preference — the course
+treats "when to stay out completely" as a **required** component of the plan, and names those exact
+conditions. Second, the journal stores a written plan, so this is the one place the course asks for something
+the app could surface directly: a plan is incomplete by the course's own definition if it cannot state its
+stand-down conditions, and nothing in the app checks for that.
+
+### Scorecard
+
+| Item | |
+|---|---|
+| News: high-impact + watchlist filter | ✓ |
+| News: symmetric before/after block | ✓ |
+| News: 45 min vs 15 min recommended | ✓ stricter |
+| News: hard veto | ✓ cap 40 |
+| **News: user-facing label** | **✗ says "next 60 minutes", is ±45** |
+| Plan: "when to stay out completely" required | ⚠ not surfaced anywhere |
+| Plan: Monday / holiday conditions | ✗ (§18) |
+
+**Nothing changed**, including the one-string label fix — it is a user-visible wording change and I would
+rather you approve the phrasing than have me invent it.
