@@ -164,3 +164,65 @@ and HH/HL/LH/LL labelling exists as stated. The divergence is in the swing *inpu
 
 **Still to read:** chunks 2–6 — internal structure, the live top-to-bottom mapping he promised, and whatever
 qualifies the above.
+
+### Ep 5 chunks 2–3 — two-tier structure, strong/weak, market shift
+
+**Internal structure is defined relative to swing structure, not independently:**
+
+> *"Internal structure is everything contained between your swing highs and your swing lows… **the only way you
+> can identify your internal structure is if you have identified your swing structure and your swing range**…
+> the first step is to always identify your swing range."*
+
+Internal structure has its own highs/lows/BOS/range, and the sequencing rule is explicit:
+
+> *"The internal structure has to shift first before the swing structure actually shifts… **That's what fractal
+> means** — whatever happens on the higher time frame must first happen on the lower time frame."*
+
+**Strong vs weak — a target-selection rule, not a description:**
+
+> *"In a bullish market structure you want to trade from **strong** structure and target **weak** structure…
+> longs at these strong lows and target these weak highs. The reason we call them weak is because **this is
+> where the break of structure happen**. The reason we call them strong is because **this is where price is
+> most likely going to hold** the next time price comes back."*
+
+**Market shift (reversal):** *"when price actually went up there and take out the strong high, the strong lower
+high. So breaking the cycle of the bearish downtrend… **it takes a lot a lot a lot of money for price to break
+a strong structure**… Only institutions have the power to do that."*
+
+**His five blank-chart questions:** trending up/down/sideways? · where are the obvious swing highs and lows? ·
+HH/HL or LH/LL? · is this move a pullback or a reversal? · who is in control right now? First step is always
+*"identify the most obvious break of structure."*
+
+### Correction to my own M1 — I overstated it
+
+I wrote M1 as "swing points are fractals, not the course's rule" and implied the two-tier model was absent.
+**That was wrong in part.** `smc.js:697-700` builds exactly two tiers:
+
+```js
+const minorSwings = alternate(findSwings(candles, 2));
+const majorSwings = alternate(findSwings(candles, 5));
+const structure    = marketStructure(candles, minorSwings);
+const htfStructure = majorSwings.length ? marketStructure(candles, majorSwings) : null;
+```
+
+and `:705` (liquidity) and `:707` (premium/discount) both **prefer `majorSwings`** — which is the right
+instinct, since the course's swing structure is what bounds the working area. Both tiers are exposed at `:741`.
+
+So a two-tier model **is** present. What genuinely diverges is narrower:
+
+1. **Definition.** The tiers differ only by fractal window (2 vs 5 bars). The course's test is event-relative —
+   which extreme *caused the BOS* — not how wide the local window is. Widening a window is not that test.
+2. **Dependency inverted** (M22). He derives internal *from* swing; the code computes both in parallel.
+3. **No `swing_range` output** (M2) — still stands, 0 hits.
+4. **No strong/weak labels** (M21) — still stands, 0 hits for the structural sense.
+
+M1 is therefore **reclassified and softened**: the architecture matches, the swing *definition* does not. It
+remains "needs measurement first" — run both definitions over the fixtures and diff trend labels and BOS
+events before concluding anything about behaviour.
+
+**M23 (new, unverified):** `smc.js:138` sets `e.mss = e.type === 'CHoCH'` for every break, while the comment
+above describes a sweep test *"checked in sweeps() and patched there"*; `:718` sets
+`structure.last_break.mss = true`. I read the line but **not** the condition guarding `:718`, so whether a
+plain BOS can be reported as an MSS is **open**, not asserted.
+
+**Still to read:** Ep 5 chunks 4–6 (bar replay on live market conditions).
