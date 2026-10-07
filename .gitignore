@@ -1,0 +1,27 @@
+# Working artifacts produced while analysing tradingpro-main.zip.
+# The archive itself is the tracked deliverable; the unpacked tree, its
+# node_modules and the generated SQLite files are not.
+extracted/
+node_modules/
+*.db
+*.db-wal
+*.db-shm
+
+# Downloaded historical OHLCV used by analysis/candle-shim.js.
+# These are third-party datasets fetched via api.github.com, not project
+# source, so they are reproducible rather than tracked. See the provenance
+# table in the header of analysis/candle-shim.js.
+analysis/fixtures/
+analysis/*.log
+
+# Verbatim course transcripts pulled from github.com/nedu-m/market-mechanics-bot
+# and used only to audit the strategy implementation. Third-party copyrighted
+# material — the findings are recorded in ANALYSIS.md section 10.2, so the raw
+# text is reproducible rather than tracked.
+analysis/transcripts/
+
+# The same repo's STRATEGY_SPEC.md and RESULTS.md, fetched for the independent
+# cross-check in ANALYSIS.md section 11. That repo declares no license, so the
+# files stay untracked; every figure relied on is quoted in the report, with the
+# source repo named so it can be re-fetched.
+analysis/independent/

@@ -1,0 +1,21 @@
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index 138beb4..639ad50 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -135,10 +135,15 @@ function buildSetups(analysis, ctx = {}) {
+ 
+     /* ------------------------------------------------------------- 5. trend alignment */
+     const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
++    // SMC.analyse() returns { ok:false } with no `structure` key when it is given
++    // fewer than 30 candles (smc.js:660). The `trend` read above already guards
++    // for that; this one did not, so a thin series crashed the whole setup build
++    // instead of scoring the checkpoint as unavailable.
++    const lastBreak = (analysis && analysis.structure && analysis.structure.last_break) || null;
+     const trendAligned = (long && trend === 'bullish') || (!long && trend === 'bearish');
+     const htfTrend = analysis && analysis.htf_structure ? analysis.htf_structure.trend : null;
+     const htfAligned = htfTrend ? ((long && htfTrend === 'bullish') || (!long && htfTrend === 'bearish')) : null;
+-    add('structure', 'Internal structure agrees', trendAligned, 12, `Structure reads ${trend}${analysis.structure.last_break ? ` after a ${analysis.structure.last_break.type} ${analysis.structure.last_break.dir} ${analysis.structure.last_break.bars_ago} bars ago${analysis.structure.last_break.mss ? ' (MSS — sweep then shift)' : ''}` : ''}.`);
++    add('structure', 'Internal structure agrees', trendAligned, 12, `Structure reads ${trend}${lastBreak ? ` after a ${lastBreak.type} ${lastBreak.dir} ${lastBreak.bars_ago} bars ago${lastBreak.mss ? ' (MSS — sweep then shift)' : ''}` : ''}.`);
+     if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
+ 
+     /* ------------------------------------------------------------- 6. higher-timeframe bias */
