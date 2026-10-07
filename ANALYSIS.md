@@ -1190,3 +1190,62 @@ parameters can be stored. ✓
 **Not changed.** Raising `correction.js:389` from 10 to 30 is a one-line edit, but it would silently stop
 personalised guardrails for every user with 10–29 trades, which is a product decision about how the app
 behaves for new users — not a bug fix I should make on the strength of a transcript.
+
+---
+
+## 18. Ep 19 read in full — and it refutes something I wrote in §14
+
+§14 closed the illiquidity gap with this sentence:
+
+> *"it needs a spread or volume input the candle model does not currently carry, and inventing one would be
+> exactly the kind of unrequested strategy change I should not make unilaterally."*
+
+**That was wrong, and reading the episode in full proves it.** I inferred the difficulty of a fix without
+investigating what the rule actually is. The mentor's illiquidity criteria are not about spreads or volume
+feeds at all — they are **calendar-based**.
+
+### The complete criteria list
+
+He opens by naming two market conditions — *"Volatile market conditions, or the markets are illiquid"* — then
+enumerates what he actually means, "based on my 5 years of experience":
+
+| # | Condition | His reason | In the bot |
+|---|---|---|---|
+| 1 | **Price in the middle of nowhere** | *"it messes up your risk to reward"* | ✓ hard gate, cap 34 |
+| 2 | **Slow, choppy price action, no clear bias** | *"price is sweeping the liquidity from this high, this low… we are just back to exactly where we start"* | ⚠ partial — `add('bias')` 12 pts + `add('momentum')` 8 pts, both weighted, neither a veto; no chop detector |
+| 3 | **Mondays and Fridays** | Monday: *"lower trading volume… a lot of traps… the market is still trying to figure out where to go."* Friday: *"the markets are illiquid… institutions are closing their books"* + weekend rollover fees | **✗ absent** |
+| 4 | **December** | *"institutions are taking a break… the market is going to be very illiquid"* | **✗ absent** |
+
+Every one of the missing items is a **day-of-week or month check on a timestamp the bot already has**. I
+verified there is no such filter: the only `getUTCDay`-style arithmetic in `src/bots/` is `smc.js:326-327`,
+which computes a Monday purely to anchor PDH/PDL and weekly levels — not to veto a trade. The session and
+killzone tables (`smc.js:611-615`, `:630-632`) are **hour-of-day only**. No day, no month.
+
+So the fix I dismissed as needing data the engine lacks needs no new data whatsoever.
+
+### One nuance that keeps this from being a blunt ban
+
+He carves out an exception, and it matters for how any fix should be shaped:
+
+> *"If I see like a top-notch A+ extreme high probability setup on a Monday, then yes, of course I'm going to
+> take it, because my trading plan states that if a setup meets my criteria, I will take the trade regardless
+> of the day. But… if it's just like a mediocre setup… Monday I just try not to trade."*
+
+And on Friday: *"The only exception to this rule is that if I'm swing trading, I'm already holding the trade
+from last week, then I'm just going to continue holding."*
+
+So the calendar rules are a **filter on marginal setups, not an absolute blackout** — which composes directly
+with the grade ladder discussed in §14: suppress Monday/Friday/December for B and C, let A+ through. That is
+the shape the course actually describes, and it is implementable in the existing `add()`/cap structure
+without touching the entry model.
+
+### Why this matters more than the missing rules alone
+
+The independent backtest in §11.3 concluded **no edge, −0.125R**, and attributed it to ~0.26R of per-trade
+cost against ~6-pip stops. Criteria 3 and 4 are precisely the conditions where spread and slippage are worst
+— thin Monday opens, Friday book-closing, December. A calendar filter is the cheapest available attack on the
+exact failure mode that killed the backtest, and it needs no new data and no change to the entry model.
+
+**Not implemented.** I am not adding it: it changes which trades the bot takes, which is your call, and §14's
+options still stand. But I am correcting the record — I told you this needed data the engine doesn't have. It
+doesn't.
