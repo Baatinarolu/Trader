@@ -327,8 +327,11 @@ Verified: the previously-throwing repro now survives, the patch applies cleanly 
 source (`git apply --check`), and the full regression run is **unchanged** — 121 / 203+2 / 66 / 36 / 36 /
 9 / 51 / 23 and 21/21 views with 0 console errors, identical to the pre-fix numbers.
 
-**Honest limit of this audit:** I verified the bot against the repo's documentation of the playlist and
-against standard ICT/SMC conventions. I could not verify it against the videos themselves.
+**Honest limit of this audit, as first written:** I verified the bot against the repo's documentation of
+the playlist and against standard ICT/SMC conventions — not against the course itself. **This was
+superseded later in the same session:** §10.2 obtains verbatim transcripts of the course and §11 adds an
+independent implementation of the same episodes, so the audit now rests on the source material directly.
+Read §9 as the first pass, corrected by §10–§11.
 
 ---
 
@@ -363,7 +366,16 @@ ep07 supply-demand       ep11 top-down-analysis  ep15 daily-bias
 ep08 premium-discount    ep12 killzones          ep17 trading-plan
 ```
 
-(Missing: ep01-04, ep16, ep19, ep21-47.) They are **genuine**, not AI summaries — first-person teaching
+**Coverage matters more than the raw count.** The curriculum maps 34 episodes (0–33) out of the 47
+uploads; the remainder are intros and re-uploads. Of those 34, the **strategy mechanics live entirely in
+eps 5–20** — and I hold **14 of those 16**. The only two strategy episodes missing are ep16 (*Trading
+plan*) and ep19 (*When NOT to trade*). Episodes 21–33 are risk, psychology, journalling, review, news and
+prop-firm process — no strategy mechanics, so they cannot contain a competing definition of the method.
+
+That makes the attribution finding in §10.2 considerably firmer than a "14 of 47" reading suggests: the
+vocabulary gap is in the core method episodes themselves, not in material I failed to obtain.
+
+The transcripts are **genuine**, not AI summaries — first-person teaching
 voice, filler words ("right?", "like I said earlier"), and 125 timestamps per episode; ep11 runs to
 `[00:48:54]` and ends on his sign-off, *"remember you're just one trade away."*
 
