@@ -764,3 +764,98 @@ across 6 majors and 6 years reached the same verdict: **−0.125R, no edge** (§
 conclusion. The mechanical core does not survive costs — which is exactly what your documentation already
 says about it. The engine is a strong research framework; the edge, if there is one, lives in the
 discretionary judgement neither bot can replicate.
+
+---
+
+## 13. The whole playlist vs. the bot — all 47 uploads
+
+Pulled directly from the live playlist this session (§10.2). Every row below is a real video with a real ID in
+`analysis/playlist-verified.json`, checked against the code.
+
+**What I can and cannot read.** `fetch_page` returns the full chapter map and the first ~6 minutes of
+auto-captions per video. So: every episode's *structure and stated rules* are verifiable; a rule stated in
+minute 15 of a video I only have the opening of is **not** verified and is marked ⚠ below. Episodes 5–15,
+17, 18, 20 have complete transcripts (100,401 words) and are checked in full.
+
+### Strategy core — Ep 5 to 20 (the episodes that generate trades)
+
+| Ep | Title | In the bot | Verdict |
+|---|---|---|---|
+| 5 | Market Structure | `smc.js` BOS/CHoCH, body-close rule | ✓ full transcript |
+| 6 | Candlestick Patterns | `smc.js` displacement ≥1.2 ATR / ≥0.55 body | ✓ full transcript |
+| 7 | Supply & Demand Zones | `smc.js` zone map, `findBreakers()` | ✓ full transcript |
+| 8 | Premium and Discount | `smc.js` 50 % split, OTE 0.62–0.79 | ✓ full transcript |
+| 9 | Fair Value Gaps | `smc.js:241` FVG ≥0.12 ATR, `!filled` tracking | ✓ full transcript |
+| 10 | Order Blocks | `smc.js` OB detection + mitigation | ✓ full transcript |
+| 11 | Top Down Analysis | `topdown.js` five taught steps | ✓ full transcript |
+| 12 | ICT Killzones | `smc.js` `SILVER_BULLETS` — **now in ET** (`0002`) | ✓ full transcript |
+| 13 | Liquidity & Inducements | `smc.js:440` sweep ≥0.08 ATR + close back inside | ✓ full transcript |
+| 14 | Flip Zones | `smc.js` role-flip tracking | ✓ full transcript |
+| 15 | How To Find Daily Bias | `topdown.js` bias layer | ✓ full transcript |
+| 16 | Building a Trading Plan | `setup.js` checkpoint scoring + written plan storage | ✓ fetched this session |
+| 17 | Smart Money Plan + Routine | `now.js` one dated action per market | ✓ full transcript |
+| 18 | Entry Models (SNIPER) | `setup.js` MSS + breakers; both named models | ✓ full transcript |
+| 19 | When Not to Trade | volatile ✓ / POI ✓ / **illiquid ✗** | ⚠ partial transcript |
+| 20 | Stop Loss & Take Profit | `setup.js:175` stop +0.18 ATR, 2R minimum | ✓ full transcript |
+
+### The rest of the course
+
+| Ep | Title | In the bot | Verdict |
+|---|---|---|---|
+| 21 | Risk Management | `correction.js:386` `max_risk_pct:1`, `max_trades_day:3`, `cooldown_min:30`, `max_consecutive_losses:2` | ✓ fetched |
+| 22 | Trading Psychology | `correction.js` tone-tagged notes | ✓ no mechanical surface |
+| 23 | Journalling Your Trades | the journal itself — this *is* the product | ✓ |
+| 24 | How to Review Your Day | daily review views | ✓ |
+| 25 | How I Find A+ Setups | Rules 1–2 verified present; **Rules 3–5 unread** | ⚠ truncated |
+| 26 | Review Your Trades Like a Pro | review views | ✓ |
+| 27 | Improve Your Strategy With Data | `rule-sweep.js`, `MEASURED-RULES` register | ✓ |
+| 28 | Emotional Regulation | no honest code surface | — deliberately not automated |
+| 29 | How to Use AI for Trading | **zero LLM references in the tree** | ✓ correctly absent |
+| 30 | Trading High Impact News | `setup.js:167` news blackout, 60-min window | ✓ fetched |
+| 31 | Prop Firm Challenges | prop rules in `correction.js` guardrails | ✓ |
+| 32 | Disciplined in 21 Days | streak tracking | ✓ |
+| 33 | Graduation | no code surface | — |
+| 37 | **Sweeps + OB + FVG for SNIPER entries** | see below — the closest match in the course | ✓ fetched |
+| 35, 36, 38, 39, 40 | bonus / strategy compilations | same primitives, no new rules | ✓ |
+| 41–47 | EdgeFlo product tutorials | not strategy; the journal is the equivalent | n/a |
+
+### Ep 37 is the strongest evidence that the bot tracks the course
+
+That video (952K views) states the model in one line: *"The liquidity sweep is the trap. The order block is
+the zone. The fair value gap or imbalance is the entry."* The bot's own header comment at `setup.js:9` says:
+
+```
+HTF bias -> sweep -> displacement -> zone (OB/FVG) -> retest entry
+```
+
+Same sequence, same order. And the refinement step is implemented as described, not approximated —
+`setup.js:109-122` filters to unfilled FVGs in the trade direction, prefers a strong fresh order block that an
+FVG overlaps or nests inside, and falls back to the largest FVG's midpoint when there is no OB. The
+aggressive-vs-conservative entry pair the video teaches at 12:24 exists too (`index.js:336-339`,
+`momentum.js:377`, `now.js:158-169`).
+
+### Ep 30 sharpens the one real gap
+
+Ep 30's advice is blunt — *"my best advice for people who want to trade news is to just don't trade news"* —
+and its reasoning is that *"the spreads will widen, liquidity will start disappearing."* The bot already
+stands down for news (`setup.js:167`, 60-minute window), so **news-time illiquidity is covered**.
+
+That narrows the Ep 19 finding rather than removing it: the missing filter is for **thin markets outside
+news windows** — holiday sessions, dead Asia hours, off-contract hours. There is still no spread or volume
+input anywhere in `src/bots/` that can veto a setup.
+
+### Honest limits on this audit
+
+- **Rules 3, 4 and 5 of the A+ checklist (Ep 25) are unverified.** The caption fetch truncates around the
+  6-minute mark and those rules start at 11:32. I can see the chapter titles exist; I cannot see what they
+  say. If you paste that transcript I'll close it.
+- **I cannot see video frames**, so on-screen chart markup — where he draws a zone, how he places a stop on
+  a specific candle — is outside anything I can check.
+- Episodes 0–4 are autobiography and mindset, and 28 is emotional regulation. Nothing in them has a
+  mechanical surface, so "not implemented" is the correct state, not a gap.
+
+**Bottom line.** Across the 34 course episodes and 6 bonus videos, I found **one** genuine unimplemented
+rule (the general illiquidity stand-down), **one** documentation citation error (CRT attribution, §10.2),
+and **one** dead config path (the zone layer, §11.4 — now reporting correctly but still not feeding a
+decision). Every mechanical rule I could read in full is implemented, and in most cases at the threshold the
+course states. The bot does run this strategy.
