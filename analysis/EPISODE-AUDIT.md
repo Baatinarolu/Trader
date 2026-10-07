@@ -17,7 +17,7 @@ Legend: `—` not started · `◐` partially read · `✔` all chunks read · `n
 | 3 | vP9gmvxdFd8 | 46:37 | 0 | — | How to Trade Forex For Beginners | instrument specs |
 | 4 | FXwJ26zT8Ds | 25:32 | 0 | — | Reprogramming Your Mind | n/a |
 | 5 | waLWuc6_HC0 | 50:32 | 5/7 | ◐ | **Market Structure** | **smc.js structure** — see M1/M2/M3 |
-| 6 | Dc0Z1B6jckA | 30:29 | 0 | — | Candlestick Patterns | pattern library |
+| 6 | Dc0Z1B6jckA | 30:29 | 1/5 | ◐ | Candlestick Patterns | informational only — verified faithful |
 | 7 | 52aKS7HN_jI | 32:09 | 0 | — | **Institutional Supply & Demand Zones** | **smc.js zones** |
 | 8 | xR1KUjv0PB8 | 25:33 | 0 | — | **Premium and Discount** | **topdown.js P/D** |
 | 9 | 9P-u7MWosFo | 31:03 | 0 | — | **Fair Value Gaps / Imbalance** | **smc.js:241 FVG** |
@@ -276,3 +276,46 @@ Logged as **M24 (S1)**, sequenced after M21: strong/weak has to exist before CHo
 `sweptBefore` is **still unverified** — I have not read `sweeps()`.
 
 **Remaining:** Ep 5 chunks 5–6 (bar replay). Theory is now fully covered; what is left is application.
+
+---
+
+## Ep 6 — Candlestick Patterns (1/5 chunks read, ◐ — provisional)
+
+Skipped in the earlier ordering and picked up after the user asked. Chunk 0 is candlestick anatomy — open,
+close, high, low, body, upper/lower wick, and the timeframe-aggregation point that four 1h candles form one
+4h candle.
+
+The load-bearing line for this audit is the caveat he attaches to reading them:
+
+> *"**A bullish candle does not always mean buy. A bearish candle does not always mean sell.** It just tells
+> you who had more control during that candle."*
+
+and the episode's own stated thesis: *"why you shouldn't just be blindly memorizing candlestick patterns."*
+
+### Where the 30-pattern library actually lives
+
+The curriculum claims *"candlestick library (30 patterns)"* and *"30 candlestick patterns"*
+(`docs/PLAYLIST-CURRICULUM.md:99`, `:105`). Tracing it:
+
+- **Not** in `src/bots/` — 0 hits for `pattern` in `setup.js`, and no pattern words in any of the eight bot
+  modules.
+- **In `src/indicators.js:59-96`** — a weighted table: `['bullishengulfingpattern','Bullish engulfing', 2]`,
+  `['bearishengulfingpattern','Bearish engulfing', -2]`, `['hammerpattern','Hammer', 2]`,
+  `['hammerpatternunconfirmed','Hammer (unconfirmed)', 1]`, plus doji, harami, marubozu, tweezer,
+  spinning-top, shooting-star, morning-star and evening-star variants.
+- **Consumed only inside `indicators.js`** — `:307 detectPatterns(all)`, `:308 ind.patterns = patterns`,
+  `:310 const strongest = patterns[0]`.
+- **No caller outside that file.** `grep candlePatterns` across `src/` and `public/js/` returns nothing
+  outside `indicators.js`; all eight `src/bots/*.js` score 0 for `candlePatterns`/`patterns(`.
+
+### Verdict: a match, not a mismatch
+
+The library is computed and surfaced (chart overlay, coach narrative) but **gates no trade decision**. That is
+precisely his position — candlesticks tell you who controlled the period, they are not a buy/sell signal, and
+the lesson argues against memorising patterns as triggers. Wiring 30 patterns into entry scoring would have
+been the divergence; not wiring them is correct.
+
+Recorded in the ledger's *verified faithful* section rather than as an M-item.
+
+**Provisional:** chunks 1–4 unread. He promised to cover *when* and *how* to use them, so if a later chunk
+assigns patterns a role in entry confirmation, this verdict needs revisiting.
