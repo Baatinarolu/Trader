@@ -130,7 +130,7 @@ sorted**, each reporting the right provider (`yahoo` / `okx`).
 | `ui-browser-test.js` | — | **cannot run** (see below) | 27 |
 | offline engine probe | 51 / 0 | **51 passed, 0 failed** | — |
 
-**543 checks executed, 2 failing.** Every claimed count I could reach matched the README exactly.
+**566 checks executed, 2 failing.** Every claimed count I could reach matched the README exactly.
 The nine Prediction-view failures and the `/bots/analyse` Vercel failure were indeed network-caused — they
 all pass now.
 
@@ -579,9 +579,10 @@ engine with no duplicated metric maths, correct rather than decorative security,
 dead-code markers, and documentation that reports the negative results of its own backtests with the command
 to reproduce them.
 
-**Verified here: 543 checks, 2 failing**, and both failures traced to gaps in *my* fixture coverage rather
+**Verified here: 566 checks, 2 failing**, and both failures traced to gaps in *my* fixture coverage rather
 than to the product. Every test count the README claims that I could reach — 121 API, 205 bots (203 + 2
-fixture artifacts), 21 views, 66 top-down, 36 chart, 9 Vercel — matched exactly.
+fixture artifacts), 21 views, 66 top-down, 36 chart, 36 now, 9 Vercel — matched exactly. On top of the
+project's own suites I added a 51-check engine probe and a 23-check method probe of my own.
 
 **The strategy implementation is faithful.** Verified three ways: every threshold in your curriculum map
 exists in the code; your own 66 top-down assertions pass; and my independent 23-check method probe
