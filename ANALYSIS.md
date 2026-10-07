@@ -1048,3 +1048,63 @@ and the course discourages rather than forbids it.
 | Aggressive vs conservative | both taught | both implemented | ✓ |
 | Stop below POI and beyond sweep | "below the point of interest" | further of the two + 0.18 ATR | ✓ stricter |
 | Take profit 2R | "stick to 2R" | advisory — see §14 | ⚠ |
+
+---
+
+## 16. Ep 21 read in full — risk rules match on defaults, but the ceiling is not enforced
+
+Ep 21 (*Risk Management*) is the episode that carries actual numbers, which makes it the most directly
+testable of the process episodes. Read end to end.
+
+### The framework, in his words
+
+**Fixed percentage per trade:**
+
+> *"The rule of thumb is to risk like 1% of your entire account on any given trade… the industry tells you to
+> stick to 1%… 0.5% is pretty decent as well. 0.25%… The larger the account that you're managing, the lower
+> your risk per trade should be… **The maximum is 1%. Anywhere below 1% that's great. The lower the
+> better.**"*
+
+**Max daily loss:**
+
+> *"Next is to set a max daily loss. So this is usually 2% to 3% max, then stop for the day."* — given
+> explicitly as a revenge-trading guardrail.
+
+**Plus three principles that have no code surface**, and correctly so: protect capital first, define risk
+before every trade, think in probabilities not certainty (*"no matter how many confluences you attain…
+anything can happen in the market"*).
+
+### What the code does
+
+| Rule | Course | Code | |
+|---|---|---|---|
+| Default risk per trade | 1 % | `db.js:120` `risk_per_trade_pct REAL DEFAULT 1.0`; `index.js:129` defaults to 1 | ✓ |
+| Lower is better, floor around 0.25 % | 0.25 / 0.5 / 1 | `correction.js:400` clamps the adaptive recommendation at `Math.max(0.25, …)` | ✓ |
+| Max daily loss 2–3 % | 2–3 %, then stop | `correction.js:387` `daily_loss_limit_pct: 3`, adapted from the user's own median daily loss at `:429` with a 1 % floor | ✓ |
+| Trades-per-day / loss-streak guardrails | implied by "stop for the day" | `correction.js:386` `max_trades_day: 3`, `cooldown_min: 30`, `max_consecutive_losses: 2` | ✓ stricter |
+| **1 % is a ceiling** | *"the maximum is 1%"* | **not enforced on any write path** | ⚠ |
+
+### The gap, precisely
+
+The default is right and the daily-loss limit is right. But nothing caps the value a user actually stores or
+passes:
+
+- `routes/api.js:566` — account update takes the field through `num(b.risk_per_trade_pct, …)` with **no
+  clamp**. Store 5 and 5 is stored.
+- `routes/api.js:398` and `:711` — both accept a `risk_pct` **query parameter** with no clamp, defaulting to
+  the account value. So `?risk_pct=5` sizes the position at 5 % for that call.
+- `correction.js:400` clamps only the *recommended* guardrail, and its upper bound is `Math.min(2, …)` —
+  **2 %, twice the course's stated maximum.**
+
+Severity is low and I want to be accurate about that: the defaults are correct, a user has to actively go
+out of their way to exceed 1 %, and letting a trader choose their own risk is a defensible product decision
+for a journal. It is not a strategy-logic divergence like §14. It is an input-validation gap between what the
+course states as a hard ceiling and what the code permits — and like §14, it is undocumented.
+
+### Ep 21 scorecard
+
+Faithful: default risk, the "lower is better" floor, the 3 % daily loss limit, and three additional
+guardrails the course only implies. Divergent: no ceiling enforcement, and the adaptive cap permits 2 %.
+
+**Not changed.** Adding a clamp to `risk_per_trade_pct` is a one-line fix, but it would silently override a
+value a user deliberately set, which is a product decision rather than a bug fix. Flagged, not applied.
