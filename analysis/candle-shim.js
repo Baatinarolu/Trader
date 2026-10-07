@@ -132,7 +132,11 @@ const NATIVE = {
   EURUSD: { '5m': 'EURUSD-5m.csv', '15m': 'EURUSD-15m.csv', '1h': 'EURUSD-1h.csv', '1d': 'EURUSD-1d.csv' },
   GBPUSD: { '5m': 'GBPUSD-5m.csv', '1h': 'GBPUSD-1h.csv' },
   XAUUSD: { '5m': 'XAUUSD-5m.csv', '15m': 'XAUUSD-15m.csv' },
-  BTCUSDT: { '1h': 'BTCUSDT-1h.csv', '1d': 'BTCUSDT-1d.csv' },
+  // 5m/15m/4h are one coherent set from Wastetoken/ATS (2026-07-25 → 2026-08-29),
+  // so the 15m stack (bias 4h / entry 15m / trigger 5m) reads a consistent period.
+  // 1h and 1d come from a different source and era; they are coherent with each
+  // other and are only used by the 1h and 4h stacks.
+  BTCUSDT: { '5m': 'BTCUSDT-5m.csv', '15m': 'BTCUSDT-15m.csv', '4h': 'BTCUSDT-4h.csv', '1h': 'BTCUSDT-1h.csv', '1d': 'BTCUSDT-1d.csv' },
 };
 const TF_MS = { '1m': 6e4, '3m': 18e4, '5m': 3e5, '15m': 9e5, '30m': 18e5, '1h': 36e5, '4h': 144e5, '1d': 864e5, '1w': 6048e5 };
 

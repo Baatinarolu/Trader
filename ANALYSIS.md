@@ -126,22 +126,39 @@ sorted**, each reporting the right provider (`yahoo` / `okx`).
 | `smoke-test.js` | 12/21 views | **21/21 views, 0 console errors** | 21 ✓ |
 | `topdown-test.js` | crash after 10 | **66 passed, 0 failed** | 66 ✓ |
 | `chart-test.js` | crash after 1 | **36 passed, 0 failed** | 36 ✓ |
-| `bots-test.js` | crash after 11 | **203 passed, 2 failed** | 205 |
+| `bots-test.js` | crash after 11 | **205 passed, 0 failed** | 205 ✓ |
 | `ui-browser-test.js` | — | **cannot run** (see below) | 27 |
 | offline engine probe | 51 / 0 | **51 passed, 0 failed** | — |
+| method-fidelity probe | — | **23 passed, 0 failed** | — |
 
-**566 checks executed, 2 failing.** Every claimed count I could reach matched the README exactly.
+**568 checks executed, 0 failing.** Every count the README claims that I could reach matched exactly.
 The nine Prediction-view failures and the `/bots/analyse` Vercel failure were indeed network-caused — they
 all pass now.
 
-### The 2 remaining failures — both fixture artifacts, both proven
+### The last two failures, and how each was cleared
+
+Both were fixture-coverage gaps in *my* offline data, not product defects. Closing them took real datasets
+rather than any code change:
 
 1. **"the replayed chart ends on an older bar (`2026-02-27` < `2011-08-03`)"** — the test compares a
-   replayed EURUSD **1h** chart against a live EURUSD **1d** one. My 1h fixture is 2025-26 and my 1d fixture
-   is 1999-2011, so the two clocks are 15 years apart. I could not fix it: every long EURUSD daily set on
-   GitHub that I found is price-only, and I would not fabricate OHLC.
-2. **"scanned 2 markets (2 errors)"** — `/bots/scan?symbols=EURUSD,XAUUSD,BTCUSDT,ES&tf=15m`. I have 15m
-   fixtures for EURUSD and XAUUSD only; BTCUSDT 15m and ES 15m do not exist in my set.
+   replayed EURUSD **1h** chart against a live EURUSD **1d** one, and my two fixtures were 15 years apart.
+   **Fixed** by finding a EURUSD daily from the *same repository* as my 1h fixture
+   (`shahryarashiq/my-vs-code-project-`), so both end on 2026-03-02. That daily is only 126 bars, which
+   alone broke the 4h stack (its bias layer is `1w`, and 126 days is ~18 weeks — under the 30-bar floor
+   in `smc.js:660`). So the fixture concatenates the long 1999-2011 history with the 2025-26 series:
+   3,312 bars, ~662 weekly, ending 2026-03-02.
+2. **"scanned 2 markets (2 errors)"** — `/bots/scan?symbols=EURUSD,XAUUSD,BTCUSDT,ES&tf=15m`. **Fixed for
+   BTCUSDT** by fetching a coherent 5m / 15m / 4h set from `Wastetoken/ATS` (all 2026-07-25 → 2026-08-29).
+   The scan now reaches 3 of 4 symbols; `ES` (S&P 500 futures) has no fixture and is the one remaining
+   gap. The test's threshold is ≥2 markets, so it passes.
+
+**One caveat I want to be explicit about**, since I introduced it deliberately: the EURUSD daily now has a
+**5,145-day gap** between 2011-08-03 and 2025-09-03. I verified this does not corrupt the analysis — there
+are 126 contiguous bars after the gap, while the ATR window is 14 bars and the structure/swing windows are
+≤120, so no analysis window reaches across it. EURUSD daily ATR reads **0.0067**, which is normal for the
+pair; had a window spanned the gap (price jumps 1.42 → 1.16) the ATR would have been absurd. Still, it is a
+synthetic splice, not a clean history — treat EURUSD 1d/1w results as directionally fine but not as a
+research-grade series.
 
 Two earlier failures disappeared on their own once I added `BTCUSDT-1d.csv`: the 4h stack's bias layer is
 `1w`, and my hourly BTC fixture spanned only 18 weeks. The webhook response said so explicitly —
@@ -591,10 +608,11 @@ engine with no duplicated metric maths, correct rather than decorative security,
 dead-code markers, and documentation that reports the negative results of its own backtests with the command
 to reproduce them.
 
-**Verified here: 566 checks, 2 failing**, and both failures traced to gaps in *my* fixture coverage rather
-than to the product. Every test count the README claims that I could reach — 121 API, 205 bots (203 + 2
-fixture artifacts), 21 views, 66 top-down, 36 chart, 36 now, 9 Vercel — matched exactly. On top of the
-project's own suites I added a 51-check engine probe and a 23-check method probe of my own.
+**Verified here: 568 checks, 0 failing.** Every test count the README claims that I could reach — 121 API,
+205 bots, 21 views, 66 top-down, 36 chart, 36 now, 9 Vercel — matched exactly. The two failures that stood
+for most of this audit were gaps in *my* offline fixture coverage, not product defects, and both were
+closed with real datasets (§5). On top of the project's own suites I added a 51-check engine probe and a
+23-check method probe of my own.
 
 **The strategy implementation is faithful.** Verified three ways: every threshold in your curriculum map
 exists in the code; your own 66 top-down assertions pass; and my independent 23-check method probe
