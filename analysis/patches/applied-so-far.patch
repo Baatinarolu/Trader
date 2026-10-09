@@ -2957,7 +2957,7 @@ index a5aa93c..50478ce 100644
  
    return {
 diff --git a/src/db.js b/src/db.js
-index 7e2fd68..ea39076 100644
+index 7e2fd68..7c1a0fb 100644
 --- a/src/db.js
 +++ b/src/db.js
 @@ -117,7 +117,10 @@ CREATE TABLE IF NOT EXISTS accounts (
@@ -3012,7 +3012,41 @@ index 7e2fd68..ea39076 100644
    screen_time_minutes INTEGER,
    created_at TEXT NOT NULL DEFAULT (datetime('now')),
    UNIQUE(user_id, entry_date)
-@@ -369,11 +398,82 @@ async function migrate() {
+@@ -232,6 +261,33 @@ CREATE TABLE IF NOT EXISTS strategies (
+   active INTEGER DEFAULT 1,
+   created_at TEXT NOT NULL DEFAULT (datetime('now'))
+ );
++-- M102 strategy versioning. Ep 27 - without this "you will never ever truly know what
++-- worked", because PUT /strategies/:id overwrote the rule set in place, so a trade taken
++-- under the January rules and one taken under the March rules were indistinguishable and
++-- the expectancy of "the strategy" was an average across several different strategies.
++-- Rows here are APPEND ONLY and never updated. The name column is stored for readability
++-- but a name change does not bump the version - only the rule-bearing fields do.
++-- active and colour are metadata about presentation and state, not rules, so they are
++-- not versioned either. UNIQUE(strategy_id, version) is what makes the history immutable at
++-- the database level rather than by convention.
++CREATE TABLE IF NOT EXISTS strategy_versions (
++  id INTEGER PRIMARY KEY AUTOINCREMENT,
++  strategy_id INTEGER NOT NULL REFERENCES strategies(id) ON DELETE CASCADE,
++  version INTEGER NOT NULL,
++  name TEXT NOT NULL DEFAULT '',
++  description TEXT DEFAULT '',
++  market_conditions TEXT DEFAULT '',
++  timeframes TEXT DEFAULT '',
++  entry_rules TEXT DEFAULT '[]',
++  exit_rules TEXT DEFAULT '[]',
++  checklist TEXT DEFAULT '[]',
++  risk_rules TEXT DEFAULT '',
++  target_r_multiple REAL DEFAULT 2.0,
++  note TEXT DEFAULT '',
++  created_at TEXT NOT NULL DEFAULT (datetime('now')),
++  UNIQUE(strategy_id, version)
++);
++CREATE INDEX IF NOT EXISTS idx_stratver ON strategy_versions(strategy_id, version);
+ CREATE TABLE IF NOT EXISTS trades (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -369,11 +425,164 @@ async function migrate() {
      if (!(cols || []).some((c) => c.name === col)) await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
    };
    await add('trades', 'legs', 'TEXT');
@@ -3027,9 +3061,91 @@ index 7e2fd68..ea39076 100644
 +  // M9: the manual unlock that lets an account sit above the 0.5 % guardrail, up to the
 +  // 1 % absolute maximum. Persisted so the write path and every later read agree.
 +  await add('accounts', 'risk_unlocked', 'INTEGER DEFAULT 0');
++  // M102: which version of its strategy a trade was taken under. NULL means the trade
++  // predates versioning or has no strategy at all - it is never guessed at read time.
++  await add('trades', 'strategy_version', 'INTEGER');
++
++  /* M102 backfill. Every strategy that has no version history gets an immutable v1
++   * snapshot of the rule set it currently holds, and every trade already linked to it is
++   * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in
++   * the snapshot's own note: those trades may have been taken under several earlier
++   * revisions that were overwritten before versioning existed and are now unrecoverable.
++   * Recording them as v1 is the honest floor - it makes the gap visible and dated rather
++   * than silently merging unknown history into the current rules. Idempotent: the guard
++   * is the existence of any version row, so booting twice creates nothing twice. */
++  try {
++    const unversioned = await db.prepare(
++      'SELECT s.* FROM strategies s WHERE NOT EXISTS (SELECT 1 FROM strategy_versions v WHERE v.strategy_id = s.id)'
++    ).all();
++    for (const st of (unversioned || [])) {
++      await db.prepare(`INSERT INTO strategy_versions
++        (strategy_id, version, name, description, market_conditions, timeframes, entry_rules, exit_rules, checklist, risk_rules, target_r_multiple, note)
++        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++        st.id, 1, st.name || '', st.description || '', st.market_conditions || '', st.timeframes || '',
++        st.entry_rules || '[]', st.exit_rules || '[]', st.checklist || '[]', st.risk_rules || '',
++        Number(st.target_r_multiple) || 2,
++        'Backfilled v1 when versioning was added. Trades attributed to this version may have been taken under earlier revisions that were overwritten in place and cannot now be recovered.');
++    }
++    if ((unversioned || []).length) {
++      await db.exec('UPDATE trades SET strategy_version = 1 WHERE strategy_id IS NOT NULL AND strategy_version IS NULL');
++    }
++  } catch (e) {
++    // A failed backfill must not stop the app booting - versioning is additive.
++    console.error('  M102 backfill skipped:', e && e.message);
++  }
    return true;
  }
  
++/* ------------------------------------------------ M102 strategy versioning */
++/** The fields whose change constitutes a NEW STRATEGY rather than a rename. */
++const STRATEGY_RULE_FIELDS = ['description', 'market_conditions', 'timeframes', 'entry_rules',
++  'exit_rules', 'checklist', 'risk_rules', 'target_r_multiple'];
++
++/**
++ * Highest existing version for a strategy, or 0 when it has no history yet.
++ * @param {number} strategyId
++ * @returns {Promise<number>}
++ */
++async function currentStrategyVersion(strategyId) {
++  const r = await db.prepare('SELECT MAX(version) AS v FROM strategy_versions WHERE strategy_id=?').get(strategyId);
++  return r && Number.isFinite(r.v) && r.v !== null ? Number(r.v) : 0;
++}
++
++/**
++ * Append an immutable snapshot of a strategy's rule set as the next version.
++ * Never updates an existing row - that is the whole point of the table.
++ * @param {number} strategyId
++ * @param {object} fields  the strategy's rule-bearing values, already normalised
++ * @param {string} [note]  why this version exists, shown next to the diff in the UI
++ * @returns {Promise<number>} the version number just written
++ */
++async function snapshotStrategyVersion(strategyId, fields, note = '') {
++  const next = (await currentStrategyVersion(strategyId)) + 1;
++  await db.prepare(`INSERT INTO strategy_versions
++    (strategy_id, version, name, description, market_conditions, timeframes, entry_rules, exit_rules, checklist, risk_rules, target_r_multiple, note)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++    strategyId, next, fields.name || '', fields.description || '', fields.market_conditions || '',
++    fields.timeframes || '', fields.entry_rules || '[]', fields.exit_rules || '[]',
++    fields.checklist || '[]', fields.risk_rules || '',
++    Number.isFinite(Number(fields.target_r_multiple)) ? Number(fields.target_r_multiple) : 2,
++    String(note || ''));
++  return next;
++}
++
++/**
++ * Do two strategies differ in a way that makes them DIFFERENT STRATEGIES?
++ * Compares only STRATEGY_RULE_FIELDS, so a rename or a recolour does not fragment the
++ * performance history of a strategy the trader has not actually changed.
++ */
++function strategyRulesChanged(before, after) {
++  for (const f of STRATEGY_RULE_FIELDS) {
++    const a = before[f], b = after[f];
++    if (f === 'target_r_multiple') { if (Number(a) !== Number(b)) return f; continue; }
++    if (String(a === undefined || a === null ? '' : a) !== String(b === undefined || b === null ? '' : b)) return f;
++  }
++  return null;
++}
++
 +/* ------------------------------------------------- M50 bias hysteresis state */
 +/**
 + * The stored bias for a symbol and timeframe, or null on a first read. Deliberately tolerant of a
@@ -3095,7 +3211,7 @@ index 7e2fd68..ea39076 100644
  /* ------------------------------------------------------------------- meta */
  
  async function getMeta(k) {
-@@ -564,6 +664,9 @@ module.exports = {
+@@ -564,7 +773,9 @@ module.exports = {
    client, db, prepare, exec, batch, tx, ready,
    DB_URL, DB_PATH, REMOTE, DATA_DIR, SCHEMA_VERSION,
    getMeta, setMeta, seedGlobalInstruments, createUser, hashPassword, verifyPassword,
@@ -3104,7 +3220,10 @@ index 7e2fd68..ea39076 100644
 +  getBiasState, setBiasState, clearBiasState,
    createSession, userFromToken, destroySession, clearWorkspace,
    getOrCreateWebhookToken, rotateWebhookToken, setWebhookOptions, userFromWebhookToken,
-   DEFAULT_CHECKLIST, DEFAULT_STRATEGIES,
+-  DEFAULT_CHECKLIST, DEFAULT_STRATEGIES,
+-};
++  DEFAULT_CHECKLIST, DEFAULT_STRATEGIES, currentStrategyVersion, snapshotStrategyVersion, strategyRulesChanged, STRATEGY_RULE_FIELDS};
+\ No newline at end of file
 diff --git a/src/instruments.js b/src/instruments.js
 index e58249b..2292b54 100644
 --- a/src/instruments.js
@@ -3221,11 +3340,57 @@ index e58249b..2292b54 100644
    positionSize, sizeFromMoneyRisk, pipsMoved, num, round2,
 +  RISK_GUARDRAIL, clampRiskPct, riskGuardrailNote,
  };
+diff --git a/src/performance.js b/src/performance.js
+index 97110a5..ff8d382 100644
+--- a/src/performance.js
++++ b/src/performance.js
+@@ -537,7 +537,14 @@ function fullAnalytics(trades, opts = {}) {
+     daily: dailySeries(trades.filter((t) => t.status !== 'open')),
+     monthly: monthlySeries(trades.filter((t) => t.status !== 'open')),
+     distribution: rDistribution(trades.filter((t) => t.status !== 'open')),
+-    by_strategy: segment(trades, (t) => t.strategy_name || 'Untagged'),
++    /* M102 — segment on (strategy, VERSION), not on the name alone. Two defects were live
++     * here: renaming a strategy silently merged or split its whole performance history, and
++     * trades taken under different revisions of the same rules were averaged together into a
++     * single number, which is precisely what Ep 27 warns makes it impossible to know what
++     * worked. A trade with no recorded version is labelled as such rather than folded into
++     * v1, so the pre-versioning gap stays visible in the report instead of disappearing. */
++    by_strategy: segment(trades, (t) => (t.strategy_name || 'Untagged')
++      + (t.strategy_id ? (t.strategy_version ? ` · v${t.strategy_version}` : ' · version unknown') : '')),
+     by_symbol: segment(trades, (t) => t.symbol),
+     by_session: segment(trades, (t) => t.session_label),
+     by_direction: segment(trades, (t) => (String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long')),
 diff --git a/src/routes/api.js b/src/routes/api.js
-index 0bb768c..e8c8052 100644
+index 0bb768c..f31c597 100644
 --- a/src/routes/api.js
 +++ b/src/routes/api.js
-@@ -393,9 +393,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+@@ -1,6 +1,7 @@
+ 'use strict';
+ const { asyncRouter } = require('./async-router');
+-const { db, createUser, verifyPassword, createSession, userFromToken, destroySession, getMeta, DEFAULT_CHECKLIST } = require('../db');
++const { db, createUser, verifyPassword, createSession, userFromToken, destroySession, getMeta, DEFAULT_CHECKLIST,
++  currentStrategyVersion, snapshotStrategyVersion, strategyRulesChanged } = require('../db');
+ const I = require('../instruments');
+ const TV = require('../tradingview');
+ const P = require('../performance');
+@@ -295,6 +296,16 @@ router.post('/trades', requireAuth, async (req, res) => {
+   if (!body.symbol) return res.status(400).json({ error: 'Symbol is required' });
+   if (!body.entry) return res.status(400).json({ error: 'Entry price is required' });
+   const trade = T.normalise(body, { instrument: spec, tz: (await settingsOf(req)).timezone });
++  /* M102 — stamp the version the trade is taken under, AT THE MOMENT IT IS TAKEN. Without
++   * this the version history exists but nothing is attributed to it and by_strategy would
++   * still average across revisions, which is the exact defect being fixed. Stamped only when
++   * the caller did not supply one (an import of historical trades may legitimately know
++   * better) and only when a strategy is attached. A trade with no strategy stays NULL rather
++   * than being guessed at, so the version column never carries an invented value. */
++  if (trade && trade.strategy_id && trade.strategy_version === undefined) {
++    const v = await currentStrategyVersion(Number(trade.strategy_id));
++    if (v) trade.strategy_version = v;
++  }
+   const id = await T.insert(db, req.user.id, { ...trade, account_id: accountId });
+   if (Array.isArray(body.rule_checks)) {
+     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
+@@ -393,9 +404,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const rs = rows.map((t) => num(t.r_multiple));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
@@ -3244,7 +3409,7 @@ index 0bb768c..e8c8052 100644
    res.json({
      monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
      optimal_risk: P.optimalRisk(rs),
-@@ -446,16 +453,19 @@ router.post('/journal', requireAuth, async (req, res) => {
+@@ -446,16 +464,19 @@ router.post('/journal', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.entry_date) return res.status(400).json({ error: 'entry_date is required' });
    const acc = b.account_id ? Number(b.account_id) : (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
@@ -3267,7 +3432,98 @@ index 0bb768c..e8c8052 100644
    });
    res.json({ ok: true, entry: await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, b.entry_date) });
  });
-@@ -541,20 +551,40 @@ router.get('/accounts', requireAuth, async (req, res) => {
+@@ -486,17 +507,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
+     req.user.id, b.name, b.description || '', b.market_conditions || '', b.timeframes || '',
+     JSON.stringify(b.entry_rules || []), JSON.stringify(b.exit_rules || []), JSON.stringify(b.checklist || []),
+     b.risk_rules || '', num(b.target_r_multiple, 2), b.colour || '#4f8cff', b.active === false ? 0 : 1);
+-  res.json({ ok: true, strategy: parseStrategy(await db.prepare('SELECT * FROM strategies WHERE id=?').get(info.lastInsertRowid)) });
++  // M102: a new strategy is version 1 of itself from the moment it exists, so there is
++  // never a window in which trades can be taken against an unversioned rule set.
++  const v1 = await snapshotStrategyVersion(info.lastInsertRowid, {
++    name: b.name, description: b.description || '', market_conditions: b.market_conditions || '',
++    timeframes: b.timeframes || '', entry_rules: JSON.stringify(b.entry_rules || []),
++    exit_rules: JSON.stringify(b.exit_rules || []), checklist: JSON.stringify(b.checklist || []),
++    risk_rules: b.risk_rules || '', target_r_multiple: num(b.target_r_multiple, 2),
++  }, 'Strategy created.');
++  res.json({ ok: true, version: v1, strategy: parseStrategy(await db.prepare('SELECT * FROM strategies WHERE id=?').get(info.lastInsertRowid)) });
+ });
+ router.put('/strategies/:id', requireAuth, async (req, res) => {
+   const b = req.body || {};
+   const id = Number(req.params.id);
+   const cur = await db.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id, req.user.id);
+   if (!cur) return res.status(404).json({ error: 'Strategy not found' });
+-  await db.prepare(`UPDATE strategies SET name=@name, description=@description, market_conditions=@market_conditions, timeframes=@timeframes,
+-    entry_rules=@entry_rules, exit_rules=@exit_rules, checklist=@checklist, risk_rules=@risk_rules, target_r_multiple=@target_r_multiple,
+-    colour=@colour, active=@active WHERE id=@id AND user_id=@user_id`).run({
+-    id, user_id: req.user.id,
++  /* M102 — this UPDATE used to overwrite the rule set in place, which is why Ep 27's
++   * "you will never ever truly know what worked" applied: the strategy whose expectancy
++   * you were reading had silently been a different strategy for part of the sample.
++   * The row is still updated (it remains the CURRENT rule set, and every existing reader
++   * depends on that), but the values are computed first so they can be compared, and a
++   * change to a RULE-BEARING field appends an immutable version instead of vanishing.
++   * A rename or a recolour deliberately does NOT bump: that would fragment the history of
++   * a strategy the trader never actually changed. */
++  const next = {
+     name: b.name !== undefined ? b.name : cur.name,
+     description: b.description !== undefined ? b.description : cur.description,
+     market_conditions: b.market_conditions !== undefined ? b.market_conditions : cur.market_conditions,
+@@ -508,8 +542,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
+     target_r_multiple: b.target_r_multiple !== undefined ? num(b.target_r_multiple, 2) : cur.target_r_multiple,
+     colour: b.colour || cur.colour,
+     active: b.active === undefined ? cur.active : (b.active ? 1 : 0),
++  };
++  await db.prepare(`UPDATE strategies SET name=@name, description=@description, market_conditions=@market_conditions, timeframes=@timeframes,
++    entry_rules=@entry_rules, exit_rules=@exit_rules, checklist=@checklist, risk_rules=@risk_rules, target_r_multiple=@target_r_multiple,
++    colour=@colour, active=@active WHERE id=@id AND user_id=@user_id`).run({ id, user_id: req.user.id, ...next });
++
++  const changedField = strategyRulesChanged(cur, next);
++  let version = await currentStrategyVersion(id);
++  if (changedField) {
++    const prevVersion = version;
++    version = await snapshotStrategyVersion(id, next,
++      `Rule changed: ${changedField}. Trades from here on are attributed to v${prevVersion + 1}; trades already logged keep the version they were taken under.`);
++  } else if (!version) {
++    // A strategy that predates versioning and somehow has no snapshot yet - the backfill
++    // covers this, but do not rely on it having run.
++    version = await snapshotStrategyVersion(id, next, 'First snapshot recorded for a pre-existing strategy.');
++  }
++  res.json({
++    ok: true, version, new_version: !!changedField, changed_field: changedField,
++    strategy: parseStrategy(await db.prepare('SELECT * FROM strategies WHERE id=?').get(id)),
++  });
++});
++/* M102 — the version history has to be READABLE or the table is write-only and the fix is
++ * half a fix: a trader who cannot see that their strategy changed in March cannot interpret
++ * their own expectancy. Newest first, with the note that says WHY each version exists and
++ * how many trades were taken under it, which is the number that decides whether a comparison
++ * between two versions means anything at all. */
++router.get('/strategies/:id/versions', requireAuth, async (req, res) => {
++  const id = Number(req.params.id);
++  const own = await db.prepare('SELECT id FROM strategies WHERE id=? AND user_id=?').get(id, req.user.id);
++  if (!own) return res.status(404).json({ error: 'Strategy not found' });
++  const rows = await db.prepare(`SELECT id, version, name, description, market_conditions, timeframes,
++      entry_rules, exit_rules, checklist, risk_rules, target_r_multiple, note, created_at
++    FROM strategy_versions WHERE strategy_id=? ORDER BY version DESC`).all(id);
++  const counts = await db.prepare('SELECT strategy_version AS v, COUNT(*) AS n FROM trades WHERE strategy_id=? GROUP BY strategy_version').all(id);
++  const byV = {}; for (const c of (counts || [])) byV[c.v === null ? 'null' : c.v] = c.n;
++  const unattributed = byV['null'] || 0;
++  res.json({
++    ok: true, strategy_id: id, count: (rows || []).length,
++    versions: (rows || []).map((r) => ({
++      ...r,
++      entry_rules: safeJson(r.entry_rules), exit_rules: safeJson(r.exit_rules), checklist: safeJson(r.checklist),
++      trades: byV[r.version] || 0,
++    })),
++    trades_with_no_recorded_version: unattributed,
++    comparable: (rows || []).filter((r) => (byV[r.version] || 0) >= 30).map((r) => r.version),
++    comparable_note: 'Ep 27 asks for 30-50 trades minimum before a version\'s numbers mean anything. Versions listed in `comparable` clear that floor; comparing two versions where either is below it is not evidence.',
+   });
+-  res.json({ ok: true, strategy: parseStrategy(await db.prepare('SELECT * FROM strategies WHERE id=?').get(id)) });
+ });
+ router.delete('/strategies/:id', requireAuth, async (req, res) => {
+   await db.prepare('DELETE FROM strategies WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
+@@ -541,20 +620,40 @@ router.get('/accounts', requireAuth, async (req, res) => {
  router.post('/accounts', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.name) return res.status(400).json({ error: 'Account name is required' });
@@ -3313,7 +3569,7 @@ index 0bb768c..e8c8052 100644
      max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, prop_preset=@prop_preset,
      prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
      id, user_id: req.user.id,
-@@ -563,7 +593,8 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -563,7 +662,8 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
      currency: b.currency !== undefined ? b.currency : cur.currency,
      starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
@@ -3323,7 +3579,7 @@ index 0bb768c..e8c8052 100644
      daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
      max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
      prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
-@@ -571,7 +602,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -571,7 +671,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
      archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
    });
@@ -3336,7 +3592,7 @@ index 0bb768c..e8c8052 100644
  });
  router.delete('/accounts/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -708,7 +743,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -708,7 +812,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
    const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
    const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
    const balance = num(b.balance, acc ? acc.current_balance : 10000);
@@ -3357,7 +3613,7 @@ index 0bb768c..e8c8052 100644
    const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
    const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
    const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
-@@ -722,6 +769,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -722,6 +838,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
      pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
      pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
      percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,
@@ -3369,7 +3625,7 @@ index 0bb768c..e8c8052 100644
  });
  
 diff --git a/src/trades.js b/src/trades.js
-index 171df43..90fb6d3 100644
+index 171df43..8c1e888 100644
 --- a/src/trades.js
 +++ b/src/trades.js
 @@ -56,6 +56,43 @@ function normalise(raw, ctx = {}) {
@@ -3416,11 +3672,12 @@ index 171df43..90fb6d3 100644
    // --- legs (scale-outs): the weighted exit price is what the P&L uses ---
    let legs = [];
    if (Array.isArray(raw.legs)) legs = raw.legs;
-@@ -130,7 +167,7 @@ const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction',
+@@ -130,7 +167,8 @@ const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction',
    'entry', 'exit', 'stop', 'target', 'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'planned_r',
    'mae_r', 'mfe_r', 'stop_moved', 'exit_reason', 'strategy_id', 'strategy_name', 'setup_grade', 'session', 'timeframes',
    'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags', 'thesis', 'lesson', 'execution_notes',
 -  'notes', 'screenshot_url', 'legs'];
++  'strategy_version',
 +  'notes', 'screenshot_url', 'legs', 'entries'];
  
  async function insert(db, userId, t) {

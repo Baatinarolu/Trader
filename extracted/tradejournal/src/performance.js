@@ -537,7 +537,14 @@ function fullAnalytics(trades, opts = {}) {
     daily: dailySeries(trades.filter((t) => t.status !== 'open')),
     monthly: monthlySeries(trades.filter((t) => t.status !== 'open')),
     distribution: rDistribution(trades.filter((t) => t.status !== 'open')),
-    by_strategy: segment(trades, (t) => t.strategy_name || 'Untagged'),
+    /* M102 — segment on (strategy, VERSION), not on the name alone. Two defects were live
+     * here: renaming a strategy silently merged or split its whole performance history, and
+     * trades taken under different revisions of the same rules were averaged together into a
+     * single number, which is precisely what Ep 27 warns makes it impossible to know what
+     * worked. A trade with no recorded version is labelled as such rather than folded into
+     * v1, so the pre-versioning gap stays visible in the report instead of disappearing. */
+    by_strategy: segment(trades, (t) => (t.strategy_name || 'Untagged')
+      + (t.strategy_id ? (t.strategy_version ? ` · v${t.strategy_version}` : ' · version unknown') : '')),
     by_symbol: segment(trades, (t) => t.symbol),
     by_session: segment(trades, (t) => t.session_label),
     by_direction: segment(trades, (t) => (String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long')),

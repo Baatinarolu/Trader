@@ -167,6 +167,7 @@ const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction', 
   'entry', 'exit', 'stop', 'target', 'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'planned_r',
   'mae_r', 'mfe_r', 'stop_moved', 'exit_reason', 'strategy_id', 'strategy_name', 'setup_grade', 'session', 'timeframes',
   'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags', 'thesis', 'lesson', 'execution_notes',
+  'strategy_version',
   'notes', 'screenshot_url', 'legs', 'entries'];
 
 async function insert(db, userId, t) {

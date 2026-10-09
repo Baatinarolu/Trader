@@ -1852,3 +1852,95 @@ VERIFICATION
   pristine unzip, with all four M11 sentinels present afterwards.
 
   Ledger: 125 rows — 45 done / 2 partial / 77 todo / 1 no-action.
+
+--------------------------------------------------------------------------------
+ M102 APPLIED — strategy versioning (Ep 27: "you will never ever truly know what
+ worked"). Not a performance change: a measurement-integrity change. It is the fix
+ that makes every FUTURE before/after comparison possible, including the M10 and
+ M124 work that follows and any re-run of Baseline 7 after a rule change.
+--------------------------------------------------------------------------------
+THREE DEFECTS, ALL FIXED
+  1. PUT /strategies/:id overwrote the rule set in place, so the strategy whose
+     expectancy you were reading had silently been a different strategy for part of
+     the sample.
+  2. Nothing recorded which rules a trade was taken under, and `strategy_version`
+     was absent from trades.js's COLUMNS whitelist — so even with a history table no
+     new trade could ever have carried a version. The feature would have been inert.
+  3. by_strategy segmented on the NAME alone (performance.js:540), so renaming a
+     strategy silently merged or split its whole performance history.
+
+WHAT WAS ADDED
+  · strategy_versions — append-only, UNIQUE(strategy_id, version) so immutability is
+    a database constraint and not a convention. Holds the eight rule-bearing fields
+    plus name, a note saying WHY the version exists, and created_at.
+  · trades.strategy_version, added by migrate(); POST /trades stamps the current
+    version at the moment the trade is taken, only when the caller did not supply one
+    and only when a strategy is attached, so the column never holds an invented value.
+  · by_strategy segments on (name, version) and labels an unversioned trade
+    "version unknown" instead of folding it into v1 — the pre-versioning gap stays
+    visible in the report rather than disappearing.
+  · GET /strategies/:id/versions. A write-only history is half a fix: a trader who
+    cannot SEE that their strategy changed in March cannot interpret their own
+    expectancy. Returns versions newest-first with per-version trade counts,
+    trades_with_no_recorded_version, and a `comparable` array listing only versions
+    with >= 30 trades plus a note quoting Ep 27's floor, so comparing two thin
+    versions cannot be mistaken for evidence.
+  · Backfill: every pre-existing strategy gets an immutable v1 and its trades are
+    attributed to v1. The snapshot's own note states this is an ASSUMPTION — those
+    trades may have been taken under revisions overwritten before versioning existed
+    and are now unrecoverable. Idempotent; a failure logs and does not stop boot.
+
+DELIBERATE DESIGN CHOICES
+  · A rename or recolour does NOT bump the version. Only the eight fields in
+    STRATEGY_RULE_FIELDS do. Bumping on cosmetics would fragment the history of a
+    strategy the trader never actually changed.
+  · The UPDATE still writes the strategies row. It remains the CURRENT rule set and
+    every existing reader depends on that; the versions table is additive.
+
+VERIFICATION — analysis/probe-m102-versioning.js, 30 passed / 0 failed
+  Drives the real HTTP API and reads values back out through it, because source
+  inspection cannot see T.normalise() dropping a stamped field before it reaches the
+  INSERT whitelist:
+    POST /strategies                      -> version 1
+    POST /trades with that strategy       -> GET /trades/:id shows strategy_version 1
+    PUT changing entry_rules              -> version 2, new_version true,
+                                             changed_field "entry_rules"
+    POST a second trade                   -> strategy_version 2
+    (the two trades are now DISTINGUISHABLE — the whole point of the row)
+    PUT changing only colour              -> still version 2, new_version false
+    PUT changing only name                -> still version 2, new_version false
+    GET /strategies/:id/versions          -> exactly 2 versions, NOT 4; v1 still
+                                             holds the original 2 entry rules, v2 the
+                                             changed 3; per-version trade counts 1/1;
+                                             comparable [] at n=1 each
+    GET /analytics                        -> by_strategy shows the two versions as
+                                             SEPARATE segments
+
+  ★ ONE BUG IN MY OWN IMPLEMENTATION WAS CAUGHT BY THIS PROBE AND FIXED. The version
+  note interpolated `version` on the right-hand side of its own assignment, so it
+  still held the OLD number and told the trader "trades from here on are attributed
+  to v1" when it meant v2 — a user-facing string that contradicted the code it sat
+  in. Source review did not catch it; the probe printed the string and it was wrong.
+  This is the same class as M51 (a string that outlives the decision it describes)
+  and the reason the probe asserts on returned TEXT and not only on status codes.
+
+  App suites unchanged: api-test 121/0 · now-test 36/0 · topdown-test 66/0 ·
+  chart-test 36/0 · bots-test 203/2 (both the pre-existing M124 parity defect).
+  Analysis probes 25/25 — 22 from the repo root, plus probe-batch0 10/0,
+  probe-m21-strongweak 10/0 and probe-m58-grade-sizing 23/0 from the app dir, which
+  is where those three resolve src/.
+
+STILL OPEN, RECORDED NOT FIXED
+  trades.strategy_id is REFERENCES strategies(id) ON DELETE SET NULL (db.js:290), so
+  deleting a strategy still destroys provenance: the version number survives but
+  points at nothing, and strategy_versions cascades away with it. Changing that FK
+  needs a rebuild of the trades table — SQLite cannot ALTER an FK — and rebuilding
+  the most important table in the app to fix a provenance edge case is a worse trade
+  than recording it. trades.strategy_name is already snapshotted (db.js:291), which
+  keeps a deleted strategy's trades attributable by name.
+
+  applied-so-far.patch regenerated: 19 files, +2565/-171 (was 18 files, +2370/-161).
+  The one added file is src/performance.js. Round trip verified BYTE-IDENTICAL against
+  a fresh pristine unzip with all six M102 sentinels present afterwards.
+
+  Ledger: 125 rows — 46 done / 2 partial / 76 todo / 1 no-action.

@@ -261,6 +261,33 @@ CREATE TABLE IF NOT EXISTS strategies (
   active INTEGER DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+-- M102 strategy versioning. Ep 27 - without this "you will never ever truly know what
+-- worked", because PUT /strategies/:id overwrote the rule set in place, so a trade taken
+-- under the January rules and one taken under the March rules were indistinguishable and
+-- the expectancy of "the strategy" was an average across several different strategies.
+-- Rows here are APPEND ONLY and never updated. The name column is stored for readability
+-- but a name change does not bump the version - only the rule-bearing fields do.
+-- active and colour are metadata about presentation and state, not rules, so they are
+-- not versioned either. UNIQUE(strategy_id, version) is what makes the history immutable at
+-- the database level rather than by convention.
+CREATE TABLE IF NOT EXISTS strategy_versions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  strategy_id INTEGER NOT NULL REFERENCES strategies(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  description TEXT DEFAULT '',
+  market_conditions TEXT DEFAULT '',
+  timeframes TEXT DEFAULT '',
+  entry_rules TEXT DEFAULT '[]',
+  exit_rules TEXT DEFAULT '[]',
+  checklist TEXT DEFAULT '[]',
+  risk_rules TEXT DEFAULT '',
+  target_r_multiple REAL DEFAULT 2.0,
+  note TEXT DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(strategy_id, version)
+);
+CREATE INDEX IF NOT EXISTS idx_stratver ON strategy_versions(strategy_id, version);
 CREATE TABLE IF NOT EXISTS trades (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -409,7 +436,89 @@ async function migrate() {
   // M9: the manual unlock that lets an account sit above the 0.5 % guardrail, up to the
   // 1 % absolute maximum. Persisted so the write path and every later read agree.
   await add('accounts', 'risk_unlocked', 'INTEGER DEFAULT 0');
+  // M102: which version of its strategy a trade was taken under. NULL means the trade
+  // predates versioning or has no strategy at all - it is never guessed at read time.
+  await add('trades', 'strategy_version', 'INTEGER');
+
+  /* M102 backfill. Every strategy that has no version history gets an immutable v1
+   * snapshot of the rule set it currently holds, and every trade already linked to it is
+   * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in
+   * the snapshot's own note: those trades may have been taken under several earlier
+   * revisions that were overwritten before versioning existed and are now unrecoverable.
+   * Recording them as v1 is the honest floor - it makes the gap visible and dated rather
+   * than silently merging unknown history into the current rules. Idempotent: the guard
+   * is the existence of any version row, so booting twice creates nothing twice. */
+  try {
+    const unversioned = await db.prepare(
+      'SELECT s.* FROM strategies s WHERE NOT EXISTS (SELECT 1 FROM strategy_versions v WHERE v.strategy_id = s.id)'
+    ).all();
+    for (const st of (unversioned || [])) {
+      await db.prepare(`INSERT INTO strategy_versions
+        (strategy_id, version, name, description, market_conditions, timeframes, entry_rules, exit_rules, checklist, risk_rules, target_r_multiple, note)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+        st.id, 1, st.name || '', st.description || '', st.market_conditions || '', st.timeframes || '',
+        st.entry_rules || '[]', st.exit_rules || '[]', st.checklist || '[]', st.risk_rules || '',
+        Number(st.target_r_multiple) || 2,
+        'Backfilled v1 when versioning was added. Trades attributed to this version may have been taken under earlier revisions that were overwritten in place and cannot now be recovered.');
+    }
+    if ((unversioned || []).length) {
+      await db.exec('UPDATE trades SET strategy_version = 1 WHERE strategy_id IS NOT NULL AND strategy_version IS NULL');
+    }
+  } catch (e) {
+    // A failed backfill must not stop the app booting - versioning is additive.
+    console.error('  M102 backfill skipped:', e && e.message);
+  }
   return true;
+}
+
+/* ------------------------------------------------ M102 strategy versioning */
+/** The fields whose change constitutes a NEW STRATEGY rather than a rename. */
+const STRATEGY_RULE_FIELDS = ['description', 'market_conditions', 'timeframes', 'entry_rules',
+  'exit_rules', 'checklist', 'risk_rules', 'target_r_multiple'];
+
+/**
+ * Highest existing version for a strategy, or 0 when it has no history yet.
+ * @param {number} strategyId
+ * @returns {Promise<number>}
+ */
+async function currentStrategyVersion(strategyId) {
+  const r = await db.prepare('SELECT MAX(version) AS v FROM strategy_versions WHERE strategy_id=?').get(strategyId);
+  return r && Number.isFinite(r.v) && r.v !== null ? Number(r.v) : 0;
+}
+
+/**
+ * Append an immutable snapshot of a strategy's rule set as the next version.
+ * Never updates an existing row - that is the whole point of the table.
+ * @param {number} strategyId
+ * @param {object} fields  the strategy's rule-bearing values, already normalised
+ * @param {string} [note]  why this version exists, shown next to the diff in the UI
+ * @returns {Promise<number>} the version number just written
+ */
+async function snapshotStrategyVersion(strategyId, fields, note = '') {
+  const next = (await currentStrategyVersion(strategyId)) + 1;
+  await db.prepare(`INSERT INTO strategy_versions
+    (strategy_id, version, name, description, market_conditions, timeframes, entry_rules, exit_rules, checklist, risk_rules, target_r_multiple, note)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    strategyId, next, fields.name || '', fields.description || '', fields.market_conditions || '',
+    fields.timeframes || '', fields.entry_rules || '[]', fields.exit_rules || '[]',
+    fields.checklist || '[]', fields.risk_rules || '',
+    Number.isFinite(Number(fields.target_r_multiple)) ? Number(fields.target_r_multiple) : 2,
+    String(note || ''));
+  return next;
+}
+
+/**
+ * Do two strategies differ in a way that makes them DIFFERENT STRATEGIES?
+ * Compares only STRATEGY_RULE_FIELDS, so a rename or a recolour does not fragment the
+ * performance history of a strategy the trader has not actually changed.
+ */
+function strategyRulesChanged(before, after) {
+  for (const f of STRATEGY_RULE_FIELDS) {
+    const a = before[f], b = after[f];
+    if (f === 'target_r_multiple') { if (Number(a) !== Number(b)) return f; continue; }
+    if (String(a === undefined || a === null ? '' : a) !== String(b === undefined || b === null ? '' : b)) return f;
+  }
+  return null;
 }
 
 /* ------------------------------------------------- M50 bias hysteresis state */
@@ -669,5 +778,4 @@ module.exports = {
   getBiasState, setBiasState, clearBiasState,
   createSession, userFromToken, destroySession, clearWorkspace,
   getOrCreateWebhookToken, rotateWebhookToken, setWebhookOptions, userFromWebhookToken,
-  DEFAULT_CHECKLIST, DEFAULT_STRATEGIES,
-};
+  DEFAULT_CHECKLIST, DEFAULT_STRATEGIES, currentStrategyVersion, snapshotStrategyVersion, strategyRulesChanged, STRATEGY_RULE_FIELDS};
