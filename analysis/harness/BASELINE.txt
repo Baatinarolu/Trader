@@ -1789,3 +1789,66 @@ implementation of the course is still the right default — the course is the
 specification, and M5 shipped on exactly that basis — but "finishing the todos will
 make it profitable" is not supported, and in this one measured case the faithful
 implementation would have made the sample worse.
+
+--------------------------------------------------------------------------------
+ M11 APPLIED — minimum sample floor raised to Ep 27's 30 (also M116, M103 partial)
+--------------------------------------------------------------------------------
+Not a performance measurement, and deliberately not presented as one: this is a
+guardrail against the system rewriting its own rules on evidence too thin to
+support them, which is a safety property rather than an expectancy one. Per
+Baseline 7 the harness could not have validated it either way.
+
+WHAT CHANGED
+  guardrails()      derived max risk %, max trades/day, cooldown, consecutive-loss
+                    stop and daily loss limit from the trader's own history at 10
+                    closed trades. Now MIN_ADAPT_TRADES = 30; below it the risk
+                    engine's defaults are returned and the basis string says why,
+                    plus sample_sufficient and min_trades_for_personal_guardrails.
+  9 severity sites  `? 'high' : 'medium'` escalations driven by a RATIO now route
+                    through sev(cond, n), 'high' only at n >= 30. `2 of 5` and
+                    `24 of 60` are both 40 % and mean different things.
+  behavior_grade    five-tier label (Disciplined..Critical) was published from as
+                    few as 5 trades. Now 'Insufficient sample' below 30, with
+                    behavior_grade_note and behavior_sample_sufficient. Kept a
+                    STRING not null so no badge renderer gets an unexpected type.
+  coach.js score    quoted "patterns become statistically meaningful around 30-50
+                    trades per setup" to the user at line 45 and then published a
+                    numeric discipline score from 5 — the app stated the right rule
+                    and broke it underneath. Score now withheld below 30 with a
+                    score_basis; insights still run from 5.
+
+DELIBERATELY NOT CHANGED, AND WHY
+  detectMistakes still returns at `n < 5`. M103 asked for the detectors themselves
+  to wait; that is recorded PARTIAL, not done. A widened stop or a stop held past is
+  visible in a single trade and is a breach of the plan, not an inference from a
+  distribution — suppressing it for 30 trades would stop the app telling a trader
+  about a real mistake for weeks. Ep 27's rule is about not TWEAKING the system on a
+  small sample, which is exactly what sev() and MIN_ADAPT_TRADES now enforce. This is
+  a design decision the user can overrule, so it is written down rather than buried.
+
+VERIFICATION
+  analysis/probe-m11-sample-floor.js  25 passed, 0 failed.
+  Section 2 drives the real exported detectMistakes with constructed journals holding
+  the stop_widened ratio at ~40 % across n = 5, 10, 29, 30, 60, so sample size is the
+  ONLY variable:
+      n= 5 (40%) -> medium     n=10 (40%) -> medium     n=29 (41%) -> medium
+      n=30 (43%) -> high       n=60 (42%) -> high
+  It asserts sub-floor cases were DEMOTED rather than merely absent, that escalation
+  still works at and above the floor (so the fix does not flatten real patterns), that
+  the detector still fires at n=6 with zero 'high' severities, and that no case failed
+  to produce the detector at all — a MISSING severity is reported as a failure, not a
+  pass. Section 4 is source-only assertion for the two database-backed gates and is
+  labelled as weaker evidence in the probe's own output.
+
+  App suites unchanged at their recorded baselines:
+      api-test 121/0 · now-test 36/0 · topdown-test 66/0 · chart-test 36/0
+      bots-test 203/2 — both failures confirmed BY NAME to be the pre-existing M124
+      parity defect ("on the same bar, chart and analysis give the same answer",
+      "filled sample for parity"), not merely matched by count.
+
+  analysis/patches/applied-so-far.patch regenerated: 18 files, +2370/-161 (was
+  +2279/-149; the +91/-12 delta is M11). File set unchanged — correction.js and
+  coach.js were already in it. Round trip verified BYTE-IDENTICAL against a fresh
+  pristine unzip, with all four M11 sentinels present afterwards.
+
+  Ledger: 125 rows — 45 done / 2 partial / 77 todo / 1 no-action.

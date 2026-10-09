@@ -9,6 +9,13 @@
  */
 const P = require('./performance');
 
+/* M11 — Ep 27's floor: "at least 30 to 50 minimum trades just to see anything
+ * meaningful", and below that "don't tweak the system at all". Duplicated from
+ * src/bots/correction.js MIN_ADAPT_TRADES DELIBERATELY rather than imported: the two
+ * modules do not currently require each other and coupling them for one integer is
+ * the worse trade. If the floor changes, change both — this comment is the pointer. */
+const MIN_ADAPT_TRADES = 30;
+
 const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 const money = (v) => (v < 0 ? '-' : '') + '$' + Math.abs(Math.round(v)).toLocaleString('en-US');
@@ -509,7 +516,17 @@ function analyse(trades, ctx = {}) {
 
   return {
     insights: out,
-    score: disciplineScore(k, closed, out),
+    /* M11 — this module told the trader at line 45 that "patterns become statistically
+     * meaningful around 30-50 trades per setup" and then published a numeric discipline
+     * score from as few as 5. The app quoted the right rule and broke it underneath.
+     * Insights still run from 5: advice about logging every trade is useful immediately
+     * and is not a statistical claim. The SCORE is a claim about the trader, so it waits
+     * for the floor. null is already the value the n < 5 branch returns, so every caller
+     * handles it — this does not introduce a new shape. */
+    score: closed.length >= MIN_ADAPT_TRADES ? disciplineScore(k, closed, out) : null,
+    score_basis: closed.length >= MIN_ADAPT_TRADES ? null
+      : `Withheld: ${closed.length} closed trade${closed.length === 1 ? '' : 's'} is below the ${MIN_ADAPT_TRADES}-trade minimum the method requires before a discipline score means anything (Ep 27: "at least 30 to 50 minimum trades just to see anything meaningful").`,
+    score_sample_sufficient: closed.length >= MIN_ADAPT_TRADES,
     summary: {
       headline: headline(k, out),
       expectancy_r: k.expectancy_r, net_pnl: k.net_pnl, profit_factor: k.profit_factor,

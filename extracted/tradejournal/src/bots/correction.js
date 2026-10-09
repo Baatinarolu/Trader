@@ -89,6 +89,39 @@ function percentile(arr, p) {
  * Every detector returns null (not enough evidence / nothing wrong) or:
  *   { key, title, severity, count, impact, impact_unit, evidence[], fix, metric }
  */
+/* -------------------------------------------------------------------------
+ * M11 — MINIMUM SAMPLE SIZES. Ep 27: "you need at least 30 to 50 minimum
+ * trades just to see anything meaningful", and below that "don't tweak the
+ * system at all". Ep 26: no plan changes before a quarterly review, 100 trades
+ * or three months. coach.js already QUOTES the 30-50 figure to the user while
+ * the code underneath acted on 10 and on 5 — the app told traders the right
+ * rule and then broke it.
+ *
+ * ★ WHY THERE ARE TWO THRESHOLDS AND NOT ONE. The course's rule is about
+ * CHANGING THE SYSTEM, not about NOTICING. Widening a stop is visible in a
+ * single trade; it is a rule violation, not a statistical pattern, and a mentor
+ * should say so immediately. So detection still runs from n >= 5 — raising that
+ * to 30 would hide real discipline breaches for weeks and would be a WORSE
+ * reading of the course, not a stricter one. What a small sample cannot support
+ * is (a) rewriting the trader's guardrails from their own history and (b)
+ * escalating a mistake to 'high' severity on the strength of a RATIO, because
+ * `2 of 5 trades` and `24 of 60 trades` produce the same 40% and mean entirely
+ * different things. Both of those now wait for MIN_ADAPT_TRADES.
+ *
+ * The 30 is the course's own floor, not a fitted constant. Nothing here was
+ * tuned against a backtest — and per Baseline 7 the harness could not have
+ * validated it anyway.
+ * ------------------------------------------------------------------------*/
+const MIN_ADAPT_TRADES = 30;      // Ep 27's floor: below this, do not change the system
+const MIN_PATTERN_TRADES = 30;    // below this a ratio cannot escalate severity or grade behaviour
+
+/**
+ * Severity that refuses to escalate on a ratio computed from too few trades.
+ * `cond` may be null/undefined (one call site short-circuits on a missing
+ * impulseStats) so it is tested for truthiness, not equality.
+ */
+const sev = (cond, n) => (cond && n >= MIN_PATTERN_TRADES ? 'high' : 'medium');
+
 function detectMistakes(trades) {
   const out = [];
   const n = trades.length;
@@ -101,7 +134,7 @@ function detectMistakes(trades) {
   const widenedAvgR = widened.length ? r2(widened.reduce((s, t) => s + (t.r_multiple || 0), 0) / widened.length) : 0;
   const widenedDrag = r2(widened.reduce((s, t) => s + Math.min(0, (t.r_multiple || 0) + 1), 0)); // R lost beyond the 1R the plan allowed
   push(widened.length >= 2 && {
-    key: 'stop_widened', severity: (widened.length / n > 0.2 || widenedAvgR < -0.5) ? 'high' : 'medium',
+    key: 'stop_widened', severity: sev((widened.length / n > 0.2 || widenedAvgR < -0.5), n),
     title: 'You move your stop away from the entry',
     count: widened.length,
     impact: widenedDrag, impact_unit: 'R lost beyond the 1R limit',
@@ -113,7 +146,7 @@ function detectMistakes(trades) {
   /* --- held past the stop --- */
   const past = trades.filter((t) => (t.r_multiple || 0) < -1.15 && !t.stop_moved);
   push(past.length >= 3 && {
-    key: 'held_past_stop', severity: past.length / n > 0.25 ? 'high' : 'medium',
+    key: 'held_past_stop', severity: sev(past.length / n > 0.25, n),
     title: 'Losers are being held past 1R',
     count: past.length, impact: r2(past.reduce((s, t) => s + ((t.r_multiple || 0) + 1), 0)), impact_unit: 'R',
     metric: `avg loss ${r2(past.reduce((s, t) => s + (t.r_multiple || 0), 0) / past.length)}R across ${past.length} trades`,
@@ -125,7 +158,7 @@ function detectMistakes(trades) {
   const cut = trades.filter((t) => (t.mfe_r || 0) >= 1 && ((t.mfe_r || 0) - (t.r_multiple || 0)) >= 1);
   const leftR = cut.reduce((s, t) => s + ((t.mfe_r || 0) - (t.r_multiple || 0)), 0);
   push(cut.length >= 3 && {
-    key: 'cut_winners', severity: leftR / n > 0.6 ? 'high' : 'medium',
+    key: 'cut_winners', severity: sev(leftR / n > 0.6, n),
     title: 'You are cutting winners before they reach the target',
     count: cut.length, impact: r2(leftR), impact_unit: 'R left on the table',
     metric: `${cut.length} trades closed an average of ${r2(leftR / cut.length)}R before the move was over`,
@@ -137,7 +170,7 @@ function detectMistakes(trades) {
   const gaveBack = trades.filter((t) => (t.mfe_r || 0) >= 1 && (t.r_multiple || 0) <= 0.2);
   const given = gaveBack.reduce((s, t) => s + ((t.mfe_r || 0) - Math.max(0, t.r_multiple || 0)), 0);
   push(gaveBack.length >= 3 && {
-    key: 'gave_back_runner', severity: gaveBack.length / n > 0.25 ? 'high' : 'medium',
+    key: 'gave_back_runner', severity: sev(gaveBack.length / n > 0.25, n),
     title: 'Trades that ran at least +1R and still finished flat or negative',
     count: gaveBack.length, impact: r2(given), impact_unit: 'R round-tripped',
     metric: `${gaveBack.length} of ${n} trades (${r2((gaveBack.length / n) * 100)}%) reached +1R or better and closed at ${r2(gaveBack.reduce((s, t) => s + (t.r_multiple || 0), 0) / gaveBack.length)}R on average`,
@@ -151,7 +184,7 @@ function detectMistakes(trades) {
   const oversized = trades.filter((t) => (t.risk_amount || 0) > med * 1.5 && med > 0);
   const oversizeLoss = oversized.reduce((s, t) => s + Math.min(0, t.net_pnl || 0), 0);
   push(oversized.length >= 3 && {
-    key: 'oversizing', severity: oversized.length / n > 0.3 ? 'high' : 'medium',
+    key: 'oversizing', severity: sev(oversized.length / n > 0.3, n),
     title: 'Position sizes are inconsistent (spikes in risk)',
     count: oversized.length, impact: r2(oversizeLoss), impact_unit: '$ lost on oversized trades',
     metric: `median risk $${r2(med)} vs ${oversized.length} trades at $${r2(oversized.reduce((s, t) => s + t.risk_amount, 0) / oversized.length)} average`,
@@ -169,7 +202,7 @@ function detectMistakes(trades) {
   }
   const revengeCost = revenge.reduce((s, x) => s + Math.min(0, x.t.net_pnl || 0), 0);
   push(revenge.length >= 3 && {
-    key: 'revenge', severity: revenge.length / n > 0.15 || revenge.filter((x) => x.bigger).length >= 3 ? 'high' : 'medium',
+    key: 'revenge', severity: sev(revenge.length / n > 0.15 || revenge.filter((x) => x.bigger).length >= 3, n),
     title: 'Revenge trading window (re-entry within 30 min of a loss)',
     count: revenge.length, impact: r2(revengeCost), impact_unit: '$ lost in these re-entries',
     metric: `${revenge.length} trades re-entered within 30 minutes of a loss; ${revenge.filter((x) => x.bigger).length} of them were BIGGER than the losing trade`,
@@ -194,7 +227,7 @@ function detectMistakes(trades) {
   const heavyAvg = heavyDays.length ? heavyPnl / heavyDays.length : 0;
   const lightAvg = lightDays.length ? lightDays.reduce((s, d) => s + d.pnl, 0) / lightDays.length : 0;
   push(heavyDays.length >= 3 && heavyPnl < 0 && heavyAvg < lightAvg && {
-    key: 'overtrading', severity: heavyAvg < -25 ? 'high' : 'medium',
+    key: 'overtrading', severity: sev(heavyAvg < -25, n),
     title: 'Your busiest days are your worst days',
     count: heavyDays.length, impact: r2(heavyPnl), impact_unit: '$ across your heaviest days',
     metric: `days with ${heavyCut}+ trades: ${heavyDays.length} days averaging $${r2(heavyAvg)}/day, versus $${r2(lightAvg)}/day on your lighter days`,
@@ -207,7 +240,7 @@ function detectMistakes(trades) {
   const lowRR = trades.filter((t) => t.planned_r && t.planned_r < 1.8);
   const lowRRpnl = lowRR.reduce((s, t) => s + (t.net_pnl || 0), 0);
   push(lowRR.length >= 4 && {
-    key: 'low_rr', severity: lowRRpnl < 0 ? 'high' : 'medium',
+    key: 'low_rr', severity: sev(lowRRpnl < 0, n),
     title: 'Taking trades with less than 1:2 planned',
     count: lowRR.length, impact: r2(lowRRpnl), impact_unit: '$',
     metric: `${lowRR.length} trades planned under 1.8R (avg ${r2(lowRR.reduce((s, t) => s + t.planned_r, 0) / lowRR.length)}R)`,
@@ -240,7 +273,7 @@ function detectMistakes(trades) {
   const impulseTags = trades.filter((t) => /impulse|fomo|revenge|tilt|angry|greed|bored/i.test(`${t.tags || ''},${t.mistakes || ''}`));
   const impulseStats = statsOf(impulseTags);
   push(impulseTags.length >= 3 && {
-    key: 'emotional', severity: impulseStats && impulseStats.expectancy_r < -0.2 ? 'high' : 'medium',
+    key: 'emotional', severity: sev(impulseStats && impulseStats.expectancy_r < -0.2, n),
     title: 'Emotion-tagged trades are dragging your results',
     count: impulseTags.length,
     impact: impulseStats ? r2(impulseStats.expectancy_r) : null, impact_unit: 'R expectancy',
@@ -386,7 +419,25 @@ async function guardrails(userId, { accountId = null } = {}) {
     max_risk_pct: 1, max_trades_day: 3, cooldown_min: 30, max_consecutive_losses: 2,
     daily_loss_limit_pct: 3, size_cap_note: null, basis: 'Defaults from the risk engine (not enough personal data yet).',
   };
-  if (!st || trades.length < 10) return { ...base, guardrails: base, stats: st, user: { trades: trades.length } };
+  /* M11 — this was `trades.length < 10`. At 10 trades the app began deriving the
+   * trader's max risk %, max trades/day, cooldown, consecutive-loss stop and daily
+   * loss limit from their own history, i.e. the system rewriting its own rules on a
+   * sample Ep 27 explicitly forbids ("don't tweak the system at all" below 30-50).
+   * Below the floor it now returns the risk engine's defaults and SAYS so, rather
+   * than silently presenting personal numbers that cannot be personal yet. */
+  if (!st || trades.length < MIN_ADAPT_TRADES) {
+    const short = trades.length > 0 && trades.length < MIN_ADAPT_TRADES;
+    return {
+      ...base,
+      basis: short
+        ? `Defaults from the risk engine. ${trades.length} closed trades is below the ${MIN_ADAPT_TRADES}-trade minimum the method requires before personal guardrails are derived — Ep 27: "at least 30 to 50 minimum trades just to see anything meaningful", and below that "don't tweak the system at all". These are NOT your personal numbers yet.`
+        : base.basis,
+      guardrails: base, stats: st,
+      user: { trades: trades.length },
+      sample_sufficient: !short && !!st,
+      min_trades_for_personal_guardrails: MIN_ADAPT_TRADES,
+    };
+  }
 
   const risks = trades.map((t) => t.risk_amount || 0).filter((x) => x > 0);
   const winners = trades.filter((t) => t.net_pnl > 0).map((t) => t.risk_amount || 0).filter((x) => x > 0);
@@ -560,7 +611,18 @@ async function analyse(userId, { accountId = null, backfill = false, days = 365 
     sample: { trades: trades.length, from: trades.length ? dayKey(trades[0].opened_at) : null, to: trades.length ? dayKey(trades[trades.length - 1].opened_at) : null },
     overall,
     behavior_score: behaviourScore,
-    behavior_grade: behaviourScore >= 85 ? 'Disciplined' : behaviourScore >= 70 ? 'Solid' : behaviourScore >= 55 ? 'Leaking' : behaviourScore >= 40 ? 'Undisciplined' : 'Critical',
+    /* M116 — a five-tier behavioural grade was published from as few as 5 trades.
+     * A grade is a statistical claim about the trader, so it waits for the same
+     * floor as everything else. The SCORE is still returned (it is just 100 minus
+     * weighted penalties and is useful as a running tally) but the tiered label is
+     * withheld, and the reason is published next to it rather than implied. Kept a
+     * string so no caller that renders the badge receives an unexpected null. */
+    behavior_grade: trades.length >= MIN_PATTERN_TRADES
+      ? (behaviourScore >= 85 ? 'Disciplined' : behaviourScore >= 70 ? 'Solid' : behaviourScore >= 55 ? 'Leaking' : behaviourScore >= 40 ? 'Undisciplined' : 'Critical')
+      : 'Insufficient sample',
+    behavior_grade_note: trades.length >= MIN_PATTERN_TRADES ? null
+      : `Withheld: ${trades.length} closed trades is below the ${MIN_PATTERN_TRADES}-trade minimum. A behavioural grade is a statistical claim about you, and Ep 27 asks for 30-50 trades before drawing one. The raw score above is still shown as a running tally.`,
+    behavior_sample_sufficient: trades.length >= MIN_PATTERN_TRADES,
     mistakes,
     guardrails: g,
     daily: state,
