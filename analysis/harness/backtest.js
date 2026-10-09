@@ -281,7 +281,7 @@ for (let wi = 0; wi < NWALK; wi++) {
     const sim = simulate(candles, i + 1, c.levels, MAX_BARS, FILL_WINDOW);
     if (!sim) continue;
     openUntil = i + sim.bars + COOLDOWN;
-    all.push({ seed, bar: i, side: c.levels.side, grade: c.grade, score: c.score,
+    all.push({ seed, bar: i, dow: new Date(candles[i].t).getUTCDay(), side: c.levels.side, grade: c.grade, score: c.score,
       entry_status: c.levels.entry_status, rr_declared: (c.levels.targets[0] || {}).rr,
       // M58: the multiplier the engine applied, so dollar outcomes can be computed with and
       // without grade sizing from a single run.
@@ -418,6 +418,30 @@ if (RANGE_SIZED) {
   console.log(`      which the aggregate throws away. Quote the exact figure, not the naive one.`);
   console.log(`   -> n=${cut.length} reduced trades is ${cut.length < 100 ? 'BELOW' : 'at or above'} this ledger's ~100-trade noise threshold (§6), so treat the sign as unmeasured.`);
 }
+
+  /* M10's premise, tested rather than assumed. Ep 19 says stand down Monday ("lower
+   * trading volume", "a lot of traps") and Friday ("lower liquidity... institutions are
+   * closing their books"). That is a CALENDAR rule, so unlike a score-based filter it does
+   * not inherit the scoring engine's failure to discriminate — and on real fixtures the
+   * weekdays are real, which synth.js cannot offer. Bucketing the trades that were actually
+   * taken answers whether the premise holds here, before any code is written to enforce it.
+   * Only printed on the real arm: on synthetic bars the weekday is an artifact of a series
+   * that starts 2024-01-01 and has no session structure, so it would be noise with a label. */
+  if (REAL) {
+    const NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    console.log('\n M10 PREMISE, MEASURED ON REAL WEEKDAYS (does Mon/Fri actually underperform?)');
+    for (let d = 0; d < 7; d++) {
+      const st = by((t) => t.dow === d);
+      if (!st.n) { console.log(`   ${NAMES[d]}  n=  0`); continue; }
+      const all6 = by(() => true);
+      console.log(`   ${NAMES[d]}  ${fmt(st)}   vs all ${all6.exp >= 0 ? '+' : ''}${all6.exp.toFixed(4)}R  -> ${st.exp > all6.exp ? 'BETTER' : st.exp < all6.exp ? 'worse' : 'same'}`);
+    }
+    const monFri = by((t) => t.dow === 1 || t.dow === 5);
+    const mid = by((t) => t.dow !== 1 && t.dow !== 5 && t.dow !== 0 && t.dow !== 6);
+    console.log(`   Mon+Fri combined  ${fmt(monFri)}`);
+    console.log(`   Tue-Thu combined  ${fmt(mid)}`);
+    console.log('   ⚠ n is small and the buckets smaller. This tests a DIRECTION, nothing more.');
+  }
 
 console.log('\n PER-SEED (is one series dominating the result?)');
 for (let s = 1; s <= SEEDS; s++) console.log(`   seed ${s}  ${fmt(by((t) => t.seed === s))}`);

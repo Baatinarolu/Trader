@@ -1743,3 +1743,49 @@ independent walks.
 NEXT: more real instruments and longer history before any of this is treated as a
 measurement. EURUSD-1d now 404s at its recorded path and the two BTC fixtures
 fetched but did not parse, so 3 of the 8 documented sets are still missing.
+
+--------------------------------------------------------------------------------
+ M10's PREMISE, TESTED ON REAL WEEKDAYS BEFORE WRITING ANY CODE FOR IT
+ `--real` now buckets the trades actually taken by day of week. Only printed on the
+ real arm: on synth.js the weekday is an artifact of a series starting 2024-01-01
+ with no session structure, so it would be noise wearing a label.
+--------------------------------------------------------------------------------
+This was run to test a user hypothesis — that the system still loses because the
+remaining todo items are unimplemented, and that implementing them would raise the
+win rate. M10 (Ep 19's Monday/Friday/December stand-down) is the cleanest test of
+that idea, because it is a CALENDAR rule and therefore, unlike a score-based filter,
+does not inherit the scoring engine's measured failure to discriminate. And on real
+fixtures the weekdays are real.
+
+   Mon  n= 12  win=  8.3%  exp= -0.7195R  PF= 0.14    worse than all (-0.2751R)
+   Tue  n=  6  win=  0.0%  exp= -0.8333R  PF= 0.00    worse
+   Wed  n= 11  win=  9.1%  exp= -0.6031R  PF= 0.17    worse
+   Thu  n= 11  win= 18.2%  exp= +0.2532R  PF= 1.35    BETTER
+   Fri  n= 12  win= 33.3%  exp= +0.2649R  PF= 1.64    BETTER
+   Mon+Fri combined  n= 24  win= 20.8%  exp= -0.2273R  PF= 0.64
+   Tue-Thu combined  n= 28  win= 10.7%  exp= -0.3160R  PF= 0.58
+
+★ THE RESULT SPLITS THE COURSE'S OWN RULE IN HALF.
+  · MONDAY supports Ep 19 outright: the worst win rate in the sample (8.3 %) and the
+    second-worst expectancy (-0.7195R). "Lower trading volume", "a lot of traps".
+  · FRIDAY CONTRADICTS it: Friday is the BEST day in the sample — highest win rate
+    (33.3 %), positive expectancy (+0.2649R), PF 1.64. Ep 19's reasoning ("lower
+    liquidity... institutions are closing their books", weekend rollover fees) does
+    not show up here at all.
+  · Consequently Mon+Fri COMBINED (-0.2273R) is BETTER than Tue-Thu (-0.3160R).
+    Implementing M10 exactly as the course states it — suppress B and C on Monday AND
+    Friday — would have suppressed the single best-performing day in this sample.
+
+CAVEATS, WHICH ARE LOAD-BEARING AND NOT DECORATIVE. n=52 total, buckets of 6-12,
+overlapping windows on two instruments over a few weeks, so the trades are not
+independent and the effective n is smaller than it looks. Friday at n=12 with a 33.3 %
+win rate is entirely within the range of noise. This establishes that the premise is
+NOT SAFE TO ASSUME in either direction — it does not establish that Friday is good.
+
+WHAT THIS MEANS FOR THE HYPOTHESIS BEING TESTED. The todo list is not a single lever
+that raises win rate. Some of it would have helped here (Monday), some would have hurt
+(Friday), and at this sample size there is no way to tell which is which. Faithful
+implementation of the course is still the right default — the course is the
+specification, and M5 shipped on exactly that basis — but "finishing the todos will
+make it profitable" is not supported, and in this one measured case the faithful
+implementation would have made the sample worse.
