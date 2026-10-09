@@ -1,12 +1,20 @@
 # Deploying TradeJournal Pro to Vercel
 
-The app is already shaped for it: `api/index.js` exports the same Express handler that
-`server.js` runs locally, `vercel.json` publishes `public/` and rewrites every `/api/*`
-request to that one function, the database client is `@libsql/client` (pure JS — no native
-module to compile on Vercel's builders), and the in-process scheduler disables itself under
-`VERCEL=1` so the platform cron owns that job instead.
+**It deploys as a backend server, not as a static site.** Vercel detects `express` in
+`package.json`, classifies the project as a backend framework project, and runs `server.js`
+as the entrypoint on the port it injects (`process.env.PORT`, bound to `0.0.0.0`). That is
+the same code path you run locally, so the deployed app behaves identically — which matters,
+because `public/index.html` is a **template**: the server substitutes a per-boot id into
+`{{V}}` on 20 asset URLs, sets `no-store`, and falls through to the shell for deep links.
+Serving `public/` as static output would ship all 20 placeholders literally, break
+cache-busting and 404 every deep link. See §6 for the build failure that this caused.
 
-`npm run test:vercel` verifies all of it. It should report **17 passed, 1 failed**, the one
+The database client is `@libsql/client` (pure JS — no native module to compile on Vercel's
+builders), and the in-process scheduler disables itself under `VERCEL=1` so the platform
+cron owns that job instead. `api/index.js` is kept as a second, equivalent entrypoint
+exporting the same handler; `scripts/vercel-check.js` asserts the two cannot diverge.
+
+`npm run test:vercel` verifies all of it. It should report **27 passed, 1 failed**, the one
 failure being `/api/bots/analyse`, which needs outbound market data and cannot reach Yahoo
 from a sandboxed CI host. On Vercel it passes, because Vercel functions have unrestricted
 egress.
@@ -59,13 +67,22 @@ npx vercel            # first run: link or create the project
 npx vercel --prod
 ```
 
-`.vercelignore` keeps `scripts/`, `docs/`, `data/` and `analysis/` out of the upload.
+`.vercelignore` keeps `scripts/`, `docs/` and `data/` out of the upload. It is deliberately
+narrow: Vercel applies those patterns to the whole clone rather than just the Root Directory,
+so an earlier version listing `analysis/` and `*.md` reached outside the app and removed 96
+files from the audit repository's own `analysis/` folder.
 
 ### Option B — Git import
 
-Push this directory to a repository and import it in the Vercel dashboard. Framework preset
-**Other**, build command **leave empty** (there is no build step — `public/` is plain static
-files), output directory is already `public` via `vercel.json`.
+Push this directory to a repository and import it in the Vercel dashboard:
+
+| setting | value |
+|---|---|
+| Root Directory | `extracted/tradejournal` (if importing the audit repo as-is) |
+| Framework preset | leave it alone — Vercel detects Express |
+| Build command | **leave empty**, there is no build step |
+| Output directory | **leave empty** — see §6, setting this broke the first deploy |
+| Install command | default (`npm install`) |
 
 If you import the *audit* repository this directory was developed in, set
 **Root Directory** to `extracted/tradejournal`. If you would rather not carry the ~17 MB of
@@ -149,3 +166,46 @@ ledger row **M123** in `analysis/MISMATCHES.md`.
 - **M124**: `/api/bots/chart` and `/api/bots/analyse` can disagree about the same bar. It is
   a pre-existing defect, recorded and not yet fixed, so do not treat a mismatch between the
   chart panel and the analysis strip as a deployment problem.
+
+---
+
+## 6. If the build fails with "No entrypoint found in output directory"
+
+This happened on the first deploy attempt, and the log is worth keeping because the fix is
+counter-intuitive:
+
+```
+WARNING! Internal rewrites in backend framework projects now route requests using the
+         rewritten destination path…
+Error: No entrypoint found in output directory: "public". Searched for:
+- app.{js,cjs,mjs,ts,cts,mts}
+- index.{js,cjs,mjs,ts,cts,mts}
+- server.{js,cjs,mjs,ts,cts,mts}
+- src/app.js  - src/index.js  - src/server.js
+```
+
+**Cause.** Vercel detected `express` and classified the project as a *backend framework
+project*. For those, it expects the **output directory** to contain the server entrypoint.
+`vercel.json` set `"outputDirectory": "public"`, and `public/` holds only `index.html`,
+`css/` and `js/` — so Vercel looked for `server.js` inside a static folder, found nothing,
+and failed the build. The deployment then 404s on every path, because there is no output.
+
+**Fix.** Delete `outputDirectory` from `vercel.json`. Vercel then searches the project root,
+finds `server.js`, and runs it on the injected port. The `functions` block and the
+`/api/(.*)` rewrite went with it — both were there to support the static-plus-function split,
+and `server.js` already routes `/api/*` itself.
+
+**Do not "fix" it the other way round.** Adding `"framework": null` also clears the error,
+by making Vercel treat `public/` as static output — and that silently ships a broken app
+instead of a failed build:
+
+- `public/index.html` is a template with **20 `{{V}}` placeholders**; served raw, every asset
+  URL becomes `/js/util.js?v={{V}}`. The files still load (a query string does not affect
+  static matching), so it *looks* fine while per-boot cache-busting is dead — a redeploy can
+  leave browsers on the previous UI.
+- the `no-store` policy the server sets on the shell, JS and CSS is lost;
+- the `app.get('*')` fall-through is lost, so any deep link 404s.
+
+A failed build is better than that. `scripts/vercel-check.js` asserts all four behaviours —
+placeholder count on disk, no `{{V}}` in the served shell, a rendered `?v=` id, `no-store`,
+and a deep link returning 200 — so this cannot regress unnoticed.

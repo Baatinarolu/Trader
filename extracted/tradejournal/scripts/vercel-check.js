@@ -89,12 +89,65 @@ async function call(pathname, opts = {}) {
   ok('the platform cron endpoint refuses unauthenticated calls', cron.status === 401 || cron.status === 403, `HTTP ${cron.status}`);
 
   // the static app is served by Vercel from public/, not by the function
-  ok('vercel.json publishes public/ and routes /api/* to the function', (() => {
+  // The deploy is a BACKEND SERVER, not a static folder. Vercel detects express in
+  // package.json, classifies the project accordingly, and looks for the entrypoint it
+  // names in its own error message: app.js / index.js / server.js, or src/ variants.
+  ok('the entrypoint Vercel searches for exists at the project root',
+    fs.existsSync(path.join(__dirname, '..', 'server.js')), 'server.js');
+  {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    ok('the entrypoint binds the port the platform injects, not a fixed one',
+      /process\.env\.PORT/.test(src), 'process.env.PORT');
+  }
+
+  // vercel.json is validated against a schema by the platform: an unknown top-level
+  // property fails the build outright. JSON has no comments, so the temptation to add
+  // `_comment: "..."` is real and would break the deploy — assert it cannot happen.
+  {
     const v = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'vercel.json'), 'utf8'));
-    return v.outputDirectory === 'public'
-      && (v.rewrites || []).some((r) => /^\/api\//.test(r.source) && r.destination === '/api/index')
-      && (v.functions || {})['api/index.js'];
-  })(), 'outputDirectory + rewrite + function config present');
+    const KNOWN = ['$schema', 'framework', 'outputDirectory', 'functions', 'crons', 'rewrites',
+      'headers', 'redirects', 'builds', 'routes', 'env', 'buildCommand', 'installCommand',
+      'cleanUrls', 'trailingSlash', 'regions', 'images', 'git', 'github', 'public', 'dev',
+      'errorPages', 'cache', 'memory', 'maxDuration', 'skipGitConnectDuringLink'];
+    const unknown = Object.keys(v).filter((k) => !KNOWN.includes(k));
+    ok('vercel.json has no property the platform would reject',
+      unknown.length === 0, unknown.length ? `unknown: ${unknown.join(', ')}` : `${Object.keys(v).length} keys, all recognised`);
+    // THE REGRESSION THAT BROKE THE FIRST DEPLOY: outputDirectory pointed at public/, a
+    // static folder, so Vercel searched it for a server entrypoint and failed the build with
+    // "No entrypoint found in output directory: public". If outputDirectory ever comes back it
+    // must point somewhere that actually holds an entrypoint.
+    ok('outputDirectory does not point a server build at a static folder',
+      !('outputDirectory' in v)
+        || ['app.js', 'index.js', 'server.js'].some((f) => fs.existsSync(path.join(__dirname, '..', v.outputDirectory, f))),
+      'outputDirectory' in v ? String(v.outputDirectory) : 'absent — the platform finds server.js itself');
+    // framework:null would make Vercel serve public/ as plain static files, which ships
+    // index.html as an UNRENDERED TEMPLATE (literal {{V}} in every asset URL), drops the
+    // no-store cache policy and 404s every deep link. Asserted behaviourally below.
+    ok('framework detection is not disabled', v.framework !== null,
+      `framework=${JSON.stringify(v.framework === undefined ? 'unset' : v.framework)}`);
+    ok('the cron path is a route the server actually serves',
+      (v.crons || []).every((c) => c.path === '/api/cron/tick'), JSON.stringify((v.crons || []).map((c) => c.path)));
+  }
+
+  // What serving public/ statically would have broken, asserted as behaviour rather than
+  // as a config shape: the shell is a template, and only the server can render it.
+  {
+    const idx = await call('/');
+    const raw = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+    ok('public/index.html really is a template (so static serving cannot work)',
+      raw.includes('{{V}}'), `${(raw.match(/\{\{V\}\}/g) || []).length} placeholders on disk`);
+    ok('the served shell has every placeholder rendered',
+      idx.status === 200 && !idx.text.includes('{{V}}'),
+      idx.status === 200 ? (idx.text.includes('{{V}}') ? 'STILL A TEMPLATE' : 'rendered') : `HTTP ${idx.status}`);
+    ok('asset URLs carry the per-boot cache-busting id',
+      /\/js\/[a-z.]+\.js\?v=[0-9a-zA-Z._-]+/.test(idx.text || ''),
+      ((idx.text || '').match(/\/js\/util\.js\?v=[^"']+/) || ['none'])[0]);
+    ok('the shell is served no-store, so a redeploy cannot leave a stale UI',
+      /no-store/.test(String(idx.headers.get('cache-control'))), String(idx.headers.get('cache-control')));
+    const deep = await call('/some/deep/link');
+    ok('a deep link falls through to the shell instead of 404ing',
+      deep.status === 200 && !deep.text.includes('{{V}}'), `HTTP ${deep.status}`);
+  }
 
   ok('api/index.js exports the same request handler the check just used',
     require('../api/index.js') === handler, 'one handler, no divergence between local and deployed');

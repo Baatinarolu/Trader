@@ -1,15 +1,12 @@
 # Not needed at runtime, and uploading it costs build time and deploy size.
+#
+# Kept deliberately narrow: Vercel applies these patterns to the whole clone, not
+# just the Root Directory, and an earlier version of this file listed `analysis/`
+# and `*.md`, which matched the audit repository's own analysis/ folder and
+# ANALYSIS.md at the repo root and removed 96 files from the deployment. Harmless,
+# but it meant a file scoped to the app was editing the repo around it.
 scripts/
 docs/
 data/
-analysis/
-*.log
-*.md
-!README.md
-.env
-.env.local
 .vercel/
-# Dev-only dependencies are traced out of the bundle anyway, but keeping the
-# install lean matters more on a serverless build than anywhere else.
-playwright-report/
-test-results/
+*.log
