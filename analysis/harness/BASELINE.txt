@@ -1494,3 +1494,62 @@ Until rr_final is capped or re-derived, EVERY expectancy and PF figure in this
 file — including all of the above — is denominated in a unit the engine does not
 honour. It is still not a ledger row. That is the highest-value open item in the
 audit, above any episode-level fidelity fix.
+
+================================================================================
+ M125 — WHY rr_final IS DEGENERATE, MEASURED. New probe: probe-rr-degeneracy.js
+ Nothing was fixed here. This is diagnosis, and it disproved the hypothesis I
+ started with, which is the reason it is written down in full.
+================================================================================
+The harness's own line was the lead: `avg declared 28.25R · avg realised -0.094R ·
+ratio -0.003`, with 8 trades hitting target against 78 hitting the stop. That is
+the bot announcing a 28:1 reward and collecting nothing. HANDOFF-PROMPT §11 had
+recorded it as a loose end and it never became a ledger row, so every expectancy
+figure in this file has been denominated in an R unit the engine does not honour.
+It is now M125, severity S1.
+
+rr_final distribution over 41740 candidates (seeds 20, bars 1500, window 300):
+    p10  1.58R    p25  3.75R    p50 15.79R    p75 50.68R
+    p90 75.30R    p95 89.50R    p99 179.91R   max 286.40R   mean 31.17R
+    56.9 % above 10R · 25.2 % above 50R
+
+★ THE HYPOTHESIS I STARTED WITH WAS WRONG, AND THE PROBE SAYS SO.
+rr = reward / risk, so I expected a tiny denominator: a sniper entry sitting almost
+on the stop base. Measured, risk is p50 0.619 ATR, p25 0.417, and only 0.7 % of
+candidates (120 of 16696) have a stop tighter than 0.25 ATR. **The stop is sound.**
+Capping the stop width would have fixed nothing and damaged a correct structural
+stop. This is why the distribution was measured before any threshold was chosen.
+
+THE ACTUAL CAUSE — a stale swing level, not an aggressive target.
+`setup.js:222` targets `sw.weak.price` as kind `weak_structure`, taken by
+`strongWeak()` from `structure.last_swing_high` / `last_swing_low`, under the comment
+"The MOST RECENT swing high and low are the levels that matter." They are not
+recent. Over 8290 weak_structure targets:
+
+    age of that swing, in bars (window = 300):
+        p25 = 32      p50 = 60      p90 = 132     max = 217
+    distance from entry, in ATR:
+        p25 = 15.00   p50 = 32.12   p90 = 65.09   max = 118.9
+    74.9 % lie beyond the measured reachability bound
+
+So `last_swing_*` returns the last swing the DETECTOR CONFIRMED, which with
+`swingMode:'bos'` and `nested:true` can be a historical extreme two hundred bars
+old. That is not the opposing liquidity of the range price is dealing in, which is
+what "target weak structure" means. M21's unshift at `setup.js:427-428` then forces
+it to the front, and `runner = targets.find(t => t.rr >= minRR)` at `:432` selects
+it — so the stale extreme wins the single-target choice M51 ships by default.
+The five worst candidates all decompose the same way: rr = 286.40R with a perfectly
+reasonable risk of 0.412 ATR and a reward of 118.94 ATR.
+
+★ SECOND FINDING, WHICH CONSTRAINS THE FIX: a numeric cap CANNOT be calibrated here.
+Measured 20-bar net travel on this generator is p50 7.646 ATR, p95 15.695 ATR
+(26920 samples) — far beyond real 15m FX, because synth.js injects regime switching
+and displacement legs by design. Deriving an ATR cap from that number would be
+tuning the engine to a fantasy volatility regime: the same category of error as
+reverting M5 to keep PF at 1.00. So the fix has to be STRUCTURAL — bound
+`weak_structure` to the current dealing range, a level the code already computes at
+`setup.js:408-416` as kind `range` — rather than a constant fitted to this data.
+Recorded so that nobody "simplifies" M125 into a cap later.
+
+NOT FIXED YET. Diagnosis, ledger row and probe are committed; the change itself is
+next, and it must be measured against this baseline so the win-rate and expectancy
+movement is attributable to it alone.
