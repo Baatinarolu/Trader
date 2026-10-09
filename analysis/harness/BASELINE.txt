@@ -1419,3 +1419,78 @@ GIT STATE CHANGED, and why
   Vercel import settings: Root Directory = extracted/tradejournal, Framework
   preset = Other, no build command (public/ is plain static files), output
   directory already set to public by vercel.json.
+
+================================================================================
+ M5 — KILLZONE DST FIX: SHIPPED AS CORRECT, AND IT MEASURES *WORSE*
+ This is the single most informative result in the audit. Read it before quoting
+ any other number in this file.
+================================================================================
+Applied analysis/0002-fix-killzone-dst.patch. The fix is unambiguously correct
+against the course: the three windows were hardcoded UTC hours pinned to three
+DIFFERENT offsets (London to EDT, NY AM to EST), so they could never all be right
+at once and drifted an hour every time the US changed clocks. They are now stated
+in New York time and converted at call time via Intl + America/New_York, so the ET
+window is fixed and the UTC label moves:
+
+    EST (winter)  London 07:00-10:00 UTC   NY AM 12:00-15:00 UTC   NY PM 15:00-17:00 UTC
+    EDT (summer)  London 06:00-09:00 UTC   NY AM 11:00-14:00 UTC   NY PM 14:00-16:00 UTC
+
+Measured by running the SAME harness twice, reversing the patch in between, so the
+delta is attributable to M5 alone (--seeds 60 --bars 1500 --window 300):
+
+    | metric                  | WITHOUT M5   | WITH M5      |
+    | n                       | 122          | 106          |
+    | win rate                | 18.9 %       | 16.0 %       |
+    | expectancy              | -0.0011R     | -0.0935R     |
+    | profit factor           | 1.00         | 0.87         |
+    | grade A+ n / exp        | 15 / +0.1355R| 15 / -0.2603R|
+    | flat 1% dollars         | $-14         | $-992        |
+    | grade-sized dollars     | $-83         | $-1110       |
+    | trades hitting target   | 11           | 8            |
+    | trades hitting stop     | 83           | 78           |
+
+A correct fix to the course's timing discipline made every headline number worse.
+
+WHY, AND WHY IT IS NOT EVIDENCE AGAINST THE FIX. synth.js injects regime switching,
+volatility clustering, liquidity sweeps and displacement legs — but it does NOT
+inject session-of-day behaviour. There is no London open in the data, no New York
+lunch lull, no Friday liquidity withdrawal. So shifting the eligible window by one
+hour cannot find real session edge; it can only select a DIFFERENT SUBSET of bars
+from a series that has no session structure. n fell 122 -> 106 and the subset that
+remained happened to be worse. That is sampling noise on data that cannot reward
+the fix, not a refutation of it.
+
+THE GENERAL RULE THIS ESTABLISHES, and it applies to every remaining fidelity fix:
+**the synthetic harness cannot validate course-fidelity changes.** It can only
+detect changes that alter internal consistency. A fix that makes the bot more
+faithful to the course will register as a random walk in these numbers — sometimes
+up, sometimes down — because the thing being fixed (real session behaviour) is
+absent from the data by construction.
+
+So M5 ships on FIDELITY grounds, exactly as M9 and M52 did, with the negative
+measurement recorded here rather than dropped. Reverting it to keep PF at 1.00
+would be tuning the bot to a random-number generator.
+
+--------------------------------------------------------------------------------
+ THE MOST IMPORTANT LINE IN THIS FILE: DECLARED vs REALISED R
+--------------------------------------------------------------------------------
+The harness prints it itself, and it explains the ~19 % win rate completely:
+
+    DECLARED R:R vs REALISED (is the target actually reachable?)
+      avg declared 28.25R   avg realised -0.094R   ratio -0.003
+      target 8  ·  stop 78  ·  expired 11
+
+The bot announces an average reward-to-risk of 28:1 and realises nothing. Of the
+trades that resolved, 78 hit the stop, 8 hit the target, 11 expired. This is the
+rr_final degeneracy recorded in HANDOFF-PROMPT section 11 (median 15R, max 346R)
+showing up in the results: targets are placed so far away that they are
+effectively unreachable, so the system is not a "low win rate, high reward"
+system in practice — it is a low win rate system whose promised reward never
+arrives. A 6.2 % win rate would be break-even at a genuine 15R target. At 8
+targets against 78 stops, the realised average win is nowhere near what the
+declared figure implies.
+
+Until rr_final is capped or re-derived, EVERY expectancy and PF figure in this
+file — including all of the above — is denominated in a unit the engine does not
+honour. It is still not a ledger row. That is the highest-value open item in the
+audit, above any episode-level fidelity fix.

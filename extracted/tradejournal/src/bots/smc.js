@@ -816,12 +816,41 @@ const SESSIONS = [
   { key: 'ny_am', name: 'New York AM', start: 12, end: 16, quality: 1.0 },
   { key: 'ny_pm', name: 'New York PM', start: 16, end: 21, quality: 0.6 },
 ];
-/** The two windows the curriculum trades hardest: London open and the 12:00–16:00 overlap. */
+/**
+ * The windows the curriculum trades hardest, stated in NEW YORK time — which is
+ * how the course teaches them (Ep12: "Q zones"). They used to be hardcoded as
+ * fixed UTC hours, which silently drifted by an hour every time the US changed
+ * clocks, and the three windows had been pinned to different offsets (London to
+ * EDT, NY AM to EST) so they could never all be right at once. Defining them in
+ * ET and converting at call time makes them correct year-round.
+ *
+ *   London       02:00–05:00 ET   EUR, GBP
+ *   New York AM  07:00–10:00 ET   USD pairs
+ *   London close 10:00–12:00 ET   USD pair retracements
+ */
 const SILVER_BULLETS = [
-  { name: 'London killzone', startH: 6, startM: 0, endH: 9, endM: 0, quality: 1.0 },
-  { name: 'NY AM killzone', startH: 12, startM: 0, endH: 15, endM: 0, quality: 1.0 },
-  { name: 'NY PM killzone', startH: 15, startM: 0, endH: 18, endM: 0, quality: 0.7 },
+  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0 },
+  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0 },
+  { name: 'NY PM killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.7 },
 ];
+
+/** Minutes since midnight in New York, DST handled by the IANA database. */
+function nyMinutes(date) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(date);
+  const get = (t) => Number((parts.find((p) => p.type === t) || {}).value || 0);
+  return get('hour') * 60 + get('minute');
+}
+
+/** The same window rendered back in UTC, so the UI label is still truthful. */
+function utcLabel(date, startMins, endMins) {
+  const base = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  // nyMinutes(base) is New York's own midnight, expressed in minutes-past-UTC-midnight.
+  const nyOffset = nyMinutes(new Date(base)) ;
+  const fmt = (m) => new Date(base + (m - nyOffset) * 60000).toISOString().slice(11, 16);
+  return `${fmt(startMins)}–${fmt(endMins)} UTC`;
+}
 
 function sessionState(date = new Date()) {
   const h = date.getUTCHours(), m = date.getUTCMinutes();
@@ -831,10 +860,14 @@ function sessionState(date = new Date()) {
   const active = sessions.filter((s) => s.active);
   const open = sessions[0];
   const nextIdx = (sessions.findIndex((s) => s.active) + 1) % sessions.length;
+  const nyMins = nyMinutes(date);
+  const inWindowNY = (s, e) => (e > s ? nyMins >= s && nyMins < e : nyMins >= s || nyMins < e);
   const bullets = SILVER_BULLETS.map((b) => {
     const s = b.startH * 60 + b.startM, e = b.endH * 60 + b.endM;
-    const until = (e - mins + 1440) % 1440;
-    return { name: b.name, window: `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} UTC`, active: inWindow(s, e), minutes_to_end: inWindow(s, e) ? until : null, minutes_to_start: inWindow(s, e) ? 0 : ((s - mins + 1440) % 1440), quality: b.quality };
+    const open_ = inWindowNY(s, e);
+    const until = (e - nyMins + 1440) % 1440;
+    const et = `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} ET`;
+    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality };
   });
   const activeBullet = bullets.find((b) => b.active) || null;
   return {
