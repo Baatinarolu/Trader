@@ -218,7 +218,34 @@ says `public`, clear it. Same for **Root Directory**, which must be `extracted/t
 when importing the audit repository — the first build log shows it was already correct
 (Vercel found this directory's `.vercelignore` and installed its 132 packages).
 
-### Plan B, if backend-framework mode still will not build
+### The second failure: every request 500s with FUNCTION_INVOCATION_FAILED
+
+Removing `outputDirectory` fixed the build, and the deployment then failed at runtime
+instead — `GET /favicon.ico` returned `500 (FUNCTION_INVOCATION_FAILED)` on
+`trader-v.vercel.app`, execution duration ~412 ms, "No outgoing requests".
+
+**Cause.** `server.js` reads the shell with
+
+```js
+const INDEX_FILE = path.join(__dirname, 'public', 'index.html');
+fs.readFile(INDEX_FILE, 'utf8', ...)
+```
+
+That is a *dynamic* path. Vercel's Node File Tracing bundles only what it can statically see
+being `require`d, so `public/` was not traced — and with `outputDirectory` gone, nothing else
+was emitting it either. The deployed function had **no `public/` directory**, so every request
+that reached the shell-reading routes failed. `/favicon.ico` is simply the one that shows up in
+the log: browsers request it for the tab even when the document itself errored, with the
+failed URL as the referer, so `Route: /` alongside `Error Page: /favicon.ico` is consistent
+with `/` having failed too.
+
+Note that this reproduces **only on the platform**. Locally `/favicon.ico` returns
+`200 text/html` from the `app.get('*')` fall-through, because `public/` is right there on
+disk. A local test cannot catch a missing-file-trace bug; the file list has to be asserted.
+
+**Fix.** Declare the files explicitly, and route everything through the one function:
+
+### The config now shipped
 
 Route *every* request through the Express handler as a serverless function. This keeps the
 template rendering, the `no-store` policy and the deep-link fall-through, because the same
@@ -228,17 +255,37 @@ template rendering, the `no-store` policy and the deep-link fall-through, becaus
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "functions": { "api/index.js": { "maxDuration": 60, "memory": 1024 } },
+  "functions": {
+    "api/index.js": { "maxDuration": 60, "memory": 1024, "includeFiles": "public/**" }
+  },
   "crons": [ { "path": "/api/cron/tick", "schedule": "0 6 * * *" } ],
   "rewrites": [ { "source": "/(.*)", "destination": "/api/index" } ],
   "headers": [ { "source": "/api/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store" }] } ]
 }
 ```
 
-The catch-all `/(.*)` is what makes this safe where `framework: null` alone is not: with no
-`outputDirectory` and every path rewritten to the function, nothing is ever served as a raw
-static file, so `{{V}}` is always rendered. `framework: null` here only stops Vercel from
-trying to run `server.js` as a backend server.
+Three properties, each closing one of the failures above:
+
+- **`includeFiles: "public/**"`** puts the shell and its assets inside the function bundle,
+  which tracing alone does not do. Without it the function has no `public/` and every request
+  500s.
+- **the catch-all `/(.*)` rewrite** is what makes `framework: null` safe here. With no
+  `outputDirectory` and every path sent to the function, nothing is ever served as a raw
+  static file, so `{{V}}` is always rendered, `no-store` is always set and deep links always
+  fall through. `framework: null` on its own — without that rewrite — is the broken
+  combination rejected earlier in this section.
+- **`functions` keyed on `api/index.js`**, the file that actually becomes the function.
+
+`scripts/vercel-check.js` asserts all three, and asserts them as the invariant rather than as
+this exact shape: *nothing can serve the shell as a raw static file* is satisfied either by
+leaving framework detection on or by a catch-all rewrite, so a future move back to
+backend-server mode will not fail the check for the wrong reason.
+
+One further hardening came out of this: `server.js` called `process.exit(1)` when boot failed.
+Inside a function that is not a clean error, it is the failure — the platform reports
+`FUNCTION_INVOCATION_FAILED` for whatever request was in flight and the real cause (usually an
+unreachable database URL) never reaches the response. It now exits only when not on Vercel;
+there, `handler()` answers 500 with the boot message instead.
 
 Whichever way it deploys, `npm run test:vercel` must still report the shell guarantees —
 no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.

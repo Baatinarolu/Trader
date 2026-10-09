@@ -215,7 +215,15 @@ if (require.main === module) {
       startScheduler();
       console.log('');
     });
-  }).catch((e) => { console.error('Startup failed:', e.message); process.exit(1); });
+  }).catch((e) => {
+    console.error('Startup failed:', e.message);
+    // On a serverless host, exiting the process IS the failure: the platform reports
+    // FUNCTION_INVOCATION_FAILED for whatever request was in flight, and the real cause
+    // (usually an unreachable database URL) is buried. handler() already awaits
+    // bootPromise inside a try/catch and answers 500 with the message, which is both
+    // survivable and diagnosable, so only a long-lived local process should exit.
+    if (!process.env.VERCEL) process.exit(1);
+  });
 }
 
 module.exports = { app, handler, bootPromise, start, startScheduler };

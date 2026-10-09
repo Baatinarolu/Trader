@@ -1,7 +1,18 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 60,
+      "memory": 1024,
+      "includeFiles": "public/**"
+    }
+  },
   "crons": [
     { "path": "/api/cron/tick", "schedule": "0 6 * * *" }
+  ],
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
   ],
   "headers": [
     { "source": "/api/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }

@@ -120,11 +120,32 @@ async function call(pathname, opts = {}) {
       !('outputDirectory' in v)
         || ['app.js', 'index.js', 'server.js'].some((f) => fs.existsSync(path.join(__dirname, '..', v.outputDirectory, f))),
       'outputDirectory' in v ? String(v.outputDirectory) : 'absent — the platform finds server.js itself');
-    // framework:null would make Vercel serve public/ as plain static files, which ships
-    // index.html as an UNRENDERED TEMPLATE (literal {{V}} in every asset URL), drops the
-    // no-store cache policy and 404s every deep link. Asserted behaviourally below.
-    ok('framework detection is not disabled', v.framework !== null,
-      `framework=${JSON.stringify(v.framework === undefined ? 'unset' : v.framework)}`);
+    // The real invariant is NOT "framework must not be null". It is that the shell must
+    // never be served as a raw static file, because public/index.html is a TEMPLATE:
+    // served unrendered it puts a literal {{V}} in all 20 asset URLs, drops the no-store
+    // policy and 404s deep links. Two configs satisfy that — a backend server that renders
+    // everything, or framework:null PLUS a catch-all rewrite so no path ever reaches the
+    // static layer. Assert the invariant, so either shape is allowed and a third is not.
+    const catchAll = (v.rewrites || []).some((r) => r.source === '/(.*)' || r.source === '/:path*');
+    const rendersEverything = v.framework !== null || catchAll;
+    ok('nothing can serve the shell as a raw static file',
+      rendersEverything,
+      v.framework !== null ? 'backend framework renders every route'
+        : catchAll ? `framework=null but ${(v.rewrites || []).map((r) => r.source).join(', ')} routes every path to the function`
+        : 'framework=null with NO catch-all rewrite — index.html would ship as an unrendered template');
+    // The function reads public/index.html with fs.readFile(path.join(__dirname, ...)), a
+    // dynamic path. Vercel's file tracer only bundles what it can statically see required,
+    // so public/ has to be declared explicitly or the deployed function has no shell to
+    // render — which is what made every request 500 with FUNCTION_INVOCATION_FAILED.
+    const fnKeys = Object.keys(v.functions || {});
+    const included = fnKeys.map((k) => (v.functions[k] || {}).includeFiles).filter(Boolean);
+    ok('the function bundle explicitly includes public/',
+      included.some((g) => /public/.test(String(g))),
+      included.length ? `includeFiles: ${included.join(', ')}` : `no includeFiles on ${fnKeys.join(', ') || 'no functions'}`);
+    ok('the catch-all rewrite points at a function that is actually declared',
+      !catchAll || (v.rewrites || []).filter((r) => r.source === '/(.*)' || r.source === '/:path*')
+        .every((r) => fnKeys.some((k) => k.replace(/\.js$/, '') === r.destination.replace(/^\//, ''))),
+      (v.rewrites || []).map((r) => `${r.source} -> ${r.destination}`).join(', ') || 'none');
     ok('the cron path is a route the server actually serves',
       (v.crons || []).every((c) => c.path === '/api/cron/tick'), JSON.stringify((v.crons || []).map((c) => c.path)));
   }

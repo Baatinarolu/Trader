@@ -18,10 +18,10 @@ index 0000000..7b4fa49
 +*.log
 diff --git a/DEPLOY.md b/DEPLOY.md
 new file mode 100644
-index 0000000..90fefcc
+index 0000000..bd0e991
 --- /dev/null
 +++ b/DEPLOY.md
-@@ -0,0 +1,211 @@
+@@ -0,0 +1,292 @@
 +# Deploying TradeJournal Pro to Vercel
 +
 +**It deploys as a backend server, not as a static site.** Vercel detects `express` in
@@ -233,11 +233,92 @@ index 0000000..90fefcc
 +A failed build is better than that. `scripts/vercel-check.js` asserts all four behaviours —
 +placeholder count on disk, no `{{V}}` in the served shell, a rendered `?v=` id, `no-store`,
 +and a deep link returning 200 — so this cannot regress unnoticed.
++
++### Also check the dashboard, which overrides `vercel.json`
++
++Anything typed into Vercel → Project → Settings → General wins over the file. So if the
++build still fails the same way after pulling the fix, look at **Output Directory**: if it
++says `public`, clear it. Same for **Root Directory**, which must be `extracted/tradejournal`
++when importing the audit repository — the first build log shows it was already correct
++(Vercel found this directory's `.vercelignore` and installed its 132 packages).
++
++### The second failure: every request 500s with FUNCTION_INVOCATION_FAILED
++
++Removing `outputDirectory` fixed the build, and the deployment then failed at runtime
++instead — `GET /favicon.ico` returned `500 (FUNCTION_INVOCATION_FAILED)` on
++`trader-v.vercel.app`, execution duration ~412 ms, "No outgoing requests".
++
++**Cause.** `server.js` reads the shell with
++
++```js
++const INDEX_FILE = path.join(__dirname, 'public', 'index.html');
++fs.readFile(INDEX_FILE, 'utf8', ...)
++```
++
++That is a *dynamic* path. Vercel's Node File Tracing bundles only what it can statically see
++being `require`d, so `public/` was not traced — and with `outputDirectory` gone, nothing else
++was emitting it either. The deployed function had **no `public/` directory**, so every request
++that reached the shell-reading routes failed. `/favicon.ico` is simply the one that shows up in
++the log: browsers request it for the tab even when the document itself errored, with the
++failed URL as the referer, so `Route: /` alongside `Error Page: /favicon.ico` is consistent
++with `/` having failed too.
++
++Note that this reproduces **only on the platform**. Locally `/favicon.ico` returns
++`200 text/html` from the `app.get('*')` fall-through, because `public/` is right there on
++disk. A local test cannot catch a missing-file-trace bug; the file list has to be asserted.
++
++**Fix.** Declare the files explicitly, and route everything through the one function:
++
++### The config now shipped
++
++Route *every* request through the Express handler as a serverless function. This keeps the
++template rendering, the `no-store` policy and the deep-link fall-through, because the same
++`server.js` code answers everything — it just is not run as a long-lived server:
++
++```json
++{
++  "$schema": "https://openapi.vercel.sh/vercel.json",
++  "framework": null,
++  "functions": {
++    "api/index.js": { "maxDuration": 60, "memory": 1024, "includeFiles": "public/**" }
++  },
++  "crons": [ { "path": "/api/cron/tick", "schedule": "0 6 * * *" } ],
++  "rewrites": [ { "source": "/(.*)", "destination": "/api/index" } ],
++  "headers": [ { "source": "/api/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store" }] } ]
++}
++```
++
++Three properties, each closing one of the failures above:
++
++- **`includeFiles: "public/**"`** puts the shell and its assets inside the function bundle,
++  which tracing alone does not do. Without it the function has no `public/` and every request
++  500s.
++- **the catch-all `/(.*)` rewrite** is what makes `framework: null` safe here. With no
++  `outputDirectory` and every path sent to the function, nothing is ever served as a raw
++  static file, so `{{V}}` is always rendered, `no-store` is always set and deep links always
++  fall through. `framework: null` on its own — without that rewrite — is the broken
++  combination rejected earlier in this section.
++- **`functions` keyed on `api/index.js`**, the file that actually becomes the function.
++
++`scripts/vercel-check.js` asserts all three, and asserts them as the invariant rather than as
++this exact shape: *nothing can serve the shell as a raw static file* is satisfied either by
++leaving framework detection on or by a catch-all rewrite, so a future move back to
++backend-server mode will not fail the check for the wrong reason.
++
++One further hardening came out of this: `server.js` called `process.exit(1)` when boot failed.
++Inside a function that is not a clean error, it is the failure — the platform reports
++`FUNCTION_INVOCATION_FAILED` for whatever request was in flight and the real cause (usually an
++unreachable database URL) never reaches the response. It now exits only when not on Vercel;
++there, `handler()` answers 500 with the boot message instead.
++
++Whichever way it deploys, `npm run test:vercel` must still report the shell guarantees —
++no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
++Those four are what distinguish a working deploy from one that merely builds.
 diff --git a/scripts/vercel-check.js b/scripts/vercel-check.js
-index 818bf26..4a7c02c 100644
+index 818bf26..08bbea4 100644
 --- a/scripts/vercel-check.js
 +++ b/scripts/vercel-check.js
-@@ -89,16 +89,127 @@ async function call(pathname, opts = {}) {
+@@ -89,16 +89,148 @@ async function call(pathname, opts = {}) {
    ok('the platform cron endpoint refuses unauthenticated calls', cron.status === 401 || cron.status === 403, `HTTP ${cron.status}`);
  
    // the static app is served by Vercel from public/, not by the function
@@ -277,11 +358,32 @@ index 818bf26..4a7c02c 100644
 +      !('outputDirectory' in v)
 +        || ['app.js', 'index.js', 'server.js'].some((f) => fs.existsSync(path.join(__dirname, '..', v.outputDirectory, f))),
 +      'outputDirectory' in v ? String(v.outputDirectory) : 'absent — the platform finds server.js itself');
-+    // framework:null would make Vercel serve public/ as plain static files, which ships
-+    // index.html as an UNRENDERED TEMPLATE (literal {{V}} in every asset URL), drops the
-+    // no-store cache policy and 404s every deep link. Asserted behaviourally below.
-+    ok('framework detection is not disabled', v.framework !== null,
-+      `framework=${JSON.stringify(v.framework === undefined ? 'unset' : v.framework)}`);
++    // The real invariant is NOT "framework must not be null". It is that the shell must
++    // never be served as a raw static file, because public/index.html is a TEMPLATE:
++    // served unrendered it puts a literal {{V}} in all 20 asset URLs, drops the no-store
++    // policy and 404s deep links. Two configs satisfy that — a backend server that renders
++    // everything, or framework:null PLUS a catch-all rewrite so no path ever reaches the
++    // static layer. Assert the invariant, so either shape is allowed and a third is not.
++    const catchAll = (v.rewrites || []).some((r) => r.source === '/(.*)' || r.source === '/:path*');
++    const rendersEverything = v.framework !== null || catchAll;
++    ok('nothing can serve the shell as a raw static file',
++      rendersEverything,
++      v.framework !== null ? 'backend framework renders every route'
++        : catchAll ? `framework=null but ${(v.rewrites || []).map((r) => r.source).join(', ')} routes every path to the function`
++        : 'framework=null with NO catch-all rewrite — index.html would ship as an unrendered template');
++    // The function reads public/index.html with fs.readFile(path.join(__dirname, ...)), a
++    // dynamic path. Vercel's file tracer only bundles what it can statically see required,
++    // so public/ has to be declared explicitly or the deployed function has no shell to
++    // render — which is what made every request 500 with FUNCTION_INVOCATION_FAILED.
++    const fnKeys = Object.keys(v.functions || {});
++    const included = fnKeys.map((k) => (v.functions[k] || {}).includeFiles).filter(Boolean);
++    ok('the function bundle explicitly includes public/',
++      included.some((g) => /public/.test(String(g))),
++      included.length ? `includeFiles: ${included.join(', ')}` : `no includeFiles on ${fnKeys.join(', ') || 'no functions'}`);
++    ok('the catch-all rewrite points at a function that is actually declared',
++      !catchAll || (v.rewrites || []).filter((r) => r.source === '/(.*)' || r.source === '/:path*')
++        .every((r) => fnKeys.some((k) => k.replace(/\.js$/, '') === r.destination.replace(/^\//, ''))),
++      (v.rewrites || []).map((r) => `${r.source} -> ${r.destination}`).join(', ') || 'none');
 +    ok('the cron path is a route the server actually serves',
 +      (v.crons || []).every((c) => c.path === '/api/cron/tick'), JSON.stringify((v.crons || []).map((c) => c.path)));
 +  }
@@ -371,7 +473,7 @@ index 818bf26..4a7c02c 100644
    server.close();
    fs.rmSync(TMP, { recursive: true, force: true });
 diff --git a/server.js b/server.js
-index 9b28a41..d0f80d8 100644
+index 9b28a41..256f99f 100644
 --- a/server.js
 +++ b/server.js
 @@ -37,6 +37,52 @@ app.use((req, res, next) => {
@@ -451,6 +553,23 @@ index 9b28a41..d0f80d8 100644
    }
  })();
  
+@@ -152,7 +215,15 @@ if (require.main === module) {
+       startScheduler();
+       console.log('');
+     });
+-  }).catch((e) => { console.error('Startup failed:', e.message); process.exit(1); });
++  }).catch((e) => {
++    console.error('Startup failed:', e.message);
++    // On a serverless host, exiting the process IS the failure: the platform reports
++    // FUNCTION_INVOCATION_FAILED for whatever request was in flight, and the real cause
++    // (usually an unreachable database URL) is buried. handler() already awaits
++    // bootPromise inside a try/catch and answers 500 with the message, which is both
++    // survivable and diagnosable, so only a long-lived local process should exit.
++    if (!process.env.VERCEL) process.exit(1);
++  });
+ }
+ 
+ module.exports = { app, handler, bootPromise, start, startScheduler };
 diff --git a/src/bots/correction.js b/src/bots/correction.js
 index 5aeb214..c8cb64c 100644
 --- a/src/bots/correction.js
@@ -3042,22 +3161,28 @@ index 171df43..90fb6d3 100644
  async function insert(db, userId, t) {
    const row = { ...t, user_id: userId };
 diff --git a/vercel.json b/vercel.json
-index 3dba89a..3ae1308 100644
+index 3dba89a..8635890 100644
 --- a/vercel.json
 +++ b/vercel.json
-@@ -1,15 +1,8 @@
+@@ -1,14 +1,18 @@
  {
    "$schema": "https://openapi.vercel.sh/vercel.json",
 -  "outputDirectory": "public",
--  "functions": {
++  "framework": null,
+   "functions": {
 -    "api/index.js": { "maxDuration": 60, "memory": 1024 }
--  },
++    "api/index.js": {
++      "maxDuration": 60,
++      "memory": 1024,
++      "includeFiles": "public/**"
++    }
+   },
    "crons": [
      { "path": "/api/cron/tick", "schedule": "0 6 * * *" }
    ],
--  "rewrites": [
+   "rewrites": [
 -    { "source": "/api/(.*)", "destination": "/api/index" }
--  ],
++    { "source": "/(.*)", "destination": "/api/index" }
+   ],
    "headers": [
      { "source": "/api/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }
-   ]
