@@ -209,3 +209,37 @@ instead of a failed build:
 A failed build is better than that. `scripts/vercel-check.js` asserts all four behaviours —
 placeholder count on disk, no `{{V}}` in the served shell, a rendered `?v=` id, `no-store`,
 and a deep link returning 200 — so this cannot regress unnoticed.
+
+### Also check the dashboard, which overrides `vercel.json`
+
+Anything typed into Vercel → Project → Settings → General wins over the file. So if the
+build still fails the same way after pulling the fix, look at **Output Directory**: if it
+says `public`, clear it. Same for **Root Directory**, which must be `extracted/tradejournal`
+when importing the audit repository — the first build log shows it was already correct
+(Vercel found this directory's `.vercelignore` and installed its 132 packages).
+
+### Plan B, if backend-framework mode still will not build
+
+Route *every* request through the Express handler as a serverless function. This keeps the
+template rendering, the `no-store` policy and the deep-link fall-through, because the same
+`server.js` code answers everything — it just is not run as a long-lived server:
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "functions": { "api/index.js": { "maxDuration": 60, "memory": 1024 } },
+  "crons": [ { "path": "/api/cron/tick", "schedule": "0 6 * * *" } ],
+  "rewrites": [ { "source": "/(.*)", "destination": "/api/index" } ],
+  "headers": [ { "source": "/api/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store" }] } ]
+}
+```
+
+The catch-all `/(.*)` is what makes this safe where `framework: null` alone is not: with no
+`outputDirectory` and every path rewritten to the function, nothing is ever served as a raw
+static file, so `{{V}}` is always rendered. `framework: null` here only stops Vercel from
+trying to run `server.js` as a backend server.
+
+Whichever way it deploys, `npm run test:vercel` must still report the shell guarantees —
+no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
+Those four are what distinguish a working deploy from one that merely builds.
