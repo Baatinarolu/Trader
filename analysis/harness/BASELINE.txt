@@ -1618,3 +1618,58 @@ outranks every remaining episode-level fidelity fix, because until it exists:
   · and no expectancy figure in this file means anything about real trading.
 That is not a reason to stop fixing fidelity — the course is the specification and
 M5 was correct to ship — but it is the reason no performance claim can be made.
+
+================================================================================
+ ★★ REAL MARKET DATA RECOVERED — AND IT OVERTURNS THE SYNTHETIC BASELINE ★★
+ The most consequential result in this file. Read it before quoting any number
+ above this line.
+================================================================================
+`api.github.com` is inside the sandbox allowlist. The five real datasets named in
+candle-shim.js's provenance table were re-fetched into analysis/fixtures/ and
+validated by median inter-bar step, with bar counts and spans matching the table
+exactly: EURUSD-5m 12054, EURUSD-15m 4032, EURUSD-1h 3015, XAUUSD-5m 3081,
+XAUUSD-15m 4534. EURUSD-1d now 404s at its recorded path; the two BTC files fetched
+but did not parse. 5 of 8 recovered.
+
+Walking the SAME engine (SMC.analyse + Setup.buildSetups, 300-bar window) over real
+bars, against the synthetic baseline:
+
+    metric (p50)              synthetic    EURUSD15m   XAUUSD15m   EURUSD5m
+    dealing-range span (ATR)      42.8         8.3         7.9         8.0
+    weak-target distance (ATR)    30.3         5.0         6.1         6.0
+    rr_final                       15.79R      2.76R       3.17R       2.92R
+    share above 10R                56.9 %      13.9 %      19.9 %      17.8 %
+    max rr_final                  286.40R     100.0R      63.7R      366.7R
+
+TWO CONCLUSIONS, AND THEY CUT IN OPPOSITE DIRECTIONS.
+
+1. M125'S HEADLINE WAS AN ARTIFACT. The synthetic generator's dealing ranges are
+   roughly 5x wider than the real instrument's, so every structural target inside
+   them was tens of ATR away and rr_final exploded. On real data the engine declares
+   a median 2.76-3.17R, which is sane and sits just above the course's own 2R
+   minimum. "The bot announces 28:1 and collects nothing" described the GENERATOR,
+   not the engine. What survives is the TAIL: 14-20 % of candidates still declare
+   above 10R, with maxima of 63.7R, 100.0R and 366.7R, because the engine still never
+   asks whether price can reach the target while the position is open. A tail-trim,
+   not a systemic repair.
+
+2. ★ EVERY PERFORMANCE FIGURE IN THIS FILE IS NOW SUSPECT, IN A KNOWN DIRECTION.
+   Baseline 6 (n=122, 18.9 % win, -0.0011R, PF 1.00) and every delta measured
+   against it were produced on ranges ~5x too wide. That inflates declared R and
+   depresses the target-hit rate — the harness reported 8 targets against 78 stops.
+   A wider range means the target is farther and the stop is hit first, so the
+   synthetic win rate is biased LOW and the expectancy biased DOWN. The real-data
+   win rate could be materially higher. It could also be lower; the point is that
+   the sign of the distortion is knowable and its size is not, so no figure derived
+   from synth.js can be used to rank two configurations.
+
+   This retroactively explains M5. The DST fix moved expectancy from -0.0011R to
+   -0.0935R, and the reason given at the time — the generator has no session
+   structure, so a correct timing fix can only resample noise — is now supported by
+   a second, independent defect in the same data. M5 was right to ship on fidelity
+   grounds; the harness simply could not have told us either way.
+
+NEXT, AND IT OUTRANKS EVERY REMAINING FIDELITY FIX: re-run the walk-forward harness
+on analysis/fixtures/ rather than synth.js. Until that exists there is no instrument
+in this project capable of answering "does the bot perform the way the course says
+it should", which is the question the audit was commissioned to answer.
