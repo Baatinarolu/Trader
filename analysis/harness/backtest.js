@@ -26,6 +26,7 @@
  *
  * Usage:  node analysis/harness/backtest.js [--seeds 5] [--bars 900] [--window 300]
  */
+const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..', 'extracted', 'tradejournal');
 const SMC = require(path.join(ROOT, 'src/bots/smc.js'));
@@ -157,8 +158,66 @@ const all = [];
 const biasStats = { calls: 0, flips: 0, holds: 0, invalidations: 0, disagreements: 0, ranged: 0, nolvl: 0 };
 const t0 = Date.now();
 
-for (let seed = 1; seed <= SEEDS; seed++) {
-  const candles = Synth.series({ seed, bars: BARS });
+/* -------------------------------------------------------------------------
+ * --real  WALK REAL MARKET DATA INSTEAD OF synth.js
+ *
+ * WHY. Every figure in BASELINE.txt was produced on synth.js, whose dealing ranges
+ * measure p50 42.8 ATR against 8.3 ATR on real EURUSD 15m — about 5x too wide. A
+ * wider range puts the target farther and the stop nearer to being hit first, so the
+ * synthetic win rate is biased LOW and expectancy biased DOWN. The sign of that
+ * distortion is knowable; its size is not. So no figure from synth.js can rank two
+ * configurations, and the question the audit was commissioned to answer — does the
+ * bot perform the way the course says it should — cannot be answered without this.
+ *
+ * WHAT IT CHANGES. Only the SOURCE of `candles`. htfAll is still
+ * Synth.aggregate(candles, 4), the window, warmup, fill, cooldown, gate and every
+ * scoring path are untouched, and the engine is still the app's unmodified
+ * smc.js + setup.js. With --real omitted the walk is byte-for-byte the old one.
+ *
+ * WHAT IT IS NOT. Not live data, and not a large sample: the fixtures are a few
+ * thousand real bars per instrument over a few weeks (see candle-shim.js's
+ * provenance table). Overlapping windows on one continuous series are NOT
+ * independent samples, so the effective n is far below the trade count printed.
+ * Read the result as a direction and a sanity check on the synthetic distortion,
+ * never as a confidence interval.
+ * ---------------------------------------------------------------------------*/
+const REAL = process.argv.includes('--real');
+// NOTE: `arg()` above coerces with Number(), so it cannot carry a string value —
+// passing '15m' through it produced NaN and matched no fixture. Read strings separately.
+const REAL_TF = (() => {
+  const i = process.argv.indexOf('--realtf');
+  return i > -1 && process.argv[i + 1] ? String(process.argv[i + 1]) : '15m';
+})();
+const FIXDIR = path.join(__dirname, '..', 'fixtures');   // analysis/fixtures, not analysis/harness/fixtures
+function loadFixture(file) {
+  const txt = fs.readFileSync(path.join(FIXDIR, file), 'utf8').trim().split(/\r?\n/).slice(1);
+  const out = [];
+  for (const l of txt) {
+    const p = l.split(',');
+    if (p.length < 5) continue;
+    const t = Date.parse(p[0].trim().replace(' ', 'T') + 'Z');
+    const o = +p[1], h = +p[2], lo = +p[3], c = +p[4];
+    if (!Number.isFinite(t) || ![o, h, lo, c].every(Number.isFinite)) continue;
+    out.push({ t, o, h, l: lo, c, v: +p[5] || 0 });
+  }
+  out.sort((a, b) => a.t - b.t);
+  return out;
+}
+const REAL_SETS = REAL
+  ? (fs.existsSync(FIXDIR)
+      ? fs.readdirSync(FIXDIR).filter((n) => n.endsWith('-' + REAL_TF + '.csv')).sort()
+      : [])
+  : [];
+if (REAL && !REAL_SETS.length) {
+  console.error(`--real: no fixtures matching *-${REAL_TF}.csv in ${FIXDIR}.`);
+  console.error('Re-fetch them per the provenance table in analysis/candle-shim.js (via api.github.com).');
+  process.exit(2);
+}
+const NWALK = REAL ? REAL_SETS.length : SEEDS;
+
+for (let wi = 0; wi < NWALK; wi++) {
+  const seed = wi + 1;                       // kept so every downstream `seed` reference still works
+  const candles = REAL ? loadFixture(REAL_SETS[wi]) : Synth.series({ seed, bars: BARS });
   const htfAll = Synth.aggregate(candles, 4);
   let openUntil = -1;
   // Per-walk hysteresis state: what the server keeps in the bias_state table. Reset with the walk,
@@ -239,11 +298,11 @@ const ms = Date.now() - t0;
 const by = (f) => stats(all.filter(f));
 
 console.log('\n' + '='.repeat(78));
-console.log(' INDEPENDENT WALK-FORWARD BACKTEST  —  SYNTHETIC DATA');
+console.log(` INDEPENDENT WALK-FORWARD BACKTEST  —  ${REAL ? 'REAL MARKET DATA' : 'SYNTHETIC DATA'}`);
 console.log('=' .repeat(78));
 // M120: the flag is printed ONLY when it is on, so the default output stays byte-for-byte
 // identical to Baselines 1-6 and a diff against BASELINE.txt still means what it says.
-console.log(` seeds=${SEEDS} bars=${BARS} window=${WINDOW} warmup=${WARMUP} maxBars=${MAX_BARS} fillWindow=${FILL_WINDOW} cooldown=${COOLDOWN}  gate=${ONLY_AT_ENTRY ? "entry_status==='at-entry'" : 'any status'}${BIAS_MODE !== 'off' ? `  bias=${BIAS_MODE}` : ''}${RANGE_SIZED ? '  range-sized=on' : ''}  ·  ${all.length} trades  ·  ${ms}ms`);
+console.log(REAL ? ` REAL DATA (${REAL_TF}) — ${REAL_SETS.length} fixture(s): ${REAL_SETS.join(', ')}  ·  windows=${WINDOW} warmup=${WARMUP} maxBars=${MAX_BARS} fillWindow=${FILL_WINDOW} cooldown=${COOLDOWN}` : ` seeds=${SEEDS} bars=${BARS} window=${WINDOW} warmup=${WARMUP} maxBars=${MAX_BARS} fillWindow=${FILL_WINDOW} cooldown=${COOLDOWN}  gate=${ONLY_AT_ENTRY ? "entry_status==='at-entry'" : 'any status'}${BIAS_MODE !== 'off' ? `  bias=${BIAS_MODE}` : ''}${RANGE_SIZED ? '  range-sized=on' : ''}  ·  ${all.length} trades  ·  ${ms}ms`);
 console.log(` engine: src/bots/smc.js analyse() + src/bots/setup.js buildSetups()  (unmodified paths)`);
 console.log('\n ALL SIGNALS WHERE ok===true (the CURRENT gate, includes B and C)');
 console.log('  ' + fmt(by(() => true)));
@@ -363,6 +422,15 @@ if (RANGE_SIZED) {
 console.log('\n PER-SEED (is one series dominating the result?)');
 for (let s = 1; s <= SEEDS; s++) console.log(`   seed ${s}  ${fmt(by((t) => t.seed === s))}`);
 
-console.log('\n⚠ Synthetic data. This measures internal consistency of the entry/stop/target');
-console.log('  logic, NOT real-market edge. Do not quote these figures as performance.\n');
+// The caveat has to change with the data, or the output mislabels itself — which is the
+// same class of defect as a string that outlives the decision it describes (M51).
+console.log(REAL
+  ? `\n⚠ REAL bars, but a SMALL and DEPENDENT sample. ${REAL_SETS.length} fixture(s), ${NWALK} walk(s),
+  overlapping 300-bar windows on one continuous series, so consecutive trades are NOT
+  independent and the effective n is far below the count printed. The course's own
+  threshold (Ep 27) is 30-50 trades minimum and 100 preferred before any conclusion;
+  treat this as a direction and a check on the synthetic distortion, never as a
+  confidence interval, and never as evidence of edge either way.`
+  : `\n⚠ Synthetic data. This measures internal consistency of the entry/stop/target
+  logic, NOT real-market edge. Do not quote these figures as performance.\n`);
 process.exit(0);

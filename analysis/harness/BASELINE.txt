@@ -1673,3 +1673,73 @@ NEXT, AND IT OUTRANKS EVERY REMAINING FIDELITY FIX: re-run the walk-forward harn
 on analysis/fixtures/ rather than synth.js. Until that exists there is no instrument
 in this project capable of answering "does the bot perform the way the course says
 it should", which is the question the audit was commissioned to answer.
+
+================================================================================
+ ★★ BASELINE 7 — THE FIRST WALK-FORWARD RUN ON REAL MARKET DATA ★★
+ `node analysis/harness/backtest.js --real --realtf 15m --window 300`
+================================================================================
+New opt-in `--real` arm. It changes ONLY the source of `candles`; htfAll is still
+Synth.aggregate(candles, 4), and the window, warmup, fill, cooldown, gate and every
+scoring path are untouched. With --real omitted the output is byte-for-byte the
+previous run (diffed, timings normalised) so all recorded baselines still compare.
+Fixtures: EURUSD-15m.csv (4032 real bars) and XAUUSD-15m.csv (4534), walked as two
+independent walks.
+
+ REAL DATA (15m) — 2 fixtures · windows=300 warmup=120 maxBars=20 fill=12 cooldown=12
+   ALL SIGNALS (the current gate, includes B and C)
+     n=  52  win= 15.4%  exp= -0.2751R  PF= 0.60
+       grade A+  n= 12  win= 16.7%  exp= -0.5171R  PF= 0.22
+       grade A   n= 39  win= 15.4%  exp= -0.2077R  PF= 0.71
+       grade B   n=  1  win=  0.0%  exp= +0.0000R  PF= 0.00
+   M95: A+ and A only n=51 exp -0.2805R PF 0.60 · B and C only n=1
+   DECLARED vs REALISED: avg declared 4.85R · avg realised -0.275R · ratio -0.057
+     target 5 · stop 36 · expired 3
+   M58: flat 1% -$1430 maxDD $1505 sd/trade $151.51 · grade-sized IDENTICAL
+   per fixture: EURUSD-15m n=25 win 16.0% exp -0.1300R PF 0.82
+                XAUUSD-15m n=27 win 14.8% exp -0.4094R PF 0.39
+
+------------------------------------------------------------------------------
+ 1. M125'S RE-DIAGNOSIS IS CONFIRMED BY THE OUTCOME, NOT JUST THE GEOMETRY.
+    Average DECLARED R:R falls from 28.25R on synthetic bars to 4.85R on real ones.
+    The engine's reward:risk arithmetic is broadly sane on real data; the 28:1
+    headline was the generator's 5x-too-wide dealing ranges, exactly as measured.
+
+ 2. ★ A PREDICTION I MADE LAST COMMIT IS FALSIFIED, AND IS CORRECTED HERE.
+    I wrote that the synthetic ranges were "biased LOW" for win rate and "biased
+    DOWN" for expectancy, so the real win rate "could be materially higher".
+    It is not. Real win rate 15.4% against synthetic 16.0% — the same — and real
+    expectancy -0.2751R against synthetic -0.0935R, i.e. WORSE, not better. The
+    distortion was real (declared R 28.25 -> 4.85 proves it) but it did not run in
+    the direction I predicted, and it did not flatter or disfavour the win rate.
+    Recorded because the prediction was published before the measurement, and
+    because "the synthetic data made it look worse than it is" is exactly the kind
+    of hopeful reading that should not survive its own test.
+
+ 3. ON REAL DATA THE SYSTEM IS NEGATIVE: -0.2751R, PF 0.60, 36 stops against 5
+    targets. Both fixtures agree in sign (EURUSD -0.1300R PF 0.82, XAUUSD -0.4094R
+    PF 0.39), so it is not one series dominating.
+
+ 4. ★ THE SAMPLE IS TOO SMALL TO BE A VERDICT, BY THE COURSE'S OWN STANDARD.
+    n=52 across two overlapping-window walks. Ep 27: "at least 30 to 50 minimum
+    trades just to see anything meaningful", 100 preferred, and Ep 26 wants a
+    quarter or 100-500 trades before any plan change. 52 sits at the BOTTOM of the
+    minimum, the windows overlap on one continuous series so consecutive trades are
+    not independent and the effective n is lower still, and only two instruments
+    over a few weeks are represented. This is a direction and a sanity check on the
+    synthetic distortion. It is NOT evidence of edge and NOT evidence against it.
+    (That the project's own M11 finding — guardrails derived from 10 trades — is
+    violated by drawing conclusions from 52 is not lost here.)
+
+ 5. GRADE A+ IS THE WORST GRADE ON REAL DATA (-0.5171R, PF 0.22, n=12). This is the
+    same shape as the retracted M118 claim, and at n=12 it is far too small to mean
+    anything — but it is the second independent sample in which the top grade did
+    not outperform, so it is recorded rather than dropped.
+
+ 6. M58's grade sizing made NO difference in dollars (flat and sized both -$1430),
+    because every real-data trade carried the same grade multiplier. On synthetic
+    data the two arms differed. So M58's dollar effect is unmeasured on real bars —
+    another case of a synthetic-only result that does not carry over.
+
+NEXT: more real instruments and longer history before any of this is treated as a
+measurement. EURUSD-1d now 404s at its recorded path and the two BTC fixtures
+fetched but did not parse, so 3 of the 8 documented sets are still missing.
