@@ -1553,3 +1553,68 @@ Recorded so that nobody "simplifies" M125 into a cap later.
 NOT FIXED YET. Diagnosis, ledger row and probe are committed; the change itself is
 next, and it must be measured against this baseline so the win-rate and expectancy
 movement is attributable to it alone.
+
+--------------------------------------------------------------------------------
+ M125 — THE FIX WAS IMPLEMENTED, MEASURED, AND REVERTED. Negative result.
+--------------------------------------------------------------------------------
+The structural bound was implemented in setup.js targetPools(): classify a
+weak_structure pool as `weak_structure_stale` when its level lies outside the
+current dealing range, so M21's unshift (which matches kind === 'weak_structure'
+exactly) no longer promotes it and the nearer pools plus the caller's `range`
+target lead instead. M21's ordering was left byte-identical for the in-range case,
+`strength` was deliberately not touched (changing it would perturb other scorers —
+an unmeasured side effect), and with no dealing range available the old behaviour
+was kept rather than guessed at.
+
+  RESULT: it fired 0 times in 6176 weak-structure pools (0.0 %).
+  rr_final p50 15.79R -> 14.03R, max 286.40R UNCHANGED, share above 10R
+  56.9 % -> 56.4 %. That is noise, not a fix.
+
+  why, measured:
+    entry -> weak extreme        p25 14.06   p50 30.33   p90 66.04  ATR
+    entry -> RANGE extreme       p25 24.78   p50 39.72   p90 69.05  ATR
+    dealing-range SPAN itself    p25 12.1    p50 42.8    p90 63.0   ATR
+
+The range extreme is FARTHER than the weak extreme, so the weak extreme is always
+inside the range and a range bound can never trigger.
+
+REVERTED, NOT SHIPPED. Code that never executes, sitting under a comment claiming
+it fixes the declared-28R problem, is worse than no code: it reads as a fix to the
+next person. After reverting, probe-rr-degeneracy.js reproduces the pre-fix baseline
+exactly (p50 15.79R, max 286.40R, 56.9 % above 10R), which is the evidence the
+revert was clean, and `git status extracted/` is empty against HEAD.
+
+★ CORRECTED DIAGNOSIS — worse than the original, and it changes the priority order.
+The degeneracy is NOT "the target lies outside the current range". It is that on this
+generator a 300-bar window spans 40+ ATR (median range span 42.8 ATR), so EVERY
+structural target inside it is tens of ATR away and no structural bound can bring
+rr down. Two consequences, and they pull in different directions:
+
+  (a) REAL ENGINE DEFECT, independent of data: the engine has no notion of a trade's
+      own horizon. It computes rr = reward / risk and reports it with no question ever
+      asked about whether price can reach the target while the position is open. It
+      will announce 286R. That is a genuine defect on any data.
+
+  (b) MEASUREMENT ARTIFACT: the observed MAGNITUDE (median 15.79R, 56.9 % above 10R)
+      is dominated by synthetic range width. Real 15m FX over 300 bars (~3 days) does
+      not span 42 ATR. So these figures cannot calibrate a fix, and they cannot even
+      establish how severe the problem is on real data.
+
+TWO DEAD ENDS NOW MEASURED AND RECORDED, so neither is retried:
+  · a numeric rr cap — uncalibratable here, because measured 20-bar travel on the
+    generator is p50 7.646 / p95 15.695 ATR, far beyond real 15m FX. Fitting a
+    constant to that tunes the engine to the generator.
+  · a dealing-range bound — inert, 0 of 6176, per the above.
+
+The fix that remains needs a HORIZON concept: how long the trade is intended to be
+held, and how far price can travel in that time, expressed in a unit that is stable
+across instruments. Calibrating it requires real OHLCV.
+
+★ THIS REORDERS THE AUDIT. Populating analysis/fixtures/ with real market data now
+outranks every remaining episode-level fidelity fix, because until it exists:
+  · M125 cannot be fixed, only described;
+  · every fidelity fix ships on the argument from the course alone, with the harness
+    able to register it as an improvement or a regression purely by chance (M5);
+  · and no expectancy figure in this file means anything about real trading.
+That is not a reason to stop fixing fidelity — the course is the specification and
+M5 was correct to ship — but it is the reason no performance claim can be made.
