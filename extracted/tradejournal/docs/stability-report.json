@@ -1,0 +1,1495 @@
+{
+ "generated_at": "2026-10-06T11:40:06.544Z",
+ "command": "node scripts/stability-report.js --markets \"BTCUSDT:1h,BTCUSDT:4h,BTCUSDT:1d,ETHUSDT:1h,ETHUSDT:4h,SOLUSDT:1h,XRPUSDT:1h,ETHUSDT:1d\" --bars 4000 --step 6 --modes entry,leg --split 0.5",
+ "markets": [
+  "BTCUSDT:1h",
+  "BTCUSDT:4h",
+  "BTCUSDT:1d",
+  "ETHUSDT:1h",
+  "ETHUSDT:4h",
+  "SOLUSDT:1h",
+  "XRPUSDT:1h",
+  "ETHUSDT:1d"
+ ],
+ "bars": 4000,
+ "step": 6,
+ "modes": [
+  "entry",
+  "leg"
+ ],
+ "split": 0.5,
+ "pool_early": 993,
+ "pool_late": 1007,
+ "per_market": [
+  {
+   "market": "BTCUSDT:1h",
+   "bars": 1440,
+   "from": "2026-08-07",
+   "to": "2026-10-06",
+   "split_ts": "2026-09-12",
+   "shapes": {
+    "video": {
+     "early": {
+      "n": 96,
+      "win_pct": 26.041666666666668,
+      "clean_pct": 21.875,
+      "expectancy_r": -0.2279583333333333,
+      "cost_r": 0.37521875
+     },
+     "late": {
+      "n": 97,
+      "win_pct": 35.051546391752574,
+      "clean_pct": 28.865979381443296,
+      "expectancy_r": -0.23191752577319596,
+      "cost_r": 0.3020927835051546
+     },
+     "all": {
+      "n": 193,
+      "win_pct": 30.569948186528496,
+      "clean_pct": 25.38860103626943,
+      "expectancy_r": -0.22994818652849727,
+      "cost_r": 0.3384663212435233
+     },
+     "label": "Video plan (50 % at T1 → BE → runner)",
+     "sign_agrees": true
+    },
+    "video_full": {
+     "early": {
+      "n": 6,
+      "win_pct": 16.666666666666664,
+      "clean_pct": 16.666666666666664,
+      "expectancy_r": 0.19800000000000015,
+      "cost_r": 0.21350000000000002
+     },
+     "late": {
+      "n": 7,
+      "win_pct": 28.57142857142857,
+      "clean_pct": 28.57142857142857,
+      "expectancy_r": 0.028857142857142786,
+      "cost_r": 0.26485714285714285
+     },
+     "all": {
+      "n": 13,
+      "win_pct": 23.076923076923077,
+      "clean_pct": 23.076923076923077,
+      "expectancy_r": 0.10692307692307697,
+      "cost_r": 0.24115384615384614
+     },
+     "label": "Video plan + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": true
+    },
+    "flat1": {
+     "early": {
+      "n": 96,
+      "win_pct": 34.375,
+      "clean_pct": 19.791666666666664,
+      "expectancy_r": -0.62521875,
+      "cost_r": 0.37521875
+     },
+     "late": {
+      "n": 97,
+      "win_pct": 46.391752577319586,
+      "clean_pct": 44.329896907216494,
+      "expectancy_r": -0.3458453608247421,
+      "cost_r": 0.3020927835051546
+     },
+     "all": {
+      "n": 193,
+      "win_pct": 40.41450777202073,
+      "clean_pct": 32.12435233160622,
+      "expectancy_r": -0.48480829015544064,
+      "cost_r": 0.3384663212435233
+     },
+     "label": "Whole position at 1R",
+     "sign_agrees": true
+    },
+    "flat1_floor": {
+     "early": {
+      "n": 64,
+      "win_pct": 32.8125,
+      "clean_pct": 28.125,
+      "expectancy_r": -0.5520781249999999,
+      "cost_r": 0.208328125
+     },
+     "late": {
+      "n": 74,
+      "win_pct": 48.64864864864865,
+      "clean_pct": 48.64864864864865,
+      "expectancy_r": -0.20074324324324325,
+      "cost_r": 0.21095945945945943
+     },
+     "all": {
+      "n": 138,
+      "win_pct": 41.30434782608695,
+      "clean_pct": 39.130434782608695,
+      "expectancy_r": -0.3636811594202899,
+      "cost_r": 0.2097391304347826
+     },
+     "label": "Whole position at 1R + cost floor (leg + stop ≥ 0.6 ATR)",
+     "sign_agrees": true
+    },
+    "flat3": {
+     "early": {
+      "n": 96,
+      "win_pct": 23.958333333333336,
+      "clean_pct": 23.958333333333336,
+      "expectancy_r": -0.41688541666666645,
+      "cost_r": 0.37521875
+     },
+     "late": {
+      "n": 97,
+      "win_pct": 31.958762886597935,
+      "clean_pct": 27.835051546391753,
+      "expectancy_r": -0.16104123711340199,
+      "cost_r": 0.3020927835051546
+     },
+     "all": {
+      "n": 193,
+      "win_pct": 27.979274611398964,
+      "clean_pct": 25.906735751295333,
+      "expectancy_r": -0.2883005181347149,
+      "cost_r": 0.3384663212435233
+     },
+     "label": "Whole position at 3R",
+     "sign_agrees": true
+    },
+    "flat3_full": {
+     "early": {
+      "n": 6,
+      "win_pct": 16.666666666666664,
+      "clean_pct": 16.666666666666664,
+      "expectancy_r": -0.5468333333333334,
+      "cost_r": 0.21350000000000002
+     },
+     "late": {
+      "n": 7,
+      "win_pct": 28.57142857142857,
+      "clean_pct": 28.57142857142857,
+      "expectancy_r": -0.12200000000000008,
+      "cost_r": 0.26485714285714285
+     },
+     "all": {
+      "n": 13,
+      "win_pct": 23.076923076923077,
+      "clean_pct": 23.076923076923077,
+      "expectancy_r": -0.3180769230769232,
+      "cost_r": 0.24115384615384614
+     },
+     "label": "Whole position at 3R + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": true
+    }
+   },
+   "gate_pass": {
+    "stop_ge_06atr": 71.50259067357513,
+    "runway3": 18.134715025906736
+   },
+   "error": null
+  },
+  {
+   "market": "BTCUSDT:4h",
+   "bars": 1440,
+   "from": "2026-02-08",
+   "to": "2026-10-06",
+   "split_ts": "2026-06-25",
+   "shapes": {
+    "video": {
+     "early": {
+      "n": 161,
+      "win_pct": 40.993788819875775,
+      "clean_pct": 32.91925465838509,
+      "expectancy_r": -0.05164596273291925,
+      "cost_r": 0.11980124223602483
+     },
+     "late": {
+      "n": 162,
+      "win_pct": 51.85185185185185,
+      "clean_pct": 36.41975308641975,
+      "expectancy_r": 0.3391543209876544,
+      "cost_r": 0.17102469135802473
+     },
+     "all": {
+      "n": 323,
+      "win_pct": 46.43962848297213,
+      "clean_pct": 34.6749226006192,
+      "expectancy_r": 0.144359133126935,
+      "cost_r": 0.14549226006191945
+     },
+     "label": "Video plan (50 % at T1 → BE → runner)",
+     "sign_agrees": false
+    },
+    "video_full": {
+     "early": {
+      "n": 2,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.093,
+      "cost_r": 0.093
+     },
+     "late": {
+      "n": 2,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.125,
+      "cost_r": 0.125
+     },
+     "all": {
+      "n": 4,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.109,
+      "cost_r": 0.109
+     },
+     "label": "Video plan + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": true
+    },
+    "flat1": {
+     "early": {
+      "n": 161,
+      "win_pct": 47.20496894409938,
+      "clean_pct": 47.20496894409938,
+      "expectancy_r": -0.17570186335403723,
+      "cost_r": 0.11980124223602483
+     },
+     "late": {
+      "n": 162,
+      "win_pct": 59.25925925925925,
+      "clean_pct": 58.0246913580247,
+      "expectancy_r": 0.020419753086419752,
+      "cost_r": 0.17102469135802473
+     },
+     "all": {
+      "n": 323,
+      "win_pct": 53.25077399380805,
+      "clean_pct": 52.63157894736842,
+      "expectancy_r": -0.07733746130030965,
+      "cost_r": 0.14549226006191945
+     },
+     "label": "Whole position at 1R",
+     "sign_agrees": false
+    },
+    "flat1_floor": {
+     "early": {
+      "n": 126,
+      "win_pct": 48.41269841269841,
+      "clean_pct": 48.41269841269841,
+      "expectancy_r": -0.1245555555555556,
+      "cost_r": 0.09280952380952377
+     },
+     "late": {
+      "n": 136,
+      "win_pct": 55.14705882352941,
+      "clean_pct": 55.14705882352941,
+      "expectancy_r": -0.030499999999999944,
+      "cost_r": 0.14089705882352943
+     },
+     "all": {
+      "n": 262,
+      "win_pct": 51.908396946564885,
+      "clean_pct": 51.908396946564885,
+      "expectancy_r": -0.07573282442748101,
+      "cost_r": 0.11777099236641225
+     },
+     "label": "Whole position at 1R + cost floor (leg + stop ≥ 0.6 ATR)",
+     "sign_agrees": true
+    },
+    "flat3": {
+     "early": {
+      "n": 161,
+      "win_pct": 30.434782608695656,
+      "clean_pct": 30.434782608695656,
+      "expectancy_r": 0.09118012422360249,
+      "cost_r": 0.11980124223602483
+     },
+     "late": {
+      "n": 162,
+      "win_pct": 41.358024691358025,
+      "clean_pct": 40.123456790123456,
+      "expectancy_r": 0.4301975308641976,
+      "cost_r": 0.17102469135802473
+     },
+     "all": {
+      "n": 323,
+      "win_pct": 35.91331269349845,
+      "clean_pct": 35.294117647058826,
+      "expectancy_r": 0.2612136222910217,
+      "cost_r": 0.14549226006191945
+     },
+     "label": "Whole position at 3R",
+     "sign_agrees": true
+    },
+    "flat3_full": {
+     "early": {
+      "n": 2,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.093,
+      "cost_r": 0.093
+     },
+     "late": {
+      "n": 2,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.125,
+      "cost_r": 0.125
+     },
+     "all": {
+      "n": 4,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.109,
+      "cost_r": 0.109
+     },
+     "label": "Whole position at 3R + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": true
+    }
+   },
+   "gate_pass": {
+    "stop_ge_06atr": 81.42414860681114,
+    "runway3": 4.953560371517028
+   },
+   "error": null
+  },
+  {
+   "market": "BTCUSDT:1d",
+   "bars": 1440,
+   "from": "2022-10-27",
+   "to": "2026-10-05",
+   "split_ts": "2024-10-28",
+   "shapes": {
+    "video": {
+     "early": {
+      "n": 131,
+      "win_pct": 43.51145038167939,
+      "clean_pct": 37.404580152671755,
+      "expectancy_r": 0.25980916030534357,
+      "cost_r": 0.05439694656488546
+     },
+     "late": {
+      "n": 131,
+      "win_pct": 47.32824427480916,
+      "clean_pct": 35.87786259541985,
+      "expectancy_r": -0.1767709923664122,
+      "cost_r": 0.050213740458015264
+     },
+     "all": {
+      "n": 262,
+      "win_pct": 45.41984732824427,
+      "clean_pct": 36.6412213740458,
+      "expectancy_r": 0.04151908396946558,
+      "cost_r": 0.052305343511450435
+     },
+     "label": "Video plan (50 % at T1 → BE → runner)",
+     "sign_agrees": false
+    },
+    "video_full": {
+     "early": {
+      "n": 2,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.015,
+      "cost_r": 0.015
+     },
+     "late": {
+      "n": 2,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.034,
+      "cost_r": 0.034
+     },
+     "all": {
+      "n": 4,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.0245,
+      "cost_r": 0.0245
+     },
+     "label": "Video plan + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": true
+    },
+    "flat1": {
+     "early": {
+      "n": 131,
+      "win_pct": 46.56488549618321,
+      "clean_pct": 46.56488549618321,
+      "expectancy_r": -0.12309923664122141,
+      "cost_r": 0.05439694656488546
+     },
+     "late": {
+      "n": 131,
+      "win_pct": 57.25190839694656,
+      "clean_pct": 57.25190839694656,
+      "expectancy_r": 0.09482442748091603,
+      "cost_r": 0.050213740458015264
+     },
+     "all": {
+      "n": 262,
+      "win_pct": 51.908396946564885,
+      "clean_pct": 51.908396946564885,
+      "expectancy_r": -0.014137404580152715,
+      "cost_r": 0.052305343511450435
+     },
+     "label": "Whole position at 1R",
+     "sign_agrees": false
+    },
+    "flat1_floor": {
+     "early": {
+      "n": 79,
+      "win_pct": 45.56962025316456,
+      "clean_pct": 45.56962025316456,
+      "expectancy_r": -0.12084810126582284,
+      "cost_r": 0.03224050632911391
+     },
+     "late": {
+      "n": 102,
+      "win_pct": 58.82352941176471,
+      "clean_pct": 58.82352941176471,
+      "expectancy_r": 0.1420784313725489,
+      "cost_r": 0.03439215686274506
+     },
+     "all": {
+      "n": 181,
+      "win_pct": 53.03867403314917,
+      "clean_pct": 53.03867403314917,
+      "expectancy_r": 0.027320441988950266,
+      "cost_r": 0.033453038674033125
+     },
+     "label": "Whole position at 1R + cost floor (leg + stop ≥ 0.6 ATR)",
+     "sign_agrees": false
+    },
+    "flat3": {
+     "early": {
+      "n": 131,
+      "win_pct": 35.87786259541985,
+      "clean_pct": 35.87786259541985,
+      "expectancy_r": 0.38071755725190837,
+      "cost_r": 0.05439694656488546
+     },
+     "late": {
+      "n": 131,
+      "win_pct": 22.900763358778626,
+      "clean_pct": 22.900763358778626,
+      "expectancy_r": -0.13418320610687018,
+      "cost_r": 0.050213740458015264
+     },
+     "all": {
+      "n": 262,
+      "win_pct": 29.389312977099237,
+      "clean_pct": 29.389312977099237,
+      "expectancy_r": 0.12326717557251916,
+      "cost_r": 0.052305343511450435
+     },
+     "label": "Whole position at 3R",
+     "sign_agrees": false
+    },
+    "flat3_full": {
+     "early": {
+      "n": 2,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.015,
+      "cost_r": 0.015
+     },
+     "late": {
+      "n": 2,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.034,
+      "cost_r": 0.034
+     },
+     "all": {
+      "n": 4,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.0245,
+      "cost_r": 0.0245
+     },
+     "label": "Whole position at 3R + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": true
+    }
+   },
+   "gate_pass": {
+    "stop_ge_06atr": 69.46564885496184,
+    "runway3": 12.977099236641221
+   },
+   "error": null
+  },
+  {
+   "market": "ETHUSDT:1h",
+   "bars": 1440,
+   "from": "2026-08-07",
+   "to": "2026-10-06",
+   "split_ts": "2026-09-06",
+   "shapes": {
+    "video": {
+     "early": {
+      "n": 129,
+      "win_pct": 48.06201550387597,
+      "clean_pct": 35.65891472868217,
+      "expectancy_r": 0.15931782945736425,
+      "cost_r": 0.26260465116279086
+     },
+     "late": {
+      "n": 133,
+      "win_pct": 37.59398496240601,
+      "clean_pct": 24.06015037593985,
+      "expectancy_r": -0.19378947368421034,
+      "cost_r": 0.23759398496240572
+     },
+     "all": {
+      "n": 262,
+      "win_pct": 42.74809160305343,
+      "clean_pct": 29.770992366412212,
+      "expectancy_r": -0.019931297709923676,
+      "cost_r": 0.2499083969465649
+     },
+     "label": "Video plan (50 % at T1 → BE → runner)",
+     "sign_agrees": false
+    },
+    "video_full": {
+     "early": {
+      "n": 16,
+      "win_pct": 25,
+      "clean_pct": 25,
+      "expectancy_r": 0.4320625,
+      "cost_r": 0.22112500000000002
+     },
+     "late": {
+      "n": 1,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.5,
+      "cost_r": 0.5
+     },
+     "all": {
+      "n": 17,
+      "win_pct": 23.52941176470588,
+      "clean_pct": 23.52941176470588,
+      "expectancy_r": 0.3184117647058824,
+      "cost_r": 0.2375294117647059
+     },
+     "label": "Video plan + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": false
+    },
+    "flat1": {
+     "early": {
+      "n": 129,
+      "win_pct": 56.58914728682171,
+      "clean_pct": 47.286821705426355,
+      "expectancy_r": -0.1308217054263566,
+      "cost_r": 0.26260465116279086
+     },
+     "late": {
+      "n": 133,
+      "win_pct": 55.639097744360896,
+      "clean_pct": 51.8796992481203,
+      "expectancy_r": -0.12481203007518799,
+      "cost_r": 0.23759398496240572
+     },
+     "all": {
+      "n": 262,
+      "win_pct": 56.10687022900763,
+      "clean_pct": 49.61832061068702,
+      "expectancy_r": -0.12777099236641204,
+      "cost_r": 0.2499083969465649
+     },
+     "label": "Whole position at 1R",
+     "sign_agrees": true
+    },
+    "flat1_floor": {
+     "early": {
+      "n": 108,
+      "win_pct": 50.92592592592593,
+      "clean_pct": 47.22222222222222,
+      "expectancy_r": -0.19157407407407412,
+      "cost_r": 0.2100925925925926
+     },
+     "late": {
+      "n": 100,
+      "win_pct": 56.00000000000001,
+      "clean_pct": 56.00000000000001,
+      "expectancy_r": -0.06266999999999999,
+      "cost_r": 0.18266999999999997
+     },
+     "all": {
+      "n": 208,
+      "win_pct": 53.36538461538461,
+      "clean_pct": 51.442307692307686,
+      "expectancy_r": -0.12960096153846135,
+      "cost_r": 0.1969086538461538
+     },
+     "label": "Whole position at 1R + cost floor (leg + stop ≥ 0.6 ATR)",
+     "sign_agrees": true
+    },
+    "flat3": {
+     "early": {
+      "n": 129,
+      "win_pct": 39.53488372093023,
+      "clean_pct": 36.434108527131784,
+      "expectancy_r": 0.23951937984496124,
+      "cost_r": 0.26260465116279086
+     },
+     "late": {
+      "n": 133,
+      "win_pct": 33.83458646616541,
+      "clean_pct": 33.83458646616541,
+      "expectancy_r": 0.11578947368421053,
+      "cost_r": 0.23759398496240572
+     },
+     "all": {
+      "n": 262,
+      "win_pct": 36.6412213740458,
+      "clean_pct": 35.11450381679389,
+      "expectancy_r": 0.17670992366412216,
+      "cost_r": 0.2499083969465649
+     },
+     "label": "Whole position at 3R",
+     "sign_agrees": true
+    },
+    "flat3_full": {
+     "early": {
+      "n": 16,
+      "win_pct": 25,
+      "clean_pct": 25,
+      "expectancy_r": -0.221125,
+      "cost_r": 0.22112500000000002
+     },
+     "late": {
+      "n": 1,
+      "win_pct": 100,
+      "clean_pct": 100,
+      "expectancy_r": 2.5,
+      "cost_r": 0.5
+     },
+     "all": {
+      "n": 17,
+      "win_pct": 29.411764705882355,
+      "clean_pct": 29.411764705882355,
+      "expectancy_r": -0.061058823529411756,
+      "cost_r": 0.2375294117647059
+     },
+     "label": "Whole position at 3R + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": false
+    }
+   },
+   "gate_pass": {
+    "stop_ge_06atr": 79.38931297709924,
+    "runway3": 12.213740458015266
+   },
+   "error": null
+  },
+  {
+   "market": "ETHUSDT:4h",
+   "bars": 1440,
+   "from": "2026-02-08",
+   "to": "2026-10-06",
+   "split_ts": "2026-06-19",
+   "shapes": {
+    "video": {
+     "early": {
+      "n": 121,
+      "win_pct": 58.67768595041323,
+      "clean_pct": 33.88429752066116,
+      "expectancy_r": 0.32309917355371903,
+      "cost_r": 0.09590909090909093
+     },
+     "late": {
+      "n": 122,
+      "win_pct": 33.60655737704918,
+      "clean_pct": 20.491803278688526,
+      "expectancy_r": -0.4343360655737708,
+      "cost_r": 0.12080327868852454
+     },
+     "all": {
+      "n": 243,
+      "win_pct": 46.09053497942387,
+      "clean_pct": 27.160493827160494,
+      "expectancy_r": -0.05717695473251029,
+      "cost_r": 0.10840740740740741
+     },
+     "label": "Video plan (50 % at T1 → BE → runner)",
+     "sign_agrees": false
+    },
+    "video_full": {
+     "early": {
+      "n": 3,
+      "win_pct": 100,
+      "clean_pct": 100,
+      "expectancy_r": 4.187666666666666,
+      "cost_r": 0.11699999999999999
+     },
+     "late": {
+      "n": 6,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.1188333333333331,
+      "cost_r": 0.11883333333333335
+     },
+     "all": {
+      "n": 9,
+      "win_pct": 33.33333333333333,
+      "clean_pct": 33.33333333333333,
+      "expectancy_r": 0.6499999999999999,
+      "cost_r": 0.11822222222222223
+     },
+     "label": "Video plan + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": false
+    },
+    "flat1": {
+     "early": {
+      "n": 121,
+      "win_pct": 61.98347107438017,
+      "clean_pct": 61.98347107438017,
+      "expectancy_r": 0.14376033057851245,
+      "cost_r": 0.09590909090909093
+     },
+     "late": {
+      "n": 122,
+      "win_pct": 48.36065573770492,
+      "clean_pct": 46.72131147540984,
+      "expectancy_r": -0.16881967213114757,
+      "cost_r": 0.12080327868852454
+     },
+     "all": {
+      "n": 243,
+      "win_pct": 55.144032921810705,
+      "clean_pct": 54.32098765432099,
+      "expectancy_r": -0.013172839506172799,
+      "cost_r": 0.10840740740740741
+     },
+     "label": "Whole position at 1R",
+     "sign_agrees": false
+    },
+    "flat1_floor": {
+     "early": {
+      "n": 95,
+      "win_pct": 62.10526315789474,
+      "clean_pct": 62.10526315789474,
+      "expectancy_r": 0.1628105263157895,
+      "cost_r": 0.0792947368421053
+     },
+     "late": {
+      "n": 98,
+      "win_pct": 46.93877551020408,
+      "clean_pct": 44.89795918367347,
+      "expectancy_r": -0.17276530612244909,
+      "cost_r": 0.09258163265306119
+     },
+     "all": {
+      "n": 193,
+      "win_pct": 54.40414507772021,
+      "clean_pct": 53.36787564766839,
+      "expectancy_r": -0.0075854922279792215,
+      "cost_r": 0.08604145077720204
+     },
+     "label": "Whole position at 1R + cost floor (leg + stop ≥ 0.6 ATR)",
+     "sign_agrees": false
+    },
+    "flat3": {
+     "early": {
+      "n": 121,
+      "win_pct": 43.80165289256198,
+      "clean_pct": 43.80165289256198,
+      "expectancy_r": 0.6561570247933886,
+      "cost_r": 0.09590909090909093
+     },
+     "late": {
+      "n": 122,
+      "win_pct": 15.573770491803279,
+      "clean_pct": 13.934426229508196,
+      "expectancy_r": -0.5458688524590166,
+      "cost_r": 0.12080327868852454
+     },
+     "all": {
+      "n": 243,
+      "win_pct": 29.629629629629626,
+      "clean_pct": 28.80658436213992,
+      "expectancy_r": 0.0526707818930042,
+      "cost_r": 0.10840740740740741
+     },
+     "label": "Whole position at 3R",
+     "sign_agrees": false
+    },
+    "flat3_full": {
+     "early": {
+      "n": 3,
+      "win_pct": 100,
+      "clean_pct": 100,
+      "expectancy_r": 2.8830000000000005,
+      "cost_r": 0.11699999999999999
+     },
+     "late": {
+      "n": 6,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.1188333333333331,
+      "cost_r": 0.11883333333333335
+     },
+     "all": {
+      "n": 9,
+      "win_pct": 33.33333333333333,
+      "clean_pct": 33.33333333333333,
+      "expectancy_r": 0.21511111111111114,
+      "cost_r": 0.11822222222222223
+     },
+     "label": "Whole position at 3R + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": false
+    }
+   },
+   "gate_pass": {
+    "stop_ge_06atr": 79.42386831275721,
+    "runway3": 8.641975308641975
+   },
+   "error": null
+  },
+  {
+   "market": "SOLUSDT:1h",
+   "bars": 1440,
+   "from": "2026-08-07",
+   "to": "2026-10-06",
+   "split_ts": "2026-09-08",
+   "shapes": {
+    "video": {
+     "early": {
+      "n": 124,
+      "win_pct": 39.516129032258064,
+      "clean_pct": 25.806451612903224,
+      "expectancy_r": -0.44270967741935496,
+      "cost_r": 0.273983870967742
+     },
+     "late": {
+      "n": 125,
+      "win_pct": 35.199999999999996,
+      "clean_pct": 23.200000000000003,
+      "expectancy_r": -0.24800000000000014,
+      "cost_r": 0.28078400000000003
+     },
+     "all": {
+      "n": 249,
+      "win_pct": 37.34939759036144,
+      "clean_pct": 24.497991967871485,
+      "expectancy_r": -0.3449638554216868,
+      "cost_r": 0.27739759036144607
+     },
+     "label": "Video plan (50 % at T1 → BE → runner)",
+     "sign_agrees": true
+    },
+    "video_full": {
+     "early": {
+      "n": 3,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.0533333333333335,
+      "cost_r": 0.05333333333333334
+     },
+     "late": {
+      "n": 3,
+      "win_pct": 66.66666666666666,
+      "clean_pct": 66.66666666666666,
+      "expectancy_r": 2.617,
+      "cost_r": 0.24833333333333332
+     },
+     "all": {
+      "n": 6,
+      "win_pct": 33.33333333333333,
+      "clean_pct": 33.33333333333333,
+      "expectancy_r": 0.7818333333333333,
+      "cost_r": 0.15083333333333335
+     },
+     "label": "Video plan + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": false
+    },
+    "flat1": {
+     "early": {
+      "n": 124,
+      "win_pct": 44.354838709677416,
+      "clean_pct": 42.74193548387097,
+      "expectancy_r": -0.3868870967741936,
+      "cost_r": 0.273983870967742
+     },
+     "late": {
+      "n": 125,
+      "win_pct": 42.4,
+      "clean_pct": 38.4,
+      "expectancy_r": -0.4463680000000001,
+      "cost_r": 0.28078400000000003
+     },
+     "all": {
+      "n": 249,
+      "win_pct": 43.373493975903614,
+      "clean_pct": 40.562248995983936,
+      "expectancy_r": -0.41674698795180715,
+      "cost_r": 0.27739759036144607
+     },
+     "label": "Whole position at 1R",
+     "sign_agrees": true
+    },
+    "flat1_floor": {
+     "early": {
+      "n": 84,
+      "win_pct": 44.047619047619044,
+      "clean_pct": 41.66666666666667,
+      "expectancy_r": -0.3149761904761905,
+      "cost_r": 0.1959285714285715
+     },
+     "late": {
+      "n": 75,
+      "win_pct": 44,
+      "clean_pct": 41.333333333333336,
+      "expectancy_r": -0.32048,
+      "cost_r": 0.17783999999999997
+     },
+     "all": {
+      "n": 159,
+      "win_pct": 44.0251572327044,
+      "clean_pct": 41.509433962264154,
+      "expectancy_r": -0.31757232704402544,
+      "cost_r": 0.18739622641509432
+     },
+     "label": "Whole position at 1R + cost floor (leg + stop ≥ 0.6 ATR)",
+     "sign_agrees": true
+    },
+    "flat3": {
+     "early": {
+      "n": 124,
+      "win_pct": 26.61290322580645,
+      "clean_pct": 25,
+      "expectancy_r": -0.2866129032258064,
+      "cost_r": 0.273983870967742
+     },
+     "late": {
+      "n": 125,
+      "win_pct": 26.400000000000002,
+      "clean_pct": 24.8,
+      "expectancy_r": -0.3312960000000002,
+      "cost_r": 0.28078400000000003
+     },
+     "all": {
+      "n": 249,
+      "win_pct": 26.506024096385545,
+      "clean_pct": 24.899598393574294,
+      "expectancy_r": -0.30904417670682727,
+      "cost_r": 0.27739759036144607
+     },
+     "label": "Whole position at 3R",
+     "sign_agrees": true
+    },
+    "flat3_full": {
+     "early": {
+      "n": 3,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.0533333333333335,
+      "cost_r": 0.05333333333333334
+     },
+     "late": {
+      "n": 3,
+      "win_pct": 66.66666666666666,
+      "clean_pct": 66.66666666666666,
+      "expectancy_r": 1.418333333333333,
+      "cost_r": 0.24833333333333332
+     },
+     "all": {
+      "n": 6,
+      "win_pct": 33.33333333333333,
+      "clean_pct": 33.33333333333333,
+      "expectancy_r": 0.18249999999999988,
+      "cost_r": 0.15083333333333335
+     },
+     "label": "Whole position at 3R + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": false
+    }
+   },
+   "gate_pass": {
+    "stop_ge_06atr": 63.85542168674698,
+    "runway3": 14.056224899598394
+   },
+   "error": null
+  },
+  {
+   "market": "XRPUSDT:1h",
+   "bars": 1440,
+   "from": "2026-08-07",
+   "to": "2026-10-06",
+   "split_ts": "2026-09-10",
+   "shapes": {
+    "video": {
+     "early": {
+      "n": 115,
+      "win_pct": 44.34782608695652,
+      "clean_pct": 35.65217391304348,
+      "expectancy_r": 0.01932173913043484,
+      "cost_r": 0.19193913043478267
+     },
+     "late": {
+      "n": 120,
+      "win_pct": 39.166666666666664,
+      "clean_pct": 38.333333333333336,
+      "expectancy_r": 0.04978333333333335,
+      "cost_r": 0.16495
+     },
+     "all": {
+      "n": 235,
+      "win_pct": 41.702127659574465,
+      "clean_pct": 37.02127659574468,
+      "expectancy_r": 0.034876595744680855,
+      "cost_r": 0.17815744680851064
+     },
+     "label": "Video plan (50 % at T1 → BE → runner)",
+     "sign_agrees": true
+    },
+    "video_full": {
+     "early": {
+      "n": 6,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.1251666666666666,
+      "cost_r": 0.12516666666666668
+     },
+     "late": {
+      "n": 5,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.0894,
+      "cost_r": 0.0894
+     },
+     "all": {
+      "n": 11,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.1089090909090908,
+      "cost_r": 0.1089090909090909
+     },
+     "label": "Video plan + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": true
+    },
+    "flat1": {
+     "early": {
+      "n": 115,
+      "win_pct": 50.43478260869565,
+      "clean_pct": 50.43478260869565,
+      "expectancy_r": -0.18324347826086956,
+      "cost_r": 0.19193913043478267
+     },
+     "late": {
+      "n": 120,
+      "win_pct": 48.333333333333336,
+      "clean_pct": 48.333333333333336,
+      "expectancy_r": -0.19828333333333334,
+      "cost_r": 0.16495
+     },
+     "all": {
+      "n": 235,
+      "win_pct": 49.361702127659576,
+      "clean_pct": 49.361702127659576,
+      "expectancy_r": -0.19092340425531912,
+      "cost_r": 0.17815744680851064
+     },
+     "label": "Whole position at 1R",
+     "sign_agrees": true
+    },
+    "flat1_floor": {
+     "early": {
+      "n": 91,
+      "win_pct": 50.54945054945055,
+      "clean_pct": 50.54945054945055,
+      "expectancy_r": -0.11901098901098905,
+      "cost_r": 0.13000000000000003
+     },
+     "late": {
+      "n": 94,
+      "win_pct": 48.93617021276596,
+      "clean_pct": 48.93617021276596,
+      "expectancy_r": -0.14798936170212768,
+      "cost_r": 0.12671276595744682
+     },
+     "all": {
+      "n": 185,
+      "win_pct": 49.72972972972973,
+      "clean_pct": 49.72972972972973,
+      "expectancy_r": -0.13373513513513516,
+      "cost_r": 0.12832972972972972
+     },
+     "label": "Whole position at 1R + cost floor (leg + stop ≥ 0.6 ATR)",
+     "sign_agrees": true
+    },
+    "flat3": {
+     "early": {
+      "n": 115,
+      "win_pct": 30.434782608695656,
+      "clean_pct": 30.434782608695656,
+      "expectancy_r": 0.025452173913043514,
+      "cost_r": 0.19193913043478267
+     },
+     "late": {
+      "n": 120,
+      "win_pct": 33.33333333333333,
+      "clean_pct": 31.666666666666664,
+      "expectancy_r": 0.15481666666666669,
+      "cost_r": 0.16495
+     },
+     "all": {
+      "n": 235,
+      "win_pct": 31.914893617021278,
+      "clean_pct": 31.06382978723404,
+      "expectancy_r": 0.09151063829787236,
+      "cost_r": 0.17815744680851064
+     },
+     "label": "Whole position at 3R",
+     "sign_agrees": true
+    },
+    "flat3_full": {
+     "early": {
+      "n": 6,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.1251666666666666,
+      "cost_r": 0.12516666666666668
+     },
+     "late": {
+      "n": 5,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.0894,
+      "cost_r": 0.0894
+     },
+     "all": {
+      "n": 11,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.1089090909090908,
+      "cost_r": 0.1089090909090909
+     },
+     "label": "Whole position at 3R + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": true
+    }
+   },
+   "gate_pass": {
+    "stop_ge_06atr": 78.72340425531915,
+    "runway3": 13.191489361702127
+   },
+   "error": null
+  },
+  {
+   "market": "ETHUSDT:1d",
+   "bars": 1440,
+   "from": "2022-10-27",
+   "to": "2026-10-05",
+   "split_ts": "2024-11-09",
+   "shapes": {
+    "video": {
+     "early": {
+      "n": 116,
+      "win_pct": 34.48275862068966,
+      "clean_pct": 27.586206896551722,
+      "expectancy_r": -0.1644396551724138,
+      "cost_r": 0.05637068965517242
+     },
+     "late": {
+      "n": 117,
+      "win_pct": 46.15384615384615,
+      "clean_pct": 44.44444444444444,
+      "expectancy_r": 0.6024358974358974,
+      "cost_r": 0.04262393162393161
+     },
+     "all": {
+      "n": 233,
+      "win_pct": 40.343347639484975,
+      "clean_pct": 36.05150214592275,
+      "expectancy_r": 0.22064377682403452,
+      "cost_r": 0.049467811158798294
+     },
+     "label": "Video plan (50 % at T1 → BE → runner)",
+     "sign_agrees": false
+    },
+    "video_full": {
+     "early": {
+      "n": 5,
+      "win_pct": 40,
+      "clean_pct": 40,
+      "expectancy_r": 0.22900000000000004,
+      "cost_r": 0.063
+     },
+     "late": {
+      "n": 9,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.0357777777777777,
+      "cost_r": 0.035777777777777776
+     },
+     "all": {
+      "n": 14,
+      "win_pct": 14.285714285714285,
+      "clean_pct": 14.285714285714285,
+      "expectancy_r": -0.5840714285714286,
+      "cost_r": 0.0455
+     },
+     "label": "Video plan + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": false
+    },
+    "flat1": {
+     "early": {
+      "n": 116,
+      "win_pct": 41.37931034482759,
+      "clean_pct": 41.37931034482759,
+      "expectancy_r": -0.22878448275862065,
+      "cost_r": 0.05637068965517242
+     },
+     "late": {
+      "n": 117,
+      "win_pct": 54.700854700854705,
+      "clean_pct": 54.700854700854705,
+      "expectancy_r": 0.05139316239316233,
+      "cost_r": 0.04262393162393161
+     },
+     "all": {
+      "n": 233,
+      "win_pct": 48.06866952789699,
+      "clean_pct": 48.06866952789699,
+      "expectancy_r": -0.08809442060085837,
+      "cost_r": 0.049467811158798294
+     },
+     "label": "Whole position at 1R",
+     "sign_agrees": false
+    },
+    "flat1_floor": {
+     "early": {
+      "n": 64,
+      "win_pct": 48.4375,
+      "clean_pct": 48.4375,
+      "expectancy_r": -0.06512500000000002,
+      "cost_r": 0.033875
+     },
+     "late": {
+      "n": 70,
+      "win_pct": 40,
+      "clean_pct": 40,
+      "expectancy_r": -0.23071428571428573,
+      "cost_r": 0.0307142857142857
+     },
+     "all": {
+      "n": 134,
+      "win_pct": 44.02985074626866,
+      "clean_pct": 44.02985074626866,
+      "expectancy_r": -0.15162686567164171,
+      "cost_r": 0.0322238805970149
+     },
+     "label": "Whole position at 1R + cost floor (leg + stop ≥ 0.6 ATR)",
+     "sign_agrees": true
+    },
+    "flat3": {
+     "early": {
+      "n": 116,
+      "win_pct": 27.586206896551722,
+      "clean_pct": 27.586206896551722,
+      "expectancy_r": 0.04707758620689656,
+      "cost_r": 0.05637068965517242
+     },
+     "late": {
+      "n": 117,
+      "win_pct": 45.2991452991453,
+      "clean_pct": 45.2991452991453,
+      "expectancy_r": 0.7693418803418803,
+      "cost_r": 0.04262393162393161
+     },
+     "all": {
+      "n": 233,
+      "win_pct": 36.48068669527897,
+      "clean_pct": 36.48068669527897,
+      "expectancy_r": 0.4097596566523607,
+      "cost_r": 0.049467811158798294
+     },
+     "label": "Whole position at 3R",
+     "sign_agrees": true
+    },
+    "flat3_full": {
+     "early": {
+      "n": 5,
+      "win_pct": 40,
+      "clean_pct": 40,
+      "expectancy_r": 0.5370000000000001,
+      "cost_r": 0.063
+     },
+     "late": {
+      "n": 9,
+      "win_pct": 0,
+      "clean_pct": 0,
+      "expectancy_r": -1.0357777777777777,
+      "cost_r": 0.035777777777777776
+     },
+     "all": {
+      "n": 14,
+      "win_pct": 14.285714285714285,
+      "clean_pct": 14.285714285714285,
+      "expectancy_r": -0.47407142857142853,
+      "cost_r": 0.0455
+     },
+     "label": "Whole position at 3R + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+     "sign_agrees": false
+    }
+   },
+   "gate_pass": {
+    "stop_ge_06atr": 57.5107296137339,
+    "runway3": 21.888412017167383
+   },
+   "error": null
+  }
+ ],
+ "pooled": [
+  {
+   "key": "video",
+   "label": "Video plan (50 % at T1 → BE → runner)",
+   "early": {
+    "n": 993,
+    "win_pct": 42.39677744209466,
+    "clean_pct": 31.722054380664655,
+    "expectancy_r": -0.008324269889224549,
+    "cost_r": 0.17170392749244667
+   },
+   "late": {
+    "n": 1007,
+    "win_pct": 41.31082423038729,
+    "clean_pct": 31.57894736842105,
+    "expectancy_r": -0.02384707050645484,
+    "cost_r": 0.16862363455809287
+   },
+   "all": {
+    "n": 2000,
+    "win_pct": 41.85,
+    "clean_pct": 31.65,
+    "expectancy_r": -0.016140000000000033,
+    "cost_r": 0.17015300000000028
+   },
+   "sign_agrees": true
+  },
+  {
+   "key": "video_full",
+   "label": "Video plan + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+   "early": {
+    "n": 43,
+    "win_pct": 23.25581395348837,
+    "clean_pct": 23.25581395348837,
+    "expectancy_r": 0.17865116279069768,
+    "cost_r": 0.15376744186046512
+   },
+   "late": {
+    "n": 35,
+    "win_pct": 11.428571428571429,
+    "clean_pct": 11.428571428571429,
+    "expectancy_r": -0.5499142857142858,
+    "cost_r": 0.1399714285714286
+   },
+   "all": {
+    "n": 78,
+    "win_pct": 17.94871794871795,
+    "clean_pct": 17.94871794871795,
+    "expectancy_r": -0.14826923076923074,
+    "cost_r": 0.14757692307692308
+   },
+   "sign_agrees": false
+  },
+  {
+   "key": "flat1",
+   "label": "Whole position at 1R",
+   "early": {
+    "n": 993,
+    "win_pct": 48.23766364551863,
+    "clean_pct": 45.41792547834844,
+    "expectancy_r": -0.2009083585095665,
+    "cost_r": 0.17170392749244667
+   },
+   "late": {
+    "n": 1007,
+    "win_pct": 52.03574975173784,
+    "clean_pct": 50.446871896722946,
+    "expectancy_r": -0.1276961271102285,
+    "cost_r": 0.16862363455809287
+   },
+   "all": {
+    "n": 2000,
+    "win_pct": 50.14999999999999,
+    "clean_pct": 47.949999999999996,
+    "expectancy_r": -0.16404599999999997,
+    "cost_r": 0.17015300000000028
+   },
+   "sign_agrees": true
+  },
+  {
+   "key": "flat1_floor",
+   "label": "Whole position at 1R + cost floor (leg + stop ≥ 0.6 ATR)",
+   "early": {
+    "n": 711,
+    "win_pct": 48.66385372714487,
+    "clean_pct": 47.39803094233474,
+    "expectancy_r": -0.15084810126582276,
+    "cost_r": 0.12412517580872018
+   },
+   "late": {
+    "n": 749,
+    "win_pct": 50.734312416555404,
+    "clean_pct": 50.200267022696934,
+    "expectancy_r": -0.10922029372496675,
+    "cost_r": 0.12419225634178903
+   },
+   "all": {
+    "n": 1460,
+    "win_pct": 49.726027397260275,
+    "clean_pct": 48.83561643835617,
+    "expectancy_r": -0.12949246575342466,
+    "cost_r": 0.12415958904109564
+   },
+   "sign_agrees": true
+  },
+  {
+   "key": "flat3",
+   "label": "Whole position at 3R",
+   "early": {
+    "n": 993,
+    "win_pct": 32.527693856998994,
+    "clean_pct": 31.92346424974824,
+    "expectancy_r": 0.10843303121852979,
+    "cost_r": 0.17170392749244667
+   },
+   "late": {
+    "n": 1007,
+    "win_pct": 31.57894736842105,
+    "clean_pct": 30.387288977159884,
+    "expectancy_r": 0.05211122144985109,
+    "cost_r": 0.16862363455809287
+   },
+   "all": {
+    "n": 2000,
+    "win_pct": 32.05,
+    "clean_pct": 31.15,
+    "expectancy_r": 0.08007500000000002,
+    "cost_r": 0.17015300000000028
+   },
+   "sign_agrees": true
+  },
+  {
+   "key": "flat3_full",
+   "label": "Whole position at 3R + measured shape (leg + stop ≥ 0.6 ATR + target ≥ 3R)",
+   "early": {
+    "n": 43,
+    "win_pct": 23.25581395348837,
+    "clean_pct": 23.25581395348837,
+    "expectancy_r": -0.22353488372093022,
+    "cost_r": 0.15376744186046512
+   },
+   "late": {
+    "n": 35,
+    "win_pct": 14.285714285714285,
+    "clean_pct": 14.285714285714285,
+    "expectancy_r": -0.5685428571428572,
+    "cost_r": 0.1399714285714286
+   },
+   "all": {
+    "n": 78,
+    "win_pct": 19.230769230769234,
+    "clean_pct": 19.230769230769234,
+    "expectancy_r": -0.3783461538461539,
+    "cost_r": 0.14757692307692308
+   },
+   "sign_agrees": true
+  }
+ ]
+}

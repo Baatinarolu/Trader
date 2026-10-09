@@ -1,7 +1,15 @@
 # Working artifacts produced while analysing tradingpro-main.zip.
-# The archive itself is the tracked deliverable; the unpacked tree, its
-# node_modules and the generated SQLite files are not.
-extracted/
+#
+# CHANGED: the unpacked app tree is now TRACKED, because it has to be deployable.
+# Vercel deploys from a Git repository, and while `extracted/` was ignored the app
+# existed only as a patch file plus a build script — and gitignored content is not
+# persisted between turns, so the tree kept vanishing. `analysis/restore-workspace.sh`
+# still rebuilds it from tradingpro-main.zip + analysis/patches/applied-so-far.patch,
+# which remains the record of exactly what the audit changed and why.
+#
+# Still ignored: dependencies, generated databases, and anything else under extracted/.
+extracted/*
+!extracted/tradejournal/
 node_modules/
 *.db
 *.db-wal

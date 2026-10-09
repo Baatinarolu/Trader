@@ -1,0 +1,15 @@
+# Not needed at runtime, and uploading it costs build time and deploy size.
+scripts/
+docs/
+data/
+analysis/
+*.log
+*.md
+!README.md
+.env
+.env.local
+.vercel/
+# Dev-only dependencies are traced out of the bundle anyway, but keeping the
+# install lean matters more on a serverless build than anywhere else.
+playwright-report/
+test-results/

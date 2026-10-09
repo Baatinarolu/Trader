@@ -1,0 +1,35 @@
+{
+  "name": "tradejournal-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TradeJournal Pro \u2014 multi-asset trading journal, analytics, coach and trade assistant",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node scripts/seed-demo.js",
+    "reset": "node scripts/reset.js --yes",
+    "test": "node scripts/api-test.js",
+    "test:ui": "node scripts/smoke-test.js",
+    "test:all": "node scripts/now-test.js && node scripts/topdown-test.js && node scripts/chart-test.js && node scripts/api-test.js && node scripts/bots-test.js && node scripts/smoke-test.js",
+    "test:bots": "node scripts/bots-test.js",
+    "reset:ask": "node scripts/reset.js",
+    "test:topdown": "node scripts/topdown-test.js",
+    "test:chart": "node scripts/chart-test.js",
+    "test:browser": "node scripts/ui-browser-test.js",
+    "test:now": "node scripts/now-test.js",
+    "test:vercel": "node scripts/vercel-check.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "express": "^4.21.2",
+    "technicalindicators": "^3.1.0"
+  },
+  "devDependencies": {
+    "jsdom": "^27.0.0",
+    "playwright-core": "^1.49.0"
+  }
+}

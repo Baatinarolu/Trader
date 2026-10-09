@@ -1,0 +1,1335 @@
+# Backtest baselines — what changed, and why the older numbers must not be quoted
+
+`node analysis/harness/backtest.js --seeds 60 --bars 1500 --window 300`
+Engine: `src/bots/smc.js analyse()` + `src/bots/setup.js buildSetups()`, unmodified call paths.
+
+⚠ **Synthetic data.** These figures measure the internal consistency of the entry / stop / target
+logic. They are not real-market edge, and the cost model is ~1.57× optimistic (M27).
+
+---
+
+## ⚠ SUPERSEDED — the wall-clock era
+
+Everything recorded before this pass was run with the killzone clock read from `new Date()`, so
+**the numbers depended on the hour the command happened to be typed at.**
+
+| | n | win | exp | PF | A+ | A | B | C |
+|---|---|---|---|---|---|---|---|---|
+| old "baseline" | 349 | 20.3 % | −0.3201R | 0.46 | 52 | 236 | 36 | 25 |
+
+The headline finding built on that table — *"the grade ladder is inverted; A+ is the worst cut;
+the most reproducible finding the harness has produced"* — **was an artefact.** With the clock
+walking the bars, A+ became the *best* cut (−0.1848R vs A −0.1886R). The claim was not
+reproducible at all. Tracked as **M118**.
+
+**Proof that the clock was the cause** (40 seeds, 236 trades, identical overall expectancy in
+every run — only the letters move):
+
+| clock | sessions.quality | A+ | A | B | C |
+|---|---|---|---|---|---|
+| 08:30Z (London) | 0.85 | 40 · −0.4331 | 157 · −0.2122 | 21 · −0.6140 | 18 · −0.3034 |
+| 13:30Z (NY AM) | 1.00 | 40 · −0.4331 | 162 · −0.2365 | 16 · −0.4934 | 18 · −0.3034 |
+| 22:30Z (Sydney) | 0.30 | **none** | 40 · −0.4331 | 162 · −0.2365 | 34 · −0.3928 |
+| walking clock | varies | 12 · −0.1848 | 97 · −0.1886 | 104 · −0.4147 | 23 · −0.2328 |
+
+At 22:30Z the entire distribution shifts one letter down and A+ ceases to exist. Cause:
+`score = score * (0.82 + 0.18 * sessions.quality)` combined with
+`sessionState(date = new Date())` called with no argument. Identical candles averaged 30.57
+at 22:30Z vs 33.13 at 12:30Z.
+
+---
+
+## Baseline 1 — clock pinned, vetoes NOT yet added
+
+Same 349 trades, now reproducible. **This is the correct control for measuring Group A.**
+
+```
+n= 349  win= 20.3%  exp=-0.3201R  PF=0.46
+  A+  n=  14  win= 21.4%  exp=-0.3012R
+  A   n= 142  win= 22.5%  exp=-0.2889R
+  B   n= 156  win= 19.2%  exp=-0.3391R
+  C   n=  37  win= 16.2%  exp=-0.3670R
+declared 3.43R · target 54 · stop 199 · expired 33
+flat 1%: -$11172  maxDD $11492  sd $98.22   |  sized: -$7508  maxDD $7780  sd $81.22
+```
+
+Note the trade *set* is identical to the superseded run — the gate is `entry_status==='at-entry'`,
+which does not involve the grade. Only the letter assignment moved. That is exactly why the old
+inversion finding looked so stable while being worthless.
+
+## Baseline 2 — CURRENT. Group A vetoes applied (M7, M8, M35, M96)
+
+```
+n= 156  win= 22.4%  exp=-0.2845R  PF=0.54
+  A+  n=  22  win= 13.6%  exp=-0.5553R  PF=0.34
+  A   n= 123  win= 25.2%  exp=-0.2401R  PF=0.59
+  B   n=  11  win=  9.1%  exp=-0.2386R  PF=0.56
+  C   n=   0        <- the RR veto eliminated this grade entirely
+declared 3.73R · target 24 · stop 95 · expired 14
+flat 1%: -$4438  maxDD $4953  sd $111.17   |  sized: -$4307  maxDD $4822  sd $107.57
+```
+
+**What the vetoes did.** 193 of 349 trades (55 %) are now refused: sub-2R, outside a killzone,
+no sweep, or price still chasing. Derived from the two runs above — not measured directly:
+
+```
+kept     n=156  exp=-0.2845R
+removed  n=193  exp=-0.3489R   = (349*-0.3201 - 156*-0.2845) / 193
+```
+
+The refused trades were **0.0644R worse** than the ones kept. That is the right direction, but
+0.0356R of improvement at n=156 is **inside the noise** (~0.1R at this sample size) — **do not
+report the vetoes as having improved expectancy.** What is defensible is the selection: they
+remove the trades the course says to refuse, and the removed set is worse.
+
+**The M95 decision became nearly free.** Cost of keeping B and C tradeable:
+
+| | A+/A only | B/C only | penalty for keeping B and C |
+|---|---|---|---|
+| before vetoes | −0.2900R (n=156) | −0.3445R (n=193) | **0.0545R** |
+| after vetoes | −0.2879R (n=145) | −0.2386R (n=11) | **0.0035R** |
+
+Reason: low-probability ideas are now refused **on their merits** rather than by letter, so the
+letters that survive are close to equivalent. The user's decision to keep B and C signalled no
+longer costs a measurable amount of expectancy.
+
+**A+ is again the weakest cut** (−0.5553R at n=22). n=22 is far too small to conclude anything,
+and M118 is a standing warning about exactly this class of claim. Recorded, not acted on.
+The open items that would actually address it are **M8** (thresholds never derived) and **M70**
+(grade not validated against realised outcomes).
+
+---
+
+## Verification run alongside these numbers
+
+| suite | result |
+|---|---|
+| `scripts/api-test.js http://127.0.0.1:3000` | 121 passed, 0 failed |
+| `npm run test:now` | 36 passed, 0 failed |
+| `analysis/probe-batch0.js` | 10 passed, 0 failed |
+| `analysis/probe-m58-grade-sizing.js` | 20 passed, 0 failed |
+| `analysis/probe-m21-strongweak.js` | 9 passed, 0 failed |
+| `analysis/probe-groupa-vetoes.js` | 18 passed, 0 failed |
+
+Probes must be run from `extracted/tradejournal` — they resolve `./src/...` relative to cwd.
+
+---
+
+## Baseline 2 is unchanged by Group B (M23, M24, M119) — and that is the finding
+
+Re-run after the Ep 5 structure work: **n=156, win 22.4 %, −0.2845R, PF 0.54** — identical to
+Baseline 2 in every figure, including the per-grade splits.
+
+That is not a failed measurement. It is verified report-only scope:
+
+- `structure.trend` is derived from the swing labels (`hh + hl >= 3`, etc.), **not** from breaks,
+  so reclassifying CHoCH vs BOS cannot change it.
+- The only two consumers of `last_break.type` / `.mss` outside `smc.js` are display strings:
+  `setup.js:277` (the structure check's *detail* text — its pass condition is `trendAligned`) and
+  `momentum.js:261` (narrative).
+
+`analysis/probe-groupb-structure.js` test 4 asserts this by reading the source, so if CHoCH is
+ever wired into a gate the probe fails and the ledger's "report-only" claim must be revisited.
+
+What did change, measured over 40 series at 300 bars:
+
+| | before | after |
+|---|---|---|
+| CHoCH flagged `mss` | 14 / 14 (a synonym for CHoCH) | **2 / 14**, each naming the swept pool |
+| direction flips reported as reversals | 204 / 204 | **14 / 204** — 190 were pullbacks |
+| up-direction CHoCH | **0** (structurally impossible) | 8 (down: 6) |
+
+`STRONG_LOOKBACK` was measured, not chosen: CHoCH counts of 15 / 14 / 14 / 14 at lookback
+3 / 5 / 8 / 12. Flat, so 5 sits mid-range. Note `slice(-0) === slice(0)`, so a lookback of 0
+silently means "every swing in the window" rather than "none" — recorded in the source.
+
+---
+
+## M1 — A/B of the swing definition (`--swingmode local|bos`)
+
+`local` = the code's local-extremum tier (default, unchanged). `bos` = the course's "extreme that
+created the break of structure". Opt-in only; the default path is verified identical.
+
+Standalone measurement first (`analysis/probe-m1-swing-definition.js`, 40 series x 300 bars,
+through the project's own `marketStructure()`): keeps 46 % of the swings, swing range 3.5x wider,
+**trend label changes on 63 % of series**. Material — a strategy change, not a refinement.
+
+Then backtested at four sample sizes:
+
+| seeds | n (local) | exp (local) | A+ (local) | n (bos) | exp (bos) | **A+ (bos)** |
+|---|---|---|---|---|---|---|
+| 20 | 57 | −0.2587R | +0.3083 (n=7) | 58 | −0.1627R | **+2.1154 (n=6)** |
+| 30 | 81 | −0.1685R | −0.2475 (n=13) | 86 | −0.1796R | **+1.1482 (n=11)** |
+| 45 | 123 | −0.2405R | −0.4245 (n=17) | 125 | −0.2425R | **+0.6971 (n=17)** |
+| 60 | 156 | −0.2845R | −0.5553 (n=22) | 155 | −0.2717R | **+0.2550 (n=25)** |
+
+Read honestly:
+
+- **Overall expectancy barely moves** (−0.2845 → −0.2717 at 60 seeds). The swing definition is not
+  an edge; it re-orders which trades receive the top grade.
+- **The A+ sign flips and stays flipped.** With `local`, A+ is the worst cut at every size from 30
+  seeds up. With `bos`, A+ is positive at all four sizes, shrinking as n grows.
+- At n=25, +0.2550R with sd ≈ 1.3R is roughly one standard error from zero. **That is a hypothesis,
+  not evidence of an edge** — and after M118 this project does not get to promote a grade cut on
+  one sample size.
+
+It does reframe the retracted M118 finding: "A+ is the worst cut" may have been a real symptom
+whose cause was the swing definition, not the clock. Both were present; only the clock was
+disproved.
+
+M2 fell out of the same pass: `structure.swing_range` is now emitted, and **price sits inside it
+on only 6 of 19 series** — which is the evidence that M22 (major tier defines the range, minor
+tier read inside it) is not cosmetic.
+
+---
+
+## M22 — A/B of the nested swing range (`--nested`)
+
+`analysis/probe-m22-nested-range.js` measured first, through the project's own `marketStructure()`:
+**56 % of minor swings (887/1587) sit outside the range the major tier defines**; structure events
+halve (17.4 → 8.4 per series); the internal trend label changes on 20 % of series.
+
+The range is also unstable — its width runs **0.18 % to 21 % of price** across the same 40 series,
+a 100× spread, because it is just the most recent major high and low. That is the same instability
+M2 exposed from the other side.
+
+| seeds | n | exp | **A+** |
+|---|---|---|---|
+| 20 | 64 | −0.1584R | +1.3621 (n=7) |
+| 30 | 95 | −0.1358R | +0.2256 (n=14) |
+| 45 | 141 | −0.2244R | +0.2049 (n=16) |
+| 60 | 176 | −0.2604R | +0.1098 (n=21) |
+
+Against the default (parallel tiers): A+ −0.5553R at n=22.
+
+**Standard errors, using the harness's own per-trade sd of ≈1.11R (from the M58 block):**
+SE at n≈21 is ±0.24R. So
+
+- default A+ −0.5553R is **≈2.3 SE below zero — reliably negative**
+- nested A+ +0.1098R is **within 0.5 SE of zero — indistinguishable from zero**
+
+The defensible claim is therefore *not* "nesting makes A+ profitable" but **"nesting removes a
+reliably bad A+ cut."** Stated that way it survives the noise; stated the other way it would not.
+
+## M1 + M22 together — the better hypothesis
+
+Two independent corrections to the structure *inputs* — the swing definition (M1) and the range the
+minor tier is read inside (M22) — **both remove the same A+ anomaly**:
+
+| | A+ at 60 seeds |
+|---|---|
+| default | −0.5553R (n=22), ≈2.3 SE below zero |
+| `--swingmode bos` (M1) | +0.2550R (n=25) |
+| `--nested` (M22) | +0.1098R (n=21) |
+
+That points at the grade ladder being **fed bad structure**, rather than the grading being wrong.
+It is a better hypothesis than the one M118 retracted — and unlike that one, it is consistent
+across four sample sizes and two independent mechanisms. It is still synthetic data, and both
+magnitudes are within about one standard error, so it remains a hypothesis.
+
+Both ship **opt-in and off by default**. The default 60-seed backtest is unchanged at
+n=156 / −0.2845R, which is the proof they are inert until switched on.
+
+---
+
+## Baseline 3 — CURRENT. M29/M30/M31 applied (Ep 7–8 zone work)
+
+```
+n= 194  win= 23.2%  exp=-0.2968R  PF=0.52
+  A+  n=  27  win= 14.8%  exp=-0.5248R  PF=0.34
+  A   n= 150  win= 26.0%  exp=-0.2460R  PF=0.58
+  B   n=  17  win= 11.8%  exp=-0.3827R  PF=0.35
+declared 4.09R
+flat 1%: -$5432  maxDD $6097  sd $104.07
+```
+
+Baseline 2 was n=156 / −0.2845R. **The trade set changed** because M30 and M31 re-rank zone
+strength, and the strongest zone becomes the point of interest. The expectancy shift
+(−0.2845 → −0.2968R) is inside noise; the change of trade set is real, so comparisons from here
+must use these figures.
+
+**M29 is verified behaviour-neutral** — Baseline 2 reproduced exactly at n=156 / −0.2845R before
+M30/M31 landed. That is the proof that `mitigated` drives no decision: `setup.js:231` selects zones
+on `!z.breached`, and the strength formula reads `tests` and `breached`, never `mitigated`. Only 6
+of 321 order blocks are reclassified, and only in the reported flag.
+
+## M32 — measured, and why it is opt-in
+
+`--ob-fvg` requires an imbalance in the leg that created the block (Ep 10: "no imbalance, no fair
+value gap"). **43 % of order blocks (137/321) fail it.**
+
+| | n | exp | PF |
+|---|---|---|---|
+| default | 194 | −0.2968R | 0.52 |
+| `--ob-fvg` | **19** | −0.1959R | 0.73 |
+
+An 88 % collapse in signal, at n=19 — far too few to validate anything. Two reasons it stays off:
+
+1. **The user's M16 decision explicitly sanctions "entering on OB mitigation when no FVG exists."**
+   Making this the default would contradict a binding decision.
+2. **The codebase has no separate supply/demand zone construct** — only `kind: 'OB'` and
+   `kind: 'FVG'` — though Ep 10 distinguishes them exactly ("for supply and demand zone it doesn't
+   matter whether there's imbalance or not... but for order block... it needs an imbalance"). One
+   object serves both roles and is the only point-of-interest supply, so the order-block rule
+   collapses the POI pool. **The faithful fix is to split the two concepts, not to flip the flag.**
+
+## Probe defect found and fixed while verifying this
+
+`probe-m21-strongweak` failed with "0 of 0 candidates". **It was the probe, not the code:** the run
+happened at 09:08 UTC, eight minutes after the London killzone closed, so `in_killzone === false`
+and the Group A veto refused everything. That is the M118 defect — a wall-clock dependency — inside
+my own test suite. Three probes called `analyse()` without pinning `now` (`probe-m21`,
+`probe-m58`, `check-discrimination`); all three now drive the clock from the candle. They pass at
+any hour, which they did not before.
+
+---
+
+## Baseline 4 — CURRENT. M42 applied (Ep 13 swept-liquidity term)
+
+```
+n= 190  win= 22.6%  exp=-0.2891R  PF=0.53
+  A+  n=  27  win= 14.8%  exp=-0.4590R  PF=0.37
+  A   n= 148  win= 25.0%  exp=-0.2569R  PF=0.57
+  B   n=  15  win= 13.3%  exp=-0.3004R  PF=0.44
+flat 1%: -$5268  maxDD $5892  sd $106.85
+```
+
+Baseline 3 was n=194 / −0.2968R / A+ −0.5248R. Both shifts are inside noise; M42 ships because it
+is what Ep 13 specifies, not because it measured better.
+
+## M44 — a negative result, recorded as one (`--all-swings`)
+
+Pool starvation was real and is now quantified: **6.4 of 14.0 minor swings per series became pools
+— 46 % of swings could ever be seen.** With `allSwings`, pools rise **235 → 356 (+51 %)**.
+
+| | n | exp | A+ |
+|---|---|---|---|
+| default | 194 | −0.2968R | −0.5248R (n=27) |
+| `--all-swings` | 191 | −0.3054R | **−0.7401R (n=25)** |
+
+A 51 % larger pool supply changes almost nothing and slightly hurts. **The rule is faithful to the
+course ("behind any high or low that price has not yet traded") and the code now offers it, but the
+evidence argues against turning it on.** Recorded rather than shipped as a default.
+
+**The trap worth keeping:** expanding the candidate set *without* raising `maxPools` makes new
+pools **displace** old ones. At cap 16 the pool count rose 20 % while **sweep events fell 82 → 76**,
+because recently-swept levels the trigger needs were pushed out by stronger distant ones. Sweeps
+stop shrinking at cap 24 and saturate by 32 (356 pools at 32 vs 357 at 48), so the cap is raised
+only when `allSwings` is on.
+
+**And what the fix deliberately avoids:** the ledger suggested filtering on `!swept` at
+construction. That would be wrong — `swept` is patched onto these objects later and `findSweeps()`
+reads the same list to find the trigger, so filtering there deletes the events the entry model
+depends on.
+
+---
+
+## M47 — flip zones as a point of interest (`--breakers`). The strongest result measured.
+
+Wiring them in was not enough: they were added and then never won, losing the POI ranking **0 of 6**
+series where both were eligible. Instrumenting the scores found the cause.
+
+**The bug.** The strength formula penalises a breached zone by **−0.5**, and `findBreakers` reads
+that *already-penalised* strength and then takes a further **−0.2**. The breach is the *precondition*
+for a flip zone existing — "a supply flip zone is formed when a demand zone fails" — so it was
+punished for the thing that created it. Retested breakers averaged **0.355** strength against
+**0.898** for un-breached order blocks. Restoring the pre-breach strength gives **0.855**.
+
+**Second asymmetry.** `fresh` keyed to `bars_ago <= 30` gave **0%** of breakers the +0.35 bonus
+against **90%** of order blocks. His three criteria are failed reaction, break of structure, close
+beyond the reaction point — none is recency. Re-keyed to the retest.
+
+**Two more found by reading every place the zone is re-described**, both of which would have shipped
+silently: `setup.js:276` rebuilds the zone as a NEW object with `kind:'order_block'` hardcoded and
+`entry: body_mid` (which `findBreakers` does not copy) — so a flip-zone POI would have been
+advertised as an order block **with an undefined entry price**. And `stop_reason`'s two-way ternary
+would have called a flip zone an "FVG".
+
+| seeds | default n / exp / win / PF | `--breakers` n / exp / win / PF |
+|---|---|---|
+| 20 | 66 / −0.3149R / 21.2% / 0.50 | 102 / **−0.1739R** / 27.5% / 0.69 |
+| 45 | 156 / −0.2850R / 22.4% / 0.54 | 220 / **−0.1580R** / 27.7% / 0.72 |
+| 60 | 190 / −0.2891R / 22.6% / 0.53 | 276 / **−0.1847R** / 27.2% / 0.67 |
+
+A+ improves at all three: +0.3927 → +0.8003R, −0.3650 → **+0.1405R**, −0.4590 → **−0.0811R**.
+
+**Every metric improves at every sample size.** Expectancy is still negative overall, so this is not
+a claim of edge — but it is the first change measured here that improves trade count, win rate,
+profit factor and expectancy together. Left opt-in pending the user's decision, because it raises
+the trade count ~45% by supplying zones to setups the Group A veto would otherwise refuse.
+
+**Method note:** my first measurement reported "0 flip zones selected" after the fix and I nearly
+concluded the plumbing was broken. It was not — I was reading `candidate.zone`, which does not
+exist; candidates carry `levels` and the kind is at `levels.entry_kind`. A +100 score-boost
+diagnostic confirmed the plumbing was fine. The bug was in the probe, not the code.
+
+---
+
+## Re-measuring M1 / M22 / M32 against Baseline 4 — the old numbers were stale
+
+The A+ figures previously recorded for M1 (+0.2550R) and M22 (+0.1098R) came from the Baseline 2
+era, before M29/M30/M31/M42 changed zone ranking. Re-measured at 60 seeds on today's code:
+
+| config | n | win | exp | PF | A+ n / exp |
+|---|---|---|---|---|---|
+| default | 190 | 22.6% | −0.2891R | 0.53 | 27 / −0.4590R |
+| `--swingmode bos` (M1) | 185 | 25.9% | −0.2188R | 0.65 | 25 / **+0.2874R** |
+| `--nested` (M22) | 205 | 22.9% | −0.1824R | 0.71 | 24 / **+0.0397R** |
+| `--ob-fvg` (M32) | **18** | 22.2% | −0.1558R | 0.78 | 3 / +1.6782R |
+
+Consistency check at 45 seeds — both hold, and both turn A+ positive there too:
+
+| config @45 | n | win | exp | PF | A+ n / exp |
+|---|---|---|---|---|---|
+| default | 156 | 22.4% | −0.2850R | 0.54 | 23 / −0.3650R |
+| `--swingmode bos` | 150 | 26.0% | −0.2068R | 0.67 | 17 / **+0.7447R** |
+| `--nested` | 169 | 23.1% | −0.1438R | 0.77 | 19 / **+0.1013R** |
+
+**Combined, at 60 seeds — the best configuration measured anywhere in this audit:**
+
+```
+--swingmode bos --nested
+n= 188  win= 26.1%  exp=-0.0935R  PF=0.85   A+ n= 19  win= 21.1%  exp=+0.1346R  PF=1.18
+```
+
+Expectancy moves from −0.2891R to **−0.0935R** and profit factor from 0.53 to **0.85**, i.e. to
+within a whisker of break-even, while A+ turns positive. **Still not positive overall**, and still
+on synthetic data, so this is not a claim of edge — but the direction is consistent across two
+sample sizes and every metric, and the two corrections are complementary rather than redundant.
+
+**M32 remains unusable as a default:** n=18. The A+ figure of +1.6782R rests on **three trades**
+and means nothing.
+
+---
+
+## Baseline 5 — CURRENT. M1 + M22 adopted as engine defaults (user decision)
+
+```
+n= 188  win= 26.1%  exp=-0.0935R  PF=0.85
+  A+  n=  19  win= 21.1%  exp=+0.1346R  PF=1.18
+  A   n= 162  win= 25.9%  exp=-0.1328R  PF=0.78
+  B   n=   7  win= 42.9%  exp=+0.1975R  PF=1.46
+sized by grade: -$1826  maxDD $2620  sd $200.75
+```
+
+`analyse()` now defaults to `swingMode: 'bos'` and `nested: true`. The harness defaults flipped to
+match: `--swingmode local` and `--no-nested` restore the previous behaviour.
+
+Baseline 4 was n=190 / −0.2891R / PF 0.53 / A+ −0.4590R. This is the largest single improvement
+measured in this audit: expectancy −0.2891R → **−0.0935R**, profit factor 0.53 → **0.85**, win rate
+22.6% → **26.1%**, and A+ from reliably negative to **positive**. **Still not positive overall, and
+still on synthetic data** — recorded as the best measured configuration, not as evidence of edge.
+
+**M32 kept opt-in** by the same decision round; M47's bug fix shipped unconditionally with its
+wiring left opt-in (see the M47 section above).
+
+---
+
+## Baseline 6 — CURRENT. M51 single target (default) + the M21 ordering fix
+
+```
+60 seeds:  n= 122  win= 18.9%  exp=-0.0011R  PF=1.00   A+ n= 15  exp=+0.1355R  PF=1.18
+120 seeds: n= 256  win= 19.1%  exp=-0.1716R  PF=0.76   A+ n= 35  exp=-0.0684R  PF=0.90
+```
+
+Against `--ladder` (the old three-rung behaviour) at the same sizes:
+
+| seeds | single target | ladder |
+|---|---|---|
+| 60 | n=122, −0.0011R, PF 1.00, A+ +0.1355R | n=185, −0.0744R, PF 0.88, A+ −0.1562R |
+| 120 | n=256, −0.1716R, PF 0.76, A+ −0.0684R | n=379, −0.2157R, PF 0.67, A+ −0.2817R |
+
+**The single target wins at every sample size measured** (also 20/45/90 before the M21 fix). It is
+**not** profitable — break-even at 60 seeds, negative at 120.
+
+**A claim made mid-work and withdrawn.** The single target first appeared to give *positive*
+expectancy (+0.0828R at 60 seeds). That was measured **before** the M21 ordering fix landed. With
+the fix, the same configuration is break-even at best. Recorded so the retraction is visible.
+
+## The M21 ordering bug
+
+`targetPools()` deliberately pushes the weak structural extreme first — "target weak structure".
+`setup.js` then ran `targets.sort((a,b) => a.rr - b.rr)`, silently undoing it, so the weak extreme
+only led when it happened to be nearest: **77 of 1174** eligible candidates. After restoring the
+priority: **1170 of 1170**.
+
+It went unnoticed because the three-rung ladder could surface the weak extreme in *any* rung and the
+probe accepted `targets.some(kind==='weak_structure')`. Collapsing to one target removed the hiding
+place.
+
+Two probe defects of my own: the original assertion (`withTarget > 0` over *tradeable* candidates)
+conflated "the wiring works" with a sampling coincidence; my first replacement compared against the
+**candle close** instead of the **entry price** and reported **841 false violations**.
+
+## The §8.2 re-verification sweep — Baseline 6 is unchanged, and one APPLIED row was half-applied
+
+Run this pass with `analysis/probe-reverify-applied.js`, written because §7 of the handoff
+records M21 sitting marked APPLIED while silently dead. The question this sweep asks of every
+one of the 36 APPLIED rows is not "is the value computed" but **"is the value CONSUMED, and does
+it SURVIVE TO THE OUTPUT"**.
+
+**Result: 35 of the 36 survive. M9 did not.** 55 assertions, 0 failures, identical at three
+sample sizes (8 seeds/900 bars/stride 5, 25/1500/3, 40/1200/4). At 25 seeds the sample is
+11 475 analyses · 22 950 candidates · 148 990 order blocks · 22 357 breakers · 73 694 break
+events — large enough that the discrimination checks below are not reading noise.
+
+### Two probe defects of my own, recorded because the ledger's rule is to record them
+
+1. **A false failure on M21.** The first assertion was "trending ⇒ both strong and weak
+   labelled", which failed 92 of 1 936 trending candidates. `strongWeak()` has a sanctioned
+   *third* branch: when the trend label contradicts the swing geometry it emits
+   `strong/weak = null` **with `stale: true`** and a note attributing the contradiction to M50
+   (no bias hysteresis) rather than inventing a target on the wrong side of the entry. Measured
+   directly: 1 844 labelled + 92 stale + **0 unexplained nulls**, and **0** labelled candidates
+   with weak on the wrong side of strong. **The probe was wrong, not the code**, so the check was
+   rewritten to the real guarantee and the false finding was NOT recorded. §6: check the input
+   before reporting the output.
+2. **A static check that tested implementation shape, not the guarantee.** The M9 ceiling check
+   was a regex for an inline `Math.min(1, …risk_pct…)` in `routes/api.js`. It reported a failure
+   the moment the clamp was correctly factored into the shared `instruments.js` helper — i.e. it
+   would have kept failing *because the fix was good*. Rewritten to test `clampRiskPct()`'s
+   semantics directly plus the behavioural question that matters: does `setup.js` actually read
+   `ctx.maxRiskPct`?
+
+Also worth recording: counting occurrences of each new field name across `src/` flags 16 fields
+that appear exactly once. **Most are not defects** — they are the *report* of a local that IS
+consumed. `depth_in_range` and `swept_liquidity` are emitted fields, while `depth * 0.15` and
+`sweptLiquidity ? 0.2 : 0` sit in the strength formula (verified by consumption, not by reading:
+mean strength 0.65 at depth ≤ 0.25 vs 0.91 at depth ≥ 0.75; 0.94 swept vs 0.72 unswept). The
+same is true of M58's `grade_risk_multiplier`, whose consumed local is `effectiveRiskPct`. So
+occurrence-counting is a *lead generator*, never a verdict.
+
+### M9 — what was actually wrong, measured live against the running server
+
+The ledger's remedy cell says "Clamp to 1% (or 0.5%) **at the API boundary**". The status cell
+claimed "0.5 % default, 1 % hard ceiling" but named only `correction.js:400` and the `db.js`
+schema default — both genuinely done, and neither is the boundary. Measured before the fix:
+
+| request | before | after |
+|---|---|---|
+| `POST /accounts`, risk omitted | stored **1 %** | stored **0.5 %** |
+| `POST /accounts`, `risk_per_trade_pct: 50` | stored **50**, no ceiling | **0.5** locked · **1** with `risk_unlocked` |
+| `POST /tools/size`, `risk_pct: 10`, $10k | **1.99 lots, $995 = 9.95 % of equity** | **0.19 lots, $95 = 0.95 %** |
+| `POST /tools/size`, `risk_pct: 0.75`, $100k ES | size 1, $612.50 | size 1, $612.50 (**unchanged**) |
+| `PUT /accounts/:id` `{prop_preset}` on a 0.75 % row | — | risk **stays 0.75** (no silent drift) |
+
+`bots/index.js:120`/`:300` read the stored row raw, so a 50 % account reached `buildSetups()` on
+the **main signal path**. `|| 0.5` is a fallback for null/0, not a ceiling. The finding's last
+clause was also still open: `maxRiskPct` was one hit in `setup.js` — the ctx docstring — so the
+derived ceiling was documented as an input and never read.
+
+### Why Baseline 6 does not move — and what that means for attribution
+
+`--seeds 60 --bars 1500 --window 300` reproduces Baseline 6 **byte-for-byte**; the only differing
+line in the whole output is the wall clock (75 101 ms → 69 773 ms):
+
+```
+  n= 122  win= 18.9%  exp=-0.0011R  PF=1.00
+   grade A+  n=  15  win= 20.0%  exp=+0.1355R  PF=1.18
+   flat  1% on every trade   total $   -14   maxDD $ 1951   sd/trade $250.43
+   sized by grade            total $   -83   maxDD $ 1870   sd/trade $248.78
+```
+
+That is the intended result, not a null. `ctx.maxRiskPct` is honoured **only when a caller
+supplies it**, and the harness supplies none, so the engine's default path is bit-identical and
+the change stays attributable. Asserted explicitly by the probe: `riskPct=5` with `maxRiskPct=1`
+→ `risk_pct_configured=1`; `riskPct=5` with no `maxRiskPct` → `5`, unchanged.
+
+**Read this honestly: an R-multiple backtest structurally cannot measure M9.** Position size
+scales R out of every figure — the guardrail changes *dollars at risk per trade*, not entry
+selection, so no expectancy or PF number here can move. What the fix changes is that a request
+saying `risk_pct: 10` used to put 9.95 % of the account at risk on one trade and now cannot
+exceed 1 %. The evidence for M9 is the table above and the 55/0 sweep, not the baseline.
+
+### Verification after the change
+
+`probe-reverify-applied` 55/0 (three sample sizes) · `api-test` 121/0 · `test:now` 36/0 ·
+`probe-batch0` 10/10 · `probe-m58-grade-sizing` 20/20 · `probe-m21-strongweak` 10/10 ·
+`probe-groupa-vetoes` 18/18 · `probe-groupb-structure` 10/10 · `probe-m36-scale-in` 17/17 ·
+`PRAGMA table_info(accounts)` returns `risk_unlocked` PRESENT after `migrate()` ran against a
+**pre-existing** database file. Cumulative patch: **11 files, +955 / −103** (was +788 / −93),
+regenerated and verified to apply cleanly to the pristine archive and reproduce the working tree
+byte-for-byte.
+
+## M120 — the harness never passed `ctx.bias`, so every grade cut in this file was mis-graded
+
+Found by the §8.2 sweep. `setup.js:199` reads `const bias = Number(ctx.bias || 0)` and the
+12-weight check at `:313` is `bias !== 0 && Math.sign(bias) === dir`. `backtest.js` passed no
+`bias`, so it was always 0 and that check **could never pass** — `check-discrimination.js` had
+been reporting `bias` failing **233 of 233** candidates all along. The server does supply it
+(`bots/index.js:155`, `bias: momentum.bias`). The harness README's claim that it "calls the same
+two functions the server calls" was true of the functions and **not of the inputs**.
+
+Measured with the new opt-in `--bias htf` flag, which derives the bias by the engine's own
+provisional rule (`momentum.js:135`, `structDir` from the HTF trend) rather than inventing one.
+**Off by default: the 60-seed default run still reproduces Baseline 6 byte-for-byte**, verified
+by diff, and the flag prints only when on.
+
+### 60 seeds · `--seeds 60 --bars 1500 --window 300`
+
+| | bias off (all of Baselines 1–6) | `--bias htf` (what the server supplies) |
+|---|---|---|
+| all signals | n=122, win 18.9%, −0.0011R, PF 1.00 | **identical** |
+| grade A+ | n=15, +0.1355R, PF 1.18 | **n=38, +0.6158R, PF 2.01** |
+| grade A | n=103, −0.0344R, PF 0.95 | n=81, **−0.3199R**, PF 0.56 |
+| grade B | n=4, +0.3437R | n=3, +0.7917R |
+| A+ and A only | n=118, −0.0128R | n=119, −0.0211R |
+| sized by grade | $−83, maxDD $1870 | **$−133**, maxDD $1920 |
+
+### 120 seeds · `--seeds 120 --bars 1500 --window 300`
+
+| | bias off | `--bias htf` |
+|---|---|---|
+| all signals | n=256, win 19.1%, −0.1716R, PF 0.76 | **identical** |
+| grade A+ | n=35, **−0.0684R**, PF 0.90 | **n=79, +0.2364R, PF 1.36** — a sign flip |
+| grade A | n=207, −0.1765R | n=167, −0.3689R |
+| A+ and A only | n=242, −0.1609R | n=246, −0.1745R |
+| sized by grade | $−4143, maxDD $5520 | $−4343, maxDD $5620 |
+
+### What this does and does not change
+
+**Does not:** the trade population is bit-identical in both configurations, because `bias` is a
+*scoring* input and not a veto, and no candidate crossed into `no-trade`. So **no entry decision
+in any recorded baseline was distorted**, and the overall expectancy figures stand exactly as
+published. `A+ and A only` stays negative at both sample sizes. **Nothing here is profitable**,
+and the `WHATS-INSIDE.md` caveat is unchanged.
+
+**Does:** every *grade-conditional* number quoted in this file and in the ledger — Baseline 6's
+`A+ n=15 +0.1355R`, the 120-seed `A+ n=35 −0.0684R`, M95's "the penalty for keeping B and C
+tradeable fell from 0.0545R to 0.0035R", and M58's grade-keyed dollars — was computed with a
+12-weight check permanently failed. Those figures are superseded by the tables above.
+
+**And the corrected A+ cell is still not a usable measurement.** n=38 at 60 seeds and n=79 at
+120 are both under this project's own ~100-trade noise threshold (§6: "Never report a grade cut
+from a small sample"). The honest statement is that the A+ cut is unmeasured at a usable sample
+size in *both* configurations — not that supplying the bias made A+ profitable. The sign flip is
+a reason to distrust the earlier figure, not a reason to trust the new one.
+
+**Open decision, deliberately not taken:** making `--bias htf` the default would renumber every
+baseline and break comparability with Baselines 1–6, so the flag ships opt-in and the choice is
+the user's. A faithful CRT-confirmed bias needs three real timeframe series
+(`Momentum.alignment`), which synthetic data cannot supply — `htf` is the honest ceiling of what
+this harness can measure.
+
+────────────────────────────────────────────────────────────────────────────────
+M121 — the candle-provider path (src/candles.js). User-reported, measured offline.
+────────────────────────────────────────────────────────────────────────────────
+
+Not a backtest measurement. This row changes how bars are OBTAINED, not how they are
+scored, so it has no expectancy figure to report. What follows is the attribution that
+it has none, plus the negative control that the fix is real.
+
+### Why no baseline moves
+
+`analysis/harness/backtest.js` generates candles from `analysis/harness/synth.js` and
+never calls `src/candles.js` at all. So M121 cannot change a single trade decision, and
+the recorded baselines must reproduce exactly. They do:
+
+```
+node analysis/harness/backtest.js --seeds 60 --bars 1500 --window 300
+
+  seeds=60 bars=1500 window=300 warmup=120 maxBars=20 fillWindow=12 cooldown=12
+  gate=entry_status==='at-entry'  ·  122 trades  ·  75101ms   (recorded Baseline 6)
+  gate=entry_status==='at-entry'  ·  122 trades  ·  74273ms   (after M121)
+
+  n= 122  win= 18.9%  exp=-0.0011R  PF=1.00
+```
+
+Byte-identical apart from the wall clock. Verified by
+`diff <(sed 's/[0-9]*ms/XXms/' before) <(sed 's/[0-9]*ms/XXms/' after)` → no output.
+
+An earlier run of this same comparison looked like a large regression
+(n=122 → n=64, exp −0.0011R → +0.0132R, A+ PF 1.18 → 1.99). It was not. The command had
+been invoked as `--seeds 60` alone, which takes the harness default `bars=900` instead of
+the recorded `bars=1500`. The header line names its own parameters for exactly this
+reason, and reading it caught the mistake before it was written down as a result.
+
+### Regression surface, unchanged
+
+| check | before M121 | after M121 |
+|---|---|---|
+| `scripts/api-test.js` | 121 / 0 | **121 / 0** |
+| `npm run test:now` | 36 / 0 | **36 / 0** |
+| 21 pre-existing analysis scripts | all exit 0 | **all exit 0** |
+| `probe-reverify-applied.js` | 55 / 0 | **55 / 0** |
+| `probe-engine.js` | 51 / 0 | **51 / 0** |
+| `method-check.js` | 23 / 0 | **23 / 0** |
+
+Both api-test runs needed a server restart first — `src/` changed, and a running process
+holds the old module in memory.
+
+### Negative control: the probe must fail on the broken code
+
+`analysis/probe-candles-yahoo.js` stubs `global.fetch`. Run against a pristine copy of
+the same file (`TJ_ROOT=/tmp/negctl/tradejournal`), it must fail — otherwise it proves
+nothing (§6: a probe that reports zero on both arms is a broken probe, not a null result).
+
+| | patched tree | pristine tree |
+|---|---|---|
+| passed | **39** | 16 |
+| failed | **0** | **13** |
+| exit code | 0 | 1 |
+
+The 13 pristine failures, one per claimed defect:
+
+```
+FAIL  crypto 4h  returns genuinely 4h bars   median 1h vs expected 4h · bars 200
+FAIL  crypto 3m  returns genuinely 3m bars   median 1h vs expected 3m · bars 200
+FAIL  a wrong-interval answer is refused     ACCEPTED it — median 1h
+FAIL  the refusal names both spacings
+FAIL  a 401 surfaces Yahoo's own reason      No candles ... (Yahoo: Yahoo EURUSD=X: HTTP 401)
+FAIL  a 401 names BOTH hosts
+FAIL  a 429 is labelled as rate limiting     No candles ... (Yahoo: Yahoo EURUSD=X: HTTP 429)
+FAIL  a 429 is retried with backoff          2 Yahoo calls   (patched: 6)
+FAIL  a 200-with-chart.error is surfaced     No candles ... (Yahoo: Yahoo ZZZZZ: no result)
+FAIL  an all-null response says how many     No candles ... (Yahoo: Yahoo EURUSD=X: no bars)
+FAIL  not the Mozilla/5.0 (compatible;) form Mozilla/5.0 (compatible; TradeJournalPro/2.0)
+FAIL  is a browser UA                        Mozilla/5.0 (compatible; TradeJournalPro/2.0)
+FAIL  the URL carries the tighter range      ?range=60d&interval=15m   (patched: ?range=1mo)
+```
+
+Three of the 39 are unit tests of helpers M121 added (`UA`, `rangeFor`,
+`yahooErrorText`); they are guarded with an export check and skip on a pristine tree,
+which is why the pristine arm totals 29 assertions rather than 39.
+
+### What the same probe CANNOT show
+
+Nothing here contacted Yahoo. This sandbox resolves DNS and completes TCP to
+`query1/query2.finance.yahoo.com` and then resets the TLS handshake at the SNI layer —
+the documented six-host allowlist (ANALYSIS.md §3), not a blanket no-network condition
+and not a defect in the code. A live call here throws `ECONNRESET`, which is not an HTTP
+status, so no conclusion about 401/403/429 behaviour could ever be drawn from it.
+
+The server log captured the real user-facing symptom before the fix:
+
+```
+BOT API error on GET /api/bots/analyse?symbol=XAUUSD&tf=15m&... :
+  No candles for XAUUSD 4h (aggregate: No candles for XAUUSD 1h (Yahoo: Yahoo GC=F: fetch failed))
+BOT API error on GET /api/bots/chart?symbol=XAUUSD&tf=15m&... :
+  No candles for XAUUSD 15m (Yahoo: Yahoo GC=F: fetch failed)
+```
+
+and after it, the same call in this sandbox:
+
+```
+No candles for XAUUSD 15m (Yahoo: Yahoo GC=F [15m/1mo]: query2: fetch failed | query1: fetch failed)
+```
+
+Still a failure here — it has to be, the network is blocked — but now naming the ticker,
+the interval, the range actually requested, and both hosts rather than only the last.
+
+### Checked and cleared, recorded so it is not re-investigated
+
+- **Ticker encoding is correct.** `encodeURIComponent` yields `GC%3DF`, `%5EDJI`,
+  `%5EGSPC`, `EURUSD%3DX`, `BTC-USDT`; all parse as legal WHATWG URLs. No mangling bug.
+- **The crumb-free design is correct and must not be "fixed".** The v8 chart endpoint
+  needs no cookie and no crumb; sending one there is a documented cause of persistent 429
+  price outages. `401 Invalid Crumb` belongs to `quoteSummary`/v7 quote, a different path.
+- **No symbol-level fallback from `GC=F` to spot `XAUUSD=X`, deliberately.**
+  `market.js`'s `PROXY_NOTE` documents COMEX futures as the intended proxy for XAUUSD.
+  Substituting spot mid-series would silently change the instrument the course method is
+  applied to and mix two price levels in one candle array — a correctness hazard larger
+  than the outage it would paper over.
+
+────────────────────────────────────────────────────────────────────────────────
+M52 — mid-range risk reduction. A/B via `--range-sized` (opt-in; default arm
+still reproduces Baseline 6 byte-for-byte).
+────────────────────────────────────────────────────────────────────────────────
+
+Ep 15 mistake #3: *"If it's mid-range, if it's consolidating, if it's sideways…
+reduce your risk, use like a smaller position size."* The detection already
+existed (`inGoodHalf`, weight 10); the SIZE response did not. `risk_pct` is now
+`configured × grade × range`.
+
+### The measurement gap found before the measurement
+
+`backtest.js:191` captured only `grade_risk_multiplier`. Shipping M52 therefore
+left Baseline 6 **byte-identical** — which looks like "M52 does nothing" and is
+actually "the harness never looked at the thing M52 changed". Same class as M120.
+Caught by reading the harness's own header line and then the sizing code, not by
+believing the diff. `--range-sized` adds the arm; it uses the multiplier the
+engine EMITTED rather than recomputing the rule in the harness, which would only
+test the harness's own copy of it.
+
+### Unchanged by construction
+
+R is normalised by risk, so a sizing change cannot move an R-multiple. Trade
+population is identical too — sizing does not decide entries:
+
+```
+  60 seeds   n= 122  win= 18.9%  exp=-0.0011R  PF=1.00     (unchanged)
+ 120 seeds   n= 256  win= 19.1%  exp=-0.1716R  PF=0.76     (unchanged)
+```
+
+### Dollars ($10k account, 1% configured risk)
+
+| | grade-only (M58) | grade × range (M52) | delta |
+|---|---|---|---|
+| **60 seeds** total | $−83 | **$−218** | −$135 |
+| maxDD | $1870 | **$2070** | +$200 |
+| sd/trade | $248.78 | **$234.23** | **−$14.55** |
+| trades cut | — | 36/122 | mean mult 0.8867 |
+| **120 seeds** total | $−4143 | **$−4349** | −$206 |
+| maxDD | $5520 | **$5707** | +$188 |
+| sd/trade | $200.88 | **$183.19** | **−$17.70** |
+| trades cut | — | 79/256 | mean mult 0.8719 |
+
+### Reading it correctly — this is a negative result, and it is not evidence against the rule
+
+The harness prints the exact decomposition, `UNIT × Σ gradeMult × (rangeMult−1) × r`
+over the cut trades, and it equals the observed delta to the dollar (−$135, −$206).
+The NAIVE reading — aggregate weighted R × mean cut — predicts **+$27** and **+$102**,
+the **opposite sign**:
+
+```
+  60 seeds:  naive +$27    exact $-135
+ 120 seeds:  naive +$102   exact $-206
+```
+
+They differ because every trade is cut by a different factor, so a heavily-cut trade
+carrying a large +r dominates the exact sum while the aggregate throws that away.
+An earlier version of this diagnostic inferred "saved money" from the subset's
+negative weighted R while the exact sum said otherwise; corrected before publishing.
+
+Three further reasons the dollar sign here means very little:
+
+1. **Sample size.** 36 and 79 cut trades — BELOW this ledger's own ~100-trade
+   threshold at both sizes. The sign is unmeasured, not negative.
+2. **The system is negative-expectancy overall**, so any dollar delta is
+   noise-dominated. This harness measures internal consistency, never edge.
+3. **maxDD rising is a path artefact, not more risk.** Shrinking some trades lowers
+   the equity peak, so later troughs sit deeper below it even though every
+   individual position got smaller. Per-trade risk strictly fell.
+
+What IS consistent across both sizes: **per-trade variance falls** ($248.78→$234.23
+and $200.88→$183.19), which is what a location-based risk reduction exists to do.
+M52 ships as a **fidelity** fix on the same footing as M58 — the course states the
+rule, and an R-multiple backtest on synthetic data structurally cannot validate a
+sizing rule. Recorded as a negative dollar result rather than dropped (§10).
+
+### Probe false failures, recorded so they are not repeated
+
+Three failures in my own M52 probes, none of them a code defect (§6: audit a
+failing probe before it becomes a finding):
+
+- `pos 0.55 → equilibrium` failed: the fixture computes `90 + 20*0.55` and
+  `20*0.55` is `11.000000000000002` in binary floating point, so the true position
+  is `0.5500000000000004` → correctly 'premium'. Boundaries are now probed from
+  just inside and just outside. An exact-boundary assertion on a float-derived
+  quantity tests the representation, not the band.
+- A label/sizing agreement check reported 51 disagreements because the floor
+  condition was written `p <= 0.5`. For a LONG the floor spans the whole
+  equilibrium band *and* the wrong half above it — the floor is "not deep enough
+  into discount", not "below the midpoint".
+- A strict-ordering check failed 1156/1235: `no-trade` carries `gradeMult 0`, so
+  `risk_pct` is 0 at every range position and no ordering between buckets is
+  possible; and `r2` collapses multiplier buckets differing in the 4th decimal
+  (0.5 vs 0.5003). Restated as non-decreasing everywhere plus strict only
+  floor-vs-full, where the gap survives rounding.
+- Separately, `position_pct` is reported rounded to 2dp while the zone label is
+  computed at full precision, so the two can only be compared to within half a
+  unit of the reported precision. Two probes asserted it exactly and each produced
+  a boundary false failure (2/17023 and 1/1001).
+
+### Result summary
+
+`probe-m52-midrange-risk.js` **33/0**, and **9 fail on a pristine copy**.
+`probe-reverify-applied.js` **55 → 64**. `api-test` 121/0, `test:now` 36/0,
+all 23 analysis scripts exit 0.
+
+────────────────────────────────────────────────────────────────────────────────
+M50 — bias hysteresis (PARTIAL). Measured with probe-m50-bias-hysteresis.js, not
+with the backtest: this is a rule about WHEN the bias may change, and no R-figure
+expresses it.
+────────────────────────────────────────────────────────────────────────────────
+
+### A/B over the identical walk (same seed, same 12 runs, same 3600-candle windows)
+
+| | from scratch | through hysteresis |
+|---|---|---|
+| `alignment()` calls | 3612 | 3612 |
+| bias changes | **276** | **10** |
+| … preceded by an invalidating close | 92 (33.3 %) | **10 (100 %)** |
+| … NOT preceded by one (his mistake #4) | **184 (66.7 %)** | **0** |
+| flips per 100 candles | 7.64 | **0.28** |
+| steps still carrying a direction | — | 3533/3612 |
+| held against a disagreeing read | — | 1825 |
+| disagreements surfaced, not hidden | — | 1825 |
+
+The rule is satisfied exactly and NOT by freezing the bias: 10 genuine changes
+remain, each one preceded by a close beyond the level, and 97.8 % of steps still
+carry a direction.
+
+### The recorded finding's numbers have drifted — corrected here
+
+The M50 row quotes **413 flips / 148 with / 265 without**. That was measured on the
+PRE-FIX engine. Both instruments now agree on the current one:
+
+```
+  probe-ep15-bias-flips.js      on the patched tree : 276 / 92 / 184
+  probe-m50-bias-hysteresis.js  on the patched tree : 276 / 92 / 184   (same walk, reimplemented)
+  probe-m50-bias-hysteresis.js  on a PRISTINE tree  : 413 / 148 / 265   (the recorded figures, exactly)
+```
+
+Reproducing 413/148/265 against pristine validates the new probe against the old
+measurement rather than merely asserting agreement. The intervening fixes (M1 swing
+mode, M22 nested ranges, M24 BOS/CHoCH among them) already cut uninvalidated flips
+265 → 184, ~31 %, without touching hysteresis. The PROPORTION is stable
+(64.2 % → 66.7 %), so the defect's character is unchanged and only its frequency
+fell. **Quote 184 as the current size of the problem, not 265.**
+
+### Why this is PARTIAL, not done
+
+`biasHysteresis` is pure and exported, and nothing in the shipped path calls it yet.
+State was kept OUT of `alignment()` on purpose: making that function order-dependent
+would let every probe and backtest carry bias state between unrelated windows and
+silently change what all of them measure — the M120 mistake, committed deliberately.
+The remaining half is a store keyed by symbol+timeframe and wiring at the six sites in
+`bots/index.js` that read `momentum.bias` (:155, :223, :275, :334, :447, :458), plus
+`bias_age` / `bias_changed_because`. In-memory vs SQLite is left to the user.
+
+### A vacuous pass caught in my own probe (§6)
+
+The prose-agreement check was guarded with `Number.isFinite(lv) &&`. On a pristine
+tree, where `invalidation_level` does not exist, it skipped all 12 subjects and still
+printed `12/12` — a full mark for measuring nothing, the same trap as `zone-ab`. It now
+prints the denominator it actually compared and fails at `0/12 plans compared`.
+Pristine arm went from 4 failures to 5 as a result.
+
+### Result summary
+
+`probe-m50-bias-hysteresis.js` **23/0** on the patched tree, **1 passed / 5 failed** on
+a pristine copy.
+
+================================================================================
+ M50 — BIAS HYSTERESIS: THE WIRING (completes the mechanism recorded above)
+================================================================================
+The mechanism half was recorded earlier: topdown.js emits a numeric
+invalidation_level + invalidation_side, and momentum.js exports a PURE
+biasHysteresis(). This section records the second half — carrying the prior
+bias between calls — which is what made M50 PARTIAL.
+
+WHAT WAS WIRED
+  src/db.js        new bias_state table (symbol, tf, bias, invalidation_level,
+                   invalidation_side, since_t, age_bars, changed_because,
+                   disagreement, updated_at; PRIMARY KEY(symbol, tf)) plus
+                   getBiasState / setBiasState / clearBiasState and a numOrNull
+                   coercion helper. Market-scoped, not user-scoped: the bias on
+                   EURUSD 4h is a fact about EURUSD, not about an account, and
+                   two users should not be able to hold contradictory biases on
+                   the same chart. Documented in the schema comment.
+  src/bots/index.js  applyBiasHysteresis(sym, tf, momentum, series) +
+                   hysteresisView(h), wired into ALL THREE entry points that
+                   feed bias to buildSetups: analyse(), chart() and scan().
+                   Responses now carry bias (held), bias_fresh (from scratch)
+                   and bias_hysteresis (an auditable view), and direction
+                   follows the held bias. buildHeadline also gets the held bias.
+
+  Deliberate exclusions, both tested:
+    - A bar replay (analyse with trim/asOf, chart with trim/cut) must NOT read
+      or write hysteresis state — it would read state written by the present
+      and write state the present later reads.
+    - applyBiasHysteresis never throws: on any error it returns the fresh bias,
+      degrading to exactly the pre-M50 behaviour rather than failing the request.
+
+  The stored level is preferred over one recomputed from today's range. "Your
+  invalidation" means the level you were wrong beyond; recomputing it lets the
+  market move the goalposts that define being wrong. The dealing range is used
+  only as a fallback when nothing usable was stored.
+
+TWO REAL BUGS FOUND WHILE WIRING (both the same hazard, both in code I had just
+written, both caught by checking the hazard rather than trusting the guard)
+  Number(null) === 0 and Number.isFinite(0) is true, so the obvious
+  `Number.isFinite(Number(v)) ? Number(v) : null` guard stores 0 for an explicit
+  null. With invalidation_side 'above', a level of 0 makes `close > 0` true on
+  EVERY call — the bias is invalidated constantly while hysteresis looks like it
+  is working. It appeared in db.js:setBiasState and, identically, in
+  momentum.js:biasHysteresis. 0 is also a meaningful bias (flat), so a
+  disagreement of 0 must not be read as "no disagreement".
+  Fix, applied in both places:
+    v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Number(v)
+  The unit probe covered NaN but not null. Lesson recorded: test null AND NaN AND
+  undefined AND '' for every numeric coercion.
+  Also: db.js exports `ready` as an IIFE promise, not a function — `await
+  D.ready`, never `D.ready()`.
+
+PROBE  analysis/probe-m50-bias-hysteresis.js
+  patched   44 passed, 0 failed
+  pristine   2 passed, 21 failed   (TJ_ROOT=/tmp/negctl/tradejournal)
+  Part D drives the SHIPPED path: Bots.analyse() against a stubbed feed and a
+  THROWAWAY database (TRADEJOURNAL_DB, set before db.js resolves its URL), so the
+  real journal.db is never touched. It verifies the state is written, read back,
+  held against a disagreeing fresh read, released on a breach, feeds buildSetups
+  and buildHeadline, and is left alone during a bar replay.
+  Two probe bugs were fixed here, both mine, both the same class as before:
+    - an assertion demanded a stored invalidation level unconditionally; with a
+      flat bias there is nothing to protect and a null level is the CORRECT row.
+      Restated conditionally on the bias being non-zero.
+    - the negative control CRASHED instead of reporting failures, because
+      HY(r3).held and Db.getBiasState() do not exist pre-M50. A crash hides every
+      check after it, so pristine under-reported (8 visible failures, then abort).
+      Property access and the store helpers are now shimmed; pristine reports a
+      clean 2/21. Third time this happened — a negative control must be checked
+      for a clean REPORT, not just a non-zero exit.
+
+BASELINE 6 IS BYTE-IDENTICAL, AND THAT MEANS NOTHING HERE — read before quoting it
+  --seeds 60 --bars 1500 --window 300 reproduces /tmp/bt60.txt exactly, and the
+  default arm still does after the harness edit below. But the harness requires
+  ONLY src/bots/smc.js, src/bots/setup.js and ./synth.js. It never loads
+  bots/index.js, momentum.js or db.js, so it cannot reach any of the M50 wiring.
+  Byte-identity is guaranteed by construction, not evidence that the change is
+  inert in trading. This is the M52 lesson ("the harness captured only
+  grade_risk_multiplier") and the M120 lesson ("the harness never passed
+  ctx.bias") applied BEFORE publishing a null result rather than after.
+
+NEW ARM  --bias held   (off by default; --bias htf from M120 unchanged)
+  Runs the real momentum.biasHysteresis() over the walk, carrying state in a
+  per-walk variable — what db.js + bots/index.js do in the server, minus
+  persistence. State resets with each walk and is never carried between seeds.
+  The invalidation level mirrors topdown.js (short voided by a close ABOVE the
+  range high, long by a close BELOW the range low); there is no sweep price in
+  the harness so it uses topdown.js's own documented fallback, the range extreme.
+  The level TESTED is the one stored when the bias was adopted, not one
+  recomputed today. The arm prints its own denominators so 0 flips out of 0
+  evaluated cannot be mistaken for 0 flips out of 160188.
+
+  60 seeds (--seeds 60 --bars 1500 --window 300 --bias held)
+    bias reads evaluated          80295
+    held against a fresh read     38525  (48.0%)
+    where fresh disagreed         38525  (48.0%)
+    bias changes                    134  (0.17%)
+    ...with an invalidating close    73 of 134
+    fresh reads that were flat     16578  (held, not invalidated)
+    bars with no usable HTF range      0
+  120 seeds
+    reads 160188 | held 77747 (48.5%) | changes 284 (0.18%) |
+    invalidating closes 160 of 284 | flat fresh reads 30314 | no range 0
+
+  The 61 (and 124) changes WITHOUT an invalidating close are not violations.
+  biasHysteresis has exactly two paths to changed=true: prior===0 adopting a
+  fresh directional read ("no prior bias — first read"), and a breach. Every
+  other disagreement holds. So the uninvalidated changes are adoptions from a
+  flat prior, which is the rule working, not failing.
+
+  GRADE ATTRIBUTION — the same 122 / 256 trades are re-graded, not re-selected:
+    overall is identical across all three arms by construction (n=122
+    -0.0011R PF 1.00 at 60; n=256 -0.1716R PF 0.76 at 120) because bias SCORES,
+    it does not veto — the M120 finding, reconfirmed.
+
+    60 seeds, grade A+          n    win     exp        PF
+      no bias (--bias off)      15   20.0%   +0.1355R   1.18
+      raw HTF read (--bias htf) 38   26.3%   +0.6158R   2.01
+      SHIPPED rule (--bias held)40   22.5%   +0.1135R   1.18
+    60 seeds, grade A
+      no bias                  103   18.4%   -0.0344R   0.95
+      raw HTF read              81   14.8%   -0.3199R   0.56
+      SHIPPED rule              78   16.7%   -0.0776R   0.89
+    120 seeds, SHIPPED rule (--bias held)
+      A+  n=87  win 21.8%  exp -0.0184R  PF 0.97
+      A   n=155 win 17.4%  exp -0.2408R  PF 0.67
+      B   n=14  win 21.4%  exp -0.3579R  PF 0.44
+      (M120's 120-seed raw-HTF arm, for contrast: A+ n=79 +0.2364R PF 1.36;
+       A n=167 -0.3689R. No-bias 120-seed: A+ n=35 -0.0684R PF 0.90.)
+
+  RESULT, stated plainly: THE M120 A+ IMPROVEMENT DOES NOT SURVIVE HYSTERESIS.
+  The raw HTF read graded A+ at +0.2364R / PF 1.36 on 120 seeds; the shipped,
+  held bias grades the same bucket at -0.0184R / PF 0.97 — back to roughly the
+  no-bias figure. Holding the bias until a close invalidates it makes the input
+  sticky, and a sticky input moves fewer grades, so the discrimination M120
+  measured largely disappears.
+  This is recorded as a NEGATIVE result, not buried. It does not argue against
+  the rule: M50 is a FIDELITY fix (Ep 15 mistake #4 — 184 of 276 bias changes had
+  no invalidating close), shipped on the same footing as M52 and M47. And it
+  carries no weight as evidence about trading, for the reasons that apply to
+  every number in this file: the data is synthetic, the corrected A+ bucket is
+  n=87, still below the ~100-trade threshold set in section 6, and the system is
+  negative-expectancy overall so any dollar delta is noise-dominated.
+  M120's open question ("should --bias htf become the default?") is now better
+  informed: the shipped rule produces a different, weaker signal than the raw
+  read M120 measured, so M120's A+ figures should not be quoted as what the
+  server does.
+
+APP SUITE — 4 scripts fail HERE, ALL ENVIRONMENTAL, ATTRIBUTED NOT ASSUMED
+  now-test 36/0 and api-test 121/0 pass. topdown-test, chart-test, bots-test and
+  smoke-test fail. Each was run against the pristine control tree in the same
+  sandbox:
+    topdown-test  pristine rc=2, identical Promise.all crash
+    chart-test    pristine rc=2, identical crash in getCandles (pristine line 282
+                  vs patched 433 — different line because M121 added code, same
+                  function, same cause)
+    getCandles('XAUUSD','15m',300), both trees, same blocked network:
+      patched   THROWS: No candles for XAUUSD 15m (Yahoo: Yahoo GC=F [15m/1mo]:
+                query2: fetch failed | query1: fetch failed | ...)
+      pristine  THROWS: No candles for XAUUSD 15m (Yahoo: Yahoo GC=F: fetch failed)
+    Both throw; the patched message names which host and query failed, which is
+    M121's diagnosability fix doing its job. bots-test dies at line 71 reading
+    cd.json.meta.provider after /api/bots/candles returned no candles — the same
+    root cause. smoke-test's failing views are the candle-dependent ones.
+  Cause: this sandbox resets TLS at the SNI layer for every host outside its
+  allowlist. Not a code defect, and not evidence the live path is healthy either
+  — see analysis/YAHOO-CANDLES.md, which still has to be re-probed where the
+  network is open.
+  Caveat recorded rather than glossed: topdown-test and chart-test require src
+  directly, so their pristine controls are exact. bots-test and smoke-test call
+  the running server, so their control is the getCandles comparison above rather
+  than a pristine server run.
+
+PATCH  analysis/patches/applied-so-far.patch
+  13 files, +1542 / -133 (was 11 files +1327/-126 before the M50 wiring;
+  src/db.js and src/bots/index.js are the two files added).
+  Verified: applies to a fresh pristine unzip, the resulting tree is
+  BYTE-IDENTICAL to the working tree (diff -r), and it reverse-applies cleanly.
+  Checked without git stash — stashing first reverts the tree and produces a
+  false negative.
+
+================================================================================
+ M122 — FAILURE-FAMILY CLASSIFICATION IN src/candles.js  (+ a workspace-loss
+ incident, and the git apply trap it exposed)
+================================================================================
+THE REPORT, verbatim
+  Analysis failed: No candles for XAUUSD 1w (Yahoo: Yahoo GC=F [1wk/5y]:
+  query2: fetch failed | query1: fetch failed)
+
+DIAGNOSIS — measured, not assumed
+  query2.finance.yahoo.com  dns=74.6.160.107  TCP OK  TLS FAIL: ECONNRESET
+                            (Client network socket disconnected before secure
+                             TLS connection was established)
+  query1.finance.yahoo.com  dns=69.147.80.15  TCP OK  TLS FAIL: ECONNRESET
+  fetch(...)                TypeError: fetch failed, cause=ECONNRESET
+  api.github.com            -> 200        registry.npmjs.org -> 200
+  So DNS resolves and TCP connects; TLS is reset. Two allowed hosts answer 200
+  from the same process at the same moment. This is a per-host allowlist, not a
+  code defect, not a Yahoo outage, and not "no network". Nothing in this
+  repository can fix it. Symbol mapping is correct and deliberate: XAUUSD -> GC=F
+  (gold futures), 1w -> 1wk/5y. Do NOT add an XAUUSD=X spot fallback — that would
+  mix two different price levels in one array.
+
+WHAT WAS ACTUALLY WRONG IN THE CODE
+  The message named the host, interval and range (M121) but not the FAMILY of
+  failure. undici reports every transport failure as the bare string
+  "fetch failed" and puts the evidence in e.cause.code, which was discarded — so
+  a DNS failure, a refused connection and a TLS reset all printed identically,
+  and none could be told apart from a symbol Yahoo does not serve or a dataset
+  that is legitimately empty. Those need opposite responses: transport means fix
+  connectivity or run the app somewhere that can reach the host; a 4xx or an
+  empty dataset means fix the symbol.
+
+FIX
+  1. the per-host catch appends e.cause.code (or e.cause.message):
+     "fetch failed" -> "fetch failed (ECONNRESET)"
+  2. netHint(errors), exported with NET_MARKERS, appends one sentence saying the
+     hosts were unreachable and that this is connectivity, not a bad symbol, an
+     unsupported interval or an empty dataset. It returns a hint ONLY when EVERY
+     entry matches a transport marker, so it can never claim unreachable while a
+     host was answering 404 or 429.
+  Live, the reported request now returns:
+     No candles for XAUUSD 1w (Yahoo: Yahoo GC=F [1wk/5y]: query2: fetch failed
+     (ECONNRESET) | query1: fetch failed (ECONNRESET)) [network: every provider
+     failed at the transport layer ... no data source replied at all.]
+
+MEASUREMENT
+  probe-candles-yahoo.js  39/0 -> 51/0. The 12 new assertions cover the
+  classifier directly (all-transport classified; MIXED not classified; pure data
+  problem not classified; empty/null/undefined no hint; bare "fetch failed" with
+  no cause still classifies; HTTP-only does not) and end to end (transport
+  failure surfaces ECONNRESET and carries the hint; a 404 withholds it and still
+  names both hosts and Yahoo's own reason).
+  THE NEGATIVE DIRECTION IS THE ONE THAT MATTERS. A classifier that calls
+  everything unreachable is worse than none: it sends the user to fix their
+  network when the real problem is a symbol. That case is asserted explicitly.
+  api-test 121/0 and now-test 36/0 still pass, so nothing that asserts on these
+  strings broke.
+
+--------------------------------------------------------------------------------
+ INCIDENT: the workspace tree was WIPED between turns
+--------------------------------------------------------------------------------
+A turn began with `cd extracted/tradejournal` failing and the live preview
+returning 000. Cause: `extracted/` is in .gitignore, and GITIGNORED CONTENT IS
+NOT PERSISTED in the turn-end snapshot. The whole app tree went, node_modules
+with it, and the server died. /tmp is wiped too — /tmp/bt60.txt (the Baseline 6
+reference), /tmp/pv4 (the byte-identity check) and /tmp/negctl (the pristine
+negative control) were all gone.
+Everything durable survived, because it is untracked-but-NOT-ignored: both zips,
+analysis/patches/applied-so-far.patch, and all of analysis/. The ledger, the
+probes and the patch are the real deliverable; the running tree is a build
+artifact. Baseline 6's numbers are recorded in this file, so losing /tmp/bt60.txt
+costs a re-run, not a result.
+
+THE RESTORE IS NOT "UNZIP THE FIXED ZIP"
+tradingpro-fixed.zip already contains the PREVIOUS session's fixes — 11 of its
+src files differ from pristine (correction, index, predict, setup, smc, topdown,
+coach, db, instruments, routes/api, trades; momentum.js and candles.js are
+identical to pristine there, i.e. the zip predates this session's work on them).
+The patch is a diff from PRISTINE to the final tree, so applying it on top of the
+fixed zip's src fails 11 hunks. Correct restore:
+    skeleton (server.js, scripts/, public/, package.json) from tradingpro-fixed.zip
+    src = pristine src from tradingpro-main.zip  +  applied-so-far.patch
+Scripted as analysis/restore-workspace.sh, and validated by running it from
+scratch. After it, the probes reproduce their pre-wipe counts exactly: M50 44/0,
+M52 33/0, candles 51/0, reverify 64/0, M58 23/0, engine 51/0; 297 assertions
+from the summary-printing scripts, 0 failures; api-test 121/0.
+
+★ THE git apply TRAP THIS EXPOSED — a silent no-op that exits 0
+The first version of the restore script did `cd extracted/tradejournal; git apply
+$PATCH`. With no .git of its own there, git resolves the patch paths against the
+OUTER repo root (/home/user/Trader), decides src/db.js lies outside the
+subdirectory it was invoked from, prints "Skipped patch" for all 13 files AND
+EXITS 0. The script reported "patch applied" over a completely pristine tree.
+  git rev-parse --show-toplevel  -> /home/user/Trader
+  git rev-parse --show-prefix     -> extracted/tradejournal/
+  git apply --verbose --check     -> "Skipped patch 'src/db.js'" x13, exit 0
+It was caught only because the script's sanity step greps one sentinel per
+patched file. An exit-code check, or `node --check`, would have passed: the tree
+was syntactically valid, booted, and simply did not contain any of the work.
+Fix: apply from the repo root with an explicit --directory, then prove it landed
+with a reverse-check rather than trusting the status:
+  git -C "$ROOT" apply --directory=extracted/tradejournal "$PATCH"
+  git -C "$ROOT" apply --check --reverse --directory=extracted/tradejournal "$PATCH"
+The earlier manual restore worked only by accident — it had run `git init` inside
+the tree first, which made the paths resolve against that repo instead.
+Two lessons, both the same shape as the vacuous-pass trap recorded above:
+  · a tool that skips its own subject must not report success — check what it
+    actually touched, not what it returned;
+  · verify a restore by CONTENT (a sentinel per changed file, plus a functional
+    probe run), never by exit code or by "the server started".
+
+PATCH  analysis/patches/applied-so-far.patch regenerated after the candles.js
+change: 13 files, +1577 / -134 (was +1542 / -133). Re-verified: applies to a
+fresh pristine unzip from the repo root, the result is BYTE-IDENTICAL to the
+working tree (diff -r), and it reverse-applies.
+
+LEDGER  M122 added (122 rows). gen-progress.py's partition guard REFUSED to write
+PROGRESS.md until M122 was assigned to a group — it went to H (market data & feed
+integrity) beside M121, same file and same concern. The guard working as designed
+is worth recording too: a new row cannot silently fall out of the progress report.
+Counts now 41 done / 1 partial (M30) / 79 todo / 1 no-action / 122 total.
+
+================================================================================
+ M123 — OFFLINE DEMO BAR SOURCE, and what it unlocked
+================================================================================
+WHY
+  With no market-data host reachable, the app could not be exercised at all in the
+  environment it is demonstrated in: every /analyse, /chart and /scan request died
+  at the candle fetch. M122 made that failure legible; it did not make the app
+  usable. The transport block cannot be removed from here, so the choice is between
+  an app that cannot be exercised and one that can be exercised on data it is honest
+  about. This is the second.
+
+DESIGN — the honesty is the design, not a caveat
+  OFF BY DEFAULT. Enabled only by TJ_OFFLINE_CANDLES=1. A trading journal that
+  quietly invented prices would be worse than one that refused to answer, so the
+  default path still requires a live feed and still throws when there is none.
+  Labelled in three places at once: meta.provider = 'offline-synthetic',
+  meta.demo = true, meta.warning = a sentence saying the bars are synthetic and must
+  not be used for a trading decision. A caller can refuse to render it by checking
+  one field.
+  Deterministic: mulberry32 seeded from symbol+timeframe, so two people looking at
+  the same preview see the same chart and a UI regression is reproducible.
+  Exact spacing by construction, so the M121 interval guard passes FOR THE RIGHT
+  REASON rather than being bypassed — the guard still runs and still means what it
+  says.
+  The branch sits after the cache lookup and before any provider is contacted, and
+  returns the same shape as the live path.
+
+A REAL DEFECT IN MY FIRST VERSION, caught by an assertion rather than by reading
+  The drift term compounded. XAUUSD ended at 27362 on 1w, 2899 on 15m and 3872 on
+  4h — three different current prices for one instrument. That is not merely
+  synthetic, it is misleading, and it would have made the preview worse than an
+  error message. Fixed by generating log returns first and re-centring the walk so
+  it ends on an anchor derived from the SYMBOL ALONE (offlineAnchor), never the
+  timeframe. All five timeframes now agree: 2525.98 / 2525.98 / 2525.98 / 2525.98 /
+  2525.98, EURUSD 1.04487 across all five, BTCUSDT 70645.2 across all five.
+  OHLC is also clamped after rounding: rounding can invert a very small wick, and
+  bots-test asserts h >= max(o,c) and l <= min(o,c) on every bar. 0 malformed bars
+  across all five timeframes.
+
+MEASUREMENT
+  probe-candles-yahoo.js  51/0 -> 62/0. The 11 new assertions run the "on" arm in a
+  CHILD PROCESS because the flag is read at module load, and assert: default OFF;
+  flag ON; 200 bars for all five timeframes with no network; both labels on every
+  response; exact spacing; no malformed bars; sorted; deterministic across calls;
+  and all timeframes of one symbol agreeing on price. Pristine control 17/20.
+  One of my own assertions failed first and was fixed: the no-flag child ran the
+  full fetch loop, which throws here, so it reported the throw instead of the flag.
+  The no-flag arm now reports the flag and returns — the point of that arm is that
+  the default path still requires a live feed.
+
+WHAT IT BOUGHT — roughly 340 assertions of coverage that were unreachable here
+  with TJ_OFFLINE_CANDLES=1:
+    topdown-test   66 passed, 0 failed     (previously rc=2, crashed in getCandles)
+    chart-test     36 passed, 0 failed     (previously rc=2, crashed in getCandles)
+    bots-test     203 passed, 2 failed     (previously crashed at line 71, reaching
+                                            none of its assertions)
+    api-test      121 passed, 0 failed     (unchanged)
+    now-test       36 passed, 0 failed     (unchanged)
+  Live, the reported request now returns a full analysis instead of an error:
+  XAUUSD 1w -> bias 1, bias_fresh 1, bias_hysteresis.applied true, direction
+  bullish, 2 candidates, headline "XAUUSD 1w: NO TRADE (A, 74.1/100) — Method says
+  wait — Both sides of the 1w range have b…". That is also the first time the M50
+  wiring has been visible in a live HTTP response.
+
+WHAT IT IS NOT
+  It does not make the live feed work and is not claimed as doing so. The preview
+  runs on labelled synthetic bars; the live Yahoo path is still unverified for the
+  reason recorded against M121. Running the app on a machine that can reach Yahoo
+  remains the only way to get real candles.
+
+================================================================================
+ M124 — chart() AND analyse() DISAGREE ABOUT THE SAME BAR  (recorded, NOT fixed)
+================================================================================
+index.js:511 carries the comment that the chart's call is "the same single answer
+the analysis strip shows, so the chart and the words on screen can never disagree
+about what to do". They disagree, and the UI shows both.
+
+MEASURED, EURUSD 1d, same evaluated_on.last_closed_bar (2026-10-08T00:00:00.000Z)
+                    analyse                       chart
+  now.action        NO TRADE                      WAIT
+  td.headline       "Both sides of the 1w range…" "The 1w sweep fired but…"
+  td.conflicts      []                            [{kind:'chase', blocks_trade:true}]
+  td.status         waiting                       waiting        (same)
+  conviction.tier   none                          none           (same)
+  td.direction      0                             0              (same)
+  setups.verdict.dir 0                            0              (same)
+  So it is NOT a scoring difference. now.js:144 maps a `chase` block to WAIT and any
+  other block to NO TRADE, so a divergent conflict list becomes a divergent
+  instruction. The two endpoints build DIFFERENT topdown objects for one bar:
+  analyse() derives td through Momentum.analyse / Momentum.series with the layers
+  from layersFor(tf); chart() calls TD.build directly with `series: entry`, and also
+  passes quote:null and omits news and daily from its Now.build call — different
+  inputs, despite the comment claiming parity.
+
+ATTRIBUTION — proved, not assumed
+  · PRE-EXISTING. The same comparison on a pristine tradingpro-main.zip tree (with
+    only candles.js swapped in so it could obtain bars at all) reproduces it exactly:
+    analyse NO TRADE, chart WAIT, same bar, AGREE false. So it predates M50, M52,
+    M121, M122 and M123.
+  · NOT M50 state contamination. The disagreement is order-independent — analyse
+    then chart, chart then analyse, and each called twice, all give the same pair of
+    answers (only bias_age increments). And chart()'s response carries no `momentum`
+    key at all, so it never reads the held bias.
+  · WHY IT WAS NEVER SEEN BEFORE. bots-test had always crashed at line 71 on the
+    candle fetch, so it never reached this assertion at line 211. M123 made the test
+    runnable and the failure became visible. Newly visible, not newly introduced —
+    the distinction matters and is the reason the attribution was run instead of
+    assumed.
+  The second bots-test failure ("filled sample for parity: 20 trades", expecting more
+  than 20) is a sample-size artefact of how much history the demo source generates.
+  It is NOT attributed to a defect and should be re-checked against a live feed
+  before being treated as a finding.
+
+NOT FIXED, deliberately. The fix means unifying two construction paths — one shared
+topdown builder, and the same Now.build context from both sites — plus a probe that
+walks a series asserting analyse().now.action === chart().now.action wherever
+evaluated_on.last_closed_bar matches, which is the invariant the comment already
+states, made measurable. That is mechanism work, queued in §8 order, not a drive-by
+inside a turn that was already carrying a restore incident and two other rows.
+
+LEDGER  124 rows. M123 -> group H (market data & feed integrity, beside M121/M122);
+M124 -> group A (scoring, vetoes & the tradeability gate) because it is a defect in
+the tradeability GATE itself even though the files are index.js and now.js.
+gen-progress.py's partition guard refused to write until both were assigned — twice,
+once per row. Counts now 42 done / 1 partial (M30) / 80 todo / 1 no-action / 124.
+
+PATCH  13 files, +1720 / -134 (was +1577 / -134). Re-verified against a fresh
+pristine unzip in a standalone repo: byte-identical to the working tree, and
+reverse-applies.

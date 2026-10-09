@@ -1,0 +1,472 @@
+{
+ "generated_at": "2026-10-06T11:59:50.255Z",
+ "command": "node scripts/rule-sweep.js",
+ "markets": [
+  "XAUUSD:15m",
+  "XAUUSD:1h",
+  "XAUUSD:4h",
+  "EURUSD:1h",
+  "GBPUSD:1h",
+  "AUDUSD:1h",
+  "USDJPY:1h",
+  "BTCUSDT:1h",
+  "BTCUSDT:4h",
+  "ETHUSDT:1h",
+  "ETHUSDT:4h",
+  "SOLUSDT:1h",
+  "XRPUSDT:1h",
+  "AAPL:1h",
+  "TSLA:1h",
+  "SPY:1h",
+  "ES:1h",
+  "NQ:1h",
+  "US30:1h",
+  "NAS100:1h",
+  "SPX500:1h",
+  "GER40:1h",
+  "XAGUSD:1h",
+  "USOIL:1h"
+ ],
+ "bars": 2000,
+ "step": 4,
+ "split": 0.7,
+ "cost_mode": "instrument",
+ "raw_samples": 7580,
+ "unique_setups": 7028,
+ "split_ts": 1788271200000,
+ "filters": {
+  "all": "No filter — every setup the model takes",
+  "leg": "Displacement leg (playlist filter)",
+  "ote": "Entry in the 50–79 % OTE retrace band",
+  "ema50+leg": "Displacement leg + 50 EMA alignment",
+  "leg+ote+ema50": "Leg + OTE band + 50 EMA (full playlist confluence)"
+ },
+ "grid_rows": 312,
+ "best_consistent_winrate": {
+  "filter": "ema50+leg",
+  "stop_atr_min": 1,
+  "rr_min": 0,
+  "target_r": 0.25,
+  "all": {
+   "n": 614,
+   "hit_pct": 75.7328990228013,
+   "net_win_pct": 74.5928338762215,
+   "clean_pct": 0,
+   "expectancy_r": -0.09182410423452778
+  },
+  "train": {
+   "n": 468,
+   "hit_pct": 75.85470085470085,
+   "net_win_pct": 74.78632478632478,
+   "clean_pct": 0,
+   "expectancy_r": -0.08442307692307698
+  },
+  "test": {
+   "n": 146,
+   "hit_pct": 75.34246575342466,
+   "net_win_pct": 73.97260273972603,
+   "clean_pct": 0,
+   "expectancy_r": -0.11554794520547944
+  }
+ },
+ "consistent_70": [
+  {
+   "filter": "ema50+leg",
+   "stop_atr_min": 1,
+   "rr_min": 0,
+   "target_r": 0.25,
+   "all": {
+    "n": 614,
+    "hit_pct": 75.7328990228013,
+    "net_win_pct": 74.5928338762215,
+    "clean_pct": 0,
+    "expectancy_r": -0.09182410423452778
+   },
+   "train": {
+    "n": 468,
+    "hit_pct": 75.85470085470085,
+    "net_win_pct": 74.78632478632478,
+    "clean_pct": 0,
+    "expectancy_r": -0.08442307692307698
+   },
+   "test": {
+    "n": 146,
+    "hit_pct": 75.34246575342466,
+    "net_win_pct": 73.97260273972603,
+    "clean_pct": 0,
+    "expectancy_r": -0.11554794520547944
+   }
+  },
+  {
+   "filter": "ema50+leg",
+   "stop_atr_min": 0.8,
+   "rr_min": 0,
+   "target_r": 0.25,
+   "all": {
+    "n": 679,
+    "hit_pct": 75.55228276877762,
+    "net_win_pct": 74.07952871870398,
+    "clean_pct": 0,
+    "expectancy_r": -0.09878055964653905
+   },
+   "train": {
+    "n": 517,
+    "hit_pct": 76.40232108317214,
+    "net_win_pct": 74.85493230174082,
+    "clean_pct": 0,
+    "expectancy_r": -0.0815918762088975
+   },
+   "test": {
+    "n": 162,
+    "hit_pct": 72.8395061728395,
+    "net_win_pct": 71.60493827160494,
+    "clean_pct": 0,
+    "expectancy_r": -0.15363580246913577
+   }
+  },
+  {
+   "filter": "ema50+leg",
+   "stop_atr_min": 0.6,
+   "rr_min": 0,
+   "target_r": 0.25,
+   "all": {
+    "n": 792,
+    "hit_pct": 72.22222222222221,
+    "net_win_pct": 70.2020202020202,
+    "clean_pct": 0,
+    "expectancy_r": -0.149112373737374
+   },
+   "train": {
+    "n": 598,
+    "hit_pct": 72.74247491638796,
+    "net_win_pct": 70.40133779264214,
+    "clean_pct": 0,
+    "expectancy_r": -0.13592642140468236
+   },
+   "test": {
+    "n": 194,
+    "hit_pct": 70.61855670103093,
+    "net_win_pct": 69.58762886597938,
+    "clean_pct": 0,
+    "expectancy_r": -0.18975773195876297
+   }
+  }
+ ],
+ "positive_expectancy": [
+  {
+   "filter": "leg",
+   "stop_atr_min": 0.6,
+   "rr_min": 3,
+   "target_r": 3,
+   "all": {
+    "n": 370,
+    "hit_pct": 37.027027027027025,
+    "net_win_pct": 37.027027027027025,
+    "clean_pct": 37.027027027027025,
+    "expectancy_r": 0.3849675675675662
+   },
+   "train": {
+    "n": 261,
+    "hit_pct": 34.86590038314176,
+    "net_win_pct": 34.86590038314176,
+    "clean_pct": 34.86590038314176,
+    "expectancy_r": 0.31299616858237417
+   },
+   "test": {
+    "n": 109,
+    "hit_pct": 42.201834862385326,
+    "net_win_pct": 42.201834862385326,
+    "clean_pct": 42.201834862385326,
+    "expectancy_r": 0.5573027522935782
+   }
+  },
+  {
+   "filter": "all",
+   "stop_atr_min": 0.6,
+   "rr_min": 3,
+   "target_r": 3,
+   "all": {
+    "n": 372,
+    "hit_pct": 36.82795698924731,
+    "net_win_pct": 36.82795698924731,
+    "clean_pct": 36.82795698924731,
+    "expectancy_r": 0.37729569892472997
+   },
+   "train": {
+    "n": 263,
+    "hit_pct": 34.60076045627377,
+    "net_win_pct": 34.60076045627377,
+    "clean_pct": 34.60076045627377,
+    "expectancy_r": 0.3026920152091243
+   },
+   "test": {
+    "n": 109,
+    "hit_pct": 42.201834862385326,
+    "net_win_pct": 42.201834862385326,
+    "clean_pct": 42.201834862385326,
+    "expectancy_r": 0.5573027522935782
+   }
+  },
+  {
+   "filter": "leg",
+   "stop_atr_min": 0.5,
+   "rr_min": 3,
+   "target_r": 3,
+   "all": {
+    "n": 568,
+    "hit_pct": 34.683098591549296,
+    "net_win_pct": 34.683098591549296,
+    "clean_pct": 34.683098591549296,
+    "expectancy_r": 0.2753961267605626
+   },
+   "train": {
+    "n": 389,
+    "hit_pct": 33.16195372750643,
+    "net_win_pct": 33.16195372750643,
+    "clean_pct": 33.16195372750643,
+    "expectancy_r": 0.242719794344472
+   },
+   "test": {
+    "n": 179,
+    "hit_pct": 37.988826815642454,
+    "net_win_pct": 37.988826815642454,
+    "clean_pct": 37.988826815642454,
+    "expectancy_r": 0.34640782122905045
+   }
+  },
+  {
+   "filter": "all",
+   "stop_atr_min": 0.5,
+   "rr_min": 3,
+   "target_r": 3,
+   "all": {
+    "n": 571,
+    "hit_pct": 34.50087565674256,
+    "net_win_pct": 34.50087565674256,
+    "clean_pct": 34.50087565674256,
+    "expectancy_r": 0.267150612959719
+   },
+   "train": {
+    "n": 392,
+    "hit_pct": 32.90816326530612,
+    "net_win_pct": 32.90816326530612,
+    "clean_pct": 32.90816326530612,
+    "expectancy_r": 0.23095918367346838
+   },
+   "test": {
+    "n": 179,
+    "hit_pct": 37.988826815642454,
+    "net_win_pct": 37.988826815642454,
+    "clean_pct": 37.988826815642454,
+    "expectancy_r": 0.34640782122905045
+   }
+  },
+  {
+   "filter": "leg",
+   "stop_atr_min": 0.6,
+   "rr_min": 3,
+   "target_r": 2,
+   "all": {
+    "n": 370,
+    "hit_pct": 44.5945945945946,
+    "net_win_pct": 44.5945945945946,
+    "clean_pct": 44.5945945945946,
+    "expectancy_r": 0.24172432432432417
+   },
+   "train": {
+    "n": 261,
+    "hit_pct": 41.37931034482759,
+    "net_win_pct": 41.37931034482759,
+    "clean_pct": 41.37931034482759,
+    "expectancy_r": 0.15973946360153246
+   },
+   "test": {
+    "n": 109,
+    "hit_pct": 52.293577981651374,
+    "net_win_pct": 52.293577981651374,
+    "clean_pct": 52.293577981651374,
+    "expectancy_r": 0.43803669724770644
+   }
+  },
+  {
+   "filter": "all",
+   "stop_atr_min": 0.6,
+   "rr_min": 3,
+   "target_r": 2,
+   "all": {
+    "n": 372,
+    "hit_pct": 44.354838709677416,
+    "net_win_pct": 44.354838709677416,
+    "clean_pct": 44.354838709677416,
+    "expectancy_r": 0.2348225806451612
+   },
+   "train": {
+    "n": 263,
+    "hit_pct": 41.06463878326996,
+    "net_win_pct": 41.06463878326996,
+    "clean_pct": 41.06463878326996,
+    "expectancy_r": 0.15060076045627369
+   },
+   "test": {
+    "n": 109,
+    "hit_pct": 52.293577981651374,
+    "net_win_pct": 52.293577981651374,
+    "clean_pct": 52.293577981651374,
+    "expectancy_r": 0.43803669724770644
+   }
+  },
+  {
+   "filter": "leg",
+   "stop_atr_min": 0.5,
+   "rr_min": 3,
+   "target_r": 2,
+   "all": {
+    "n": 568,
+    "hit_pct": 41.725352112676056,
+    "net_win_pct": 41.725352112676056,
+    "clean_pct": 41.725352112676056,
+    "expectancy_r": 0.13983274647887312
+   },
+   "train": {
+    "n": 389,
+    "hit_pct": 40.102827763496144,
+    "net_win_pct": 40.102827763496144,
+    "clean_pct": 40.102827763496144,
+    "expectancy_r": 0.11932647814910008
+   },
+   "test": {
+    "n": 179,
+    "hit_pct": 45.2513966480447,
+    "net_win_pct": 45.2513966480447,
+    "clean_pct": 45.2513966480447,
+    "expectancy_r": 0.1843966480446927
+   }
+  },
+  {
+   "filter": "all",
+   "stop_atr_min": 0.5,
+   "rr_min": 3,
+   "target_r": 2,
+   "all": {
+    "n": 571,
+    "hit_pct": 41.5061295971979,
+    "net_win_pct": 41.5061295971979,
+    "clean_pct": 41.5061295971979,
+    "expectancy_r": 0.13229947460595431
+   },
+   "train": {
+    "n": 392,
+    "hit_pct": 39.795918367346935,
+    "net_win_pct": 39.795918367346935,
+    "clean_pct": 39.795918367346935,
+    "expectancy_r": 0.10851020408163242
+   },
+   "test": {
+    "n": 179,
+    "hit_pct": 45.2513966480447,
+    "net_win_pct": 45.2513966480447,
+    "clean_pct": 45.2513966480447,
+    "expectancy_r": 0.1843966480446927
+   }
+  },
+  {
+   "filter": "leg",
+   "stop_atr_min": 0,
+   "rr_min": 3,
+   "target_r": 3,
+   "all": {
+    "n": 1100,
+    "hit_pct": 31.727272727272727,
+    "net_win_pct": 31.727272727272727,
+    "clean_pct": 31.727272727272727,
+    "expectancy_r": 0.13158909090909046
+   },
+   "train": {
+    "n": 779,
+    "hit_pct": 30.42362002567394,
+    "net_win_pct": 30.42362002567394,
+    "clean_pct": 30.42362002567394,
+    "expectancy_r": 0.10687804878048719
+   },
+   "test": {
+    "n": 321,
+    "hit_pct": 34.890965732087224,
+    "net_win_pct": 34.890965732087224,
+    "clean_pct": 34.890965732087224,
+    "expectancy_r": 0.19155763239875395
+   }
+  },
+  {
+   "filter": "all",
+   "stop_atr_min": 0,
+   "rr_min": 3,
+   "target_r": 3,
+   "all": {
+    "n": 1107,
+    "hit_pct": 31.616982836495033,
+    "net_win_pct": 31.616982836495033,
+    "clean_pct": 31.616982836495033,
+    "expectancy_r": 0.12639114724480532
+   },
+   "train": {
+    "n": 786,
+    "hit_pct": 30.279898218829516,
+    "net_win_pct": 30.279898218829516,
+    "clean_pct": 30.279898218829516,
+    "expectancy_r": 0.09977735368956679
+   },
+   "test": {
+    "n": 321,
+    "hit_pct": 34.890965732087224,
+    "net_win_pct": 34.890965732087224,
+    "clean_pct": 34.890965732087224,
+    "expectancy_r": 0.19155763239875395
+   }
+  }
+ ],
+ "counts": {
+  "consistent_70": 3,
+  "positive_expectancy": 16
+ },
+ "presets": [
+  {
+   "key": "video",
+   "label": "Playlist management (50 % at first target → break-even → runner)",
+   "filter": "playlist",
+   "target_r": null,
+   "stop_atr_min": 0.5,
+   "rr_min": 1,
+   "note": "What the videos teach: partials at the first structural target, stop to break-even, run the rest to the second target. Measured win rate: high 30s / low 40s %, expectancy ≈ 0."
+  },
+  {
+   "key": "winrate",
+   "label": "Maximum win rate (75 % measured on unseen data)",
+   "filter": "ema50+leg",
+   "target_r": 0.25,
+   "stop_atr_min": 1,
+   "rr_min": 0,
+   "measured": {
+    "train_win_pct": 75.85470085470085,
+    "test_win_pct": 75.34246575342466,
+    "expectancy_r": -0.09182410423452778,
+    "n": 614
+   },
+   "note": "Wins most of the time and still loses money — the honest price of a high hit rate."
+  },
+  {
+   "key": "edge",
+   "label": "Maximum expectancy (+0.38R per trade measured)",
+   "filter": "leg",
+   "target_r": 3,
+   "stop_atr_min": 0.6,
+   "rr_min": 3,
+   "measured": {
+    "train_exp_r": 0.31299616858237417,
+    "test_exp_r": 0.5573027522935782,
+    "win_pct": 37.027027027027025,
+    "n": 370
+   },
+   "note": "Earns from the tail: you lose more often than you win and the winners pay for it."
+  }
+ ]
+}

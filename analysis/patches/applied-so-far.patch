@@ -1,0 +1,2918 @@
+diff --git a/.vercelignore b/.vercelignore
+new file mode 100644
+index 0000000..e28e2aa
+--- /dev/null
++++ b/.vercelignore
+@@ -0,0 +1,15 @@
++# Not needed at runtime, and uploading it costs build time and deploy size.
++scripts/
++docs/
++data/
++analysis/
++*.log
++*.md
++!README.md
++.env
++.env.local
++.vercel/
++# Dev-only dependencies are traced out of the bundle anyway, but keeping the
++# install lean matters more on a serverless build than anywhere else.
++playwright-report/
++test-results/
+diff --git a/DEPLOY.md b/DEPLOY.md
+new file mode 100644
+index 0000000..3bed413
+--- /dev/null
++++ b/DEPLOY.md
+@@ -0,0 +1,151 @@
++# Deploying TradeJournal Pro to Vercel
++
++The app is already shaped for it: `api/index.js` exports the same Express handler that
++`server.js` runs locally, `vercel.json` publishes `public/` and rewrites every `/api/*`
++request to that one function, the database client is `@libsql/client` (pure JS — no native
++module to compile on Vercel's builders), and the in-process scheduler disables itself under
++`VERCEL=1` so the platform cron owns that job instead.
++
++`npm run test:vercel` verifies all of it. It should report **17 passed, 1 failed**, the one
++failure being `/api/bots/analyse`, which needs outbound market data and cannot reach Yahoo
++from a sandboxed CI host. On Vercel it passes, because Vercel functions have unrestricted
++egress.
++
++---
++
++## 1. The one setting that actually matters
++
++**Set `TURSO_DATABASE_URL`, or your journal will silently lose every trade.**
++
++When `VERCEL` is set and no remote database URL is given, `src/db.js` falls back to
++`file:/tmp/journal.db` so the app still boots. Vercel wipes `/tmp` on every cold start and
++does not share it between concurrent instances. The result is a deployment that returns
++HTTP 200, creates a workspace, accepts your trades — and forgets all of them minutes later.
++Nothing errors, which is what makes it dangerous.
++
++This is deliberately not fatal (a demo deploy should still come up), but it is loud:
++
++- the boot log prints a `!! EPHEMERAL DATABASE !!` block;
++- `GET /api/health` returns `database.persistent: false` with a warning string.
++
++**Check `/api/health` immediately after your first deploy.** That is what it is for.
++
++Create a free Turso database, then set two variables in Vercel → Project → Settings →
++Environment Variables:
++
++| variable | required | notes |
++|---|---|---|
++| `TURSO_DATABASE_URL` | **yes** | e.g. `libsql://your-db-user.turso.io`. Without it the DB is ephemeral |
++| `TURSO_AUTH_TOKEN` | **yes** with the above | Turso read/write token |
++| `CRON_SECRET` | recommended | without it `/api/cron/tick` returns 403 and the daily cron does nothing |
++| `LIBSQL_URL` | alternative | honoured instead of `TURSO_DATABASE_URL` |
++| `TRADEJOURNAL_DB` | alternative | any `libsql:`/`https:`/`file:` URL |
++| `TJ_OFFLINE_CANDLES` | **leave unset** | serves synthetic demo bars instead of market data. See §4 |
++
++`LIBSQL_URL` and `TURSO_DATABASE_URL` are interchangeable; `TRADEJOURNAL_DB` is the escape
++hatch for anything else. Precedence is Turso → libSQL → `TRADEJOURNAL_DB` → the `/tmp`
++fallback.
++
++---
++
++## 2. Deploying
++
++### Option A — Vercel CLI (fastest, no Git host needed)
++
++```bash
++cd <this directory>
++npm install
++npx vercel            # first run: link or create the project
++npx vercel --prod
++```
++
++`.vercelignore` keeps `scripts/`, `docs/`, `data/` and `analysis/` out of the upload.
++
++### Option B — Git import
++
++Push this directory to a repository and import it in the Vercel dashboard. Framework preset
++**Other**, build command **leave empty** (there is no build step — `public/` is plain static
++files), output directory is already `public` via `vercel.json`.
++
++If you import the *audit* repository this directory was developed in, set
++**Root Directory** to `extracted/tradejournal`. If you would rather not carry the ~17 MB of
++reference zips and the `analysis/` folder into a deploy, copy this directory into a fresh
++repository of its own and import that — nothing outside it is needed at runtime.
++
++Node 18 or newer (`engines` in `package.json`).
++
++---
++
++## 3. After deploying — verify in this order
++
++```bash
++curl https://your-app.vercel.app/api/health
++```
++
++You want to see:
++
++```json
++{ "ok": true, "serverless": true,
++  "database": { "remote": true, "persistent": true },
++  "demo_data": false,
++  "scheduler": "platform cron (/api/cron/tick)" }
++```
++
++`database.persistent: false` → you forgot `TURSO_DATABASE_URL`. Fix it before entering
++anything you care about.
++`demo_data: true` → `TJ_OFFLINE_CANDLES` is set in the environment. Unset it.
++
++Then check the app itself: `/api/bots/markets` should list ~70 instruments, and an analysis
++request should return candles rather than a provider error:
++
++```bash
++curl 'https://your-app.vercel.app/api/bots/candles?symbol=EURUSD&tf=15m&limit=200'
++```
++
++If that returns an error, read the tail of the message — it names the host, the interval and
++the reason, and a trailing `[network: …]` block means the hosts were unreachable at the
++transport layer rather than the symbol being wrong. See `analysis/YAHOO-CANDLES.md` §5 for
++the full table of what each tail means.
++
++### The cron
++
++`vercel.json` schedules `/api/cron/tick` daily at 06:00 UTC. It resolves tracked signals the
++way the local scheduler would. Set `CRON_SECRET` to the same value Vercel uses; the endpoint
++accepts either `Authorization: Bearer <secret>` (what Vercel sends) or `x-cron-secret`, and
++returns 403 when no secret is configured. Hobby plans allow one cron job, which is what this
++is. Change the schedule in `vercel.json` if you want it more often.
++
++---
++
++## 4. `TJ_OFFLINE_CANDLES` — do not set this in production
++
++It exists so the product can be exercised where no market-data host is reachable (a sandbox,
++an offline demo, a CI run). With it set, every bar the app serves is a deterministic
++synthetic random walk, labelled `meta.provider: "offline-synthetic"` and `meta.demo: true`
++with a warning string, and `/api/health` reports `demo_data: true`.
++
++It is **off by default** and never a silent fallback: unset it and the app requires a live
++feed again. The labels are at the API boundary — the browser UI does not currently render a
++banner, so `/api/health` is the reliable check. That gap is recorded as a limitation of
++ledger row **M123** in `analysis/MISMATCHES.md`.
++
++---
++
++## 5. Known limitations, stated rather than discovered later
++
++- **`maxDuration: 60`** is set for `api/index.js` in `vercel.json`. A full top-down analysis
++  fetches several timeframes and can take a few seconds; if your plan caps function duration
++  lower than 60 s, reduce that number instead of leaving it above your limit.
++- **Cold starts** pay the schema migration and starter-workspace creation on the first
++  request. Measured locally at ~270–360 ms with an empty database; a remote Turso database
++  adds network latency to that first request.
++- **`/api/bots/*` is unauthenticated for market data** in the current build; the workspace
++  endpoints use an `x-session` token from `/api/auth/register`. If this is going anywhere
++  public, put authentication in front of it.
++- **Analysis depends on Yahoo Finance's public chart endpoint**, which needs no API key and
++  no crumb, but is unauthenticated and can be rate-limited. The client retries with backoff
++  on 429/5xx and reports both hosts when it fails. It is a free endpoint used as if it were a
++  data vendor; for anything load-bearing, put a real vendor behind `src/candles.js`.
++- **M124**: `/api/bots/chart` and `/api/bots/analyse` can disagree about the same bar. It is
++  a pre-existing defect, recorded and not yet fixed, so do not treat a mismatch between the
++  chart panel and the analysis strip as a deployment problem.
+diff --git a/scripts/vercel-check.js b/scripts/vercel-check.js
+index 818bf26..21c34bd 100644
+--- a/scripts/vercel-check.js
++++ b/scripts/vercel-check.js
+@@ -99,6 +99,64 @@ async function call(pathname, opts = {}) {
+   ok('api/index.js exports the same request handler the check just used',
+     require('../api/index.js') === handler, 'one handler, no divergence between local and deployed');
+ 
++  // ── the two deploy hazards, MEASURED rather than documented ───────────────
++  // A serverless host wipes /tmp, and db.js falls back to file:/tmp/journal.db when
++  // VERCEL is set and no remote URL is given. The app then boots, looks healthy and
++  // loses every trade — the worst failure mode for a journal, because nothing errors.
++  // This check is itself running in exactly that configuration, so it can assert the
++  // hazard is detected rather than only that the happy path works.
++  const hp = await call('/api/health');
++  ok('/api/health answers unauthenticated (the first thing you check after a deploy)',
++    hp.status === 200 && !!hp.json && hp.json.ok === true, `HTTP ${hp.status}`);
++  ok('it reports that this really is a serverless boot', !!hp.json && hp.json.serverless === true,
++    hp.json ? `serverless=${hp.json.serverless}` : '');
++  ok('it FLAGS the ephemeral database this very check is running on',
++    !!hp.json && hp.json.database && hp.json.database.persistent === false
++      && /EPHEMERAL/.test(hp.json.database.warning || ''),
++    hp.json && hp.json.database ? `persistent=${hp.json.database.persistent}, warning=${(hp.json.database.warning || 'NONE').slice(0, 40)}` : '');
++  ok('the in-process scheduler is off and the platform cron is named instead',
++    !!hp.json && /cron/.test(hp.json.scheduler || ''), hp.json ? hp.json.scheduler : '');
++  ok('demo data is reported OFF unless TJ_OFFLINE_CANDLES is set',
++    !!hp.json && hp.json.demo_data === false, hp.json ? `demo_data=${hp.json.demo_data}` : '');
++  ok('no database credential leaks through the health endpoint',
++    !!hp.json && !/:[^/@]*@/.test(String(hp.json.database && hp.json.database.url)),
++    hp.json && hp.json.database ? hp.json.database.url : '');
++
++  // The other two configurations have to be checked in child processes: db.js
++  // resolves its URL once at module load, so one process can only ever be one case.
++  const cp = require('child_process');
++  const healthIn = (env) => {
++    const script = "const s=require('./server.js'),http=require('http');"
++      + "http.createServer(s.handler).listen(0,'127.0.0.1',async()=>{});"
++      + "setTimeout(async()=>{process.exit(1)},1);"
++    // Simpler and more robust than racing a listen callback: boot the handler on an
++    // ephemeral port, fetch /api/health, print it, exit.
++    const full = "const s=require('./server.js'),http=require('http');"
++      + "const srv=http.createServer(s.handler);"
++      + "srv.listen(0,'127.0.0.1',async()=>{const p=srv.address().port;"
++      + "try{const j=await (await fetch('http://127.0.0.1:'+p+'/api/health')).json();"
++      + "console.log(JSON.stringify(j));}catch(e){console.log(JSON.stringify({err:String(e.message)}));}"
++      + "srv.close();process.exit(0);});";
++    const r = cp.spawnSync(process.execPath, ['-e', full], {
++      cwd: path.join(__dirname, '..'),
++      env: Object.assign({}, process.env, env),
++      encoding: 'utf8', timeout: 45000,
++    });
++    const line = String(r.stdout || '').trim().split('\n').pop();
++    try { return JSON.parse(line); } catch (e) { return { err: (r.stderr || line || 'no output').slice(0, 140) }; }
++  };
++  const remote = healthIn({ TURSO_DATABASE_URL: 'libsql://example-user.turso.io', TURSO_AUTH_TOKEN: 'fake' });
++  ok('a remote Turso URL is reported as PERSISTENT, with no ephemeral warning',
++    !!remote && remote.database && remote.database.persistent === true && !remote.database.warning,
++    remote && remote.database ? `persistent=${remote.database.persistent}, remote=${remote.database.remote}` : `child failed: ${remote && remote.err}`);
++  ok('the remote URL is redacted of credentials in the health output',
++    !!remote && remote.database && !/:[^/@]*@/.test(String(remote.database.url)),
++    remote && remote.database ? remote.database.url : '');
++  const demo = healthIn({ TJ_OFFLINE_CANDLES: '1' });
++  ok('TJ_OFFLINE_CANDLES is surfaced as demo_data, so synthetic bars cannot ship unnoticed',
++    !!demo && demo.demo_data === true && /synthetic/.test(demo.demo_warning || ''),
++    demo && demo.err ? `child failed: ${demo.err}` : `demo_data=${demo && demo.demo_data}`);
++
+   console.log(`\n${pass} passed, ${fail} failed · cold start ${Date.now() - t0} ms`);
+   server.close();
+   fs.rmSync(TMP, { recursive: true, force: true });
+diff --git a/server.js b/server.js
+index 9b28a41..d0f80d8 100644
+--- a/server.js
++++ b/server.js
+@@ -37,6 +37,52 @@ app.use((req, res, next) => {
+   next();
+ });
+ 
++/* ─────────────────────────────────────────────────────────────── deploy health
++ * Unauthenticated on purpose: the first thing anyone does after a deploy is check
++ * it came up, and the two things that can be silently wrong on a serverless host
++ * are exactly what this reports.
++ *
++ *   database.persistent  false means the DB is a file under /tmp, which a
++ *                        serverless platform wipes on every cold start. db.js
++ *                        falls back to file:/tmp/journal.db when VERCEL is set and
++ *                        no TURSO_DATABASE_URL / LIBSQL_URL / TRADEJOURNAL_DB is
++ *                        provided, so the app boots and looks healthy while losing
++ *                        every trade. For a journal that is the worst possible
++ *                        failure mode, so it is reported rather than left to the
++ *                        boot log nobody reads.
++ *   demo_data            true means TJ_OFFLINE_CANDLES is on and every bar the app
++ *                        serves is synthetic. That flag exists so the product can be
++ *                        exercised where no market-data host is reachable; shipping
++ *                        it to production by accident would mean charts full of
++ *                        invented prices, so it is visible here and in the boot log.
++ * Neither value is a secret: the DB URL is redacted of credentials before it is
++ * returned.
++ */
++app.get('/api/health', (req, res) => {
++  const serverless = !!process.env.VERCEL;
++  const persistent = REMOTE || !serverless;
++  const demo = /^(1|true|yes|on)$/i.test(String(process.env.TJ_OFFLINE_CANDLES || '').trim());
++  res.json({
++    ok: true,
++    uptime_s: Math.round(process.uptime()),
++    serverless,
++    database: {
++      url: REMOTE ? DB_URL.replace(/\/\/.*@/, '//') : DB_URL,
++      remote: REMOTE,
++      persistent,
++      ...(persistent ? {} : {
++        warning: 'EPHEMERAL DATABASE — writes live in /tmp and are lost on every cold start. '
++          + 'Set TURSO_DATABASE_URL (and TURSO_AUTH_TOKEN) to keep data.',
++      }),
++    },
++    demo_data: demo,
++    ...(demo ? { demo_warning: 'TJ_OFFLINE_CANDLES is on: every bar served is synthetic, not market data.' } : {}),
++    scheduler: serverless ? 'platform cron (/api/cron/tick)' : (process.env.TJ_SCHEDULER === '0' ? 'disabled' : 'in-process'),
++    node: process.version,
++    checked_at: new Date().toISOString(),
++  });
++});
++
+ app.use('/api', api);
+ 
+ /**
+@@ -106,6 +152,23 @@ const bootPromise = (async () => {
+     booted = true;
+     if (!REMOTE && !process.env.VERCEL) console.log(`  Database: ${DB_URL}`);
+     else console.log(`  Database: ${REMOTE ? DB_URL.replace(/\/\/.*@/, '//') : DB_URL}`);
++    // Two hazards that are invisible in the running app and catastrophic or
++    // embarrassing in a deployed one. Said at boot AND exposed on /api/health.
++    if (process.env.VERCEL && !REMOTE) {
++      console.log('');
++      console.log('  !! EPHEMERAL DATABASE !!');
++      console.log('     No TURSO_DATABASE_URL / LIBSQL_URL / TRADEJOURNAL_DB is set, so the');
++      console.log('     database is a file under /tmp, which this platform wipes on every');
++      console.log('     cold start. The app will boot and look healthy while losing every');
++      console.log('     trade, note and setting written to it. Set TURSO_DATABASE_URL (and');
++      console.log('     TURSO_AUTH_TOKEN) before relying on a deployment. GET /api/health');
++      console.log('     reports this as database.persistent=false.');
++    }
++    if (/^(1|true|yes|on)$/i.test(String(process.env.TJ_OFFLINE_CANDLES || '').trim())) {
++      console.log('');
++      console.log('  !! DEMO DATA !!  TJ_OFFLINE_CANDLES is set: every bar served is a');
++      console.log('     synthetic random walk, NOT market data. Unset it in production.');
++    }
+   }
+ })();
+ 
+diff --git a/src/bots/correction.js b/src/bots/correction.js
+index 5aeb214..c8cb64c 100644
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
+@@ -68,7 +68,7 @@ async function accountOf(userId, accountId = null) {
+   const acc = accountId
+     ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(accountId, userId)
+     : await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
+-  return acc || { id: null, current_balance: 0, starting_balance: 0, risk_per_trade_pct: 1, daily_loss_limit_pct: 3, currency: 'USD' };
++  return acc || { id: null, current_balance: 0, starting_balance: 0, risk_per_trade_pct: 0.5, daily_loss_limit_pct: 3, currency: 'USD' };
+ }
+ 
+ function median(arr) {
+@@ -397,8 +397,11 @@ async function guardrails(userId, { accountId = null } = {}) {
+   // cap = min(their configured risk %, the risk their own winning trades actually survived)
+   const ownCapPct = accountBalance > 0 ? (riskCap / accountBalance) * 100 : 0;
+   const maxRiskPct = accountBalance > 0
+-    ? Math.max(0.25, Math.min(2, r2(ownCapPct > 0 ? Math.min(Number(account.risk_per_trade_pct) || 1, Math.max(ownCapPct, 0.5)) : Number(account.risk_per_trade_pct) || 1)))
+-    : Number(account.risk_per_trade_pct) || 1;
++    // M9: ceiling 2 -> 1. The course's hard maximum is 1% and its guardrail default is 0.5%;
++    // the old clamp allowed 2%, a 4x gap against the guardrail. Fallbacks || 1 -> || 0.5 so a
++    // null/zero account risk falls back to the guardrail rather than to double it.
++    ? Math.max(0.25, Math.min(1, r2(ownCapPct > 0 ? Math.min(Number(account.risk_per_trade_pct) || 0.5, Math.max(ownCapPct, 0.5)) : Number(account.risk_per_trade_pct) || 0.5)))
++    : Number(account.risk_per_trade_pct) || 0.5;
+ 
+   // their own best days set the trade cap
+   const byDay = new Map();
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 0007b01..70ad8d9 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -16,7 +16,7 @@
+  *      so the bot's own hit rate is on the record (no vibes, no cherry-picking).
+  */
+ 
+-const { db } = require('../db');
++const { db, getBiasState, setBiasState } = require('../db');
+ const I = require('../instruments');
+ const M = require('../market');
+ const C = require('../candles');
+@@ -97,6 +97,130 @@ function specOf(symbol) {
+ const floorRR = (v) => (Number(v) > 0 ? Number(v) : 1);   // the trader's minimum R:R
+ const runRR = (v) => Math.max(2, floorRR(v));              // the setup model's 1:2 runway
+ 
++/**
++ * M9 — the risk-per-trade guardrail on the READ path. One helper because two call sites need
++ * it and they must not drift.
++ *
++ * The write path (routes/api.js) clamps what a request supplies. This clamps what the engine
++ * USES, so a row stored above the guardrail before the fix — or written by any path that
++ * bypasses the API — can never reach buildSetups() and size every signal from it. Before this,
++ * `Number(account.risk_per_trade_pct || 0.5)` was a FALLBACK for null/0, not a ceiling: a
++ * stored 50 % flowed straight through to position sizing on the main signal path.
++ *
++ * @returns {{riskPct:number, maxRiskPct:number}} the percentage to size with, plus the ceiling
++ *   to hand the engine — which also makes setup.js's documented `ctx.maxRiskPct` a real input.
++ *   The finding recorded that `grep -n maxRiskPct src/bots/setup.js` returned ONE hit, the ctx
++ *   docstring: documented as an input and never read.
++ */
++const riskPlan = (account, opts = {}) => {
++  if (account) {
++    const unlocked = !!account.risk_unlocked;
++    return {
++      riskPct: I.clampRiskPct(account.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked }),
++      maxRiskPct: unlocked ? I.RISK_GUARDRAIL.max_pct : I.RISK_GUARDRAIL.guardrail_pct,
++    };
++  }
++  // No account: the caller supplied a per-request figure, which is the manual act itself, so
++  // it is honoured up to the absolute maximum rather than pulled down to the guardrail.
++  return {
++    riskPct: I.clampRiskPct(opts.riskPct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked: true }),
++    maxRiskPct: I.RISK_GUARDRAIL.max_pct,
++  };
++};
++
++/* ══════════════════════════════════════════════════════ M50 bias hysteresis */
++/**
++ * Apply Ep 15's bias rule across calls and persist the result.
++ *
++ * Mistake #4: *"changing bias after every single candlestick… your bias only change when your
++ * invalidation is hit."* `alignment()` is pure and re-derives from scratch on every call, which is
++ * the right design for a function but left the rule with no mechanism — `probe-ep15-bias-flips.js`
++ * measured 184 of 276 sign flips with no invalidating close behind them.
++ *
++ * So the state lives HERE, at the boundary that has an identity (symbol+timeframe) and a clock, and
++ * never inside `alignment()`. Folding it in there would make that function order-dependent, and
++ * every probe and backtest that walks a series would then carry bias between unrelated windows and
++ * silently change what all of them measure — which is exactly how M120 happened.
++ *
++ * The level tested is the one STORED when the bias was formed, not one recomputed now: "your
++ * invalidation" means the level you were wrong beyond, and re-deriving it every candle would let the
++ * market move the goalposts and defeat the whole point. It falls back to the current dealing range
++ * only when nothing usable was stored.
++ *
++ * Never throws. If the state cannot be read or written the fresh bias is returned unchanged, so a
++ * database problem degrades to the pre-M50 behaviour rather than failing an analysis.
++ */
++async function applyBiasHysteresis(sym, tf, momentum, series) {
++  const num = (v) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
++  const fresh = num(momentum && momentum.bias) || 0;
++  const out = {
++    bias: fresh, held: false, changed: false, invalidated: false, changed_because: null,
++    disagreement: null, age_bars: null, since_t: null, invalidation_level: null,
++    invalidation_side: null, prior_bias: null, stored: false, error: null,
++  };
++  try {
++    const pd = (series && series.smc && series.smc.premium_discount) || null;
++    // analyse() gets `{ layers: { bias: { plan } } }` from Momentum.analyse while chart() builds
++    // the raw TD.build result, which carries `plan` at the top level. Accept both shapes.
++    const tdObj = (momentum && momentum.topdown) || null;
++    const plan = tdObj ? ((tdObj.layers && tdObj.layers.bias && tdObj.layers.bias.plan) || tdObj.plan || null) : null;
++    // The level that voids a given bias: the CRT plan's own numeric level when the plan is for that
++    // direction (that is literally his invalidation), else the opposite side of the dealing range —
++    // the definition probe-m50-bias-hysteresis.js measured with.
++    const levelFor = (b) => {
++      if (!b) return { level: null, side: null };
++      if (plan && num(plan.dir) === b && num(plan.invalidation_level) !== null) {
++        return { level: num(plan.invalidation_level), side: plan.invalidation_side };
++      }
++      const lvl = b > 0 ? num(pd && pd.range_low) : num(pd && pd.range_high);
++      return lvl === null ? { level: null, side: null } : { level: lvl, side: b > 0 ? 'below' : 'above' };
++    };
++
++    const prior = await getBiasState(sym, tf);
++    const priorBias = prior ? (num(prior.bias) || 0) : 0;
++    const storedInv = prior && num(prior.invalidation_level) !== null
++      ? { level: num(prior.invalidation_level), side: prior.invalidation_side }
++      : levelFor(priorBias);
++    const h = Momentum.biasHysteresis({
++      priorBias, freshBias: fresh, invalidation: storedInv, close: num(series && series.price),
++    });
++
++    const candles = series && Array.isArray(series.candles) && series.candles.length ? series.candles : null;
++    const lastT = candles ? num(candles[candles.length - 1].t) : null;
++    const changed = !prior || h.changed;
++    const sinceT = changed ? lastT : (num(prior && prior.since_t) !== null ? num(prior.since_t) : lastT);
++    const ageBars = changed ? 0 : (num(prior && prior.age_bars) === null ? 0 : num(prior.age_bars) + 1);
++    const next = levelFor(h.bias);
++
++    Object.assign(out, {
++      bias: h.bias, held: h.held, changed: h.changed, invalidated: h.invalidated,
++      changed_because: h.changed_because, disagreement: h.disagreement,
++      age_bars: ageBars, since_t: sinceT, invalidation_level: next.level,
++      invalidation_side: next.side, prior_bias: prior ? priorBias : null,
++    });
++    out.stored = await setBiasState({
++      symbol: sym, tf, bias: h.bias,
++      invalidation_level: next.level, invalidation_side: next.side,
++      since_t: sinceT, age_bars: ageBars,
++      changed_because: h.changed_because, disagreement: h.disagreement,
++    });
++    return out;
++  } catch (e) { out.error = e.message; return out; }
++}
++
++/** The response block describing what hysteresis did, so a held bias is auditable not silent. */
++function hysteresisView(h) {
++  if (!h) return null;
++  return {
++    applied: true, prior_bias: h.prior_bias, bias_fresh: h.disagreement !== null ? h.disagreement : h.bias,
++    held: h.held, changed: h.changed, invalidated: h.invalidated,
++    changed_because: h.changed_because, disagreement: h.disagreement,
++    age_bars: h.age_bars, since_t: h.since_t ? new Date(h.since_t).toISOString() : null,
++    invalidation_level: h.invalidation_level, invalidation_side: h.invalidation_side,
++    stored: h.stored, error: h.error || null,
++  };
++}
++
+ async function analyse(symbol, tf = '15m', opts = {}) {
+   const sym = String(symbol || '').toUpperCase();
+   const spec = specOf(sym);
+@@ -115,15 +239,23 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+ 
+   // the setup model needs the raw trading-timeframe handle (zones, sweeps, indicators)
+   const series = await Momentum.series(sym, tf, 600, cut);
++
++  // M50. Skipped during a bar replay on purpose: a replay reconstructs what the bot would have
++  // said THEN, so it must neither read state written by the present nor write state the present
++  // will later read. A replayed bias is therefore the from-scratch one, and says so.
++  const hyst = replay ? null : await applyBiasHysteresis(sym, tf, momentum, series);
++  const momentumEff = hyst
++    ? { ...momentum, bias: hyst.bias, direction: hyst.bias > 0 ? 'bullish' : hyst.bias < 0 ? 'bearish' : 'neutral' }
++    : momentum;
+   const account = opts.userId ? await Cor.accountOf(opts.userId, opts.accountId) : null;
+   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
+-  const riskPct = account ? Number(account.risk_per_trade_pct || 1) : Number(opts.riskPct || 1);
++  const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
+ 
+   const setups = Setup.buildSetups(series.smc, {
+     price: series.price, atr: series.atr,
+-    bias: momentum.bias, biasReason: momentum.alignment.reason,
++    bias: momentumEff.bias, biasReason: momentum.alignment.reason,
+     indicators: series.ind,
+-    balance, riskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
++    balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
+     newsBlackout: news.blackout, minRR: floorRR(opts.minRR),
+     topdown: momentum.topdown,          // the method decides whether a side may be armed
+   });
+@@ -143,7 +275,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   let daily = null;
+   if (opts.userId) { try { daily = await Cor.dailyState(opts.userId, { accountId: opts.accountId }); } catch (e) { daily = null; } }
+ 
+-  const headline = buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, daily });
++  const headline = buildHeadline({ sym, tf, momentum: momentumEff, setups, prediction, predRow, news, daily });
+ 
+ 
+   // The method's own verdict, kept separate from the setup model's. Anything
+@@ -189,7 +321,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+     method_verdict: methodVerdict,
+     topdown: td,
+     momentum: {
+-      direction: momentum.direction, bias: momentum.bias, bias_score: momentum.bias_score,
++      direction: momentumEff.direction, bias: momentumEff.bias, bias_score: momentum.bias_score,
++      // M50: `bias` is the HELD bias, the one every decision below was made with. `bias_fresh` is
++      // what a from-scratch derivation said this candle, and `bias_score` scores THAT read — it is
++      // the alignment score, not a confidence in the held bias, so the two are reported separately
++      // rather than quietly disagreeing.
++      bias_fresh: momentum.bias, bias_hysteresis: hysteresisView(hyst),
+       alignment: momentum.alignment, mechanics: momentum.mechanics,
+       narrative: momentum.narrative, conflicts: momentum.conflicts,
+       htf: momentum.htf, quote: momentum.quote, series: momentum.series,
+@@ -294,14 +431,18 @@ async function chart(symbol, tf = '15m', opts = {}) {
+     alignment: { reason: td.headline },
+     topdown: td,
+   };
++  // M50: the same rule as analyse(), against the same stored state, so the chart cannot show a
++  // bias that the analysis endpoint disagrees with. Skipped while replaying, for the same reason.
++  const chartHyst = (trim > 0 || cut.asOf) ? null : await applyBiasHysteresis(sym, tf, momentum, entry);
++  if (chartHyst) momentum.bias = chartHyst.bias;
+ 
+   const account = opts.userId ? await Cor.accountOf(opts.userId, opts.accountId) : null;
+   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
+-  const riskPct = account ? Number(account.risk_per_trade_pct || 1) : Number(opts.riskPct || 1);
++  const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
+ 
+   const setups = Setup.buildSetups(entry.smc, {
+-    price: entry.price, atr: entry.atr, bias: momentum.bias, biasReason: td.headline,
+-    indicators: entry.ind, balance, riskPct, valuePerPoint: spec.value_per_point,
++    price: entry.price, atr: entry.atr, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
++    indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
+     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td,
+   });
+ 
+@@ -391,7 +532,10 @@ async function chart(symbol, tf = '15m', opts = {}) {
+     smc, plan, topdown: td, stack,
+     setups: {
+       verdict: setups.verdict, method: setups.method,
+-      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok, levels: c.levels, action: c.action })),
++      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok,
++        // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
++        // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
++        no_trade: c.no_trade || [], levels: c.levels, action: c.action })),
+     },
+     quote: { price: entry.price, atr: entry.atr, change_pct: entry.candles.length > 1 ? r2(((entry.price - entry.candles[0].c) / entry.candles[0].c) * 100) : null },
+   };
+@@ -409,8 +553,12 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+           Momentum.analyse(sym, tf, { limit: 400 }),
+           Momentum.series(sym, tf, 400),
+         ]);
++        // M50: a scan is a real observation of the market, so it reads and updates the same state
++        // as analyse(). Without this a scan and an analyse of the same symbol could report
++        // different biases, which is worse than either rule applied consistently.
++        const scanHyst = await applyBiasHysteresis(sym, tf, momentum, series);
+         const specs = Setup.buildSetups(series.smc, {
+-          price: series.price, atr: series.atr, bias: momentum.bias, biasReason: momentum.alignment.reason,
++          price: series.price, atr: series.atr, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
+           indicators: series.ind, minRR: 2, topdown: momentum.topdown,
+         });
+         // one row per market: the side the method permits (a scan that lists both
+@@ -421,7 +569,9 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+         rows.push({
+           symbol: sym, timeframe: tf, ok: true,
+           price: series.price, atr: series.atr,
+-          direction: momentum.direction, bias: momentum.bias,
++          direction: scanHyst.bias > 0 ? 'bullish' : scanHyst.bias < 0 ? 'bearish' : 'neutral',
++          bias: scanHyst.bias, bias_fresh: momentum.bias,
++          bias_held: scanHyst.held, bias_changed_because: scanHyst.changed_because,
+           mechanics: momentum.mechanics.score, mechanics_grade: momentum.mechanics.grade,
+           action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
+           setup_side: best ? best.side : null,
+diff --git a/src/bots/momentum.js b/src/bots/momentum.js
+index 2e664e5..153ef90 100644
+--- a/src/bots/momentum.js
++++ b/src/bots/momentum.js
+@@ -174,6 +174,86 @@ function alignment(htf, mtf, ltf, td = null) {
+  * The first factor is the method itself, not an indicator average.
+  * @param {object} p { htf, mtf, ltf, align, td }
+  */
++/**
++ * M50 — bias hysteresis.
++ *
++ * Ep 15 states the rule twice. Mistake #4: *"changing bias after every single candlestick… your
++ * bias only change when your invalidation is hit."* Step 5: *"If my bias is invalidated, I reset
++ * my bias… I accept the fact that I am wrong and I reread the market."* Both require STATE, and
++ * `alignment()` above has none — it re-derives from scratch on every call, so the invalidation
++ * level was never the gate that changes the bias. `probe-ep15-bias-flips.js` measured the result:
++ * 3612 calls → 413 sign flips, of which only 148 (35.8 %) were preceded by an invalidating close
++ * and 265 (64.2 %) were not.
++ *
++ * **This function is deliberately PURE and deliberately NOT called from `alignment()`.** Folding
++ * state into `alignment()` would make it order-dependent, so every probe and backtest that calls
++ * it across a walk would carry state between unrelated windows and silently change what all of
++ * them measure — the M120 class of mistake, committed on purpose. State belongs to the caller,
++ * which is why this takes the prior bias as an argument and returns the new one.
++ *
++ * The fairness note from the ledger row still holds and is the reason this is worth doing: a bot
++ * has no emotions, so this is not the human failure mode he describes. The divergence is narrower
++ * and real — his invalidation is a *close beyond a key level*, which is a STRONGER condition than
++ * the structure relabel that actually drives `align.bias`, so the code's bias was free to change
++ * more easily than his rule permits.
++ *
++ * @param {number|null} priorBias   the stored bias (1, -1, 0 or null on a first read)
++ * @param {number}      freshBias   what alignment() derives from scratch this candle
++ * @param {object|null} invalidation `{ level, side }` — the level whose breach voids the PRIOR
++ *                                 bias; `side` is 'below' for a long, 'above' for a short
++ * @param {number}      close       the latest CLOSED price (never a wick — he says "close")
++ * @returns {{bias, held, changed, invalidated, changed_because, disagreement}}
++ */
++function biasHysteresis({ priorBias = null, freshBias = 0, invalidation = null, close = null } = {}) {
++  const prior = Number(priorBias) || 0;
++  const fresh = Number(freshBias) || 0;
++  const out = { bias: prior, held: false, changed: false, invalidated: false, changed_because: null, disagreement: null };
++
++  // First read, or the stored bias was flat: nothing to protect, so take the fresh derivation.
++  if (prior === 0) {
++    out.bias = fresh;
++    out.changed = fresh !== 0;
++    out.changed_because = fresh !== 0 ? 'no prior bias — first read' : null;
++    return out;
++  }
++
++  // The from-scratch read agrees: hold, and say nothing.
++  if (fresh === prior) { out.bias = prior; return out; }
++
++  // It disagrees. His rule: the bias changes ONLY when the invalidation is hit — a CLOSE beyond
++  // the level, not a wick and not a structure relabel.
++  //
++  // `num` treats null and undefined as ABSENT rather than as 0. `Number(null)` is 0 and
++  // `Number.isFinite(0)` is true, so the obvious guard would accept a null level as 0 — and a
++  // level of 0 with side 'above' makes `close > 0` true on every call, invalidating the bias
++  // constantly while looking like hysteresis was working. Found by checking the hazard rather than
++  // assuming the guard was right; the unit tests covered NaN but not null.
++  const num = (v) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
++  const level = invalidation ? num(invalidation.level) : null;
++  const side = invalidation && invalidation.side;
++  const c = num(close);
++  const breached = level !== null && c !== null &&
++    (side === 'below' ? c < level : side === 'above' ? c > level : false);
++
++  if (breached) {
++    out.bias = fresh !== 0 ? fresh : 0;
++    out.changed = true;
++    out.invalidated = true;
++    out.changed_because = `invalidation hit: a close at ${close} beyond ${level} (${side}) voids the prior ${prior > 0 ? 'long' : 'short'} bias`;
++    return out;
++  }
++
++  // Not breached: HOLD the prior bias and report the disagreement rather than hiding it. A fresh
++  // read of 0 (the higher timeframe went ranging) is an ABSENCE of information, not an
++  // invalidation, so it is held too — the `ranging` vetoes elsewhere already stand the trade down,
++  // so holding the label does not mean trading through a range.
++  out.bias = prior;
++  out.held = true;
++  out.disagreement = fresh;
++  out.changed_because = null;
++  return out;
++}
++
+ function mechanics({ htf, mtf, ltf, align, td = null }) {
+   const smc = mtf.smc;
+   const ind = mtf.ind;
+@@ -302,9 +382,20 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
+     });
+   }
+   if (pd) {
++    // M52: this line tested `zone === 'discount'` binarily — discount got +1, everything else
++    // got -1 with "longs here are paying up". Widening the equilibrium band in smc.js without
++    // touching this would have pushed 45–50% of the range into that else branch and told the
++    // trader price was premium while it was still BELOW the midpoint. `dir: 0` is the neutral
++    // value this same array already uses for Next step / Inducement / Timing.
++    const LOCATION_DIR = { discount: 1, premium: -1, equilibrium: 0 };
++    const LOCATION_TEXT = {
++      discount: 'Buying in discount and selling in premium is the whole game — this is the value side for longs.',
++      premium: 'Premium is where short-sellers want to be; longs here are paying up.',
++      equilibrium: 'Mid-range: neither side has value here. Ep 15 mistake #3 — either stay out and wait for price to come to an extreme, or take it at reduced size.',
++    };
+     lines.push({
+-      title: 'Location', dir: pd.zone === 'discount' ? 1 : -1,
+-      text: `Dealing range ${pd.range_low}–${pd.range_high}; price is at ${pd.position_pct}% (${pd.zone})${pd.ote ? `, inside the 0.62–0.79 OTE band (${pd.ote} bias)` : ''}. ${pd.zone === 'discount' ? 'Buying in discount and selling in premium is the whole game — this is the value side for longs.' : 'Premium is where short-sellers want to be; longs here are paying up.'}`,
++      title: 'Location', dir: LOCATION_DIR[pd.zone] !== undefined ? LOCATION_DIR[pd.zone] : 0,
++      text: `Dealing range ${pd.range_low}–${pd.range_high}; price is at ${pd.position_pct}% (${pd.zone})${pd.ote ? `, inside the 0.62–0.79 OTE band (${pd.ote} bias)` : ''}. ${LOCATION_TEXT[pd.zone] || LOCATION_TEXT.equilibrium}`,
+     });
+   }
+   if (td && td.steps) {
+@@ -451,4 +542,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+ module.exports = {
+   analyse, series, alignment, mechanics, narrative, crtView, regimeOf,
+   MTF, htfOf, ltfOf, topdown: TD,
++  // M50: exported pure so the hysteresis RULE can be unit-tested and measured against the same
++  // walk that found the defect, without any caller having to own a state store first.
++  biasHysteresis,
+ };
+diff --git a/src/bots/predict.js b/src/bots/predict.js
+index bacfca7..38ec2fa 100644
+--- a/src/bots/predict.js
++++ b/src/bots/predict.js
+@@ -443,9 +443,13 @@ function mtfTrigger(cand, ltf, fromT, { sweepLookback = 20, sweepFresh = 10 } =
+ }
+ 
+ /* --------------------------------------------------- entry-depth variants
+- * The playlist's refinement loop (ep. 24/32) says: don't take the first touch of
+- * the zone — wait for price to retrace deeper into it, so the same structural stop
+- * sits closer and a 0.5–0.75R win becomes a smaller move. This re-prices the same
++ * NOT FROM THE PLAYLIST (M114): this comment previously cited "ep. 24/32". Neither
++ * episode contains this rule — ep. 24 is guardrail/behaviour scoring and ep. 32 is the
++ * Mark Douglas trading-psychology material. The deeper-retrace refinement is a reasonable
++ * analysis in its own right and stays; the false provenance does not.
++ * The idea: don't take the first touch of the zone — wait for price to retrace deeper into
++ * it, so the same structural stop sits closer and a 0.5–0.75R win becomes a smaller move.
++ * This re-prices the same
+  * candidate at the zone midpoint or its far edge without touching the setup model,
+  * so "enter deeper" can be measured instead of argued about.
+  */
+@@ -599,7 +603,9 @@ function long_band(leg, dir) {
+ }
+ 
+ /* --------------------------------------------------- second-chance re-entry
+- * Playlist ep. 32: if the zone stops you out without reaching the first target,
++ * NOT FROM THE PLAYLIST (M114): previously cited "ep. 32", which does not contain this
++ * rule. The re-entry behaviour is measured, not prescribed — if the zone stops you out
++ * without reaching the first target,
+  * price often comes back to the same level — a "second chance" entry. This walks
+  * the same candle series and reports, honestly, what taking that second tap did:
+  * whether it happened, and whether re-risking 1R on it made money.
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index 138beb4..aeecd6b 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -15,7 +15,15 @@
+  *    - exact entry / stop / targets with R:R per target
+  *    - a position-size risk plan in the journal's own instrument maths
+  *    - invalidation + management rules
+- *    - hard vetoes (news blackout, chaos volatility, chase risk, no trigger yet)
++ *    - the score, for RANKING candidates against each other
++ *    - `ok` plus `no_trade`, decided by the all-or-nothing rules, not by the score.
++ *      History: M61 found the old wording named four vetoes when only two vetoed, because
++ *      "veto" meant "a cap that happens to land below the C floor of 44". That made
++ *      tradeability an accident of arithmetic — the risk-reward cap sat at 45, one point
++ *      above the floor, so a sub-2R idea was refused in spirit and accepted in fact (M7/M95).
++ *      It is now explicit: `vetoes` lists the conditions the course states as non-negotiable
++ *      and `tradeable` is their negation. The score caps below are kept for what they are
++ *      good at — showing how far short a setup fell — and no longer decide anything.
+  *
+  *  The model is deliberately conservative: when the trigger is not there, it says
+  *  "wait" instead of inventing a trade. That is episode 19 — when not to trade.
+@@ -35,12 +43,166 @@ const GRADES = [
+   { min: -Infinity, grade: 'no-trade', label: 'Not an A+ setup — the edge is not there' },
+ ];
+ 
++// M58: capital deployment per grade. A+/A deploy the account's configured risk in full;
++// B and C are scaled down to match the wording GRADES already carries. C stays at half of B
++// so that its "half risk at most" label is actually true. 'no-trade' is 0 for completeness —
++// such a setup is not signalled, so the multiplier is never reached.
++const GRADE_RISK_MULT = { 'A+': 1, 'A': 1, 'B': 0.5, 'C': 0.25, 'no-trade': 0 };
++
++/**
++ * M52 — mid-range risk reduction.
++ *
++ * Ep 15 mistake #3: *"If it's mid-range, if it's consolidating, if it's sideways, it's either you
++ * stay out of the market completely and wait for price to come up to the extremes. Or if you do
++ * want to trade this, reduce your risk, use like a smaller position size."*
++ *
++ * The DETECTION was already here — `inGoodHalf` costs a mid-range entry 10 points. What was
++ * missing is the SIZE response he specifies: `riskPct` was a constant lifted from the request
++ * context and never scaled by where price sits in the dealing range, so a mid-range entry and a
++ * deep-discount entry at the same grade deployed the same percentage of the account. Scoring it
++ * down and then sizing it identically is not the rule he states.
++ *
++ * `depth` is how far price sits beyond the midpoint TOWARD the favourable extreme: 0.5 at the
++ * range low for a long (range high for a short), 0 at the midpoint, negative in the wrong half.
++ * The multiplier is full at the extremes and falls to `floor` through the equilibrium band,
++ * interpolated linearly between — so risk cannot JUMP on a one-tick move across a threshold. A
++ * cliff at 45% would make position size discontinuous in price, which is indefensible live.
++ *
++ * The band is read from `pd.eq_band` rather than redeclared here, so the label smc.js emits and
++ * the sizing this drives cannot drift apart. That agreement is the second half of the ledger row:
++ * before it, `'equilibrium'` was reachable only at exactly pos === 0.5, so the label was cosmetic
++ * and the 45–55 band in `inGoodHalf` was the only real mechanism.
++ *
++ * Deliberately INERT when the dealing range is unavailable: multiplier 1, sizing exactly as
++ * before. This one is NOT inert in general, though — unlike M9 it changes real position sizes,
++ * so it is measured against Baseline 6 rather than assumed neutral.
++ */
++const RANGE_RISK = { fullAt: 0.20, floor: 0.5 };
++
++function rangeRiskMult(pd, long) {
++  if (!pd || !Number.isFinite(pd.position_pct)) {
++    return { mult: 1, depth: null, band: null, reason: 'no dealing range available' };
++  }
++  const pos = pd.position_pct / 100;
++  const band = Array.isArray(pd.eq_band) && pd.eq_band.length === 2 ? pd.eq_band : [45, 55];
++  const halfAt = Math.max(0, (band[1] - band[0]) / 200);   // 0.05 for a 45–55 band, as a fraction
++  const fullAt = Math.max(RANGE_RISK.fullAt, halfAt + 1e-9);
++  const depth = long ? 0.5 - pos : pos - 0.5;
++  if (depth >= fullAt) return { mult: 1, depth: r4(depth), band, reason: 'at the favourable extreme of the range' };
++  if (depth <= halfAt) {
++    return {
++      mult: RANGE_RISK.floor, depth: r4(depth), band,
++      reason: depth < 0 ? 'in the wrong half of the range for this direction' : 'mid-range, inside the equilibrium band',
++    };
++  }
++  const mult = RANGE_RISK.floor + (1 - RANGE_RISK.floor) * (depth - halfAt) / (fullAt - halfAt);
++  return { mult: r4(mult), depth: r4(depth), band, reason: 'between mid-range and the extreme' };
++}
++
+ function gradeFor(score) {
+   const g = GRADES.find((x) => score >= x.min);
+   return { grade: g.grade, label: g.label };
+ }
+ 
+ /** Liquidity pools that matter for a target, sorted outward from `entry`. */
++/**
++ * M21 — strong / weak structure.
++ *
++ * The course makes this a TARGET-SELECTION rule, not a decoration:
++ *   "in a bullish market structure you want to trade from STRONG structure and TARGET WEAK
++ *    structure", where weak is "where the break of structure happen" (expected to break) and
++ *    strong is "where price is most likely going to hold the next time".
++ * Ep-bonus `en8RMFRqSME` uses the same vocabulary on the 1h: "this is the one hour strong low
++ * and this is the one hour weak low."
++ *
++ * The labels already computed by smc.js are enough — no restructuring of the swing tiers is
++ * needed (that is M22, a separate rule) and nothing here depends on the CHoCH definition
++ * (that is M24, also separate). Verified against the live output: structure.labels carries
++ * H/L/HH/HL/LH/LL, and structure.last_swing_high/low carry the most recent of each.
++ *
++ *   bullish → weak = the most recent LH (the lower high structure is expected to take out)
++ *             strong = the most recent HL (the higher low structure is expected to hold)
++ *   bearish → weak = the most recent LL, strong = the most recent LH
++ *
++ * A ranging structure gets no assignment: strong and weak are defined by the direction of the
++ * break of structure, so without a direction the labels would be invented.
++ */
++function strongWeak(analysis) {
++  const st = analysis && analysis.structure;
++  if (!st) return null;
++  const trend = st.trend;
++  if (trend !== 'bullish' && trend !== 'bearish') {
++    return { trend: trend || 'ranging', strong: null, weak: null,
++      note: 'No strong/weak assignment — the structure is ranging, and strong/weak are defined relative to the direction of the break of structure.' };
++  }
++  // The MOST RECENT swing high and low are the levels that matter. Reaching back for the
++  // last LH/LL was wrong: in a healthy bullish HH/HL sequence the most recent high is an HH,
++  // so searching for an LH walks back to a stale level that can sit BELOW the strong low and
++  // below current price. smc.js already exposes the most recent of each, with its label.
++  const sh = st.last_swing_high || null;
++  const sl = st.last_swing_low || null;
++  const pick = (l) => (l ? { price: l.price, label: l.label, i: l.i, t: l.t } : null);
++
++  if (trend === 'bullish') {
++    const weak = pick(sh);      // the high above, expected to be taken out
++    const strong = pick(sl);    // the low below, expected to hold
++    if (!weak || !strong || !(weak.price > strong.price)) {
++      // Emit nothing rather than a target on the wrong side of the entry. The contradiction
++      // between the trend label and the swing labels is M50 (no bias hysteresis), not M21.
++      return { trend, strong: null, weak: null, stale: true,
++        note: 'Bullish label, but the most recent swing high is not above the most recent swing low — the trend label is stale relative to structure, so no strong/weak target is assigned. (See M50: no bias hysteresis.)' };
++    }
++    return { trend, strong, weak,
++      note: `Bullish structure: trade from the strong low at ${strong.price} (${strong.label}, expected to hold) and target the weak high at ${weak.price} (${weak.label}, expected to break).` };
++  }
++  const weak = pick(sl);        // the low below, expected to break
++  const strong = pick(sh);      // the high above, expected to hold
++  if (!weak || !strong || !(weak.price < strong.price)) {
++    return { trend, strong: null, weak: null, stale: true,
++      note: 'Bearish label, but the most recent swing low is not below the most recent swing high — the trend label is stale relative to structure, so no strong/weak target is assigned. (See M50: no bias hysteresis.)' };
++  }
++  return { trend, strong, weak,
++    note: `Bearish structure: trade from the strong high at ${strong.price} (${strong.label}, expected to hold) and target the weak low at ${weak.price} (${weak.label}, expected to break).` };
++}
++
++/**
++ * M25 — market phase, the four-stage sequence from Ep 5.
++ *
++ * Ep 2 says stay away from consolidation and Ep 5 closes with the three-state model, both of
++ * which this codebase ALREADY serves: `smc.js` initialises `trend = 'ranging'` and `ranging`
++ * is used as a bias veto in five places (momentum.js:105/142, topdown.js:550, setup.js:137,
++ * indicators.js:160). So no new stand-down logic is needed — the ledger entry was narrowed to
++ * exactly this after Ep 5 was read in full.
++ *
++ * What was genuinely missing is the distinction between the stages WITHIN a trend: expansion
++ * (an impulse is running), pullback (price is retracing into the point of interest), and
++ * balance (tight, undecided). Ep 5's timing rule — "get in during the balance phase… not
++ * after" — and M3 both key on it, and without it the bot cannot tell an impulse it is late
++ * for from a pullback it is early for.
++ *
++ * Derived only from what analyse() exposes. The newest bar index is taken as the maximum index
++ * seen across displacement and swing labels, so no candle array is required.
++ */
++function marketPhase(analysis) {
++  const st = analysis && analysis.structure;
++  if (!st) return { phase: 'unknown', note: 'No structure available.' };
++  const trend = st.trend || 'ranging';
++  const lb = st.last_break || null;
++  const ago = lb ? lb.bars_ago : null;
++  const RECENT = 5;   // bars within which a break of structure still counts as an impulse in progress
++
++  if (trend === 'ranging') {
++    return { phase: 'balance', trend, bars_since_break: ago,
++      note: 'No structural direction — this is the balance/consolidation stage. Ep 2: stay away from it; Ep 5: the market is ranging.' };
++  }
++  if (ago !== null && ago <= RECENT) {
++    return { phase: 'expansion', trend, bars_since_break: ago,
++      note: `Structure broke ${ago} bar(s) ago (${lb.type} ${lb.dir}) — the impulse is still running. Entering now is chasing it; the model waits for the retrace.` };
++  }
++  return { phase: 'pullback', trend, bars_since_break: ago,
++    note: `No break of structure in the last ${RECENT} bars while the trend holds${ago === null ? '' : ` (last one ${ago} bars ago)`} — price is retracing. This is the stage the entry models want.` };
++}
++
+ function targetPools(analysis, dir, entry) {
+   const pools = (analysis.liquidity && analysis.liquidity.pools) || [];
+   const outward = pools
+@@ -49,6 +211,17 @@ function targetPools(analysis, dir, entry) {
+     .sort((a, b) => (dir > 0 ? a.price - b.price : b.price - a.price));
+   const seen = new Set();
+   const out = [];
++  // M21: the weak structural extreme is the course's primary target — "target weak structure".
++  // It goes first when it lies beyond the entry, so it takes the T1 slot ahead of generic
++  // liquidity pools. Strength 0.9 puts it just under an equal-high/low triple, which the
++  // method treats as the strongest draw on price.
++  const sw = strongWeak(analysis);
++  if (sw && sw.weak && (dir > 0 ? sw.weak.price > entry : sw.weak.price < entry)) {
++    const key = sw.weak.price.toFixed(5);
++    seen.add(key);
++    out.push({ price: sw.weak.price, strength: 0.9, kind: 'weak_structure',
++      label: `Weak ${sw.weak.label} — the level structure is expected to take out`, touches: null });
++  }
+   for (const p of outward) {
+     const key = p.price.toFixed(5);
+     if (seen.has(key)) continue;
+@@ -83,7 +256,7 @@ function buildSetups(analysis, ctx = {}) {
+   const td = ctx.topdown || null;                   // the method gate
+ 
+   const candidates = [];
+-  const vetoes = [];
++  // M61: `const vetoes = []` lived here and was never read or returned — dead code. Removed.
+ 
+   for (const dir of [1, -1]) {
+     const long = dir > 0;
+@@ -108,22 +281,62 @@ function buildSetups(analysis, ctx = {}) {
+     const obs = ((analysis && analysis.order_blocks) || []).filter((z) => z.dir === dir && !z.breached);
+     const fvgs = ((analysis && analysis.fvgs) || []).filter((g) => g.dir === dir && !g.filled);
+     // prefer a fresh, strong OB with an unfilled FVG overlapping or nested
+-    const scored = obs.map((z) => {
++    // M47 - Ep 14: flip zones are computed and correctly named but consumed by NOTHING.
++    // "A supply flip zone is formed when a demand zone fails." findBreakers() emits them and
++    // the API returns them, yet grep finds only four hits in src/ - the docstring, the
++    // computation, the output and the API payload. He trades them as points of interest in
++    // their own right, so they belong in the same candidate pool as un-breached order blocks.
++    // Opt-in (ctx.useBreakers) until it is measured; the `retested` flag is required, which is
++    // his own confirmation step - "retest since the break = confirmation the flip holds".
++    const breakers = ctx.useBreakers
++      ? ((analysis && analysis.breakers) || []).filter((b) => b.dir === dir && b.retested)
++      : [];
++    const obCandidates = obs.map((z) => {
+       const overlap = fvgs.find((g) => g.bottom <= z.top && g.top >= z.bottom);
+       const reach = z.distance_atr;                          // how far price is from the zone
+       const proximity = clamp(1 - reach / 6, 0, 1);          // within 6 ATR is "reachable"
+       const score = z.strength + (z.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
+       return { zone: z, overlap, score, reach };
+-    }).sort((a, b) => b.score - a.score);
++    });
++    const breakerCandidates = breakers.map((b) => {
++      const overlap = fvgs.find((g) => g.bottom <= b.top && g.top >= b.bottom);
++      // a flip zone has no `fresh`/`breached` of its own; shape it so downstream can use it
++      // `fresh` on an order block means "recently formed". For a flip zone the equivalent
++      // confirmation is the RETEST, which the filter above already requires - his own three
++      // criteria are failed reaction, break of structure and a close beyond the reaction
++      // point, none of which is about recency. Keying it to bars_ago gave 0% of breakers the
++      // bonus against 90% of order blocks, which is most of the ranking gap by itself.
++      const zone = { ...b, fresh: true, breached: false, is_breaker: true };
++      const reach = b.distance_atr;
++      const proximity = clamp(1 - reach / 6, 0, 1);
++      const score = b.strength + (zone.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
++      return { zone, overlap, score, reach };
++    });
++    const scored = obCandidates.concat(breakerCandidates).sort((a, b) => b.score - a.score);
+     const bestOB = scored[0] || null;
+     const bestFvg = fvgs.filter((g) => !bestOB || !(bestOB.overlap && bestOB.overlap.i === g.i)).sort((a, b) => b.size_atr - a.size_atr)[0] || null;
+ 
+-    const zone = bestOB ? { kind: 'order_block', top: bestOB.zone.top, bottom: bestOB.zone.bottom, mid: bestOB.zone.mid, entry: bestOB.zone.body_mid, meta: bestOB.zone, overlap: bestOB.overlap }
+-      : bestFvg ? { kind: 'fvg', top: bestFvg.top, bottom: bestFvg.bottom, mid: bestFvg.mid, entry: bestFvg.mid, meta: bestFvg, overlap: null }
+-        : null;
+-
+-    add('zone', long ? 'Demand zone (order block / FVG) to buy from' : 'Supply zone (order block / FVG) to sell from',
+-      !!zone, 16, zone ? `${zone.kind === 'order_block' ? 'Order block' : 'FVG'} ${r4(zone.bottom)} – ${r4(zone.top)}${zone.overlap ? ', nested FVG' : ''}${zone.meta.fresh ? ', fresh' : `, already tested ${zone.meta.tests}×`}` : 'No unmitigated zone in this direction.');
++    // M16 (decided): a standalone FVG no longer qualifies as the point of interest.
++    // The sniper-entry material is explicit — "ideally, I want the fair value gap to be
++    // WITHIN the order block itself… try not to enter at like a random fair value gap that
++    // is in the middle of nowhere." The asymmetry is deliberate and sanctioned: entering on
++    // ORDER BLOCK mitigation with no FVG present is allowed, but a lone FVG is not a POI.
++    // `bestFvg` is still computed because the reach calculation at the zoneReach block below
++    // uses it; it just can no longer form the zone.
++    // M47: this line rebuilds the zone as a NEW object, so anything a candidate carries has to
++    // be forwarded explicitly - the same trap as `no_trade` being stripped at index.js:394.
++    // Two things it got wrong for flip zones: `kind` was hardcoded 'order_block', which would
++    // have advertised a flip zone as an order block, and `entry` came from `body_mid`, which
++    // findBreakers does not copy - so a flip-zone point of interest would have had an
++    // UNDEFINED entry price.
++    const zMeta = bestOB ? bestOB.zone : null;
++    const zone = bestOB ? { kind: zMeta.is_breaker ? 'flip_zone' : 'order_block', top: zMeta.top, bottom: zMeta.bottom, mid: zMeta.mid, entry: zMeta.body_mid != null ? zMeta.body_mid : zMeta.mid, meta: zMeta, overlap: bestOB.overlap }
++      : null;
++
++    add('zone', long ? 'Demand zone (order block) to buy from' : 'Supply zone (order block) to sell from',
++      !!zone, 16, zone ? `Order block ${r4(zone.bottom)} – ${r4(zone.top)}${zone.overlap ? ', nested FVG' : ', no nested FVG (entry on mitigation of the block itself)'}${zone.meta.fresh ? ', fresh' : `, already tested ${zone.meta.tests}×`}`
++        : bestFvg ? `No unmitigated order block in this direction — only a standalone FVG at ${r4(bestFvg.bottom)} – ${r4(bestFvg.top)}, which is not a point of interest on its own.`
++          : 'No unmitigated zone in this direction.');
+ 
+     if (zone && zone.overlap) add('nested', 'Zone + imbalance overlap (confluence)', true, 8, 'The order block contains an unfilled FVG — two reasons for price to react at the same price.');
+ 
+@@ -135,10 +348,15 @@ function buildSetups(analysis, ctx = {}) {
+ 
+     /* ------------------------------------------------------------- 5. trend alignment */
+     const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
++    // M6: smc.analyse() returns a short-series sentinel `{ ok:false, tf }` with NO `structure`
++    // key (bots/smc.js, candles.length < 30), reachable via the `trim` branch in momentum.js.
++    // The `trend` line above already guards for that; hoist the same guard so the report
++    // string below cannot dereference `analysis.structure` unconditionally.
++    const lastBreak = analysis && analysis.structure ? analysis.structure.last_break : null;
+     const trendAligned = (long && trend === 'bullish') || (!long && trend === 'bearish');
+     const htfTrend = analysis && analysis.htf_structure ? analysis.htf_structure.trend : null;
+     const htfAligned = htfTrend ? ((long && htfTrend === 'bullish') || (!long && htfTrend === 'bearish')) : null;
+-    add('structure', 'Internal structure agrees', trendAligned, 12, `Structure reads ${trend}${analysis.structure.last_break ? ` after a ${analysis.structure.last_break.type} ${analysis.structure.last_break.dir} ${analysis.structure.last_break.bars_ago} bars ago${analysis.structure.last_break.mss ? ' (MSS — sweep then shift)' : ''}` : ''}.`);
++    add('structure', 'Internal structure agrees', trendAligned, 12, `Structure reads ${trend}${lastBreak ? ` after a ${lastBreak.type} ${lastBreak.dir} ${lastBreak.bars_ago} bars ago${lastBreak.mss ? ' (MSS — sweep then shift)' : ''}` : ''}.`);
+     if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
+ 
+     /* ------------------------------------------------------------- 6. higher-timeframe bias */
+@@ -160,7 +378,11 @@ function buildSetups(analysis, ctx = {}) {
+ 
+     /* ---------------------------------------------------------------- 9. news */
+     add('news', 'No high-impact news in the window', !blackout, 10,
+-      blackout ? blackout : 'No high-impact releases due in the next 60 minutes.');
++      // M4: the previous fallback asserted "the next 60 minutes", which was wrong twice —
++      // newsCheck() defaults to windowMin = 45 (bots/index.js), and the test is SYMMETRIC
++      // (±windowMin, both sides of the entry), not forward-only. State neither the number
++      // nor a direction, so the string cannot drift out of sync with the config again.
++      blackout ? blackout : 'No high-impact releases inside the news window (checked either side of the entry).');
+ 
+     /* ------------------------------------------------------------- 10. volatility */
+     const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
+@@ -195,6 +417,15 @@ function buildSetups(analysis, ctx = {}) {
+         }
+       }
+       targets.sort((a, b) => a.rr - b.rr);
++      // M21 BUG, found by strengthening the M21 probe: targetPools() deliberately pushes the
++      // weak structural extreme FIRST, because "in a bullish market structure you want to
++      // trade from strong structure and TARGET WEAK STRUCTURE". This sort by rr then silently
++      // undid that ordering, so the weak extreme only led when it happened to be the nearest
++      // pool - measured at 77 of 1174 eligible candidates. The placement had been dead code.
++      // It only looked alive because the old three-rung ladder could surface the weak extreme
++      // in ANY rung, and the probe accepted that.
++      const wkIdx = targets.findIndex((t) => t.kind === 'weak_structure');
++      if (wkIdx > 0) targets.unshift(targets.splice(wkIdx, 1)[0]);
+       // The FIRST pool is a wall, not a nuisance: price usually reacts there. The model
+       // banks a partial on it, protects the trade, and runs the rest to the 2R+ pool.
+       const first = targets[0] || null;
+@@ -203,16 +434,47 @@ function buildSetups(analysis, ctx = {}) {
+ 
+       add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
+         runner && runner.rr >= minRR
+-          ? `Partial at ${first.label} (${first.rr}R), runner to ${runner.label} at ${runner.price} = ${runner.rr}R`
++          // M51: this described a partial that no longer exists by default. Re-read every
++          // string that describes a decision whenever the decision changes.
++          ? (ctx.ladderTargets
++            ? `Partial at ${first.label} (${first.rr}R), runner to ${runner.label} at ${runner.price} = ${runner.rr}R`
++            : `One target: ${runner.label} at ${runner.price} = ${runner.rr}R — pick one and manage one position.`)
+           : first ? `The furthest real pool (${first.label}, ${first.price}) is only ${first.rr}R away — not enough runway for the risk taken.`
+             : 'No liquidity pool beyond entry to target — no reason for price to travel.');
+ 
+-      // target ladder: T1 (wall, partial), T2 (runner), T3 (extension if one exists)
++      // M51 - Ep 15 step 4: "Take profit, JUST PICK ONE TARGET... they mark 10 different
++      // targets... THAT'S NOT HOW YOU DO IT... you're going to PANIC and you're going to MANAGE
++      // THE TRADE DIFFERENT WAYS AT DIFFERENT PRICE POINTS... you only need ONE TARGET for your
++      // daily bias." The three-rung ladder with a 50% partial at T1 is precisely the behaviour
++      // he is describing, and the `management.rule` string even said "the runner is free".
++      // Collapsed to a SINGLE target by default. `ctx.ladderTargets` restores the ladder as an
++      // optional management view, which is where the ledger says it belongs - a trader's own
++      // plan, not the model's default.
++      // The single target is the runner (the first pool at or beyond minRR), falling back to
++      // the nearest pool: that keeps the minRR floor meaningful rather than letting the choice
++      // of one target quietly drop the risk:reward requirement.
+       const ladder = [];
+-      if (first) ladder.push({ ...first, role: 'T1' });
+-      if (runner && (!first || runner.rr > first.rr + 0.3)) ladder.push({ ...runner, role: 'T2' });
+-      const beyond = targets.filter((t) => runner && t.rr > runner.rr + 0.6).slice(0, 1);
+-      beyond.forEach((t) => ladder.push({ ...t, role: 'T3' }));
++      if (ctx.ladderTargets) {
++        if (first) ladder.push({ ...first, role: 'T1' });
++        if (runner && (!first || runner.rr > first.rr + 0.3)) ladder.push({ ...runner, role: 'T2' });
++        const beyond = targets.filter((t) => runner && t.rr > runner.rr + 0.6).slice(0, 1);
++        beyond.forEach((t) => ladder.push({ ...t, role: 'T3' }));
++      } else {
++        // M21 put the WEAK STRUCTURAL EXTREME first in the target list on purpose - "target
++        // weak structure" is the course's primary magnet. Selecting the runner here discarded
++        // it, and probe-m21 caught that (0 of 48 candidates reached the ladder). The two rules
++        // are not in conflict once resolved correctly: ONE target, and that target is the weak
++        // extreme. Fall back to the runner only when the weak extreme cannot carry the minRR
++        // floor, so the risk:reward requirement is not quietly dropped.
++        // The weak extreme IS the one target. Falling back to the runner when it sits under
++        // minRR was the wrong resolution - it silently swapped the course's magnet for a
++        // farther pool just to clear the ratio floor. If the weak structure is only 1R away
++        // the idea does not meet the 2R requirement and should not be taken at all; the
++        // existing runway/minRR veto says so, which keeps both rules intact instead of
++        // satisfying one by violating the other.
++        const single = first || runner || null;
++        if (single) ladder.push({ ...single, role: 'T1' });
++      }
+       if (!ladder.length) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
+       const rrPrimary = ladder[0].rr;
+       const rrFinal = ladder[ladder.length - 1].rr;
+@@ -230,6 +492,22 @@ function buildSetups(analysis, ctx = {}) {
+         else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
+         else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
+       }
++      // M43 - Ep 13: un-swept liquidity between entry and target is a STAND-DOWN, not a
++      // partial. "They see price comes up to this supply zone and they immediately enter for a
++      // sell the minute price mitigate the supply zone... WE ARE NOT GOING TO BE ENTERING FOR A
++      // SELL RIGHT HERE. We acknowledge that okay, swing highs are formed right there. There is
++      // available liquidity being built up right there and I'm not going to enter for sell
++      // UNTIL THOSE GET SWEPT."
++      // The code already detected this wall (`wallRisk` = the first pool inside 1.3R) but
++      // answered it by banking a partial on it. Downgrading to `waiting` routes through the
++      // existing veto machinery, so the refusal is explainable in the same terms as the
++      // others. `swept === false` is tested explicitly: synthetic targets such as
++      // weak_structure carry no flag at all, and absence of evidence is not an un-swept pool.
++      if (ctx.standDownOnWall && wallRisk && wallRisk.swept === false
++          && (entryStatus === 'at-entry' || entryStatus === 'approaching')) {
++        entryStatus = 'waiting';
++        entryNote = `Un-swept liquidity at ${r4(wallRisk.price)} (${wallRisk.label}) sits only ${wallRisk.rr}R beyond entry — the method waits for that pool to be swept before entering rather than banking a partial on it. Re-arms once it is taken out.`;
++      }
+       // Distance still to travel to the zone we would enter at. An FVG-only read has
+       // no order-block `reach` — measure to its near edge instead of dereferencing null.
+       const zoneReach = bestOB ? bestOB.reach
+@@ -245,12 +523,19 @@ function buildSetups(analysis, ctx = {}) {
+         stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / atr),
+         stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
+           ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(atr * 0.18)} buffer`
+-          : `Beyond the ${zone.kind === 'order_block' ? 'order block' : 'FVG'} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(atr * 0.18)} buffer`,
++          // M47: a third kind now exists, so the two-way ternary would have called a flip
++          // zone an "FVG" - the recurring trap of a string that describes a decision no
++          // longer being updated when the decision changes.
++          : `Beyond the ${{ order_block: 'order block', flip_zone: 'flip zone', fvg: 'FVG' }[zone.kind] || zone.kind} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(atr * 0.18)} buffer`,
+         targets: ladder, primary_target: ladder[0] ? { ...ladder[0] } : null,
+         rr_primary: rrPrimary, rr_final: rrFinal,
+         management: {
+-          partial_at: ladder[0] ? { price: ladder[0].price, rr: ladder[0].rr, label: ladder[0].label, size: '50%' } : null,
+-          break_even_after: ladder[0] ? ladder[0].price : null,
++          // M51: with a single target there is no partial to take and nothing to move to
++          // break-even at - the old code emitted `partial_at` at 50% and a `runner_target` at
++          // 100% for the SAME price, i.e. "take half off here and run the rest to here".
++          // A field that describes a decision which no longer exists is the recurring trap.
++          partial_at: ladder.length > 1 && ladder[0] ? { price: ladder[0].price, rr: ladder[0].rr, label: ladder[0].label, size: '50%' } : null,
++          break_even_after: ladder.length > 1 && ladder[0] ? ladder[0].price : null,
+           runner_target: ladder[ladder.length - 1] ? { price: ladder[ladder.length - 1].price, rr: ladder[ladder.length - 1].rr, label: ladder[ladder.length - 1].label, size: ladder.length > 1 ? '50%' : '100%' } : null,
+           rule: ladder.length > 1
+             ? `Bank 50% at T1 (${ladder[0].rr}R) and move the stop to entry. The runner is free — let the pool at ${ladder[ladder.length - 1].price} do the work.`
+@@ -271,8 +556,14 @@ function buildSetups(analysis, ctx = {}) {
+     const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
+     const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
+     let score = (got / totalW) * 100;
+-    // killzone is a real multiplier in the curriculum: outside it, size/edge drops
+-    score = score * (0.82 + 0.18 * strike);
++    // M8: the killzone used to scale the score — `score *= (0.82 + 0.18 * sessions.quality)`.
++    // That made the GRADE a function of the wall clock, because `quality` runs 0.30 -> 1.00
++    // across the day. Measured on identical candles: average score 30.57 at 22:30Z vs 33.13 at
++    // 12:30Z, and at 22:30Z the whole distribution shifts down a letter — the 40 trades that
++    // grade A+ at 08:30Z grade A, and the 162 that grade A grade B. A+/A/B/C stopped describing
++    // the setup and started describing the hour. Timing is one of the course's five all-or-
++    // nothing triggers, not a quality dial, so it is enforced as a veto below instead. Session
++    // quality is still reported as `killzone_quality` for the trader to read.
+     // a missing trigger or zone is disqualifying regardless of the rest
+     const hasTrigger = checks.find((c) => c.key === 'sweep').pass;
+     const hasZone = checks.find((c) => c.key === 'zone').pass;
+@@ -286,22 +577,104 @@ function buildSetups(analysis, ctx = {}) {
+ 
+     const g = gradeFor(score);
+ 
++    /* ------------------------------------------------- the all-or-nothing rules
++       Ep 25: "If even just one of these boxes are not being checked, I would still not
++       trade." A weighted score is structurally unable to express that (M96): failing the
++       risk-reward check costs 14 of 155 points, so the weighted score stays at 91 — inside
++       the A+ band — and only the score cap caught it. Tradeability is therefore decided
++       here, from booleans, and `score` is left to do the job a weighted number is good at:
++       ranking candidates against each other.
++
++       M95 — user decision: B and C stay tradeable, so the GRADE is deliberately not a veto
++       here. What is vetoed are the conditions the course states as non-negotiable no matter
++       how good the rest of the setup looks. The two are different axes and this keeps both.
++    */
++    const vetoes = [];
++    if (!hasTrigger) vetoes.push('No liquidity sweep — the model has no trigger to enter on.');
++    if (!hasZone) vetoes.push('No order block to trade against — no level, so no defined risk.');
++    // M7 / M96 — "no matter how many confluences I have, no matter how confident I am,
++    // I'm going to be passing on the trade." This is arithmetic, not taste: at the measured
++    // ~21% win rate, break-even needs (1 - 0.21) / 0.21 = 3.8R, so a sub-2R idea cannot win.
++    if (levels && levels.rr_final > 0 && levels.rr_final < minRR) {
++      vetoes.push(`Risk:reward ${levels.rr_final}R is below the ${minRR}R floor — passing on the trade.`);
++    }
++    if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
++    if (blackout) vetoes.push('High-impact news inside the window.');
++    // M8 — tested against the boolean, not truthiness: when analysis is the short-series
++    // sentinel, `sessions` is {} and in_killzone is undefined, which must NOT veto.
++    if (sessions.in_killzone === false) {
++      vetoes.push(`Outside the killzone — "if the setup appears before or after that window, I personally will not enter."${sessions.best_time ? ` ${sessions.best_time}` : ''}`);
++    }
++    // M35 — a cap at 66 left this tradeable as a B. The course stands it down instead:
++    // "when price is hovering around here in the middle of nowhere, we do not go down to the
++    // lower time frame." It stays visible with its action string so it can be alerted on.
++    if (levels && levels.entry_status === 'waiting') {
++      vetoes.push('Price has not reached the point of interest yet — waiting for the retrace is not an entry.');
++    }
++    const tradeable = vetoes.length === 0 && g.grade !== 'no-trade';
++
++    const phaseInfo = marketPhase(analysis);   // M25
++    const swInfo = strongWeak(analysis);        // M21
++
+     /* --------------------------------------------------------------- risk plan */
+     let risk = null;
+     if (levels) {
+       const balance = Number(ctx.balance || 0);
+-      const riskPct = Number(ctx.riskPct || 1);
++      // M9: the fallback was 1 — double the guardrail default. `maxRiskPct` was listed in the
++      // ctx docstring above and NEVER READ — the finding's own evidence was that
++      // `grep -n maxRiskPct src/bots/setup.js` returned one hit, that docstring — so the
++      // derived ceiling never reached sizing. It is honoured here when a caller supplies one,
++      // which bots/index.js now does from the account's persisted unlock.
++      // Deliberately INERT when absent: the harness and every existing measurement keep the
++      // exact risk they passed in, so the 60-seed baseline still reproduces and this change
++      // stays attributable (§10: measure every change separately).
++      const riskPct = Number(ctx.maxRiskPct) > 0
++        ? I.clampRiskPct(ctx.riskPct, { fallback: 0.5, max: Number(ctx.maxRiskPct), unlocked: true })
++        : Number(ctx.riskPct || 0.5);
+       const vpp = Number(ctx.valuePerPoint || 1);
+       if (balance > 0 && vpp > 0) {
++        // M58: the grade has to drive capital deployment, or the words in GRADES above are
++        // decoration. B is labelled "Tradeable — reduced size or wait for the retest" and C is
++        // "Marginal — paper/demo or half risk at most", but nothing enforced either. This is
++        // also the compensating control for the M95 decision to keep B and C tradeable: with
++        // refusal off the table, position size is the only remaining protection against a
++        // low-probability setup. C is capped at half of B so "half risk at most" holds.
++        const gradeMult = GRADE_RISK_MULT[g.grade] !== undefined ? GRADE_RISK_MULT[g.grade] : 1;
++        // M52: the grade is not the only thing that should move capital. Ep 15 mistake #3 ties
++        // position size to WHERE in the dealing range the entry is, independently of quality —
++        // an A+ taken mid-range is still a mid-range entry. The two multipliers compose; neither
++        // can raise risk above the configured figure, so M9's ceiling still binds.
++        const rangeInfo = rangeRiskMult(pd, long);
++        const rangeMult = rangeInfo.mult;
++        const sizeMult = gradeMult * rangeMult;
++        const effectiveRiskPct = r2(riskPct * sizeMult);
+         const sizing = I.positionSize({
+-          balance, riskPct, entry: levels.entry, stop: levels.stop,
++          balance, riskPct: effectiveRiskPct, entry: levels.entry, stop: levels.stop,
+           value_per_point: vpp, asset_class: ctx.assetClass || 'stocks',
+         });
+         const perR = sizing.riskAmount || 0;
+         risk = {
+-          balance: r2(balance), risk_pct: riskPct, risk_amount: r2(balance * riskPct / 100),
++          balance: r2(balance), risk_pct: effectiveRiskPct, risk_amount: r2(balance * effectiveRiskPct / 100),
+           size: sizing.size, unit: sizing.unit, actual_risk: perR, per_unit: sizing.perUnit,
+           note: sizing.note || null,
++          grade_risk_multiplier: gradeMult,
++          // M52: reported so a reduction is auditable and attributable to its cause. `depth` is
++          // the signed distance beyond the midpoint toward the favourable extreme, which is what
++          // the multiplier is a function of — without it a reviewer cannot tell a mid-range cut
++          // from a wrong-half cut.
++          range_risk_multiplier: rangeMult,
++          range_position_pct: pd ? pd.position_pct : null,
++          range_zone: pd ? pd.zone : null,
++          range_depth: rangeInfo.depth,
++          risk_pct_configured: riskPct,
++          risk_adjustment_note: (() => {
++            const why = [];
++            if (gradeMult !== 1) why.push(`grade ${g.grade} ×${gradeMult} — the setup is ${g.label.toLowerCase()}`);
++            if (rangeMult !== 1) why.push(`range position ×${rangeMult} — price is at ${pd.position_pct}% of the dealing range, ${rangeInfo.reason}`);
++            // Null only when NOTHING reduced risk, so the field stays a faithful "was this
++            // adjusted?" flag rather than a grade-only one.
++            return why.length ? `Risk scaled ${riskPct}% → ${effectiveRiskPct}%: ${why.join('; ')}.` : null;
++          })(),
+           at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
+           managed: levels.management && levels.management.runner_target
+             ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
+@@ -312,17 +685,44 @@ function buildSetups(analysis, ctx = {}) {
+ 
+     candidates.push({
+       dir, side, score, grade: g.grade, grade_label: g.label,
+-      ok: g.grade !== 'no-trade' && (!levels || levels.entry_status !== 'invalid'),
++      // M25: the market phase, so the trader (and any review) can tell an impulse they are
++      // late for from a pullback they are early for. Reported, not enforced — turning it
++      // into a gate is M3's timing rule and needs its own measurement.
++      phase: phaseInfo,
++      strong_weak: swInfo,
++      // M7/M8/M35/M96: tradeability now comes from the all-or-nothing rules above, not from
++      // the grade. `no_trade` says which one fired, so the refusal is explainable.
++      ok: tradeable,
++      no_trade: vetoes,
+       checks,
+       passed: checks.filter((c) => c.pass).length,
+       total_checks: checks.length,
+       levels, risk,
+       /** what to do right now, in one line */
+-      action: !levels ? 'Stand down — no zone to trade against.'
+-        : levels.entry_status === 'at-entry' && g.grade !== 'no-trade' ? `Arm the entry: limit at ${levels.entry}, stop ${levels.stop}, first target ${levels.targets[0] ? levels.targets[0].price : '—'}.`
+-          : levels.entry_status === 'approaching' ? `Get ready: price is approaching the ${levels.entry_kind === 'order_block' ? 'order block' : 'FVG'}. Set an alert at ${long ? levels.entry_zone[1] : levels.entry_zone[0]}.`
+-            : levels.entry_status === 'waiting' ? `Wait for the retrace to ${levels.entry_zone[0]}–${levels.entry_zone[1]}. Chasing here breaks the model's edge.`
+-              : 'Invalidated — remove the level and re-map.',
++      action: (() => {
++        // The refusal leads. A vetoed setup must never read as "get ready" or "set an alert" --
++        // that advertises a trade the model has just declined. A `waiting` setup is refused for
++        // now but becomes valid at the zone, so it keeps its watch instruction; everything else
++        // gets the reason and nothing else.
++        if (!tradeable) {
++          const reason = vetoes.length ? vetoes[0]
++            : `the setup grades ${g.grade}, below the tradeable line.`;
++          const watch = levels && levels.entry_status === 'waiting'
++            ? ` Watch for the retrace to ${levels.entry_zone[0]}–${levels.entry_zone[1]}.` : '';
++          return `No trade — ${reason}${watch}`;
++        }
++        if (!levels) return 'Stand down — no zone to trade against.';
++        if (levels.entry_status === 'at-entry') {
++          return `Arm the entry: limit at ${levels.entry}, stop ${levels.stop}, first target ${levels.targets[0] ? levels.targets[0].price : '—'}.`;
++        }
++        if (levels.entry_status === 'approaching') {
++          return `Get ready: price is approaching the ${levels.entry_kind === 'order_block' ? 'order block' : 'FVG'}. Set an alert at ${long ? levels.entry_zone[1] : levels.entry_zone[0]}.`;
++        }
++        if (levels.entry_status === 'waiting') {
++          return `Wait for the retrace to ${levels.entry_zone[0]}–${levels.entry_zone[1]}. Chasing here breaks the model's edge.`;
++        }
++        return 'Invalidated — remove the level and re-map.';
++      })(),
+       why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
+       why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
+     });
+@@ -430,4 +830,7 @@ function pendingStep(td) {
+   return open && open.title ? ` Outstanding step: ${open.title}.` : '';
+ }
+ 
+-module.exports = { buildSetups, gradeFor, GRADES, targetPools };
++// M52: `rangeRiskMult` / `RANGE_RISK` exported for the same reason `GRADE_RISK_MULT` is — so the
++// multiplier curve can be unit-tested on its own instead of only being observable through a full
++// engine run that has to happen to produce a mid-range candidate.
++module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK };
+diff --git a/src/bots/smc.js b/src/bots/smc.js
+index 2ccb576..15b58a8 100644
+--- a/src/bots/smc.js
++++ b/src/bots/smc.js
+@@ -35,6 +35,13 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  * plateaus produce one point, not two).
+  * @returns {Array<{i:number,t:number,price:number,type:'high'|'low',strength:number}>}
+  */
++// M24: how many recent swings of one side define the "current swing range" whose extreme is
++// the strong level. Measured rather than chosen by taste: at 300 bars over 40 series the CHoCH
++// count is 15 / 14 / 14 / 14 for lookback 3 / 5 / 8 / 12, so the result is insensitive to it
++// and 5 sits in the middle of the flat region. Do NOT set it to 0 — `slice(-0)` is `slice(0)`,
++// which silently means "every swing in the window" rather than "none".
++const STRONG_LOOKBACK = 5;
++
+ function findSwings(candles, strength = 2) {
+   const out = [];
+   const n = candles.length;
+@@ -63,6 +70,41 @@ function alternate(swings) {
+   return out;
+ }
+ 
++/**
++ * M1 - the course's swing definition, offered alongside the local-extremum one.
++ *
++ * `findSwings` marks a bar that is the strict local max/min of N bars either side. Ep 5 defines
++ * a swing differently: the swing low is "the lowest point that CREATED the break of structure" -
++ * the extreme that originated the impulse, not merely a turning point. A local turn that never
++ * produced a break is not a swing by that definition.
++ *
++ * MEASURED, NOT ADOPTED (analysis/probe-m1-swing-definition.js, 40 series x 300 bars, driven
++ * through the project's own marketStructure):
++ *   - keeps 46% of the swings (18.2 vs 39.7 per series)
++ *   - the swing range is 3.5x wider (3.42% vs 0.97% of price): leg extremes, not tight turns
++ *   - the trend label changes on 63% of series (25/40: bullish->bearish x13,
++ *     bearish->bullish x9, ->ranging x3)
++ *
++ * That is a strategy change, not a refinement, so it is opt-in via analyse(candles,
++ * { swingMode: 'bos' }) and OFF by default. Making it the default needs its own backtest and a
++ * decision - see the ledger entry for M1.
++ */
++function bosSwings(candles, minor) {
++  const kept = [];
++  for (let k = 0; k < minor.length; k++) {
++    const s = minor[k];
++    let level = null;
++    for (let j = k - 1; j >= 0; j--) { if (minor[j].type !== s.type) { level = minor[j]; break; } }
++    if (!level) { kept.push(s); continue; }
++    const after = candles.slice(s.i + 1);
++    const broke = s.type === 'low'
++      ? after.some((c) => c.c > level.price)
++      : after.some((c) => c.c < level.price);
++    if (broke) kept.push(s);
++  }
++  return alternate(kept);
++}
++
+ /* ══════════════════════════════════════════════ 2. MARKET STRUCTURE / BOS */
+ 
+ /**
+@@ -99,6 +141,15 @@ function marketStructure(candles, swings) {
+   const events = [];
+   const swingHighs = labels.filter((x) => x.type === 'high');
+   const swingLows = labels.filter((x) => x.type === 'low');
++  // M24 — is `s` the extreme (strong) level among the recent swings of its own side?
++  const isStrongLevel = (list, s, i, dir) => {
++    const prior = list.filter((x) => x.i < i).slice(-STRONG_LOOKBACK);
++    if (!prior.length) return false;
++    const extreme = dir === 'up'
++      ? prior.reduce((a, b) => (b.price > a.price ? b : a))   // strong HIGH = highest high
++      : prior.reduce((a, b) => (b.price < a.price ? b : a));  // strong LOW  = lowest low
++    return Math.abs(extreme.price - s.price) < 1e-9;
++  };
+   const scanBreaks = (list, dir) => {
+     for (let k = 0; k < list.length; k++) {
+       const s = list[k];
+@@ -106,15 +157,14 @@ function marketStructure(candles, swings) {
+         const c = candles[i];
+         const broke = dir === 'up' ? c.c > s.price : c.c < s.price;
+         if (!broke) continue;
+-        // was the structure above/at this swing already bullish/bearish?
+-        const prior = events.filter((e) => e.i < i);
+-        const lastEvent = prior[prior.length - 1];
+-        // A break in the OPPOSITE direction to the last break = change of character.
+-        const isChoch = !!lastEvent && (dir === 'up' ? lastEvent.dir === 'down' : lastEvent.dir === 'up');
++        // `type` is NOT decided here. See the chronological pass below — deciding it during
++        // the scan is what made bullish reversals undetectable.
+         events.push({
+-          type: isChoch ? 'CHoCH' : 'BOS',
+           dir, i, t: c.t, level: r4(s.price), close: r4(c.c),
+           sweptBefore: false,
++          // M24: did this break take out the extreme (strong) level of the recent swings on
++          // its own side? Decided here because the swing list is in scope, applied later.
++          broke_strong: isStrongLevel(list, s, i, dir),
+         });
+         break; // one break per swing level
+       }
+@@ -132,10 +182,32 @@ function marketStructure(candles, swings) {
+     breaks.push(e);
+   }
+ 
++  // M24 — classify CHoCH vs BOS in ONE chronological pass over the merged, deduped sequence.
++  // It used to be decided inside scanBreaks, which runs every swing high before any swing low;
++  // during that phase `events` held only up-breaks, so `lastEvent.dir === 'down'` could never
++  // be true and an UP break could never be a CHoCH. Measured: 0 up-direction CHoCH across 40
++  // series — a bullish reversal was structurally undetectable. Both sides are now classified
++  // against the same sorted sequence.
++  //
++  // And a direction flip alone is still not a reversal. Ep 5: "in order for the trend to shift
++  // from bullish to bearish, price needs to come down and TAKE OUT THE STRONG LOW", and "a lot
++  // of beginners tend to get trapped because they think that every pullback is a reversal."
++  // A pullback breaks intermediate swings; it does not break the extreme that defines the
++  // current swing range. So a CHoCH requires the flip AND the strong level.
++  for (let k = 0; k < breaks.length; k++) {
++    const e = breaks[k];
++    const prev = breaks[k - 1];
++    e.flipped = !!prev && prev.dir !== e.dir;
++    e.type = e.flipped && e.broke_strong ? 'CHoCH' : 'BOS';
++  }
++
+   // MSS = CHoCH whose break bar swept liquidity in the opposite direction first.
+-  // Approximate: a CHoCH is an MSS when the 5 bars before the break wick beyond the
+-  // prior swing of the OTHER side (a stop run) — checked in sweeps() and patched there.
+-  for (const e of breaks) { e.mss = e.type === 'CHoCH'; }
++  // M23: this used to read `e.mss = e.type === 'CHoCH'`, which made MSS a synonym for CHoCH
++  // and threw the sweep test away — the comment even claimed the flag was "checked in
++  // sweeps() and patched there", but the patch below could only ever set it to true, never
++  // back to false, so a CHoCH with no stop run was still reported as an MSS. Initialised
++  // false here and decided once `sweeps` exists.
++  for (const e of breaks) { e.mss = false; }
+ 
+   const lastHigh = swingHighs[swingHighs.length - 1] || null;
+   const lastLow = swingLows[swingLows.length - 1] || null;
+@@ -147,6 +219,17 @@ function marketStructure(candles, swings) {
+     recent_labels: labels.slice(-6).map((x) => ({ label: x.label, price: r4(x.price), t: x.t, type: x.type })),
+     last_swing_high: lastHigh ? { price: r4(lastHigh.price), t: lastHigh.t, i: lastHigh.i, label: lastHigh.label } : null,
+     last_swing_low: lastLow ? { price: r4(lastLow.price), t: lastLow.t, i: lastLow.i, label: lastLow.label } : null,
++    // M2 - the swing range. Ep 5: "this becomes my swing range and this is the area that I
++    // want to focus on. I don't care about what price is doing outside of this swing range."
++    // The two extremes were already exposed individually; what was missing is the span between
++    // them as a single object, so nothing downstream could ask "is price inside the range?".
++    // Report-only for now, per the ledger: bounding zone validity by it is a separate,
++    // measurable change.
++    swing_range: lastHigh && lastLow && lastHigh.price > lastLow.price ? {
++      high: r4(lastHigh.price), low: r4(lastLow.price),
++      width: r4(lastHigh.price - lastLow.price),
++      width_pct: r4((lastHigh.price - lastLow.price) / lastLow.price * 100),
++    } : null,
+   };
+ }
+ 
+@@ -177,9 +260,17 @@ function findDisplacement(candles, atr, { minAtr = 1.2, minBody = 0.55 } = {}) {
+  * Order blocks: the last opposite candle before a displacement leg.
+  * Bundles supply (bearish OB) and demand (bullish OB) with freshness + confluence tags.
+  */
+-function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, maxBlocks = 14 } = {}) {
++function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, maxBlocks = 14, fvgs = null, requireFvg = false } = {}) {
+   const out = [];
+   const n = candles.length;
++  // M31 - the dealing range the zone's depth is measured against. Ep 8: "the more extreme the
++  // zone is within the range, the higher the probability", because "the previous low has to
++  // hold in order for price to remain bullish."
++  const look = candles.slice(Math.max(0, n - maxAge));
++  const rangeHigh = look.length ? Math.max(...look.map((b) => b.h)) : 0;
++  const rangeLow = look.length ? Math.min(...look.map((b) => b.l)) : 0;
++  const eq = (rangeHigh + rangeLow) / 2;
++  const span = rangeHigh - rangeLow || 1;
+   for (const d of displacement) {
+     if (n - 1 - d.i > maxAge) continue;
+     // walk back from the displacement bar to find the last opposite-colour candle
+@@ -197,27 +288,81 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
+ 
+     // mitigation: how has price interacted with the zone SINCE the displacement leg?
+     // (bars inside the leg itself are the move that created the zone, not a test)
+-    let tests = 0, mitigated = false, breached = false, firstTest = null;
++    // M29 - mitigation needs the 50% level, not a touch. Ep 7: "it counts as a mitigation if
++    // price... has pulled back very aggressively into the 50% of this zone... if price just
++    // touches this zone and then continues going down, I personally do not like to count that
++    // as a valid mitigation." A wick to the zone edge therefore leaves it fresh, and the code
++    // was more permissive than the course, not stricter. `touched` keeps the old behaviour
++    // visible for display so the change is auditable rather than silent.
++    const mid = (top + bottom) / 2;
++    let tests = 0, mitigated = false, breached = false, touched = false, firstTest = null;
+     for (let i = Math.max(idx + 1, d.i + 1); i < n; i++) {
+       const b = candles[i];
+       const inside = b.l <= top && b.h >= bottom;
+       if (inside && !firstTest) firstTest = i;
+       if (inside) tests++;
+       if (dir > 0 ? b.c < bottom : b.c > top) { breached = true; mitigated = true; }
+-      else if (dir > 0 ? b.l <= top : b.h >= bottom) mitigated = true;
++      else if (dir > 0 ? b.l <= mid : b.h >= mid) mitigated = true;   // reached the 50% level
++      else if (dir > 0 ? b.l <= top : b.h >= bottom) touched = true;  // probed the edge only
+     }
+     const brokeStructure = breaks.some((x) => x.i > idx && x.i <= d.i + 1 && ((dir > 0 && x.dir === 'up') || (dir < 0 && x.dir === 'down')));
++    // M42 - Ep 13: "liquidity zone is simply A POINT OF INTEREST THAT SWEPT LIQUIDITY... an
++    // area where price first takes an obvious high or low, triggers the resting orders right
++    // there and then reacts from that point MAKING THE POINT OF INTEREST MUCH MORE STRONGER."
++    // His zone-one/zone-two ranking turns on exactly this: zone one is premium + swept +
++    // broke structure, zone two is discount + un-swept, and "zone one has a higher chance of
++    // working out... It's just math." Strength had no swept term at all.
++    // Mechanical test, using only the candles: did the move INTO the block take out the
++    // extreme of the run immediately before it? That is the stop run he describes.
++    let sweptLiquidity = false;
++    {
++      const pre = candles.slice(Math.max(0, idx - 12), idx);
++      if (pre.length >= 4) {
++        const ref = pre.slice(0, -2), probe = pre.slice(-2);
++        const refLow = Math.min(...ref.map((b) => b.l));
++        const refHigh = Math.max(...ref.map((b) => b.h));
++        sweptLiquidity = dir > 0
++          ? probe.some((b) => b.l < refLow)
++          : probe.some((b) => b.h > refHigh);
++      }
++    }
++    // M31 - depth into the range, on the correct side, capped at the extreme half.
++    const depth = dir > 0
++      ? clamp((eq - top) / span, 0, 0.5) / 0.5      // demand: the further below equilibrium
++      : clamp((bottom - eq) / span, 0, 0.5) / 0.5;  // supply: the further above it
+     const strength = clamp(
+-      0.4 + Math.min(d.rangeAtr / 3, 1) * 0.3 + (brokeStructure ? 0.2 : 0) + (tests === 0 ? 0.15 : 0) - (breached ? 0.5 : 0), 0, 1.4,
++      0.4 + Math.min(d.rangeAtr / 3, 1) * 0.3 + (brokeStructure ? 0.2 : 0) + (tests === 0 ? 0.15 : 0)
++      // M30 - Ep 7: "price respected multiple times... this is a very strong supply zone." The
++      // formula only rewarded an UNTESTED zone and gave nothing for repeated respect, which is
++      // the opposite of the rule. Both are kept: fresh is valuable, and so is proven respect.
++      + (tests >= 2 ? 0.15 : 0)
++      // M31
++      + depth * 0.15
++      // M42 - the sweep is what upgrades a point of interest to a liquidity zone. Weighted
++      // alongside broke_structure, which is the other half of his zone-one description.
++      + (sweptLiquidity ? 0.2 : 0)
++      - (breached ? 0.5 : 0), 0, 1.4,
+     );
++    // M32 - Ep 10 states the prerequisite twice: "fair value gap must be present in order for
++    // us to identify order block. No imbalance, no fair value gap." and "for supply and demand
++    // zone it doesn't matter whether there's imbalance or not... but for order block, one of
++    // the very strict criteria for it to be valid is that it needs to have an imbalance."
++    // Requiring DISPLACEMENT did not satisfy this: displacement is one large candle
++    // (rangeAtr >= 1.2, bodyRatio >= 0.55), whereas an FVG is a three-candle gap. The gap must
++    // belong to the same leg that created the block.
++    const gap = requireFvg && Array.isArray(fvgs)
++      ? fvgs.find((g) => g.dir === dir && g.i >= idx && g.i <= d.i + 2) || null
++      : null;
++    if (requireFvg && !gap) continue;
+     const firstTouch = firstTest;
+     out.push({
+       kind: 'OB', dir, side: dir > 0 ? 'demand' : 'supply',
+       top: r4(top), bottom: r4(bottom), mid: r4((top + bottom) / 2),
+       body_top: r4(bodyTop), body_bottom: r4(bodyBottom), body_mid: r4((bodyTop + bodyBottom) / 2),
+       i: idx, t: ob.t, displacement_i: d.i, displacement_atr: d.rangeAtr,
+-      tests, first_touch: firstTouch, mitigated, breached, fresh: tests === 0,
+-      broke_structure: brokeStructure, strength: r2(strength),
++      tests, first_touch: firstTouch, mitigated, breached, touched, fresh: tests === 0,
++      broke_structure: brokeStructure, swept_liquidity: sweptLiquidity, strength: r2(strength), depth_in_range: r2(depth),
++      has_fvg: !!gap, fvg_i: gap ? gap.i : null,
+       bars_ago: n - 1 - idx,
+       distance_pct: r2(((dir > 0 ? top : bottom) - candles[n - 1].c) / candles[n - 1].c * 100),
+       distance_atr: r2(Math.abs(((dir > 0 ? top : bottom) - candles[n - 1].c)) / (atr || 1)),
+@@ -288,7 +433,7 @@ function findFvgs(candles, atr, { minAtr = 0.12, maxAge = 250, maxGaps = 14 } =
+  * Breaker blocks / flip zones: a zone that failed in its own direction and now acts
+  * the other way. A demand OB that closes below becomes resistance (bearish breaker).
+  */
+-function findBreakers(orderBlocks, candles, atr) {
++function findBreakers(orderBlocks, candles, atr, breaks = []) {
+   const out = [];
+   const n = candles.length;
+   for (const z of orderBlocks) {
+@@ -300,6 +445,27 @@ function findBreakers(orderBlocks, candles, atr) {
+       if (through) { brokeAt = i; break; }
+     }
+     if (brokeAt === null) continue;
++    // M48 - Ep 14 gives a CLOSED LIST of three criteria: "A flip zone is only confirmed when
++    // there is a FAILED REACTION, when price BREAKS STRUCTURE and price actually CLOSE ABOVE
++    // THE OR BELOW THE REACTION POINT." Only the close test existed here, and the other two
++    // were not merely untested but unmeasurable - no reaction extreme was ever recorded.
++    // (1) failed reaction: the zone did its job first. Price has to have reacted off it before
++    //     it failed, otherwise it was never a zone that "worked" - just price passing through.
++    //     The reaction point is the extreme of that reaction, measured from the zone to the
++    //     break.
++    let reactionPoint = null;
++    for (let i = z.i; i < brokeAt; i++) {
++      const v = z.dir > 0 ? candles[i].h : candles[i].l;
++      reactionPoint = reactionPoint === null ? v : (z.dir > 0 ? Math.max(reactionPoint, v) : Math.min(reactionPoint, v));
++    }
++    const reactionSize = reactionPoint === null ? 0
++      : Math.abs(reactionPoint - (z.dir > 0 ? z.top : z.bottom)) / (atr || 1);
++    const failedReaction = reactionSize >= 0.5;
++    // (2) break of structure AFTER the failure, in the flip direction. "If this flip zone did
++    //     not break structure it is NOT COUNTED AS A FLIP ZONE."
++    const structureBreak = (breaks || []).find((k) => k.i > brokeAt
++      && ((z.dir > 0 && k.dir === 'down') || (z.dir < 0 && k.dir === 'up')));
++    const brokeStructure = !!structureBreak;
+     // retest since the break = confirmation the flip holds
+     let retested = false;
+     for (let i = brokeAt + 1; i < n; i++) {
+@@ -310,7 +476,18 @@ function findBreakers(orderBlocks, candles, atr) {
+       kind: 'breaker', dir: -z.dir, side: z.dir > 0 ? 'supply' : 'demand',
+       top: z.top, bottom: z.bottom, mid: z.mid, i: brokeAt, t: candles[brokeAt].t,
+       origin: { top: z.top, bottom: z.bottom, side: z.side, t: z.t }, retested,
+-      strength: r2(clamp(z.strength + (retested ? 0.2 : 0) - 0.2, 0, 1.4)),
++      // M48: the two criteria that were missing, recorded so the emitted set can be audited
++      failed_reaction: failedReaction, reaction_point: reactionPoint === null ? null : r4(reactionPoint),
++      broke_structure: brokeStructure, confirmed: failedReaction && brokeStructure,
++      // M47 bug: `z.strength` here is ALREADY penalised -0.5 for being breached (see the
++      // strength formula above), and then takes a further -0.2. But the breach is the
++      // PRECONDITION for a flip zone existing, not a defect in it - "a supply flip zone is
++      // formed when a demand zone fails". Measured, this double penalty put retested breakers
++      // at 0.355 average strength against 0.898 for un-breached order blocks, so they lost the
++      // point-of-interest ranking 0 of 6 times and could never be selected. The origin's
++      // pre-breach strength is restored; the -0.2 staleness term and the +0.2 retest
++      // confirmation are kept.
++      strength: r2(clamp(z.strength + (z.breached ? 0.5 : 0) + (retested ? 0.2 : 0) - 0.2, 0, 1.4)),
+       bars_ago: n - 1 - brokeAt, distance_atr: r2(Math.abs(((z.dir > 0 ? z.bottom : z.top) - candles[n - 1].c)) / (atr || 1)),
+     });
+   }
+@@ -349,7 +526,7 @@ function clusterLevels(swings, tol) {
+  *   BSL (buy-side liquidity, above price)  /  SSL (sell-side, below price)
+  * Sources: equal highs/lows, prior day/week extremes, session extremes, old swing points.
+  */
+-function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPools = 16 } = {}) {
++function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPools = 16, allSwings = false } = {}) {
+   const n = candles.length;
+   if (!n) return { pools: [], equal_highs: [], equal_lows: [] };
+   const price = candles[n - 1].c;
+@@ -400,8 +577,18 @@ function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPo
+     push({ kind: 'PWL', type: 'SSL', price: prevWeek.l, t: prevWeek.t, label: 'Previous week low', strength: 1.0 });
+   }
+   // remaining un-swept swing extremes (old highs above, old lows below)
+-  for (const s of highs.slice(-4)) push({ kind: 'swing_high', type: 'BSL', price: s.price, t: s.t, label: 'Swing high', strength: 0.55, i: s.i });
+-  for (const s of lows.slice(-4)) push({ kind: 'swing_low', type: 'SSL', price: s.price, t: s.t, label: 'Swing low', strength: 0.55, i: s.i });
++  // M44 - Ep 13: "always assume that there is resting liquidity behind ANY high or low that
++  // price has not yet traded." Only the last four of each side were ever eligible, so an
++  // un-swept swing from six moves back - exactly the "fuel" his narrative sends price to fetch
++  // next - was invisible to liquidity(), to findSweeps(), and therefore to the target ladder.
++  // Measured: 6.4 of 14.0 minor swings per series, i.e. 46% of swings could ever become a pool.
++  // NOTE what this deliberately does NOT do: it does not filter on `swept` here, because
++  // `swept` is patched onto these objects later and findSweeps() reads this same list to find
++  // the trigger. Filtering at construction would delete the sweep events the entry model needs.
++  const poolHighs = allSwings ? highs : highs.slice(-4);
++  const poolLows = allSwings ? lows : lows.slice(-4);
++  for (const s of poolHighs) push({ kind: 'swing_high', type: 'BSL', price: s.price, t: s.t, label: 'Swing high', strength: 0.55, i: s.i });
++  for (const s of poolLows) push({ kind: 'swing_low', type: 'SSL', price: s.price, t: s.t, label: 'Swing low', strength: 0.55, i: s.i });
+ 
+   // sort by strength, annotate side: above price = BSL, below = SSL (regardless of source)
+   const merged = [];
+@@ -417,7 +604,12 @@ function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPo
+       distance_atr: r2(Math.abs(p.price - price) / (atr || 1)),
+       swept: false, swept_t: null,
+     });
+-    if (merged.length >= maxPools) break;
++    // M44: expanding the candidate set without raising this cap makes new pools DISPLACE old
++    // ones - measured at maxPools 16 the pool count rose 20% but sweep events fell 82 -> 76,
++    // because the recently-swept levels the trigger needs were pushed out by stronger distant
++    // ones. Measured across caps: sweeps stop shrinking at 24 and saturate by 32 (356 pools at
++    // 32 vs 357 at 48). The cap is only raised when allSwings is on, so the default is untouched.
++    if (merged.length >= (allSwings ? Math.max(maxPools, 32) : maxPools)) break;
+   }
+   merged.sort((a, b) => a.distance_pct - b.distance_pct);
+   return {
+@@ -517,13 +709,23 @@ function premiumDiscount(candles, swings) {
+   const span = rangeHigh - rangeLow;
+   if (!span) return null;
+   const pos = (last - rangeLow) / span; // 0 = range low, 1 = range high
+-  const inDiscount = pos < 0.5, inPremium = pos > 0.5;
++  // M52: the `equilibrium` label used to be unreachable in practice — `inDiscount = pos < 0.5`
++  // and `inPremium = pos > 0.5` left the third branch only `pos === 0.5` exactly, so the label
++  // was cosmetic while `setup.js`'s weight-10 `inGoodHalf` check used a real 45–55 band. The two
++  // now agree because they read the SAME number: EQ_BAND_PCT is exported on the result, and
++  // setup.js's mid-range risk multiplier takes the band from there rather than declaring its own
++  // copy that could drift. Ep 15 mistake #3 treats mid-range as a distinct condition deserving a
++  // distinct response, which it cannot have while the label never fires.
++  const EQ_HALF_PCT = 5;                                  // ±5% around the midpoint = 45–55
++  const inDiscount = pos * 100 < 50 - EQ_HALF_PCT;
++  const inPremium = pos * 100 > 50 + EQ_HALF_PCT;
+   const ote = pos >= 0.62 && pos <= 0.79;  // favourable long continuation zone in an uptrend
+   const oteShort = pos >= 0.21 && pos <= 0.38;
+   return {
+     range_high: r4(rangeHigh), range_low: r4(rangeLow), mid: r4(rangeLow + span / 2),
+     span: r4(span), position_pct: r2(pos * 100),
+     zone: inPremium ? 'premium' : inDiscount ? 'discount' : 'equilibrium',
++    eq_band: [50 - EQ_HALF_PCT, 50 + EQ_HALF_PCT],
+     ote: ote || oteShort ? (ote ? 'long' : 'short') : null,
+     ote_band: [r4(rangeLow + span * 0.62), r4(rangeLow + span * 0.79)],
+     levels: {
+@@ -655,21 +857,62 @@ function sessionState(date = new Date()) {
+  * Run the full mechanics pass on one series.
+  * @returns {{swings, structure, displacement, order_blocks, fvgs, breakers, liquidity, sweeps, premium_discount, crt, atr, price}}
+  */
+-function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
++// `now` pins the killzone clock. Without it the session state is taken from the wall clock,
++// which makes every downstream number time-of-day dependent — `setup.js` multiplies the score
++// by (0.82 + 0.18 * sessions.quality), so the same candles grade differently at 07:00 UTC
++// (London, quality 0.85) than at 02:00 UTC. Live callers should leave it null; backtests and
++// tests must set it, or their baselines are not reproducible.
++function analyse(candles, { tf = '15m', htfCandles = null, now = null,
++  // M1 and M22 are DEFAULTS as of the user's decision (see analysis/harness/BASELINE.txt).
++  // Re-measured against Baseline 4 at two sample sizes, each improves every metric and
++  // together they were the best configuration measured in this audit: expectancy -0.2891R ->
++  // -0.0935R, profit factor 0.53 -> 0.85, and A+ turns positive. Pass swingMode:'local' or
++  // nested:false to get the old behaviour back.
++  swingMode = 'bos', nested = true,
++  // M32 stays OPT-IN by the same decision: it cuts trades 190 -> 18, and the headline A+
++  // figure rested on three trades.
++  obRequiresFvg = false, allSwings = false } = {}) {
+   const out = { ok: false, tf };
+   if (!candles || candles.length < 30) { out.note = 'Not enough candles for structure analysis (need 30+).'; return out; }
+   const closed = candles.slice(0, -1);
+   const atr = I.atr(closed.length > 20 ? closed : candles, 14) || 0;
+ 
+-  const minorSwings = alternate(findSwings(candles, 2));
++  // M1: the minor tier is what feeds `structure`, and therefore the trend label the setup
++  // checklist scores against. swingMode 'bos' substitutes the course's definition; see
++  // bosSwings() for the measurement that keeps it off by default.
++  const minorRaw = alternate(findSwings(candles, 2));
++  const minorSwings = swingMode === 'bos' ? bosSwings(candles, minorRaw) : minorRaw;
+   const majorSwings = alternate(findSwings(candles, 5));
+-  const structure = marketStructure(candles, minorSwings);
++  // M22 - Ep 5 sequences this: "the first step is to always identify your swing range", and
++  // "the only way you can identify your internal structure is if you have identified your
++  // swing structure and your swing range." The two tiers are computed in parallel today, so the
++  // internal read runs over swings belonging to legs that have already resolved.
++  // MEASURED (analysis/probe-m22-nested-range.js, 40 series x 300 bars): 56% of minor swings
++  // sit outside the range the major tier defines, structure events halve (17.4 -> 8.4 per
++  // series), and the internal trend label changes on 20% of series. Material, but smaller than
++  // M1's 63% - and the range itself is unstable: its width runs 0.18% to 21% of price across
++  // the same sample, a 100x spread, because it is just the most recent major high and low.
++  // Bounding by something that unstable makes the internal read erratic, so this is opt-in and
++  // OFF by default. Adopting it needs a decision, not a default flip.
++  const nestedSwings = nested && majorSwings.length >= 2 ? (() => {
++    const mh = majorSwings.filter((x) => x.type === 'high').slice(-1)[0];
++    const ml = majorSwings.filter((x) => x.type === 'low').slice(-1)[0];
++    if (!mh || !ml || !(mh.price > ml.price)) return minorSwings;
++    const kept = minorSwings.filter((x) => x.price <= mh.price && x.price >= ml.price);
++    // Fewer than 3 swings cannot label a trend; fall back rather than silently blanking it.
++    return kept.length >= 3 ? kept : minorSwings;
++  })() : minorSwings;
++  const structure = marketStructure(candles, nestedSwings);
+   const htfStructure = majorSwings.length ? marketStructure(candles, majorSwings) : null;
+   const displacement = findDisplacement(candles, atr);
+-  const orderBlocks = findOrderBlocks(candles, atr, displacement, structure.breaks);
++  // M32: FVGs are computed FIRST now, because an order block is only valid if the leg that
++  // created it left an imbalance. The order was the other way round, which is part of why the
++  // prerequisite could not be enforced.
+   const fvgs = findFvgs(candles, atr);
+-  const breakers = findBreakers(orderBlocks, candles, atr);
+-  const liq = liquidity(candles, majorSwings.length ? majorSwings : minorSwings, atr, { tf });
++  const orderBlocks = findOrderBlocks(candles, atr, displacement, structure.breaks,
++    { fvgs, requireFvg: obRequiresFvg });
++  const breakers = findBreakers(orderBlocks, candles, atr, structure.breaks);
++  const liq = liquidity(candles, majorSwings.length ? majorSwings : minorSwings, atr, { tf, allSwings });
+   const sweeps = findSweeps(candles, liq.pools, atr);
+   const pd = premiumDiscount(candles, majorSwings.length ? majorSwings : minorSwings);
+   const crtRes = htfCandles ? crt(htfCandles, candles, atr) : null;
+@@ -679,12 +922,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+     const pool = liq.pools.find((p) => p.kind === s.pool && Math.abs(p.price - s.level) < 1e-9);
+     if (pool) { pool.swept = true; pool.swept_t = s.t; }
+   }
+-  if (structure.last_break && structure.last_break.type === 'CHoCH') {
+-    const sw = sweeps.find((s) => s.bars_ago <= (structure.last_break.bars_ago || 0) + 6 && s.bars_ago >= (structure.last_break.bars_ago || 0) - 6);
+-    if (sw) {
+-      structure.last_break.mss = true;
+-      structure.last_break.swept = sw.pool_label;
+-    }
++  // M23: decide MSS from the actual sweep test, for every break — not just the last one, and
++  // in both directions. `structure.breaks` is the live array the caller sees, so patching it
++  // in place is enough there; `last_break` is a copy built inside marketStructure() and has
++  // to be updated separately.
++  const breaks = structure.breaks || [];
++  const barIndexOfSweep = (sw) => candles.length - 1 - (sw.bars_ago || 0);
++  for (const e of breaks) {
++    if (e.type !== 'CHoCH') { e.mss = false; continue; }
++    const sw = sweeps.find((x) => Math.abs(barIndexOfSweep(x) - e.i) <= 6);
++    e.mss = !!sw;
++    if (sw) e.swept = sw.pool_label; else delete e.swept;
++  }
++  if (structure.last_break) {
++    const lb = breaks[breaks.length - 1];
++    structure.last_break.mss = !!(lb && lb.mss);
++    if (lb && lb.swept) structure.last_break.swept = lb.swept;
++    else delete structure.last_break.swept;
+   }
+   // inducement: a minor pool sitting between price and a major pool, on the way to it
+   const big = liq.pools.filter((p) => p.strength >= 0.8 && !p.swept);
+@@ -705,7 +959,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+   out.ok = true;
+   out.price = r4(price);
+   out.atr = r4(atr);
+-  out.swings = { minor: minorSwings.slice(-14), major: majorSwings.slice(-10) };
++  // M22: report the tier `structure` was actually built from, not the raw minor tier. Without
++  // this the output would claim swings the internal read never saw whenever nested is on.
++  out.swings = { minor: nestedSwings.slice(-14), major: majorSwings.slice(-10),
++    nested: nested && nestedSwings !== minorSwings };
+   out.structure = structure;
+   out.htf_structure = htfStructure ? { trend: htfStructure.trend, last_break: htfStructure.last_break, recent_labels: htfStructure.recent_labels } : null;
+   out.displacement = displacement.slice(-8).reverse();
+@@ -716,10 +973,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+   out.sweeps = sweeps;
+   out.premium_discount = pd;
+   out.crt = crtRes;
+-  out.sessions = sessionState();
++  out.sessions = sessionState(now ? new Date(now) : new Date());
+   out.inducement = inducement.slice(0, 4);
+   out.counts = {
+-    swings: minorSwings.length, breaks: structure.breaks.length, displacement: displacement.length,
++    swings: nestedSwings.length, breaks: structure.breaks.length, displacement: displacement.length,
+     order_blocks: orderBlocks.filter((z) => !z.breached).length, fvgs: fvgs.filter((g) => !g.filled).length,
+     sweeps: sweeps.length, pools: liq.pools.length,
+   };
+@@ -727,7 +984,7 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+ }
+ 
+ module.exports = {
+-  findSwings, alternate, marketStructure, findDisplacement, findOrderBlocks, findFvgs, findBreakers,
++  findSwings, alternate, bosSwings, marketStructure, findDisplacement, findOrderBlocks, findFvgs, findBreakers,
+   liquidity, findSweeps, premiumDiscount, crt, sessionState, analyse, clusterLevels,
+   SESSIONS, SILVER_BULLETS, dayKey, weekKey,
+ };
+diff --git a/src/bots/topdown.js b/src/bots/topdown.js
+index 7870e51..2e84f99 100644
+--- a/src/bots/topdown.js
++++ b/src/bots/topdown.js
+@@ -102,6 +102,13 @@ function layersFor(tf) {
+   return {
+     style: s.style,
+     bias_tf: s.bias,
++    // M20: DEAD CONFIG. `s.zone` is declared per-timeframe in STACK above (e.g. '15m'
++    // declares zone:'1h') and this field computes it, but NOTHING reads `zone_tf` —
++    // verified: it appears exactly once in all of src/. Callers fetch series for
++    // `bias_tf` and `trigger_tf` only, so the location layer silently runs on `entryTf`.
++    // The API report is honest about that (layers.zone.tf === entryTf at :697); it is the
++    // STACK declaration that is misleading. Wiring this up changes where zones are found,
++    // so it belongs in a backtested batch, not here. Kept for the future fix.
+     zone_tf: s.zone === s.bias ? s.bias : s.zone,
+     entry_tf: tf,          // the chart the trader is actually trading
+     trigger_tf: s.trigger, // the chart used for the confirmation
+@@ -378,6 +385,13 @@ function readRange(right, htf, ltf, atr, { tolerance = 0.05 } = {}) {
+             : null,
+       target_note: `opposite side of the range (${dir === -1 ? 'range low' : 'range high'} ${r4(opposite)})`,
+       invalidation: dir === -1 ? `a close back above ${r4(sweepPrice || R.h)} voids the short` : `a close back below ${r4(sweepPrice || R.l)} voids the long`,
++      // M50: the SAME level as a number and a direction, not only as prose. The finding was that
++      // the invalidation level exists but nothing can feed it back as the gate that changes the
++      // bias — and a sentence cannot be compared against a close. `invalidation_side` says which
++      // way a close voids the idea: a short is voided by a close ABOVE, a long by a close BELOW.
++      // Kept next to the prose so the two cannot disagree about which level they mean.
++      invalidation_level: r4(dir === -1 ? (sweepPrice || R.h) : (sweepPrice || R.l)),
++      invalidation_side: dir === -1 ? 'above' : 'below',
+     };
+   }
+ 
+diff --git a/src/candles.js b/src/candles.js
+index c7de369..107d946 100644
+--- a/src/candles.js
++++ b/src/candles.js
+@@ -111,32 +111,238 @@ function clearCache() { cache.clear(); }
+ 
+ /* ------------------------------------------------------------------ fetch */
+ 
+-async function fetchJson(url, { timeout = 12000, headers = {} } = {}) {
+-  const ctl = new AbortController();
+-  const timer = setTimeout(() => ctl.abort(), timeout);
++/**
++ * M121 — the User-Agent this used to send was `Mozilla/5.0 (compatible; TradeJournalPro/2.0)`.
++ * That is the *conventional bot format* — `Mozilla/5.0 (compatible; <name>/<version>)` is exactly
++ * what Googlebot and Bingbot announce themselves with. Yahoo's edge is documented to treat such
++ * callers as automated and to answer them with 401/403/429, and the public chart endpoint needs
++ * no crumb or cookie, so an announce-yourself-as-a-bot UA buys nothing and risks the request.
++ * A plain browser UA is what every maintained Yahoo client sends.
++ */
++const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
++
++/**
++ * Pull the human-readable reason out of a Yahoo error body. Yahoo answers 401/429 with JSON
++ * that says precisely what is wrong — `{"finance":{"result":null,"error":{"code":"Unauthorized",
++ * "description":"Invalid Crumb"}}}` — and the old code threw a bare `HTTP 401` and discarded it,
++ * so the one string that identifies the cause never reached the caller, the log, or the UI.
++ * @returns {string} the reason, or '' when the body carries none
++ */
++function yahooErrorText(body) {
++  const s = String(body || '').trim();
++  if (!s) return '';
+   try {
+-    const res = await fetch(url, {
+-      signal: ctl.signal,
+-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TradeJournalPro/2.0)', Accept: 'application/json', ...headers },
+-    });
+-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+-    return await res.json();
+-  } finally {
+-    clearTimeout(timer);
++    const j = JSON.parse(s);
++    const e = (j && j.finance && j.finance.error) || (j && j.chart && j.chart.error) || null;
++    if (e) return [e.code, e.description].filter(Boolean).join(': ');
++  } catch (_) { /* not JSON — fall through to the raw snippet */ }
++  return s.length > 120 ? `${s.slice(0, 120)}…` : s;
++}
++
++/**
++ * Fetch JSON, retrying ONLY on a server-side throttle/5xx.
++ *
++ * Deliberately does not retry on network errors or timeouts: those cost the full `timeout` each
++ * attempt, and retrying them turns a 14 s failure into a 42 s one on every symbol the scheduler
++ * fans out across. A 429 answers immediately, so backing off it is cheap — and Yahoo's throttle
++ * is the documented reason a chart call fails intermittently after a burst of them.
++ */
++async function fetchJson(url, { timeout = 12000, headers = {}, retries = 2 } = {}) {
++  let lastErr = null;
++  for (let attempt = 0; attempt <= retries; attempt++) {
++    if (attempt) await new Promise((r) => setTimeout(r, 400 * 2 ** (attempt - 1)));   // 400ms, then 800ms
++    const ctl = new AbortController();
++    const timer = setTimeout(() => ctl.abort(), timeout);
++    try {
++      const res = await fetch(url, {
++        signal: ctl.signal,
++        headers: { 'User-Agent': UA, Accept: 'application/json', 'Accept-Language': 'en-US,en;q=0.9', ...headers },
++      });
++      if (!res.ok) {
++        const body = await res.text().catch(() => '');
++        const why = yahooErrorText(body);
++        const err = new Error(`HTTP ${res.status}${res.status === 429 ? ' (rate limited)' : ''}${why ? ` — ${why}` : ''}`);
++        err.status = res.status;
++        throw err;
++      }
++      return await res.json();
++    } catch (e) {
++      lastErr = e;
++      const retryable = e.status === 429 || (e.status >= 500 && e.status <= 599);
++      if (!retryable || attempt === retries) throw e;
++    } finally {
++      clearTimeout(timer);
++    }
+   }
++  throw lastErr;
+ }
+ 
+ const n2 = (v) => (Number.isFinite(v) ? v : null);
+ 
+-/** Yahoo chart API -> bars. Tries both hosts (they fail independently). */
++/* ═══════════════════════════════════════════════════ M123: offline demo bars ══
++ * The live providers are unreachable from some hosts. Concretely, from the sandbox
++ * this repository is previewed in: DNS resolves and TCP 443 connects to
++ * query1/query2.finance.yahoo.com, then the TLS handshake is reset (ECONNRESET),
++ * while allowlisted hosts answer 200 from the same process. No change to this file
++ * can fix that — it is a property of the network the process sits on.
++ *
++ * What that leaves is a choice between an app that cannot be exercised at all and
++ * an app that can be exercised on data it is honest about. This is the second one.
++ *
++ * OFF BY DEFAULT, and it has to stay that way: a trading journal that quietly
++ * invented prices would be far worse than one that refused to answer. It is enabled
++ * only by TJ_OFFLINE_CANDLES=1 in the environment, and every bar it produces is
++ * labelled in three places at once — meta.provider ('offline-synthetic'), meta.demo
++ * (true) and meta.warning (a sentence) — so it cannot be mistaken for a feed, and a
++ * caller can refuse to render it by checking one field.
++ *
++ * Deterministic on purpose: the same symbol and timeframe always produce the same
++ * series, so two people looking at the same preview see the same chart and a UI
++ * regression is reproducible. It is a random walk, not a model of anything, and it
++ * carries no view about where price goes next.
++ */
++const OFFLINE = /^(1|true|yes|on)$/i.test(String(process.env.TJ_OFFLINE_CANDLES || '').trim());
++const OFFLINE_WARNING = 'OFFLINE DEMO DATA — these bars were generated on this machine because no '
++  + 'market-data host was reachable. They are synthetic, not prices, and must not be used for a '
++  + 'trading decision. Unset TJ_OFFLINE_CANDLES to require a live feed.';
++
++// A handful of recognisable levels so the preview does not show gold at 3.7. Anything
++// not listed gets a stable hash-derived level; the walk is arbitrary either way.
++const OFFLINE_BASE = {
++  XAUUSD: 2650, 'GC=F': 2650, XAGUSD: 31, EURUSD: 1.09, GBPUSD: 1.27, USDJPY: 152,
++  AUDUSD: 0.66, USDCAD: 1.36, USDCHF: 0.88, NZDUSD: 0.61, BTCUSDT: 68000,
++  ETHUSDT: 3500, SPX500: 5750, NAS100: 20000, US30: 42000,
++};
++const OFFLINE_PROVIDER = 'offline-synthetic';
++
++function offlineSeed(str) {
++  let h = 2166136261 >>> 0;
++  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
++  return h >>> 0;
++}
++// mulberry32 — small, fast, and reproducible across processes and Node versions,
++// which Math.random() seeded by hand would not be.
++function offlineRnd(seed) {
++  let a = seed >>> 0;
++  return () => {
++    a = (a + 0x6D2B79F5) >>> 0;
++    let t = Math.imul(a ^ (a >>> 15), 1 | a);
++    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
++    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
++  };
++}
++
++/**
++ * The price the demo series ends on. Derived from the SYMBOL ONLY, never the timeframe,
++ * so every chart of one instrument agrees about where price is now. The first version of
++ * this let the drift term compound: 300 weekly bars walked gold from 2650 to 27362 while
++ * the 15m series ended at 2899 — three different current prices for one symbol, which is
++ * obviously broken data and would have made the preview misleading rather than merely
++ * synthetic.
++ */
++function offlineAnchor(res) {
++  const base = OFFLINE_BASE[res.symbol] || OFFLINE_BASE[res.ticker]
++    || Math.round((5 + (offlineSeed(res.symbol) % 40000)) * 100) / 100;
++  const jitter = ((offlineSeed(res.symbol + '|anchor') % 1000) / 1000 - 0.5) * 0.10;
++  return base * (1 + jitter);
++}
++
++/**
++ * Build `limit` bars of the exact requested timeframe, ending on the most recent closed
++ * boundary. Spacing is exact by construction, so the M121 interval guard — which exists to
++ * catch a provider answering the wrong timeframe — passes for the right reason rather than
++ * being bypassed. OHLC is clamped after rounding so a bar can never come out malformed.
++ */
++function offlineCandles(res, info, limit) {
++  const rnd = offlineRnd(offlineSeed(`${res.symbol}|${info.key}`));
++  const anchor = offlineAnchor(res);
++  // Per-bar volatility scaled from a 15m reference by sqrt(time), the usual diffusion
++  // scaling, so a weekly bar is not the same size as a one-minute bar.
++  const vol = 0.0009 * Math.sqrt(info.ms / 900000);
++  const digits = anchor < 10 ? 5 : anchor < 1000 ? 3 : 2;
++  const rd = (v) => Number(v.toFixed(digits));
++
++  // Log returns first, then re-centred so the walk ENDS on the anchor whatever its length
++  // or timeframe. A slow sinusoidal regime drift keeps trends and ranges in the series —
++  // the structure engines downstream need something to find, or every demo chart is a flat
++  // blob and the UI looks broken for an unrelated reason.
++  const rets = [];
++  for (let i = 0; i < limit; i++) {
++    const drift = Math.sin(i / 90) * vol * 0.5 + Math.sin(i / 23) * vol * 0.18;
++    const shock = (rnd() + rnd() + rnd() - 1.5) * vol;        // ~normal, mean 0
++    rets.push(drift + shock);
++  }
++  let price = anchor * Math.exp(-rets.reduce((a, b) => a + b, 0));
++
++  const step = info.ms;
++  const lastT = Math.floor(Date.now() / step) * step;          // current boundary
++  const out = [];
++  for (let i = 0; i < limit; i++) {
++    const o = price;
++    const c = o * Math.exp(rets[i]);
++    price = c;                                                 // walk on unrounded values
++    const O = rd(o), C = rd(c);
++    let H = rd(Math.max(o, c) * (1 + rnd() * vol * 0.7));
++    let L = rd(Math.min(o, c) * (1 - rnd() * vol * 0.7));
++    // Rounding can invert a very small wick, and bots-test asserts h >= max(o,c) and
++    // l <= min(o,c) on every bar. Clamp rather than hope.
++    const top = Math.max(O, C), bot = Math.min(O, C);
++    if (H < top) H = top;
++    if (L > bot) L = bot;
++    if (H < L) H = L;
++    out.push({ t: lastT - (limit - 1 - i) * step, o: O, h: H, l: L, c: C, v: Math.round(500 + rnd() * 4000) });
++  }
++  return out;
++}
++
++/* Transport-level failure markers. A failure matching one of these means the request never got a
++ * reply: DNS did not resolve, TCP did not connect, or TLS was reset. That is a different problem
++ * from an HTTP 4xx/5xx, an unknown symbol, or a symbol Yahoo knows but has no bars for — and the
++ * three call for different responses (fix connectivity / fix the symbol / nothing is wrong). */
++const NET_MARKERS = ['fetch failed', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN', 'ETIMEDOUT',
++  'ECONNREFUSED', 'EHOSTUNREACH', 'ENETUNREACH', 'EPIPE', 'UND_ERR', 'socket hang up',
++  'network socket disconnected', 'TLS', 'SSL', 'getaddrinfo'];
++
++/**
++ * Classify a list of provider error strings.
++ * Returns a sentence ONLY when every provider failed at the transport layer, so it can never
++ * claim "unreachable" while one host was actually answering with a 404 or an empty dataset.
++ * Exported so the probe can test the classifier directly rather than only through a live fetch.
++ */
++function netHint(errors) {
++  const list = (errors || []).filter((e) => typeof e === 'string' && e.trim());
++  if (!list.length) return null;
++  const net = list.filter((e) => NET_MARKERS.some((m) => e.includes(m)));
++  if (net.length !== list.length) return null;
++  return '[network: every provider failed at the transport layer, so the data hosts were '
++    + 'unreachable from this machine. That is a connectivity problem, not a bad symbol, an '
++    + 'unsupported interval, or an empty dataset — no data source replied at all.]';
++}
++
++/**
++ * Yahoo chart API -> bars. Tries both hosts (they fail independently).
++ *
++ * M121: this needs no crumb or cookie. The v8 chart endpoint is the one Yahoo endpoint that
++ * still answers unauthenticated — it is what yfinance's `Ticker.history()` uses, and clients
++ * that DO send a cookie+crumb here report persistent 429 outages as a result. So the
++ * crumb-free design is correct and is deliberately kept; what was missing is the diagnostics.
++ */
+ async function yahooCandles(ticker, interval, range) {
+   const path = (host) => `https://${host}/v8/finance/chart/${encodeURIComponent(ticker)}?range=${range}&interval=${interval}&includePrePost=false`;
+-  let lastErr = null;
++  const errs = [];
+   for (const host of ['query2.finance.yahoo.com', 'query1.finance.yahoo.com']) {
+     try {
+       const j = await fetchJson(path(host), { timeout: 14000 });
+-      const r = j && j.chart && j.chart.result && j.chart.result[0];
+-      if (!r || !r.timestamp) throw new Error('no result');
++      const chart = j && j.chart;
++      // Yahoo answers HTTP 200 with the error in the BODY for a bad or delisted symbol:
++      // {"chart":{"result":null,"error":{"code":"Not Found","description":"No data found,
++      // symbol may be delisted"}}}. `!res.ok` never fires for that, so it used to collapse
++      // into a bare "no result" and the explanation was thrown away.
++      if (chart && chart.error) {
++        throw new Error([chart.error.code, chart.error.description].filter(Boolean).join(': ') || 'chart error');
++      }
++      const r = chart && chart.result && chart.result[0];
++      if (!r || !r.timestamp) throw new Error('no result in response');
+       const q = (r.indicators && r.indicators.quote && r.indicators.quote[0]) || {};
+       const out = [];
+       for (let i = 0; i < r.timestamp.length; i++) {
+@@ -145,11 +351,23 @@ async function yahooCandles(ticker, interval, range) {
+         if (o === null || h === null || l === null || c === null) continue;
+         out.push({ t: r.timestamp[i] * 1000, o, h, l, c, v: n2(q.volume && q.volume[i]) || 0 });
+       }
+-      if (!out.length) throw new Error('no bars');
++      // Say how many were dropped: "no bars" alone does not distinguish an empty response
++      // from a full one whose OHLC were all null (which is what Yahoo returns for a symbol
++      // it knows but has no data for).
++      if (!out.length) throw new Error(`no usable bars in ${r.timestamp.length} timestamps (every OHLC value null)`);
+       return { candles: out, meta: { provider: 'yahoo', ticker, currency: r.meta && r.meta.currency, exchange: (r.meta && r.meta.exchangeName) || null, tz: (r.meta && r.meta.exchangeTimezoneName) || null } };
+-    } catch (e) { lastErr = e; }
++    } catch (e) {
++      // Name the transport cause. undici reports every network-level failure as the bare
++      // string "fetch failed" and puts the actual evidence in e.cause.code, so without this
++      // a TLS reset, a DNS failure and a refused connection all look identical — and all three
++      // mean "this host could not be reached", not "Yahoo has no data for that symbol".
++      const code = e && e.cause && (e.cause.code || e.cause.message);
++      errs.push(`${host.split('.')[0]}: ${e.message}${code ? ` (${code})` : ''}`);
++    }
+   }
+-  throw new Error(`Yahoo ${ticker}: ${lastErr ? lastErr.message : 'unavailable'}`);
++  // Report BOTH hosts. Keeping only the last one let a network failure on query1 mask an
++  // authentication failure on query2, which is the one that actually explains the outage.
++  throw new Error(`Yahoo ${ticker} [${interval}/${range}]: ${errs.join(' | ') || 'unavailable'}`);
+ }
+ 
+ /** OKX public candles -> bars (newest first upstream, reversed here). */
+@@ -216,6 +434,62 @@ function sanitise(candles) {
+  * @param {{limit?:number, force?:boolean}} [opts] limit = bars to return (backtest wants ~1500)
+  * @returns {Promise<{candles:Array, meta:object}>}
+  */
++/* ------------------------------------------------- M121: interval integrity */
++
++/** Median inter-bar spacing in ms, or null when there are too few bars to judge. */
++function medianStep(candles) {
++  if (!Array.isArray(candles) || candles.length < 3) return null;
++  const d = [];
++  for (let i = 1; i < candles.length; i++) d.push(candles[i].t - candles[i - 1].t);
++  d.sort((a, b) => a - b);
++  return d[Math.floor(d.length / 2)];
++}
++
++const fmtStep = (ms) => (ms >= 864e5 ? `${Math.round(ms / 864e5)}d`
++  : ms >= 3600e3 ? `${Math.round(ms / 3600e3 * 10) / 10}h`
++    : `${Math.round(ms / 60e3)}m`);
++
++/**
++ * Does the spacing that actually arrived match the timeframe that was asked for?
++ *
++ * 10 % tolerance: intraday bars are exact, and daily/weekly bars jitter with weekends and
++ * holidays, but a skipped aggregation step is off by a factor of 4 or more — so this catches
++ * the real failure without failing on a calendar.
++ */
++function spacingOk(median, expected) {
++  if (median === null || !(expected > 0)) return true;
++  return Math.abs(median - expected) / expected <= 0.10;
++}
++
++/**
++ * The tightest Yahoo `range` that still covers `limit` bars for this interval.
++ *
++ * The old code always asked for `yahooRange`, the LARGEST range the interval supports — a 15m
++ * request pulled 60 days (~5 700 bars) to serve a default limit of 400, about 14x the data
++ * needed. That is not merely wasteful: payload size and call volume are what trip Yahoo's
++ * throttle, so asking for less is part of not getting 429'd. Never returns a range larger than
++ * the interval's documented maximum, and never one too small to cover the request.
++ */
++const RANGE_LADDER = {
++  '1m': [{ r: '1d', bars: 390 }, { r: '5d', bars: 1950 }, { r: '7d', bars: 2730 }],
++  '5m': [{ r: '5d', bars: 390 }, { r: '1mo', bars: 2340 }, { r: '3mo', bars: 7020 }, { r: '60d', bars: 14040 }],
++  '15m': [{ r: '5d', bars: 130 }, { r: '1mo', bars: 780 }, { r: '3mo', bars: 2340 }, { r: '60d', bars: 4680 }],
++  '30m': [{ r: '1mo', bars: 390 }, { r: '3mo', bars: 1170 }, { r: '60d', bars: 2340 }],
++  '1h': [{ r: '1mo', bars: 150 }, { r: '3mo', bars: 450 }, { r: '6mo', bars: 900 }, { r: '1y', bars: 1800 }, { r: '730d', bars: 3600 }],
++  '1d': [{ r: '6mo', bars: 126 }, { r: '1y', bars: 252 }, { r: '2y', bars: 504 }, { r: '5y', bars: 1260 }],
++  '1wk': [{ r: '2y', bars: 104 }, { r: '5y', bars: 260 }, { r: '10y', bars: 520 }],
++};
++function rangeFor(interval, maxRange, limit) {
++  const ladder = RANGE_LADDER[interval];
++  if (!ladder) return maxRange;                       // unknown interval: keep today's behaviour
++  for (const rung of ladder) {
++    if (rung.bars >= limit && (maxRange === null || ladder.indexOf(rung) <= ladder.findIndex((x) => x.r === maxRange))) {
++      return rung.r;
++    }
++  }
++  return maxRange || ladder[ladder.length - 1].r;     // nothing on the ladder is big enough
++}
++
+ async function getCandles(symbol, tf = DEFAULT_TF, opts = {}) {
+   const info = tfInfo(tf);
+   const res = resolveSymbol(symbol);
+@@ -226,6 +500,31 @@ async function getCandles(symbol, tf = DEFAULT_TF, opts = {}) {
+     if (hit) return { candles: hit.candles, meta: { ...hit.meta, cached: true } };
+   }
+ 
++  // M123: the offline source, when explicitly enabled. Placed after the cache lookup so
++  // caching behaves normally, and before any provider is contacted so it works with no
++  // network at all. It returns the same shape as the live path, with the demo labels on it.
++  if (OFFLINE) {
++    const candles = offlineCandles(res, info, limit);
++    const last = candles[candles.length - 1];
++    const meta = {
++      symbol: res.symbol, timeframe: info.key, timeframe_label: info.label, bars: candles.length,
++      asset_class: res.assetClass, provider: OFFLINE_PROVIDER, ticker: res.ticker,
++      note: res.note || null, currency: res.currency || null, aggregation: null,
++      first_bar: candles.length ? new Date(candles[0].t).toISOString() : null,
++      last_bar: last ? new Date(last.t).toISOString() : null,
++      last_price: last ? last.c : null,
++      last_bar_closed: true,
++      warnings: [OFFLINE_WARNING],
++      warning: OFFLINE_WARNING,
++      demo: true,
++      offline: true,
++      fetched_at: new Date().toISOString(),
++      cached: false,
++    };
++    cacheSet(key, candles, meta);
++    return { candles, meta };
++  }
++
+   const errors = [];
+   let got = null;
+ 
+@@ -254,11 +553,35 @@ async function getCandles(symbol, tf = DEFAULT_TF, opts = {}) {
+   // 2) Yahoo (everything, and crypto fallback)
+   if (!got && info.yahoo) {
+     try {
+-      got = await yahooCandles(res.ticker, info.yahoo, info.yahooRange);
++      // M121: ask for the tightest range that covers `limit`, not the interval's maximum.
++      got = await yahooCandles(res.ticker, info.yahoo, rangeFor(info.yahoo, info.yahooRange, limit));
+     } catch (e) { errors.push('Yahoo: ' + e.message); }
+   }
++  // 2b) Crypto whose OKX call failed -> Yahoo under the -USD ticker.
++  // M121 — THE BUG THIS FIXES. This branch used to fire for timeframes Yahoo does NOT serve
++  // (3m, 4h) by substituting `info.yahoo || '1h'`, and because it assigned `got`, step 3's
++  // aggregation was skipped. A 4h request therefore returned 1h BARS LABELLED 4h, with
++  // `aggregation: null` and no warning anywhere in the response. 4h is the higher-timeframe bias
++  // layer, so the direction decision was made on the wrong timeframe — silently, and only when
++  // OKX was unavailable, which is exactly when nobody is looking. Proven with a stubbed fetch:
++  // `4h -> median step 1h, expected 4h` and `3m -> median step 1h, expected 3m`.
++  // It now goes through the same base+aggregate path as step 3, and a timeframe with neither a
++  // Yahoo interval nor an aggregatable base is REFUSED rather than served wrong bars.
+   if (!got && res.fallback) {
+-    try { got = await yahooCandles(res.fallback, info.yahoo || '1h', info.yahooRange || '1mo'); } catch (e) { errors.push('Yahoo fallback: ' + e.message); }
++    const baseInfo = info.yahooFrom ? tfInfo(info.yahooFrom) : null;
++    const fbInterval = info.yahoo || (baseInfo ? baseInfo.yahoo : null);
++    if (!fbInterval) {
++      errors.push(`Yahoo fallback: ${info.key} is not served by Yahoo and has no aggregatable base`);
++    } else {
++      try {
++        const fbRange = rangeFor(fbInterval, info.yahooRange || (baseInfo ? baseInfo.yahooRange : null),
++          info.yahoo ? limit : limit * (info.agg || 4) + 20);
++        const r = await yahooCandles(res.fallback, fbInterval, fbRange);
++        got = info.yahoo
++          ? r
++          : { candles: aggregate(r.candles, info.agg || 4), meta: { ...r.meta, aggregated: `${info.agg || 4}×${info.yahooFrom}` } };
++      } catch (e) { errors.push('Yahoo fallback: ' + e.message); }
++    }
+   }
+ 
+   // 3) Timeframes Yahoo does not serve (3m, 4h…) -> aggregate a smaller one
+@@ -279,10 +602,31 @@ async function getCandles(symbol, tf = DEFAULT_TF, opts = {}) {
+     } catch (e) { errors.push('CoinGecko: ' + e.message); }
+   }
+ 
+-  if (!got) throw new Error(`No candles for ${res.symbol} ${info.key} (${errors.join('; ')})`);
++  if (!got) {
++    const hint = netHint(errors);
++    throw new Error(`No candles for ${res.symbol} ${info.key} (${errors.join('; ')})${hint ? ` ${hint}` : ''}`);
++  }
+ 
+   let candles = sanitise(got.candles);
+   if (candles.length > limit) candles = candles.slice(-limit);
++
++  // M121: validate the spacing of what actually came back. This is the same discipline
++  // ANALYSIS.md §4 already applies to every fixture — "a median step that disagrees with the
++  // filename means rejection" — now applied to live data, where it matters more.
++  //
++  // It is the guard that makes silent timeframe mislabelling impossible from ANY provider or
++  // path, not just the crypto fallback found above: a provider answering the wrong interval, a
++  // skipped aggregation, or CoinGecko's coarse last-resort bars all fail here with the real
++  // numbers in the message, instead of being fed to SMC, top-down and the setup model as though
++  // they were the timeframe that was asked for. Refusing is the honest outcome — analysing a 4h
++  // decision on 1h bars produces confidently wrong direction, which is worse than no answer.
++  const median = medianStep(candles);
++  if (!spacingOk(median, info.ms)) {
++    throw new Error(`No candles for ${res.symbol} ${info.key}: ${got.meta.provider} returned bars spaced ` +
++      `${fmtStep(median)} apart, not ${fmtStep(info.ms)} — refusing to analyse the wrong timeframe` +
++      `${errors.length ? ` (${errors.join('; ')})` : ''}`);
++  }
++
+   const last = candles[candles.length - 1];
+   const meta = {
+     symbol: res.symbol, timeframe: info.key, timeframe_label: info.label, bars: candles.length,
+@@ -304,4 +648,9 @@ async function getCandles(symbol, tf = DEFAULT_TF, opts = {}) {
+ module.exports = {
+   TIMEFRAMES, TF_KEYS, CHART_TFS, tfInfo, resolveSymbol, getCandles, aggregate,
+   clearCache, isCryptoSymbol, cryptoSplit, CRYPTO_YAHOO,
++  // M121: exported so the interval-integrity guard is unit-testable on its own rather than
++  // only observable through a live fetch this sandbox cannot make.
++  UA, yahooErrorText, netHint, NET_MARKERS, medianStep, spacingOk, fmtStep, rangeFor, RANGE_LADDER,
++  // M123: exported so the offline source is testable without a second process per assertion.
++  OFFLINE, OFFLINE_WARNING, OFFLINE_PROVIDER, offlineCandles, offlineSeed,
+ };
+diff --git a/src/coach.js b/src/coach.js
+index a5aa93c..c80696b 100644
+--- a/src/coach.js
++++ b/src/coach.js
+@@ -356,6 +356,47 @@ function analyse(trades, ctx = {}) {
+     });
+   }
+ 
++  /* 13b — M36: how you scale in ------------------------------------------
++     Ep 11 shows the method (add into a winner after confirmation, then move the stop below the
++     new low). Ep 18 warns about the opposite: adding into a loser is averaging down, and it is
++     the most expensive habit in the book. Now that `entries` legs exist the two can be told
++     apart, which they could not be when a pyramid was journalled as two unrelated trades. */
++  {
++    const pyramids = closed.filter((t) => Number(t.entries_n) > 1);
++    if (pyramids.length >= 4) {
++      const intoWinners = pyramids.filter((t) => Number(t.adds_into_winner) === 1);
++      const intoLosers = pyramids.filter((t) => Number(t.adds_into_winner) === 0);
++      const exp = (rows) => rows.length
++        ? rows.reduce((a, t) => a + (Number(t.net_pnl) || 0), 0) / rows.length : 0;
++      if (intoLosers.length > intoWinners.length) {
++        add({
++          id: 'averaging_down', category: 'risk', severity: 'critical',
++          title: 'Most of your adds are into losers, not winners',
++          detail: `${intoLosers.length} of ${pyramids.length} pyramided trades were added to BELOW the average entry (averaging down), versus ${intoWinners.length} added into a winner. The course adds only after further confirmation in the trade's favour, then moves the stop below the new low — the opposite of rescuing a losing idea.`,
++          impact: -(Math.abs(exp(intoLosers)) * intoLosers.length) * 0.5,
++          evidence: [
++            { label: 'Adds into losers', value: String(intoLosers.length) },
++            { label: 'Adds into winners', value: String(intoWinners.length) },
++            { label: 'Avg P&L, adds into losers', value: String(Math.round(exp(intoLosers))) },
++          ],
++          action: 'Only add when the trade has confirmed in your favour, and move the stop to below the new low before you do. If the reason to add is "it is cheaper now", that is averaging down — stand down instead.',
++        });
++      } else if (intoWinners.length >= 3) {
++        add({
++          id: 'scaling_in_well', category: 'discipline', severity: 'positive',
++          title: 'You scale into winners, not into losers',
++          detail: `${intoWinners.length} of ${pyramids.length} pyramided trades were added above the average entry — adding after confirmation, the way the method describes.`,
++          impact: Math.abs(exp(intoWinners)) * intoWinners.length * 0.1,
++          evidence: [
++            { label: 'Adds into winners', value: String(intoWinners.length) },
++            { label: 'Adds into losers', value: String(intoLosers.length) },
++          ],
++          action: 'Keep the stop discipline with it: every add moves the stop below the new low, so the added size never increases the risk of the original idea.',
++        });
++      }
++    }
++  }
++
+   /* 14 — drawdown concentration ------------------------------------------ */
+   const days = P.dailySeries(closed);
+   const dayList = Object.values(days).sort((a, b) => a.pnl - b.pnl);
+@@ -557,7 +598,7 @@ function briefing({ trades, events = [], quotes = {}, account, journalEntry, ris
+   const focus = analysis.insights.filter((i) => i.severity === 'critical' || i.severity === 'warning').slice(0, 3);
+   const realised = closed.reduce((s2, t) => s2 + num(t.net_pnl), 0);
+   const bank = account ? r2(num(account.starting_balance, 10000) + realised) : 10000;
+-  const suggestedRiskPct = account ? account.risk_per_trade_pct : 1;
++  const suggestedRiskPct = account ? account.risk_per_trade_pct : 0.5;  // M9: fallback 1 -> 0.5
+   const suggestedRisk = r2(bank * (suggestedRiskPct / 100) * riskMultiplier);
+ 
+   return {
+diff --git a/src/db.js b/src/db.js
+index 7e2fd68..ea39076 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -117,7 +117,10 @@ CREATE TABLE IF NOT EXISTS accounts (
+   currency TEXT DEFAULT 'USD',
+   starting_balance REAL DEFAULT 10000,
+   current_balance REAL DEFAULT 10000,
+-  risk_per_trade_pct REAL DEFAULT 1.0,
++  risk_per_trade_pct REAL DEFAULT 0.5,   -- M9 guardrail 0.5 pct, manual maximum 1 pct, settable per account
++  risk_unlocked INTEGER DEFAULT 0,       -- M9: 1 pct is behind a MANUAL unlock, so the unlock has to be
++                                         -- persisted. Without this column a stored 1 pct would be re-clamped
++                                         -- to 0.5 on every read and the row would disagree with the sizing.
+   daily_loss_limit_pct REAL DEFAULT 3.0,
+   max_drawdown_pct REAL DEFAULT 10.0,
+   profit_target_pct REAL DEFAULT 8.0,
+@@ -125,6 +128,25 @@ CREATE TABLE IF NOT EXISTS accounts (
+   archived INTEGER DEFAULT 0,
+   created_at TEXT NOT NULL DEFAULT (datetime('now'))
+ );
++-- M50 bias hysteresis. Ep 15 mistake 4 says the bias only changes when its invalidation is hit,
++-- which needs the prior bias and its level to survive between calls. alignment() is deliberately
++-- pure so this state lives here rather than inside it, and nothing that measures the engine has to
++-- carry state between unrelated windows. Keyed by symbol and timeframe only, not by user, because
++-- the bias is a property of the market rather than of the account. CREATE TABLE IF NOT EXISTS runs
++-- on every boot, so databases created before this row pick the table up with no ALTER needed.
++CREATE TABLE IF NOT EXISTS bias_state (
++  symbol TEXT NOT NULL,
++  tf TEXT NOT NULL,
++  bias INTEGER NOT NULL DEFAULT 0,        -- 1 long, -1 short, 0 flat
++  invalidation_level REAL,                -- level whose CLOSE voids this bias
++  invalidation_side TEXT,                 -- below for a long, above for a short
++  since_t INTEGER,                        -- candle time in ms when this bias was set
++  age_bars INTEGER NOT NULL DEFAULT 0,    -- bars observed since it was set
++  changed_because TEXT,                   -- why it last changed, null when it has not
++  disagreement INTEGER,                   -- the from-scratch read that was held against
++  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
++  PRIMARY KEY (symbol, tf)
++);
+ CREATE TABLE IF NOT EXISTS bot_signals (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     user_id INTEGER NOT NULL,
+@@ -186,6 +208,13 @@ CREATE TABLE IF NOT EXISTS journal_entries (
+   review TEXT DEFAULT '',
+   lessons TEXT DEFAULT '',
+   tomorrow TEXT DEFAULT '',
++  -- M28: Ep 4 nightly reflection protocol asks for three fields each night. The tomorrow
++  -- column already covered the third. These two cover the rest.
++  -- NOTE: SQL comments here live inside a JS template literal, so no backticks and no
++  -- semicolons (see M117).
++  proof_lived TEXT DEFAULT '',                -- one proof that you lived your edge today
++  rule_broke TEXT DEFAULT '',                 -- one moment you broke it
++  broke_trigger TEXT DEFAULT '',              -- and what triggered it
+   screen_time_minutes INTEGER,
+   created_at TEXT NOT NULL DEFAULT (datetime('now')),
+   UNIQUE(user_id, entry_date)
+@@ -369,11 +398,82 @@ async function migrate() {
+     if (!(cols || []).some((c) => c.name === col)) await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
+   };
+   await add('trades', 'legs', 'TEXT');
++  // M36: scale-IN legs. `legs` already covered scaling OUT; pyramiding had nowhere to live.
++  await add('trades', 'entries', 'TEXT');
+   await add('accounts', 'prop_preset', 'TEXT');
+   await add('accounts', 'prop_rules', 'TEXT');
++  // M28: Ep 4 nightly reflection protocol, the two fields that were missing
++  await add('journal_entries', 'proof_lived', "TEXT DEFAULT ''");
++  await add('journal_entries', 'rule_broke', "TEXT DEFAULT ''");
++  await add('journal_entries', 'broke_trigger', "TEXT DEFAULT ''");
++  // M9: the manual unlock that lets an account sit above the 0.5 % guardrail, up to the
++  // 1 % absolute maximum. Persisted so the write path and every later read agree.
++  await add('accounts', 'risk_unlocked', 'INTEGER DEFAULT 0');
+   return true;
+ }
+ 
++/* ------------------------------------------------- M50 bias hysteresis state */
++/**
++ * The stored bias for a symbol and timeframe, or null on a first read. Deliberately tolerant of a
++ * missing table: a database opened before this row existed has the table created on boot by
++ * `exec(SCHEMA)`, but a caller should never hard-fail an analysis over hysteresis state.
++ */
++async function getBiasState(symbol, tf) {
++  try {
++    const r = await db.prepare('SELECT symbol, tf, bias, invalidation_level, invalidation_side, since_t, age_bars, changed_because, disagreement, updated_at FROM bias_state WHERE symbol=? AND tf=?')
++      .get(String(symbol || '').toUpperCase(), String(tf || ''));
++    return r || null;
++  } catch (e) { return null; }
++}
++
++/**
++ * Numeric-or-null. `Number(null)` is 0 and `Number.isFinite(0)` is true, so the obvious
++ * `Number.isFinite(Number(v)) ? Number(v) : null` guard stores 0 for an explicit null. That is not
++ * cosmetic here: an `invalidation_level` of 0 with `invalidation_side` 'above' makes `close > 0`
++ * true on every single call, so the bias would be invalidated constantly and hysteresis would do
++ * nothing while looking like it was working. 0 is also a meaningful BIAS value (flat), so a
++ * `disagreement` of 0 must not be conflated with "there was no disagreement".
++ */
++const numOrNull = (v) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
++
++/** Upsert the bias state after an analysis. `age_bars` is carried by the caller. */
++async function setBiasState(s) {
++  const sym = String((s && s.symbol) || '').toUpperCase();
++  const tf = String((s && s.tf) || '');
++  if (!sym || !tf) return false;
++  try {
++    await db.prepare(`INSERT INTO bias_state
++        (symbol, tf, bias, invalidation_level, invalidation_side, since_t, age_bars, changed_because, disagreement, updated_at)
++      VALUES (?,?,?,?,?,?,?,?,?, datetime('now'))
++      ON CONFLICT(symbol, tf) DO UPDATE SET
++        bias=excluded.bias,
++        invalidation_level=excluded.invalidation_level,
++        invalidation_side=excluded.invalidation_side,
++        since_t=excluded.since_t,
++        age_bars=excluded.age_bars,
++        changed_because=excluded.changed_because,
++        disagreement=excluded.disagreement,
++        updated_at=excluded.updated_at`)
++      .run(sym, tf, Number(s.bias) || 0,
++        numOrNull(s.invalidation_level),
++        s.invalidation_side === 'above' || s.invalidation_side === 'below' ? s.invalidation_side : null,
++        numOrNull(s.since_t),
++        numOrNull(s.age_bars) === null ? 0 : numOrNull(s.age_bars),
++        s.changed_because == null ? null : String(s.changed_because),
++        numOrNull(s.disagreement));
++    return true;
++  } catch (e) { return false; }
++}
++
++/** Drop stored bias state — for tests, for a reset, and for a symbol the user re-maps. */
++async function clearBiasState(symbol, tf) {
++  try {
++    if (!symbol) { await db.prepare('DELETE FROM bias_state').run(); return true; }
++    await db.prepare('DELETE FROM bias_state WHERE symbol=? AND tf=?').run(String(symbol).toUpperCase(), String(tf || ''));
++    return true;
++  } catch (e) { return false; }
++}
++
+ /* ------------------------------------------------------------------- meta */
+ 
+ async function getMeta(k) {
+@@ -564,6 +664,9 @@ module.exports = {
+   client, db, prepare, exec, batch, tx, ready,
+   DB_URL, DB_PATH, REMOTE, DATA_DIR, SCHEMA_VERSION,
+   getMeta, setMeta, seedGlobalInstruments, createUser, hashPassword, verifyPassword,
++  // M50: bias hysteresis state. Exported so the server path can hold a bias between calls and so
++  // a probe can reset it deterministically instead of depending on whatever the last run left.
++  getBiasState, setBiasState, clearBiasState,
+   createSession, userFromToken, destroySession, clearWorkspace,
+   getOrCreateWebhookToken, rotateWebhookToken, setWebhookOptions, userFromWebhookToken,
+   DEFAULT_CHECKLIST, DEFAULT_STRATEGIES,
+diff --git a/src/instruments.js b/src/instruments.js
+index e58249b..2292b54 100644
+--- a/src/instruments.js
++++ b/src/instruments.js
+@@ -39,10 +39,18 @@ const CLASS_LABELS = {
+ // instruments whose spreads are not class-typical (oil, nat gas, silver).
+ // ---------------------------------------------------------------------------
+ const COST_BPS = {
+-  forex:     { spread: 0.80, slippage: 0.20, commission: 0.35 },   // 1.7 bp round turn
+-  commodity: { spread: 0.60, slippage: 0.30, commission: 0.20 },   // 1.3 bp
+-  cfd_index: { spread: 0.60, slippage: 0.30, commission: 0.00 },   // 0.9 bp
+-  futures:   { spread: 0.45, slippage: 0.45, commission: 0.20 },   // 1.1 bp
++  // M27: these forex figures sit BELOW the ones the course itself quotes. Ep 3 gives a spread
++  // of "1.5 pips" (= 1.38 bp at EURUSD 1.09) and commission of "$7 per lot... round trip... $14"
++  // (= 1.28 bp on $109k notional) — 2.66 bp round turn against the 1.70 bp below, i.e. the
++  // model is 1.57x optimistic, with commission the largest gap (3.7x). His numbers are
++  // illustrative for one broker rather than a spec, so the default is NOT silently raised;
++  // instead the shortfall is recorded here and callers can pass real terms via opts.costs
++  // ({ symbol: {...} } or { asset_class: {...} }), which costBps() already merges.
++  // READ EVERY BACKTEST AS OPTIMISTIC BY ~1.57x ON COST until real broker terms are supplied.
++  forex:     { spread: 0.80, slippage: 0.20, commission: 0.35, swap_per_day: 0.25 },   // 1.7 bp round turn + swap
++  commodity: { spread: 0.60, slippage: 0.30, commission: 0.20, swap_per_day: 0.30 },   // 1.3 bp + swap
++  cfd_index: { spread: 0.60, slippage: 0.30, commission: 0.00, swap_per_day: 0.35 },   // 0.9 bp + swap
++  futures:   { spread: 0.45, slippage: 0.45, commission: 0.20, swap_per_day: 0.00 },   // 1.1 bp; futures roll, they do not swap
+   crypto:    { spread: 1.00, slippage: 1.50, commission: 5.00 },   // 12.5 bp (taker fee dominates)
+   stocks:    { spread: 1.00, slippage: 1.00, commission: 0.00 },   // 2.0 bp
+   etf:       { spread: 0.50, slippage: 0.50, commission: 0.00 },   // 1.0 bp
+@@ -72,7 +80,14 @@ function costBps(instrument, opts = {}) {
+   const ext = (opts.costs && (opts.costs[merged.symbol] || opts.costs[cls])) || {};
+   const parts = Object.assign({}, base, over, ext);
+   const bps = parts.spread + parts.slippage + 2 * (parts.commission || 0);
+-  return { bps, parts, source: ext && Object.keys(ext).length ? 'custom' : (over && Object.keys(over).length ? 'instrument' : cls) };
++  // M27: swap / rollover was not modelled at all, though `swing` and `position` presets hold
++  // for days. It is per-day and directional in reality (long and short pay different rates),
++  // so it is applied only when the caller says how long the trade is held. Without
++  // opts.hold_days the round-turn figure is unchanged, so no existing result moves.
++  const holdDays = Number(opts.hold_days || 0);
++  const swap = holdDays > 0 ? (Number(parts.swap_per_day) || 0) * holdDays : 0;
++  return { bps: bps + swap, bps_round_turn: bps, swap_bps: swap, hold_days: holdDays || null,
++    parts, source: ext && Object.keys(ext).length ? 'custom' : (over && Object.keys(over).length ? 'instrument' : cls) };
+ }
+ 
+ /** Round-trip cost as a fraction of price (0.00012 = 1.2 bp). */
+@@ -305,9 +320,72 @@ function pipsMoved({ entry, exit, pip_size, direction }) {
+   return round2(((x - e) * dirSign(direction)) / ps);
+ }
+ 
++// ---------------------------------------------------------------------------
++// M9 — the risk-per-trade guardrail, in ONE place.
++//
++// Ep 21: "the rule of thumb is to risk like 1 %... the maximum is 1 %. Anywhere
++// below 1 % that's great. The lower the better." Ep 31: "in your guardrails, just
++// stick to 0.5 %... because when you risk only 0.5 % of your capital on any given
++// trade, now you have more room to breathe." The ledger decision is 0.5 % by
++// default with 1 % behind a MANUAL UNLOCK.
++//
++// This lives in instruments.js because it is already the sizing maths module that
++// BOTH boundaries import — routes/api.js and bots/setup.js each `require` it — so
++// the request boundary and the engine clamp against one definition instead of two
++// that can drift. It was previously enforced in exactly one place
++// (bots/correction.js:403), which is a review endpoint: the value the finding
++// actually named, `risk_per_trade_pct` accepted from a request, reached
++// positionSize() unclamped and sized a $10k account at 9.95 % of equity for a
++// request that said risk_pct=10.
++// ---------------------------------------------------------------------------
++const RISK_GUARDRAIL = {
++  default_pct: 0.5,    // Ep 31's guardrail setting, and the schema default
++  guardrail_pct: 0.5,  // the ceiling until the trader manually unlocks more
++  max_pct: 1,          // Ep 21's absolute maximum — never exceeded, unlocked or not
++  floor_pct: 0.25,     // correction.js's existing floor; below this the size is untradeable
++};
++
++/**
++ * Clamp a risk-per-trade percentage against the guardrail.
++ * @param {*} v          the requested value (anything a request or a DB row holds)
++ * @param {object} opts  { fallback, unlocked, floor, guardrail, max }
++ * @returns {number}     a percentage safe to size with
++ */
++function clampRiskPct(v, opts = {}) {
++  const fallback = num(opts.fallback, RISK_GUARDRAIL.default_pct);
++  const floor = num(opts.floor, RISK_GUARDRAIL.floor_pct);
++  const guardrail = num(opts.guardrail, RISK_GUARDRAIL.guardrail_pct);
++  const max = num(opts.max, RISK_GUARDRAIL.max_pct);
++  const requested = num(v, fallback);
++  // Above the guardrail requires an explicit unlock; 1 % is the ceiling either way.
++  const ceiling = Math.min(opts.unlocked ? max : guardrail, max);
++  if (!(requested > 0)) return Math.min(Math.max(fallback > 0 ? fallback : guardrail, floor), ceiling);
++  return Math.min(Math.max(requested, floor), ceiling);
++}
++
++/**
++ * Explain a clamp so the UI can say what happened instead of silently returning a
++ * different number from the one asked for. §6: a field that describes a decision
++ * which no longer exists is the recurring trap — so is a number that does.
++ * @returns {string|null} null when the request was honoured as given
++ */
++function riskGuardrailNote(requested, applied, opts = {}) {
++  const req = num(requested, NaN), app = num(applied, NaN);
++  if (!isFinite(req) || !isFinite(app) || Math.abs(req - app) < 0.005) return null;
++  const max = num(opts.max, RISK_GUARDRAIL.max_pct);
++  if (req > max) {
++    return `Risk capped at ${app}% — ${max}% is the course's absolute maximum per trade (Ep 21: "the maximum is 1%. Anywhere below 1% that's great. The lower the better").`;
++  }
++  if (!opts.unlocked) {
++    return `Risk held at ${app}%, the guardrail default (Ep 31: "in your guardrails, just stick to 0.5%"). Going above it needs a manual unlock; ${max}% is the ceiling even then.`;
++  }
++  return `Risk adjusted from ${req}% to ${app}% by the guardrail.`;
++}
++
+ module.exports = {
+   COST_BPS, COST_BPS_OVERRIDE, costBps, costFraction, costR,
+   ASSET_CLASSES, CLASS_LABELS, UNIT_LABELS, PRESETS,
+   genericSpec, unitLabel, classLabel, dirSign, computePnl, riskAmount, riskPerUnit,
+   positionSize, sizeFromMoneyRisk, pipsMoved, num, round2,
++  RISK_GUARDRAIL, clampRiskPct, riskGuardrailNote,
+ };
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 0bb768c..e8c8052 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -393,9 +393,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+     .map((t) => P.decorate(t, tz));
+   const rs = rows.map((t) => num(t.r_multiple));
+   const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
+-    || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || { current_balance: 10000, risk_per_trade_pct: 1 };
++    || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || { current_balance: 10000, risk_per_trade_pct: 0.5 };  // M9: fallback 1 -> 0.5
+   const start = num(req.query.start_equity, acc.current_balance);
+-  const riskPct = num(req.query.risk_pct, acc.risk_per_trade_pct);
++  // M9: `risk_pct` was accepted here as a raw query param and fed straight into the Monte
++  // Carlo simulation, so a ruin projection could be run at any percentage. An explicit value
++  // is the trader's own manual act (ceiling: the 1 % absolute maximum); the FALLBACK is the
++  // stored account setting, clamped by that account's own unlock so a legacy row cannot
++  // smuggle an unclamped number in sideways.
++  const riskPct = req.query.risk_pct !== undefined && req.query.risk_pct !== ''
++    ? I.clampRiskPct(req.query.risk_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked: true })
++    : I.clampRiskPct(acc.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked: !!acc.risk_unlocked });
+   res.json({
+     monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
+     optimal_risk: P.optimalRisk(rs),
+@@ -446,16 +453,19 @@ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+   if (!b.entry_date) return res.status(400).json({ error: 'entry_date is required' });
+   const acc = b.account_id ? Number(b.account_id) : (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
+-  await db.prepare(`INSERT INTO journal_entries (user_id,account_id,entry_date,market_bias,mood,energy,focus,plan,review,lessons,tomorrow,screen_time_minutes)
+-    VALUES (@user_id,@account_id,@entry_date,@market_bias,@mood,@energy,@focus,@plan,@review,@lessons,@tomorrow,@screen_time_minutes)
++  // M28: proof_lived / rule_broke / broke_trigger are Ep 4's nightly reflection protocol.
++  await db.prepare(`INSERT INTO journal_entries (user_id,account_id,entry_date,market_bias,mood,energy,focus,plan,review,lessons,tomorrow,proof_lived,rule_broke,broke_trigger,screen_time_minutes)
++    VALUES (@user_id,@account_id,@entry_date,@market_bias,@mood,@energy,@focus,@plan,@review,@lessons,@tomorrow,@proof_lived,@rule_broke,@broke_trigger,@screen_time_minutes)
+     ON CONFLICT(user_id,entry_date) DO UPDATE SET
+       market_bias=excluded.market_bias, mood=excluded.mood, energy=excluded.energy, focus=excluded.focus,
+       plan=excluded.plan, review=excluded.review, lessons=excluded.lessons, tomorrow=excluded.tomorrow,
++      proof_lived=excluded.proof_lived, rule_broke=excluded.rule_broke, broke_trigger=excluded.broke_trigger,
+       screen_time_minutes=excluded.screen_time_minutes`).run({
+     user_id: req.user.id, account_id: acc, entry_date: b.entry_date,
+     market_bias: b.market_bias || '', mood: b.mood || null, energy: b.energy || null,
+     focus: b.focus || '', plan: b.plan || '', review: b.review || '', lessons: b.lessons || '',
+-    tomorrow: b.tomorrow || '', screen_time_minutes: b.screen_time_minutes || null,
++    tomorrow: b.tomorrow || '', proof_lived: b.proof_lived || '', rule_broke: b.rule_broke || '',
++    broke_trigger: b.broke_trigger || '', screen_time_minutes: b.screen_time_minutes || null,
+   });
+   res.json({ ok: true, entry: await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, b.entry_date) });
+ });
+@@ -541,20 +551,40 @@ router.get('/accounts', requireAuth, async (req, res) => {
+ router.post('/accounts', requireAuth, async (req, res) => {
+   const b = req.body || {};
+   if (!b.name) return res.status(400).json({ error: 'Account name is required' });
+-  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(
++  // M9: the guardrail is enforced HERE, at the boundary the finding names — `api.js` stored
++  // `risk_per_trade_pct` via num() with no clamp at all, so an account could be configured at
++  // any percentage and every later signal sized from it. A STORED value is a standing
++  // instruction that silently drives every future trade, so going above the 0.5 % guardrail
++  // (Ep 31) requires the unlock to be asked for explicitly and is persisted beside it; 1 %
++  // (Ep 21) is the ceiling either way.
++  const unlocked = !!b.risk_unlocked;
++  const riskPct = I.clampRiskPct(b.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked });
++  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     req.user.id, b.name, b.broker || '', b.account_type || 'live', b.currency || 'USD',
+-    num(b.starting_balance, 10000), num(b.starting_balance, 10000), num(b.risk_per_trade_pct, 1),
++    num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0,
+     num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8));
+-  res.json({ ok: true, account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(info.lastInsertRowid) });
++  res.json({
++    ok: true,
++    account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(info.lastInsertRowid),
++    risk_note: I.riskGuardrailNote(b.risk_per_trade_pct, riskPct, { unlocked }),
++  });
+ });
+ router.put('/accounts/:id', requireAuth, async (req, res) => {
+   const id = Number(req.params.id);
+   const cur = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(id, req.user.id);
+   if (!cur) return res.status(404).json({ error: 'Account not found' });
+   const b = req.body || {};
++  // M9: the same guardrail on the update path, which also stored the value via num() with no
++  // clamp. Only a value THIS request supplies is clamped — a row stored above the guardrail
++  // before the fix is left untouched here and clamped on READ (bots/index.js) instead, so an
++  // unrelated edit such as a rename cannot silently move the trader's risk setting.
++  const unlocked = b.risk_unlocked !== undefined ? !!b.risk_unlocked : !!cur.risk_unlocked;
++  const riskPct = b.risk_per_trade_pct !== undefined
++    ? I.clampRiskPct(b.risk_per_trade_pct, { fallback: num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct), unlocked })
++    : num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct);
+   await db.prepare(`UPDATE accounts SET name=@name, broker=@broker, account_type=@account_type, currency=@currency,
+-    starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, daily_loss_limit_pct=@daily_loss_limit_pct,
++    starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, daily_loss_limit_pct=@daily_loss_limit_pct,
+     max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, prop_preset=@prop_preset,
+     prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
+     id, user_id: req.user.id,
+@@ -563,7 +593,8 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+     account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
+     currency: b.currency !== undefined ? b.currency : cur.currency,
+     starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
+-    risk_per_trade_pct: b.risk_per_trade_pct !== undefined ? num(b.risk_per_trade_pct, cur.risk_per_trade_pct) : cur.risk_per_trade_pct,
++    risk_per_trade_pct: riskPct,
++    risk_unlocked: unlocked ? 1 : 0,
+     daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
+     max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
+     prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
+@@ -571,7 +602,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+     profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
+     archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
+   });
+-  res.json({ ok: true, account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(id) });
++  res.json({
++    ok: true,
++    account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(id),
++    risk_note: b.risk_per_trade_pct !== undefined ? I.riskGuardrailNote(b.risk_per_trade_pct, riskPct, { unlocked }) : null,
++  });
+ });
+ router.delete('/accounts/:id', requireAuth, async (req, res) => {
+   await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
+@@ -708,7 +743,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+   const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
+   const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
+   const balance = num(b.balance, acc ? acc.current_balance : 10000);
+-  const riskPct = num(b.risk_pct, acc ? acc.risk_per_trade_pct : 1);
++  // M9: this is the endpoint that ACTUALLY sizes a position, and it took `risk_pct` straight
++  // from the request body — measured before the fix: a body saying risk_pct=10 sized a $10k
++  // account at $995 of risk, 9.95 % of equity, against a stated maximum of 1 %. A number typed
++  // into the calculator is the manual act the decision asks for, so it is honoured up to the
++  // 1 % absolute maximum (Ep 21) and the clamp is reported rather than silent; the account
++  // fallback is clamped by that account's own persisted unlock.
++  const riskRequested = b.risk_pct !== undefined && b.risk_pct !== null && b.risk_pct !== '';
++  const riskAsked = riskRequested ? b.risk_pct : (acc ? acc.risk_per_trade_pct : I.RISK_GUARDRAIL.default_pct);
++  const riskPct = riskRequested
++    ? I.clampRiskPct(b.risk_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked: true })
++    : I.clampRiskPct(acc ? acc.risk_per_trade_pct : I.RISK_GUARDRAIL.default_pct,
++        { fallback: I.RISK_GUARDRAIL.default_pct, unlocked: !!(acc && acc.risk_unlocked) });
++  const riskNote = I.riskGuardrailNote(riskAsked, riskPct, { unlocked: true });
+   const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
+   const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
+   const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
+@@ -722,6 +769,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+     pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
+     pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
+     percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,
++    // M9: reported beside `note`, never over it — `note` is positionSize()'s own wording
++    // ("risk too small for 1 contract") and scripts/api-test.js asserts on that string.
++    risk_pct_applied: riskPct,
++    risk_note: riskNote,
+   });
+ });
+ 
+diff --git a/src/trades.js b/src/trades.js
+index 171df43..90fb6d3 100644
+--- a/src/trades.js
++++ b/src/trades.js
+@@ -56,6 +56,43 @@ function normalise(raw, ctx = {}) {
+     planned_r: raw.planned_r ? num(raw.planned_r) : null,
+   };
+ 
++  // --- M36: entry legs (scale-ins): the weighted entry price is what the P&L uses ---
++  // Ep 11, his live scalper trade on camera: "enter for the long for the first position right
++  // here. And then later on price pullback to this area here, giving me more confirmation. So,
++  // this is where I decided to scale in for my second position." -- with the stop then moved
++  // "below this new low... of my second position."
++  // Scaling OUT already had this mechanism (`legs`, below). Scaling IN did not, so a pyramid
++  // could only be journalled as two unrelated trades and the coach could not see the pattern.
++  // Mirrors `legs` deliberately: same JSON column shape, same weighted-average arithmetic, so
++  // the two directions cannot drift apart.
++  let entries = [];
++  if (Array.isArray(raw.entries)) entries = raw.entries;
++  else if (typeof raw.entries === 'string' && raw.entries.trim().startsWith('[')) { try { entries = JSON.parse(raw.entries); } catch { entries = []; } }
++  entries = entries.map((l) => ({
++    pct: num(l.pct, 0), price: num(l.price, null),
++    reason: l.reason ? String(l.reason).slice(0, 60) : '', at: l.at || null,
++    stop_after: l.stop_after === '' || l.stop_after == null ? null : num(l.stop_after),
++  })).filter((l) => l.price !== null && l.pct > 0);
++  let weightedEntry = entry;
++  if (entries.length) {
++    const totalPct = entries.reduce((a, l) => a + l.pct, 0);
++    if (totalPct > 0) weightedEntry = r4(entries.reduce((a, l) => a + l.pct * l.price, 0) / totalPct);
++    t.entry = weightedEntry;
++    // the stop follows the most recent add that carries one -- that is the course's rule
++    const lastStop = entries.slice().reverse().find((l) => l.stop_after !== null);
++    if (lastStop) { t.stop = lastStop.stop_after; t.stop_moved = 1; }
++  }
++  t.entries = entries.length ? JSON.stringify(entries) : null;
++  t.entries_n = entries.length;
++  t.weighted_entry = entries.length ? weightedEntry : null;
++  // Ep 18 distinguishes the two: adding into a winner is the method, adding into a loser is
++  // averaging down. The coach needs the flag to tell them apart.
++  t.adds_into_winner = entries.length > 1
++    ? (direction === 'long'
++      ? (entries[entries.length - 1].price > weightedEntry ? 1 : 0)
++      : (entries[entries.length - 1].price < weightedEntry ? 1 : 0))
++    : null;
++
+   // --- legs (scale-outs): the weighted exit price is what the P&L uses ---
+   let legs = [];
+   if (Array.isArray(raw.legs)) legs = raw.legs;
+@@ -130,7 +167,7 @@ const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction',
+   'entry', 'exit', 'stop', 'target', 'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'planned_r',
+   'mae_r', 'mfe_r', 'stop_moved', 'exit_reason', 'strategy_id', 'strategy_name', 'setup_grade', 'session', 'timeframes',
+   'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags', 'thesis', 'lesson', 'execution_notes',
+-  'notes', 'screenshot_url', 'legs'];
++  'notes', 'screenshot_url', 'legs', 'entries'];
+ 
+ async function insert(db, userId, t) {
+   const row = { ...t, user_id: userId };

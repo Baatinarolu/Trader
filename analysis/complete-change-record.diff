@@ -1,0 +1,228 @@
+COMPLETE CHANGE RECORD — every line differing from tradingpro-main.zip
+generated 2026-10-07 11:37:40Z
+
+diff -ruN src/bots/index.js src/bots/index.js
+--- src/bots/index.js	2026-10-07 07:47:34.000000000 +0000
++++ src/bots/index.js	2026-10-07 11:15:04.621555415 +0000
+@@ -97,6 +97,15 @@
+ const floorRR = (v) => (Number(v) > 0 ? Number(v) : 1);   // the trader's minimum R:R
+ const runRR = (v) => Math.max(2, floorRR(v));              // the setup model's 1:2 runway
+ 
++/* The stack's medium timeframe carries the location read (premium/discount,
++   fresh zone, unfilled gap). It only needs its own fetch when it differs from
++   every series already being pulled; otherwise we reuse one and save a
++   round-trip. A zone fetch that fails is non-fatal — topdown.build() falls
++   back to the entry chart, which is what the engine did before. */
++const needsOwnZone = (L, tf) => L.zone_tf !== tf && L.zone_tf !== L.bias_tf && L.zone_tf !== L.trigger_tf;
++const reuseZone = (L, entry, bias, trig) =>
++  (L.zone_tf === L.bias_tf ? bias : L.zone_tf === L.trigger_tf ? trig : entry);
++
+ async function analyse(symbol, tf = '15m', opts = {}) {
+   const sym = String(symbol || '').toUpperCase();
+   const spec = specOf(sym);
+@@ -169,7 +178,11 @@
+     const L2 = Momentum.topdown.layersFor(tf);
+     const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
+     const ltfRaw = L2.trigger_tf === tf ? null : await Momentum.series(sym, L2.trigger_tf, 400);
+-    const tdNow = Momentum.topdown.build({ symbol: sym, tf, series: full[0], biasSeries: full[1], triggerSeries: ltfRaw || full[0], opts: { minRR: floorRR(opts.minRR) } });
++    const trigNow = ltfRaw || full[0];
++    const zoneNow = needsOwnZone(L2, tf)
++      ? await Momentum.series(sym, L2.zone_tf, 400).catch(() => null)
++      : null;
++    const tdNow = Momentum.topdown.build({ symbol: sym, tf, series: full[0], biasSeries: full[1], triggerSeries: trigNow, zoneSeries: zoneNow || reuseZone(L2, full[0], full[1], trigNow), opts: { minRR: floorRR(opts.minRR) } });
+     replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
+   }
+   const now = Now.build({
+@@ -278,14 +291,19 @@
+   // The same series lengths the analyse endpoint uses, so the two payloads can
+   // never disagree about the same market (they did once: the chart asked for 200
+   // higher-timeframe candles and the method read a different range from them).
+-  const [entry, bias, triggerRaw] = await Promise.all([
++  const [entry, bias, triggerRaw, zoneRaw] = await Promise.all([
+     Momentum.series(sym, tf, bars, cut),
+     Momentum.series(sym, L.bias_tf, 400, cut),
+     L.trigger_tf === tf ? Promise.resolve(null) : Momentum.series(sym, L.trigger_tf, 400, cut),
++    // The stack's medium timeframe holds the location read. Fetch it only when
++    // it is not already one of the series above, and never let a failed zone
++    // fetch sink the whole analysis — build() falls back to the entry chart.
++    needsOwnZone(L, tf) ? Momentum.series(sym, L.zone_tf, 400, cut).catch(() => null) : Promise.resolve(null),
+   ]);
+   const trig = triggerRaw || entry;
++  const zone = zoneRaw || reuseZone(L, entry, bias, trig);
+ 
+-  const td = Momentum.topdown.build({ symbol: sym, tf, series: entry, biasSeries: bias, triggerSeries: trig, opts: { minRR: floorRR(opts.minRR) } });
++  const td = Momentum.topdown.build({ symbol: sym, tf, series: entry, biasSeries: bias, triggerSeries: trig, zoneSeries: zone, opts: { minRR: floorRR(opts.minRR) } });
+   entry.smc.crt = Momentum.crtView(td, tf);
+ 
+   const biasTrend = bias.smc.structure ? bias.smc.structure.trend : 'ranging';
+diff -ruN src/bots/momentum.js src/bots/momentum.js
+--- src/bots/momentum.js	2026-10-07 07:47:34.000000000 +0000
++++ src/bots/momentum.js	2026-10-07 11:15:20.853637416 +0000
+@@ -396,14 +396,20 @@
+ async function analyse(symbol, tf = '15m', opts = {}) {
+   const L = TD.layersFor(tf);
+   const cut = { trim: opts.trim || 0, asOf: opts.asOf || null };
+-  const [htf, mtf, ltfRaw] = await Promise.all([
++  const [htf, mtf, ltfRaw, zoneRaw] = await Promise.all([
+     series(symbol, L.bias_tf, opts.htfLimit || 400, cut),
+     series(symbol, tf, opts.limit || 600, cut),
+     L.trigger_tf === tf ? null : series(symbol, L.trigger_tf, opts.ltfLimit || 400, cut),
++    // the stack's medium timeframe carries the location read; only worth its own
++    // fetch when it is not already one of the three series above
++    (L.zone_tf !== tf && L.zone_tf !== L.bias_tf && L.zone_tf !== L.trigger_tf)
++      ? series(symbol, L.zone_tf, opts.zoneLimit || 400, cut).catch(() => null)
++      : null,
+   ]);
+   const ltf = ltfRaw || mtf;
++  const zone = zoneRaw || (L.zone_tf === L.bias_tf ? htf : L.zone_tf === L.trigger_tf ? ltf : mtf);
+ 
+-  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR } });
++  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, zoneSeries: zone, opts: { minRR: opts.minRR } });
+   const align = alignment(htf, mtf, ltf, td);
+   const mech = mechanics({ htf, mtf, ltf, align, td });
+   const read = narrative({ symbol, mtf, htf, ltf, align, mech, td });
+diff -ruN src/bots/setup.js src/bots/setup.js
+--- src/bots/setup.js	2026-10-07 07:47:34.000000000 +0000
++++ src/bots/setup.js	2026-10-07 09:39:51.868476146 +0000
+@@ -135,10 +135,15 @@
+ 
+     /* ------------------------------------------------------------- 5. trend alignment */
+     const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
++    // SMC.analyse() returns { ok:false } with no `structure` key when it is given
++    // fewer than 30 candles (smc.js:660). The `trend` read above already guards
++    // for that; this one did not, so a thin series crashed the whole setup build
++    // instead of scoring the checkpoint as unavailable.
++    const lastBreak = (analysis && analysis.structure && analysis.structure.last_break) || null;
+     const trendAligned = (long && trend === 'bullish') || (!long && trend === 'bearish');
+     const htfTrend = analysis && analysis.htf_structure ? analysis.htf_structure.trend : null;
+     const htfAligned = htfTrend ? ((long && htfTrend === 'bullish') || (!long && htfTrend === 'bearish')) : null;
+-    add('structure', 'Internal structure agrees', trendAligned, 12, `Structure reads ${trend}${analysis.structure.last_break ? ` after a ${analysis.structure.last_break.type} ${analysis.structure.last_break.dir} ${analysis.structure.last_break.bars_ago} bars ago${analysis.structure.last_break.mss ? ' (MSS — sweep then shift)' : ''}` : ''}.`);
++    add('structure', 'Internal structure agrees', trendAligned, 12, `Structure reads ${trend}${lastBreak ? ` after a ${lastBreak.type} ${lastBreak.dir} ${lastBreak.bars_ago} bars ago${lastBreak.mss ? ' (MSS — sweep then shift)' : ''}` : ''}.`);
+     if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
+ 
+     /* ------------------------------------------------------------- 6. higher-timeframe bias */
+diff -ruN src/bots/smc.js src/bots/smc.js
+--- src/bots/smc.js	2026-10-07 07:47:34.000000000 +0000
++++ src/bots/smc.js	2026-10-07 10:10:18.879781843 +0000
+@@ -614,13 +614,42 @@
+   { key: 'ny_am', name: 'New York AM', start: 12, end: 16, quality: 1.0 },
+   { key: 'ny_pm', name: 'New York PM', start: 16, end: 21, quality: 0.6 },
+ ];
+-/** The two windows the curriculum trades hardest: London open and the 12:00–16:00 overlap. */
++/**
++ * The windows the curriculum trades hardest, stated in NEW YORK time — which is
++ * how the course teaches them (Ep12: "Q zones"). They used to be hardcoded as
++ * fixed UTC hours, which silently drifted by an hour every time the US changed
++ * clocks, and the three windows had been pinned to different offsets (London to
++ * EDT, NY AM to EST) so they could never all be right at once. Defining them in
++ * ET and converting at call time makes them correct year-round.
++ *
++ *   London       02:00–05:00 ET   EUR, GBP
++ *   New York AM  07:00–10:00 ET   USD pairs
++ *   London close 10:00–12:00 ET   USD pair retracements
++ */
+ const SILVER_BULLETS = [
+-  { name: 'London killzone', startH: 6, startM: 0, endH: 9, endM: 0, quality: 1.0 },
+-  { name: 'NY AM killzone', startH: 12, startM: 0, endH: 15, endM: 0, quality: 1.0 },
+-  { name: 'NY PM killzone', startH: 15, startM: 0, endH: 18, endM: 0, quality: 0.7 },
++  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0 },
++  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0 },
++  { name: 'NY PM killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.7 },
+ ];
+ 
++/** Minutes since midnight in New York, DST handled by the IANA database. */
++function nyMinutes(date) {
++  const parts = new Intl.DateTimeFormat('en-GB', {
++    timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
++  }).formatToParts(date);
++  const get = (t) => Number((parts.find((p) => p.type === t) || {}).value || 0);
++  return get('hour') * 60 + get('minute');
++}
++
++/** The same window rendered back in UTC, so the UI label is still truthful. */
++function utcLabel(date, startMins, endMins) {
++  const base = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
++  // nyMinutes(base) is New York's own midnight, expressed in minutes-past-UTC-midnight.
++  const nyOffset = nyMinutes(new Date(base)) ;
++  const fmt = (m) => new Date(base + (m - nyOffset) * 60000).toISOString().slice(11, 16);
++  return `${fmt(startMins)}–${fmt(endMins)} UTC`;
++}
++
+ function sessionState(date = new Date()) {
+   const h = date.getUTCHours(), m = date.getUTCMinutes();
+   const mins = h * 60 + m;
+@@ -629,10 +658,14 @@
+   const active = sessions.filter((s) => s.active);
+   const open = sessions[0];
+   const nextIdx = (sessions.findIndex((s) => s.active) + 1) % sessions.length;
++  const nyMins = nyMinutes(date);
++  const inWindowNY = (s, e) => (e > s ? nyMins >= s && nyMins < e : nyMins >= s || nyMins < e);
+   const bullets = SILVER_BULLETS.map((b) => {
+     const s = b.startH * 60 + b.startM, e = b.endH * 60 + b.endM;
+-    const until = (e - mins + 1440) % 1440;
+-    return { name: b.name, window: `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} UTC`, active: inWindow(s, e), minutes_to_end: inWindow(s, e) ? until : null, minutes_to_start: inWindow(s, e) ? 0 : ((s - mins + 1440) % 1440), quality: b.quality };
++    const open_ = inWindowNY(s, e);
++    const until = (e - nyMins + 1440) % 1440;
++    const et = `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} ET`;
++    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality };
+   });
+   const activeBullet = bullets.find((b) => b.active) || null;
+   return {
+diff -ruN src/bots/topdown.js src/bots/topdown.js
+--- src/bots/topdown.js	2026-10-07 07:47:34.000000000 +0000
++++ src/bots/topdown.js	2026-10-07 11:13:28.953072221 +0000
+@@ -487,11 +487,20 @@
+   const right = found.right;
+   const biasRange = found.range;
+ 
+-  // ---- Layer 2: the zone on the trading timeframe -------------------------
++  // ---- Layer 2: the zone / location --------------------------------------
++  // The stack declares a dedicated medium timeframe for the location read (the
++  // MTF in the course's HTF → MTF → LTF). When the caller supplies it, the
++  // premium/discount read, the fresh zone and the unfilled gap are taken from
++  // there — that is the timeframe the course says to refine the dealing range
++  // on. With no zone series the engine falls back to the entry chart, which is
++  // exactly what it did before this layer was wired up.
++  const locSeries = zoneSeries || entrySeries;
++  const locTf = zoneSeries ? L.zone_tf : entryTf;
++  const locSmc = locSeries.smc || {};
+   const entrySmc = entrySeries.smc || {};
+-  const pd = entrySmc.premium_discount || null;
+-  const freshZone = (entrySmc.order_blocks || []).find((z) => !z.breached && z.distance_atr <= 4) || null;
+-  const unfilledFvg = (entrySmc.fvgs || []).filter((g) => !g.filled)[0] || null;
++  const pd = locSmc.premium_discount || null;
++  const freshZone = (locSmc.order_blocks || []).find((z) => !z.breached && z.distance_atr <= 4) || null;
++  const unfilledFvg = (locSmc.fvgs || []).filter((g) => !g.filled)[0] || null;
+   const entryCrt = (() => {
+     // the trading timeframe also gets the CRT treatment: its own newest reacting
+     // candle, read against the trigger timeframe as the confirmation series
+@@ -632,7 +641,7 @@
+   const steps = [
+     {
+       n: 1, title: 'Timeframe stack', done: true,
+-      text: `${L.bias_tf} decides the bias and holds the range · ${entryTf} holds the location · ${trigger.tf || L.trigger_tf} gives the trigger. Style: ${L.style}.`,
++      text: `${L.bias_tf} decides the bias and holds the range · ${locTf} holds the location · ${trigger.tf || L.trigger_tf} gives the trigger. Style: ${L.style}.`,
+     },
+     {
+       n: 2, title: 'The right candle', done: !!right,
+@@ -674,7 +683,7 @@
+   return {
+     method: {
+       name: 'CRT top-down (Market Mechanics)',
+-      stack: `${L.bias_tf} bias → ${entryTf} location → ${trigger.tf || L.trigger_tf} trigger`,
++      stack: `${L.bias_tf} bias → ${locTf} location → ${trigger.tf || L.trigger_tf} trigger`,
+       style: L.style,
+       steps: steps.map((s) => s.title),
+       conflict_rule: 'The higher timeframe decides direction; lower timeframes only time it. A lower-timeframe move against the higher-timeframe direction is the liquidity being taken — not a conflict. A genuine conflict (higher timeframe sweeping its own opposing extreme) means stand down and wait for the next right candle, never a split-the-difference trade.',
+@@ -694,9 +703,9 @@
+         bars: biasCandles.length, atr: r4(biasAtr),
+       },
+       zone: {
+-        tf: entryTf, job: 'location',
++        tf: locTf, job: 'location',
+         role_note: 'Where the entry lives: premium/discount, fresh zone, unfilled gap.',
+-        structure: entryTrend,
++        structure: (locSmc.structure && locSmc.structure.trend) || null,
+         premium_discount: pd ? { zone: pd.zone, position_pct: pd.position_pct, range: [pd.range_low, pd.range_high], ote_band: pd.ote_band || null, ote: pd.ote || null } : null,
+         fresh_zone: freshZone ? { side: freshZone.side, top: r4(freshZone.top), bottom: r4(freshZone.bottom), distance_atr: freshZone.distance_atr } : null,
+         unfilled_fvg: unfilledFvg ? { dir: unfilledFvg.dir, top: r4(unfilledFvg.top), bottom: r4(unfilledFvg.bottom) } : null,
