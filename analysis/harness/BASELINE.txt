@@ -2307,3 +2307,26 @@ M125 stays OPEN at S1 with this scope, and the honest sentence for it is now: th
 reward is sane at the median on real data, its tail is largely reachable travel, and no gate
 measured so far can trim the tail without also trimming the median. Revisit only with a mechanism
 that separates the two, or with position-manager evidence that the maxima change realised outcomes.
+
+--------------------------------------------------------------------------------
+ M57 APPLIED — compliance computed at last, from rows that were always there
+--------------------------------------------------------------------------------
+rule_checks(trade_id,label,passed) was written on trade create and update and rendered as
+checkboxes, but no SELECT on the table existed anywhere in src/; the only other reference was a
+DELETE on update. Ep 26's formula is verbatim: 8 follows of a 10-step plan is ~80%. Implemented as
+one aggregate with TWO readings and THREE denominators, because the sentence supports both a
+per-trade average and a pooled followed-steps ratio and they differ whenever trades carry
+different check counts: compliance (per-trade average), compliance_pooled (steps), and
+compliance_trades / compliance_checks / compliance_passed so neither can be quoted naked. Empty
+set yields null, never 0. Wired into /analytics over exactly the closed trades that payload
+analyses, and into the per-strategy stats; rendered as a Discipline group in the analytics view.
+
+VERIFIED by analysis/probe-m57-compliance.js, 6 passed / 0 failed, against a live server: two
+closed trades with checklists 3-of-4 and 2-of-2 make the expected figures arithmetic rather than
+judgement — per-trade 87.5, pooled 83.3, denominators 2/6/5, per-strategy segment carries the
+fields, filtered-to-empty yields null. Suites unchanged.
+
+The wider point, recorded because it is the reason this row mattered: the subjective 1-5
+adherence self-score had been standing in for this metric, and coach.js analyses adherence
+genuinely well. His objection is not to the analysis but to the input — a self-score "requires you
+to be brutally honest", a derived metric removes the choice. Both now exist and are labelled.

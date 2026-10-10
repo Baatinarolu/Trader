@@ -412,6 +412,18 @@ index 8e16034..d58c883 100644
  
      // the plot box is often laid out after the first paint; observe it
      if (global.ResizeObserver) {
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index a3eb318..f9d364b 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -23,6 +23,7 @@
+           const w = U.h('div', { class: 'grid' });
+           const cards = [
+             ['Profitability', [['Net P&L', U.moneySign(k.net_pnl), U.cls(k.net_pnl)], ['Gross profit', U.money(k.gross_profit), 'pos'], ['Gross loss', U.money(-k.gross_loss), 'neg'], ['Fees & costs', U.money(-k.fees), 'neg'], ['Expectancy / trade', U.moneySign(k.expectancy), U.cls(k.expectancy)], ['Expectancy (R)', U.signed(k.expectancy_r, 3) + 'R', U.cls(k.expectancy_r)], ['Profit factor', k.profit_factor === null ? '∞' : U.num(k.profit_factor, 2), ''], ['Payoff ratio', U.num(k.payoff, 2), ''], ['Kelly optimum', U.pct(k.kelly, 1), '']]],
++            ['Discipline', [['Compliance (per trade)', k.compliance === null ? '—' : U.pct(k.compliance, 1), ''], ['Compliance (pooled steps)', k.compliance_pooled === null ? '—' : U.pct(k.compliance_pooled, 1), ''], ['Trades with a checklist', k.compliance_trades === undefined ? '—' : k.compliance_trades, ''], ['Checklist steps followed', (k.compliance_checks ? k.compliance_passed + ' / ' + k.compliance_checks : '—'), '']]],
+             ['Trade outcomes', [['Total trades', k.trades, ''], ['Winners', `${k.wins} (${U.pct(k.win_rate, 1)})`, 'pos'], ['Losers', `${k.losses} (${U.pct(k.loss_rate, 1)})`, 'neg'], ['Break-even', k.breakevens, ''], ['Avg win', U.money(k.avg_win), 'pos'], ['Avg loss', U.money(-k.avg_loss), 'neg'], ['Largest win', U.money(k.best_trade), 'pos'], ['Largest loss', U.money(k.worst_trade), 'neg'], ['Best / worst R', `${U.signed(k.best_r, 1)}R / ${U.signed(k.worst_r, 1)}R`, '']]],
+             ['Risk-adjusted', [['Sharpe (ann.)', U.num(k.sharpe, 2), k.sharpe > 1 ? 'pos' : ''], ['Sortino (ann.)', U.num(k.sortino, 2), k.sortino > 1 ? 'pos' : ''], ['SQN', U.num(k.sqn, 2), ''], ['Calmar', U.num(k.calmar, 2), ''], ['Recovery factor', U.num(k.recovery_factor, 2), ''], ['Std dev of R', U.num(k.std_r, 2), ''], ['Median R', U.signed(k.median_r, 2) + 'R', ''], ['Total R', U.signed(k.total_r, 1) + 'R', U.cls(k.total_r)], ['Profit concentration', U.pct(k.profit_concentration, 0), '']]],
+             ['Discipline', [['Avg adherence', k.avg_adherence ? U.num(k.avg_adherence, 2) + ' / 5' : '—', ''], ['Risk consistency', '±' + U.pct(k.risk_consistency, 0), k.risk_consistency < 35 ? 'pos' : 'warn'], ['Avg risk / trade', U.money(k.avg_risk), ''], ['Avg risk % of balance', U.pct(k.avg_risk_pct_of_balance, 2), ''], ['Trades without stop', k.stops_overshot ? `${an.by_symbol.length ? '' : ''}${k.stops_overshot} over -1R` : '0', ''], ['Current streak', k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + ' wins' : Math.abs(k.streaks.current) + ' losses'), k.streaks.current_type === 'loss' ? 'neg' : 'pos'], ['Longest win streak', k.streaks.longest_win, ''], ['Longest loss streak', k.streaks.longest_loss, 'neg'], ['Trading days', `${k.trading_days} (${U.num(k.avg_trades_per_day, 1)}/day)`, '']]],
 diff --git a/public/js/views/bots.js b/public/js/views/bots.js
 index 2222ac3..682e865 100644
 --- a/public/js/views/bots.js
@@ -3842,7 +3854,7 @@ index 97110a5..ff8d382 100644
      by_session: segment(trades, (t) => t.session_label),
      by_direction: segment(trades, (t) => (String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long')),
 diff --git a/src/routes/api.js b/src/routes/api.js
-index 0bb768c..f86a479 100644
+index 0bb768c..bd2d979 100644
 --- a/src/routes/api.js
 +++ b/src/routes/api.js
 @@ -1,6 +1,7 @@
@@ -3899,7 +3911,69 @@ index 0bb768c..f86a479 100644
    const id = await T.insert(db, req.user.id, { ...trade, account_id: accountId });
    if (Array.isArray(body.rule_checks)) {
      const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
-@@ -393,9 +423,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+@@ -364,6 +394,51 @@ router.post('/trades/bulk-delete', requireAuth, async (req, res) => {
+ });
+ 
+ /* --------------------------------------------------------------- analytics */
++/* ── M57 — COMPLIANCE, the one derived discipline metric, finally read ──────────
++ * Ep 26 states the formula verbatim: *"If you are supposed to follow your trade plan
++ * 10 times, but you only follow it 8 times, then your compliance rate is probably
++ * around 80%."* The raw rows already existed — rule_checks(trade_id,label,passed),
++ * written on trade create and update and rendered as checkboxes in the trade view —
++ * but no SELECT on the table existed anywhere in src/; its only other reference was a
++ * DELETE on update. So the metric was collected, displayed per trade, and never
++ * aggregated, while the subjective 1-5 self-score (adherence) stood in for it. His
++ * whole point is the difference: a derived metric *"removes the choice"* of being
++ * honest, a self-score does not.
++ *
++ * Two readings are returned on purpose. `compliance` is the prescribed one — the
++ * per-trade passed/total ratio, averaged over trades that carry a checklist.
++ * `compliance_pooled` is the ratio Ep 26's sentence literally describes, followed
++ * steps over required steps across the set. They differ whenever trades carry
++ * different numbers of checks, and returning both means neither can be quoted
++ * without its denominator: compliance_trades / compliance_checks / compliance_passed.
++ * Null, never 0, when no trade in the set has a checklist — an empty denominator is
++ * an absence of evidence, not 0% discipline. */
++async function complianceByTrade(userId) {
++  const rows = await db.prepare(
++    'SELECT trade_id, passed FROM rule_checks WHERE trade_id IN (SELECT id FROM trades WHERE user_id=?)'
++  ).all(userId);
++  const m = new Map();
++  for (const r of rows) {
++    const e = m.get(r.trade_id) || { passed: 0, total: 0 };
++    e.total += 1; if (r.passed) e.passed += 1;
++    m.set(r.trade_id, e);
++  }
++  return m;
++}
++function complianceOver(map, ids) {
++  let trades = 0, checks = 0, passed = 0, sumRatio = 0;
++  for (const id of ids || []) {
++    const e = map.get(id);
++    if (!e || !e.total) continue;
++    trades += 1; checks += e.total; passed += e.passed; sumRatio += e.passed / e.total;
++  }
++  return {
++    compliance: trades ? Number((100 * sumRatio / trades).toFixed(1)) : null,
++    compliance_pooled: checks ? Number((100 * passed / checks).toFixed(1)) : null,
++    compliance_trades: trades, compliance_checks: checks, compliance_passed: passed,
++  };
++}
++
+ router.get('/analytics', requireAuth, async (req, res) => {
+   const tz = (await settingsOf(req)).timezone;
+   const f = tradeFilters(req);
+@@ -380,6 +455,9 @@ router.get('/analytics', requireAuth, async (req, res) => {
+     || await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id)
+     || { starting_balance: 10000, id: null };
+   const analytics = P.fullAnalytics(closed, { startingBalance: acc.starting_balance });
++  /* M57 — compliance over exactly the closed trades this payload analyses, so the
++   * discipline figure and the performance figures can never describe different sets. */
++  Object.assign(analytics, complianceOver(await complianceByTrade(req.user.id), closed.map((t) => t.id)));
+   analytics.account = acc;
+   analytics.open_positions = decorated.filter((t) => t.status === 'open');
+   res.json(analytics);
+@@ -393,9 +471,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const rs = rows.map((t) => num(t.r_multiple));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
@@ -3918,7 +3992,7 @@ index 0bb768c..f86a479 100644
    res.json({
      monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
      optimal_risk: P.optimalRisk(rs),
-@@ -446,16 +483,19 @@ router.post('/journal', requireAuth, async (req, res) => {
+@@ -446,16 +531,19 @@ router.post('/journal', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.entry_date) return res.status(400).json({ error: 'entry_date is required' });
    const acc = b.account_id ? Number(b.account_id) : (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
@@ -3941,7 +4015,21 @@ index 0bb768c..f86a479 100644
    });
    res.json({ ok: true, entry: await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, b.entry_date) });
  });
-@@ -486,17 +526,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
+@@ -470,11 +558,12 @@ router.get('/strategies', requireAuth, async (req, res) => {
+   const stats = {};
+   const tz = (await settingsOf(req)).timezone;
+   const rows = (await db.prepare("SELECT * FROM trades WHERE user_id=? AND status='closed'").all(req.user.id)).map((t) => P.decorate(t, tz));
++  const cMap = await complianceByTrade(req.user.id);   // M57: one read, aggregated per strategy below
+   for (const s of strategies) {
+     const list = rows.filter((t) => t.strategy_id === s.id || (t.strategy_name && t.strategy_name === s.name));
+     stats[s.id] = { trades: list.length, ...P.segment(list.length ? list : [{}], (t) => t.symbol)[0] };
+     const k = list.length ? P.kpis(list, { startingBalance: 10000 }) : null;
+-    stats[s.id] = k ? { trades: k.trades, net_pnl: k.net_pnl, win_rate: k.win_rate, expectancy_r: k.expectancy_r, profit_factor: k.profit_factor, avg_r: k.avg_r, total_r: k.total_r } : { trades: 0 };
++    stats[s.id] = k ? { trades: k.trades, net_pnl: k.net_pnl, win_rate: k.win_rate, expectancy_r: k.expectancy_r, profit_factor: k.profit_factor, avg_r: k.avg_r, total_r: k.total_r, ...complianceOver(cMap, list.map((t) => t.id)) } : { trades: 0, ...complianceOver(cMap, []) };
+   }
+   res.json({ strategies, stats });
+ });
+@@ -486,17 +575,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
      req.user.id, b.name, b.description || '', b.market_conditions || '', b.timeframes || '',
      JSON.stringify(b.entry_rules || []), JSON.stringify(b.exit_rules || []), JSON.stringify(b.checklist || []),
      b.risk_rules || '', num(b.target_r_multiple, 2), b.colour || '#4f8cff', b.active === false ? 0 : 1);
@@ -3977,7 +4065,7 @@ index 0bb768c..f86a479 100644
      name: b.name !== undefined ? b.name : cur.name,
      description: b.description !== undefined ? b.description : cur.description,
      market_conditions: b.market_conditions !== undefined ? b.market_conditions : cur.market_conditions,
-@@ -508,8 +561,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
+@@ -508,8 +610,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
      target_r_multiple: b.target_r_multiple !== undefined ? num(b.target_r_multiple, 2) : cur.target_r_multiple,
      colour: b.colour || cur.colour,
      active: b.active === undefined ? cur.active : (b.active ? 1 : 0),
@@ -4032,7 +4120,7 @@ index 0bb768c..f86a479 100644
  });
  router.delete('/strategies/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM strategies WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -541,20 +639,40 @@ router.get('/accounts', requireAuth, async (req, res) => {
+@@ -541,20 +688,40 @@ router.get('/accounts', requireAuth, async (req, res) => {
  router.post('/accounts', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.name) return res.status(400).json({ error: 'Account name is required' });
@@ -4078,7 +4166,7 @@ index 0bb768c..f86a479 100644
      max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, prop_preset=@prop_preset,
      prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
      id, user_id: req.user.id,
-@@ -563,7 +681,8 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -563,7 +730,8 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
      currency: b.currency !== undefined ? b.currency : cur.currency,
      starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
@@ -4088,7 +4176,7 @@ index 0bb768c..f86a479 100644
      daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
      max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
      prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
-@@ -571,7 +690,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -571,7 +739,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
      archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
    });
@@ -4101,7 +4189,7 @@ index 0bb768c..f86a479 100644
  });
  router.delete('/accounts/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -708,7 +831,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -708,7 +880,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
    const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
    const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
    const balance = num(b.balance, acc ? acc.current_balance : 10000);
@@ -4122,7 +4210,7 @@ index 0bb768c..f86a479 100644
    const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
    const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
    const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
-@@ -722,6 +857,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -722,6 +906,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
      pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
      pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
      percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,

@@ -394,6 +394,51 @@ router.post('/trades/bulk-delete', requireAuth, async (req, res) => {
 });
 
 /* --------------------------------------------------------------- analytics */
+/* ── M57 — COMPLIANCE, the one derived discipline metric, finally read ──────────
+ * Ep 26 states the formula verbatim: *"If you are supposed to follow your trade plan
+ * 10 times, but you only follow it 8 times, then your compliance rate is probably
+ * around 80%."* The raw rows already existed — rule_checks(trade_id,label,passed),
+ * written on trade create and update and rendered as checkboxes in the trade view —
+ * but no SELECT on the table existed anywhere in src/; its only other reference was a
+ * DELETE on update. So the metric was collected, displayed per trade, and never
+ * aggregated, while the subjective 1-5 self-score (adherence) stood in for it. His
+ * whole point is the difference: a derived metric *"removes the choice"* of being
+ * honest, a self-score does not.
+ *
+ * Two readings are returned on purpose. `compliance` is the prescribed one — the
+ * per-trade passed/total ratio, averaged over trades that carry a checklist.
+ * `compliance_pooled` is the ratio Ep 26's sentence literally describes, followed
+ * steps over required steps across the set. They differ whenever trades carry
+ * different numbers of checks, and returning both means neither can be quoted
+ * without its denominator: compliance_trades / compliance_checks / compliance_passed.
+ * Null, never 0, when no trade in the set has a checklist — an empty denominator is
+ * an absence of evidence, not 0% discipline. */
+async function complianceByTrade(userId) {
+  const rows = await db.prepare(
+    'SELECT trade_id, passed FROM rule_checks WHERE trade_id IN (SELECT id FROM trades WHERE user_id=?)'
+  ).all(userId);
+  const m = new Map();
+  for (const r of rows) {
+    const e = m.get(r.trade_id) || { passed: 0, total: 0 };
+    e.total += 1; if (r.passed) e.passed += 1;
+    m.set(r.trade_id, e);
+  }
+  return m;
+}
+function complianceOver(map, ids) {
+  let trades = 0, checks = 0, passed = 0, sumRatio = 0;
+  for (const id of ids || []) {
+    const e = map.get(id);
+    if (!e || !e.total) continue;
+    trades += 1; checks += e.total; passed += e.passed; sumRatio += e.passed / e.total;
+  }
+  return {
+    compliance: trades ? Number((100 * sumRatio / trades).toFixed(1)) : null,
+    compliance_pooled: checks ? Number((100 * passed / checks).toFixed(1)) : null,
+    compliance_trades: trades, compliance_checks: checks, compliance_passed: passed,
+  };
+}
+
 router.get('/analytics', requireAuth, async (req, res) => {
   const tz = (await settingsOf(req)).timezone;
   const f = tradeFilters(req);
@@ -410,6 +455,9 @@ router.get('/analytics', requireAuth, async (req, res) => {
     || await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id)
     || { starting_balance: 10000, id: null };
   const analytics = P.fullAnalytics(closed, { startingBalance: acc.starting_balance });
+  /* M57 — compliance over exactly the closed trades this payload analyses, so the
+   * discipline figure and the performance figures can never describe different sets. */
+  Object.assign(analytics, complianceOver(await complianceByTrade(req.user.id), closed.map((t) => t.id)));
   analytics.account = acc;
   analytics.open_positions = decorated.filter((t) => t.status === 'open');
   res.json(analytics);
@@ -510,11 +558,12 @@ router.get('/strategies', requireAuth, async (req, res) => {
   const stats = {};
   const tz = (await settingsOf(req)).timezone;
   const rows = (await db.prepare("SELECT * FROM trades WHERE user_id=? AND status='closed'").all(req.user.id)).map((t) => P.decorate(t, tz));
+  const cMap = await complianceByTrade(req.user.id);   // M57: one read, aggregated per strategy below
   for (const s of strategies) {
     const list = rows.filter((t) => t.strategy_id === s.id || (t.strategy_name && t.strategy_name === s.name));
     stats[s.id] = { trades: list.length, ...P.segment(list.length ? list : [{}], (t) => t.symbol)[0] };
     const k = list.length ? P.kpis(list, { startingBalance: 10000 }) : null;
-    stats[s.id] = k ? { trades: k.trades, net_pnl: k.net_pnl, win_rate: k.win_rate, expectancy_r: k.expectancy_r, profit_factor: k.profit_factor, avg_r: k.avg_r, total_r: k.total_r } : { trades: 0 };
+    stats[s.id] = k ? { trades: k.trades, net_pnl: k.net_pnl, win_rate: k.win_rate, expectancy_r: k.expectancy_r, profit_factor: k.profit_factor, avg_r: k.avg_r, total_r: k.total_r, ...complianceOver(cMap, list.map((t) => t.id)) } : { trades: 0, ...complianceOver(cMap, []) };
   }
   res.json({ strategies, stats });
 });
