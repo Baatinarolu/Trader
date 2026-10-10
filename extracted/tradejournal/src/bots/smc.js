@@ -828,10 +828,17 @@ const SESSIONS = [
  *   New York AM  07:00–10:00 ET   USD pairs
  *   London close 10:00–12:00 ET   USD pair retracements
  */
+/* M38 / M40 — he names FOUR killzones and assigns pairs to each; this array had three and no
+ * Asia, so `in_killzone` could never be true in the one window he gives to AUD, NZD and JPY
+ * pairs (20:00-00:00 ET). Asia is added at a LOWER quality (0.5): his own caveat is that it is
+ * not where "the big explosive move on the USD pairs" happens, so it must not score like London.
+ * `pairs` is M40's mapping — the currencies that actually move in each window. A window with no
+ * `pairs` entry counts for every instrument, which is how the pre-existing three behave. */
 const SILVER_BULLETS = [
-  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0 },
-  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0 },
-  { name: 'NY PM killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.7 },
+  { name: 'Asia killzone', startH: 20, startM: 0, endH: 24, endM: 0, quality: 0.5, restricted: true, pairs: ['AUD', 'NZD', 'JPY'] },
+  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0, pairs: ['EUR', 'GBP'] },
+  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0, pairs: ['USD'] },
+  { name: 'NY PM killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.7, pairs: ['USD'] },
 ];
 
 /** Minutes since midnight in New York, DST handled by the IANA database. */
@@ -867,7 +874,7 @@ function sessionState(date = new Date()) {
     const open_ = inWindowNY(s, e);
     const until = (e - nyMins + 1440) % 1440;
     const et = `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} ET`;
-    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality };
+    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted };
   });
   const activeBullet = bullets.find((b) => b.active) || null;
   return {
@@ -890,6 +897,72 @@ function sessionState(date = new Date()) {
     open_session: open.name,
     next_session: { name: sessions[nextIdx].name, starts: sessions[nextIdx].window },
   };
+}
+
+/* ── M40 — pair-per-session affinity ───────────────────────────────────────────
+ * *"Don't try to trade every pair in every session… make sure that you combine the
+ * currency pairs that you are trading with the right time."* His reason: *"if you are
+ * trading EURUSD, you cannot expect to get the same volatility in Asia session as you
+ * do in London session."* The code applied one session quality to every symbol, so
+ * EURUSD and AUDNZD scored identically inside the Asia window where he says only the
+ * latter belongs.
+ *
+ * Returns `sessions` untouched when the active window counts for this instrument, and a
+ * copy that reads EXACTLY like the true outside-state when it does not: in_killzone
+ * false, killzone null, the outside note. Mirroring the outside-state rather than
+ * zeroing one field is the point — setup.js vetoes on `in_killzone === false` and
+ * momentum's session factor reads `quality`, so a half-adjusted object would let a pair
+ * keep the veto-free benefit of a window it does not belong to while losing only the
+ * points. Adding Asia without this would have LOOSENED the gate for EURUSD at 02:00 UTC,
+ * the opposite of his instruction.
+ *
+ * Two exemptions, both deliberate. An instrument whose legs are not all in the named
+ * currency set (XAUUSD, BTCUSDT — XAU and BTC appear in no session list of his) is
+ * ungoverned: absence of a statement is not a prohibition. And a window with no `pairs`
+ * counts for everyone, which preserves the pre-M38 behaviour of any bullet this table
+ * does not describe. */
+const NAMED_SESSION_CURRENCIES = ['AUD', 'NZD', 'JPY', 'EUR', 'GBP', 'USD'];
+function sessionAffinity(symbol, sessions) {
+  const ses = sessions || {};
+  if (!ses.in_killzone) return ses;
+  const bullet = (ses.bullets || []).find((x) => x.active) || null;
+  const pairs = bullet && bullet.pairs;
+  if (!pairs || !pairs.length) return ses;
+  /* Symbols carry no separator ('EURUSD', 'XAUUSD', 'BTCUSDT'), so legs are taken
+   * positionally: first three characters against the remainder. Splitting on
+   * non-letters yields ONE leg for every symbol and silently disables the whole map. */
+  const base = String(symbol || '').toUpperCase().replace(/[^A-Z]/g, '');
+  const legs = base.length >= 6 ? [base.slice(0, 3), base.slice(3)] : (base ? [base] : []);
+  const match = legs.some((l) => pairs.indexOf(l) !== -1);
+  /* A RESTRICTED window exists only for its pairs: Asia was added BY this fix for AUD, NZD
+   * and JPY, so for every other instrument it must not exist at all — admitting XAUUSD or
+   * BTCUSDT into it would loosen their gate at 02:00 UTC, the exact opposite of the intent.
+   * An UNRESTRICTED window (London, NY) existed for everyone before M38 and still does; its
+   * pairs list is M40's affinity guidance and governs only the named FX pairs, because he
+   * never placed gold or crypto in any session and absence of a statement is not a rule. */
+  if (bullet.restricted) { if (match) return ses; }
+  else {
+    if (legs.length !== 2 || legs.some((l) => NAMED_SESSION_CURRENCIES.indexOf(l) === -1)) return ses;
+    if (match) return ses;
+  }
+  /* Which window opens next FOR THIS INSTRUMENT. An ungoverned one (gold, crypto — a leg
+   * outside his named set) is welcome in every window, so it must not be filtered by the
+   * pair lists at all; filtering it left BTCUSDT with no next window whatsoever. */
+  const governed = legs.length === 2 && legs.every((l) => NAMED_SESSION_CURRENCIES.indexOf(l) !== -1);
+  const counts = (x) => !x.pairs || !x.pairs.length || (x.restricted ? false : !governed) || legs.some((l) => x.pairs.indexOf(l) !== -1);
+  const nxt = (ses.bullets || []).filter((x) => x.minutes_to_start > 0 && counts(x))
+    .sort((x, y) => x.minutes_to_start - y.minutes_to_start)[0];
+  /* Mirror the GENUINE outside-state, not just the two flags momentum and setup read.
+   * sessionState's real outside branch sets `quality` to the best active SESSION quality
+   * (0.3 when none is active) and momentum scores `quality * 6` — leaving the bullet's own
+   * quality in place would keep paying session credit to a pair this window does not want. */
+  const actSes = (ses.sessions || []).filter((x) => x.active);
+  const outsideQ = actSes.length ? Math.max.apply(null, actSes.map((x) => x.quality || 0)) : 0.3;
+  return Object.assign({}, ses, {
+    in_killzone: false, killzone: null, quality: outsideQ, affinity_outside: bullet.name,
+    best_time: nxt ? `Next window for this pair: ${nxt.name}` : ses.best_time,
+    note: `${bullet.name} is not this instrument's window — ${String(symbol || '').toUpperCase()} scores as if outside the killzones. `,
+  });
 }
 
 /* ═══════════════════════════════════════════════════════ ANALYSE (bundle) */
@@ -1027,5 +1100,5 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
 module.exports = {
   findSwings, alternate, bosSwings, marketStructure, findDisplacement, findOrderBlocks, findFvgs, findBreakers,
   liquidity, findSweeps, premiumDiscount, crt, sessionState, analyse, clusterLevels,
-  SESSIONS, SILVER_BULLETS, dayKey, weekKey,
+  SESSIONS, SILVER_BULLETS, dayKey, weekKey, sessionAffinity,
 };

@@ -441,6 +441,25 @@ index 2222ac3..682e865 100644
      wrap.appendChild(sizeRow);
      return wrap;
    }
+diff --git a/scripts/bots-test.js b/scripts/bots-test.js
+index c463eda..9865d46 100644
+--- a/scripts/bots-test.js
++++ b/scripts/bots-test.js
+@@ -57,7 +57,13 @@ async function call(path, opts = {}) {
+ 
+   const sessions = await call('/api/bots/sessions');
+   ok(sessions.status === 200 && sessions.json.sessions.length === 5, 'five sessions defined');
+-  ok(Array.isArray(sessions.json.bullets) && sessions.json.bullets.length === 3, 'three killzone windows');
++  /* M38: he names FOUR killzones, so the suite must not pin the array to the three this
++   * code happened to have. M40: Asia is pair-scoped, and that scoping is what stops the new
++   * window from admitting EURUSD, XAUUSD and BTCUSDT at 02:00 UTC. */
++  ok(Array.isArray(sessions.json.bullets) && sessions.json.bullets.length === 4, 'four killzone windows');
++  const asiaB = (sessions.json.bullets || []).find((x) => x.name === 'Asia killzone');
++  ok(!!asiaB && JSON.stringify(asiaB.pairs) === JSON.stringify(['AUD', 'NZD', 'JPY']),
++    'Asia killzone is pair-scoped to AUD/NZD/JPY');
+ 
+   /* -------------------------------------------------------------- candles */
+   section('candles');
 diff --git a/scripts/vercel-check.js b/scripts/vercel-check.js
 index 818bf26..08bbea4 100644
 --- a/scripts/vercel-check.js
@@ -1295,13 +1314,14 @@ index 0007b01..93f74c7 100644
            action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
            setup_side: best ? best.side : null,
 diff --git a/src/bots/momentum.js b/src/bots/momentum.js
-index 2e664e5..153ef90 100644
+index 2e664e5..7720789 100644
 --- a/src/bots/momentum.js
 +++ b/src/bots/momentum.js
-@@ -174,6 +174,86 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -174,7 +174,87 @@ function alignment(htf, mtf, ltf, td = null) {
   * The first factor is the method itself, not an indicator average.
   * @param {object} p { htf, mtf, ltf, align, td }
   */
+-function mechanics({ htf, mtf, ltf, align, td = null }) {
 +/**
 + * M50 — bias hysteresis.
 + *
@@ -1382,10 +1402,27 @@ index 2e664e5..153ef90 100644
 +  return out;
 +}
 +
- function mechanics({ htf, mtf, ltf, align, td = null }) {
++function mechanics({ htf, mtf, ltf, align, td = null, symbol = null }) {
    const smc = mtf.smc;
    const ind = mtf.ind;
-@@ -302,9 +382,20 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
+   const sessions = smc.sessions || {};
+@@ -220,7 +300,14 @@ function mechanics({ htf, mtf, ltf, align, td = null }) {
+     `${zone ? `Fresh ${zone.side} zone ${zone.bottom}–${zone.top} within ${zone.distance_atr} ATR. ` : 'No fresh zone near price. '}${pd ? `Price sits at ${pd.position_pct}% of the ${pd.range_low}–${pd.range_high} dealing range (${pd.zone}).` : ''}`);
+ 
+   /* 6. session quality (6) */
+-  add('session', 'Session / killzone', clamp(sessions.quality ? sessions.quality * 6 : 3, 0, 6), sessions.note || '');
++  { /* M38/M40 — the session factor for THIS symbol, not for the clock */
++    const ses = SMC.sessionAffinity(symbol, sessions);
++    /* 4 args was 5: every other factor passes a numeric `max` then a `detail`, this one
++     * passed the note as `max` and left `detail` undefined, so the reason the user needs
++     * ("EURUSD scores as if outside the killzones") rendered in the points slot as
++     * "3/Asia killzone …" and the detail column stayed empty. */
++    add('session', 'Session / killzone', clamp(ses.quality ? ses.quality * 6 : 3, 0, 6), 6, ses.note || '');
++  }
+ 
+   /* 7. volatility regime (4) */
+   const rank = ind.ind ? ind.ind.atr_rank : null;
+@@ -302,9 +389,20 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
      });
    }
    if (pd) {
@@ -1408,7 +1445,16 @@ index 2e664e5..153ef90 100644
      });
    }
    if (td && td.steps) {
-@@ -451,4 +542,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -405,7 +503,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+ 
+   const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR } });
+   const align = alignment(htf, mtf, ltf, td);
+-  const mech = mechanics({ htf, mtf, ltf, align, td });
++  const mech = mechanics({ htf, mtf, ltf, align, td, symbol });
+   const read = narrative({ symbol, mtf, htf, ltf, align, mech, td });
+   mtf.smc.crt = crtView(td, tf);
+ 
+@@ -451,4 +549,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
  module.exports = {
    analyse, series, alignment, mechanics, narrative, crtView, regimeOf,
    MTF, htfOf, ltfOf, topdown: TD,
@@ -1449,7 +1495,7 @@ index bacfca7..38ec2fa 100644
   * the same candle series and reports, honestly, what taking that second tap did:
   * whether it happened, and whether re-risking 1R on it made money.
 diff --git a/src/bots/setup.js b/src/bots/setup.js
-index 138beb4..77649be 100644
+index 138beb4..cd4f207 100644
 --- a/src/bots/setup.js
 +++ b/src/bots/setup.js
 @@ -15,7 +15,15 @@
@@ -1740,10 +1786,21 @@ index 138beb4..77649be 100644
    for (const p of outward) {
      const key = p.price.toFixed(5);
      if (seen.has(key)) continue;
-@@ -76,6 +335,13 @@ function buildSetups(analysis, ctx = {}) {
+@@ -70,12 +329,24 @@ function targetPools(analysis, dir, entry) {
+  *                                    only that side can be armed.
+  * @returns {{candidates:Array, verdict:object}}
+  */
++const SMC = require('./smc');   // M38/M40: sessionAffinity
++
+ function buildSetups(analysis, ctx = {}) {
+   const price = Number(ctx.price || (analysis && analysis.price));
+   const atr = Number(ctx.atr || (analysis && analysis.atr)) || price * 0.001;
    const bias = Number(ctx.bias || 0);            // -1 / 0 / +1 from the MTF + momentum layer
    const minRR = Number(ctx.minRR || 2);
    const sessions = (analysis && analysis.sessions) || {};
++  /* M38/M40 — the session view THIS SYMBOL is entitled to. The calendar fields (dow,
++   * month) are preserved by the copy, so M10's stand-down is unaffected. */
++  const sess = SMC.sessionAffinity(ctx.symbol, sessions);
 +  /* M10 — computed ONCE here rather than per candidate: it depends only on the bar's
 +   * calendar and the caller's configuration, not on anything about an individual setup.
 +   * It was originally declared inside the scoring loop, which put it out of scope for the
@@ -1754,7 +1811,7 @@ index 138beb4..77649be 100644
    const strike = sessions.quality != null ? sessions.quality : 0.5;
    const blackout = ctx.newsBlackout || null;
    const ind = ctx.indicators || null;
-@@ -83,7 +349,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -83,7 +354,7 @@ function buildSetups(analysis, ctx = {}) {
    const td = ctx.topdown || null;                   // the method gate
  
    const candidates = [];
@@ -1763,7 +1820,7 @@ index 138beb4..77649be 100644
  
    for (const dir of [1, -1]) {
      const long = dir > 0;
-@@ -108,22 +374,62 @@ function buildSetups(analysis, ctx = {}) {
+@@ -108,22 +379,62 @@ function buildSetups(analysis, ctx = {}) {
      const obs = ((analysis && analysis.order_blocks) || []).filter((z) => z.dir === dir && !z.breached);
      const fvgs = ((analysis && analysis.fvgs) || []).filter((g) => g.dir === dir && !g.filled);
      // prefer a fresh, strong OB with an unfilled FVG overlapping or nested
@@ -1833,7 +1890,7 @@ index 138beb4..77649be 100644
  
      if (zone && zone.overlap) add('nested', 'Zone + imbalance overlap (confluence)', true, 8, 'The order block contains an unfilled FVG — two reasons for price to react at the same price.');
  
-@@ -135,10 +441,57 @@ function buildSetups(analysis, ctx = {}) {
+@@ -135,10 +446,57 @@ function buildSetups(analysis, ctx = {}) {
  
      /* ------------------------------------------------------------- 5. trend alignment */
      const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
@@ -1893,7 +1950,13 @@ index 138beb4..77649be 100644
      if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
  
      /* ------------------------------------------------------------- 6. higher-timeframe bias */
-@@ -160,7 +513,11 @@ function buildSetups(analysis, ctx = {}) {
+@@ -155,12 +513,16 @@ function buildSetups(analysis, ctx = {}) {
+     }
+ 
+     /* ------------------------------------------------------- 8. session / killzone */
+-    add('session', 'Inside a high-probability killzone', !!sessions.in_killzone, 8,
++    add('session', 'Inside a high-probability killzone', !!sess.in_killzone, 8,
+       sessions.note || 'Session filter unavailable.');
  
      /* ---------------------------------------------------------------- 9. news */
      add('news', 'No high-impact news in the window', !blackout, 10,
@@ -1906,7 +1969,7 @@ index 138beb4..77649be 100644
  
      /* ------------------------------------------------------------- 10. volatility */
      const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
-@@ -195,6 +552,15 @@ function buildSetups(analysis, ctx = {}) {
+@@ -195,6 +557,15 @@ function buildSetups(analysis, ctx = {}) {
          }
        }
        targets.sort((a, b) => a.rr - b.rr);
@@ -1922,7 +1985,7 @@ index 138beb4..77649be 100644
        // The FIRST pool is a wall, not a nuisance: price usually reacts there. The model
        // banks a partial on it, protects the trade, and runs the rest to the 2R+ pool.
        const first = targets[0] || null;
-@@ -203,16 +569,47 @@ function buildSetups(analysis, ctx = {}) {
+@@ -203,16 +574,47 @@ function buildSetups(analysis, ctx = {}) {
  
        add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
          runner && runner.rr >= minRR
@@ -1976,7 +2039,7 @@ index 138beb4..77649be 100644
        if (!ladder.length) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
        const rrPrimary = ladder[0].rr;
        const rrFinal = ladder[ladder.length - 1].rr;
-@@ -230,6 +627,22 @@ function buildSetups(analysis, ctx = {}) {
+@@ -230,6 +632,22 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
@@ -1999,7 +2062,7 @@ index 138beb4..77649be 100644
        // Distance still to travel to the zone we would enter at. An FVG-only read has
        // no order-block `reach` — measure to its near edge instead of dereferencing null.
        const zoneReach = bestOB ? bestOB.reach
-@@ -245,12 +658,19 @@ function buildSetups(analysis, ctx = {}) {
+@@ -245,12 +663,19 @@ function buildSetups(analysis, ctx = {}) {
          stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / atr),
          stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
            ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(atr * 0.18)} buffer`
@@ -2022,7 +2085,7 @@ index 138beb4..77649be 100644
            runner_target: ladder[ladder.length - 1] ? { price: ladder[ladder.length - 1].price, rr: ladder[ladder.length - 1].rr, label: ladder[ladder.length - 1].label, size: ladder.length > 1 ? '50%' : '100%' } : null,
            rule: ladder.length > 1
              ? `Bank 50% at T1 (${ladder[0].rr}R) and move the stop to entry. The runner is free — let the pool at ${ladder[ladder.length - 1].price} do the work.`
-@@ -271,8 +691,14 @@ function buildSetups(analysis, ctx = {}) {
+@@ -271,8 +696,14 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -2039,7 +2102,7 @@ index 138beb4..77649be 100644
      // a missing trigger or zone is disqualifying regardless of the rest
      const hasTrigger = checks.find((c) => c.key === 'sweep').pass;
      const hasZone = checks.find((c) => c.key === 'zone').pass;
-@@ -284,24 +710,131 @@ function buildSetups(analysis, ctx = {}) {
+@@ -284,24 +715,131 @@ function buildSetups(analysis, ctx = {}) {
      if (levels && levels.entry_status === 'waiting') score = Math.min(score, 66); // great idea, not yet valid
      score = round1(clamp(score, 0, 100));
  
@@ -2095,8 +2158,8 @@ index 138beb4..77649be 100644
 +    if (blackout) vetoes.push('High-impact news inside the window.');
 +    // M8 — tested against the boolean, not truthiness: when analysis is the short-series
 +    // sentinel, `sessions` is {} and in_killzone is undefined, which must NOT veto.
-+    if (sessions.in_killzone === false) {
-+      vetoes.push(`Outside the killzone — "if the setup appears before or after that window, I personally will not enter."${sessions.best_time ? ` ${sessions.best_time}` : ''}`);
++    if (sess.in_killzone === false) {
++      vetoes.push(`Outside the killzone — "if the setup appears before or after that window, I personally will not enter."${sess.best_time ? ` ${sess.best_time}` : ''}`);
 +    }
 +    // M35 — a cap at 66 left this tradeable as a B. The course stands it down instead:
 +    // "when price is hovering around here in the middle of nowhere, we do not go down to the
@@ -2174,7 +2237,7 @@ index 138beb4..77649be 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +844,55 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +849,55 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -2236,7 +2299,7 @@ index 138beb4..77649be 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -399,6 +969,23 @@ function buildSetups(analysis, ctx = {}) {
+@@ -399,6 +974,23 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -2260,7 +2323,7 @@ index 138beb4..77649be 100644
        killzone_quality: strike,
        news_blackout: blackout || null,
        min_rr: minRR,
-@@ -430,4 +1017,8 @@ function pendingStep(td) {
+@@ -430,4 +1022,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  
@@ -2271,7 +2334,7 @@ index 138beb4..77649be 100644
 +module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK,
 +  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX };
 diff --git a/src/bots/smc.js b/src/bots/smc.js
-index 2ccb576..e842986 100644
+index 2ccb576..b7d7393 100644
 --- a/src/bots/smc.js
 +++ b/src/bots/smc.js
 @@ -35,6 +35,13 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -2653,7 +2716,7 @@ index 2ccb576..e842986 100644
      ote: ote || oteShort ? (ote ? 'long' : 'short') : null,
      ote_band: [r4(rangeLow + span * 0.62), r4(rangeLow + span * 0.79)],
      levels: {
-@@ -614,13 +816,42 @@ const SESSIONS = [
+@@ -614,13 +816,49 @@ const SESSIONS = [
    { key: 'ny_am', name: 'New York AM', start: 12, end: 16, quality: 1.0 },
    { key: 'ny_pm', name: 'New York PM', start: 16, end: 21, quality: 0.6 },
  ];
@@ -2670,13 +2733,20 @@ index 2ccb576..e842986 100644
 + *   New York AM  07:00–10:00 ET   USD pairs
 + *   London close 10:00–12:00 ET   USD pair retracements
 + */
++/* M38 / M40 — he names FOUR killzones and assigns pairs to each; this array had three and no
++ * Asia, so `in_killzone` could never be true in the one window he gives to AUD, NZD and JPY
++ * pairs (20:00-00:00 ET). Asia is added at a LOWER quality (0.5): his own caveat is that it is
++ * not where "the big explosive move on the USD pairs" happens, so it must not score like London.
++ * `pairs` is M40's mapping — the currencies that actually move in each window. A window with no
++ * `pairs` entry counts for every instrument, which is how the pre-existing three behave. */
  const SILVER_BULLETS = [
 -  { name: 'London killzone', startH: 6, startM: 0, endH: 9, endM: 0, quality: 1.0 },
 -  { name: 'NY AM killzone', startH: 12, startM: 0, endH: 15, endM: 0, quality: 1.0 },
 -  { name: 'NY PM killzone', startH: 15, startM: 0, endH: 18, endM: 0, quality: 0.7 },
-+  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0 },
-+  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0 },
-+  { name: 'NY PM killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.7 },
++  { name: 'Asia killzone', startH: 20, startM: 0, endH: 24, endM: 0, quality: 0.5, restricted: true, pairs: ['AUD', 'NZD', 'JPY'] },
++  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0, pairs: ['EUR', 'GBP'] },
++  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0, pairs: ['USD'] },
++  { name: 'NY PM killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.7, pairs: ['USD'] },
  ];
  
 +/** Minutes since midnight in New York, DST handled by the IANA database. */
@@ -2700,7 +2770,7 @@ index 2ccb576..e842986 100644
  function sessionState(date = new Date()) {
    const h = date.getUTCHours(), m = date.getUTCMinutes();
    const mins = h * 60 + m;
-@@ -629,14 +860,26 @@ function sessionState(date = new Date()) {
+@@ -629,14 +867,26 @@ function sessionState(date = new Date()) {
    const active = sessions.filter((s) => s.active);
    const open = sessions[0];
    const nextIdx = (sessions.findIndex((s) => s.active) + 1) % sessions.length;
@@ -2713,7 +2783,7 @@ index 2ccb576..e842986 100644
 +    const open_ = inWindowNY(s, e);
 +    const until = (e - nyMins + 1440) % 1440;
 +    const et = `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} ET`;
-+    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality };
++    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted };
    });
    const activeBullet = bullets.find((b) => b.active) || null;
    return {
@@ -2729,7 +2799,79 @@ index 2ccb576..e842986 100644
      active: active.length ? active.map((s) => s.name).join(' + ') : 'Between sessions',
      sessions, bullets,
      in_killzone: !!activeBullet,
-@@ -655,21 +898,62 @@ function sessionState(date = new Date()) {
+@@ -649,27 +899,134 @@ function sessionState(date = new Date()) {
+   };
+ }
+ 
++/* ── M40 — pair-per-session affinity ───────────────────────────────────────────
++ * *"Don't try to trade every pair in every session… make sure that you combine the
++ * currency pairs that you are trading with the right time."* His reason: *"if you are
++ * trading EURUSD, you cannot expect to get the same volatility in Asia session as you
++ * do in London session."* The code applied one session quality to every symbol, so
++ * EURUSD and AUDNZD scored identically inside the Asia window where he says only the
++ * latter belongs.
++ *
++ * Returns `sessions` untouched when the active window counts for this instrument, and a
++ * copy that reads EXACTLY like the true outside-state when it does not: in_killzone
++ * false, killzone null, the outside note. Mirroring the outside-state rather than
++ * zeroing one field is the point — setup.js vetoes on `in_killzone === false` and
++ * momentum's session factor reads `quality`, so a half-adjusted object would let a pair
++ * keep the veto-free benefit of a window it does not belong to while losing only the
++ * points. Adding Asia without this would have LOOSENED the gate for EURUSD at 02:00 UTC,
++ * the opposite of his instruction.
++ *
++ * Two exemptions, both deliberate. An instrument whose legs are not all in the named
++ * currency set (XAUUSD, BTCUSDT — XAU and BTC appear in no session list of his) is
++ * ungoverned: absence of a statement is not a prohibition. And a window with no `pairs`
++ * counts for everyone, which preserves the pre-M38 behaviour of any bullet this table
++ * does not describe. */
++const NAMED_SESSION_CURRENCIES = ['AUD', 'NZD', 'JPY', 'EUR', 'GBP', 'USD'];
++function sessionAffinity(symbol, sessions) {
++  const ses = sessions || {};
++  if (!ses.in_killzone) return ses;
++  const bullet = (ses.bullets || []).find((x) => x.active) || null;
++  const pairs = bullet && bullet.pairs;
++  if (!pairs || !pairs.length) return ses;
++  /* Symbols carry no separator ('EURUSD', 'XAUUSD', 'BTCUSDT'), so legs are taken
++   * positionally: first three characters against the remainder. Splitting on
++   * non-letters yields ONE leg for every symbol and silently disables the whole map. */
++  const base = String(symbol || '').toUpperCase().replace(/[^A-Z]/g, '');
++  const legs = base.length >= 6 ? [base.slice(0, 3), base.slice(3)] : (base ? [base] : []);
++  const match = legs.some((l) => pairs.indexOf(l) !== -1);
++  /* A RESTRICTED window exists only for its pairs: Asia was added BY this fix for AUD, NZD
++   * and JPY, so for every other instrument it must not exist at all — admitting XAUUSD or
++   * BTCUSDT into it would loosen their gate at 02:00 UTC, the exact opposite of the intent.
++   * An UNRESTRICTED window (London, NY) existed for everyone before M38 and still does; its
++   * pairs list is M40's affinity guidance and governs only the named FX pairs, because he
++   * never placed gold or crypto in any session and absence of a statement is not a rule. */
++  if (bullet.restricted) { if (match) return ses; }
++  else {
++    if (legs.length !== 2 || legs.some((l) => NAMED_SESSION_CURRENCIES.indexOf(l) === -1)) return ses;
++    if (match) return ses;
++  }
++  /* Which window opens next FOR THIS INSTRUMENT. An ungoverned one (gold, crypto — a leg
++   * outside his named set) is welcome in every window, so it must not be filtered by the
++   * pair lists at all; filtering it left BTCUSDT with no next window whatsoever. */
++  const governed = legs.length === 2 && legs.every((l) => NAMED_SESSION_CURRENCIES.indexOf(l) !== -1);
++  const counts = (x) => !x.pairs || !x.pairs.length || (x.restricted ? false : !governed) || legs.some((l) => x.pairs.indexOf(l) !== -1);
++  const nxt = (ses.bullets || []).filter((x) => x.minutes_to_start > 0 && counts(x))
++    .sort((x, y) => x.minutes_to_start - y.minutes_to_start)[0];
++  /* Mirror the GENUINE outside-state, not just the two flags momentum and setup read.
++   * sessionState's real outside branch sets `quality` to the best active SESSION quality
++   * (0.3 when none is active) and momentum scores `quality * 6` — leaving the bullet's own
++   * quality in place would keep paying session credit to a pair this window does not want. */
++  const actSes = (ses.sessions || []).filter((x) => x.active);
++  const outsideQ = actSes.length ? Math.max.apply(null, actSes.map((x) => x.quality || 0)) : 0.3;
++  return Object.assign({}, ses, {
++    in_killzone: false, killzone: null, quality: outsideQ, affinity_outside: bullet.name,
++    best_time: nxt ? `Next window for this pair: ${nxt.name}` : ses.best_time,
++    note: `${bullet.name} is not this instrument's window — ${String(symbol || '').toUpperCase()} scores as if outside the killzones. `,
++  });
++}
++
+ /* ═══════════════════════════════════════════════════════ ANALYSE (bundle) */
+ 
+ /**
   * Run the full mechanics pass on one series.
   * @returns {{swings, structure, displacement, order_blocks, fvgs, breakers, liquidity, sweeps, premium_discount, crt, atr, price}}
   */
@@ -2798,7 +2940,7 @@ index 2ccb576..e842986 100644
    const sweeps = findSweeps(candles, liq.pools, atr);
    const pd = premiumDiscount(candles, majorSwings.length ? majorSwings : minorSwings);
    const crtRes = htfCandles ? crt(htfCandles, candles, atr) : null;
-@@ -679,12 +963,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -679,12 +1036,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
      const pool = liq.pools.find((p) => p.kind === s.pool && Math.abs(p.price - s.level) < 1e-9);
      if (pool) { pool.swept = true; pool.swept_t = s.t; }
    }
@@ -2828,7 +2970,7 @@ index 2ccb576..e842986 100644
    }
    // inducement: a minor pool sitting between price and a major pool, on the way to it
    const big = liq.pools.filter((p) => p.strength >= 0.8 && !p.swept);
-@@ -705,7 +1000,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -705,7 +1073,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
    out.ok = true;
    out.price = r4(price);
    out.atr = r4(atr);
@@ -2840,7 +2982,7 @@ index 2ccb576..e842986 100644
    out.structure = structure;
    out.htf_structure = htfStructure ? { trend: htfStructure.trend, last_break: htfStructure.last_break, recent_labels: htfStructure.recent_labels } : null;
    out.displacement = displacement.slice(-8).reverse();
-@@ -716,10 +1014,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -716,10 +1087,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
    out.sweeps = sweeps;
    out.premium_discount = pd;
    out.crt = crtRes;
@@ -2853,14 +2995,15 @@ index 2ccb576..e842986 100644
      order_blocks: orderBlocks.filter((z) => !z.breached).length, fvgs: fvgs.filter((g) => !g.filled).length,
      sweeps: sweeps.length, pools: liq.pools.length,
    };
-@@ -727,7 +1025,7 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -727,7 +1098,7 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
  }
  
  module.exports = {
 -  findSwings, alternate, marketStructure, findDisplacement, findOrderBlocks, findFvgs, findBreakers,
 +  findSwings, alternate, bosSwings, marketStructure, findDisplacement, findOrderBlocks, findFvgs, findBreakers,
    liquidity, findSweeps, premiumDiscount, crt, sessionState, analyse, clusterLevels,
-   SESSIONS, SILVER_BULLETS, dayKey, weekKey,
+-  SESSIONS, SILVER_BULLETS, dayKey, weekKey,
++  SESSIONS, SILVER_BULLETS, dayKey, weekKey, sessionAffinity,
  };
 diff --git a/src/bots/topdown.js b/src/bots/topdown.js
 index 7870e51..2e84f99 100644

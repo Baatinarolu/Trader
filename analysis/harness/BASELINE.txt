@@ -2330,3 +2330,36 @@ The wider point, recorded because it is the reason this row mattered: the subjec
 adherence self-score had been standing in for this metric, and coach.js analyses adherence
 genuinely well. His objection is not to the analysis but to the input — a self-score "requires you
 to be brutally honest", a derived metric removes the choice. Both now exist and are labelled.
+
+=== M38 + M40 — Asia killzone + pair-per-session affinity (APPLIED) ===
+Shipped as ONE change: setup.js:765 vetoes on in_killzone === false, so adding Asia without
+affinity would have flipped EURUSD at 02:00 UTC from refused to tradeable-minus-8. A new
+session window can LOOSEN a gate; measured here, not assumed.
+Probe analysis/probe-m38-m40-affinity.js: 49 passed / 0 failed (parts A-G).
+Session map, clock pinned (EST 2026-03-03, EDT 2026-07-15 — bullets are NY minutes):
+  Asia   04:00Z (23:00 ET) raw in_killzone=true  AUDJPY/AUDNZD/NZDJPY=true; EURUSD/GBPUSD/XAUUSD/BTCUSDT=false (restricted)
+  London 08:00Z (03:00 ET) EURUSD/GBPUSD/GBPJPY/EURGBP=true; AUDJPY=false; XAUUSD/BTCUSDT=true (ungoverned)
+  NY AM  13:00Z (08:00 ET) EURUSD=true; GBPJPY=false (no USD leg); XAUUSD=true
+  Dead   06:00Z (01:00 ET) raw false; affinity returns the SAME object (identity), not a copy
+  July   04:00Z closed (00:00 EDT) / 03:00Z open (23:00 EDT) — DST boundary correct
+Setup level (buildSetups on a pinned bundle, the same call the API makes):
+  AUDJPY  session check pass=true  weight=8, no killzone veto (its veto is POI-not-reached)
+  EURUSD  session check pass=false weight=8, veto "Outside the killzone — …"
+  XAUUSD  session check pass=false weight=8, veto "Outside the killzone — …"
+Momentum session factor (mechanics({…,symbol}), factors keyed 'session', points/max/detail):
+  Asia   AUDJPY 3/6 · EURUSD 3/6 — TIE, expected: genuine outside-state quality is 0.5 (Tokyo
+         active at 23:00 ET) which equals Asia's 0.5. Discriminator here is the gate, not the factor.
+  London EURUSD 5.1/6 · AUDJPY 5.1/6 — TIE, also expected: the factor scores sessions.quality
+         (SESSION table London 0.85 -> 5.1), NOT the bullet's 1.0 -> 6. Changing that would
+         redefine quality for every symbol in every window. NEGATIVE RESULT recorded.
+  detail text now differs correctly; max is numeric 6 (was the note string — 4-arg add()).
+Two bugs found while wiring, both caught by the probe:
+  1. split(/[^A-Z]+/) yields ONE leg for 'EURUSD' -> legs.length!==2 guard returned sessions
+     untouched -> the whole map was inert (all symbols effective=true).
+  2. `restricted` was set on SILVER_BULLETS but not copied into the bullets[] objects that
+     sessionState returns, so Asia admitted XAUUSD/BTCUSDT (a loosening) until it was passed through.
+Suites after: api 121/0 · bots 204/2 (two known sample-size gates; was 203/2 — bots-test:60
+pinned THREE bullets, updated to four + Asia pair scoping) · chart 36/0.
+Live API at 17:02Z (13:02 EDT) is outside every window, so all three symbols agree there and
+the endpoint takes no date parameter — end-to-end discrimination had to be measured on a pinned
+bundle, not through HTTP.

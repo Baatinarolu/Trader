@@ -254,7 +254,7 @@ function biasHysteresis({ priorBias = null, freshBias = 0, invalidation = null, 
   return out;
 }
 
-function mechanics({ htf, mtf, ltf, align, td = null }) {
+function mechanics({ htf, mtf, ltf, align, td = null, symbol = null }) {
   const smc = mtf.smc;
   const ind = mtf.ind;
   const sessions = smc.sessions || {};
@@ -300,7 +300,14 @@ function mechanics({ htf, mtf, ltf, align, td = null }) {
     `${zone ? `Fresh ${zone.side} zone ${zone.bottom}–${zone.top} within ${zone.distance_atr} ATR. ` : 'No fresh zone near price. '}${pd ? `Price sits at ${pd.position_pct}% of the ${pd.range_low}–${pd.range_high} dealing range (${pd.zone}).` : ''}`);
 
   /* 6. session quality (6) */
-  add('session', 'Session / killzone', clamp(sessions.quality ? sessions.quality * 6 : 3, 0, 6), sessions.note || '');
+  { /* M38/M40 — the session factor for THIS symbol, not for the clock */
+    const ses = SMC.sessionAffinity(symbol, sessions);
+    /* 4 args was 5: every other factor passes a numeric `max` then a `detail`, this one
+     * passed the note as `max` and left `detail` undefined, so the reason the user needs
+     * ("EURUSD scores as if outside the killzones") rendered in the points slot as
+     * "3/Asia killzone …" and the detail column stayed empty. */
+    add('session', 'Session / killzone', clamp(ses.quality ? ses.quality * 6 : 3, 0, 6), 6, ses.note || '');
+  }
 
   /* 7. volatility regime (4) */
   const rank = ind.ind ? ind.ind.atr_rank : null;
@@ -496,7 +503,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
 
   const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR } });
   const align = alignment(htf, mtf, ltf, td);
-  const mech = mechanics({ htf, mtf, ltf, align, td });
+  const mech = mechanics({ htf, mtf, ltf, align, td, symbol });
   const read = narrative({ symbol, mtf, htf, ltf, align, mech, td });
   mtf.smc.crt = crtView(td, tf);
 

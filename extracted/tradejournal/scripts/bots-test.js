@@ -57,7 +57,13 @@ async function call(path, opts = {}) {
 
   const sessions = await call('/api/bots/sessions');
   ok(sessions.status === 200 && sessions.json.sessions.length === 5, 'five sessions defined');
-  ok(Array.isArray(sessions.json.bullets) && sessions.json.bullets.length === 3, 'three killzone windows');
+  /* M38: he names FOUR killzones, so the suite must not pin the array to the three this
+   * code happened to have. M40: Asia is pair-scoped, and that scoping is what stops the new
+   * window from admitting EURUSD, XAUUSD and BTCUSDT at 02:00 UTC. */
+  ok(Array.isArray(sessions.json.bullets) && sessions.json.bullets.length === 4, 'four killzone windows');
+  const asiaB = (sessions.json.bullets || []).find((x) => x.name === 'Asia killzone');
+  ok(!!asiaB && JSON.stringify(asiaB.pairs) === JSON.stringify(['AUD', 'NZD', 'JPY']),
+    'Asia killzone is pair-scoped to AUD/NZD/JPY');
 
   /* -------------------------------------------------------------- candles */
   section('candles');

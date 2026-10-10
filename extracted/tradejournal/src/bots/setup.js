@@ -329,12 +329,17 @@ function targetPools(analysis, dir, entry) {
  *                                    only that side can be armed.
  * @returns {{candidates:Array, verdict:object}}
  */
+const SMC = require('./smc');   // M38/M40: sessionAffinity
+
 function buildSetups(analysis, ctx = {}) {
   const price = Number(ctx.price || (analysis && analysis.price));
   const atr = Number(ctx.atr || (analysis && analysis.atr)) || price * 0.001;
   const bias = Number(ctx.bias || 0);            // -1 / 0 / +1 from the MTF + momentum layer
   const minRR = Number(ctx.minRR || 2);
   const sessions = (analysis && analysis.sessions) || {};
+  /* M38/M40 — the session view THIS SYMBOL is entitled to. The calendar fields (dow,
+   * month) are preserved by the copy, so M10's stand-down is unaffected. */
+  const sess = SMC.sessionAffinity(ctx.symbol, sessions);
   /* M10 — computed ONCE here rather than per candidate: it depends only on the bar's
    * calendar and the caller's configuration, not on anything about an individual setup.
    * It was originally declared inside the scoring loop, which put it out of scope for the
@@ -508,7 +513,7 @@ function buildSetups(analysis, ctx = {}) {
     }
 
     /* ------------------------------------------------------- 8. session / killzone */
-    add('session', 'Inside a high-probability killzone', !!sessions.in_killzone, 8,
+    add('session', 'Inside a high-probability killzone', !!sess.in_killzone, 8,
       sessions.note || 'Session filter unavailable.');
 
     /* ---------------------------------------------------------------- 9. news */
@@ -762,8 +767,8 @@ function buildSetups(analysis, ctx = {}) {
     if (blackout) vetoes.push('High-impact news inside the window.');
     // M8 — tested against the boolean, not truthiness: when analysis is the short-series
     // sentinel, `sessions` is {} and in_killzone is undefined, which must NOT veto.
-    if (sessions.in_killzone === false) {
-      vetoes.push(`Outside the killzone — "if the setup appears before or after that window, I personally will not enter."${sessions.best_time ? ` ${sessions.best_time}` : ''}`);
+    if (sess.in_killzone === false) {
+      vetoes.push(`Outside the killzone — "if the setup appears before or after that window, I personally will not enter."${sess.best_time ? ` ${sess.best_time}` : ''}`);
     }
     // M35 — a cap at 66 left this tradeable as a B. The course stands it down instead:
     // "when price is hovering around here in the middle of nowhere, we do not go down to the
