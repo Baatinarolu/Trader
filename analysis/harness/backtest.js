@@ -181,6 +181,23 @@ const t0 = Date.now();
  * Read the result as a direction and a sanity check on the synthetic distortion,
  * never as a confidence interval.
  * ---------------------------------------------------------------------------*/
+/* M10 arms. `course` is the shipped default (Monday, Friday, December); `mondec` drops
+ * Friday, which Baseline 7 measured as the BEST real-data day (+0.2649R, 33.3% win,
+ * PF 1.64) in direct contradiction of Ep 19; `off` disables the day filter entirely.
+ * Running all three on the same bars is what turns that contradiction from an anecdote
+ * into a measured choice — and it is only meaningful on --real, since synth.js has no
+ * weekday behaviour to filter. */
+const STANDDOWN_MODE = (() => {
+  const i = process.argv.indexOf('--standdown');
+  return i > -1 && process.argv[i + 1] ? String(process.argv[i + 1]) : 'course';
+})();
+const STANDDOWN_CFG = STANDDOWN_MODE === 'mondec' ? { days: [1], months: [12] }
+  : STANDDOWN_MODE === 'off' ? { days: [], months: [] }
+  : undefined;   // undefined lets the engine use its own default, so the default stays tested
+if (!['course', 'mondec', 'off'].includes(STANDDOWN_MODE)) {
+  console.error(`--standdown: unknown mode '${STANDDOWN_MODE}' (want course | monday-only? use mondec | off)`);
+  process.exit(2);
+}
 const REAL = process.argv.includes('--real');
 // NOTE: `arg()` above coerces with Number(), so it cannot carry a string value —
 // passing '15m' through it produced NaN and matched no fixture. Read strings separately.
@@ -270,7 +287,7 @@ for (let wi = 0; wi < NWALK; wi++) {
       heldState = { bias: h.bias, level: fresh === -1 && hasRange ? hh : fresh === 1 && hasRange ? ll : null, side: fresh === -1 ? 'above' : fresh === 1 ? 'below' : null };
       biasDir = h.bias;
     }
-    try { res = Setup.buildSetups(analysis, { price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex', useBreakers: USE_BREAKERS, standDownOnWall: STAND_DOWN_WALL, ladderTargets: LADDER, ...(biasDir !== null ? { bias: biasDir } : {}) }); }
+    try { res = Setup.buildSetups(analysis, { price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex', useBreakers: USE_BREAKERS, standDownOnWall: STAND_DOWN_WALL, ladderTargets: LADDER, ...(STANDDOWN_CFG !== undefined ? { standDown: STANDDOWN_CFG } : {}), ...(biasDir !== null ? { bias: biasDir } : {}) }); }
     catch (e) { continue; }
 
     const cands = (res && res.candidates) || [];
@@ -304,6 +321,7 @@ console.log('=' .repeat(78));
 // identical to Baselines 1-6 and a diff against BASELINE.txt still means what it says.
 console.log(REAL ? ` REAL DATA (${REAL_TF}) — ${REAL_SETS.length} fixture(s): ${REAL_SETS.join(', ')}  ·  windows=${WINDOW} warmup=${WARMUP} maxBars=${MAX_BARS} fillWindow=${FILL_WINDOW} cooldown=${COOLDOWN}` : ` seeds=${SEEDS} bars=${BARS} window=${WINDOW} warmup=${WARMUP} maxBars=${MAX_BARS} fillWindow=${FILL_WINDOW} cooldown=${COOLDOWN}  gate=${ONLY_AT_ENTRY ? "entry_status==='at-entry'" : 'any status'}${BIAS_MODE !== 'off' ? `  bias=${BIAS_MODE}` : ''}${RANGE_SIZED ? '  range-sized=on' : ''}  ·  ${all.length} trades  ·  ${ms}ms`);
 console.log(` engine: src/bots/smc.js analyse() + src/bots/setup.js buildSetups()  (unmodified paths)`);
+console.log(` M10 stand-down arm: ${STANDDOWN_MODE}${STANDDOWN_MODE === 'course' ? ' (Monday + Friday + December — what ships)' : STANDDOWN_MODE === 'mondec' ? ' (Monday + December — Friday excluded per the Baseline 7 measurement)' : ' (disabled)'}`);
 console.log('\n ALL SIGNALS WHERE ok===true (the CURRENT gate, includes B and C)');
 console.log('  ' + fmt(by(() => true)));
 for (const g of ['A+', 'A', 'B', 'C']) {

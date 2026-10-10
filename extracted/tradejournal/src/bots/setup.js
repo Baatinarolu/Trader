@@ -49,6 +49,92 @@ const GRADES = [
 // such a setup is not signalled, so the multiplier is never reached.
 const GRADE_RISK_MULT = { 'A+': 1, 'A': 1, 'B': 0.5, 'C': 0.25, 'no-trade': 0 };
 
+/* -------------------------------------------------------------------------
+ * M10 — Ep 19's stand-down days, implemented as a GRADE FILTER ON B AND C.
+ *
+ * THE COURSE. Ep 19 stands down Monday ("lower trading volume", "a lot of traps")
+ * and Friday ("lower liquidity... institutions are closing their books", weekend
+ * rollover), and December for the same reason at a monthly scale. But it also
+ * carries an explicit exception: "if a setup meets my criteria, I will take the
+ * trade regardless of the day." So this is NOT a blackout. A and A+ pass through
+ * untouched; B and C are stood down. That reading is the one the ledger records,
+ * and it is why this lives next to the grade table rather than in `vetoes` — a
+ * veto would kill the A+ setup the course explicitly permits.
+ *
+ * ★ MEASURED CONTRADICTION, RECORDED RATHER THAN RESOLVED. Baseline 7 walked real
+ * EURUSD and XAUUSD 15m bars and bucketed the trades actually taken by weekday:
+ *
+ *     Mon  n=12  win  8.3%  exp -0.7195R  PF 0.14   <- the course is RIGHT
+ *     Tue  n= 6  win  0.0%  exp -0.8333R  PF 0.00
+ *     Wed  n=11  win  9.1%  exp -0.6031R  PF 0.17
+ *     Thu  n=11  win 18.2%  exp +0.2532R  PF 1.35
+ *     Fri  n=12  win 33.3%  exp +0.2649R  PF 1.64   <- the course is CONTRADICTED
+ *
+ *   Monday is the worst day in the sample and matches Ep 19 outright. Friday is the
+ *   BEST day — highest win rate, positive expectancy — with no sign of the "lower
+ *   liquidity" reasoning. Mon+Fri combined (-0.2273R) beat Tue-Thu (-0.3160R), so
+ *   this filter as the course specifies it would have suppressed the best day in the
+ *   sample.
+ *
+ *   Friday at n=12 is well inside noise, so this does NOT establish that Friday is
+ *   good. It establishes that the premise is not safe to assume in either direction.
+ *   The default therefore stays FAITHFUL TO THE COURSE — the transcripts are the
+ *   specification and n=12 is not evidence — but `ctx.standDown` overrides it, so
+ *   `{ days: [1], months: [12] }` runs Monday-and-December only and `{ days: [] }`
+ *   disables the day filter, and the harness can measure both arms. A trader who
+ *   disagrees with Ep 19 on Friday can turn off exactly that part without touching
+ *   the code, and the response says which configuration produced the decision.
+ * ------------------------------------------------------------------------*/
+const M10_DEFAULT = { days: [1, 5], months: [12] };   // Monday, Friday, December
+const M10_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const GRADE_A_MIN = 72;    // A and A+ are exempt — the course's own "regardless of the day"
+const NO_TRADE_MAX = 43;   // one point under the C floor of 44, so gradeFor() returns 'no-trade'
+
+/**
+ * Does Ep 19's stand-down apply to this bar?
+ * Returns `applies:false` when the calendar is unknown rather than guessing: `sessions`
+ * is `{}` for the short-series sentinel, and a filter that fires on missing data would
+ * stand down every analysis of a short series. Same lesson as M8, which tests
+ * `in_killzone === false` against the boolean for exactly this reason.
+ * @param {object} sessions  analysis.sessions
+ * @param {object|null} [override]  `{days:[],months:[]}`, or null/false to disable
+ */
+function standDownFor(sessions, override) {
+  const cfg = override === undefined ? M10_DEFAULT : override;
+  if (!cfg || typeof cfg !== 'object') return { applies: false, reason: null, configured: false };
+  const days = Array.isArray(cfg.days) ? cfg.days : [];
+  const months = Array.isArray(cfg.months) ? cfg.months : [];
+  /* Number(null) === 0 and Number('') === 0, so a missing calendar would have been read as
+   * SUNDAY and silently reported calendar_known:true — the same trap that made an
+   * invalidation_level of 0 breach on every call in M50. Test for absence BEFORE coercing.
+   * 0 is a legitimate day (Sunday), so the check is on null/undefined/'', not on falsiness. */
+  const known = (v) => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v));
+  const dow = sessions && known(sessions.dow) ? Number(sessions.dow) : NaN;
+  const month = sessions && known(sessions.month) ? Number(sessions.month) : NaN;
+  if (!Number.isFinite(dow) || !Number.isFinite(month)) {
+    return { applies: false, reason: null, configured: true, calendar_known: false, days, months };
+  }
+  const dayHit = days.indexOf(dow) !== -1;
+  const monthHit = months.indexOf(month) !== -1;
+  if (!dayHit && !monthHit) {
+    return { applies: false, reason: null, configured: true, calendar_known: true,
+      day_name: M10_DAY_NAMES[dow] || null, month, days, months };
+  }
+  const which = [];
+  if (dayHit) which.push(M10_DAY_NAMES[dow] || ('day ' + dow));
+  if (monthHit) which.push('December');
+  return {
+    applies: true, calendar_known: true, configured: true,
+    day_name: M10_DAY_NAMES[dow] || null, month, days, months,
+    reason: `${which.join(' and ')} stand-down (Ep 19) — lower liquidity and institutional book-closing. `
+      + `A and A+ setups still trade: "if a setup meets my criteria, I will take the trade regardless of the day." `
+      + `B and C are stood down.`,
+    note_friday: months.indexOf(12) === -1 && days.indexOf(5) !== -1
+      ? 'Measured on real bars (Baseline 7, n=12) Friday was the BEST day in the sample at +0.2649R and a 33.3% win rate, contradicting Ep 19. n=12 is inside noise, so the course default stands — but pass standDown:{days:[1],months:[12]} to filter Monday and December only.'
+      : null,
+  };
+}
+
 /**
  * M52 — mid-range risk reduction.
  *
@@ -249,6 +335,13 @@ function buildSetups(analysis, ctx = {}) {
   const bias = Number(ctx.bias || 0);            // -1 / 0 / +1 from the MTF + momentum layer
   const minRR = Number(ctx.minRR || 2);
   const sessions = (analysis && analysis.sessions) || {};
+  /* M10 — computed ONCE here rather than per candidate: it depends only on the bar's
+   * calendar and the caller's configuration, not on anything about an individual setup.
+   * It was originally declared inside the scoring loop, which put it out of scope for the
+   * candidate object built further down and crashed four of the five app suites with
+   * `ReferenceError: standDown is not defined`. node --check passed that, because the
+   * identifier is only resolved at runtime — the suites are what caught it. */
+  const standDown = standDownFor(sessions, ctx.standDown);
   const strike = sessions.quality != null ? sessions.quality : 0.5;
   const blackout = ctx.newsBlackout || null;
   const ind = ctx.indicators || null;
@@ -575,6 +668,16 @@ function buildSetups(analysis, ctx = {}) {
     if (levels && levels.entry_status === 'waiting') score = Math.min(score, 66); // great idea, not yet valid
     score = round1(clamp(score, 0, 100));
 
+    /* M10 — applied AFTER every other cap and BEFORE the grade is read, so the grade the
+     * trader sees already reflects the stand-down. Only scores below the A floor are
+     * touched: `Math.min` cannot express "demote B and C but leave A and A+ alone", which
+     * is why this is an explicit band test rather than another cap. A setup that would have
+     * graded A+ or A is untouched, per the course's exception; a B or C becomes 'no-trade'
+     * and stays visible with the reason, rather than disappearing. */
+    const stoodDown = standDown.applies && score < GRADE_A_MIN;
+    const scoreBeforeStandDown = score;
+    if (stoodDown) score = NO_TRADE_MAX;
+
     const g = gradeFor(score);
 
     /* ------------------------------------------------- the all-or-nothing rules
@@ -684,6 +787,16 @@ function buildSetups(analysis, ctx = {}) {
     }
 
     candidates.push({
+      // M10 — per-candidate: was THIS setup stood down, and what did it cost it.
+      stand_down: {
+        applies: !!standDown.applies,
+        demoted: !!stoodDown,
+        score_before: scoreBeforeStandDown,
+        score_after: score,
+        grade_before: gradeFor(scoreBeforeStandDown).grade,
+        grade_after: g.grade,
+        reason: stoodDown ? standDown.reason : null,
+      },
       dir, side, score, grade: g.grade, grade_label: g.label,
       // M25: the market phase, so the trader (and any review) can tell an impulse they are
       // late for from a pullback they are early for. Reported, not enforced — turning it
@@ -799,6 +912,23 @@ function buildSetups(analysis, ctx = {}) {
     grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
     filters: {
       killzone: sessions.killzone || 'outside killzone',
+      /* M10 — the stand-down POLICY and its inputs, which are facts about this bar and
+       * this configuration, so they belong at the top level. Whether a given setup was
+       * actually demoted is a fact about that setup and lives on the candidate instead;
+       * putting per-candidate values here was a scope error that crashed four suites. */
+      stand_down: {
+        applies: !!standDown.applies,
+        day_name: standDown.day_name || null,
+        month: standDown.month || null,
+        configured_days: standDown.days || [],
+        configured_months: standDown.months || [],
+        calendar_known: standDown.calendar_known !== false,
+        exempts_grades: ['A+', 'A'],
+        demotes_grades: ['B', 'C'],
+        demoted_count: candidates.filter((c) => c.stand_down && c.stand_down.demoted).length,
+        reason: standDown.applies ? standDown.reason : null,
+        note_friday: standDown.applies ? standDown.note_friday : null,
+      },
       killzone_quality: strike,
       news_blackout: blackout || null,
       min_rr: minRR,
@@ -833,4 +963,5 @@ function pendingStep(td) {
 // M52: `rangeRiskMult` / `RANGE_RISK` exported for the same reason `GRADE_RISK_MULT` is — so the
 // multiplier curve can be unit-tested on its own instead of only being observable through a full
 // engine run that has to happen to produce a mid-range candidate.
-module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK };
+module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK,
+  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX };

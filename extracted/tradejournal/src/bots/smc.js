@@ -872,6 +872,14 @@ function sessionState(date = new Date()) {
   const activeBullet = bullets.find((b) => b.active) || null;
   return {
     now_utc: date.toISOString().slice(0, 16) + 'Z',
+    // M10 — Ep 19's stand-down is a CALENDAR rule, so the calendar has to be visible to
+    // the layer that grades. Previously `date` was consumed inside this function to compute
+    // New York minutes and then thrown away, so nothing downstream could tell Monday from
+    // Tuesday. UTC is used deliberately: the candles are stamped UTC and a session-day
+    // boundary drawn in New York would disagree with the bar it is filtering.
+    dow: date.getUTCDay(),
+    day_name: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getUTCDay()],
+    month: date.getUTCMonth() + 1,
     active: active.length ? active.map((s) => s.name).join(' + ') : 'Between sessions',
     sessions, bullets,
     in_killzone: !!activeBullet,

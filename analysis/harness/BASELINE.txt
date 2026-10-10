@@ -1944,3 +1944,81 @@ STILL OPEN, RECORDED NOT FIXED
   a fresh pristine unzip with all six M102 sentinels present afterwards.
 
   Ledger: 125 rows — 46 done / 2 partial / 76 todo / 1 no-action.
+
+--------------------------------------------------------------------------------
+ M10 APPLIED — Ep 19's Monday / Friday / December stand-down, as a GRADE FILTER
+ ON B AND C rather than a blackout. Plus the baseline shift it caused.
+--------------------------------------------------------------------------------
+A and A+ pass through untouched per the course's own exception ("if a setup meets my
+criteria, I will take the trade regardless of the day"). A stood-down B or C is set to
+43, one point under the C floor of 44, so gradeFor returns 'no-trade' and the existing
+tradeable gate refuses it. This is a band test, not another Math.min cap: a cap cannot
+express "demote B and C but leave A and A+ alone".
+
+smc.js had to expose the calendar first — `sessions` consumed `date` to compute New York
+minutes and threw it away, so nothing downstream could tell Monday from Tuesday. It now
+returns dow, day_name and month, in UTC because the candles are stamped UTC and a
+session-day boundary drawn in New York would disagree with the bar it filters.
+
+★ THE SYNTHETIC BASELINE MOVES. Recorded so the next diff is not misread as a regression:
+
+    before M10 (post-M5)   n=106  win 16.0%  exp -0.0935R  PF 0.87
+    after  M10             n=104  win 16.3%  exp -0.0857R  PF 0.88
+    A+ and A only          n=103  win 15.5%  exp -0.1193R  PF 0.84   (unchanged)
+
+  The synthetic series starts 2024-01-01 and walks every weekday, so Monday, Friday and
+  December bars really do demote. Two trades changed. At n=2 that is noise, and the A+/A
+  slice is byte-identical, which is the part that should not move if the exemption works.
+
+★ ON REAL DATA THE THREE ARMS ARE IDENTICAL, AND THAT IS EXPECTED.
+  `--standdown off | course | mondec` all give n=52, win 15.4%, exp -0.2751R, PF 0.60,
+  declared 4.85R, target 5 / stop 36 / expired 3, flat -$1430 maxDD $1505.
+
+  Not a failure to wire it: all three arms report "A+ and A only n=51" of 52, so the
+  harness's gate already selects almost exclusively the grades the course EXEMPTS, and the
+  single B trade fell on a non-stood-down day. M10 cannot move this harness's headline
+  numbers by construction. It is therefore verified at the candidate level, where it acts:
+  probe-m10-standdown.js 38/0 measured 138 B/C demotions on real stood-down bars, 22
+  A-or-better candidates seen with 0 wrongly demoted, and tradeable setups falling 63->22.
+
+  ★ THE GENERAL LESSON, AND IT IS THE SAME ONE M5 TAUGHT. A fidelity fix whose subject the
+  harness barely contains cannot be measured by that harness. Here the harness's own gate
+  filters out 98% of the population the rule applies to. Reporting "no change" without
+  checking the denominator would have been a vacuous pass in the other direction — it would
+  have looked like the fix was inert when in fact the measurement was blind to it.
+
+★ FRIDAY: THE COURSE AND THE DATA DISAGREE, AND THE DISAGREEMENT SHIPS AS A CONFIG.
+  Baseline 7 on real bars: Monday is the worst day (-0.7195R, 8.3% win) and matches Ep 19
+  outright; Friday is the BEST (+0.2649R, 33.3% win, PF 1.64) and contradicts it. Friday at
+  n=12 is well inside noise, so the shipped default stays faithful to the course — the
+  transcripts are the specification — but ctx.standDown overrides it, the harness has a
+  --standdown arm for each reading, and the contradiction is stated in the code comment, in
+  the note_friday field returned on a stood-down Friday, and in the ledger. A trader who
+  disagrees with Ep 19 on Friday can change exactly that without forking.
+
+TWO BUGS CAUGHT BY TESTING RATHER THAN BY READING:
+  · `Number(null) === 0` made a missing dow read as SUNDAY and report calendar_known:true.
+    Under the default policy Sunday does not fire, so the assertion PASSED FOR THE WRONG
+    REASON and the bug would have survived into any policy listing Sunday. Fixed by testing
+    for null/undefined/'' before coercing, and the probe now proves it both ways under a
+    days:[0] policy so the negative case cannot pass because the policy is inert.
+  · A scope error put the per-candidate `stoodDown` in the top-level return and crashed four
+    of five app suites with ReferenceError. node --check passed it, because identifiers
+    resolve at runtime. The suites caught it. The policy facts now live at top level and the
+    demotion on the candidate, which is where each belongs.
+
+bots-test's two failures CHANGED NAME between runs (20 trades on Oct 9, 12 on Oct 10) because
+they are date-dependent demo-data artifacts. Attributed by stashing the M10 changes and
+reproducing the identical two failures on the pre-M10 tree — matched by name, not by count.
+
+  analysis/fetch-fixtures.js is now a committed script: analysis/fixtures/ is gitignored so it
+  is wiped on every workspace rebuild, and each wipe silently downgraded a probe's real-data
+  section to UNTESTED. It re-downloads all eight documented sources via api.github.com and
+  VALIDATES each by median inter-bar step before accepting it, which is what rejects a
+  mislabelled file rather than letting it corrupt every measurement downstream. It recovered
+  6 of 8 (EURUSD 5m/15m/1h, XAUUSD 15m, BTCUSDT 1h/1d); XAUUSD-5m parsed 0 rows and
+  EURUSD-1d failed to fetch. Node's TLS verifier does not trust this sandbox's intercepted
+  certificate, so it falls back to curl for CERTIFICATE ERRORS ONLY — verification is never
+  disabled, and on a normal machine the Node path succeeds.
+
+  Ledger: 125 rows — 47 done / 2 partial / 75 todo / 1 no-action.
