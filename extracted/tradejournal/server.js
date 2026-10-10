@@ -4,6 +4,34 @@
  *   Express + libSQL (a local SQLite file by default, Turso when TURSO_DATABASE_URL is set).
  *   No build step, no bundler, zero client-side dependencies.
  */
+/* ── local .env — dev convenience ONLY, never a deployment mechanism ─────────
+ * Read when a .env file exists beside this file, which it never does in
+ * production: .env is gitignored, so it is not uploaded, and Vercel injects
+ * environment variables from its own store rather than from a repository file.
+ * Existing process.env ALWAYS wins, so a platform-provided variable can never be
+ * shadowed by a stray local file, and a malformed .env can never stop boot.
+ * It exists because the user asked for credentials in .env and, without a loader,
+ * that file would silently do nothing and read as a fix while changing nothing. */
+(function loadDotEnv() {
+  try {
+    const fs = require('fs'), pth = require('path');
+    const file = pth.join(__dirname, '.env');
+    if (!fs.existsSync(file)) return;
+    for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+      if (!line.trim() || line.trim().startsWith('#')) continue;
+      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+      if (!m) continue;
+      let v = m[2];
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+      if (process.env[m[1]] === undefined) process.env[m[1]] = v;
+    }
+  } catch (e) { /* never let a broken .env stop the server starting */ }
+})();
+/* It must run BEFORE the require() calls below: src/db.js computes its database URL
+ * at require time, so a loader placed after the requires is read too late — which is
+ * exactly how the first version silently did nothing and reported the file DB while
+ * a .env full of Turso credentials sat beside it. */
+
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
