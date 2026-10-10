@@ -2363,3 +2363,24 @@ pinned THREE bullets, updated to four + Asia pair scoping) · chart 36/0.
 Live API at 17:02Z (13:02 EDT) is outside every window, so all three symbols agree there and
 the endpoint takes no date parameter — end-to-end discrimination had to be measured on a pinned
 bundle, not through HTTP.
+
+=== M37 — the two killzone constants on two different Eastern offsets (already satisfied) ===
+No app source changed. The finding is real against pristine (London 06:00-09:00 UTC pinned to
+UTC-4, NY AM 12:00-15:00 UTC pinned to UTC-5, smc.js:618-622, compared against
+date.getUTCHours()) and M5's patch 0002 already replaced fixed UTC hours with ET wall-clock
+resolved via Intl.DateTimeFormat + America/New_York (in the tree since 999a24c).
+Row corrections: its "see M6" pointer is stale (M6 is the setup.js:141 TypeError guard; the DST
+row is M5), and its first prescription half ("set NY AM to 11:00-14:00 UTC") must NOT be applied
+literally — that pair is EDT-only, and hardcoding it re-breaks winter (EST wants 12:00-15:00 UTC).
+New guard analysis/probe-m37-killzone-offsets.js (TJ_APP override for cross-tree runs):
+  current tree   20 passed / 0 failed
+  pristine zip    5 passed / 11 failed   <- negative control
+Measurements, current tree:
+  EDT 2026-07-15  11:00Z NY AM OPEN (pristine: false) | 10:59Z closed | 13:59Z NY AM -> 14:00Z NY PM
+  EST 2026-01-15  11:00Z closed | 12:00Z NY AM OPEN
+  London  07:00-10:00 UTC (EST) vs 06:00-09:00 UTC (EDT)
+  NY AM   12:00-15:00 UTC (EST) vs 11:00-14:00 UTC (EDT)   both shift exactly 60 min
+  London close -> NY AM open gap = 120 min in BOTH seasons (one clock, so no drift is possible)
+  Asia (M38) on the same clock: open 03:00Z EDT, 04:00Z EST; closed 04:00Z EDT
+Pristine's pass/fail split IS the finding: it passes both winter assertions (NY AM was pinned to
+EST, correct in January) and fails the summer ones.
