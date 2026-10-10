@@ -2384,3 +2384,32 @@ Measurements, current tree:
   Asia (M38) on the same clock: open 03:00Z EDT, 04:00Z EST; closed 04:00Z EDT
 Pristine's pass/fail split IS the finding: it passes both winter assertions (NY AM was pinned to
 EST, correct in January) and fails the summer ones.
+
+=== M38/M40 on the synthetic harness — three arms, same seeds (measured, not assumed) ===
+First pair of arms (current tree vs a worktree at 6805201, pre-M38/M40) came out IDENTICAL:
+n=27 win=25.9% exp=+0.5918R PF=1.93 on both. That looked like a null result but it is a property
+of the harness: backtest.js:290 passes NO ctx.symbol to buildSetups, so sessionAffinity sees an
+ungoverned instrument — London/NY keep their pre-M38 behaviour and the RESTRICTED Asia window
+admits nothing — which reproduces pre-M38 behaviour exactly. The harness drives `now` from the
+candle (backtest.js:255), so it is NOT blind to sessions; it was blind to the SYMBOL.
+Added an opt-in `--symbol` flag (default null, so every recorded baseline stays comparable).
+Arms, --seeds 60 --bars 1500 --window 300:
+  (no symbol)      n=27  win=25.9%  exp=+0.5918R  PF=1.93   <- baseline reproduced exactly
+  --symbol EURUSD  n=27  win=25.9%  exp=+0.5918R  PF=1.93   <- identical to no-symbol, as predicted:
+                   EURUSD is excluded from Asia (like the ungoverned case) and included in London/NY
+                   (also like it), so the flag cannot change its path. A consistency check, not a null.
+  --symbol AUDJPY  n= 9  win=22.2%  exp=-0.3702R  PF=0.44   <- 27 -> 9, a 67% cut in candidates
+AUDJPY is admitted ONLY inside Asia: London's list is EUR/GBP and NY's is "anything with USD", so
+every London and NY bar is now vetoed for it. That is his instruction — "Don't try to trade every
+pair in every session… combine the currency pairs… with the right time" — quantified.
+NOT A PERFORMANCE CLAIM: n=9 is far below the course's 30-trade floor and the bars are a synthetic
+random walk. The measurable statement is the change in WHICH bars a governed pair may trade
+(27 -> 9), not the expectancy sign.
+
+=== §9 verification sweep, re-measured 2026-10-10 ===
+batch0 11/0 (was red 8/2 since M69 — probe asserted the pre-M69 "Structure reads …" detail string;
+re-pointed at the market-shift wording and gained one assertion) · m58 23/0 (doc said 20/20) ·
+m21 10/0 · groupa 18/18 · groupb 10/10 · m36 17/17 · m57 6/0 · m69 16/0 · m38-m40 49/0 ·
+m37 20/0 · now-test 36/0 · api-test 121/0 · bots-test 204/2 (two known sample-size gates) ·
+chart-test 36/0. HANDOFF-PROMPT §9's expected-green list and its stale backtest figure
+(n=122 / -0.0011R / PF 1.00) were updated to these measured values.

@@ -35,7 +35,16 @@ ok(result !== null && typeof result === 'object', 'buildSetups(sentinel) returns
 
 // 3. The degraded build must be honest, not silently optimistic.
 const flat = JSON.stringify(result || {});
-ok(/Structure reads ranging/.test(flat), "structure checkpoint falls back to 'ranging' rather than inventing a trend");
+/* RE-POINTED after M69. This used to assert /Structure reads ranging/, the pristine detail
+ * string at setup.js:141. M69 (commit 5a08ba6, recorded in the ledger) replaced that detail
+ * with market-shift wording, and this probe was never re-pointed — so it has been red since
+ * then while §9 of the handoff still listed it as expected-green 10/10. The INTENT is what is
+ * asserted now, in the current wording: a degraded build must say the structure is
+ * unavailable and must not invent a direction. */
+ok(/Structure not available on this series/.test(flat) && /no market shift can be confirmed/i.test(flat),
+  'structure checkpoint admits the series is degraded rather than inventing a trend');
+ok(!/Structure reads (bullish|bearish)/.test(flat) && !/last break was a/.test(flat),
+  'the degraded build claims no trend and no break: ' + ((flat.match(/Structure[^"]{0,90}/) || ['<none>'])[0]));
 
 /* ---------------------------------------------------------------- M4 */
 const checks = ((result && result.candidates) || []).flatMap((c) => c.checks || []);
@@ -57,7 +66,10 @@ const rich = {
 };
 const r2 = Setup.buildSetups(rich, { price: 1.1050 });
 const f2 = JSON.stringify(r2 || {});
-ok(/Structure reads bullish after a BOS up 4 bars ago/.test(f2), 'happy path still renders the full last_break detail');
+/* Also re-pointed after M69: the same detail string, now carrying BOTH the event (the break)
+ * and the label, because M69's whole point is that a trader can see the two disagreeing. */
+ok(/last break was a BOS up 4 bars ago/.test(f2) && /Label reads bullish/.test(f2),
+  'happy path still renders the full last_break detail: ' + ((f2.match(/Market shift needs[^"]{0,150}/) || ['<none>'])[0]));
 
 console.log(`\nBATCH 0 PROBE: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

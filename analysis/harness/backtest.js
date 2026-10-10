@@ -25,6 +25,7 @@
  *     tradeable) makes the per-grade expectancy the load-bearing number
  *
  * Usage:  node analysis/harness/backtest.js [--seeds 5] [--bars 900] [--window 300]
+ *         [--symbol EURUSD]   feed ctx.symbol so M40's session affinity is exercised
  */
 const fs = require('fs');
 const path = require('path');
@@ -198,6 +199,15 @@ if (!['course', 'mondec', 'off'].includes(STANDDOWN_MODE)) {
   console.error(`--standdown: unknown mode '${STANDDOWN_MODE}' (want course | monday-only? use mondec | off)`);
   process.exit(2);
 }
+/* --symbol feeds buildSetups' ctx.symbol, which is what M40's sessionAffinity() keys on.
+ * Without it ctx.symbol is undefined: the instrument reads as UNGOVERNED, London and NY keep
+ * their pre-M38 behaviour and the restricted Asia window admits nothing -- so a run with no
+ * --symbol reproduces the pre-M38 numbers exactly. That is why the two arms measured
+ * identical, and it is a property of the harness, not evidence that M40 does nothing.
+ * Default stays null so every previously recorded baseline remains comparable. */
+const SYM_I = process.argv.indexOf('--symbol');
+const SYMBOL = SYM_I > -1 && process.argv[SYM_I + 1] ? String(process.argv[SYM_I + 1]) : null;
+
 const REAL = process.argv.includes('--real');
 // NOTE: `arg()` above coerces with Number(), so it cannot carry a string value —
 // passing '15m' through it produced NaN and matched no fixture. Read strings separately.
@@ -287,7 +297,7 @@ for (let wi = 0; wi < NWALK; wi++) {
       heldState = { bias: h.bias, level: fresh === -1 && hasRange ? hh : fresh === 1 && hasRange ? ll : null, side: fresh === -1 ? 'above' : fresh === 1 ? 'below' : null };
       biasDir = h.bias;
     }
-    try { res = Setup.buildSetups(analysis, { price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex', useBreakers: USE_BREAKERS, standDownOnWall: STAND_DOWN_WALL, ladderTargets: LADDER, ...(STANDDOWN_CFG !== undefined ? { standDown: STANDDOWN_CFG } : {}), ...(biasDir !== null ? { bias: biasDir } : {}) }); }
+    try { res = Setup.buildSetups(analysis, { price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex', ...(SYMBOL ? { symbol: SYMBOL } : {}), useBreakers: USE_BREAKERS, standDownOnWall: STAND_DOWN_WALL, ladderTargets: LADDER, ...(STANDDOWN_CFG !== undefined ? { standDown: STANDDOWN_CFG } : {}), ...(biasDir !== null ? { bias: biasDir } : {}) }); }
     catch (e) { continue; }
 
     const cands = (res && res.candidates) || [];

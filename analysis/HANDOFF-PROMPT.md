@@ -143,7 +143,8 @@ computed" but **"is the value actually consumed, and does it survive to the outp
 ```
 cd /home/user/Trader/extracted/tradejournal
 for t in probe-batch0 probe-m58-grade-sizing probe-m21-strongweak probe-groupa-vetoes \
-         probe-groupb-structure probe-m36-scale-in; do
+         probe-groupb-structure probe-m36-scale-in probe-m57-compliance \
+         probe-m69-market-shift probe-m38-m40-affinity probe-m37-killzone-offsets; do
   printf "%-26s " "$t"; node ../../analysis/$t.js 2>&1 | grep -E "passed" | tail -1; done
 npm run test:now
 # restart the server, then:
@@ -151,8 +152,23 @@ node scripts/api-test.js http://127.0.0.1:3000
 cd /home/user/Trader && node analysis/harness/backtest.js --seeds 60 --bars 1500 --window 300
 ```
 
-Expected green: **10/10, 20/20, 10/10, 18/18, 10/10, 17/17, now-test 36/0, api-test 121/0**, and the
-backtest must reproduce **n=122 / −0.0011R / PF 1.00**.
+Expected green, **re-measured 2026-10-10** after M37/M38/M40/M57: batch0 **11/0**, m58 **23/0**,
+m21 **10/0**, groupa **18/18**, groupb **10/10**, m36 **17/17**, m57 **6/0**, m69 **16/0**,
+m38-m40 **49/0**, m37 **20/0**, now-test **36/0**, api-test **121/0**, bots-test **204/2** (the two
+sample-size gates), chart-test **36/0**.
+
+The old figures in this list were stale in two places and are worth naming so the next reader does
+not chase them: batch0 was **10/10** and m58 **20/20**. batch0 went red at M69 (`5a08ba6`), which
+rewrote the structure checkpoint's detail string from *"Structure reads bullish after a BOS up 4
+bars ago"* to the market-shift wording; the probe kept asserting the old text and nobody re-ran it.
+It is re-pointed now (and gained one assertion, so 11 not 10). m58 grew to 23 as its own row was
+extended.
+
+The backtest line below was also stale. `--seeds 60 --bars 1500 --window 300` currently reproduces
+**n=27 / win 25.9% / +0.5918R / PF 1.93**, not **n=122 / −0.0011R / PF 1.00**. n=27 is below the
+course's own 30-trade floor, so this arm is a REGRESSION GATE (does the number move when it should
+not?) and not a performance claim. For a sample above the floor use `--seeds 200`, which after M69
+gave **n=101 / win 24.8% / +0.0357R / PF 1.06**.
 
 ## 10. Standing instructions from the user
 
