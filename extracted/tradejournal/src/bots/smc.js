@@ -526,6 +526,78 @@ function clusterLevels(swings, tol) {
  *   BSL (buy-side liquidity, above price)  /  SSL (sell-side, below price)
  * Sources: equal highs/lows, prior day/week extremes, session extremes, old swing points.
  */
+/* ── M41 — the Asia session range ─────────────────────────────────────────────
+ * *"If the daily structure is bullish, what tends to happen is that price will sweep
+ * the Asia high, creates the high of the day, and then goes down… if price is actually
+ * bearish, then… price can come up there, sweep the Asia low… and then reverse and go
+ * back up."* Nothing in `src/` marked an Asia high or low at all — `asia_high`,
+ * `asia_low`, `asia_range`, `asiaRange` returned 0 hits — so the pool his London
+ * narrative depends on did not exist, and no sweep of it could be detected.
+ *
+ * The window used is the Asia killzone from M38 (20:00-24:00 ET), because that is the
+ * Asia he defines in the same episode as this sweep. He never states separate "Asia
+ * range" hours, so this is a documented judgment call, not a quotation: the alternative
+ * in this file is the coarse `SESSIONS` tokyo band (00:00-07:00 UTC), which is
+ * UTC-hardcoded (row M126) and no more transcript-anchored than this one.
+ *
+ * New York date and hour come from the same IANA clock the killzones use, memoised by
+ * hour bucket: a 3000-bar series would otherwise make 3000 Intl calls per analysis. */
+const ASIA_START_H = 20, ASIA_END_H = 24;
+const NY_WHEN_CACHE = new Map();
+function nyWhen(t) {
+  const bucket = Math.floor(Number(t) / 3600000);
+  let v = NY_WHEN_CACHE.get(bucket);
+  if (v === undefined) {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date(Number(t)));
+    const g = (ty) => String((parts.find((x) => x.type === ty) || {}).value || '0');
+    v = { key: `${g('year')}-${g('month')}-${g('day')}`, h: Number(g('hour')) };
+    if (NY_WHEN_CACHE.size > 20000) NY_WHEN_CACHE.clear();
+    NY_WHEN_CACHE.set(bucket, v);
+  }
+  return v;
+}
+const inAsia = (h) => h >= ASIA_START_H && h < ASIA_END_H;
+
+/**
+ * The most recent COMPLETED Asia window in the series — that is the range his narrative
+ * sweeps during London. If the last bar is itself inside an Asia window, the range still
+ * building is exposed as `forming_now` for display, and only becomes the primary answer
+ * when the series holds no completed window at all, in which case it is flagged
+ * `forming: true` and pooled at a lower strength.
+ */
+function asiaRange(candles) {
+  if (!Array.isArray(candles) || candles.length < 2) return null;
+  const wins = new Map();
+  for (const b of candles) {
+    const w = nyWhen(b.t);
+    if (!inAsia(w.h)) continue;
+    let r = wins.get(w.key);
+    if (!r) { r = { day: w.key, high: -Infinity, low: Infinity, high_t: null, low_t: null, bars: 0 }; wins.set(w.key, r); }
+    if (b.h > r.high) { r.high = b.h; r.high_t = b.t; }
+    if (b.l < r.low) { r.low = b.l; r.low_t = b.t; }
+    r.bars++;
+  }
+  if (!wins.size) return null;
+  const lastW = nyWhen(candles[candles.length - 1].t);
+  const formingKey = inAsia(lastW.h) ? lastW.key : null;
+  const keys = [...wins.keys()].sort();
+  const done = keys.filter((k) => k !== formingKey);
+  const pickKey = done.length ? done[done.length - 1] : keys[keys.length - 1];
+  const pick = wins.get(pickKey);
+  if (!pick || !Number.isFinite(pick.high) || !Number.isFinite(pick.low)) return null;
+  const forming = formingKey ? wins.get(formingKey) : null;
+  return {
+    day: pick.day, high: r4(pick.high), low: r4(pick.low), mid: r4((pick.high + pick.low) / 2),
+    range: r4(pick.high - pick.low), high_t: pick.high_t, low_t: pick.low_t, bars: pick.bars,
+    window_et: `${ASIA_START_H}:00-${ASIA_END_H}:00 ET`, forming: pick.day === formingKey,
+    forming_now: forming && Number.isFinite(forming.high)
+      ? { day: forming.day, high: r4(forming.high), low: r4(forming.low), bars: forming.bars } : null,
+  };
+}
+
 function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPools = 16, allSwings = false } = {}) {
   const n = candles.length;
   if (!n) return { pools: [], equal_highs: [], equal_lows: [] };
@@ -576,6 +648,21 @@ function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPo
     push({ kind: 'PWH', type: 'BSL', price: prevWeek.h, t: prevWeek.t, label: 'Previous week high', strength: 1.0 });
     push({ kind: 'PWL', type: 'SSL', price: prevWeek.l, t: prevWeek.t, label: 'Previous week low', strength: 1.0 });
   }
+  /* M41: the Asia range joins the same list, so findSweeps() — which reads these pools and
+   * stamps `pool: p.kind` on every sweep — detects an Asia-high/low sweep with no further
+   * change, and setup's target ladder can aim at it. Strength 0.85 sits just under PDH/PDL
+   * (a whole day's extreme is broader than one session's) and above today's high; a range
+   * still forming is weaker liquidity, so it is pooled at 0.6 and labelled as forming. Both
+   * numbers are judgment, not quotation — he names the pool, he never weights it.
+   * NOTE the cap below: at maxPools 16 these two can displace the weakest swing pools, which
+   * is the displacement M44's comment warns about, so it is measured rather than assumed. */
+  const asia = asiaRange(candles);
+  if (asia && asia.bars >= 2) {
+    const aStrength = asia.forming ? 0.6 : 0.85;
+    const tag = asia.forming ? ' (still forming)' : '';
+    push({ kind: 'ASIA_HIGH', type: 'BSL', price: asia.high, t: asia.high_t, label: `Asia session high${tag}`, strength: aStrength, asia_day: asia.day });
+    push({ kind: 'ASIA_LOW', type: 'SSL', price: asia.low, t: asia.low_t, label: `Asia session low${tag}`, strength: aStrength, asia_day: asia.day });
+  }
   // remaining un-swept swing extremes (old highs above, old lows below)
   // M44 - Ep 13: "always assume that there is resting liquidity behind ANY high or low that
   // price has not yet traded." Only the last four of each side were ever eligible, so an
@@ -592,18 +679,32 @@ function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPo
 
   // sort by strength, annotate side: above price = BSL, below = SSL (regardless of source)
   const merged = [];
-  const seen = new Set();
+  const seen = new Map();
   for (const p of pools.sort((a, b) => b.strength - a.strength)) {
     const key = `${p.type}:${p.price.toFixed(5)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    merged.push({
+    if (seen.has(key)) {
+      /* M41: one price is one pool, but the SECOND label is information, not noise. The Asia
+       * range very often IS the previous day's high or low — his narrative depends on that —
+       * and dedupe by strength used to keep PDH (0.9) and silently throw the Asia attribution
+       * away, so a sweep of it was reported as "Previous day high" and the Asia playbook could
+       * not be told apart from a generic day-extreme run. The survivor now carries the labels
+       * it also answers to. */
+      const kept = seen.get(key);
+      if (kept && kept.kind !== p.kind) {
+        kept.also = (kept.also || []).concat(p.kind);
+        kept.also_labels = (kept.also_labels || []).concat(p.label);
+      }
+      continue;
+    }
+    const row = {
       ...p,
       side: p.price > price ? 'above' : 'below',
       distance_pct: r2(Math.abs(p.price - price) / price * 100),
       distance_atr: r2(Math.abs(p.price - price) / (atr || 1)),
       swept: false, swept_t: null,
-    });
+    };
+    seen.set(key, row);
+    merged.push(row);
     // M44: expanding the candidate set without raising this cap makes new pools DISPLACE old
     // ones - measured at maxPools 16 the pool count rose 20% but sweep events fell 82 -> 76,
     // because the recently-swept levels the trigger needs were pushed out by stronger distant
@@ -616,6 +717,7 @@ function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPo
     pools: merged,
     equal_highs: eh.map((c) => ({ price: c.price, touches: c.touches, t: c.lastT })),
     equal_lows: el.map((c) => ({ price: c.price, touches: c.touches, t: c.lastT })),
+    asia_range: asia,
     pdh: prevDay ? r4(prevDay.h) : null, pdl: prevDay ? r4(prevDay.l) : null,
     pwh: prevWeek ? r4(prevWeek.h) : null, pwl: prevWeek ? r4(prevWeek.l) : null,
     tolerance: r4(tol), price: r4(price),
@@ -1123,5 +1225,5 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
 module.exports = {
   findSwings, alternate, bosSwings, marketStructure, findDisplacement, findOrderBlocks, findFvgs, findBreakers,
   liquidity, findSweeps, premiumDiscount, crt, sessionState, analyse, clusterLevels,
-  SESSIONS, SILVER_BULLETS, dayKey, weekKey, sessionAffinity,
+  SESSIONS, SILVER_BULLETS, dayKey, weekKey, sessionAffinity, asiaRange,
 };

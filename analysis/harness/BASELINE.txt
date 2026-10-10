@@ -2460,3 +2460,36 @@ New row M126 (todo, not fixed): SESSIONS is still hardcoded UTC in the same modu
 are ET. Left alone deliberately — converting it needs ET hours for five sessions he never states,
 and M39 confines its influence to hours outside the four windows. Ledger 55 done / 2 partial /
 68 todo / 1 no-action / 126 total.
+
+=== M41 — Asia session range as a liquidity level (APPLIED; playbook half scoped out) ===
+asiaRange(candles) in smc.js marks the Asia window (20:00-24:00 ET, the M38 killzone) high/low and
+pushes ASIA_HIGH (BSL) / ASIA_LOW (SSL) into the liquidity() pool list beside PDH/PDL/PWH/PWL, plus
+liquidity().asia_range. Most recent COMPLETED window is primary; a forming one is exposed as
+forming_now and pooled at 0.6 instead of 0.85 when no completed window exists. NY date+hour via the
+same IANA clock, memoised per hour bucket: 5 x 3000 bars = 203-222 ms.
+Sweep detection came free (findSweeps stamps pool: p.kind): 77 Asia sweeps over 40 synthetic series
+(1.9/series) vs 0 before.
+Second defect found and fixed: the Asia window's bars fall in the NEXT UTC day (20:00-24:00 ET =
+00:00-04:00Z), usually also the series' last UTC day, so prevDay resolves to it and PDH/PDL land on
+exactly the Asia high/low. The pool merge dedupes on type:price, kept PDH (0.9) and threw the Asia
+attribution away, so a sweep of the Asia high was reported as "Previous day high". Survivors now
+carry also / also_labels.
+Displacement A/B (40 series, same seeds, worktree @ 764c079):
+  pools/series      15.43 -> 15.85      swing pools/series 4.15 -> 2.90
+  sweeps/series     10.00 ->  9.97  (-0.25%; M44's warned-of shrink did NOT happen, cap unchanged)
+  sweep composition  equal_highs 114->100  equal_lows 120->113  swing_high 95->57  swing_low 40->23
+                     PDH 11->9  PDL 20->20  ASIA_HIGH 0->33  ASIA_LOW 0->44
+Harness, above the trade floor (--seeds 200 --bars 1500 --window 300), A/B against the same worktree:
+  pre-M41   n=101  win=24.8%  exp=+0.0357R  PF=1.06   <- reproduces the recorded post-M69 baseline
+                                                        exactly (so M37/M38/M39/M40 left it untouched)
+  post-M41  n= 99  win=24.2%  exp=-0.0111R  PF=0.98
+M41 therefore makes the synthetic harness SLIGHTLY WORSE (0.047R over ~100 random-walk trades, both
+sides within noise of breakeven). Shipped on fidelity grounds exactly as M5 was: the Asia range is a
+named pool in his playbook and its absence was a mechanism gap. NO performance claim either way.
+60-seed gate for continuity: no-symbol/EURUSD n=27 -> 25 (+0.5918R -> +0.7191R, PF 1.93 -> 2.18),
+AUDJPY n=9 -> 5 (-0.3702R -> -1.0000R) — all below the 30-trade floor, not quotable.
+NOT implemented: the directional playbook (bullish daily -> fade the Asia high into the HOD; bearish
+-> run the Asia low then reverse). He qualifies it twice ("not always, right?", "sometimes this Asia
+sweep strategy works really, really well") and points to a video outside this playlist.
+Probe analysis/probe-m41-asia-range.js 27/0; pristine via TJ_APP= 0/3 (negative control).
+Suites: api 121/0 · bots 206/0 (parity sample 21 trades, 0 mismatches) · chart 36/0 · now 36/0.
