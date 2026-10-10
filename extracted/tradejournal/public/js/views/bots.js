@@ -95,7 +95,11 @@
       sizeRow.appendChild(b);
     });
     sizeRow.appendChild(h('span', { class: 'tiny muted', style: 'margin-left:auto',
-      text: 'draw with the tool row · right of the chart is the price axis · wheel to zoom' }));
+      /* This string told the user "wheel to zoom", which is FALSE: a bare wheel
+       * deliberately keeps scrolling the page (see the wheel handler in chart.js) and
+       * zoom needs Ctrl/⌘. A wrong hint is worse than no hint — it is why "I can't
+       * zoom" was the first thing reported about this chart. */
+      text: 'draw with the tool row · the price axis is at the right · Ctrl/\u2318 + scroll to zoom, drag to pan' }));
     wrap.appendChild(sizeRow);
     return wrap;
   }

@@ -644,10 +644,13 @@
       canvas.style.width = '100%';
       canvas.style.height = H + 'px';
       state.W = W; state.H = H; state.dpr = dpr;
-      /* Re-apply the width cap on every layout: the panel can be narrower than the
-       * caller assumed, and Expand/Collapse changes the drawing area. Without this the
-       * initial 170 would survive into a container too small to show it readably. */
-      const cap = widthCap();
+      /* Re-apply the width cap on every layout, using the W measured two lines above.
+       * This MUST use that W and not re-read the element: at first paint the container has
+       * not been laid out, clientWidth is 0, and the `|| 900` fallback inside widthCap()
+       * yields a cap of 180 — which left the 170-bar default untouched in exactly the
+       * narrow panel it was written for. The bug was reported back by the user as a
+       * screenshot still reading "bars 170" after the fix shipped. */
+      const cap = Math.max(20, Math.floor(W / MIN_CANDLE_PX));
       if (state.bars > cap) state.bars = cap;
       draw();
     }
@@ -1210,6 +1213,10 @@
     canvas.style.cursor = 'crosshair';
 
     global.addEventListener('resize', () => { resize(); });
+    /* The first resize() can run before layout, when clientWidth is still 0 and the cap
+     * falls back to a guess. Measuring again on the next frame costs one redraw and makes
+     * the candle width correct on load instead of only after the first window resize. */
+    requestAnimationFrame(() => { resize(); });
 
     // the plot box is often laid out after the first paint; observe it
     if (global.ResizeObserver) {

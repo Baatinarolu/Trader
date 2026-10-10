@@ -332,7 +332,7 @@ index 34cc0ff..39a6d52 100644
  .chart-plot canvas{display:block;width:100%;cursor:crosshair}
  .chart-empty{padding:18px;color:var(--steel);font-family:var(--mono);font-size:.72rem}
 diff --git a/public/js/chart.js b/public/js/chart.js
-index 8e16034..154525a 100644
+index 8e16034..998cbe5 100644
 --- a/public/js/chart.js
 +++ b/public/js/chart.js
 @@ -264,13 +264,21 @@
@@ -383,18 +383,49 @@ index 8e16034..154525a 100644
        draw();
      }
  
-@@ -621,6 +644,11 @@
+@@ -621,6 +644,14 @@
        canvas.style.width = '100%';
        canvas.style.height = H + 'px';
        state.W = W; state.H = H; state.dpr = dpr;
-+      /* Re-apply the width cap on every layout: the panel can be narrower than the
-+       * caller assumed, and Expand/Collapse changes the drawing area. Without this the
-+       * initial 170 would survive into a container too small to show it readably. */
-+      const cap = widthCap();
++      /* Re-apply the width cap on every layout, using the W measured two lines above.
++       * This MUST use that W and not re-read the element: at first paint the container has
++       * not been laid out, clientWidth is 0, and the `|| 900` fallback inside widthCap()
++       * yields a cap of 180 — which left the 170-bar default untouched in exactly the
++       * narrow panel it was written for. The bug was reported back by the user as a
++       * screenshot still reading "bars 170" after the fix shipped. */
++      const cap = Math.max(20, Math.floor(W / MIN_CANDLE_PX));
 +      if (state.bars > cap) state.bars = cap;
        draw();
      }
  
+@@ -1182,6 +1213,10 @@
+     canvas.style.cursor = 'crosshair';
+ 
+     global.addEventListener('resize', () => { resize(); });
++    /* The first resize() can run before layout, when clientWidth is still 0 and the cap
++     * falls back to a guess. Measuring again on the next frame costs one redraw and makes
++     * the candle width correct on load instead of only after the first window resize. */
++    requestAnimationFrame(() => { resize(); });
+ 
+     // the plot box is often laid out after the first paint; observe it
+     if (global.ResizeObserver) {
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 2222ac3..682e865 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -95,7 +95,11 @@
+       sizeRow.appendChild(b);
+     });
+     sizeRow.appendChild(h('span', { class: 'tiny muted', style: 'margin-left:auto',
+-      text: 'draw with the tool row · right of the chart is the price axis · wheel to zoom' }));
++      /* This string told the user "wheel to zoom", which is FALSE: a bare wheel
++       * deliberately keeps scrolling the page (see the wheel handler in chart.js) and
++       * zoom needs Ctrl/⌘. A wrong hint is worse than no hint — it is why "I can't
++       * zoom" was the first thing reported about this chart. */
++      text: 'draw with the tool row · the price axis is at the right · Ctrl/\u2318 + scroll to zoom, drag to pan' }));
+     wrap.appendChild(sizeRow);
+     return wrap;
+   }
 diff --git a/scripts/vercel-check.js b/scripts/vercel-check.js
 index 818bf26..08bbea4 100644
 --- a/scripts/vercel-check.js
