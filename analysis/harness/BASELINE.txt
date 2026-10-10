@@ -2166,3 +2166,49 @@ MEASUREMENT — the same synthetic generator, both arms by git stash, SAME flags
 
   STILL OPEN FROM M69's OWN PRESCRIPTION: "reuse the same test for the flip-zone criterion in
   findBreakers" — the M48 half. Not done. M63 and M69 are closed; M48 is not.
+
+--------------------------------------------------------------------------------
+ M69 ON REAL DATA — same direction as synthetic, and a measurement-method failure
+ that had to be redone. Also: the M48 "outstanding half" claim was WRONG.
+--------------------------------------------------------------------------------
+REAL DATA, `--real --realtf 15m --window 300` (EURUSD-15m 4032 bars + XAUUSD-15m 4534):
+    before M69   n= 52  win 15.4%  exp -0.2751R  PF 0.60
+    after  M69   n=  8  win 37.5%  exp +0.4688R  PF 1.94
+
+  The BEFORE arm reproduces recorded Baseline 7 EXACTLY (n=52, -0.2751R, PF 0.60), which is the
+  integrity check that the harness and the recovered fixtures are unchanged since it was taken.
+
+  Same direction as the synthetic arm (expectancy negative -> positive, PF below 1 -> above 1),
+  but the sample collapses from 52 to 8 trades — an 85% cut, against 74% on synthetic. **n=8 is
+  far below the course's own 30-trade floor (M11), so by this system's own rule the real-data
+  result is NOT a measurement.** It cannot confirm or refute an edge; it can only say the change
+  did not make things worse in the 8 trades that survive.
+
+  ★ CONSEQUENCE WORTH RECORDING: M69 makes the real-data harness UNABLE to reach the 30-trade
+  floor. Evaluating anything further on real bars now needs roughly 6x more data than the 8566
+  bars recovered — i.e. more instruments or a longer history, not more seeds.
+
+★ MEASUREMENT-METHOD FAILURE, AND THE FIX. The first before/after run on real data returned
+  IDENTICAL numbers for both arms (n=8 / +0.4688R / PF 1.94 twice). Cause: `git stash push --
+  <file>` STASHES NOTHING ONCE THE CHANGE IS COMMITTED, so both arms ran the same code, and the
+  `git stash pop` then failed with "No stash entries found" — which broke the `&&` chain and
+  silently skipped the restore verification. M69 was committed in 5a08ba6 before this run.
+  The stash method is valid ONLY for uncommitted changes (it was valid for the synthetic 200-seed
+  run last turn, which was measured before committing). For a committed change the correct pair is:
+      git checkout <commit>^ -- <file>   # BEFORE arm
+      git checkout HEAD     -- <file>    # restore
+  and BOTH arms must be verified by a sentinel in the file, not by the command's exit code. Here
+  `grep -c marketShift` reading 0 then 4 is what proves the two arms actually differed. An
+  identical before/after result is a MEASUREMENT BUG until a sentinel proves otherwise — this is
+  the third distinct way an unchanged result has been misread in this audit (M10's exempt-grade
+  denominator, the vacuous generator above, and now this).
+
+★ M48's "outstanding half" WAS A FALSE CLAIM, RETRACTED IN THE LEDGER. Commit 5a08ba6 asserted
+  that reusing the break-event test for the flip-zone criterion in `findBreakers` was not done.
+  It was already done, under M48 itself, before M69 existed: `findBreakers` receives
+  `structure.breaks` at smc.js:955 and tests the break EVENT after `brokeAt` in the flip
+  direction, emitting `broke_structure` and `confirmed = failed_reaction && broke_structure`.
+  What was deliberately NOT adopted is GATING on `confirmed`, because that was measured worse
+  (n=244 / 26.2% / -0.2344R / PF 0.62 vs the shipped `retested`-only n=276 / 27.2% / -0.1847R /
+  PF 0.67). The claim was written from M69's prescription text without opening the file it names.
+  M48 is closed on mechanism; nothing remains. Corrected in all three cells (M48, M63, M69).
