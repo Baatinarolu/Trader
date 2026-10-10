@@ -2087,3 +2087,82 @@ demo-data artifacts, and the logic they gate reports zero mismatches.
   Ledger: 125 rows — 48 done / 2 partial / 74 todo / 1 no-action. With M124 closed, every
   S1 row raised from the episodes is now resolved; the only S1 left is M125's tail, which
   is scoped and waiting on more real data rather than on a decision.
+
+--------------------------------------------------------------------------------
+ M69 / M63 APPLIED — market shift is now a BREAK EVENT and a veto, not a trend
+ label and a 12-point weight. The FIRST selectivity change out of seven that moved
+ expectancy in the right direction, and it is still only break-even.
+--------------------------------------------------------------------------------
+THE CHANGE. Ep 17: "two things… liquidity sweep and market shift." Ep 20: "we need to have
+some form of market shift. That's the prerequisite. That's the non-negotiable for each one of
+these entry models." The gate tested only that the structure LABEL agreed with the trade
+direction. A label summarises the whole window and can read 'bullish' with no break in the
+required direction on this leg, so the non-negotiable could be satisfied without the event it
+names. The sweep — the other of the same two things — was ALREADY a veto, while the shift was a
+12-point weight, so losing it cost 12 of 155 and the setup still cleared the bar.
+
+  setup.js: trendAligned now reads structure.last_break.dir against the direction the trade
+  needs ('up' for a long, 'down' for a short) instead of the trend label. The break machinery
+  was already correct — smc.js detects the break on the CLOSE, which is exactly his "a
+  candlestick… where it closed above the last lower high". Only the gate read the label.
+  A veto was added next to the sweep's so the pair is symmetric.
+
+  IMPLEMENTED AS A VETO, WHICH IS STRONGER THAN WHAT THE LEDGER FIRST PRESCRIBED ("a hard
+  condition for an A/A+ grade"). Documented judgment, three reasons: the course calls it the
+  non-negotiable for EACH ENTRY MODEL, not a grade qualifier; this file's own stated rule is
+  that non-negotiables are booleans in `vetoes` while the score only ranks candidates; and a
+  grade cap would have left Ep 17's two things asymmetric, one vetoed and one weighted.
+
+  M8's rule governs and was tested: MISSING DATA MUST NOT VETO. smc.analyse() returns a
+  short-series sentinel with no `structure` key, and a gate firing on it would stand down every
+  analysis of a short series. `structureKnown` separates "no shift observed" from "cannot know".
+
+VERIFICATION — analysis/probe-m69-market-shift.js, 16 passed / 0 failed
+  Drives the divergence DIRECTLY: runs a real Smc.analyse(), then rewrites structure.trend and
+  structure.last_break.dir independently, which is the only way to construct the case that
+  matters — label says yes, event says no. Covers: label bullish + break down refuses a long;
+  label bearish + break up refuses a short (his own sentence); break up does NOT refuse a long;
+  label 'ranging' + break down does NOT refuse a short and the check PASSES, proving the event
+  is the criterion and not the label; no break at all refuses with the correct wording; the
+  sentinel neither crashes nor vetoes and reports itself as unknown; a refusal makes ok=false
+  and cannot reach A or A+.
+
+  ★ WHY NOT MEASURE IT THROUGH THE BACKTEST ALONE. Over 400 synthetic candidates the veto fires
+  on 200 — correctly wired — yet the tradeable count and the grade histogram are IDENTICAL
+  before and after, because 399 of 400 were already refused by other conditions. A generator
+  that refuses nearly everything cannot show whether a NEW refusal is right; it can only hide
+  it. That is the M10 vacuous-pass trap in reverse, so the probe drives the unit directly.
+
+MEASUREMENT — the same synthetic generator, both arms by git stash, SAME flags
+    --seeds  60 --bars 1500 --window 300
+        before M69   n=104  win 16.3%  exp -0.0857R  PF 0.88
+        after  M69   n= 27  win 25.9%  exp +0.5918R  PF 1.93
+    --seeds 200 --bars 1500 --window 300
+        before M69   n=382  win 16.5%  exp -0.2611R  PF 0.64
+        after  M69   n=101  win 24.8%  exp +0.0357R  PF 1.06
+
+  ★ THE 60-SEED RUN WAS RNG-INFLATED AND MUST NOT BE QUOTED. It reported +0.5918R and PF 1.93
+  on n=27 — BELOW the course's own 30-trade floor (M11), i.e. by this system's own rule an
+  insufficient sample. At 200 seeds, n=101 and above that floor, the true size of the effect is
+  expectancy -0.2611R -> +0.0357R and PF 0.64 -> 1.06. The direction survives 4x the sample;
+  the magnitude in the small run does not. This is the same lesson as M5, where PF 1.00 was an
+  artifact of a particular seed set.
+
+  HONEST READING: M69 removes roughly three quarters of the trades (382 -> 101) and moves
+  expectancy from clearly negative to MARGINALLY POSITIVE. PF 1.06 is within noise of
+  break-even, so this is NOT an edge and must not be reported as one. What it is: the system
+  stopped taking trades the course explicitly forbids, and the trades it stopped taking were, on
+  this generator, net losers. That is a fidelity result that happens to also be a performance
+  result — the reverse of M5, which was shipped on fidelity grounds while measuring WORSE.
+
+  ★ THIS IS THE SEVENTH SELECTIVITY CHANGE AND THE FIRST THAT HELPED. The previous six (M95,
+  M48, M44/M32, M5, M52, M50) all failed to improve expectancy. The difference is that those
+  tuned a threshold, and this one replaced a PROXY with the thing the course actually names.
+  "Be more selective" was never the lesson; "test the event, not a label summarising the window"
+  was. Recorded so the next pass does not conclude that tightening gates generally works.
+
+  Suites unchanged: api-test 121/0, now-test 36/0, topdown-test 66/0, chart-test 36/0,
+  bots-test 203/2 (the same two demo-data sample-size gates, both reporting 0 mismatches).
+
+  STILL OPEN FROM M69's OWN PRESCRIPTION: "reuse the same test for the flip-zone criterion in
+  findBreakers" — the M48 half. Not done. M63 and M69 are closed; M48 is not.

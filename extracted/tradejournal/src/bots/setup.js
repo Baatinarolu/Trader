@@ -446,10 +446,52 @@ function buildSetups(analysis, ctx = {}) {
     // The `trend` line above already guards for that; hoist the same guard so the report
     // string below cannot dereference `analysis.structure` unconditionally.
     const lastBreak = analysis && analysis.structure ? analysis.structure.last_break : null;
-    const trendAligned = (long && trend === 'bullish') || (!long && trend === 'bearish');
+
+    /* ---------------------------------------------------------------------------
+     * M69 / M63 / M48 — THE MARKET SHIFT IS A BREAK EVENT, NOT A TREND LABEL.
+     *
+     * Ep 17: *"There are mainly two things that I look out for before I actually enter
+     * for the trade… Two things, liquidity sweep and market shift."* Ep 20: *"we need to
+     * have some form of market shift. That's the prerequisite. That's the non-negotiable
+     * for each one of these entry models."* And on why a failed reaction is not an entry:
+     * *"Because you haven't gotten a confirmation that the structure is indeed shifting
+     * bullish. You haven't gotten the market shift."*
+     *
+     * The check here tested only that the structure LABEL agreed with the trade direction.
+     * A label is a summary of the whole window and can read 'bullish' without any break in
+     * the required direction having occurred on this leg — so the non-negotiable could be
+     * satisfied without the event it names. The break machinery was already correct:
+     * smc.js detects a break on the CLOSE (`dir === 'up' ? c.c > s.price : c.c < s.price`),
+     * which is exactly his *"a candlestick… where it closed above the last lower high."*
+     * Only the gate read the label instead of the event.
+     *
+     * Direction mapping: for a LONG the required shift is a break UP (price closed above a
+     * structural high); for a SHORT a break DOWN. Ep 17 states the short side explicitly:
+     * *"You don't want to enter for a sell when the internal structure is still bullish."*
+     *
+     * `structureKnown` exists because of M8's rule in this file — MISSING DATA MUST NOT
+     * VETO. `smc.analyse()` returns a short-series sentinel with no `structure` key, and a
+     * gate that fired on it would stand down every analysis of a short series, exactly the
+     * failure M8 was written to prevent. Unknown is therefore reported as unknown and is
+     * not treated as "no shift".
+     * ------------------------------------------------------------------------*/
+    const structureKnown = !!(analysis && analysis.structure);
+    const shiftDir = long ? 'up' : 'down';
+    const labelAligned = (long && trend === 'bullish') || (!long && trend === 'bearish');
+    const marketShift = structureKnown && !!lastBreak && lastBreak.dir === shiftDir;
+    // the weighted check now scores the EVENT. The label is kept for the report string so a
+    // trader can see the two disagreeing, which is the whole point of the change.
+    const trendAligned = marketShift;
     const htfTrend = analysis && analysis.htf_structure ? analysis.htf_structure.trend : null;
     const htfAligned = htfTrend ? ((long && htfTrend === 'bullish') || (!long && htfTrend === 'bearish')) : null;
-    add('structure', 'Internal structure agrees', trendAligned, 12, `Structure reads ${trend}${lastBreak ? ` after a ${lastBreak.type} ${lastBreak.dir} ${lastBreak.bars_ago} bars ago${lastBreak.mss ? ' (MSS — sweep then shift)' : ''}` : ''}.`);
+    add('structure', 'Internal structure agrees — a break in the trade\'s direction', trendAligned, 12,
+      !structureKnown
+        ? 'Structure not available on this series (too short) — no market shift can be confirmed either way.'
+        : `Market shift needs a break ${shiftDir}; `
+          + (lastBreak
+            ? `the last break was a ${lastBreak.type} ${lastBreak.dir} ${lastBreak.bars_ago} bars ago${lastBreak.mss ? ' (MSS — sweep then shift)' : ''}`
+            : 'no structural break in this window')
+          + `. Label reads ${trend}${labelAligned === marketShift ? '' : ` — the LABEL agrees but the EVENT does not, which is what M69 exists to catch`}.`);
     if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
 
     /* ------------------------------------------------------------- 6. higher-timeframe bias */
@@ -694,6 +736,21 @@ function buildSetups(analysis, ctx = {}) {
     */
     const vetoes = [];
     if (!hasTrigger) vetoes.push('No liquidity sweep — the model has no trigger to enter on.');
+    /* M69 — the sweep's twin. Ep 17's "two things" are liquidity sweep AND market shift, and
+     * the sweep was already a veto while the shift was a 12-point weight, so losing the
+     * non-negotiable cost 12 of 155 points and the setup still cleared the bar. A veto is
+     * stronger than the "hard condition for an A/A+ grade" this item was first written up as,
+     * and deliberately so: the course calls it *"the non-negotiable for each one of these entry
+     * models"*, this file's own rule is that non-negotiables are booleans in `vetoes` while the
+     * score only ranks candidates, and a grade cap would have left the two things asymmetric.
+     * M8's rule still governs — when the structure is unknown this does NOT veto. */
+    if (structureKnown && !marketShift) {
+      vetoes.push(lastBreak
+        ? `No market shift in the trade's direction — the last structural break was ${lastBreak.dir}, not ${shiftDir}. `
+          + (long ? 'Do not buy while the internal structure is still breaking down.'
+                  : '"You don\'t want to enter for a sell when the internal structure is still bullish."')
+        : `No market shift — no structural break ${shiftDir} in this window, so the shift ${long ? 'long' : 'short'} requires has not happened.`);
+    }
     if (!hasZone) vetoes.push('No order block to trade against — no level, so no defined risk.');
     // M7 / M96 — "no matter how many confluences I have, no matter how confident I am,
     // I'm going to be passing on the trade." This is arithmetic, not taste: at the measured
