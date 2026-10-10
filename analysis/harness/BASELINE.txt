@@ -2022,3 +2022,68 @@ reproducing the identical two failures on the pre-M10 tree — matched by name, 
   disabled, and on a normal machine the Node path succeeds.
 
   Ledger: 125 rows — 47 done / 2 partial / 75 todo / 1 no-action.
+
+--------------------------------------------------------------------------------
+ M124 FIXED — chart() and analyse() agreed to disagree, and the cause was the
+ entry-series DEPTH, not td.conflicts. Last known failing assertion in the repo.
+--------------------------------------------------------------------------------
+ROOT CAUSE. analyse() fetched a hardcoded 600 entry bars. chart() fetched
+clamp(opts.bars || 400, 80, 1200). The same request with bars=400 therefore made the
+chart analyse a 400-bar window and the analysis strip a 600-bar one. Different windows
+-> different structure -> different topdown direction -> DIFFERENT ACTION ON THE SAME
+BAR. Measured before the fix, EURUSD 15m at 2026-10-10T07:15Z:
+
+    analyse   direction 1 · status confirmed · blocked false            -> BUY
+    chart     direction 0 · status waiting   · blocked true             -> NO TRADE
+              conflicts: no-trigger[BLOCKS], chase[BLOCKS]
+
+The recorded diagnosis blamed `td.conflicts`. That was the SYMPTOM: the conflicts
+follow from the direction, and the direction followed from the window. Fixing the
+conflict logic would have treated the downstream effect.
+
+The comment above chart()'s fetch already claimed "the same series lengths the analyse
+endpoint uses, so the two payloads can never disagree about the same market (they did
+once: the chart asked for 200 higher-timeframe candles...)". An earlier fix had made
+that true for the BIAS and TRIGGER series and it was still false for the ENTRY series,
+which is the one that decides direction. A claim like that has to be enforced by a
+shared constant, not by two literals that happen to agree — so there is now one
+METHOD_ENTRY_BARS = 600 read by both paths.
+
+`opts.bars` IS A DISPLAY PARAMETER and is now kept strictly separate from how deep the
+method reads. The chart still returns the candles asked for: sliced from the method
+series when bars <= 600, fetched separately for display only when the caller wants more
+drawn than the method reads, so the extra depth never feeds the analysis. Making the
+chart ignore `bars` entirely would have been a regression dressed as a fix.
+
+VERIFICATION — analysis/probe-m124-chart-parity.js, 5 passed / 0 failed
+  4 timeframes (1d, 1h, 15m, 5m) x 4 bar depths (200, 400, 800, 1200) = 16 same-bar
+  comparisons. Asserts topdown direction/status/blocked agree, action AND side agree,
+  the result does not depend on requested depth, and the display contract still holds
+  (candles > 0 and <= bars). Result: 16 comparisons, 0 divergences.
+
+  ★ WHY bots-test DID NOT CATCH THIS, AND WHY THE PROBE EXISTS. bots-test has one parity
+  assertion comparing a single bar at a single depth, and only when the two calls happen
+  to land on the same bar. The defect was a function of `bars`, not of the market, so
+  that assertion could pass while the chart contradicted the analysis strip at every
+  other depth. The probe varies the depth on purpose.
+
+  ★ ALSO NOTE: the constant was first written next to chart() at line 426 while analyse()
+  at line 241 read it. That only works because module evaluation completes before any
+  call — a temporal-dead-zone hazard waiting for the first require-time use. Moved above
+  every use.
+
+bots-test STILL REPORTS 203/2, AND BOTH FAILURES ARE NEITHER M124 NOR LOGIC FAILURES.
+They are demo-data sample-size gates whose counts move with the run time (20 trades on
+Oct 9, 12 on Oct 10, 15 now):
+    ok(checked >= 20 && mism === 0, ...)  -> reports "0 mismatches", fails on the count
+    ok(filled3.length > 20, ...)          -> a pure sample gate
+The M124 chart/analysis parity assertion no longer fails. Attributed earlier by stashing
+changes and reproducing the same two on the pre-change tree; they are date-dependent
+demo-data artifacts, and the logic they gate reports zero mismatches.
+
+  App suites: api-test 121/0 · now-test 36/0 · topdown-test 66/0 · chart-test 36/0 ·
+  bots-test 203/2 (both sample-size gates, 0 mismatches).
+
+  Ledger: 125 rows — 48 done / 2 partial / 74 todo / 1 no-action. With M124 closed, every
+  S1 row raised from the episodes is now resolved; the only S1 left is M125's tail, which
+  is scoped and waiting on more real data rather than on a decision.

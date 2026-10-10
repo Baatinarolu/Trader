@@ -27,6 +27,28 @@ const Now = require('./now');
 const Predict = require('./predict');
 const Cor = require('./correction');
 
+/* -------------------------------------------------------------------------
+ * M124 — THE ENTRY-SERIES DEPTH THE METHOD READS.
+ *
+ * `analyse()` fetched a hardcoded 600 entry bars. `chart()` fetched
+ * `clamp(opts.bars || 400, 80, 1200)`, so the same request with bars=400 made the
+ * chart analyse a 400-bar window and the analysis strip a 600-bar one. Different
+ * windows produce different structure, a different topdown direction, and therefore
+ * a DIFFERENT ACTION FOR THE SAME BAR — measured on EURUSD 15m at
+ * 2026-10-10T07:15Z: analyse direction 1 / status confirmed / BUY, chart direction
+ * 0 / status waiting / blocked on `no-trigger` and `chase` / NO TRADE.
+ *
+ * The comment above chart()'s fetch already claimed "the same series lengths the
+ * analyse endpoint uses, so the two payloads can never disagree" — it had been made
+ * true for the bias and trigger series by an earlier fix and was still false for the
+ * entry series, which is the one that decides direction. A claim like that has to be
+ * enforced by a shared constant, not by two literals that happen to agree.
+ *
+ * `opts.bars` is a DISPLAY parameter — how many candles to draw — and is now kept
+ * strictly separate from how deep the method reads.
+ * ------------------------------------------------------------------------*/
+const METHOD_ENTRY_BARS = 600;
+
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -238,7 +260,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   ]);
 
   // the setup model needs the raw trading-timeframe handle (zones, sweeps, indicators)
-  const series = await Momentum.series(sym, tf, 600, cut);
+  const series = await Momentum.series(sym, tf, METHOD_ENTRY_BARS, cut);   // M124: shared with chart()
 
   // M50. Skipped during a bar replay on purpose: a replay reconstructs what the bot would have
   // said THEN, so it must neither read state written by the present nor write state the present
@@ -403,6 +425,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
  * @param {string} tf
  * @param {{bars?:number, userId?:number, accountId?:number, minRR?:number, balance?:number, riskPct?:number}} opts
  */
+
 async function chart(symbol, tf = '15m', opts = {}) {
   const sym = String(symbol || '').toUpperCase();
   const bars = Math.min(Math.max(Number(opts.bars) || 400, 80), 1200);
@@ -416,7 +439,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
   // never disagree about the same market (they did once: the chart asked for 200
   // higher-timeframe candles and the method read a different range from them).
   const [entry, bias, triggerRaw] = await Promise.all([
-    Momentum.series(sym, tf, bars, cut),
+    Momentum.series(sym, tf, METHOD_ENTRY_BARS, cut),   // M124: the method's window, NOT `bars`
     Momentum.series(sym, L.bias_tf, 400, cut),
     L.trigger_tf === tf ? Promise.resolve(null) : Momentum.series(sym, L.trigger_tf, 400, cut),
   ]);
@@ -528,7 +551,15 @@ async function chart(symbol, tf = '15m', opts = {}) {
       last_price: entry.meta.last_price, warnings: entry.meta.warnings,
       sources: { bias: `${L.bias_tf} via ${bias.meta.provider}`, trigger: `${trig.tf} via ${trig.meta.provider}` },
     },
-    candles: entry.candles.map((b) => ({ t: b.t, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v })),
+    /* M124 — `bars` is a DISPLAY parameter and stays one. The method above always reads
+     * METHOD_ENTRY_BARS so this payload and /analyse cannot disagree about the same bar;
+     * the candles returned for drawing are still sliced to what was asked for. When the
+     * caller wants MORE candles drawn than the method reads, the extra depth is fetched
+     * for display only and never feeds the analysis. */
+    candles: (bars > METHOD_ENTRY_BARS
+      ? (await Momentum.series(sym, tf, bars, cut)).candles
+      : entry.candles
+    ).slice(-bars).map((b) => ({ t: b.t, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v })),
     smc, plan, topdown: td, stack,
     setups: {
       verdict: setups.verdict, method: setups.method,
