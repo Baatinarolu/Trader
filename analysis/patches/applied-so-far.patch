@@ -314,6 +314,87 @@ index 0000000..bd0e991
 +Whichever way it deploys, `npm run test:vercel` must still report the shell guarantees —
 +no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
 +Those four are what distinguish a working deploy from one that merely builds.
+diff --git a/public/css/app.css b/public/css/app.css
+index 34cc0ff..39a6d52 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -431,7 +431,11 @@ fieldset,legend{border-color:var(--border)}
+   font:inherit;font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:2px;cursor:pointer}
+ .chart-tog:hover,.chart-btn:hover{color:var(--text);border-color:var(--border-strong)}
+ .chart-tog.on{color:var(--text);border-color:var(--accent);background:rgba(63,127,224,.12)}
+-.chart-zoom{display:flex;gap:2px}
++.chart-zoom{display:flex;gap:2px;align-items:center;flex:0 0 auto;margin-left:6px}
++/* the hint that makes Ctrl/scroll-zoom and drag-pan discoverable */
++.chart-hint{color:var(--steel);font-size:.64rem;letter-spacing:.02em;opacity:.8;white-space:nowrap;
++  margin-left:6px;font-family:var(--mono)}
++@media (max-width:900px){.chart-hint{display:none}}
+ .chart-plot{position:relative;width:100%}
+ .chart-plot canvas{display:block;width:100%;cursor:crosshair}
+ .chart-empty{padding:18px;color:var(--steel);font-family:var(--mono);font-size:.72rem}
+diff --git a/public/js/chart.js b/public/js/chart.js
+index 8e16034..154525a 100644
+--- a/public/js/chart.js
++++ b/public/js/chart.js
+@@ -264,13 +264,21 @@
+     };
+     mkBtn('−', 'Zoom out', () => setBars(state.bars * 1.4));
+     mkBtn('+', 'Zoom in', () => setBars(state.bars / 1.4));
+-    mkBtn('Reset', 'Reset zoom and pan', () => { state.offset = 0; setBars(170); });
++    mkBtn('Reset', 'Reset zoom and pan', () => { state.offset = 0; setBars(Math.min(170, widthCap())); });
+     mkBtn('Expand', 'Taller chart', (e) => {
+       state.expanded = !state.expanded;
+       e.target.textContent = state.expanded ? 'Collapse' : 'Expand';
+       wrap.classList.toggle('chart-expanded', state.expanded);
+       resize();
+     });
++    /* The wheel was deliberately made Ctrl/⌘-only so a bare wheel keeps scrolling the
++     * page, and panning is drag-only — both reasonable, but neither was written down
++     * anywhere the user could see, so the controls read as broken ("I can't zoom, I
++     * can't scroll"). The behaviour stays; it is now stated next to the buttons. */
++    const hint = document.createElement('span');
++    hint.className = 'chart-hint';
++    hint.textContent = 'Ctrl/\u2318 + scroll = zoom \u00b7 drag = pan \u00b7 double-click = reset';
++    zoomRow.appendChild(hint);
+     bar.appendChild(zoomRow);
+ 
+     /* ---- studies + drawing tools: the second row of the toolbar ---------- */
+@@ -607,8 +615,23 @@
+       dashOff();
+     }
+ 
++    /* ── THE VISIBLE COUNT IS NOW DERIVED FROM THE REAL PIXEL WIDTH ────────────────
++     * `bars` defaulted to 170 no matter how wide the panel was, so in a narrow column
++     * each candle was about 2 px wide and the chart was unreadable — reported as "the
++     * candles are too small". A fixed count can only ever be right at one width. Capping
++     * the count by width guarantees a candle is never thinner than MIN_CANDLE_PX, which
++     * makes the default legible in any container instead of only in a wide one, and it
++     * keeps working when the panel is resized or the chart is expanded. */
++    const MIN_CANDLE_PX = 5;
++    function widthCap() {
++      const W = plot.clientWidth || wrap.clientWidth || 900;
++      return Math.max(20, Math.floor(W / MIN_CANDLE_PX));
++    }
++
+     function setBars(n) {
+-      state.bars = Math.round(Math.min(Math.max(n, 40), Math.min(500, Math.max(40, all.length))));
++      const cap = widthCap();
++      const hi = Math.min(500, Math.max(40, all.length), cap);
++      state.bars = Math.round(Math.min(Math.max(n, Math.min(40, hi)), hi));
+       draw();
+     }
+ 
+@@ -621,6 +644,11 @@
+       canvas.style.width = '100%';
+       canvas.style.height = H + 'px';
+       state.W = W; state.H = H; state.dpr = dpr;
++      /* Re-apply the width cap on every layout: the panel can be narrower than the
++       * caller assumed, and Expand/Collapse changes the drawing area. Without this the
++       * initial 170 would survive into a container too small to show it readably. */
++      const cap = widthCap();
++      if (state.bars > cap) state.bars = cap;
+       draw();
+     }
+ 
 diff --git a/scripts/vercel-check.js b/scripts/vercel-check.js
 index 818bf26..08bbea4 100644
 --- a/scripts/vercel-check.js
@@ -3639,7 +3720,7 @@ index 97110a5..ff8d382 100644
      by_session: segment(trades, (t) => t.session_label),
      by_direction: segment(trades, (t) => (String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long')),
 diff --git a/src/routes/api.js b/src/routes/api.js
-index 0bb768c..f31c597 100644
+index 0bb768c..f86a479 100644
 --- a/src/routes/api.js
 +++ b/src/routes/api.js
 @@ -1,6 +1,7 @@
@@ -3651,7 +3732,35 @@ index 0bb768c..f31c597 100644
  const I = require('../instruments');
  const TV = require('../tradingview');
  const P = require('../performance');
-@@ -295,6 +296,16 @@ router.post('/trades', requireAuth, async (req, res) => {
+@@ -40,7 +41,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
+ async function requireAuth(req, res, next) {
+   try {
+     const user = await userFromToken(readToken(req));
+-    if (!user) return res.status(401).json({ error: 'Not signed in' });
++    if (!user) {
++      /* "Not signed in" is the wrong diagnosis on a serverless host with no remote DB.
++       * db.js falls back to file:/tmp/journal.db when VERCEL is set and no
++       * TURSO_DATABASE_URL / LIBSQL_URL / TRADEJOURNAL_DB is provided, and /tmp is wiped
++       * between invocations — so the session row written at sign-in is simply GONE by the
++       * next request. The user sees an auth failure and reaches for their password when
++       * the actual fault is the missing environment variable. /api/health already reports
++       * this, but the error the user actually reads did not. */
++      const ephemeral = !!process.env.VERCEL && !require('../db').REMOTE;
++      return res.status(401).json({
++        error: 'Not signed in',
++        ...(ephemeral ? {
++          cause: 'ephemeral_database',
++          detail: 'This deployment has no persistent database: it is using /tmp, which the '
++            + 'platform wipes between invocations, so the session created at sign-in does not '
++            + 'survive to the next request. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN, then '
++            + 'redeploy. GET /api/health reports database.persistent:false while this is so.',
++        } : {}),
++      });
++    }
+     req.user = user;
+     next();
+   } catch (e) { next(e); }
+@@ -295,6 +315,16 @@ router.post('/trades', requireAuth, async (req, res) => {
    if (!body.symbol) return res.status(400).json({ error: 'Symbol is required' });
    if (!body.entry) return res.status(400).json({ error: 'Entry price is required' });
    const trade = T.normalise(body, { instrument: spec, tz: (await settingsOf(req)).timezone });
@@ -3668,7 +3777,7 @@ index 0bb768c..f31c597 100644
    const id = await T.insert(db, req.user.id, { ...trade, account_id: accountId });
    if (Array.isArray(body.rule_checks)) {
      const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
-@@ -393,9 +404,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+@@ -393,9 +423,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const rs = rows.map((t) => num(t.r_multiple));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
@@ -3687,7 +3796,7 @@ index 0bb768c..f31c597 100644
    res.json({
      monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
      optimal_risk: P.optimalRisk(rs),
-@@ -446,16 +464,19 @@ router.post('/journal', requireAuth, async (req, res) => {
+@@ -446,16 +483,19 @@ router.post('/journal', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.entry_date) return res.status(400).json({ error: 'entry_date is required' });
    const acc = b.account_id ? Number(b.account_id) : (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
@@ -3710,7 +3819,7 @@ index 0bb768c..f31c597 100644
    });
    res.json({ ok: true, entry: await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, b.entry_date) });
  });
-@@ -486,17 +507,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
+@@ -486,17 +526,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
      req.user.id, b.name, b.description || '', b.market_conditions || '', b.timeframes || '',
      JSON.stringify(b.entry_rules || []), JSON.stringify(b.exit_rules || []), JSON.stringify(b.checklist || []),
      b.risk_rules || '', num(b.target_r_multiple, 2), b.colour || '#4f8cff', b.active === false ? 0 : 1);
@@ -3746,7 +3855,7 @@ index 0bb768c..f31c597 100644
      name: b.name !== undefined ? b.name : cur.name,
      description: b.description !== undefined ? b.description : cur.description,
      market_conditions: b.market_conditions !== undefined ? b.market_conditions : cur.market_conditions,
-@@ -508,8 +542,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
+@@ -508,8 +561,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
      target_r_multiple: b.target_r_multiple !== undefined ? num(b.target_r_multiple, 2) : cur.target_r_multiple,
      colour: b.colour || cur.colour,
      active: b.active === undefined ? cur.active : (b.active ? 1 : 0),
@@ -3801,7 +3910,7 @@ index 0bb768c..f31c597 100644
  });
  router.delete('/strategies/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM strategies WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -541,20 +620,40 @@ router.get('/accounts', requireAuth, async (req, res) => {
+@@ -541,20 +639,40 @@ router.get('/accounts', requireAuth, async (req, res) => {
  router.post('/accounts', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.name) return res.status(400).json({ error: 'Account name is required' });
@@ -3847,7 +3956,7 @@ index 0bb768c..f31c597 100644
      max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, prop_preset=@prop_preset,
      prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
      id, user_id: req.user.id,
-@@ -563,7 +662,8 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -563,7 +681,8 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
      currency: b.currency !== undefined ? b.currency : cur.currency,
      starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
@@ -3857,7 +3966,7 @@ index 0bb768c..f31c597 100644
      daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
      max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
      prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
-@@ -571,7 +671,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -571,7 +690,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
      archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
    });
@@ -3870,7 +3979,7 @@ index 0bb768c..f31c597 100644
  });
  router.delete('/accounts/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -708,7 +812,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -708,7 +831,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
    const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
    const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
    const balance = num(b.balance, acc ? acc.current_balance : 10000);
@@ -3891,7 +4000,7 @@ index 0bb768c..f31c597 100644
    const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
    const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
    const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
-@@ -722,6 +838,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -722,6 +857,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
      pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
      pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
      percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,
