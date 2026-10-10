@@ -162,7 +162,7 @@ function findSession(o, depth) {
     } else {
       ok('the factor reports a numeric max of 6 (the note is no longer in the max slot)',
         fa.max === 6 && fb.max === 6, 'AUDJPY max=' + fa.max + ' EURUSD max=' + fb.max);
-      ok('AUDJPY is told it is IN its window', /killzone/.test(fa.detail || '') && !/not this instrument/.test(fa.detail || ''),
+      ok('AUDJPY is told it is IN its window', /Asia —/.test(fa.detail || '') && !/not this instrument/.test(fa.detail || ''),
         fa.detail);
       ok('EURUSD is told Asia is NOT its window', /Asia killzone is not this instrument/.test(fb.detail || ''), fb.detail);
       /* At 23:00 ET the Tokyo session is active for everyone, so the genuine outside-state
@@ -194,17 +194,20 @@ function findSession(o, depth) {
     const fg = findSession(g, 0), fh = findSession(h, 0);
     if (!fg || !fh) skipped('London discrimination', 'no session factor found');
     else {
-      /* MEASURED, NOT ASSUMED: momentum's session factor scores `sessions.quality`, which is
-       * the SESSION table's quality (London 0.85 -> 5.1 points), not the bullet's (1.0 -> 6).
-       * So the affinity map cannot move that number without redefining what `quality` means —
-       * and redefining it would also change every symbol's score in every window, which no
-       * transcript line asks for. The two therefore TIE on points while the reason text
-       * differs, and M40's numeric teeth live where the killzone is actually gated:
-       * setup.js's weight-8 session check and its in_killzone veto. Asserting a points gap
-       * here would be asserting something the code was never shaped to produce. */
-      ok('London: both score off SESSION quality (0.85 -> 5.1), so the points tie is expected',
-        fg.points === fh.points && Math.abs(fg.points - 5.1) < 0.01, 'EURUSD=' + fg.points + ' AUDJPY=' + fh.points);
-      ok('London: EURUSD is told it belongs, AUDJPY is told it does not',
+      /* UPDATED BY M39. This used to be a documented TIE: momentum scored sessions.quality,
+       * which came from the coarse UTC-based SESSION table (London 0.85 -> 5.1) for every
+       * symbol, so the affinity map could not move it. M39 made the in-killzone quality
+       * BULLET-driven, and the affinity copy is capped at the bullet quality, so the two now
+       * differ: EURUSD is inside London (bullet quality 1.0 -> 6 points) and AUDJPY is not
+       * (capped to the session table's 0.85 -> 5.1). M40's session credit is therefore
+       * operative in momentum as well as in setup's gate. */
+      ok('in London EURUSD out-scores AUDJPY on the session factor', fg.points > fh.points,
+        'EURUSD=' + fg.points + ' AUDJPY=' + fh.points);
+      ok('EURUSD keeps the full London credit (6/6)', fg.points === 6 && fg.max === 6,
+        'points=' + fg.points + ' max=' + fg.max);
+      ok('AUDJPY is reduced but not zeroed (the session table still counts)', fh.points === 5.1,
+        'points=' + fh.points);
+      ok('EURUSD is told it belongs, AUDJPY is told it does not',
         !/not this instrument/.test(fg.detail || '') && /London killzone is not this instrument/.test(fh.detail || ''),
         'EURUSD="' + fg.detail + '" AUDJPY="' + fh.detail + '"');
       console.log('    LONDON EURUSD session=' + fg.points + '/' + fg.max + ' · AUDJPY session=' + fh.points + '/' + fh.max);

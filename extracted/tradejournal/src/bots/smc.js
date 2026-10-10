@@ -834,11 +834,23 @@ const SESSIONS = [
  * not where "the big explosive move on the USD pairs" happens, so it must not score like London.
  * `pairs` is M40's mapping — the currencies that actually move in each window. A window with no
  * `pairs` entry counts for every instrument, which is how the pre-existing three behave. */
+/* M39: the fourth window is the LONDON CLOSE, not a "NY PM". He gives its hours as
+ * 10:00-12:00 Eastern and its character explicitly: *"There's a little bit lower trading
+ * volume… price tends to retrace back to the daily range… if you want to catch small
+ * retracement base opportunities, this London close session would be pretty decent."*
+ * The entry that sat on those hours was named NY PM and carried quality 0.7 with the
+ * generic "highest-probability window" note — the opposite of what he says it is for.
+ * Each window now carries its own `note`, because one shared sentence cannot describe
+ * both an expansion window and a retrace window. */
 const SILVER_BULLETS = [
-  { name: 'Asia killzone', startH: 20, startM: 0, endH: 24, endM: 0, quality: 0.5, restricted: true, pairs: ['AUD', 'NZD', 'JPY'] },
-  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0, pairs: ['EUR', 'GBP'] },
-  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0, pairs: ['USD'] },
-  { name: 'NY PM killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.7, pairs: ['USD'] },
+  { name: 'Asia killzone', startH: 20, startM: 0, endH: 24, endM: 0, quality: 0.5, restricted: true, pairs: ['AUD', 'NZD', 'JPY'],
+    note: 'Asia — the Australian dollar, New Zealand dollar and Japanese yen pairs. Lower volume; not where the explosive moves on the USD pairs happen.' },
+  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0, pairs: ['EUR', 'GBP'],
+    note: 'London killzone — highest-probability window for the entry models.' },
+  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0, pairs: ['USD'],
+    note: 'New York AM killzone — highest-probability window for the entry models.' },
+  { name: 'London close killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.5, pairs: ['USD'],
+    note: 'London close — lower volume; price tends to retrace back into the daily range. Small retracement bases, not fresh expansion.' },
 ];
 
 /** Minutes since midnight in New York, DST handled by the IANA database. */
@@ -874,7 +886,7 @@ function sessionState(date = new Date()) {
     const open_ = inWindowNY(s, e);
     const until = (e - nyMins + 1440) % 1440;
     const et = `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} ET`;
-    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted };
+    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted, note: b.note || null };
   });
   const activeBullet = bullets.find((b) => b.active) || null;
   return {
@@ -891,9 +903,14 @@ function sessionState(date = new Date()) {
     sessions, bullets,
     in_killzone: !!activeBullet,
     killzone: activeBullet ? activeBullet.name : null,
-    quality: active ? Math.max(...active.map((s) => s.quality)) : 0.3,
+    /* M39: when a killzone is open, ITS quality is the statement about the window — the
+     * SESSION table is a coarser overlay and had London close reporting quality 1.0 (its
+     * 12:00-16:00 UTC New York AM session covers those hours), which is exactly what the
+     * row complains of: "its hours are reported as the highest-quality window". Outside
+     * every killzone the session table still governs, as before. */
+    quality: activeBullet ? activeBullet.quality : (active.length ? Math.max(...active.map((s) => s.quality)) : 0.3),
     best_time: !activeBullet ? `Next high-quality window: ${bullets.filter((b) => b.minutes_to_start > 0).sort((a, b) => a.minutes_to_start - b.minutes_to_start)[0].name}` : null,
-    note: activeBullet ? `${activeBullet.name} — highest-probability window for the entry models.` : 'Outside the killzones: entries here have materially lower odds. Wait for London (07:00) or the NY overlap (12:00 UTC).',
+    note: activeBullet ? (activeBullet.note || `${activeBullet.name} — highest-probability window for the entry models.`) : 'Outside the killzones: entries here have materially lower odds. Wait for London (07:00) or the NY overlap (12:00 UTC).',
     open_session: open.name,
     next_session: { name: sessions[nextIdx].name, starts: sessions[nextIdx].window },
   };
@@ -957,7 +974,13 @@ function sessionAffinity(symbol, sessions) {
    * (0.3 when none is active) and momentum scores `quality * 6` — leaving the bullet's own
    * quality in place would keep paying session credit to a pair this window does not want. */
   const actSes = (ses.sessions || []).filter((x) => x.active);
-  const outsideQ = actSes.length ? Math.max.apply(null, actSes.map((x) => x.quality || 0)) : 0.3;
+  const sessQ = actSes.length ? Math.max.apply(null, actSes.map((x) => x.quality || 0)) : 0.3;
+  /* Capped at the bullet's own quality (M39 made the in-window quality bullet-driven, and the
+   * SESSION table is coarser and UTC-based: at 14:30 UTC it says "New York AM, quality 1.0"
+   * over the London close hours). Without this cap a pair told "this window is not yours"
+   * would score HIGHER than a pair inside it — 6 points against 3 — which inverts the whole
+   * point. Affinity may only ever reduce session credit, never increase it. */
+  const outsideQ = bullet.quality == null ? sessQ : Math.min(sessQ, bullet.quality);
   return Object.assign({}, ses, {
     in_killzone: false, killzone: null, quality: outsideQ, affinity_outside: bullet.name,
     best_time: nxt ? `Next window for this pair: ${nxt.name}` : ses.best_time,

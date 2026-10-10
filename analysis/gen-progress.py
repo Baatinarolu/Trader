@@ -31,7 +31,11 @@ GROUPS = [
      + ['M36'] + ['M%d' % i for i in range(42, 56)]
      + ['M67', 'M71', 'M72', 'M73', 'M75', 'M76', 'M77', 'M78', 'M119']),
     ('C \u2014 sessions, killzones & no-trade conditions',
-     ['M5', 'M10', 'M26', 'M33', 'M37', 'M38', 'M39', 'M40', 'M41', 'M74', 'M112']),
+     ['M5', 'M10', 'M26', 'M33', 'M37', 'M38', 'M39', 'M40', 'M41', 'M74', 'M112',
+     # M126 was raised while applying M39: SESSIONS is still hardcoded UTC in the same
+     # module whose SILVER_BULLETS M5 moved to New York time, so it belongs with the
+     # session/timing rows rather than with a file-based group.
+     'M126']),
     ('D \u2014 risk & guardrails',
      ['M9', 'M11'] + ['M%d' % i for i in range(79, 86)] + ['M94', 'M103', 'M113', 'M116']),
     ('E \u2014 journal, review & behaviour',

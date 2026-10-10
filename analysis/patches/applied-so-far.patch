@@ -332,10 +332,59 @@ index 34cc0ff..39a6d52 100644
  .chart-plot canvas{display:block;width:100%;cursor:crosshair}
  .chart-empty{padding:18px;color:var(--steel);font-family:var(--mono);font-size:.72rem}
 diff --git a/public/js/chart.js b/public/js/chart.js
-index 8e16034..d58c883 100644
+index 8e16034..ed4e333 100644
 --- a/public/js/chart.js
 +++ b/public/js/chart.js
-@@ -264,13 +264,21 @@
+@@ -21,11 +21,17 @@
+   'use strict';
+ 
+   /* ------------------------------------------------------------- constants */
++  /* M39: these were the pristine UTC hours, so the chart shaded a "NY PM KZ" band at
++   * 15:00-18:00 UTC that the engine stopped having when M5 moved the windows to New York
++   * time, put Asia at 00:00-06:00 UTC instead of 20:00-24:00 ET, and had no London close
++   * band at all. The bands are now the engine's windows, in Eastern time, and each bar is
++   * converted with the browser's own IANA database — so the shading follows DST instead of
++   * being an hour off for half the year. `from`/`to` are ET hours; 24 means midnight, no wrap. */
+   const KILLZONES = [
+-    { key: 'asia', label: 'Asia', from: 0, to: 6 },
+-    { key: 'london', label: 'London KZ', from: 6, to: 9 },
+-    { key: 'ny_am', label: 'NY AM KZ', from: 12, to: 15 },
+-    { key: 'ny_pm', label: 'NY PM KZ', from: 15, to: 18 },
++    { key: 'asia', label: 'Asia', from: 20, to: 24 },
++    { key: 'london', label: 'London KZ', from: 2, to: 5 },
++    { key: 'ny_am', label: 'NY AM KZ', from: 7, to: 10 },
++    { key: 'london_close', label: 'London close', from: 10, to: 12 },
+   ];
+   const ZOOM_STEPS = [80, 120, 170, 240, 340, 500];
+ 
+@@ -78,8 +84,25 @@
+     return day;
+   }
+ 
++  /* Memoised by hour bucket: a pan or zoom re-runs this for every visible bar, and an
++   * Intl call per bar per frame is the kind of thing that makes a chart feel sticky. */
++  const nyHourCache = new Map();
++  function nyHour(t) {
++    const bucket = Math.floor(Number(t) / 3600000);
++    let h = nyHourCache.get(bucket);
++    if (h === undefined) {
++      const parts = new Intl.DateTimeFormat('en-GB', {
++        timeZone: 'America/New_York', hour: '2-digit', hourCycle: 'h23',
++      }).formatToParts(new Date(Number(t)));
++      h = Number((parts.find((x) => x.type === 'hour') || {}).value || 0);
++      if (nyHourCache.size > 8192) nyHourCache.clear();
++      nyHourCache.set(bucket, h);
++    }
++    return h;
++  }
++
+   function killzoneAt(t) {
+-    const h = new Date(Number(t)).getUTCHours();
++    const h = nyHour(t);
+     return KILLZONES.find((z) => h >= z.from && h < z.to) || null;
+   }
+ 
+@@ -264,13 +287,21 @@
      };
      mkBtn('−', 'Zoom out', () => setBars(state.bars * 1.4));
      mkBtn('+', 'Zoom in', () => setBars(state.bars / 1.4));
@@ -358,7 +407,7 @@ index 8e16034..d58c883 100644
      bar.appendChild(zoomRow);
  
      /* ---- studies + drawing tools: the second row of the toolbar ---------- */
-@@ -607,8 +615,23 @@
+@@ -607,8 +638,23 @@
        dashOff();
      }
  
@@ -383,7 +432,7 @@ index 8e16034..d58c883 100644
        draw();
      }
  
-@@ -621,6 +644,14 @@
+@@ -621,6 +667,14 @@
        canvas.style.width = '100%';
        canvas.style.height = H + 'px';
        state.W = W; state.H = H; state.dpr = dpr;
@@ -398,7 +447,16 @@ index 8e16034..d58c883 100644
        draw();
      }
  
-@@ -1182,6 +1213,13 @@
+@@ -765,7 +819,7 @@
+             // The caption has to fit the band, otherwise a 3-hour killzone on an
+             // hourly chart prints "London" over "Asia". Try the full name, then
+             // the short one, then a coloured notch in the top margin.
+-            const short = { asia: 'ASIA', london: 'LDN', ny_am: 'NY', ny_pm: 'PM' }[runKz.key] || '';
++            const short = { asia: 'ASIA', london: 'LDN', ny_am: 'NY', london_close: 'LC' }[runKz.key] || '';
+             const colour = runKz.key === 'london' ? 'rgba(63,127,224,0.85)' : runKz.key === 'asia' ? 'rgba(153,161,175,0.8)' : 'rgba(207,154,69,0.85)';
+             ctx.font = '9px ui-monospace, Menlo, monospace';
+             ctx.fillStyle = colour;
+@@ -1182,6 +1236,13 @@
      canvas.style.cursor = 'crosshair';
  
      global.addEventListener('resize', () => { resize(); });
@@ -1462,6 +1520,74 @@ index 2e664e5..7720789 100644
 +  // walk that found the defect, without any caller having to own a state store first.
 +  biasHysteresis,
  };
+diff --git a/src/bots/now.js b/src/bots/now.js
+index 66e0bbb..38a2fad 100644
+--- a/src/bots/now.js
++++ b/src/bots/now.js
+@@ -21,6 +21,7 @@
+  * Inputs are the objects the API already builds; this file adds no new data feeds.
+  */
+ 
++const SMC = require('./smc');   // M39: one clock, one list of windows
+ const MS = { m: 60000, h: 3600000, d: 86400000, w: 604800000 };
+ const TF_MS = { '1m': MS.m, '5m': 5 * MS.m, '15m': 15 * MS.m, '30m': 30 * MS.m, '1h': MS.h, '4h': 4 * MS.h, '1d': MS.d, '1w': MS.w };
+ 
+@@ -40,25 +41,30 @@ function nextBarClose(ms, tf) {
+  * Killzones, same clock the SMC module uses (UTC). Used for the checkpoint and
+  * for the "you are outside the window" note — never as a reason to trade.
+  */
+-const KZ = [
+-  { key: 'asia', label: 'Asia', from: 0, to: 6 },
+-  { key: 'london', label: 'London', from: 6, to: 9 },
+-  { key: 'ny_am', label: 'New York AM', from: 12, to: 15 },
+-  { key: 'ny_pm', label: 'New York PM', from: 15, to: 18 },
+-];
++/* M39: this table used to be a second copy of the killzone hours, hardcoded in UTC and
++ * commented "same clock the SMC module uses (UTC)". That stopped being true when M5 moved
++ * SILVER_BULLETS to New York time: this copy named a "New York PM" window at 15:00-18:00 UTC
++ * that the engine no longer has, put Asia at 00:00-06:00 UTC instead of 20:00-24:00 ET, and
++ * had no London close at all — so the Now view and the engine disagreed by an hour for half
++ * the year and by a whole window always. Both functions now ask the engine, so there is one
++ * clock and one list of windows. */
++const slug = (name) => String(name || '').toLowerCase().replace(/ killzone$/, '').replace(/[^a-z0-9]+/g, '_');
++const shortLabel = (name) => String(name || '').replace(/ killzone$/, '');
+ function killzoneAt(ms) {
+-  const d = new Date(ms);
+-  const h = d.getUTCHours() + d.getUTCMinutes() / 60;
+-  return KZ.find((k) => h >= k.from && h < k.to) || null;
++  const st = SMC.sessionState(new Date(ms));
++  const b = (st.bullets || []).find((x) => x.active);
++  if (!b) return null;
++  return { key: slug(b.name), label: shortLabel(b.name), name: b.name, quality: b.quality, window: b.window, note: b.note || null };
+ }
+ function nextKillzone(ms) {
+-  const d = new Date(ms);
+-  const day = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+-  for (const k of KZ) {
+-    const at = day + k.from * HOUR;
+-    if (at > ms) return { ...k, at };
+-  }
+-  return { ...KZ[0], at: day + MS.d };
++  const st = SMC.sessionState(new Date(ms));
++  const open = (st.bullets || []).filter((x) => x.minutes_to_start > 0)
++    .sort((x, y) => x.minutes_to_start - y.minutes_to_start);
++  const b = open[0] || (st.bullets || [])[0];
++  if (!b) return null;
++  const mins = b.minutes_to_start > 0 ? b.minutes_to_start : 1440;
++  return { key: slug(b.name), label: shortLabel(b.name), name: b.name, quality: b.quality,
++    window: b.window, note: b.note || null, at: ms + mins * 60000 };
+ }
+ 
+ const num = (v) => (v === null || v === undefined || isNaN(Number(v)) ? null : Number(v));
+@@ -319,7 +325,7 @@ function build(p = {}) {
+     steps_done: doneSteps,
+     steps_total: (td.steps || []).length,
+     pending_step: pendingStep ? { n: pendingStep.n, title: pendingStep.title, text: pendingStep.text } : null,
+-    killzone: kzNow ? kzNow.label : null,
++    killzone: kzNow ? (kzNow.name || kzNow.label) : null,
+     range: bias.range ? { low: num(bias.range.low), high: num(bias.range.high), mid: num(bias.range.mid) } : null,
+     since,
+   };
 diff --git a/src/bots/predict.js b/src/bots/predict.js
 index bacfca7..38ec2fa 100644
 --- a/src/bots/predict.js
@@ -2334,7 +2460,7 @@ index 138beb4..cd4f207 100644
 +module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK,
 +  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX };
 diff --git a/src/bots/smc.js b/src/bots/smc.js
-index 2ccb576..b7d7393 100644
+index 2ccb576..ee26f7c 100644
 --- a/src/bots/smc.js
 +++ b/src/bots/smc.js
 @@ -35,6 +35,13 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -2716,7 +2842,7 @@ index 2ccb576..b7d7393 100644
      ote: ote || oteShort ? (ote ? 'long' : 'short') : null,
      ote_band: [r4(rangeLow + span * 0.62), r4(rangeLow + span * 0.79)],
      levels: {
-@@ -614,13 +816,49 @@ const SESSIONS = [
+@@ -614,13 +816,61 @@ const SESSIONS = [
    { key: 'ny_am', name: 'New York AM', start: 12, end: 16, quality: 1.0 },
    { key: 'ny_pm', name: 'New York PM', start: 16, end: 21, quality: 0.6 },
  ];
@@ -2739,14 +2865,26 @@ index 2ccb576..b7d7393 100644
 + * not where "the big explosive move on the USD pairs" happens, so it must not score like London.
 + * `pairs` is M40's mapping — the currencies that actually move in each window. A window with no
 + * `pairs` entry counts for every instrument, which is how the pre-existing three behave. */
++/* M39: the fourth window is the LONDON CLOSE, not a "NY PM". He gives its hours as
++ * 10:00-12:00 Eastern and its character explicitly: *"There's a little bit lower trading
++ * volume… price tends to retrace back to the daily range… if you want to catch small
++ * retracement base opportunities, this London close session would be pretty decent."*
++ * The entry that sat on those hours was named NY PM and carried quality 0.7 with the
++ * generic "highest-probability window" note — the opposite of what he says it is for.
++ * Each window now carries its own `note`, because one shared sentence cannot describe
++ * both an expansion window and a retrace window. */
  const SILVER_BULLETS = [
 -  { name: 'London killzone', startH: 6, startM: 0, endH: 9, endM: 0, quality: 1.0 },
 -  { name: 'NY AM killzone', startH: 12, startM: 0, endH: 15, endM: 0, quality: 1.0 },
 -  { name: 'NY PM killzone', startH: 15, startM: 0, endH: 18, endM: 0, quality: 0.7 },
-+  { name: 'Asia killzone', startH: 20, startM: 0, endH: 24, endM: 0, quality: 0.5, restricted: true, pairs: ['AUD', 'NZD', 'JPY'] },
-+  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0, pairs: ['EUR', 'GBP'] },
-+  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0, pairs: ['USD'] },
-+  { name: 'NY PM killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.7, pairs: ['USD'] },
++  { name: 'Asia killzone', startH: 20, startM: 0, endH: 24, endM: 0, quality: 0.5, restricted: true, pairs: ['AUD', 'NZD', 'JPY'],
++    note: 'Asia — the Australian dollar, New Zealand dollar and Japanese yen pairs. Lower volume; not where the explosive moves on the USD pairs happen.' },
++  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0, pairs: ['EUR', 'GBP'],
++    note: 'London killzone — highest-probability window for the entry models.' },
++  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0, pairs: ['USD'],
++    note: 'New York AM killzone — highest-probability window for the entry models.' },
++  { name: 'London close killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.5, pairs: ['USD'],
++    note: 'London close — lower volume; price tends to retrace back into the daily range. Small retracement bases, not fresh expansion.' },
  ];
  
 +/** Minutes since midnight in New York, DST handled by the IANA database. */
@@ -2770,7 +2908,7 @@ index 2ccb576..b7d7393 100644
  function sessionState(date = new Date()) {
    const h = date.getUTCHours(), m = date.getUTCMinutes();
    const mins = h * 60 + m;
-@@ -629,14 +867,26 @@ function sessionState(date = new Date()) {
+@@ -629,47 +879,177 @@ function sessionState(date = new Date()) {
    const active = sessions.filter((s) => s.active);
    const open = sessions[0];
    const nextIdx = (sessions.findIndex((s) => s.active) + 1) % sessions.length;
@@ -2783,7 +2921,7 @@ index 2ccb576..b7d7393 100644
 +    const open_ = inWindowNY(s, e);
 +    const until = (e - nyMins + 1440) % 1440;
 +    const et = `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} ET`;
-+    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted };
++    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted, note: b.note || null };
    });
    const activeBullet = bullets.find((b) => b.active) || null;
    return {
@@ -2799,7 +2937,19 @@ index 2ccb576..b7d7393 100644
      active: active.length ? active.map((s) => s.name).join(' + ') : 'Between sessions',
      sessions, bullets,
      in_killzone: !!activeBullet,
-@@ -649,27 +899,134 @@ function sessionState(date = new Date()) {
+     killzone: activeBullet ? activeBullet.name : null,
+-    quality: active ? Math.max(...active.map((s) => s.quality)) : 0.3,
++    /* M39: when a killzone is open, ITS quality is the statement about the window — the
++     * SESSION table is a coarser overlay and had London close reporting quality 1.0 (its
++     * 12:00-16:00 UTC New York AM session covers those hours), which is exactly what the
++     * row complains of: "its hours are reported as the highest-quality window". Outside
++     * every killzone the session table still governs, as before. */
++    quality: activeBullet ? activeBullet.quality : (active.length ? Math.max(...active.map((s) => s.quality)) : 0.3),
+     best_time: !activeBullet ? `Next high-quality window: ${bullets.filter((b) => b.minutes_to_start > 0).sort((a, b) => a.minutes_to_start - b.minutes_to_start)[0].name}` : null,
+-    note: activeBullet ? `${activeBullet.name} — highest-probability window for the entry models.` : 'Outside the killzones: entries here have materially lower odds. Wait for London (07:00) or the NY overlap (12:00 UTC).',
++    note: activeBullet ? (activeBullet.note || `${activeBullet.name} — highest-probability window for the entry models.`) : 'Outside the killzones: entries here have materially lower odds. Wait for London (07:00) or the NY overlap (12:00 UTC).',
+     open_session: open.name,
+     next_session: { name: sessions[nextIdx].name, starts: sessions[nextIdx].window },
    };
  }
  
@@ -2861,7 +3011,13 @@ index 2ccb576..b7d7393 100644
 +   * (0.3 when none is active) and momentum scores `quality * 6` — leaving the bullet's own
 +   * quality in place would keep paying session credit to a pair this window does not want. */
 +  const actSes = (ses.sessions || []).filter((x) => x.active);
-+  const outsideQ = actSes.length ? Math.max.apply(null, actSes.map((x) => x.quality || 0)) : 0.3;
++  const sessQ = actSes.length ? Math.max.apply(null, actSes.map((x) => x.quality || 0)) : 0.3;
++  /* Capped at the bullet's own quality (M39 made the in-window quality bullet-driven, and the
++   * SESSION table is coarser and UTC-based: at 14:30 UTC it says "New York AM, quality 1.0"
++   * over the London close hours). Without this cap a pair told "this window is not yours"
++   * would score HIGHER than a pair inside it — 6 points against 3 — which inverts the whole
++   * point. Affinity may only ever reduce session credit, never increase it. */
++  const outsideQ = bullet.quality == null ? sessQ : Math.min(sessQ, bullet.quality);
 +  return Object.assign({}, ses, {
 +    in_killzone: false, killzone: null, quality: outsideQ, affinity_outside: bullet.name,
 +    best_time: nxt ? `Next window for this pair: ${nxt.name}` : ses.best_time,
@@ -2940,7 +3096,7 @@ index 2ccb576..b7d7393 100644
    const sweeps = findSweeps(candles, liq.pools, atr);
    const pd = premiumDiscount(candles, majorSwings.length ? majorSwings : minorSwings);
    const crtRes = htfCandles ? crt(htfCandles, candles, atr) : null;
-@@ -679,12 +1036,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -679,12 +1059,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
      const pool = liq.pools.find((p) => p.kind === s.pool && Math.abs(p.price - s.level) < 1e-9);
      if (pool) { pool.swept = true; pool.swept_t = s.t; }
    }
@@ -2970,7 +3126,7 @@ index 2ccb576..b7d7393 100644
    }
    // inducement: a minor pool sitting between price and a major pool, on the way to it
    const big = liq.pools.filter((p) => p.strength >= 0.8 && !p.swept);
-@@ -705,7 +1073,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -705,7 +1096,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
    out.ok = true;
    out.price = r4(price);
    out.atr = r4(atr);
@@ -2982,7 +3138,7 @@ index 2ccb576..b7d7393 100644
    out.structure = structure;
    out.htf_structure = htfStructure ? { trend: htfStructure.trend, last_break: htfStructure.last_break, recent_labels: htfStructure.recent_labels } : null;
    out.displacement = displacement.slice(-8).reverse();
-@@ -716,10 +1087,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -716,10 +1110,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
    out.sweeps = sweeps;
    out.premium_discount = pd;
    out.crt = crtRes;
@@ -2995,7 +3151,7 @@ index 2ccb576..b7d7393 100644
      order_blocks: orderBlocks.filter((z) => !z.breached).length, fvgs: fvgs.filter((g) => !g.filled).length,
      sweeps: sweeps.length, pools: liq.pools.length,
    };
-@@ -727,7 +1098,7 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -727,7 +1121,7 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
  }
  
  module.exports = {

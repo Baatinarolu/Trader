@@ -2413,3 +2413,50 @@ m21 10/0 · groupa 18/18 · groupb 10/10 · m36 17/17 · m57 6/0 · m69 16/0 · 
 m37 20/0 · now-test 36/0 · api-test 121/0 · bots-test 204/2 (two known sample-size gates) ·
 chart-test 36/0. HANDOFF-PROMPT §9's expected-green list and its stale backtest figure
 (n=122 / -0.0011R / PF 1.00) were updated to these measured values.
+
+=== M39 — London close killzone (APPLIED) + two stale copies of the hours unified ===
+Window: NY PM killzone -> London close killzone, 10:00-12:00 ET, pairs ['USD'], NOT restricted,
+quality 0.7 -> 0.5, and every bullet now carries its own note (London close describes a retrace
+into the daily range; London/NY AM keep "highest-probability window").
+The row's headline number needed a second change: sessionState's top-level `quality` came from
+Math.max(...active SESSIONS), and SESSIONS' ny_am band (12:00-16:00 UTC, quality 1.0) covers his
+London close hours — so 14:30 UTC reported quality 1 whatever the bullet said. Quality is now
+bullet-driven when a killzone is open, session-driven outside them (unchanged).
+  14:30Z (10:30 EDT) -> London close killzone, quality 0.5, retrace note   (was: NY PM, quality 1)
+  15:30Z (10:30 EST) -> London close killzone, quality 0.5, retrace note
+  handover 13:59Z NY AM -> 14:00Z London close -> 16:00Z none (EDT); 15:00Z/17:00Z in EST
+Inversion created and capped: M40's affinity copy mirrors SESSIONS (1.0 at London close), so an
+EXCLUDED pair would have scored 6 points against 3 for a pair inside it. sessionAffinity now caps
+outside quality at the active bullet's -> affinity can only reduce. Sweep of 4 windows x 7 symbols
+asserts no symbol ever out-scores the window it is excluded from.
+Stale copies fixed with it: src/bots/now.js:43 kept its own UTC KZ table commented "same clock the
+SMC module uses (UTC)" (false since M5 — it named a New York PM window at 15:00-18:00Z the engine
+no longer has, put Asia at 00:00-06:00Z instead of 20:00-24:00 ET, and had no London close);
+killzoneAt/nextKillzone now call SMC.sessionState. public/js/chart.js:24 shaded the same pristine
+UTC bands; now the engine's ET windows with each bar converted via the browser's America/New_York
+clock, memoised by hour bucket.
+Unrecorded M5 discrepancy this exposed: patch 0002 converted London (06-09Z -> 02-05 ET) and NY AM
+(12-15Z -> 07-10 ET) correctly but turned NY PM 15:00-18:00 UTC into 10:00-12:00 ET, which is not a
+conversion of those hours (15-18Z is 11:00-14:00 EDT) — it landed on his London close hours under
+the wrong name. M39's replacement resolves it.
+Side effect: M40 became operative in momentum. Its negative result (in-window and out-of-window
+pairs tie because the factor scored SESSIONS quality) no longer holds where a bullet is open —
+London now gives EURUSD 1.0 -> 6 points vs AUDJPY 0.85 -> 5.1. Asia still ties (0.5 vs Tokyo 0.5).
+Probe analysis/probe-m39-london-close.js: 34 passed / 0 failed; pristine via TJ_APP= 2 / 24.
+probe-m38-m40-affinity.js now 51/0 (London tie assertions replaced by gap assertions);
+probe-m37 20/0 re-pointed at the new name.
+Suites: api 121/0 · bots 206/0 · chart 36/0 · now 36/0.
+  bots-test's two sample-size gates went 16 -> 21 trades (threshold >20) and now pass. Attribution
+  NOT claimed: the offline synthetic series is seeded by symbol|interval but its last bar is
+  Math.floor(Date.now()/step)*step (candles.js:278), so the sample's session mix moves with the
+  wall clock — this run sat inside London close, the 204/2 run was in the dead zone. Two
+  consecutive runs both gave 21.
+Harness (--seeds 60 --bars 1500 --window 300) UNCHANGED by M39: no-symbol n=27 win 25.9%
++0.5918R PF 1.93 · EURUSD identical · AUDJPY n=9 -0.3702R PF 0.44. Reason, specific: the harness
+path is SMC.analyse + Setup.buildSetups, and setup.js uses the quality-derived `strike` at exactly
+one place — :994 `killzone_quality: strike` — reported, never gating. Quality moves momentum's
+factor, predict.js features and the topdown passthrough, not harness trade selection.
+New row M126 (todo, not fixed): SESSIONS is still hardcoded UTC in the same module whose bullets
+are ET. Left alone deliberately — converting it needs ET hours for five sessions he never states,
+and M39 confines its influence to hours outside the four windows. Ledger 55 done / 2 partial /
+68 todo / 1 no-action / 126 total.

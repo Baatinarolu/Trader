@@ -21,11 +21,17 @@
   'use strict';
 
   /* ------------------------------------------------------------- constants */
+  /* M39: these were the pristine UTC hours, so the chart shaded a "NY PM KZ" band at
+   * 15:00-18:00 UTC that the engine stopped having when M5 moved the windows to New York
+   * time, put Asia at 00:00-06:00 UTC instead of 20:00-24:00 ET, and had no London close
+   * band at all. The bands are now the engine's windows, in Eastern time, and each bar is
+   * converted with the browser's own IANA database — so the shading follows DST instead of
+   * being an hour off for half the year. `from`/`to` are ET hours; 24 means midnight, no wrap. */
   const KILLZONES = [
-    { key: 'asia', label: 'Asia', from: 0, to: 6 },
-    { key: 'london', label: 'London KZ', from: 6, to: 9 },
-    { key: 'ny_am', label: 'NY AM KZ', from: 12, to: 15 },
-    { key: 'ny_pm', label: 'NY PM KZ', from: 15, to: 18 },
+    { key: 'asia', label: 'Asia', from: 20, to: 24 },
+    { key: 'london', label: 'London KZ', from: 2, to: 5 },
+    { key: 'ny_am', label: 'NY AM KZ', from: 7, to: 10 },
+    { key: 'london_close', label: 'London close', from: 10, to: 12 },
   ];
   const ZOOM_STEPS = [80, 120, 170, 240, 340, 500];
 
@@ -78,8 +84,25 @@
     return day;
   }
 
+  /* Memoised by hour bucket: a pan or zoom re-runs this for every visible bar, and an
+   * Intl call per bar per frame is the kind of thing that makes a chart feel sticky. */
+  const nyHourCache = new Map();
+  function nyHour(t) {
+    const bucket = Math.floor(Number(t) / 3600000);
+    let h = nyHourCache.get(bucket);
+    if (h === undefined) {
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'America/New_York', hour: '2-digit', hourCycle: 'h23',
+      }).formatToParts(new Date(Number(t)));
+      h = Number((parts.find((x) => x.type === 'hour') || {}).value || 0);
+      if (nyHourCache.size > 8192) nyHourCache.clear();
+      nyHourCache.set(bucket, h);
+    }
+    return h;
+  }
+
   function killzoneAt(t) {
-    const h = new Date(Number(t)).getUTCHours();
+    const h = nyHour(t);
     return KILLZONES.find((z) => h >= z.from && h < z.to) || null;
   }
 
@@ -796,7 +819,7 @@
             // The caption has to fit the band, otherwise a 3-hour killzone on an
             // hourly chart prints "London" over "Asia". Try the full name, then
             // the short one, then a coloured notch in the top margin.
-            const short = { asia: 'ASIA', london: 'LDN', ny_am: 'NY', ny_pm: 'PM' }[runKz.key] || '';
+            const short = { asia: 'ASIA', london: 'LDN', ny_am: 'NY', london_close: 'LC' }[runKz.key] || '';
             const colour = runKz.key === 'london' ? 'rgba(63,127,224,0.85)' : runKz.key === 'asia' ? 'rgba(153,161,175,0.8)' : 'rgba(207,154,69,0.85)';
             ctx.font = '9px ui-monospace, Menlo, monospace';
             ctx.fillStyle = colour;

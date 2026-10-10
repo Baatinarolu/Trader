@@ -3,7 +3,7 @@
  * Run from the REPO ROOT:  node analysis/probe-m37-killzone-offsets.js
  *
  * Pristine `SILVER_BULLETS` was fixed UTC hours: London 06:00-09:00, NY AM 12:00-15:00,
- * NY PM 15:00-18:00. Checked numerically, London reproduced his 02:00-05:00 ET only at
+ * NY PM 15:00-18:00 (renamed London close by M39). Checked numerically, London reproduced his 02:00-05:00 ET only at
  * UTC-4 while NY AM reproduced 07:00-10:00 ET only at UTC-5 — they could not both be
  * right, and the loser was NY AM: at 11:00 UTC, the first hour of his New York killzone
  * in summer, `in_killzone` returned false.
@@ -49,7 +49,7 @@ console.log('\n=== 1. The constants are Eastern wall-clock, not UTC hours ===');
   for (const b of SMC.SILVER_BULLETS) byName[b.name] = b;
   const want = {
     'London killzone': [2, 5], 'NY AM killzone': [7, 10],
-    'NY PM killzone': [10, 12], 'Asia killzone': [20, 24],
+    'London close killzone': [10, 12], 'Asia killzone': [20, 24],
   };
   for (const name of Object.keys(want)) {
     const b = byName[name];
@@ -70,8 +70,8 @@ console.log('\n=== 2. The row\'s headline measurement: 11:00 UTC in summer IS hi
   ok('and closed one minute earlier at 10:59 UTC',
     activeName(EDT + 'T10:59:00Z') === null && at(EDT + 'T10:59:00Z').in_killzone === false,
     'active=' + activeName(EDT + 'T10:59:00Z'));
-  ok('NY AM closes at 14:00 UTC on an EDT date (NY PM takes over)',
-    activeName(EDT + 'T13:59:00Z') === 'NY AM killzone' && activeName(EDT + 'T14:00:00Z') === 'NY PM killzone',
+  ok('NY AM closes at 14:00 UTC on an EDT date (London close takes over)',
+    activeName(EDT + 'T13:59:00Z') === 'NY AM killzone' && activeName(EDT + 'T14:00:00Z') === 'London close killzone',
     activeName(EDT + 'T13:59:00Z') + ' -> ' + activeName(EDT + 'T14:00:00Z'));
 }
 
@@ -123,7 +123,7 @@ console.log('\n=== 5. Guard against re-hardcoding a fixed UTC pair ===');
   ok('the window is correct in summer AND winter simultaneously (a fixed UTC pair cannot be)',
     summerOpen && winterOpen, 'summer=' + summerOpen + ' winter=' + winterOpen);
   const winterClosed = activeName(EST + 'T11:00:00Z') === null;
-  const summerClosed = activeName(EDT + 'T15:00:00Z') === null || activeName(EDT + 'T15:00:00Z') === 'NY PM killzone';
+  const summerClosed = activeName(EDT + 'T15:00:00Z') === null || activeName(EDT + 'T15:00:00Z') === 'London close killzone';
   ok('and it is NOT open an hour early in winter / an hour late in summer',
     winterClosed && summerClosed, 'winter 11:00Z=' + activeName(EST + 'T11:00:00Z') + ' summer 15:00Z=' + activeName(EDT + 'T15:00:00Z'));
 }

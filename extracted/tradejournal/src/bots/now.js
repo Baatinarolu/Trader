@@ -21,6 +21,7 @@
  * Inputs are the objects the API already builds; this file adds no new data feeds.
  */
 
+const SMC = require('./smc');   // M39: one clock, one list of windows
 const MS = { m: 60000, h: 3600000, d: 86400000, w: 604800000 };
 const TF_MS = { '1m': MS.m, '5m': 5 * MS.m, '15m': 15 * MS.m, '30m': 30 * MS.m, '1h': MS.h, '4h': 4 * MS.h, '1d': MS.d, '1w': MS.w };
 
@@ -40,25 +41,30 @@ function nextBarClose(ms, tf) {
  * Killzones, same clock the SMC module uses (UTC). Used for the checkpoint and
  * for the "you are outside the window" note — never as a reason to trade.
  */
-const KZ = [
-  { key: 'asia', label: 'Asia', from: 0, to: 6 },
-  { key: 'london', label: 'London', from: 6, to: 9 },
-  { key: 'ny_am', label: 'New York AM', from: 12, to: 15 },
-  { key: 'ny_pm', label: 'New York PM', from: 15, to: 18 },
-];
+/* M39: this table used to be a second copy of the killzone hours, hardcoded in UTC and
+ * commented "same clock the SMC module uses (UTC)". That stopped being true when M5 moved
+ * SILVER_BULLETS to New York time: this copy named a "New York PM" window at 15:00-18:00 UTC
+ * that the engine no longer has, put Asia at 00:00-06:00 UTC instead of 20:00-24:00 ET, and
+ * had no London close at all — so the Now view and the engine disagreed by an hour for half
+ * the year and by a whole window always. Both functions now ask the engine, so there is one
+ * clock and one list of windows. */
+const slug = (name) => String(name || '').toLowerCase().replace(/ killzone$/, '').replace(/[^a-z0-9]+/g, '_');
+const shortLabel = (name) => String(name || '').replace(/ killzone$/, '');
 function killzoneAt(ms) {
-  const d = new Date(ms);
-  const h = d.getUTCHours() + d.getUTCMinutes() / 60;
-  return KZ.find((k) => h >= k.from && h < k.to) || null;
+  const st = SMC.sessionState(new Date(ms));
+  const b = (st.bullets || []).find((x) => x.active);
+  if (!b) return null;
+  return { key: slug(b.name), label: shortLabel(b.name), name: b.name, quality: b.quality, window: b.window, note: b.note || null };
 }
 function nextKillzone(ms) {
-  const d = new Date(ms);
-  const day = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-  for (const k of KZ) {
-    const at = day + k.from * HOUR;
-    if (at > ms) return { ...k, at };
-  }
-  return { ...KZ[0], at: day + MS.d };
+  const st = SMC.sessionState(new Date(ms));
+  const open = (st.bullets || []).filter((x) => x.minutes_to_start > 0)
+    .sort((x, y) => x.minutes_to_start - y.minutes_to_start);
+  const b = open[0] || (st.bullets || [])[0];
+  if (!b) return null;
+  const mins = b.minutes_to_start > 0 ? b.minutes_to_start : 1440;
+  return { key: slug(b.name), label: shortLabel(b.name), name: b.name, quality: b.quality,
+    window: b.window, note: b.note || null, at: ms + mins * 60000 };
 }
 
 const num = (v) => (v === null || v === undefined || isNaN(Number(v)) ? null : Number(v));
@@ -319,7 +325,7 @@ function build(p = {}) {
     steps_done: doneSteps,
     steps_total: (td.steps || []).length,
     pending_step: pendingStep ? { n: pendingStep.n, title: pendingStep.title, text: pendingStep.text } : null,
-    killzone: kzNow ? kzNow.label : null,
+    killzone: kzNow ? (kzNow.name || kzNow.label) : null,
     range: bias.range ? { low: num(bias.range.low), high: num(bias.range.high), mid: num(bias.range.mid) } : null,
     since,
   };
