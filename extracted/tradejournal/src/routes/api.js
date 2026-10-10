@@ -41,7 +41,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
 async function requireAuth(req, res, next) {
   try {
     const user = await userFromToken(readToken(req));
-    if (!user) return res.status(401).json({ error: 'Not signed in' });
+    if (!user) {
+      /* "Not signed in" is the wrong diagnosis on a serverless host with no remote DB.
+       * db.js falls back to file:/tmp/journal.db when VERCEL is set and no
+       * TURSO_DATABASE_URL / LIBSQL_URL / TRADEJOURNAL_DB is provided, and /tmp is wiped
+       * between invocations — so the session row written at sign-in is simply GONE by the
+       * next request. The user sees an auth failure and reaches for their password when
+       * the actual fault is the missing environment variable. /api/health already reports
+       * this, but the error the user actually reads did not. */
+      const ephemeral = !!process.env.VERCEL && !require('../db').REMOTE;
+      return res.status(401).json({
+        error: 'Not signed in',
+        ...(ephemeral ? {
+          cause: 'ephemeral_database',
+          detail: 'This deployment has no persistent database: it is using /tmp, which the '
+            + 'platform wipes between invocations, so the session created at sign-in does not '
+            + 'survive to the next request. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN, then '
+            + 'redeploy. GET /api/health reports database.persistent:false while this is so.',
+        } : {}),
+      });
+    }
     req.user = user;
     next();
   } catch (e) { next(e); }

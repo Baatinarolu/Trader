@@ -264,13 +264,21 @@
     };
     mkBtn('−', 'Zoom out', () => setBars(state.bars * 1.4));
     mkBtn('+', 'Zoom in', () => setBars(state.bars / 1.4));
-    mkBtn('Reset', 'Reset zoom and pan', () => { state.offset = 0; setBars(170); });
+    mkBtn('Reset', 'Reset zoom and pan', () => { state.offset = 0; setBars(Math.min(170, widthCap())); });
     mkBtn('Expand', 'Taller chart', (e) => {
       state.expanded = !state.expanded;
       e.target.textContent = state.expanded ? 'Collapse' : 'Expand';
       wrap.classList.toggle('chart-expanded', state.expanded);
       resize();
     });
+    /* The wheel was deliberately made Ctrl/⌘-only so a bare wheel keeps scrolling the
+     * page, and panning is drag-only — both reasonable, but neither was written down
+     * anywhere the user could see, so the controls read as broken ("I can't zoom, I
+     * can't scroll"). The behaviour stays; it is now stated next to the buttons. */
+    const hint = document.createElement('span');
+    hint.className = 'chart-hint';
+    hint.textContent = 'Ctrl/\u2318 + scroll = zoom \u00b7 drag = pan \u00b7 double-click = reset';
+    zoomRow.appendChild(hint);
     bar.appendChild(zoomRow);
 
     /* ---- studies + drawing tools: the second row of the toolbar ---------- */
@@ -607,8 +615,23 @@
       dashOff();
     }
 
+    /* ── THE VISIBLE COUNT IS NOW DERIVED FROM THE REAL PIXEL WIDTH ────────────────
+     * `bars` defaulted to 170 no matter how wide the panel was, so in a narrow column
+     * each candle was about 2 px wide and the chart was unreadable — reported as "the
+     * candles are too small". A fixed count can only ever be right at one width. Capping
+     * the count by width guarantees a candle is never thinner than MIN_CANDLE_PX, which
+     * makes the default legible in any container instead of only in a wide one, and it
+     * keeps working when the panel is resized or the chart is expanded. */
+    const MIN_CANDLE_PX = 5;
+    function widthCap() {
+      const W = plot.clientWidth || wrap.clientWidth || 900;
+      return Math.max(20, Math.floor(W / MIN_CANDLE_PX));
+    }
+
     function setBars(n) {
-      state.bars = Math.round(Math.min(Math.max(n, 40), Math.min(500, Math.max(40, all.length))));
+      const cap = widthCap();
+      const hi = Math.min(500, Math.max(40, all.length), cap);
+      state.bars = Math.round(Math.min(Math.max(n, Math.min(40, hi)), hi));
       draw();
     }
 
@@ -621,6 +644,11 @@
       canvas.style.width = '100%';
       canvas.style.height = H + 'px';
       state.W = W; state.H = H; state.dpr = dpr;
+      /* Re-apply the width cap on every layout: the panel can be narrower than the
+       * caller assumed, and Expand/Collapse changes the drawing area. Without this the
+       * initial 170 would survive into a container too small to show it readably. */
+      const cap = widthCap();
+      if (state.bars > cap) state.bars = cap;
       draw();
     }
 

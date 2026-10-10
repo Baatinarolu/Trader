@@ -431,7 +431,11 @@ fieldset,legend{border-color:var(--border)}
   font:inherit;font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:2px;cursor:pointer}
 .chart-tog:hover,.chart-btn:hover{color:var(--text);border-color:var(--border-strong)}
 .chart-tog.on{color:var(--text);border-color:var(--accent);background:rgba(63,127,224,.12)}
-.chart-zoom{display:flex;gap:2px}
+.chart-zoom{display:flex;gap:2px;align-items:center;flex:0 0 auto;margin-left:6px}
+/* the hint that makes Ctrl/scroll-zoom and drag-pan discoverable */
+.chart-hint{color:var(--steel);font-size:.64rem;letter-spacing:.02em;opacity:.8;white-space:nowrap;
+  margin-left:6px;font-family:var(--mono)}
+@media (max-width:900px){.chart-hint{display:none}}
 .chart-plot{position:relative;width:100%}
 .chart-plot canvas{display:block;width:100%;cursor:crosshair}
 .chart-empty{padding:18px;color:var(--steel);font-family:var(--mono);font-size:.72rem}
