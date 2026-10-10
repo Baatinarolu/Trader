@@ -332,7 +332,7 @@ index 34cc0ff..39a6d52 100644
  .chart-plot canvas{display:block;width:100%;cursor:crosshair}
  .chart-empty{padding:18px;color:var(--steel);font-family:var(--mono);font-size:.72rem}
 diff --git a/public/js/chart.js b/public/js/chart.js
-index 8e16034..998cbe5 100644
+index 8e16034..d58c883 100644
 --- a/public/js/chart.js
 +++ b/public/js/chart.js
 @@ -264,13 +264,21 @@
@@ -398,14 +398,17 @@ index 8e16034..998cbe5 100644
        draw();
      }
  
-@@ -1182,6 +1213,10 @@
+@@ -1182,6 +1213,13 @@
      canvas.style.cursor = 'crosshair';
  
      global.addEventListener('resize', () => { resize(); });
 +    /* The first resize() can run before layout, when clientWidth is still 0 and the cap
 +     * falls back to a guess. Measuring again on the next frame costs one redraw and makes
 +     * the candle width correct on load instead of only after the first window resize. */
-+    requestAnimationFrame(() => { resize(); });
++    /* Guarded: chart-test renders this module in plain Node, which has no
++     * requestAnimationFrame, and an unguarded call took the suite from 36/0 to 2/3. */
++    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => { resize(); });
++    else setTimeout(() => { resize(); }, 0);
  
      // the plot box is often laid out after the first paint; observe it
      if (global.ResizeObserver) {

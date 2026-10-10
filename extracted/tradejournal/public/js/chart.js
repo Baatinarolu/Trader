@@ -1216,7 +1216,10 @@
     /* The first resize() can run before layout, when clientWidth is still 0 and the cap
      * falls back to a guess. Measuring again on the next frame costs one redraw and makes
      * the candle width correct on load instead of only after the first window resize. */
-    requestAnimationFrame(() => { resize(); });
+    /* Guarded: chart-test renders this module in plain Node, which has no
+     * requestAnimationFrame, and an unguarded call took the suite from 36/0 to 2/3. */
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => { resize(); });
+    else setTimeout(() => { resize(); }, 0);
 
     // the plot box is often laid out after the first paint; observe it
     if (global.ResizeObserver) {
