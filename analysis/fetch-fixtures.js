@@ -88,18 +88,34 @@ function get(repo, file) {
 const STAMP_FORMATS = ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%dT%H:%M',
   '%Y-%m-%d %H:%M:%S.%f', '%Y.%m.%d %H:%M:%S', '%Y.%m.%d %H:%M', '%Y.%m.%d', '%Y-%m-%d'];
 
+/* ★ BUG FIXED — this function silently destroyed every ';'-delimited source.
+ *
+ * It stripped fractional seconds with `.split('.')[0]`, which is correct for
+ * `2026-04-10 04:00:00.123` and CATASTROPHIC for the `YYYY.MM.DD HH:MM` format that the
+ * `semi` sources use: `2026.04.10 04:00` became the string `2026`, matched no format, failed
+ * the unix-epoch test below it, and returned NaN. Every row was dropped, so XAUUSD-5m.csv
+ * parsed to 0 rows and the file was reported as a fetch problem rather than a parser problem.
+ *
+ * Stripping a trailing `.\d+$` instead is ALSO wrong: `2026.04.10` — the date-only format —
+ * ends in `.10` and would be truncated to `2026.04`. There is no single string rewrite that
+ * serves both, so both readings are tried: the raw stamp first, then the fraction-stripped one.
+ * Order matters — raw first means the dot-separated formats are matched before anything is
+ * removed, and a genuine `.123` fraction still falls through to the second candidate. */
 function parseStamp(raw) {
-  const s = String(raw).trim().replace('Z', '').split('+')[0].split('.')[0];
-  for (const f of STAMP_FORMATS) {
-    const iso = f.replace('%Y', '(\\d{4})').replace('%m', '(\\d{2})').replace('%d', '(\\d{2})')
-      .replace('%H', '(\\d{2})').replace('%M', '(\\d{2})').replace('%S', '(\\d{2})').replace('%f', '\\d+');
-    const m = s.match(new RegExp('^' + iso + '$'));
-    if (m) {
-      const g = m.slice(1).map(Number);
-      return Date.UTC(g[0], g[1] - 1, g[2], g[3] || 0, g[4] || 0, g[5] || 0);
+  const base = String(raw).trim().replace('Z', '').split('+')[0];
+  const candidates = [base, base.replace(/\.\d+$/, '')];
+  for (const s of candidates) {
+    for (const f of STAMP_FORMATS) {
+      const iso = f.replace('%Y', '(\\d{4})').replace('%m', '(\\d{2})').replace('%d', '(\\d{2})')
+        .replace('%H', '(\\d{2})').replace('%M', '(\\d{2})').replace('%S', '(\\d{2})').replace('%f', '\\d+');
+      const m = s.match(new RegExp('^' + iso + '$'));
+      if (m) {
+        const g = m.slice(1).map(Number);
+        return Date.UTC(g[0], g[1] - 1, g[2], g[3] || 0, g[4] || 0, g[5] || 0);
+      }
     }
   }
-  const n = Number(s);
+  const n = Number(base);
   if (Number.isFinite(n) && n > 1e9) return n < 1e11 ? n * 1000 : n;   // unix s or ms
   return NaN;
 }

@@ -2212,3 +2212,52 @@ REAL DATA, `--real --realtf 15m --window 300` (EURUSD-15m 4032 bars + XAUUSD-15m
   (n=244 / 26.2% / -0.2344R / PF 0.62 vs the shipped `retested`-only n=276 / 27.2% / -0.1847R /
   PF 0.67). The claim was written from M69's prescription text without opening the file it names.
   M48 is closed on mechanism; nothing remains. Corrected in all three cells (M48, M63, M69).
+
+--------------------------------------------------------------------------------
+ FIXTURE PARSER BUG FIXED (7 of 8 recovered) — AND M69's REAL-DATA FIGURE IS
+ CONTRADICTED BY A LARGER REAL SAMPLE ON A DIFFERENT TIMEFRAME. DO NOT QUOTE PF 1.94.
+--------------------------------------------------------------------------------
+1. THE PARSER BUG. `fetch-fixtures.js` stripped fractional seconds with `.split('.')[0]`. That
+   is right for `2026-04-10 04:00:00.123` and catastrophic for the `YYYY.MM.DD HH:MM` format the
+   `semi` sources use: `2026.04.10 04:00` became the string `2026`, matched no format, failed the
+   unix-epoch test, returned NaN — so EVERY row was dropped and XAUUSD-5m.csv parsed to 0 rows.
+   It had been reported as a fetch problem; it was a parser problem. Stripping a trailing
+   `\.\d+$` instead is ALSO wrong, because `2026.04.10` (the date-only format) ends in `.10` and
+   would be truncated to `2026.04`. No single string rewrite serves both, so both readings are
+   now tried: raw first, then fraction-stripped. Verified on all four shapes:
+     2026.04.10 04:00 -> 2026-04-10T04:00Z      2026.04.10 -> 2026-04-10T00:00Z
+     2026-04-10 04:00:00.123 -> ...T04:00Z      2026-04-10T04:00:00 -> ...T04:00Z
+   RESULT: XAUUSD-5m.csv now yields 3081 bars at a median step of 5.0m and is ACCEPTED.
+   **7 of 8 fixtures recovered** (was 6 of 8). EURUSD-1d.csv remains REJECTED — a genuine
+   upstream 404 (the SciChart.Android.Examples asset path moved), not a parser or TLS problem.
+
+2. ★★ M69 MEASURED ACROSS ALL FOUR REAL TIMEFRAMES — THE SIGN FLIPS.
+       --realtf  5m   n= 28  win 10.7%  exp -0.4327R  PF 0.33
+       --realtf 15m   n=  8  win 37.5%  exp +0.4688R  PF 1.94
+       --realtf  1h   n= 13  win 38.5%  exp +0.2041R  PF 1.33
+       --realtf  1d   n=  0  (no trades at all on BTCUSDT-1d, 3200 bars)
+
+   The previous entry reported the 15m arm alone — n 52 -> 8, -0.2751R -> +0.4688R, PF 0.60 ->
+   1.94 — and flagged it as "NOT a measurement" because n=8 is below the course's 30-trade floor.
+   THAT CAVEAT IS NOW EVIDENCED RATHER THAN MERELY PRUDENT. The 5m arm has 3.5x more real trades
+   and returns PF 0.33 with expectancy -0.4327R: the OPPOSITE SIGN from the 15m arm. The 1h arm
+   is positive again at n=13. Three real arms, two signs, none above the floor.
+
+   **CONCLUSION: the real-data harness cannot resolve the sign of M69's effect at all, and the
+   +0.4688R / PF 1.94 figure must not be quoted in isolation.** The only sample large enough to
+   speak is the synthetic one (n=101 at 200 seeds: -0.2611R -> +0.0357R, PF 0.64 -> 1.06), and
+   that says MARGINALLY POSITIVE, within noise of break-even. Pooling the real arms to reach n=49
+   would be invalid — different instruments, non-overlapping spans (EURUSD-5m/15m are Dec-Feb,
+   XAUUSD-15m is Jun-Sep, XAUUSD-5m is Apr, BTCUSDT-1h is 2020), so they are not one sample.
+
+   This is the fourth distinct way a favourable number has had to be withdrawn in this audit:
+   M5's PF 1.00 (seed artifact), the 60-seed M69 run (+0.5918R on n=27, below the floor), the
+   synthetic rr_final distribution (~5x too wide, making M125's premise a data artifact), and now
+   M69's real-data PF 1.94 (n=8, contradicted at n=28). In every case the number was real and the
+   SAMPLE was not. The standing rule is unchanged and this is another instance of it: never quote
+   an expectancy or PF without its n and its floor.
+
+3. n=0 ON THE DAILY ARM is itself a finding: BTCUSDT-1d has 3200 bars spanning 2017-2026 and
+   produces no trades at all. Either the daily series never satisfies the gates, or crypto daily
+   bars do not present the structure the method looks for. Not investigated — recorded so it is
+   not mistaken for a fixture problem, since the same file validates at a 1440m median step.
