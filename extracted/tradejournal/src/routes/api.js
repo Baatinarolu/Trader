@@ -13,7 +13,8 @@ const SessionTime = require('../session-time');
 const J = require('../journaling');
 const RR = require('../routine-records');
 const Routine = require('../routine');
-const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t)});
+const Execution = require('../execution-review');
+const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t)});
 const O = require('../options');
 const Exp = require('../exposure');
 const Prop = require('../prop');
@@ -399,6 +400,19 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
   res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
 });
 
+// Optional post-close HUMAN execution review is separate from financial CRUD
+// and mandatory core/loss writing. It cannot backfill pre-entry setup grades.
+router.post('/trades/:id/execution-review',requireAuth,async(req,res)=>{
+  try {
+    if(!/^[1-9]\d*$/.test(req.params.id))return res.status(404).json({error:'Trade not found'});
+    const row=await Execution.acknowledge(req.user.id,Number(req.params.id),req.body);
+    res.json({ok:true,trade:journalTrade(row,(await settingsOf(req)).timezone)});
+  } catch(e) {
+    if(e.code==='execution_review_invalid')return res.status(e.status).json({error:e.message,code:e.code});
+    res.status(503).json({error:'Execution review could not be recorded.'});
+  }
+});
+
 router.post('/trades/:id/journal', requireAuth,async(req,res)=>{
   try { const row=await J.reviewTrade(req.user.id,Number(req.params.id),req.body||{});res.json({ok:true,trade:journalTrade(row,(await settingsOf(req)).timezone)}); }
   catch(e){if(e.code==='journal_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Journal review could not be recorded.'});}
@@ -631,11 +645,12 @@ router.post('/journal/reflections/:id',requireAuth,async(req,res)=>{
 router.get('/journal/:date', requireAuth, async (req, res) => {
   const row = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, req.params.date);
   const tz = (await settingsOf(req)).timezone;
-  const accountId=req.query.account_id?Number(req.query.account_id):null;
-  if(accountId!==null && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Account not found'});
+  if(req.query.account_id!==undefined && (typeof req.query.account_id!=='string'||!/^([1-9]\d*)$/.test(req.query.account_id)))return res.status(400).json({error:'Select a canonical positive owned account ID.'});
+  const account=await accountOr404(req,res);if(!account)return;
+  const accountId=account.id;
   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
-  res.json({ entry: row || null, trades,pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
 });
 router.post('/journal', requireAuth, async (req, res) => {
   const b = req.body || {};

@@ -1,0 +1,57 @@
+ok execution adherence 1/5 has transparent dominant score20/D
+ok good-loss label only from adherence>=4 AND explicit honoured stop: 1/5
+ok execution adherence 2/5 has transparent dominant score40/C
+ok good-loss label only from adherence>=4 AND explicit honoured stop: 2/5
+ok execution adherence 3/5 has transparent dominant score60/B
+ok good-loss label only from adherence>=4 AND explicit honoured stop: 3/5
+ok execution adherence 4/5 has transparent dominant score75/A
+ok good-loss label only from adherence>=4 AND explicit honoured stop: 4/5
+ok execution adherence 5/5 has transparent dominant score95/A+
+ok good-loss label only from adherence>=4 AND explicit honoured stop: 5/5
+ok realised -20R changes outcome only, never execution score/grade
+ok realised -1.051R changes outcome only, never execution score/grade
+ok realised -1.05R changes outcome only, never execution score/grade
+ok realised -0.0001R changes outcome only, never execution score/grade
+ok realised 0R changes outcome only, never execution score/grade
+ok realised 0.01R changes outcome only, never execution score/grade
+ok realised 0.5R changes outcome only, never execution score/grade
+ok realised 2R changes outcome only, never execution score/grade
+ok realised 20R changes outcome only, never execution score/grade
+ok plannedRR/session/MAE/MFE are not execution reward {"planned_r":0.1}
+ok plannedRR/session/MAE/MFE are not execution reward {"planned_r":null}
+ok plannedRR/session/MAE/MFE are not execution reward {"planned_r":200}
+ok plannedRR/session/MAE/MFE are not execution reward {"session":"sydney"}
+ok plannedRR/session/MAE/MFE are not execution reward {"session":"london"}
+ok plannedRR/session/MAE/MFE are not execution reward {"session":""}
+ok plannedRR/session/MAE/MFE are not execution reward {"mae_r":-20,"mfe_r":300}
+ok plannedRR/session/MAE/MFE are not execution reward {"mae_r":null,"mfe_r":null}
+ok plan-breaking -0.8R can never be A/A+ or textbook repeat
+ok plan-breaking 10R can never be A/A+ or textbook repeat
+ok explicit stop violation dominates even adherence5 and -0.8R
+ok explicit stop violation dominates even adherence5 and 10R
+ok protective stop movement is not inferred to be widening/violation
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"adherence":null}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"adherence":0}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"adherence":6}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"adherence":4.5}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"adherence":[5]}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"adherence":true}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"stop_honoured":null}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"stop_honoured":"true"}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"stop_honoured":[1]}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"stop_honoured":2}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"stop_honoured_source":null}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"stop_honoured_source":"broker_verified"}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"stop_honoured_recorded_at":null}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"stop_honoured_recorded_at":"2026-10-12T00:00:00Z"}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"status":"open"}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"closed_at":null}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"closed_at":"2026-10-12T00:00:00Z"}
+ok missing/corrupt/future/open evidence cannot fabricate numeric grade {"stop":null}
+ok unknown outcome is not an invented breakeven/good loss; known self-review can remain graded
+ok explicit breakeven is not a loss
+ok contradictory outcome signs remain unknown, not inferred loss/win
+ok pure grading never mutates original journal/setup grade or inputs
+ok basis openly self-reported/not broker-verified, no numerical outcome points
+M86 execution rubric: 56 passed, 0 failed

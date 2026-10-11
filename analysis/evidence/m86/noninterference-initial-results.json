@@ -1,0 +1,113 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 6,
+  "fail": 2,
+  "results": [
+    {
+      "label": "-1/market_shift: profitable journal with entryA+ can be executionD",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: real positive technical/prerequisite control remains armed despite journalD",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: actual32-row refresh read-only/no blank or wrong legacy grades overwritten",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: all candidate grade/score/checklist/price/SL/TP/RR/risk/Now order byte-equal",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: chart market plan/Now actual order byte-equal",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: scan action/checklist grade/score unchanged",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: unchanged30-floor satisfied, journal grade not alternative sizing authority",
+      "passed": false,
+      "detail": {
+        "max_risk_pct": 0.5,
+        "max_trades_day": 20,
+        "daily_profit_limit_pct": null,
+        "trade_cap_policy": {
+          "max_trades_day": 20,
+          "selected_at": "2026-10-11T12:15:00.000Z",
+          "daily_profit_limit_pct": null,
+          "profit_selected_at": "2026-10-11T12:15:00.000Z",
+          "rule_date": "2026-10-11",
+          "timezone": "UTC"
+        },
+        "cooldown_min": 30,
+        "max_consecutive_losses": 2,
+        "daily_loss_limit_pct": 3,
+        "size_cap_note": "Your own winning trades risked a median of $100 (90th pct $100). Stay under that and you never blow a good month on one idea.",
+        "basis": "Derived from your last 32 closed trades (1 trading days, 0 losers in the sample).",
+        "evidence": {
+          "risk_p90_of_winners": 100,
+          "median_risk": 100,
+          "trade_cap_suggestion": 6,
+          "trade_cap_basis": "Historical suggestion only, never an automatic cap: your profitable days average 32 trades",
+          "trades_past_cap": {
+            "count": 26,
+            "win_rate": 100
+          }
+        },
+        "guardrails": {
+          "max_risk_pct": 0.5,
+          "max_trades_day": 20,
+          "daily_profit_limit_pct": null,
+          "trade_cap_policy": {
+            "max_trades_day": 20,
+            "selected_at": "2026-10-11T12:15:00.000Z",
+            "daily_profit_limit_pct": null,
+            "profit_selected_at": "2026-10-11T12:15:00.000Z",
+            "rule_date": "2026-10-11",
+            "timezone": "UTC"
+          },
+          "cooldown_min": 30,
+          "max_consecutive_losses": 2,
+          "daily_loss_limit_pct": 3,
+          "size_cap_note": "Your own winning trades risked a median of $100 (90th pct $100). Stay under that and you never blow a good month on one idea.",
+          "basis": "Derived from your last 32 closed trades (1 trading days, 0 losers in the sample).",
+          "evidence": {
+            "risk_p90_of_winners": 100,
+            "median_risk": 100,
+            "trade_cap_suggestion": 6,
+            "trade_cap_basis": "Historical suggestion only, never an automatic cap: your profitable days average 32 trades",
+            "trades_past_cap": {
+              "count": 26,
+              "win_rate": 100
+            }
+          }
+        },
+        "stats": {
+          "trades": 32,
+          "wins": 32,
+          "losses": 0,
+          "win_rate": 100,
+          "net": 3200,
+          "expectancy_r": 1,
+          "total_r": 32,
+          "profit_factor": 99,
+          "avg_win_r": 1,
+          "avg_loss_r": 0,
+          "median_risk": 100
+        },
+        "user": {
+          "trades": 32
+        }
+      }
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "SQLITE_ERROR: no such column: account_id"
+    }
+  ],
+  "scope": "M86 journal/market noninterference: real auth/HTTP/SQL on literal/fixedUTC journals, no legacy/native routine adapter, broker/provider/real-human/pixel/outcome or financial retune proof"
+}

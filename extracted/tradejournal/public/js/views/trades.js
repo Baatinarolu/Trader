@@ -24,6 +24,7 @@
       <label class="row gap-8"><input id="jr-none" type="checkbox" ${trade.mistakes_none===1?'checked':''} /><span>Explicitly followed plan; no mistakes to report (not inferred from a win)</span></label>
       <label class="field"><span>3. What would you do differently / repeat?</span><textarea id="jr-different" maxlength="2000">${U.esc(trade.lesson||'')}</textarea></label>
       <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
+    if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
@@ -158,8 +159,8 @@
           <thead><tr>
             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
-              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Journal'], ['', '']].map(([k, l]) =>
+              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', '']].map(([k, l]) =>
               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
           </tr></thead>
           <tbody>
@@ -180,6 +181,7 @@
             <td class="tiny nowrap">${U.esc(t.session_label || '—')}</td>
             <td class="tiny"><span class="rating ${t.adherence >= 4 ? 'strong' : t.adherence <= 2 ? 'weak' : ''}">${U.rating(t.adherence)}</span></td>
             <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
+            <td class="tiny"><span data-execution-state>${U.esc(Views.execution?Views.execution.state(t.execution_review):'Unreviewed')}</span>${t.status==='closed'?` <button class="btn xs ghost" data-execution="${t.id}">Execution</button>`:''}</td>
             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
           </tr>`).join('')}
@@ -191,10 +193,11 @@
         if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = -1; }
         draw();
       }));
+      U.$$('[data-execution]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.execution)Views.execution.open(Number(b.dataset.execution));else global.App.toast('Execution review UI unavailable; no grade inferred.','err');}));
       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
-        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal]')) return;
+        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution]')) return;
         global.App.openTrade(Number(tr.dataset.id));
       }));
       const chkAll = U.$('#chk-all', body);
@@ -274,7 +277,7 @@
         <label class="field span2"><span>Strategy / setup</span>
           <select id="tf-strategy"><option value="">— untagged —</option>${strategyOptions}</select>
         </label>
-        <label class="field"><span>Setup grade</span>
+        <label class="field"><span>Entry setup grade</span>
           <select id="tf-grade"><option value="">—</option>${list(['A+', 'A', 'B', 'C', 'D'], t.setup_grade)}</select>
         </label>
         <label class="field"><span>Entry model</span>
@@ -514,6 +517,7 @@
     g('entrytf').addEventListener('change',refreshGuard);
     U.$('#tf-guardrail-refresh',node).addEventListener('click',refreshGuard);
     refreshGuard();
+    if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
   };
 

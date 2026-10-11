@@ -228,7 +228,7 @@ M91, M92, M93, M99, M100, M101, M104, M105, M106, M107, M115; M17, M18, M19,
 M62, M109, M110, M111, M117. Exact placement/status of **all132** remains in
 `PROGRESS.md` and `MISMATCHES.md`, eight groups, no duplicates/missing IDs.
 
-Next: **M86 loss-drill workflow**, then M87/M88 screenshots/confluences and M89
+Next at this delivery (label corrected): **M86 execution-based grading, not loss drill**, with separately measured M92. Both are now applied; see [execution report](M86-M92-EXECUTION-REVIEW.md). Next M87/M88 screenshots/confluences and M89
 capture-time provenance; M106 fresh state gate, M108 remaining regulation,
 M111/M112 news/hours remain explicit. User CONTINUE, no new clarifiers. Separate
 measurement/control/error/proof for every mechanism. Not a promised win-rate fix.

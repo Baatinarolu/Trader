@@ -8,6 +8,8 @@
  * normalised `risk_amount`, `net_pnl` and `r_multiple`.
  */
 
+const Execution = require('./execution-review');
+
 const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
@@ -99,6 +101,7 @@ function decorate(t, tz) {
   out.weighted_exit = legsArr.length
     ? r4(legsArr.reduce((acc, l) => acc + num(l.pct) * num(l.price), 0) / legsArr.reduce((acc, l) => acc + num(l.pct), 0))
     : null;
+  out.execution_review = Execution.review(t);
   return out;
 }
 function splitTags(s) {
@@ -208,6 +211,9 @@ function kpis(trades, opts = {}) {
     expectancy: r2(expectancy), expectancy_r: r4(expectancyR),
     total_r: r2(sum(rs)), avg_r: r4(mean(rs)), median_r: r4(median(rs)),
     std_r: r4(sdR), sqn: r2(sqn), kelly: r2(kelly * 100),
+    // Compatibility money fields retained, never process-ranked execution.
+    trade_extremes_basis:'legacy_realised_money_use_execution_summary_for_process',
+    execution_summary:Execution.summary(closed),
     best_trade: closed.length ? r2(Math.max(...pnls)) : 0,
     worst_trade: closed.length ? r2(Math.min(...pnls)) : 0,
     best_r: rs.length ? r4(Math.max(...rs)) : 0,

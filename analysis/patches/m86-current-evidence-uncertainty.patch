@@ -1,0 +1,60 @@
+diff --git a/src/bots/correction.js b/src/bots/correction.js
+index 128547a..d88ea31 100644
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
+@@ -516,12 +516,13 @@ async function dailyState(userId, { accountId = null, store = db, nowMs = Date.n
+ function feedback(trade, { guardrails: g = null, siblings = null } = {}) {
+   const auto = autograde(trade);
+   const notes = [];
+-  const r = trade.r_multiple || 0, mfe = trade.mfe_r, mae = trade.mae_r;
++  const metric=v=>typeof v==='number'&&Number.isFinite(v)?v:null;
++  const r = auto.outcome.r_multiple, mfe = metric(trade.mfe_r), mae = metric(trade.mae_r);
+ 
+   if(auto.state==='unreviewed')notes.push({tone:'info',text:'Execution review is incomplete/stale. No rating is inferred from P&L, legacy stop flags or an entry setup grade.'});
+   if(auto.execution_quality==='plan_violated'||auto.execution_quality==='known_violation_in_incomplete_review')notes.push({tone:'bad',text:'Your current valid self-report identifies a plan/stop violation. A profitable outcome does not make that execution good.'});
+   if(auto.execution_quality==='plan_followed')notes.push({tone:'good',text:'You report following the plan and honouring its stop. This is a retrospective self-review, not verified broker/plan compliance.'});
+-  if(trade.stop_moved)notes.push({tone:'info',text:'The journal records stop movement. Movement may be protective or planned; it is not by itself evidence of widening or a loss cause.'});
++  if(trade.stop_moved===1||trade.stop_moved===true)notes.push({tone:'info',text:'The journal records stop movement. Movement may be protective or planned; it is not by itself evidence of widening or a loss cause.'});
+   if(auto.outcome.state==='known')notes.push({tone:'info',text:`Recorded realised net ${auto.outcome.net_pnl}${auto.outcome.r_multiple===null?'':` (${r2(auto.outcome.r_multiple)}R)`}. Outcome is separate from the execution grade.`});
+   else notes.push({tone:'info',text:'Realised outcome unavailable/contradictory; not treated as zero, a win or a loss.'});
+   if(r < -1.05)notes.push({tone:'info',text:`Recorded ${r2(r)}R exceeds1R in size. Fees/gaps/slippage or plan choices may be involved; this result alone does not establish a stop violation.`});
+diff --git a/src/execution-review.js b/src/execution-review.js
+index deb16cd..18ffa92 100644
+--- a/src/execution-review.js
++++ b/src/execution-review.js
+@@ -53,17 +53,21 @@ function review(trade, {nowMs=Date.now()}={}) {
+   const recorded = stamp(trade.stop_honoured_recorded_at), close = stamp(trade.closed_at);
+   const validClock = number(nowMs) !== null && close !== null && close <= nowMs;
+   const stop = number(trade.stop);
+-  const validStop = validFlag && stop !== null && stop > 0 && ['self_reported','imported_self_report'].includes(trade.stop_honoured_source)
+-    && recorded !== null && recorded <= nowMs && close !== null && recorded >= close
+-    && typeof trade.execution_review_hash==='string' && trade.execution_review_hash===fingerprint(trade);
+   const completed = trade.status === 'closed' && number(trade.exit) !== null && validClock;
++  // A partial CURRENT human acknowledgement can report an explicit violation,
++  // but raw legacy/default/stale/corrupt ratings cannot manufacture that claim.
++  const acknowledged = completed && (validAdherence || trade.adherence===null) && (validFlag || flag===null)
++    && ['self_reported','imported_self_report'].includes(trade.stop_honoured_source)
++    && recorded !== null && recorded <= nowMs && recorded >= close
++    && typeof trade.execution_review_hash==='string' && trade.execution_review_hash===fingerprint(trade);
++  const validStop = acknowledged && validFlag && stop !== null && stop > 0;
+   const honoured = validStop ? flag === 1 || flag === true : null;
+   const facts = completed ? outcome(trade) : {state:'unknown',kind:null,basis:'not_known_closed_outcome',net_pnl:null,r_multiple:null};
+-  reasons.push(validAdherence ? `Rule adherence ${a}/5: the owner's retrospective report.` : 'Rule adherence unavailable/invalid: no rating is inferred from P&L.');
++  reasons.push(validAdherence ? `Recorded rule adherence ${a}/5: ${acknowledged?'current acknowledged self-report':'not acknowledged for the current record; provisional only'}.` : 'Rule adherence unavailable/invalid: no rating is inferred from P&L.');
+   reasons.push(validStop ? `Stop honour explicitly reported ${honoured ? 'yes' : 'no'} (${trade.stop_honoured_source}).`
+     : 'Stop honour unreviewed/invalid: not inferred from movement, realised R, default zero or a legacy row.');
+   const complete = completed && validAdherence && validStop;
+-  const violated = completed && (validAdherence && a < 4 || validStop && !honoured);
++  const violated = acknowledged && (validAdherence && a < 4 || validStop && !honoured);
+   const quality = complete ? violated ? 'plan_violated' : 'plan_followed' : violated ? 'known_violation_in_incomplete_review' : 'unreviewed';
+   let score = null, grade = 'Unreviewed', loss = 'unknown';
+   if (complete) {
+@@ -78,7 +82,7 @@ function review(trade, {nowMs=Date.now()}={}) {
+   } else reasons.push('Execution grade withheld until an actual closed journal and complete valid self-review exist.');
+   reasons.push('Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect.');
+   return {state:complete ? 'reviewed' : 'unreviewed',grade,score,reasons,basis:BASIS,rubric_version:VERSION,
+-    execution_quality:quality,loss_quality:loss,outcome:facts,evidence:{adherence:validAdherence?a:null,stop_honoured:honoured,
++    execution_quality:quality,loss_quality:loss,outcome:facts,evidence:{adherence:acknowledged&&validAdherence?a:null,stop_honoured:honoured,
+       stop_honoured_source:validStop?trade.stop_honoured_source:null,stop_honoured_recorded_at:validStop?trade.stop_honoured_recorded_at:null},
+     retrospective:true,broker_verified:false,entry_setup_grade:trade.setup_grade || null,record_revision:fingerprint(trade)};
+ }

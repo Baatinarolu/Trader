@@ -1176,18 +1176,8 @@
       left.appendChild(card);
     });
 
-    const grades = h('div', { class: 'card' });
-    grades.appendChild(h('div', { class: 'card-head', html: `<strong>Auto-graded setups</strong> <span class="muted">every trade graded from its own data</span>` }));
-    grades.appendChild(h('div', { class: 'table-wrap', html: `<table class="table"><thead><tr><th>Grade</th><th>Trades</th><th>Win rate</th><th>Net</th><th>Expectancy</th></tr></thead><tbody>${(c.grades || []).map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.trades}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.net > 0 ? 'pos' : 'neg'}">${global.U.moneySign(x.net)}</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No graded trades yet.</td></tr>'}</tbody></table>` }));
-    const backfill = h('button', { class: 'btn sm', text: 'Auto-grade the trades that have no grade' });
-    backfill.addEventListener('click', async () => {
-      try {
-        const r = await global.API.post('/bots/correction/backfill', {});
-        global.App.toast(`Graded ${r.updated} trade(s)`, 'ok');
-        B.correction = null; global.App.refresh();
-      } catch (e) { global.App.toast(e.message, 'err'); }
-    });
-    grades.appendChild(h('div', { class: 'card' }, backfill));
+    const grades = Views.execution ? Views.execution.correctionCard(c,{onRefresh:()=>{B.correction=null;global.App.refresh();}})
+      : h('div',{class:'card',text:'Execution review UI unavailable. No execution grade is inferred from entry quality or P&L.'});
     right.appendChild(grades);
 
     const fb = h('div', { class: 'card' });
@@ -1199,9 +1189,7 @@
       try {
         const r = await global.API.get('/bots/feedback/' + Number(idIn.value));
         global.U.clear(fbOut);
-        fbOut.appendChild(h('div', { class: 'bot-plan', html: `<b>${esc(r.symbol)}</b> — grade <b>${esc(r.grade)}</b> (${r.score}/100): ${esc(r.summary)}` }));
-        (r.notes || []).forEach((n) => fbOut.appendChild(h('div', { class: 'bot-' + (n.tone === 'bad' ? 'warn' : n.tone === 'good' ? 'good' : 'detail'), text: (n.tone === 'good' ? 'Kept: ' : n.tone === 'bad' ? 'Fix: ' : '') + n.text })));
-        if (!r.notes || !r.notes.length) fbOut.appendChild(h('div', { class: 'muted', text: 'No behavioural flags on this trade.' }));
+        fbOut.appendChild(Views.execution?Views.execution.feedbackCard(r):h('div',{class:'muted',text:'Execution feedback UI unavailable; no numeric grade fabricated.'}));
       } catch (e) { global.App.toast(e.message, 'err'); }
     });
     fb.appendChild(h('div', { class: 'row gap-8' }, idIn, fbBtn));

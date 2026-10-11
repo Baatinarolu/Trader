@@ -1,0 +1,128 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 30,
+  "fail": 0,
+  "results": [
+    {
+      "label": "legacy/default account does not fabricate a local trading-window hour",
+      "passed": true
+    },
+    {
+      "label": "no selected schedule is explicit setup_required, never falsely completed",
+      "passed": true
+    },
+    {
+      "label": "bad config400/no write {\"routine_window_start\":\"25:00\"}",
+      "passed": true
+    },
+    {
+      "label": "bad config400/no write {\"routine_window_start\":\"9:3\"}",
+      "passed": true
+    },
+    {
+      "label": "bad config400/no write {\"routine_window_start\":true}",
+      "passed": true
+    },
+    {
+      "label": "bad config400/no write {\"routine_timezone\":\"Bad/Zone\"}",
+      "passed": true
+    },
+    {
+      "label": "bad config400/no write {\"routine_timezone\":[]}",
+      "passed": true
+    },
+    {
+      "label": "bad config400/no write {\"routine_lead_minutes\":0}",
+      "passed": true
+    },
+    {
+      "label": "bad config400/no write {\"routine_lead_minutes\":181}",
+      "passed": true
+    },
+    {
+      "label": "bad config400/no write {\"routine_lead_minutes\":1.5}",
+      "passed": true
+    },
+    {
+      "label": "bad config400/no write {\"routine_lead_minutes\":true}",
+      "passed": true
+    },
+    {
+      "label": "bad config400/no write {\"routine_order\":\"made_up\"}",
+      "passed": true
+    },
+    {
+      "label": "account selects valid HH:MM/IANA/default-hour/order roundtrip",
+      "passed": true
+    },
+    {
+      "label": "unrelated rename retains all selected routine fields",
+      "passed": true
+    },
+    {
+      "label": "before local reset current cycle is previous local window, not tomorrow early pass",
+      "passed": true
+    },
+    {
+      "label": "inclusive14:00Lagos reset creates fresh15:00Lagos/14:00UTC window cycle",
+      "passed": true
+    },
+    {
+      "label": "full Ep17 step order is explicit calendar/plan/charts/meditation/check-in",
+      "passed": true
+    },
+    {
+      "label": "new cycle has no invented step confirmations or completion time",
+      "passed": true
+    },
+    {
+      "label": "same active cycle freezes original schedule/order despite timezone/hour edits",
+      "passed": true
+    },
+    {
+      "label": "clearing future window cannot erase active pending cycle",
+      "passed": true
+    },
+    {
+      "label": "next scheduled reset does not carry previous-cycle completion/checks",
+      "passed": true
+    },
+    {
+      "label": "another owner cannot read routine404",
+      "passed": true
+    },
+    {
+      "label": "another owner cannot edit routine configuration404",
+      "passed": true
+    },
+    {
+      "label": "routine inspection requires real auth401",
+      "passed": true
+    },
+    {
+      "label": "reset-before-midnight correctly identifies upcoming window localdate",
+      "passed": true
+    },
+    {
+      "label": "IANA DST summer preserves selected09:30local/16:30UTC",
+      "passed": true
+    },
+    {
+      "label": "IANA standard time changes UTC, not selected09:30local",
+      "passed": true
+    },
+    {
+      "label": "ambiguous DST fold uses explicitly disclosed earlier occurrence",
+      "passed": true
+    },
+    {
+      "label": "nonexistent DST clock shifts forward by gap, disclosed not silent fake time",
+      "passed": true
+    },
+    {
+      "label": "explicit bonus variant has meditation first and chosen45-minute lead",
+      "passed": true
+    }
+  ],
+  "scope": "Actual owned config/SQL with mutable UTC and declared IANA local window/reset policy; not broker allowed-hour enforcement or live providers/production/DST-calendar authority"
+}

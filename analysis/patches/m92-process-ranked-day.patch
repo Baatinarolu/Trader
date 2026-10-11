@@ -1,0 +1,78 @@
+diff --git a/src/execution-review.js b/src/execution-review.js
+index 8145bcb..deb16cd 100644
+--- a/src/execution-review.js
++++ b/src/execution-review.js
+@@ -97,4 +97,21 @@ function distribution(trades) {
+     win_rate:r.known_outcomes?round(r.wins/r.known_outcomes*100):null,net:r.known_outcomes?round(r.net_sum):null,expectancy_r:r.r_count?round(r.r_sum/r.r_count):null,
+     basis:BASIS,rubric_version:VERSION,descriptive_only:true})).sort((a,b)=>order.indexOf(a.grade)-order.indexOf(b.grade));
+ }
+-module.exports = {review,outcome,distribution,acknowledge,fingerprint,HASH_KEYS,VERSION,BASIS,SCORES};
++/** M92 relative retrospective execution extremes; ties kept, unknown unranked.
++ * Money-only extrema/day totals are explicitly independent. No P&L tiebreak. */
++function summary(trades,{accountId=null,date=null,timezone='recorded_closed_cohort',nowMs=Date.now()}={}) {
++  const closed=trades.filter(t=>t.status==='closed'),ranked=[];
++  for(const t of closed) {const g=review(t,{nowMs});if(g.state==='reviewed')ranked.push({trade_id:t.id,symbol:t.symbol,grade:g.grade,score:g.score,adherence:g.evidence.adherence,
++    stop_honoured:g.evidence.stop_honoured,loss_quality:g.loss_quality,outcome:g.outcome,entry_setup_grade:g.entry_setup_grade,basis:BASIS});}
++  const pick=max=>{if(!ranked.length)return null;const score=(max?Math.max:Math.min)(...ranked.map(r=>r.score)),ties=ranked.filter(r=>r.score===score).sort((a,b)=>a.trade_id-b.trade_id);
++    return {score,grade:ties[0].grade,trade_ids:ties.map(r=>r.trade_id),tie_count:ties.length,trades:ties};};
++  const observed=t=>{const c=stamp(t.closed_at);return c!==null&&c<=nowMs&&number(t.exit)!==null;};
++  const money=closed.filter(t=>observed(t)&&number(t.net_pnl)!==null),rs=closed.filter(t=>observed(t)&&outcome(t).state==='known'&&number(t.r_multiple)!==null);
++  const pnl=money.map(t=>t.net_pnl),net=pnl.reduce((a,b)=>a+b,0),unavailable=closed.length-money.length;
++  return {state:!closed.length?'empty':ranked.length?'ranked':'unreviewed',closed:closed.length,ranked:ranked.length,unranked:closed.length-ranked.length,best:pick(true),worst:pick(false),
++    account_id:accountId,date,timezone,basis:BASIS,rubric_version:VERSION,descriptive_only:true,broker_verified:false,
++    note:'Relative best/worst among reviewed closed journals by self-reported execution only. Ties kept, unreviewed evidence unranked. No P&L tie-break or strategy/risk/causal claim. Entry setup grade is separate.',
++    pnl:{basis:'realised_money_not_execution',known:money.length,unavailable,best:pnl.length?Math.max(...pnl):null,worst:pnl.length?Math.min(...pnl):null,
++      realised_total:unavailable?null:net,known_partial_sum:money.length?net:null,recorded_total_r:rs.length===closed.length?rs.reduce((n,t)=>n+t.r_multiple,0):null}};
++}
++module.exports = {review,outcome,distribution,summary,acknowledge,fingerprint,HASH_KEYS,VERSION,BASIS,SCORES};
+diff --git a/src/performance.js b/src/performance.js
+index ad741f1..5ac760a 100644
+--- a/src/performance.js
++++ b/src/performance.js
+@@ -8,6 +8,8 @@
+  * normalised `risk_amount`, `net_pnl` and `r_multiple`.
+  */
+ 
++const Execution = require('./execution-review');
++
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+ const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
+@@ -99,6 +101,7 @@ function decorate(t, tz) {
+   out.weighted_exit = legsArr.length
+     ? r4(legsArr.reduce((acc, l) => acc + num(l.pct) * num(l.price), 0) / legsArr.reduce((acc, l) => acc + num(l.pct), 0))
+     : null;
++  out.execution_review = Execution.review(t);
+   return out;
+ }
+ function splitTags(s) {
+@@ -208,6 +211,9 @@ function kpis(trades, opts = {}) {
+     expectancy: r2(expectancy), expectancy_r: r4(expectancyR),
+     total_r: r2(sum(rs)), avg_r: r4(mean(rs)), median_r: r4(median(rs)),
+     std_r: r4(sdR), sqn: r2(sqn), kelly: r2(kelly * 100),
++    // Compatibility money fields retained, never process-ranked execution.
++    trade_extremes_basis:'legacy_realised_money_use_execution_summary_for_process',
++    execution_summary:Execution.summary(closed),
+     best_trade: closed.length ? r2(Math.max(...pnls)) : 0,
+     worst_trade: closed.length ? r2(Math.min(...pnls)) : 0,
+     best_r: rs.length ? r4(Math.max(...rs)) : 0,
+diff --git a/src/routes/api.js b/src/routes/api.js
+index da48896..20a189f 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -645,11 +645,12 @@ router.post('/journal/reflections/:id',requireAuth,async(req,res)=>{
+ router.get('/journal/:date', requireAuth, async (req, res) => {
+   const row = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, req.params.date);
+   const tz = (await settingsOf(req)).timezone;
+-  const accountId=req.query.account_id?Number(req.query.account_id):null;
+-  if(accountId!==null && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Account not found'});
++  if(req.query.account_id!==undefined && (typeof req.query.account_id!=='string'||!/^([1-9]\d*)$/.test(req.query.account_id)))return res.status(400).json({error:'Select a canonical positive owned account ID.'});
++  const account=await accountOr404(req,res);if(!account)return;
++  const accountId=account.id;
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
+-  res.json({ entry: row || null, trades,pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};

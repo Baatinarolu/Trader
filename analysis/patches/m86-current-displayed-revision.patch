@@ -1,0 +1,32 @@
+diff --git a/src/execution-review.js b/src/execution-review.js
+index 3d48f36..8145bcb 100644
+--- a/src/execution-review.js
++++ b/src/execution-review.js
+@@ -19,14 +19,16 @@ function fingerprint(trade) { return crypto.createHash('sha256').update(JSON.str
+ function invalid(message,status=400) { const e=new Error(message);e.status=status;e.code='execution_review_invalid';return e; }
+ async function acknowledge(userId,id,body) {
+   if(!Number.isSafeInteger(id)||id<=0)throw invalid('Trade not found',404);
+-  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['adherence','stop_honoured'].includes(k))
+-    ||!Object.hasOwn(body,'adherence')||!Object.hasOwn(body,'stop_honoured'))throw invalid('Provide only adherence and stop_honoured, including explicit unknown/null when appropriate.');
++  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['adherence','stop_honoured','record_revision'].includes(k))
++    ||!Object.hasOwn(body,'adherence')||!Object.hasOwn(body,'stop_honoured'))throw invalid('Provide only adherence, stop_honoured and the displayed record_revision, including explicit unknown/null when appropriate.');
++  if(typeof body.record_revision!=='string'||!/^[a-f0-9]{64}$/.test(body.record_revision))throw invalid('Read the saved record and supply its current displayed record_revision.');
+   const a=body.adherence,flag=body.stop_honoured;
+   if(a!==null && (!Number.isInteger(a)||a<1||a>5))throw invalid('Adherence must be a literal whole number1–5 or null.');
+   if(flag!==null && typeof flag!=='boolean')throw invalid('Stop honour must be literal true/false/null.');
+   const {db}=require('./db');
+   return db.tx(async tx=>{const store=db.transactionStore(tx),row=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);
+     if(!row)throw invalid('Trade not found',404);
++    if(body.record_revision!==fingerprint(row))throw invalid('The saved trade changed after display. Reopen its current record before reviewing execution.',409);
+     const now=Date.now(),closed=stamp(row.closed_at);
+     if(row.status!=='closed'||number(row.exit)===null||closed===null||closed>now)throw invalid('Record the actual close before this retrospective execution review.',409);
+     if(flag!==null && (number(row.stop)===null||row.stop<=0))throw invalid('Record the actual planned stop before reporting whether it was honoured.');
+@@ -78,7 +80,7 @@ function review(trade, {nowMs=Date.now()}={}) {
+   return {state:complete ? 'reviewed' : 'unreviewed',grade,score,reasons,basis:BASIS,rubric_version:VERSION,
+     execution_quality:quality,loss_quality:loss,outcome:facts,evidence:{adherence:validAdherence?a:null,stop_honoured:honoured,
+       stop_honoured_source:validStop?trade.stop_honoured_source:null,stop_honoured_recorded_at:validStop?trade.stop_honoured_recorded_at:null},
+-    retrospective:true,broker_verified:false,entry_setup_grade:trade.setup_grade || null};
++    retrospective:true,broker_verified:false,entry_setup_grade:trade.setup_grade || null,record_revision:fingerprint(trade)};
+ }
+ function distribution(trades) {
+   const groups=new Map();

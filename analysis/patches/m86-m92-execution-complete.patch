@@ -1,0 +1,848 @@
+diff --git a/README.md b/README.md
+index ce03d77..6522a7a 100644
+--- a/README.md
++++ b/README.md
+@@ -11,6 +11,27 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+ 
+ ---
+ 
++## Execution self-review (separate from entry setup grade)
++
++After recording the actual close, use **Trade log → Execution** (also in saved
++trade/core-writing forms). Explicitly review your own adherence1–5 and whether
++you honoured the planned stop; unknown stays **Unreviewed**, never a made-up0.
++P&L/R/planned RR/session/excursions add **no execution points**. The human
++assessment is not broker verification or live emotional capture, does not
++complete core writing/routine or change entry permission/risk. Save financial
++edits first; a changed saved record requires reopening the current review.
++
++Daily review shows **best/worst by reported execution**, retaining ties and
++leaving unknowns unranked. Money-only extrema remain separately labelled; unknown
++realised net is unavailable, not zero, and open floating data is excluded from
++the realised day values. Existing numeric P&L statistics remain compatible.
++The old “backfill grades” API is now a **read-only derived refresh**: `updated:0`,
++with reviewed/unreviewed counts. It never overwrites `setup_grade`. Earlier stored
++manual/model/auto-grade provenance cannot be reconstructed; values are retained
++and explicitly separate from execution. See [API](docs/API.md) and
++[guardrails](docs/GUARDRAILS.md). Entry models/checklist grades/risk factors,
++price geometry and deliberate sample thresholds are unchanged.
++
+ ## Personal-rule admission
+ 
+ New trade/reopen and prospective plan actions now recheck scoped personal rules
+diff --git a/docs/API.md b/docs/API.md
+index d2a4cf7..f63a6aa 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -431,3 +431,66 @@ research plans, and survives journal edits/deletion independently. Late completi
+ or a human flag cannot rewrite its original preparation basis. Current done and
+ on-time/before-first-entry prepared are different facts. Neither is broker activity,
+ a live emotional/feed clearance or proof of a profitable causal effect.
++
++
++## Retrospective execution self-review (M86) and day extremes (M92)
++
++`GET /trades/:id` (and trade lists/day rows) adds a **derived** `execution_review`:
++`state`, `grade`, nullable `score`, `execution_quality`, `loss_quality`, separate
++`outcome`, `evidence`, `basis:"self_reported_execution"`, `rubric_version`,
++`broker_verified:false`, original `entry_setup_grade`, and opaque
++`record_revision`. Missing/invalid/stale/future/open evidence is **Unreviewed**,
++not an inferred0 or good/bad loss. A current acknowledged partial report can
++identify a specific violation, but cannot receive a full grade/good/bad-loss label.
++
++`POST /trades/:id/execution-review` is optional and owned/authenticated:
++
++```json
++{"adherence":5,"stop_honoured":true,"record_revision":"<copy current GET execution_review.record_revision>"}
++```
++
++- Only those three keys. Adherence is a literal whole number1–5 or null; stop
++  honour is literal true/false/null. Read the **saved current** record first.
++- Server records nullable `stop_honoured`, `stop_honoured_source`,
++  `stop_honoured_recorded_at`, and versioned `execution_review_hash`, atomically
++  with the bounded existing `adherence`. Hash binds relevant current trade fields,
++  not a cached score or broker signature. No client clock/source/hash/grade spoofing.
++- No actual close/open/future evidence or changed displayed revision:409. Bad
++  input/unknown recorded stop for an honour claim:400. Foreign/missing ID:404.
++  Storage uncertainty:503 without a partial write. Literal nullable answers may
++  remain unreviewed; legacy populated notes/default0 movement do not prove honour.
++- Core writing remains `/trades/:id/journal`; financial create/update/close/delete
++  remains legal without an execution review. Financial CRUD does not mint review
++  flags/source/clocks/hash. JSON/CSV record-only imports do not replay these
++  server-owned acknowledgements or infer historic completion; re-review explicitly.
++- App display rubric `execution-v1`: adherence1/2/3/4/5 →20/40/60/75/95; explicit
++  stop violation caps39/D. Good loss requires >=4 **and** explicit honoured stop,
++  with known consistent realised loss. P&L/R/RR/session/MAE/MFE earn no points.
++  This mapping is an app display choice, **not a numeric course quotation** or
++  entry sizing input. Current same-record evidence required even for partial flags.
++
++`POST /bots/correction/backfill` is retained for compatibility but **READ-ONLY**:
++optional literal positive integer `account_id`, otherwise all own closed journals.
++Returns `updated:0`, `evaluated`, `reviewed`, `unreviewed`, `distribution`,
++`read_only:true`, basis/version. Foreign account404, malformed ID400. No stored
++`setup_grade` writes, cache, guessed legacy source or any capital-rule change.
++`GET /bots/correction` exposes execution `grades` plus independent original
++`setup_grades` with legacy provenance warning. Its `backfill=1` is read-only too.
++Feedback uses current human execution versus separately descriptive outcome,
++not outcome-only repeat-it praise or stop/entry-location blame from excursions.
++
++`GET /journal/:date?account_id=…` adds `account_id` and `execution_summary` scoped
++to one owned account and UTC close day. Omitted account resolves the actual
++default (not mixed-account trades beside a default routine). Noncanonical/repeated
++account query400; foreign404. Shared notebook text is still shared, not new
++per-account duplicate notes. `best`/`worst` rank known current self-review scores;
++`trade_ids`/`tie_count` retain ties, unknowns unranked, no P&L tie-break. `pnl` is
++money-only known/unavailable extrema and nullable realised day total/recorded R;
++open/future/unknown data never silently becomes realised0.
++
++Performance retains every prior numeric metric including `best_trade`/`worst_trade`
++as money fields. New `trade_extremes_basis` labels that compatibility basis, and
++`execution_summary` is separate; finance is not renamed or used as execution.
++All ranking/grade/outcome associations are descriptive, self-reported and
++retrospective, not statistical edge, causation, live emotion/provider/broker proof,
++fresh entry readiness, permission or risk advice.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index b6556fc..526d0c8 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -271,6 +271,34 @@ this does **not** attribute each trade to its own entry routine. Small/selected
+ samples, human/retrospective reports and close-day association do not establish
+ causation or justify risk sizing, strategy changes or a win-rate promise.
+ 
++## Optional execution self-review is not capital, writing or permission
++
++M86 replaces outcome-weighted journal grading with **retrospective human
++execution**. Adherence1–5 plus explicit nullable stop-honour answers are captured
++for an actual closed current saved record. Its source/server time/versioned hash
++and displayed-record revision are owned; relevant edits withhold stale evidence.
++Missing/corrupt/future/legacy data stays Unreviewed with null score. Current valid
++partial answers may identify a specific reported violation, never a full grade.
++Stop movement may be protective; default0, loss size, fees/gaps/slippage and
++MAE/MFE do not establish compliance/violation. Self-report is never broker proof.
++
++`execution-v1` maps1/2/3/4/5 to20/40/60/75/95; explicit stop violation caps39.
++Good-loss classification requires >=4 and explicit honour, not the amount lost.
++There are **no** points for P&L/R/planned RR/session/excursions. This is an app
++display rubric, not a newly quoted course coefficient or a pre-entry setup score.
++M92 ranks a day's known current execution reviews, not biggest profit/loss.
++Unknowns unranked; ties explicit; separately labelled money-only extremes and
++unknown realised-day totals are not converted to zero/floating profit.
++
++No execution score is persisted. The old grade-backfill endpoint now reports
++read-only `updated:0` and evaluated/reviewed/unreviewed counts. Original stored
++`setup_grade` values remain untouched; unknown old manual/model/auto provenance
++cannot be recovered. Entry checklist grades and **A+/A×1, B×.5, C×.25** factors
++are unchanged. Neither grade, explicit stop answer nor a process rank completes
++core loss writing, fresh emotional gate, routine/timer or any first-admission fact,
++waives unknown state or refunds cap/loss/streak/cooldown observations. Truthful
++financial close/correction/deletion/import and record-only entries remain legal.
++
+ ## Scope still open
+ 
+ M108's full Sanctuary presets/ambient/intention/toolkit/independent session log
+@@ -280,6 +308,6 @@ stay open. **Correction:** M116 is already classified APPLIED in the ledger; the
+ prior guide/summaries incorrectly listed it open. No new closure/retuning is counted.
+ M84/M85 complete their scoped input-capture/manual-marker gaps, not adaptive sizing.
+ These changes do not change
+-entry models, target/stop geometry, RR floors, grade policies, the course's
++entry models, target/stop geometry, RR floors, entry setup-grade policies, the course's
+ 30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
+ edge, win-rate improvement, live-provider or production-deployment claim is made.
+diff --git a/public/index.html b/public/index.html
+index 5560dda..3b7f3d9 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -25,6 +25,7 @@
+ <script src="/js/api.js?v={{V}}"></script>
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
++<script src="/js/views/execution.js?v={{V}}"></script>
+ <script src="/js/views/dashboard.js?v={{V}}"></script>
+ <script src="/js/views/bots.js?v={{V}}"></script>
+ <script src="/js/views/trades.js?v={{V}}"></script>
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index a5dc09b..b696929 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -24,7 +24,7 @@
+           const cards = [
+             ['Profitability', [['Net P&L', U.moneySign(k.net_pnl), U.cls(k.net_pnl)], ['Gross profit', U.money(k.gross_profit), 'pos'], ['Gross loss', U.money(-k.gross_loss), 'neg'], ['Fees & costs', U.money(-k.fees), 'neg'], ['Expectancy / trade', U.moneySign(k.expectancy), U.cls(k.expectancy)], ['Expectancy (R)', U.signed(k.expectancy_r, 3) + 'R', U.cls(k.expectancy_r)], ['Profit factor', k.profit_factor === null ? '∞' : U.num(k.profit_factor, 2), ''], ['Payoff ratio', U.num(k.payoff, 2), ''], ['Kelly optimum', U.pct(k.kelly, 1), '']]],
+             ['Discipline', [['Compliance (per trade)', k.compliance === null ? '—' : U.pct(k.compliance, 1), ''], ['Compliance (pooled steps)', k.compliance_pooled === null ? '—' : U.pct(k.compliance_pooled, 1), ''], ['Trades with a checklist', k.compliance_trades === undefined ? '—' : k.compliance_trades, ''], ['Checklist steps followed', (k.compliance_checks ? k.compliance_passed + ' / ' + k.compliance_checks : '—'), '']]],
+-            ['Trade outcomes', [['Total trades', k.trades, ''], ['Winners', `${k.wins} (${U.pct(k.win_rate, 1)})`, 'pos'], ['Losers', `${k.losses} (${U.pct(k.loss_rate, 1)})`, 'neg'], ['Break-even', k.breakevens, ''], ['Avg win', U.money(k.avg_win), 'pos'], ['Avg loss', U.money(-k.avg_loss), 'neg'], ['Largest win', U.money(k.best_trade), 'pos'], ['Largest loss', U.money(k.worst_trade), 'neg'], ['Best / worst R', `${U.signed(k.best_r, 1)}R / ${U.signed(k.worst_r, 1)}R`, '']]],
++            ['Trade outcomes', [['Total trades', k.trades, ''], ['Winners', `${k.wins} (${U.pct(k.win_rate, 1)})`, 'pos'], ['Losers', `${k.losses} (${U.pct(k.loss_rate, 1)})`, 'neg'], ['Break-even', k.breakevens, ''], ['Avg win', U.money(k.avg_win), 'pos'], ['Avg loss', U.money(-k.avg_loss), 'neg'], ['Max realised P&L (money only)', U.money(k.best_trade), 'pos'], ['Min realised P&L (money only)', U.money(k.worst_trade), 'neg'], ['Max / min realised R', `${U.signed(k.best_r, 1)}R / ${U.signed(k.worst_r, 1)}R`, '']]],
+             ['Risk-adjusted', [['Sharpe (ann.)', U.num(k.sharpe, 2), k.sharpe > 1 ? 'pos' : ''], ['Sortino (ann.)', U.num(k.sortino, 2), k.sortino > 1 ? 'pos' : ''], ['SQN', U.num(k.sqn, 2), ''], ['Calmar', U.num(k.calmar, 2), ''], ['Recovery factor', U.num(k.recovery_factor, 2), ''], ['Std dev of R', U.num(k.std_r, 2), ''], ['Median R', U.signed(k.median_r, 2) + 'R', ''], ['Total R', U.signed(k.total_r, 1) + 'R', U.cls(k.total_r)], ['Profit concentration', U.pct(k.profit_concentration, 0), '']]],
+             ['Discipline', [['Avg adherence', k.avg_adherence ? U.num(k.avg_adherence, 2) + ' / 5' : '—', ''], ['Risk consistency', '±' + U.pct(k.risk_consistency, 0), k.risk_consistency < 35 ? 'pos' : 'warn'], ['Avg risk / trade', U.money(k.avg_risk), ''], ['Avg risk % of balance', U.pct(k.avg_risk_pct_of_balance, 2), ''], ['Trades without stop', k.stops_overshot ? `${an.by_symbol.length ? '' : ''}${k.stops_overshot} over -1R` : '0', ''], ['Current streak', k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + ' wins' : Math.abs(k.streaks.current) + ' losses'), k.streaks.current_type === 'loss' ? 'neg' : 'pos'], ['Longest win streak', k.streaks.longest_win, ''], ['Longest loss streak', k.streaks.longest_loss, 'neg'], ['Trading days', `${k.trading_days} (${U.num(k.avg_trades_per_day, 1)}/day)`, '']]],
+           ];
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 4f2861a..540c469 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -1176,18 +1176,8 @@
+       left.appendChild(card);
+     });
+ 
+-    const grades = h('div', { class: 'card' });
+-    grades.appendChild(h('div', { class: 'card-head', html: `<strong>Auto-graded setups</strong> <span class="muted">every trade graded from its own data</span>` }));
+-    grades.appendChild(h('div', { class: 'table-wrap', html: `<table class="table"><thead><tr><th>Grade</th><th>Trades</th><th>Win rate</th><th>Net</th><th>Expectancy</th></tr></thead><tbody>${(c.grades || []).map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.trades}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.net > 0 ? 'pos' : 'neg'}">${global.U.moneySign(x.net)}</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No graded trades yet.</td></tr>'}</tbody></table>` }));
+-    const backfill = h('button', { class: 'btn sm', text: 'Auto-grade the trades that have no grade' });
+-    backfill.addEventListener('click', async () => {
+-      try {
+-        const r = await global.API.post('/bots/correction/backfill', {});
+-        global.App.toast(`Graded ${r.updated} trade(s)`, 'ok');
+-        B.correction = null; global.App.refresh();
+-      } catch (e) { global.App.toast(e.message, 'err'); }
+-    });
+-    grades.appendChild(h('div', { class: 'card' }, backfill));
++    const grades = Views.execution ? Views.execution.correctionCard(c,{onRefresh:()=>{B.correction=null;global.App.refresh();}})
++      : h('div',{class:'card',text:'Execution review UI unavailable. No execution grade is inferred from entry quality or P&L.'});
+     right.appendChild(grades);
+ 
+     const fb = h('div', { class: 'card' });
+@@ -1199,9 +1189,7 @@
+       try {
+         const r = await global.API.get('/bots/feedback/' + Number(idIn.value));
+         global.U.clear(fbOut);
+-        fbOut.appendChild(h('div', { class: 'bot-plan', html: `<b>${esc(r.symbol)}</b> — grade <b>${esc(r.grade)}</b> (${r.score}/100): ${esc(r.summary)}` }));
+-        (r.notes || []).forEach((n) => fbOut.appendChild(h('div', { class: 'bot-' + (n.tone === 'bad' ? 'warn' : n.tone === 'good' ? 'good' : 'detail'), text: (n.tone === 'good' ? 'Kept: ' : n.tone === 'bad' ? 'Fix: ' : '') + n.text })));
+-        if (!r.notes || !r.notes.length) fbOut.appendChild(h('div', { class: 'muted', text: 'No behavioural flags on this trade.' }));
++        fbOut.appendChild(Views.execution?Views.execution.feedbackCard(r):h('div',{class:'muted',text:'Execution feedback UI unavailable; no numeric grade fabricated.'}));
+       } catch (e) { global.App.toast(e.message, 'err'); }
+     });
+     fb.appendChild(h('div', { class: 'row gap-8' }, idIn, fbBtn));
+diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
+index c4c988f..f81408b 100644
+--- a/public/js/views/dashboard.js
++++ b/public/js/views/dashboard.js
+@@ -170,7 +170,7 @@
+           <div><div class="l">Peak</div><div class="v">${U.money(Math.max(...an.equity.map((p) => p.equity)))}</div></div>
+           <div><div class="l">Recovery factor</div><div class="v">${U.num(k.recovery_factor, 2)}</div></div>
+           <div><div class="l">Streak</div><div class="v ${k.streaks.current_type === 'loss' ? 'neg' : 'pos'}">${k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + 'W' : Math.abs(k.streaks.current) + 'L')}</div></div>
+-          <div><div class="l">Best / worst</div><div class="v">${U.money(k.best_trade)} / ${U.money(k.worst_trade)}</div></div>
++          <div><div class="l">P&L max / min (money only)</div><div class="v">${U.money(k.best_trade)} / ${U.money(k.worst_trade)}</div></div>
+           <div><div class="l">Avg hold</div><div class="v">${U.dur(k.avg_hold_minutes)}</div></div>
+         </div>`;
+       row3.appendChild(eqCard);
+diff --git a/public/js/views/execution.js b/public/js/views/execution.js
+new file mode 100644
+index 0000000..89a16ef
+--- /dev/null
++++ b/public/js/views/execution.js
+@@ -0,0 +1,70 @@
++/* M86/M92 — HUMAN retrospective execution review, separate from entry setup
++ * quality, financial edits, core writing, routine and permission. */
++(function(global){
++  'use strict';
++  const Views=global.Views=global.Views||{},U=global.U;let opened=0;
++  const state=g=>g?.state==='reviewed'&&typeof g.score==='number'&&Number.isFinite(g.score)?`${g.grade} · ${g.score}/100`:'Unreviewed';
++  const money=v=>typeof v==='number'&&Number.isFinite(v)?U.moneySign(v):'Unavailable';
++  const context=()=>({account:global.Store.accountId,user:global.Store.user?.id});
++  const same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id;
++  const X=Views.execution={state,
++    card(trade){
++      const g=trade.execution_review||{},node=U.h('div',{class:'card',style:'margin-top:12px'});
++      node.innerHTML=`<div class="card-head"><h3>Execution self-review</h3><span class="chip muted" data-execution-state>${U.esc(state(g))}</span></div>
++        <div class="small">Entry setup grade ${U.esc(trade.setup_grade||'unknown')} is separate from the execution review.</div>
++        <div class="field-note">Retrospective human assessment, not broker-verified plan compliance or fresh emotional capture. It does not complete core writing/routine or alter risk/permission. Review the saved record — save financial edits first.</div>
++        <div class="tiny muted">${U.esc(g.state==='reviewed'?'Reported '+g.execution_quality.replace(/_/g,' '):'Missing or stale execution evidence; no score is inferred from P&L.')}</div>`;
++      if(trade.id&&trade.status==='closed')node.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{executionOpen:String(trade.id)},text:'Review saved execution',onclick:()=>X.open(Number(trade.id))}));
++      else node.appendChild(U.h('div',{class:'tiny muted',text:'Record the actual close before reviewing execution.'}));return node;
++    },
++    async open(id){
++      const before=context(),serial=++opened;let trade;
++      try{trade=(await global.API.get('/trades/'+id)).trade;}catch(e){return global.App.toast(e.message||'Current record unavailable','err');}
++      if(!same(before)||serial!==opened)return global.App.toast('Workspace/account changed while loading; reopen the current record.','err');
++      if(trade.status!=='closed')return global.App.toast('Record the actual close before reviewing execution.','err');
++      const body=U.h('div'),g=trade.execution_review||{},validStop=g.evidence?.stop_honoured;
++      body.innerHTML=`<p class="small"><b>#${U.esc(trade.id)} ${U.esc(trade.symbol)}</b> · account #${U.esc(trade.account_id)}<br>Actual saved entry ${U.price(trade.entry)}, stop ${trade.stop==null?'unknown':U.price(trade.stop)}, exit ${U.price(trade.exit)}. Entry setup grade ${U.esc(trade.setup_grade||'unknown')}.</p>
++        <p class="field-note">This is a retrospective HUMAN report, not broker-verified compliance or an actual fresh entry/exit emotion. It does not grant an entry, resize a setup, complete core writing/routine or remove any guard stop. Outcome is not execution quality. Changed saved records require a new current screen.</p>
++        <label class="field"><span>How closely did you follow your plan? (your 1–5 self-rating)</span><select id="xr-adherence"><option value="">Unknown / not reviewed</option>${[1,2,3,4,5].map(a=>`<option value="${a}" ${trade.adherence===a?'selected':''}>${a} / 5</option>`).join('')}</select></label>
++        <label class="field"><span>Did you honour the planned stop, including only moves the plan allowed?</span><select id="xr-stop"><option value="" ${validStop==null?'selected':''}>Unknown / not reviewed</option><option value="true" ${validStop===true?'selected':''}>Yes — my explicit report</option><option value="false" ${validStop===false?'selected':''}>No — I violated it</option></select></label>
++        <div class="tiny muted">A moved stop may be protective. A gap/slippage-like result beyond1R is not by itself a violation. Missing answers remain unreviewed, not bad/good. Rubric: adherence1/2/3/4/5 →20/40/60/75/95 points, explicit stop violation capped39; P&L/R/RR/session/excursions add no points. This is an app display rubric, not an empirically validated edge.</div>`;
++      return global.App.modal({title:'Review saved execution',body,wide:true,actions:[{label:'Cancel — no review recorded',ghost:true},{label:'Save execution self-review',primary:true,onClick:async close=>{
++        if(!same(before))return global.App.toast('Workspace/account changed; reopen the current saved record.','err');
++        const a=body.querySelector('#xr-adherence').value,stop=body.querySelector('#xr-stop').value;
++        try{
++          const out=await global.API.post('/trades/'+id+'/execution-review',{adherence:a===''?null:Number(a),stop_honoured:stop===''?null:stop==='true',record_revision:g.record_revision});
++          global.Store.invalidate();close();global.App.toast(`Execution ${state(out.trade.execution_review)} recorded as your self-report; other stops/core writing unchanged.`,'ok');if(same(before))global.App.refresh();
++        }catch(e){global.App.toast(e.message||'Execution review could not be recorded.','err');}
++      }}]});
++    },
++    summaryCard(summary={}){
++      const node=U.h('div',{class:'card',style:'margin-top:14px'});
++      node.appendChild(U.h('div',{class:'card-head',html:'<h3>Best / worst by reported execution</h3>'}));
++      node.appendChild(U.h('div',{class:'tiny muted',text:summary.note||'Execution summary unavailable; money is not an execution fallback.'}));
++      for(const [key,label] of [['best','Best among reviewed'],['worst','Worst among reviewed']]){
++        const value=summary[key],box=U.h('div',{style:'padding:8px',dataset:{[key==='best'?'executionBest':'executionWorst']:'true'}});
++        box.appendChild(U.h('div',{class:'small',text:label+': '+(value?`${value.grade} · ${value.score}/100${value.tie_count>1?' · '+value.tie_count+' tied':''}`:'Unavailable / no reviewed execution')}));
++        for(const t of value?.trades||[])box.appendChild(U.h('button',{class:'btn xs ghost',type:'button',text:`#${t.trade_id} ${t.symbol} — review`,onclick:()=>X.open(Number(t.trade_id))}));node.appendChild(box);
++      }
++      node.appendChild(U.h('div',{class:'tiny muted',text:`${summary.ranked??'unavailable'} ranked · ${summary.unranked??'unavailable'} unranked. Relative extremes, not a declaration that an unknown trade was worst or a good trade is profitable.`}));
++      const p=summary.pnl||{};node.appendChild(U.h('div',{class:'small',text:`Money-only P&L extremes: max ${money(p.best)} / min ${money(p.worst)} · ${p.known??'unavailable'} known / ${p.unavailable??'unavailable'} unavailable. Separate from execution, no P&L tiebreak.`}));return node;
++    },
++    correctionCard(c,{onRefresh=null}={}){
++      const node=U.h('div',{class:'card'}),rows=c.grades||[],value=v=>v==null?'Unavailable':U.esc(v);
++      node.innerHTML=`<div class="card-head"><strong>Execution self-reviews</strong><span class="muted">human reports, not automatic entry setup grades</span></div>
++        <div class="table-wrap"><table class="table"><thead><tr><th>Execution</th><th>Closed journals</th><th>Known outcomes</th><th>Win rate (descriptive)</th><th>Known net</th><th>Known R mean</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${U.esc(r.grade)}</td><td>${r.trades}</td><td>${r.known_outcomes} / ${r.trades}</td><td>${value(r.win_rate)}${r.win_rate==null?'':'%'}</td><td>${money(r.net)}</td><td>${value(r.expectancy_r)}${r.expectancy_r==null?'':'R'}</td></tr>`).join('')||'<tr><td colspan="6">No closed journals in this cohort.</td></tr>'}</tbody></table></div>
++        <div class="tiny muted">Current self-reported execution is derived on read, including Unreviewed evidence. No score is manufactured from outcome, and these associations are not causal or sizing guidance.</div>
++        <h4>Entry setup grades — separate stored history</h4><div class="tiny muted">Legacy source may be manual, model or earlier unproven auto-backfill. Values are preserved, not reclassified or promoted into execution.</div>
++        <div class="small">${(c.setup_grades||[]).map(r=>U.esc(r.grade)+': '+r.trades).join(' · ')||'No stored entry setup grades.'}</div>`;
++      node.appendChild(U.h('button',{class:'btn sm',dataset:{executionRefresh:'true'},text:'Refresh derived execution reviews — no backfill',onclick:async()=>{
++        try{const id=global.Store.accountId,r=await global.API.post('/bots/correction/backfill',id==null?{}:{account_id:Number(id)});global.App.toast(`Checked ${r.evaluated}; ${r.reviewed} reviewed, ${r.unreviewed} unreviewed. Entry setup grades unchanged.`,'ok');if(onRefresh)onRefresh();}
++        catch(e){global.App.toast(e.message,'err');}
++      }}));return node;
++    },
++    feedbackCard(r){
++      const node=U.h('div',{class:'bot-col'});node.appendChild(U.h('div',{class:'bot-plan',text:`${r.symbol} — execution ${state(r)}: ${r.summary}`}));
++      node.appendChild(U.h('div',{class:'tiny muted',text:`Entry setup grade ${r.entry_setup_grade||'unknown'} is separate; retrospective self-report, not verified broker execution.`}));
++      for(const n of r.notes||[])node.appendChild(U.h('div',{class:n.tone==='bad'?'bot-warn':n.tone==='good'?'bot-good':'bot-detail',text:n.text}));return node;
++    },
++  };
++})(window);
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 3d9fdc6..5d76f80 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -138,18 +138,21 @@
+   };
+ 
+   async function openEditor(dateISO, root) {
+-    const day = await API.get('/journal/' + dateISO,{account_id:Store.accountId});
++    const accountId=Store.accountId,userId=Store.user?.id;
++    const sameContext=()=>accountId===Store.accountId&&userId===Store.user?.id;
++    const day = await API.get('/journal/' + dateISO,{account_id:accountId});
++    if(!sameContext())return global.App.toast('Workspace/account changed while loading the day; reopen it.','err');
+     const e = day.entry || {};
+     const trades = day.trades || [];
+-    const pnl = trades.filter((t) => t.status !== 'open').reduce((s, t) => s + (t.net_pnl || 0), 0);
++    const pnl=day.execution_summary?.pnl?.realised_total??null,totalR=day.execution_summary?.pnl?.recorded_total_r??null;
+     const body = U.h('div');
+     body.innerHTML = `
+       <div class="small">Core journal ${day.journal_summary?.journaled ?? 'unavailable'} / ${day.journal_summary?.total ?? 'unavailable'} · ${U.esc(day.journal_summary?.state || 'unavailable')} — notebook review and trading P&L are separate.</div>
+       <div class="grid g4" style="margin-bottom:14px">
+         <div class="kpi"><div class="k-label">Date</div><div class="k-value" style="font-size:1rem">${U.esc(dateISO)}</div></div>
+-        <div class="kpi ${pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">Day P&L</div><div class="k-value ${U.cls(pnl)}">${U.moneySign(pnl)}</div></div>
+-        <div class="kpi"><div class="k-label">Trades</div><div class="k-value">${trades.length}</div></div>
+-        <div class="kpi"><div class="k-label">Total R</div><div class="k-value">${U.signed(trades.reduce((s, t) => s + (t.r_multiple || 0), 0), 2)}R</div></div>
++        <div class="kpi ${pnl==null?'':pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">UTC close-day realised P&L</div><div class="k-value ${pnl==null?'':U.cls(pnl)}" data-day-realised-pnl>${pnl==null?'Unavailable':U.moneySign(pnl)}</div></div>
++        <div class="kpi"><div class="k-label">Records (incl. open)</div><div class="k-value">${trades.length}</div></div>
++        <div class="kpi"><div class="k-label">Recorded realised R</div><div class="k-value" data-day-total-r>${totalR==null?'Unavailable':U.signed(totalR,2)+'R'}</div></div>
+       </div>
+       <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
+         <label class="field"><span>Market bias</span><select id="j-bias">${['', 'Bullish', 'Bearish', 'Neutral', 'Choppy'].map((v) => `<option ${e.market_bias === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+@@ -167,6 +170,7 @@
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+     if(Views.routine){
+       body.prepend(Views.routine.dayCard(day.pre_market||{}));
+@@ -181,8 +185,9 @@
+       title: 'Day review — ' + dateISO, body, wide: true,
+       actions: [{ label: 'Cancel', ghost: true }, {
+         label: 'Save review', primary: true, onClick: async (close) => {
++          if(!sameContext())return global.App.toast('Workspace/account changed; reopen this day before saving.','err');
+           const payload = {
+-            entry_date: dateISO,account_id:Store.accountId,
++            entry_date: dateISO,account_id:accountId,
+             market_bias: U.$('#j-bias', body).value, mood: U.$('#j-mood', body).value || null, energy: U.$('#j-energy', body).value || null,
+             focus: U.$('#j-focus', body).value, plan: U.$('#j-plan', body).value, review: U.$('#j-review', body).value,
+             lessons: U.$('#j-lessons', body).value, tomorrow: U.$('#j-tomorrow', body).value,
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index be55a5a..c06d71c 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -24,6 +24,7 @@
+       <label class="row gap-8"><input id="jr-none" type="checkbox" ${trade.mistakes_none===1?'checked':''} /><span>Explicitly followed plan; no mistakes to report (not inferred from a win)</span></label>
+       <label class="field"><span>3. What would you do differently / repeat?</span><textarea id="jr-different" maxlength="2000">${U.esc(trade.lesson||'')}</textarea></label>
+       <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
++    if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
+     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
+     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
+       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
+@@ -158,8 +159,8 @@
+           <thead><tr>
+             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
+             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
+-              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Journal'], ['', '']].map(([k, l]) =>
++              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
++              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', '']].map(([k, l]) =>
+               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
+           </tr></thead>
+           <tbody>
+@@ -180,6 +181,7 @@
+             <td class="tiny nowrap">${U.esc(t.session_label || '—')}</td>
+             <td class="tiny"><span class="rating ${t.adherence >= 4 ? 'strong' : t.adherence <= 2 ? 'weak' : ''}">${U.rating(t.adherence)}</span></td>
+             <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
++            <td class="tiny"><span data-execution-state>${U.esc(Views.execution?Views.execution.state(t.execution_review):'Unreviewed')}</span>${t.status==='closed'?` <button class="btn xs ghost" data-execution="${t.id}">Execution</button>`:''}</td>
+             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
+             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
+           </tr>`).join('')}
+@@ -191,10 +193,11 @@
+         if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = -1; }
+         draw();
+       }));
++      U.$$('[data-execution]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.execution)Views.execution.open(Number(b.dataset.execution));else global.App.toast('Execution review UI unavailable; no grade inferred.','err');}));
+       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
+       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
+       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
+-        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal]')) return;
++        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution]')) return;
+         global.App.openTrade(Number(tr.dataset.id));
+       }));
+       const chkAll = U.$('#chk-all', body);
+@@ -274,7 +277,7 @@
+         <label class="field span2"><span>Strategy / setup</span>
+           <select id="tf-strategy"><option value="">— untagged —</option>${strategyOptions}</select>
+         </label>
+-        <label class="field"><span>Setup grade</span>
++        <label class="field"><span>Entry setup grade</span>
+           <select id="tf-grade"><option value="">—</option>${list(['A+', 'A', 'B', 'C', 'D'], t.setup_grade)}</select>
+         </label>
+         <label class="field"><span>Entry model</span>
+@@ -514,6 +517,7 @@
+     g('entrytf').addEventListener('change',refreshGuard);
+     U.$('#tf-guardrail-refresh',node).addEventListener('click',refreshGuard);
+     refreshGuard();
++    if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
+     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
+   };
+ 
+diff --git a/src/bots/correction.js b/src/bots/correction.js
+index e0fb389..d88ea31 100644
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
+@@ -19,6 +19,7 @@
+ const { db } = require('../db');
+ const SMC = require('./smc');
+ const Guards = require('./guardrails');
++const Execution = require('../execution-review');
+ 
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+ const dayKey = (iso) => String(iso || '').slice(0, 10);
+@@ -339,72 +340,23 @@ function detectMistakes(trades) {
+ 
+ /* ══════════════════════════════════════════════════════ 2. AUTO-GRADING */
+ 
+-/**
+- * Grade a trade from its own data (no opinions). Used to backfill `setup_grade`
+- * so the analytics "grade" breakdown is never empty again.
+- * @returns {{score:number, grade:string, reasons:string[]}}
+- */
+-function autograde(trade) {
+-  const reasons = [];
+-  let score = 50;
+-
+-  // 1. planned R:R (the model's minimum is 2)
+-  const planned = trade.planned_r || null;
+-  if (planned == null) { reasons.push('No planned R:R logged (-10)'); score -= 10; }
+-  else if (planned >= 3) { score += 20; reasons.push(`Planned ${r2(planned)}R — excellent pay-off (+20)`); }
+-  else if (planned >= 2) { score += 14; reasons.push(`Planned ${r2(planned)}R — meets the 2R minimum (+14)`); }
+-  else if (planned >= 1.5) { score += 2; reasons.push(`Planned ${r2(planned)}R — below the 2R minimum (+2)`); }
+-  else { score -= 10; reasons.push(`Planned only ${r2(planned)}R (-10)`); }
+-
+-  // 2. execution quality: outcome vs plan
+-  const r = trade.r_multiple || 0;
+-  if (r >= 2) { score += 16; reasons.push(`Closed ${r2(r)}R — plan executed (+16)`); }
+-  else if (r > 0.5) { score += 12; reasons.push(`Closed ${r2(r)}R — winner, but short of a full target (+12)`); }
+-  else if (r > 0) { score += 4; reasons.push(`Closed ${r2(r)}R — small win (+4)`); }
+-  else if (r >= -1.05) { score += 6; reasons.push(`Loss of ${r2(r)}R — within the 1R limit, that is a good loss (+6)`); }
+-  else { score -= 12; reasons.push(`Loss of ${r2(r)}R exceeds the 1R stop (-12)`); }
+-
+-  // 3. risk discipline
+-  if (trade.stop_moved) { score -= 18; reasons.push('Stop was moved away from entry (-18)'); }
+-  else if (r < -1.05) { reasons.push('Stop not honoured (-6)'); score -= 6; }
+-  else { score += 6; reasons.push('Stop left where the plan put it (+6)'); }
+-
+-  // 4. excursion discipline (entry timing + exit timing)
+-  if (trade.mae_r != null && trade.mae_r > -0.9 && r < 0) { score += 4; reasons.push('Entry was not run over (MAE under 0.9R) (+4)'); }
+-  if (trade.mae_r != null && trade.mae_r < -1.2) { score -= 6; reasons.push(`Entry was immediately underwater (MAE ${r2(trade.mae_r)}R) (-6)`); }
+-  if (trade.mfe_r != null && r > 0 && trade.mfe_r - r <= 0.75) { score += 8; reasons.push('Exited near the peak excursion (+8)'); }
+-  if (trade.mfe_r != null && r > 0 && trade.mfe_r - r >= 1.5) { score -= 8; reasons.push(`Left ${r2(trade.mfe_r - r)}R on the table (MFE was ${r2(trade.mfe_r)}R) (-8)`); }
+-
+-  // 5. adherence self-score
+-  if (trade.adherence != null) {
+-    if (trade.adherence >= 4) { score += 6; reasons.push(`Rule adherence ${trade.adherence}/5 (+6)`); }
+-    else if (trade.adherence <= 2) { score -= 10; reasons.push(`Rule adherence only ${trade.adherence}/5 (-10)`); }
+-  }
+-
+-  // 6. session quality (killzone windows)
+-  const sess = String(trade.session || '').toLowerCase();
+-  if (sess) {
+-    const quality = sessionQuality(sess);
+-    if (quality != null && quality < 0.55) { score -= 6; reasons.push(`Traded the ${sess} session — low-probability window (-6)`); }
+-    else if (quality != null && quality >= 0.85) { score += 4; reasons.push(`Traded the ${sess} killzone (+4)`); }
+-  }
+-
+-  score = Math.max(0, Math.min(100, score));
+-  const grade = score >= 80 ? 'A+' : score >= 68 ? 'A' : score >= 54 ? 'B' : score >= 40 ? 'C' : 'D';
+-  return { score, grade, reasons };
+-}
+-
+-/** Fill in setup_grade for trades that have none. */
+-async function backfillGrades(userId) {
+-  const rows = await db.prepare(`SELECT * FROM trades WHERE user_id=? AND status='closed' AND (setup_grade IS NULL OR setup_grade='')`).all(userId);
+-  const upd = await db.prepare(`UPDATE trades SET setup_grade=?, updated_at=datetime('now') WHERE id=?`);
+-  const dist = {};
+-  for (const t of rows) {
+-    const g = autograde(t);
+-    await upd.run(g.grade, t.id);
+-    dist[g.grade] = (dist[g.grade] || 0) + 1;
++/** M86 retrospective self-report execution rubric, separate from entry setup
++ * quality. Pure current facts, no outcome/session/excursion points or risk input. */
++function autograde(trade) { return Execution.review(trade); }
++
++/** Compatibility endpoint: READ-ONLY current execution reviews. Old automatic
++ * setup_grade writes were outcome-derived and unproven. Never guess which
++ * legacy grade was manual/bot/old backfill, erase it or route it into capital. */
++async function backfillGrades(userId,{accountId=null}={}) {
++  if(accountId!==null) {
++    if(!Number.isSafeInteger(accountId)||accountId<=0) {const e=new Error('A positive owned account ID is required.');e.code='execution_review_invalid';e.status=400;throw e;}
++    if(!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,userId)) {const e=new Error('Account not found');e.code='execution_review_invalid';e.status=404;throw e;}
+   }
+-  return { updated: rows.length, distribution: dist };
++  const rows=await db.prepare(`SELECT * FROM trades WHERE user_id=? AND status='closed'${accountId===null?'':' AND account_id=?'} ORDER BY id`).all(...(accountId===null?[userId]:[userId,accountId]));
++  const groups=Execution.distribution(rows),reviewed=groups.reduce((n,g)=>n+g.reviewed,0);
++  return {updated:0,evaluated:rows.length,reviewed,unreviewed:rows.length-reviewed,distribution:Object.fromEntries(groups.map(g=>[g.grade,g.trades])),read_only:true,
++    basis:Execution.BASIS,rubric_version:Execution.VERSION,account_id:accountId,
++    note:'Live-derived self-report execution reviews only. No trade, pre-entry setup grade, capital rule or historical completion is backfilled.'};
+ }
+ 
+ /* ══════════════════════════════════════════════════ 3. GUARDRAILS (ep 21/31) */
+@@ -564,17 +516,18 @@ async function dailyState(userId, { accountId = null, store = db, nowMs = Date.n
+ function feedback(trade, { guardrails: g = null, siblings = null } = {}) {
+   const auto = autograde(trade);
+   const notes = [];
+-  const r = trade.r_multiple || 0, mfe = trade.mfe_r, mae = trade.mae_r;
+-
+-  if (trade.stop_moved) notes.push({ tone: 'bad', text: `You moved the stop on this one. That single decision turned a ${r2(Math.abs(1))}R planned loss into ${r2(r)}R.` });
+-  if (r < -1.15 && !trade.stop_moved) notes.push({ tone: 'bad', text: `Loss was ${r2(r)}R — beyond the 1R limit. Either the stop was too tight for the volatility, or the exit was late.` });
+-  if (mfe != null && mfe >= 1 && r >= 0 && mfe - r >= 1) notes.push({ tone: 'warn', text: `Price reached ${r2(mfe)}R but you closed at ${r2(r)}R — ${r2(mfe - r)}R left for someone else.` });
+-  if (mfe != null && mfe < 0.5 && r < 0) notes.push({ tone: 'info', text: `The trade never worked (MFE ${r2(mfe)}R). That is a location problem, not an exit problem — the entry was early or against the flow.` });
+-  if (mae != null && mae < -1 && r >= 0) notes.push({ tone: 'info', text: `It went ${r2(mae)}R against you before working — your entry could be moved deeper into the zone (the 50% level).` });
+-  if (trade.planned_r && trade.planned_r >= 2 && r >= trade.planned_r * 0.9) notes.push({ tone: 'good', text: `Full target executed at ${r2(r)}R. This is the trade that pays for the losers — repeat it.` });
+-  else if (r >= 1) notes.push({ tone: 'good', text: `Banked ${r2(r)}R. ${trade.planned_r ? `Plan was ${r2(trade.planned_r)}R target.` : ''}` });
+-  if (trade.adherence != null && trade.adherence <= 3) notes.push({ tone: 'bad', text: `You rated your own adherence ${trade.adherence}/5. Trades you cannot grade highly should not be taken.` });
+-  if (g && trade.risk_amount && g.stats && g.stats.median_risk && trade.risk_amount > g.stats.median_risk * 1.5) notes.push({ tone: 'warn', text: `Risked $${r2(trade.risk_amount)} against your usual $${r2(g.stats.median_risk)} — the size is what makes the loss hurt, not the loss itself.` });
++  const metric=v=>typeof v==='number'&&Number.isFinite(v)?v:null;
++  const r = auto.outcome.r_multiple, mfe = metric(trade.mfe_r), mae = metric(trade.mae_r);
++
++  if(auto.state==='unreviewed')notes.push({tone:'info',text:'Execution review is incomplete/stale. No rating is inferred from P&L, legacy stop flags or an entry setup grade.'});
++  if(auto.execution_quality==='plan_violated'||auto.execution_quality==='known_violation_in_incomplete_review')notes.push({tone:'bad',text:'Your current valid self-report identifies a plan/stop violation. A profitable outcome does not make that execution good.'});
++  if(auto.execution_quality==='plan_followed')notes.push({tone:'good',text:'You report following the plan and honouring its stop. This is a retrospective self-review, not verified broker/plan compliance.'});
++  if(trade.stop_moved===1||trade.stop_moved===true)notes.push({tone:'info',text:'The journal records stop movement. Movement may be protective or planned; it is not by itself evidence of widening or a loss cause.'});
++  if(auto.outcome.state==='known')notes.push({tone:'info',text:`Recorded realised net ${auto.outcome.net_pnl}${auto.outcome.r_multiple===null?'':` (${r2(auto.outcome.r_multiple)}R)`}. Outcome is separate from the execution grade.`});
++  else notes.push({tone:'info',text:'Realised outcome unavailable/contradictory; not treated as zero, a win or a loss.'});
++  if(r < -1.05)notes.push({tone:'info',text:`Recorded ${r2(r)}R exceeds1R in size. Fees/gaps/slippage or plan choices may be involved; this result alone does not establish a stop violation.`});
++  if(mfe!=null || mae!=null)notes.push({tone:'info',text:`Recorded excursions: MAE ${mae==null?'unavailable':r2(mae)+'R'}, MFE ${mfe==null?'unavailable':r2(mfe)+'R'}. Excursions alone do not prove bad entry/exit execution or justify changing targets.`});
++  if(g&&trade.risk_amount&&g.stats&&g.stats.median_risk&&trade.risk_amount>g.stats.median_risk*1.5)notes.push({tone:'warn',text:`Recorded risk $${r2(trade.risk_amount)} vs journal median $${r2(g.stats.median_risk)}. Descriptive sizing observation, not an execution-score input.`});
+ 
+   const today = dayKey(trade.opened_at);
+   if (siblings && siblings.length) {
+@@ -583,18 +536,20 @@ function feedback(trade, { guardrails: g = null, siblings = null } = {}) {
+     const last = before[before.length - 1];
+     if (last && (last.net_pnl || 0) < 0) {
+       const gapMin = (new Date(trade.opened_at) - new Date(last.closed_at || last.opened_at)) / 60000;
+-      if (gapMin <= 30) notes.push({ tone: 'bad', text: `This entry came ${r2(gapMin)} minutes after a loss (#${last.id}). That is the revenge window — the next trade after a loss should be after a break, not immediately.` });
++      if (gapMin <= 30) notes.push({ tone: 'bad', text: `This entry came ${r2(gapMin)} minutes after a loss (#${last.id}). Compare this recorded timing with the independent break/full-candle rules; the timestamp does not establish your emotional motive.` });
+     }
+     if (before.length + 1 > (g ? g.max_trades_day : 99)) notes.push({ tone: 'warn', text: `This was trade #${before.length + 1} of the day; your cap is ${g ? g.max_trades_day : '—'}.` });
+   }
+ 
+   return {
+-    trade_id: trade.id, symbol: trade.symbol, grade: auto.grade, score: auto.score,
+-    reasons: auto.reasons, notes,
+-    summary: auto.grade === 'A+' || auto.grade === 'A'
+-      ? 'Textbook execution — this is the behaviour to repeat.'
+-      : auto.grade === 'B' ? 'Decent trade with fixable leaks — see notes.'
+-        : auto.grade === 'C' ? 'Process errors here; the P&L is beside the point.' : 'This trade should not have been taken in this form.',
++    ...auto,trade_id:trade.id,symbol:trade.symbol,notes,
++    summary:auto.state==='unreviewed'
++      ? 'Execution unreviewed/incomplete — complete your own current adherence and stop-honour assessment; no outcome judgement.'
++      : auto.execution_quality==='plan_violated'
++        ? `Reported plan violation${auto.outcome.kind==='win'?' despite a profitable outcome':''}; P&L does not excuse the execution.`
++        : auto.loss_quality==='good_loss'
++          ? 'Reported plan followed and stop honoured: a good loss by execution, not by its size.'
++          : 'Reported plan followed and stop honoured; outcome remains a separate descriptive fact, not verified textbook execution.',
+   };
+ }
+ 
+@@ -606,7 +561,7 @@ async function analyse(userId, { accountId = null, backfill = false, days = 365
+   const mistakes = detectMistakes(trades);
+   const g = await guardrails(userId, { accountId });
+   const state = await dailyState(userId, { accountId });
+-  const graded = backfill ? await backfillGrades(userId) : null;
++  const graded = backfill ? await backfillGrades(userId,{accountId}) : null;
+   const accountRow = await accountOf(userId, accountId);
+ 
+   const byGrade = {};
+@@ -647,7 +602,9 @@ async function analyse(userId, { accountId = null, backfill = false, days = 365
+     mistakes,
+     guardrails: g,
+     daily: state,
+-    grades: gradeTable,
++    grades: Execution.distribution(trades),
++    grades_basis: Execution.BASIS, execution_rubric_version: Execution.VERSION,
++    setup_grades: gradeTable, setup_grades_basis: 'stored_entry_setup_grade_legacy_provenance_may_be_unknown',
+     backfill: graded,
+     top_fix: mistakes.length ? { title: mistakes[0].title, fix: mistakes[0].fix, impact: mistakes[0].impact, impact_unit: mistakes[0].impact_unit } : null,
+     session_state: SMC.sessionState(),
+diff --git a/src/db.js b/src/db.js
+index 70ba4fa..b2c37ab 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -481,6 +481,10 @@ CREATE TABLE IF NOT EXISTS trades (
+   mae_r REAL,                                 -- worst excursion in R (negative number)
+   mfe_r REAL,                                 -- best excursion in R (positive number)
+   stop_moved INTEGER DEFAULT 0,
++  stop_honoured INTEGER CHECK(stop_honoured IS NULL OR stop_honoured IN (0,1)),
++  stop_honoured_source TEXT,
++  stop_honoured_recorded_at TEXT,
++  execution_review_hash TEXT,
+   exit_reason TEXT DEFAULT '',
+   notes TEXT DEFAULT '',
+   strategy_id INTEGER REFERENCES strategies(id) ON DELETE SET NULL,
+@@ -629,6 +633,11 @@ async function migrate() {
+   await add('trades','mistakes_none','INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1))');
+   await add('trades','journal_reviewed_at','TEXT');
+   await add('trades','journal_review_hash','TEXT');
++  // M86 retrospective self-report only, no default/legacy stop/grade inference.
++  await add('trades','stop_honoured','INTEGER CHECK(stop_honoured IS NULL OR stop_honoured IN (0,1))');
++  await add('trades','stop_honoured_source','TEXT');
++  await add('trades','stop_honoured_recorded_at','TEXT');
++  await add('trades','execution_review_hash','TEXT');
+   await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
+   await add('journal_entries','pre_market_basis','TEXT');
+   await add('journal_entries','pre_market_recorded_at','TEXT');
+diff --git a/src/execution-review.js b/src/execution-review.js
+new file mode 100644
+index 0000000..18ffa92
+--- /dev/null
++++ b/src/execution-review.js
+@@ -0,0 +1,121 @@
++'use strict';
++/** M86: retrospective HUMAN execution review, never a pre-entry checklist
++ * grade/risk input. Unknown evidence is not a manufactured poor/good trade.
++ * Outcome/excursions do not award points or prove stop violations. */
++const crypto = require('crypto');
++const VERSION = 'execution-v1';
++const BASIS = 'self_reported_execution';
++const SCORES = Object.freeze({1:20,2:40,3:60,4:75,5:95});
++const number = v => typeof v === 'number' && Number.isFinite(v) ? v : null;
++const stamp = v => {
++  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(v)) return null;
++  const d = new Date(v), n = d.getTime();
++  return Number.isFinite(n) && d.toISOString().replace('.000Z','Z') === v.replace('.000Z','Z') ? n : null;
++};
++// Binds HUMAN acknowledgement to relevant current record, never a persisted
++// score. Truthful correction invalidates stale evidence without blocking CRUD.
++const HASH_KEYS = ['id','user_id','account_id','symbol','direction','status','opened_at','closed_at','entry','exit','stop','target','size','fees','strategy_id','strategy_version','adherence','stop_moved','stop_honoured','stop_honoured_source','stop_honoured_recorded_at'];
++function fingerprint(trade) { return crypto.createHash('sha256').update(JSON.stringify([VERSION,...HASH_KEYS.map(k=>[k,trade[k]??null])])).digest('hex'); }
++function invalid(message,status=400) { const e=new Error(message);e.status=status;e.code='execution_review_invalid';return e; }
++async function acknowledge(userId,id,body) {
++  if(!Number.isSafeInteger(id)||id<=0)throw invalid('Trade not found',404);
++  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['adherence','stop_honoured','record_revision'].includes(k))
++    ||!Object.hasOwn(body,'adherence')||!Object.hasOwn(body,'stop_honoured'))throw invalid('Provide only adherence, stop_honoured and the displayed record_revision, including explicit unknown/null when appropriate.');
++  if(typeof body.record_revision!=='string'||!/^[a-f0-9]{64}$/.test(body.record_revision))throw invalid('Read the saved record and supply its current displayed record_revision.');
++  const a=body.adherence,flag=body.stop_honoured;
++  if(a!==null && (!Number.isInteger(a)||a<1||a>5))throw invalid('Adherence must be a literal whole number1–5 or null.');
++  if(flag!==null && typeof flag!=='boolean')throw invalid('Stop honour must be literal true/false/null.');
++  const {db}=require('./db');
++  return db.tx(async tx=>{const store=db.transactionStore(tx),row=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);
++    if(!row)throw invalid('Trade not found',404);
++    if(body.record_revision!==fingerprint(row))throw invalid('The saved trade changed after display. Reopen its current record before reviewing execution.',409);
++    const now=Date.now(),closed=stamp(row.closed_at);
++    if(row.status!=='closed'||number(row.exit)===null||closed===null||closed>now)throw invalid('Record the actual close before this retrospective execution review.',409);
++    if(flag!==null && (number(row.stop)===null||row.stop<=0))throw invalid('Record the actual planned stop before reporting whether it was honoured.');
++    const at=new Date(now).toISOString(),fields={adherence:a,stop_honoured:flag===null?null:flag?1:0,stop_honoured_source:'self_reported',stop_honoured_recorded_at:at},hash=fingerprint({...row,...fields});
++    await store.prepare("UPDATE trades SET adherence=?,stop_honoured=?,stop_honoured_source=?,stop_honoured_recorded_at=?,execution_review_hash=?,updated_at=datetime('now') WHERE id=? AND user_id=?")
++      .run(a,fields.stop_honoured,fields.stop_honoured_source,at,hash,id,userId);
++    return store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);
++  });
++}
++function outcome(trade) {
++  const net = number(trade.net_pnl), r = number(trade.r_multiple);
++  if (net === null || r !== null && Math.sign(net) !== Math.sign(r)) {
++    return {state:'unknown',kind:null,net_pnl:net,r_multiple:r,basis:'unavailable_or_contradictory_realised_outcome'};
++  }
++  const v = net;
++  return {state:'known',kind:v < 0 ? 'loss' : v > 0 ? 'win' : 'breakeven',net_pnl:net,r_multiple:r,basis:'recorded_realised_net_pnl'};
++}
++function review(trade, {nowMs=Date.now()}={}) {
++  const reasons = ['Execution basis: self-reported journal evidence, not broker-verified adherence.'];
++  const a = number(trade.adherence), validAdherence = Number.isInteger(a) && a >= 1 && a <= 5;
++  const flag = trade.stop_honoured, validFlag = flag === 1 || flag === true || flag === 0 || flag === false;
++  const recorded = stamp(trade.stop_honoured_recorded_at), close = stamp(trade.closed_at);
++  const validClock = number(nowMs) !== null && close !== null && close <= nowMs;
++  const stop = number(trade.stop);
++  const completed = trade.status === 'closed' && number(trade.exit) !== null && validClock;
++  // A partial CURRENT human acknowledgement can report an explicit violation,
++  // but raw legacy/default/stale/corrupt ratings cannot manufacture that claim.
++  const acknowledged = completed && (validAdherence || trade.adherence===null) && (validFlag || flag===null)
++    && ['self_reported','imported_self_report'].includes(trade.stop_honoured_source)
++    && recorded !== null && recorded <= nowMs && recorded >= close
++    && typeof trade.execution_review_hash==='string' && trade.execution_review_hash===fingerprint(trade);
++  const validStop = acknowledged && validFlag && stop !== null && stop > 0;
++  const honoured = validStop ? flag === 1 || flag === true : null;
++  const facts = completed ? outcome(trade) : {state:'unknown',kind:null,basis:'not_known_closed_outcome',net_pnl:null,r_multiple:null};
++  reasons.push(validAdherence ? `Recorded rule adherence ${a}/5: ${acknowledged?'current acknowledged self-report':'not acknowledged for the current record; provisional only'}.` : 'Rule adherence unavailable/invalid: no rating is inferred from P&L.');
++  reasons.push(validStop ? `Stop honour explicitly reported ${honoured ? 'yes' : 'no'} (${trade.stop_honoured_source}).`
++    : 'Stop honour unreviewed/invalid: not inferred from movement, realised R, default zero or a legacy row.');
++  const complete = completed && validAdherence && validStop;
++  const violated = acknowledged && (validAdherence && a < 4 || validStop && !honoured);
++  const quality = complete ? violated ? 'plan_violated' : 'plan_followed' : violated ? 'known_violation_in_incomplete_review' : 'unreviewed';
++  let score = null, grade = 'Unreviewed', loss = 'unknown';
++  if (complete) {
++    score = honoured ? SCORES[a] : Math.min(SCORES[a],39);
++    grade = score >= 80 ? 'A+' : score >= 68 ? 'A' : score >= 54 ? 'B' : score >= 40 ? 'C' : 'D';
++    reasons.push(`Execution rubric ${VERSION}: adherence points ${SCORES[a]}${honoured ? '' : ', explicit stop violation caps score below C at39'}.`);
++    if (facts.state === 'known') {
++      loss = facts.kind === 'loss' ? violated ? 'bad_loss' : 'good_loss' : 'not_loss';
++      if (loss === 'good_loss') reasons.push('Good loss by reported plan adherence and honoured stop — not by its size.');
++      else if (loss === 'bad_loss') reasons.push('Bad loss by an explicit reported execution violation, not by red P&L alone.');
++    }
++  } else reasons.push('Execution grade withheld until an actual closed journal and complete valid self-review exist.');
++  reasons.push('Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect.');
++  return {state:complete ? 'reviewed' : 'unreviewed',grade,score,reasons,basis:BASIS,rubric_version:VERSION,
++    execution_quality:quality,loss_quality:loss,outcome:facts,evidence:{adherence:acknowledged&&validAdherence?a:null,stop_honoured:honoured,
++      stop_honoured_source:validStop?trade.stop_honoured_source:null,stop_honoured_recorded_at:validStop?trade.stop_honoured_recorded_at:null},
++    retrospective:true,broker_verified:false,entry_setup_grade:trade.setup_grade || null,record_revision:fingerprint(trade)};
++}
++function distribution(trades) {
++  const groups=new Map();
++  for(const trade of trades) {
++    const g=review(trade),key=g.grade;
++    if(!groups.has(key))groups.set(key,{grade:key,trades:0,reviewed:0,known_outcomes:0,unavailable_outcomes:0,wins:0,net_sum:0,r_sum:0,r_count:0});
++    const row=groups.get(key);row.trades++;if(g.state==='reviewed')row.reviewed++;
++    if(g.outcome.state==='known') {row.known_outcomes++;if(g.outcome.kind==='win')row.wins++;row.net_sum+=g.outcome.net_pnl;
++      if(g.outcome.r_multiple!==null){row.r_count++;row.r_sum+=g.outcome.r_multiple;}
++    } else row.unavailable_outcomes++;
++  }
++  const round=v=>Math.round(v*100)/100,order=['A+','A','B','C','D','Unreviewed'];
++  return [...groups.values()].map(r=>({grade:r.grade,trades:r.trades,reviewed:r.reviewed,unreviewed:r.trades-r.reviewed,known_outcomes:r.known_outcomes,unavailable_outcomes:r.unavailable_outcomes,
++    win_rate:r.known_outcomes?round(r.wins/r.known_outcomes*100):null,net:r.known_outcomes?round(r.net_sum):null,expectancy_r:r.r_count?round(r.r_sum/r.r_count):null,
++    basis:BASIS,rubric_version:VERSION,descriptive_only:true})).sort((a,b)=>order.indexOf(a.grade)-order.indexOf(b.grade));
++}
++/** M92 relative retrospective execution extremes; ties kept, unknown unranked.
++ * Money-only extrema/day totals are explicitly independent. No P&L tiebreak. */
++function summary(trades,{accountId=null,date=null,timezone='recorded_closed_cohort',nowMs=Date.now()}={}) {
++  const closed=trades.filter(t=>t.status==='closed'),ranked=[];
++  for(const t of closed) {const g=review(t,{nowMs});if(g.state==='reviewed')ranked.push({trade_id:t.id,symbol:t.symbol,grade:g.grade,score:g.score,adherence:g.evidence.adherence,
++    stop_honoured:g.evidence.stop_honoured,loss_quality:g.loss_quality,outcome:g.outcome,entry_setup_grade:g.entry_setup_grade,basis:BASIS});}
++  const pick=max=>{if(!ranked.length)return null;const score=(max?Math.max:Math.min)(...ranked.map(r=>r.score)),ties=ranked.filter(r=>r.score===score).sort((a,b)=>a.trade_id-b.trade_id);
++    return {score,grade:ties[0].grade,trade_ids:ties.map(r=>r.trade_id),tie_count:ties.length,trades:ties};};
++  const observed=t=>{const c=stamp(t.closed_at);return c!==null&&c<=nowMs&&number(t.exit)!==null;};
++  const money=closed.filter(t=>observed(t)&&number(t.net_pnl)!==null),rs=closed.filter(t=>observed(t)&&outcome(t).state==='known'&&number(t.r_multiple)!==null);
++  const pnl=money.map(t=>t.net_pnl),net=pnl.reduce((a,b)=>a+b,0),unavailable=closed.length-money.length;
++  return {state:!closed.length?'empty':ranked.length?'ranked':'unreviewed',closed:closed.length,ranked:ranked.length,unranked:closed.length-ranked.length,best:pick(true),worst:pick(false),
++    account_id:accountId,date,timezone,basis:BASIS,rubric_version:VERSION,descriptive_only:true,broker_verified:false,
++    note:'Relative best/worst among reviewed closed journals by self-reported execution only. Ties kept, unreviewed evidence unranked. No P&L tie-break or strategy/risk/causal claim. Entry setup grade is separate.',
++    pnl:{basis:'realised_money_not_execution',known:money.length,unavailable,best:pnl.length?Math.max(...pnl):null,worst:pnl.length?Math.min(...pnl):null,
++      realised_total:unavailable?null:net,known_partial_sum:money.length?net:null,recorded_total_r:rs.length===closed.length?rs.reduce((n,t)=>n+t.r_multiple,0):null}};
++}
++module.exports = {review,outcome,distribution,summary,acknowledge,fingerprint,HASH_KEYS,VERSION,BASIS,SCORES};
+diff --git a/src/performance.js b/src/performance.js
+index ad741f1..5ac760a 100644
+--- a/src/performance.js
++++ b/src/performance.js
+@@ -8,6 +8,8 @@
+  * normalised `risk_amount`, `net_pnl` and `r_multiple`.
+  */
+ 
++const Execution = require('./execution-review');
++
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+ const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
+@@ -99,6 +101,7 @@ function decorate(t, tz) {
+   out.weighted_exit = legsArr.length
+     ? r4(legsArr.reduce((acc, l) => acc + num(l.pct) * num(l.price), 0) / legsArr.reduce((acc, l) => acc + num(l.pct), 0))
+     : null;
++  out.execution_review = Execution.review(t);
+   return out;
+ }
+ function splitTags(s) {
+@@ -208,6 +211,9 @@ function kpis(trades, opts = {}) {
+     expectancy: r2(expectancy), expectancy_r: r4(expectancyR),
+     total_r: r2(sum(rs)), avg_r: r4(mean(rs)), median_r: r4(median(rs)),
+     std_r: r4(sdR), sqn: r2(sqn), kelly: r2(kelly * 100),
++    // Compatibility money fields retained, never process-ranked execution.
++    trade_extremes_basis:'legacy_realised_money_use_execution_summary_for_process',
++    execution_summary:Execution.summary(closed),
+     best_trade: closed.length ? r2(Math.max(...pnls)) : 0,
+     worst_trade: closed.length ? r2(Math.min(...pnls)) : 0,
+     best_r: rs.length ? r4(Math.max(...rs)) : 0,
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 06e88a8..20a189f 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -13,7 +13,8 @@ const SessionTime = require('../session-time');
+ const J = require('../journaling');
+ const RR = require('../routine-records');
+ const Routine = require('../routine');
+-const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t)});
++const Execution = require('../execution-review');
++const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+ const Prop = require('../prop');
+@@ -399,6 +400,19 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
+ });
+ 
++// Optional post-close HUMAN execution review is separate from financial CRUD
++// and mandatory core/loss writing. It cannot backfill pre-entry setup grades.
++router.post('/trades/:id/execution-review',requireAuth,async(req,res)=>{
++  try {
++    if(!/^[1-9]\d*$/.test(req.params.id))return res.status(404).json({error:'Trade not found'});
++    const row=await Execution.acknowledge(req.user.id,Number(req.params.id),req.body);
++    res.json({ok:true,trade:journalTrade(row,(await settingsOf(req)).timezone)});
++  } catch(e) {
++    if(e.code==='execution_review_invalid')return res.status(e.status).json({error:e.message,code:e.code});
++    res.status(503).json({error:'Execution review could not be recorded.'});
++  }
++});
++
+ router.post('/trades/:id/journal', requireAuth,async(req,res)=>{
+   try { const row=await J.reviewTrade(req.user.id,Number(req.params.id),req.body||{});res.json({ok:true,trade:journalTrade(row,(await settingsOf(req)).timezone)}); }
+   catch(e){if(e.code==='journal_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Journal review could not be recorded.'});}
+@@ -631,11 +645,12 @@ router.post('/journal/reflections/:id',requireAuth,async(req,res)=>{
+ router.get('/journal/:date', requireAuth, async (req, res) => {
+   const row = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, req.params.date);
+   const tz = (await settingsOf(req)).timezone;
+-  const accountId=req.query.account_id?Number(req.query.account_id):null;
+-  if(accountId!==null && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Account not found'});
++  if(req.query.account_id!==undefined && (typeof req.query.account_id!=='string'||!/^([1-9]\d*)$/.test(req.query.account_id)))return res.status(400).json({error:'Select a canonical positive owned account ID.'});
++  const account=await accountOr404(req,res);if(!account)return;
++  const accountId=account.id;
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
+-  res.json({ entry: row || null, trades,pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 4d65de9..c4c9d6f 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -16,6 +16,7 @@ function createBotsRouter({ requireAuth }) {
+   const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch((err) => {
+     console.error(`BOT API error on ${req.method} ${req.originalUrl}:`, err.message);
+     if (res.headersSent) return;
++    if(err.code==='execution_review_invalid')return res.status(err.status).json({error:err.message,code:err.code});
+     if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
+     res.status(500).json({ error: err.message || 'Bot error' });
+   });
+@@ -235,7 +236,9 @@ router.get('/markets', requireAuth, (req, res) => {
+   }));
+ 
+   router.post('/correction/backfill', requireAuth, wrap(async (req, res) => {
+-    const out = await Bots.correction.backfillGrades(req.user.id);
++    const value=req.body?.account_id;
++    if(value!==undefined && !(typeof value==='number'&&Number.isSafeInteger(value)&&value>0))return res.status(400).json({error:'account_id must be a positive whole number when selected.'});
++    const out = await Bots.correction.backfillGrades(req.user.id,{accountId:value===undefined?null:value});
+     res.json({ ok: true, ...out });
+   }));
+ 

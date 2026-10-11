@@ -271,6 +271,34 @@ this does **not** attribute each trade to its own entry routine. Small/selected
 samples, human/retrospective reports and close-day association do not establish
 causation or justify risk sizing, strategy changes or a win-rate promise.
 
+## Optional execution self-review is not capital, writing or permission
+
+M86 replaces outcome-weighted journal grading with **retrospective human
+execution**. Adherence1–5 plus explicit nullable stop-honour answers are captured
+for an actual closed current saved record. Its source/server time/versioned hash
+and displayed-record revision are owned; relevant edits withhold stale evidence.
+Missing/corrupt/future/legacy data stays Unreviewed with null score. Current valid
+partial answers may identify a specific reported violation, never a full grade.
+Stop movement may be protective; default0, loss size, fees/gaps/slippage and
+MAE/MFE do not establish compliance/violation. Self-report is never broker proof.
+
+`execution-v1` maps1/2/3/4/5 to20/40/60/75/95; explicit stop violation caps39.
+Good-loss classification requires >=4 and explicit honour, not the amount lost.
+There are **no** points for P&L/R/planned RR/session/excursions. This is an app
+display rubric, not a newly quoted course coefficient or a pre-entry setup score.
+M92 ranks a day's known current execution reviews, not biggest profit/loss.
+Unknowns unranked; ties explicit; separately labelled money-only extremes and
+unknown realised-day totals are not converted to zero/floating profit.
+
+No execution score is persisted. The old grade-backfill endpoint now reports
+read-only `updated:0` and evaluated/reviewed/unreviewed counts. Original stored
+`setup_grade` values remain untouched; unknown old manual/model/auto provenance
+cannot be recovered. Entry checklist grades and **A+/A×1, B×.5, C×.25** factors
+are unchanged. Neither grade, explicit stop answer nor a process rank completes
+core loss writing, fresh emotional gate, routine/timer or any first-admission fact,
+waives unknown state or refunds cap/loss/streak/cooldown observations. Truthful
+financial close/correction/deletion/import and record-only entries remain legal.
+
 ## Scope still open
 
 M108's full Sanctuary presets/ambient/intention/toolkit/independent session log
@@ -280,6 +308,6 @@ stay open. **Correction:** M116 is already classified APPLIED in the ledger; the
 prior guide/summaries incorrectly listed it open. No new closure/retuning is counted.
 M84/M85 complete their scoped input-capture/manual-marker gaps, not adaptive sizing.
 These changes do not change
-entry models, target/stop geometry, RR floors, grade policies, the course's
+entry models, target/stop geometry, RR floors, entry setup-grade policies, the course's
 30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
 edge, win-rate improvement, live-provider or production-deployment claim is made.

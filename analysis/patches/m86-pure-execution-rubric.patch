@@ -1,0 +1,139 @@
+diff --git a/src/bots/correction.js b/src/bots/correction.js
+index e0fb389..44c6bd0 100644
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
+@@ -19,6 +19,7 @@
+ const { db } = require('../db');
+ const SMC = require('./smc');
+ const Guards = require('./guardrails');
++const Execution = require('../execution-review');
+ 
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+ const dayKey = (iso) => String(iso || '').slice(0, 10);
+@@ -339,60 +340,9 @@ function detectMistakes(trades) {
+ 
+ /* ══════════════════════════════════════════════════════ 2. AUTO-GRADING */
+ 
+-/**
+- * Grade a trade from its own data (no opinions). Used to backfill `setup_grade`
+- * so the analytics "grade" breakdown is never empty again.
+- * @returns {{score:number, grade:string, reasons:string[]}}
+- */
+-function autograde(trade) {
+-  const reasons = [];
+-  let score = 50;
+-
+-  // 1. planned R:R (the model's minimum is 2)
+-  const planned = trade.planned_r || null;
+-  if (planned == null) { reasons.push('No planned R:R logged (-10)'); score -= 10; }
+-  else if (planned >= 3) { score += 20; reasons.push(`Planned ${r2(planned)}R — excellent pay-off (+20)`); }
+-  else if (planned >= 2) { score += 14; reasons.push(`Planned ${r2(planned)}R — meets the 2R minimum (+14)`); }
+-  else if (planned >= 1.5) { score += 2; reasons.push(`Planned ${r2(planned)}R — below the 2R minimum (+2)`); }
+-  else { score -= 10; reasons.push(`Planned only ${r2(planned)}R (-10)`); }
+-
+-  // 2. execution quality: outcome vs plan
+-  const r = trade.r_multiple || 0;
+-  if (r >= 2) { score += 16; reasons.push(`Closed ${r2(r)}R — plan executed (+16)`); }
+-  else if (r > 0.5) { score += 12; reasons.push(`Closed ${r2(r)}R — winner, but short of a full target (+12)`); }
+-  else if (r > 0) { score += 4; reasons.push(`Closed ${r2(r)}R — small win (+4)`); }
+-  else if (r >= -1.05) { score += 6; reasons.push(`Loss of ${r2(r)}R — within the 1R limit, that is a good loss (+6)`); }
+-  else { score -= 12; reasons.push(`Loss of ${r2(r)}R exceeds the 1R stop (-12)`); }
+-
+-  // 3. risk discipline
+-  if (trade.stop_moved) { score -= 18; reasons.push('Stop was moved away from entry (-18)'); }
+-  else if (r < -1.05) { reasons.push('Stop not honoured (-6)'); score -= 6; }
+-  else { score += 6; reasons.push('Stop left where the plan put it (+6)'); }
+-
+-  // 4. excursion discipline (entry timing + exit timing)
+-  if (trade.mae_r != null && trade.mae_r > -0.9 && r < 0) { score += 4; reasons.push('Entry was not run over (MAE under 0.9R) (+4)'); }
+-  if (trade.mae_r != null && trade.mae_r < -1.2) { score -= 6; reasons.push(`Entry was immediately underwater (MAE ${r2(trade.mae_r)}R) (-6)`); }
+-  if (trade.mfe_r != null && r > 0 && trade.mfe_r - r <= 0.75) { score += 8; reasons.push('Exited near the peak excursion (+8)'); }
+-  if (trade.mfe_r != null && r > 0 && trade.mfe_r - r >= 1.5) { score -= 8; reasons.push(`Left ${r2(trade.mfe_r - r)}R on the table (MFE was ${r2(trade.mfe_r)}R) (-8)`); }
+-
+-  // 5. adherence self-score
+-  if (trade.adherence != null) {
+-    if (trade.adherence >= 4) { score += 6; reasons.push(`Rule adherence ${trade.adherence}/5 (+6)`); }
+-    else if (trade.adherence <= 2) { score -= 10; reasons.push(`Rule adherence only ${trade.adherence}/5 (-10)`); }
+-  }
+-
+-  // 6. session quality (killzone windows)
+-  const sess = String(trade.session || '').toLowerCase();
+-  if (sess) {
+-    const quality = sessionQuality(sess);
+-    if (quality != null && quality < 0.55) { score -= 6; reasons.push(`Traded the ${sess} session — low-probability window (-6)`); }
+-    else if (quality != null && quality >= 0.85) { score += 4; reasons.push(`Traded the ${sess} killzone (+4)`); }
+-  }
+-
+-  score = Math.max(0, Math.min(100, score));
+-  const grade = score >= 80 ? 'A+' : score >= 68 ? 'A' : score >= 54 ? 'B' : score >= 40 ? 'C' : 'D';
+-  return { score, grade, reasons };
+-}
++/** M86 retrospective self-report execution rubric, separate from entry setup
++ * quality. Pure current facts, no outcome/session/excursion points or risk input. */
++function autograde(trade) { return Execution.review(trade); }
+ 
+ /** Fill in setup_grade for trades that have none. */
+ async function backfillGrades(userId) {
+diff --git a/src/execution-review.js b/src/execution-review.js
+new file mode 100644
+index 0000000..d351fa8
+--- /dev/null
++++ b/src/execution-review.js
+@@ -0,0 +1,57 @@
++'use strict';
++/** M86: retrospective HUMAN execution review, never a pre-entry checklist
++ * grade/risk input. Unknown evidence is not a manufactured poor/good trade.
++ * Outcome/excursions do not award points or prove stop violations. */
++const VERSION = 'execution-v1';
++const BASIS = 'self_reported_execution';
++const SCORES = Object.freeze({1:20,2:40,3:60,4:75,5:95});
++const number = v => typeof v === 'number' && Number.isFinite(v) ? v : null;
++const stamp = v => {
++  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(v)) return null;
++  const d = new Date(v), n = d.getTime();
++  return Number.isFinite(n) && d.toISOString().replace('.000Z','Z') === v.replace('.000Z','Z') ? n : null;
++};
++function outcome(trade) {
++  const net = number(trade.net_pnl), r = number(trade.r_multiple);
++  if (net === null && r === null || net !== null && r !== null && Math.sign(net) !== Math.sign(r)) {
++    return {state:'unknown',kind:null,net_pnl:net,r_multiple:r,basis:'unavailable_or_contradictory_realised_outcome'};
++  }
++  const v = net === null ? r : net;
++  return {state:'known',kind:v < 0 ? 'loss' : v > 0 ? 'win' : 'breakeven',net_pnl:net,r_multiple:r,basis:net === null ? 'recorded_realised_r' : 'recorded_realised_net_pnl'};
++}
++function review(trade, {nowMs=Date.now()}={}) {
++  const reasons = ['Execution basis: self-reported journal evidence, not broker-verified adherence.'];
++  const a = number(trade.adherence), validAdherence = Number.isInteger(a) && a >= 1 && a <= 5;
++  const flag = trade.stop_honoured, validFlag = flag === 1 || flag === true || flag === 0 || flag === false;
++  const recorded = stamp(trade.stop_honoured_recorded_at), close = stamp(trade.closed_at);
++  const validClock = number(nowMs) !== null && close !== null && close <= nowMs;
++  const stop = number(trade.stop);
++  const validStop = validFlag && stop !== null && stop > 0 && ['self_reported','imported_self_report'].includes(trade.stop_honoured_source)
++    && recorded !== null && recorded <= nowMs && close !== null && recorded >= close;
++  const completed = trade.status === 'closed' && number(trade.exit) !== null && validClock;
++  const honoured = validStop ? flag === 1 || flag === true : null;
++  const facts = completed ? outcome(trade) : {state:'unknown',kind:null,basis:'not_known_closed_outcome',net_pnl:null,r_multiple:null};
++  reasons.push(validAdherence ? `Rule adherence ${a}/5: the owner's retrospective report.` : 'Rule adherence unavailable/invalid: no rating is inferred from P&L.');
++  reasons.push(validStop ? `Stop honour explicitly reported ${honoured ? 'yes' : 'no'} (${trade.stop_honoured_source}).`
++    : 'Stop honour unreviewed/invalid: not inferred from movement, realised R, default zero or a legacy row.');
++  const complete = completed && validAdherence && validStop;
++  const violated = completed && (validAdherence && a < 4 || validStop && !honoured);
++  const quality = complete ? violated ? 'plan_violated' : 'plan_followed' : violated ? 'known_violation_in_incomplete_review' : 'unreviewed';
++  let score = null, grade = 'Unreviewed', loss = 'unknown';
++  if (complete) {
++    score = honoured ? SCORES[a] : Math.min(SCORES[a],39);
++    grade = score >= 80 ? 'A+' : score >= 68 ? 'A' : score >= 54 ? 'B' : score >= 40 ? 'C' : 'D';
++    reasons.push(`Execution rubric ${VERSION}: adherence points ${SCORES[a]}${honoured ? '' : ', explicit stop violation caps score below C at39'}.`);
++    if (facts.state === 'known') {
++      loss = facts.kind === 'loss' ? violated ? 'bad_loss' : 'good_loss' : 'not_loss';
++      if (loss === 'good_loss') reasons.push('Good loss by reported plan adherence and honoured stop — not by its size.');
++      else if (loss === 'bad_loss') reasons.push('Bad loss by an explicit reported execution violation, not by red P&L alone.');
++    }
++  } else reasons.push('Execution grade withheld until an actual closed journal and complete valid self-review exist.');
++  reasons.push('Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect.');
++  return {state:complete ? 'reviewed' : 'unreviewed',grade,score,reasons,basis:BASIS,rubric_version:VERSION,
++    execution_quality:quality,loss_quality:loss,outcome:facts,evidence:{adherence:validAdherence?a:null,stop_honoured:honoured,
++      stop_honoured_source:validStop?trade.stop_honoured_source:null,stop_honoured_recorded_at:validStop?trade.stop_honoured_recorded_at:null},
++    retrospective:true,broker_verified:false,entry_setup_grade:trade.setup_grade || null};
++}
++module.exports = {review,outcome,VERSION,BASIS,SCORES};

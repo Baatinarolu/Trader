@@ -1,0 +1,402 @@
+{
+  "base_commit": "c22d5b9f6db4eca17f5981f5b87230f5ec343b86",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 89,
+    "partial": 3,
+    "todo": 40,
+    "no_action": 0,
+    "partition_groups": 8,
+    "partial_ids": [
+      "M30",
+      "M103",
+      "M108"
+    ],
+    "todo_ids": [
+      "M125",
+      "M45",
+      "M46",
+      "M49",
+      "M53",
+      "M55",
+      "M67",
+      "M72",
+      "M73",
+      "M74",
+      "M112",
+      "M12",
+      "M13",
+      "M15",
+      "M56",
+      "M59",
+      "M60",
+      "M65",
+      "M66",
+      "M87",
+      "M88",
+      "M89",
+      "M91",
+      "M93",
+      "M99",
+      "M100",
+      "M101",
+      "M104",
+      "M105",
+      "M106",
+      "M107",
+      "M115",
+      "M17",
+      "M18",
+      "M19",
+      "M62",
+      "M109",
+      "M110",
+      "M111",
+      "M117"
+    ]
+  },
+  "feature_assertions": {
+    "pass": 260,
+    "fail": 0,
+    "probes": 9,
+    "scope": "Actual no legacy/native prerequisite adapter, declared literal fixed-clock journal/market IO/DOM only"
+  },
+  "prior_actual_routine": {
+    "pass": 321,
+    "fail": 0,
+    "probes": 10,
+    "owned_strategy_ui_freshness": "UNMEASURED prior distinct scope"
+  },
+  "raw_inherited": {
+    "pass": 597,
+    "fail": 155,
+    "probes": 31,
+    "completed_nonzero": 21,
+    "timeout_no_exit": 1,
+    "scope": "Sum of REPORTED completed counters only, no invented denominator or null exit0"
+  },
+  "declared_isolation": {
+    "pass": 828,
+    "fail": 0,
+    "probes": 31,
+    "scope": "Sum of REPORTED completed counters only, no invented denominator or null exit0"
+  },
+  "offline_synthetic_no_prerequisite_adapter": {
+    "pass": 178,
+    "fail": 0
+  },
+  "original_live_provider_attempts": {
+    "pass": 70,
+    "fail": 1,
+    "completed_nonzero": 6,
+    "summaryless": 5,
+    "scope": "Sum of REPORTED completed counters only, no invented denominator or null exit0"
+  },
+  "declared_market": {
+    "pass": 325,
+    "fail": 0
+  },
+  "native": [
+    {
+      "arm": "parent",
+      "suite": "api",
+      "server_app": "/tmp/m86-parent/app",
+      "scripts_unchanged": true,
+      "pass": 121,
+      "fail": 0,
+      "exit_code": 0,
+      "output": "native-parent-api.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. DECLARED synthetic owned preparation actual modules/15m control clock; old assertions, not human/meditation/live/broker/production proof.",
+      "parity_fills": null,
+      "parity_mismatches": null
+    },
+    {
+      "arm": "parent",
+      "suite": "bots",
+      "server_app": "/tmp/m86-parent/app",
+      "scripts_unchanged": true,
+      "pass": 206,
+      "fail": 0,
+      "exit_code": 0,
+      "output": "native-parent-bots.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. DECLARED synthetic owned preparation actual modules/15m control clock; old assertions, not human/meditation/live/broker/production proof.",
+      "parity_fills": 21,
+      "parity_mismatches": 0
+    },
+    {
+      "arm": "raw",
+      "suite": "api",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": null,
+      "fail": null,
+      "exit_code": 2,
+      "output": "native-raw-api.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. NO preparation fixture, retained new mandatory-routine aborts, not integrated-all assertion pass.",
+      "parity_fills": null,
+      "parity_mismatches": null
+    },
+    {
+      "arm": "raw",
+      "suite": "bots",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": 202,
+      "fail": 4,
+      "exit_code": 1,
+      "output": "native-raw-bots.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. NO preparation fixture, retained new mandatory-routine aborts, not integrated-all assertion pass.",
+      "parity_fills": 21,
+      "parity_mismatches": 0
+    },
+    {
+      "arm": "fixture",
+      "suite": "api",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": 121,
+      "fail": 0,
+      "exit_code": 0,
+      "output": "native-fixture-api.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. DECLARED synthetic owned preparation actual modules/15m control clock; old assertions, not human/meditation/live/broker/production proof.",
+      "parity_fills": null,
+      "parity_mismatches": null
+    },
+    {
+      "arm": "fixture",
+      "suite": "bots",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": 206,
+      "fail": 0,
+      "exit_code": 0,
+      "output": "native-fixture-bots.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. DECLARED synthetic owned preparation actual modules/15m control clock; old assertions, not human/meditation/live/broker/production proof.",
+      "parity_fills": 21,
+      "parity_mismatches": 0
+    }
+  ],
+  "smoke": {
+    "exit_code": null,
+    "tool_status": "timeout_after90s",
+    "result_views_passed": 21,
+    "result_views_failed": 0,
+    "ui_style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limitations": 8,
+    "stdout_summary_later_observed": true,
+    "exit_not_inferred_from_stdout": true,
+    "scope": "Original actual JSDOM all-view composition on raw current server; explicit synthetic offline candle IO, NO preparation adapter. Reported21 rows dynamic/conditional, not pixel/rendered browser/provider/production proof."
+  },
+  "controls_and_errors": {
+    "parent-rubric-results.json": [
+      4,
+      52
+    ],
+    "parent-final-rubric-results.json": [
+      4,
+      56
+    ],
+    "rubric-only-review-contracts-results.json": [
+      6,
+      36
+    ],
+    "review-only-rubric-results.json": [
+      59,
+      1
+    ],
+    "outcome-only-derived-feedback-initial-results.json": [
+      2,
+      21
+    ],
+    "outcome-only-derived-feedback-results.json": [
+      3,
+      20
+    ],
+    "feedback-only-freshness-results.json": [
+      3,
+      11
+    ],
+    "freshness-only-day-results.json": [
+      3,
+      21
+    ],
+    "day-only-ui-results.json": [
+      2,
+      27
+    ],
+    "day-only-final-ui-results.json": [
+      2,
+      31
+    ],
+    "ui-whole-initial-results.json": [
+      32,
+      1
+    ],
+    "noninterference-initial-results.json": [
+      6,
+      2
+    ],
+    "parent-noninterference-results.json": [
+      26,
+      8
+    ],
+    "ui-only-hardening-results.json": [
+      2,
+      12
+    ],
+    "ui-only-final-hardening-results.json": [
+      2,
+      13
+    ],
+    "known-evidence-movement-initial-results.json": [
+      14,
+      1
+    ]
+  },
+  "stages": [
+    {
+      "stage": "rubric",
+      "source_manifest": "rubric-source.json",
+      "source_files": 118,
+      "patch": "m86-pure-execution-rubric.patch",
+      "files": 2,
+      "bytes": 9116,
+      "sha256": "ef1c73202cc92b0ef088f4d49ae9d3ddcbcf48096227d840edea3af851f5c98f",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "review",
+      "source_manifest": "review-source.json",
+      "source_files": 118,
+      "patch": "m86-explicit-stop-review-contracts.patch",
+      "files": 3,
+      "bytes": 8513,
+      "sha256": "276b71c581d96112f0a43ca84038a240120cc53db235c018f558bb146656dcb0",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "outcome",
+      "source_manifest": "outcome-source.json",
+      "source_files": 118,
+      "patch": "m86-unknown-realised-outcome.patch",
+      "files": 1,
+      "bytes": 1137,
+      "sha256": "7d16eea4a8bafb6ddbcb1ac480f4f56094b393a87d7579f2bed4964b41f73104",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "feedback",
+      "source_manifest": "feedback-source.json",
+      "source_files": 118,
+      "patch": "m86-read-only-grades-feedback.patch",
+      "files": 3,
+      "bytes": 13036,
+      "sha256": "b90650ff2f45cd01e3548d197389dab24bc16e33f99079a0497b9f50f6f0d6c2",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "freshness",
+      "source_manifest": "freshness-source.json",
+      "source_files": 118,
+      "patch": "m86-current-displayed-revision.patch",
+      "files": 1,
+      "bytes": 3160,
+      "sha256": "1dbf59466a33cf4eea6d8693250cabb584c264be3927806db2370affb7156c6d",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "day",
+      "source_manifest": "day-source.json",
+      "source_files": 118,
+      "patch": "m92-process-ranked-day.patch",
+      "files": 3,
+      "bytes": 6626,
+      "sha256": "ab68d76dda1194a4ca28146fbaa37ca21ca21eac8c6fb2f405d111e425af2739",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "ui",
+      "source_manifest": "ui-source.json",
+      "source_files": 119,
+      "patch": "m86-m92-execution-review-ui.patch",
+      "files": 7,
+      "bytes": 27556,
+      "sha256": "35e540edbc5c9ee8a31e6f6881a82a38a5f83c13a5096da53bc337f16d74cfc4",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "hardening",
+      "source_manifest": "hardening-source.json",
+      "source_files": 119,
+      "patch": "m86-current-evidence-uncertainty.patch",
+      "files": 2,
+      "bytes": 5992,
+      "sha256": "419487ed47bcba2b9a56b1673ef399e8127a53d9255d0ddde3c74057d8aaff39",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "full",
+      "source_manifest": "full-source.json",
+      "source_files": 119,
+      "patch": "m86-m92-documentation.patch",
+      "files": 3,
+      "bytes": 9430,
+      "sha256": "ee6964e9237aace5850d75c9f2013523570dd3b9a36f91cd6e9458a006394cb6",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 16,
+    "bytes": 71237,
+    "sha256": "73d81fcd76487abf9532543a44f8d1a25b102794575fde7888cb210f95c4f7e0",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 55,
+    "bytes": 849330,
+    "sha256": "e1286c7c1d1ba28cbc390b18c5351ef2dff105a0dea9c8ee7653827958023129",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 119,
+    "application_byte_differences": 0,
+    "private_env_db_dependency_files": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/setup.js",
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "other_neutral_files": [
+    "src/instruments.js",
+    "package-lock.json",
+    "scripts/api-test.js",
+    "scripts/bots-test.js",
+    "scripts/smoke-test.js"
+  ],
+  "package_lock_sha256": "33e859914328605792ab71c75957b752716748828b0b2bef164956525cffb74c",
+  "scope": "M86 retrospective SELF execution +M92 process day ranking only, not capital grade, core writing, broker/live emotion/routine/market edge/cause/70%/production/pixel proof; unknowns unreviewed, no guessed legacy provenance."
+}

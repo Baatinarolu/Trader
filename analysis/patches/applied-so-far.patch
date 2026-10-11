@@ -315,13 +315,34 @@ index 0000000..bd0e991
 +no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
 +Those four are what distinguish a working deploy from one that merely builds.
 diff --git a/README.md b/README.md
-index df9ae3c..ce03d77 100644
+index df9ae3c..6522a7a 100644
 --- a/README.md
 +++ b/README.md
-@@ -11,6 +11,17 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -11,6 +11,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  
  ---
  
++## Execution self-review (separate from entry setup grade)
++
++After recording the actual close, use **Trade log → Execution** (also in saved
++trade/core-writing forms). Explicitly review your own adherence1–5 and whether
++you honoured the planned stop; unknown stays **Unreviewed**, never a made-up0.
++P&L/R/planned RR/session/excursions add **no execution points**. The human
++assessment is not broker verification or live emotional capture, does not
++complete core writing/routine or change entry permission/risk. Save financial
++edits first; a changed saved record requires reopening the current review.
++
++Daily review shows **best/worst by reported execution**, retaining ties and
++leaving unknowns unranked. Money-only extrema remain separately labelled; unknown
++realised net is unavailable, not zero, and open floating data is excluded from
++the realised day values. Existing numeric P&L statistics remain compatible.
++The old “backfill grades” API is now a **read-only derived refresh**: `updated:0`,
++with reviewed/unreviewed counts. It never overwrites `setup_grade`. Earlier stored
++manual/model/auto-grade provenance cannot be reconstructed; values are retained
++and explicitly separate from execution. See [API](docs/API.md) and
++[guardrails](docs/GUARDRAILS.md). Entry models/checklist grades/risk factors,
++price geometry and deliberate sample thresholds are unchanged.
++
 +## Personal-rule admission
 +
 +New trade/reopen and prospective plan actions now recheck scoped personal rules
@@ -336,7 +357,7 @@ index df9ae3c..ce03d77 100644
  ## What it does
  
  | Area | What you get |
-@@ -18,8 +29,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -18,8 +50,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  | **Journal** | 40+ fields per trade — thesis, execution notes, emotions, confidence, rule-adherence score, mistake tags, screenshots, MAE/MFE, planned R, **scale-out legs** (closes at the pct-weighted price). Works for FX, futures, stocks, ETFs, crypto, index CFDs and options. |
  | **Analytics** | Expectancy ($ and R), win rate, profit factor, payoff, SQN, Sharpe, Sortino, Calmar, recovery factor, Kelly, max drawdown, streaks, R-distribution, MAE/MFE capture efficiency, time-of-day and weekday grids, hold-time buckets, 10+ segment tables. |
  | **Coach** | 20+ deterministic behavioural tests on your own rows — losing setups, bad hours, revenge entries, post-loss trading, overtrading days, size creep, early exits, tight stops, cost of each mistake tag — each with the numbers, the dollar impact and one concrete action. |
@@ -347,7 +368,7 @@ index df9ae3c..ce03d77 100644
  | **Data** | CSV import with automatic column detection, CSV export, full JSON backup & restore, multi-account (including prop-firm drawdown rules), instrument library. |
  | **Options** | Black-Scholes calculator (price, delta/gamma/theta/vega, break-even, ITM/OTM), premium-based position sizing, and a plan that warns instead of printing a fake R:R when your target premium is below the entry. 7 option presets (100× multiplier). *IV is yours to type — there is no options feed.* |
  | **Prop challenge** | Named challenge shapes (5 %/10 %, 6 %/6 %, instant…) applied to an account, then a live tracker over 4 checks — daily loss, max drawdown, profit target, consistency — with progress %. |
-@@ -263,6 +274,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
+@@ -263,6 +295,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
  
  Guides: [docs/BOTS.md](docs/BOTS.md) · [docs/PLAYLIST-CURRICULUM.md](docs/PLAYLIST-CURRICULUM.md)
  
@@ -396,10 +417,10 @@ index df9ae3c..ce03d77 100644
  
  * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.
 diff --git a/docs/API.md b/docs/API.md
-index 4475db3..d2a4cf7 100644
+index 4475db3..f63a6aa 100644
 --- a/docs/API.md
 +++ b/docs/API.md
-@@ -383,3 +383,51 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
+@@ -383,3 +383,114 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
  | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
  | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
  | `DELETE /api/chart/drawings?symbol=…&tf=…` | clears that market |
@@ -451,12 +472,75 @@ index 4475db3..d2a4cf7 100644
 +or a human flag cannot rewrite its original preparation basis. Current done and
 +on-time/before-first-entry prepared are different facts. Neither is broker activity,
 +a live emotional/feed clearance or proof of a profitable causal effect.
++
++
++## Retrospective execution self-review (M86) and day extremes (M92)
++
++`GET /trades/:id` (and trade lists/day rows) adds a **derived** `execution_review`:
++`state`, `grade`, nullable `score`, `execution_quality`, `loss_quality`, separate
++`outcome`, `evidence`, `basis:"self_reported_execution"`, `rubric_version`,
++`broker_verified:false`, original `entry_setup_grade`, and opaque
++`record_revision`. Missing/invalid/stale/future/open evidence is **Unreviewed**,
++not an inferred0 or good/bad loss. A current acknowledged partial report can
++identify a specific violation, but cannot receive a full grade/good/bad-loss label.
++
++`POST /trades/:id/execution-review` is optional and owned/authenticated:
++
++```json
++{"adherence":5,"stop_honoured":true,"record_revision":"<copy current GET execution_review.record_revision>"}
++```
++
++- Only those three keys. Adherence is a literal whole number1–5 or null; stop
++  honour is literal true/false/null. Read the **saved current** record first.
++- Server records nullable `stop_honoured`, `stop_honoured_source`,
++  `stop_honoured_recorded_at`, and versioned `execution_review_hash`, atomically
++  with the bounded existing `adherence`. Hash binds relevant current trade fields,
++  not a cached score or broker signature. No client clock/source/hash/grade spoofing.
++- No actual close/open/future evidence or changed displayed revision:409. Bad
++  input/unknown recorded stop for an honour claim:400. Foreign/missing ID:404.
++  Storage uncertainty:503 without a partial write. Literal nullable answers may
++  remain unreviewed; legacy populated notes/default0 movement do not prove honour.
++- Core writing remains `/trades/:id/journal`; financial create/update/close/delete
++  remains legal without an execution review. Financial CRUD does not mint review
++  flags/source/clocks/hash. JSON/CSV record-only imports do not replay these
++  server-owned acknowledgements or infer historic completion; re-review explicitly.
++- App display rubric `execution-v1`: adherence1/2/3/4/5 →20/40/60/75/95; explicit
++  stop violation caps39/D. Good loss requires >=4 **and** explicit honoured stop,
++  with known consistent realised loss. P&L/R/RR/session/MAE/MFE earn no points.
++  This mapping is an app display choice, **not a numeric course quotation** or
++  entry sizing input. Current same-record evidence required even for partial flags.
++
++`POST /bots/correction/backfill` is retained for compatibility but **READ-ONLY**:
++optional literal positive integer `account_id`, otherwise all own closed journals.
++Returns `updated:0`, `evaluated`, `reviewed`, `unreviewed`, `distribution`,
++`read_only:true`, basis/version. Foreign account404, malformed ID400. No stored
++`setup_grade` writes, cache, guessed legacy source or any capital-rule change.
++`GET /bots/correction` exposes execution `grades` plus independent original
++`setup_grades` with legacy provenance warning. Its `backfill=1` is read-only too.
++Feedback uses current human execution versus separately descriptive outcome,
++not outcome-only repeat-it praise or stop/entry-location blame from excursions.
++
++`GET /journal/:date?account_id=…` adds `account_id` and `execution_summary` scoped
++to one owned account and UTC close day. Omitted account resolves the actual
++default (not mixed-account trades beside a default routine). Noncanonical/repeated
++account query400; foreign404. Shared notebook text is still shared, not new
++per-account duplicate notes. `best`/`worst` rank known current self-review scores;
++`trade_ids`/`tie_count` retain ties, unknowns unranked, no P&L tie-break. `pnl` is
++money-only known/unavailable extrema and nullable realised day total/recorded R;
++open/future/unknown data never silently becomes realised0.
++
++Performance retains every prior numeric metric including `best_trade`/`worst_trade`
++as money fields. New `trade_extremes_basis` labels that compatibility basis, and
++`execution_summary` is separate; finance is not renamed or used as execution.
++All ranking/grade/outcome associations are descriptive, self-reported and
++retrospective, not statistical edge, causation, live emotion/provider/broker proof,
++fresh entry readiness, permission or risk advice.
 diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
 new file mode 100644
-index 0000000..b6556fc
+index 0000000..526d0c8
 --- /dev/null
 +++ b/docs/GUARDRAILS.md
-@@ -0,0 +1,285 @@
+@@ -0,0 +1,313 @@
 +# Personal guardrails, recording and reasoned exceptions
 +
 +These rules govern **this app's prospective trade/plan actions**. There is no broker
@@ -730,6 +814,34 @@ index 0000000..b6556fc
 +samples, human/retrospective reports and close-day association do not establish
 +causation or justify risk sizing, strategy changes or a win-rate promise.
 +
++## Optional execution self-review is not capital, writing or permission
++
++M86 replaces outcome-weighted journal grading with **retrospective human
++execution**. Adherence1–5 plus explicit nullable stop-honour answers are captured
++for an actual closed current saved record. Its source/server time/versioned hash
++and displayed-record revision are owned; relevant edits withhold stale evidence.
++Missing/corrupt/future/legacy data stays Unreviewed with null score. Current valid
++partial answers may identify a specific reported violation, never a full grade.
++Stop movement may be protective; default0, loss size, fees/gaps/slippage and
++MAE/MFE do not establish compliance/violation. Self-report is never broker proof.
++
++`execution-v1` maps1/2/3/4/5 to20/40/60/75/95; explicit stop violation caps39.
++Good-loss classification requires >=4 and explicit honour, not the amount lost.
++There are **no** points for P&L/R/planned RR/session/excursions. This is an app
++display rubric, not a newly quoted course coefficient or a pre-entry setup score.
++M92 ranks a day's known current execution reviews, not biggest profit/loss.
++Unknowns unranked; ties explicit; separately labelled money-only extremes and
++unknown realised-day totals are not converted to zero/floating profit.
++
++No execution score is persisted. The old grade-backfill endpoint now reports
++read-only `updated:0` and evaluated/reviewed/unreviewed counts. Original stored
++`setup_grade` values remain untouched; unknown old manual/model/auto provenance
++cannot be recovered. Entry checklist grades and **A+/A×1, B×.5, C×.25** factors
++are unchanged. Neither grade, explicit stop answer nor a process rank completes
++core loss writing, fresh emotional gate, routine/timer or any first-admission fact,
++waives unknown state or refunds cap/loss/streak/cooldown observations. Truthful
++financial close/correction/deletion/import and record-only entries remain legal.
++
 +## Scope still open
 +
 +M108's full Sanctuary presets/ambient/intention/toolkit/independent session log
@@ -739,7 +851,7 @@ index 0000000..b6556fc
 +prior guide/summaries incorrectly listed it open. No new closure/retuning is counted.
 +M84/M85 complete their scoped input-capture/manual-marker gaps, not adaptive sizing.
 +These changes do not change
-+entry models, target/stop geometry, RR floors, grade policies, the course's
++entry models, target/stop geometry, RR floors, entry setup-grade policies, the course's
 +30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
 +edge, win-rate improvement, live-provider or production-deployment claim is made.
 diff --git a/public/css/app.css b/public/css/app.css
@@ -782,10 +894,18 @@ index 34cc0ff..877c80b 100644
 +.routine-report{margin-top:14px}.routine-report th{white-space:normal}
 +@media(max-width:700px){.routine-banner{position:relative;top:auto;align-items:flex-start;padding:10px;flex-wrap:wrap}.routine-schedule .form-grid{grid-template-columns:1fr!important}}
 diff --git a/public/index.html b/public/index.html
-index 7ed122b..5560dda 100644
+index 7ed122b..3b7f3d9 100644
 --- a/public/index.html
 +++ b/public/index.html
-@@ -36,6 +36,7 @@
+@@ -25,6 +25,7 @@
+ <script src="/js/api.js?v={{V}}"></script>
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
++<script src="/js/views/execution.js?v={{V}}"></script>
+ <script src="/js/views/dashboard.js?v={{V}}"></script>
+ <script src="/js/views/bots.js?v={{V}}"></script>
+ <script src="/js/views/trades.js?v={{V}}"></script>
+@@ -36,6 +37,7 @@
  <script src="/js/views/risk.js?v={{V}}"></script>
  <script src="/js/views/market.js?v={{V}}"></script>
  <script src="/js/views/settings.js?v={{V}}"></script>
@@ -1113,17 +1233,19 @@ index 4ca4e5e..e13fa5d 100644
  
      /**
 diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
-index a3eb318..a5dc09b 100644
+index a3eb318..b696929 100644
 --- a/public/js/views/analytics.js
 +++ b/public/js/views/analytics.js
-@@ -23,6 +23,7 @@
+@@ -23,7 +23,8 @@
            const w = U.h('div', { class: 'grid' });
            const cards = [
              ['Profitability', [['Net P&L', U.moneySign(k.net_pnl), U.cls(k.net_pnl)], ['Gross profit', U.money(k.gross_profit), 'pos'], ['Gross loss', U.money(-k.gross_loss), 'neg'], ['Fees & costs', U.money(-k.fees), 'neg'], ['Expectancy / trade', U.moneySign(k.expectancy), U.cls(k.expectancy)], ['Expectancy (R)', U.signed(k.expectancy_r, 3) + 'R', U.cls(k.expectancy_r)], ['Profit factor', k.profit_factor === null ? '∞' : U.num(k.profit_factor, 2), ''], ['Payoff ratio', U.num(k.payoff, 2), ''], ['Kelly optimum', U.pct(k.kelly, 1), '']]],
+-            ['Trade outcomes', [['Total trades', k.trades, ''], ['Winners', `${k.wins} (${U.pct(k.win_rate, 1)})`, 'pos'], ['Losers', `${k.losses} (${U.pct(k.loss_rate, 1)})`, 'neg'], ['Break-even', k.breakevens, ''], ['Avg win', U.money(k.avg_win), 'pos'], ['Avg loss', U.money(-k.avg_loss), 'neg'], ['Largest win', U.money(k.best_trade), 'pos'], ['Largest loss', U.money(k.worst_trade), 'neg'], ['Best / worst R', `${U.signed(k.best_r, 1)}R / ${U.signed(k.worst_r, 1)}R`, '']]],
 +            ['Discipline', [['Compliance (per trade)', k.compliance === null ? '—' : U.pct(k.compliance, 1), ''], ['Compliance (pooled steps)', k.compliance_pooled === null ? '—' : U.pct(k.compliance_pooled, 1), ''], ['Trades with a checklist', k.compliance_trades === undefined ? '—' : k.compliance_trades, ''], ['Checklist steps followed', (k.compliance_checks ? k.compliance_passed + ' / ' + k.compliance_checks : '—'), '']]],
-             ['Trade outcomes', [['Total trades', k.trades, ''], ['Winners', `${k.wins} (${U.pct(k.win_rate, 1)})`, 'pos'], ['Losers', `${k.losses} (${U.pct(k.loss_rate, 1)})`, 'neg'], ['Break-even', k.breakevens, ''], ['Avg win', U.money(k.avg_win), 'pos'], ['Avg loss', U.money(-k.avg_loss), 'neg'], ['Largest win', U.money(k.best_trade), 'pos'], ['Largest loss', U.money(k.worst_trade), 'neg'], ['Best / worst R', `${U.signed(k.best_r, 1)}R / ${U.signed(k.worst_r, 1)}R`, '']]],
++            ['Trade outcomes', [['Total trades', k.trades, ''], ['Winners', `${k.wins} (${U.pct(k.win_rate, 1)})`, 'pos'], ['Losers', `${k.losses} (${U.pct(k.loss_rate, 1)})`, 'neg'], ['Break-even', k.breakevens, ''], ['Avg win', U.money(k.avg_win), 'pos'], ['Avg loss', U.money(-k.avg_loss), 'neg'], ['Max realised P&L (money only)', U.money(k.best_trade), 'pos'], ['Min realised P&L (money only)', U.money(k.worst_trade), 'neg'], ['Max / min realised R', `${U.signed(k.best_r, 1)}R / ${U.signed(k.worst_r, 1)}R`, '']]],
              ['Risk-adjusted', [['Sharpe (ann.)', U.num(k.sharpe, 2), k.sharpe > 1 ? 'pos' : ''], ['Sortino (ann.)', U.num(k.sortino, 2), k.sortino > 1 ? 'pos' : ''], ['SQN', U.num(k.sqn, 2), ''], ['Calmar', U.num(k.calmar, 2), ''], ['Recovery factor', U.num(k.recovery_factor, 2), ''], ['Std dev of R', U.num(k.std_r, 2), ''], ['Median R', U.signed(k.median_r, 2) + 'R', ''], ['Total R', U.signed(k.total_r, 1) + 'R', U.cls(k.total_r)], ['Profit concentration', U.pct(k.profit_concentration, 0), '']]],
              ['Discipline', [['Avg adherence', k.avg_adherence ? U.num(k.avg_adherence, 2) + ' / 5' : '—', ''], ['Risk consistency', '±' + U.pct(k.risk_consistency, 0), k.risk_consistency < 35 ? 'pos' : 'warn'], ['Avg risk / trade', U.money(k.avg_risk), ''], ['Avg risk % of balance', U.pct(k.avg_risk_pct_of_balance, 2), ''], ['Trades without stop', k.stops_overshot ? `${an.by_symbol.length ? '' : ''}${k.stops_overshot} over -1R` : '0', ''], ['Current streak', k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + ' wins' : Math.abs(k.streaks.current) + ' losses'), k.streaks.current_type === 'loss' ? 'neg' : 'pos'], ['Longest win streak', k.streaks.longest_win, ''], ['Longest loss streak', k.streaks.longest_loss, 'neg'], ['Trading days', `${k.trading_days} (${U.num(k.avg_trades_per_day, 1)}/day)`, '']]],
+           ];
 @@ -207,14 +208,14 @@
            const w = U.h('div', { class: 'grid' });
            const defs = [
@@ -1142,7 +1264,7 @@ index a3eb318..a5dc09b 100644
                <tbody>${rows.sort((a, b) => b.net_pnl - a.net_pnl).map((r) => `<tr><td>${U.esc(r.key)}</td><td class="num">${r.trades}</td><td class="num">${U.pct(r.win_rate, 0)}</td>
                  <td class="num ${U.cls(r.expectancy_r)}">${U.signed(r.expectancy_r, 2)}R</td><td class="num">${r.profit_factor === null ? '∞' : U.num(r.profit_factor, 2)}</td>
 diff --git a/public/js/views/bots.js b/public/js/views/bots.js
-index 2222ac3..4f2861a 100644
+index 2222ac3..540c469 100644
 --- a/public/js/views/bots.js
 +++ b/public/js/views/bots.js
 @@ -13,6 +13,11 @@
@@ -1536,7 +1658,39 @@ index 2222ac3..4f2861a 100644
  
      const grid = h('div', { class: 'bot-grid' });
      const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
-@@ -1094,13 +1231,15 @@
+@@ -1039,18 +1176,8 @@
+       left.appendChild(card);
+     });
+ 
+-    const grades = h('div', { class: 'card' });
+-    grades.appendChild(h('div', { class: 'card-head', html: `<strong>Auto-graded setups</strong> <span class="muted">every trade graded from its own data</span>` }));
+-    grades.appendChild(h('div', { class: 'table-wrap', html: `<table class="table"><thead><tr><th>Grade</th><th>Trades</th><th>Win rate</th><th>Net</th><th>Expectancy</th></tr></thead><tbody>${(c.grades || []).map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.trades}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.net > 0 ? 'pos' : 'neg'}">${global.U.moneySign(x.net)}</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No graded trades yet.</td></tr>'}</tbody></table>` }));
+-    const backfill = h('button', { class: 'btn sm', text: 'Auto-grade the trades that have no grade' });
+-    backfill.addEventListener('click', async () => {
+-      try {
+-        const r = await global.API.post('/bots/correction/backfill', {});
+-        global.App.toast(`Graded ${r.updated} trade(s)`, 'ok');
+-        B.correction = null; global.App.refresh();
+-      } catch (e) { global.App.toast(e.message, 'err'); }
+-    });
+-    grades.appendChild(h('div', { class: 'card' }, backfill));
++    const grades = Views.execution ? Views.execution.correctionCard(c,{onRefresh:()=>{B.correction=null;global.App.refresh();}})
++      : h('div',{class:'card',text:'Execution review UI unavailable. No execution grade is inferred from entry quality or P&L.'});
+     right.appendChild(grades);
+ 
+     const fb = h('div', { class: 'card' });
+@@ -1062,9 +1189,7 @@
+       try {
+         const r = await global.API.get('/bots/feedback/' + Number(idIn.value));
+         global.U.clear(fbOut);
+-        fbOut.appendChild(h('div', { class: 'bot-plan', html: `<b>${esc(r.symbol)}</b> — grade <b>${esc(r.grade)}</b> (${r.score}/100): ${esc(r.summary)}` }));
+-        (r.notes || []).forEach((n) => fbOut.appendChild(h('div', { class: 'bot-' + (n.tone === 'bad' ? 'warn' : n.tone === 'good' ? 'good' : 'detail'), text: (n.tone === 'good' ? 'Kept: ' : n.tone === 'bad' ? 'Fix: ' : '') + n.text })));
+-        if (!r.notes || !r.notes.length) fbOut.appendChild(h('div', { class: 'muted', text: 'No behavioural flags on this trade.' }));
++        fbOut.appendChild(Views.execution?Views.execution.feedbackCard(r):h('div',{class:'muted',text:'Execution feedback UI unavailable; no numeric grade fabricated.'}));
+       } catch (e) { global.App.toast(e.message, 'err'); }
+     });
+     fb.appendChild(h('div', { class: 'row gap-8' }, idIn, fbBtn));
+@@ -1094,13 +1219,15 @@
        <td>#${g.id}</td><td><b>${esc(g.symbol)}</b> <span class="muted">${esc(g.timeframe)}</span></td>
        <td class="${g.dir > 0 ? 'pos' : 'neg'}">${esc(g.side.toUpperCase())}</td>
        <td>${esc(g.grade)} <span class="muted">${g.score}</span></td>
@@ -1553,7 +1707,7 @@ index 2222ac3..4f2861a 100644
      if ((st.by_grade || []).length) {
        pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Signal quality by grade</strong></div><div class="table-wrap"><table class="table"><thead><tr><th>Grade</th><th>Resolved</th><th>Win rate</th><th>Expectancy</th></tr></thead><tbody>${st.by_grade.map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.resolved}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('')}</tbody></table></div>` }));
      }
-@@ -1112,6 +1251,9 @@
+@@ -1112,6 +1239,9 @@
    Views.bots = {
      title: 'Bots',
      render(root) {
@@ -1563,7 +1717,7 @@ index 2222ac3..4f2861a 100644
        root.innerHTML = '';                       // replace the shell's skeleton placeholder
        if (global.__botRequest) {                 // handed over from the Market chart panel
          B.symbol = String(global.__botRequest.symbol || B.symbol).toUpperCase();
-@@ -1161,8 +1303,10 @@
+@@ -1161,8 +1291,10 @@
          const sym = B.symbol, tf = B.tf;
          const trim = B.trim || 0;
          Promise.all([
@@ -1576,7 +1730,7 @@ index 2222ac3..4f2861a 100644
            API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
          ]).then(([d, ch, dr]) => {
            B.data = d; B.predict = d.prediction; B.chart = ch; B.candles = (ch && ch.candles) || [];
-@@ -1171,11 +1315,11 @@
+@@ -1171,11 +1303,11 @@
            global.App.refresh();
          }).catch((e) => { B.error = 'Analysis failed: ' + e.message; B.busy = ''; global.App.refresh(); });
        } else if (B.busy === 'scan') {
@@ -1591,7 +1745,7 @@ index 2222ac3..4f2861a 100644
            .catch((e) => { B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
        } else if (B.busy === 'backtest') {
 diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
-index d8a189b..c4c988f 100644
+index d8a189b..f81408b 100644
 --- a/public/js/views/dashboard.js
 +++ b/public/js/views/dashboard.js
 @@ -3,6 +3,26 @@
@@ -1656,8 +1810,93 @@ index d8a189b..c4c988f 100644
                <div class="tiny muted" style="margin-top:8px">${(rp.reasons || []).map((r) => U.esc(r)).join(' · ')}</div>
              </div>
              <div style="min-width:250px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:14px">
+@@ -140,7 +170,7 @@
+           <div><div class="l">Peak</div><div class="v">${U.money(Math.max(...an.equity.map((p) => p.equity)))}</div></div>
+           <div><div class="l">Recovery factor</div><div class="v">${U.num(k.recovery_factor, 2)}</div></div>
+           <div><div class="l">Streak</div><div class="v ${k.streaks.current_type === 'loss' ? 'neg' : 'pos'}">${k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + 'W' : Math.abs(k.streaks.current) + 'L')}</div></div>
+-          <div><div class="l">Best / worst</div><div class="v">${U.money(k.best_trade)} / ${U.money(k.worst_trade)}</div></div>
++          <div><div class="l">P&L max / min (money only)</div><div class="v">${U.money(k.best_trade)} / ${U.money(k.worst_trade)}</div></div>
+           <div><div class="l">Avg hold</div><div class="v">${U.dur(k.avg_hold_minutes)}</div></div>
+         </div>`;
+       row3.appendChild(eqCard);
+diff --git a/public/js/views/execution.js b/public/js/views/execution.js
+new file mode 100644
+index 0000000..89a16ef
+--- /dev/null
++++ b/public/js/views/execution.js
+@@ -0,0 +1,70 @@
++/* M86/M92 — HUMAN retrospective execution review, separate from entry setup
++ * quality, financial edits, core writing, routine and permission. */
++(function(global){
++  'use strict';
++  const Views=global.Views=global.Views||{},U=global.U;let opened=0;
++  const state=g=>g?.state==='reviewed'&&typeof g.score==='number'&&Number.isFinite(g.score)?`${g.grade} · ${g.score}/100`:'Unreviewed';
++  const money=v=>typeof v==='number'&&Number.isFinite(v)?U.moneySign(v):'Unavailable';
++  const context=()=>({account:global.Store.accountId,user:global.Store.user?.id});
++  const same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id;
++  const X=Views.execution={state,
++    card(trade){
++      const g=trade.execution_review||{},node=U.h('div',{class:'card',style:'margin-top:12px'});
++      node.innerHTML=`<div class="card-head"><h3>Execution self-review</h3><span class="chip muted" data-execution-state>${U.esc(state(g))}</span></div>
++        <div class="small">Entry setup grade ${U.esc(trade.setup_grade||'unknown')} is separate from the execution review.</div>
++        <div class="field-note">Retrospective human assessment, not broker-verified plan compliance or fresh emotional capture. It does not complete core writing/routine or alter risk/permission. Review the saved record — save financial edits first.</div>
++        <div class="tiny muted">${U.esc(g.state==='reviewed'?'Reported '+g.execution_quality.replace(/_/g,' '):'Missing or stale execution evidence; no score is inferred from P&L.')}</div>`;
++      if(trade.id&&trade.status==='closed')node.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{executionOpen:String(trade.id)},text:'Review saved execution',onclick:()=>X.open(Number(trade.id))}));
++      else node.appendChild(U.h('div',{class:'tiny muted',text:'Record the actual close before reviewing execution.'}));return node;
++    },
++    async open(id){
++      const before=context(),serial=++opened;let trade;
++      try{trade=(await global.API.get('/trades/'+id)).trade;}catch(e){return global.App.toast(e.message||'Current record unavailable','err');}
++      if(!same(before)||serial!==opened)return global.App.toast('Workspace/account changed while loading; reopen the current record.','err');
++      if(trade.status!=='closed')return global.App.toast('Record the actual close before reviewing execution.','err');
++      const body=U.h('div'),g=trade.execution_review||{},validStop=g.evidence?.stop_honoured;
++      body.innerHTML=`<p class="small"><b>#${U.esc(trade.id)} ${U.esc(trade.symbol)}</b> · account #${U.esc(trade.account_id)}<br>Actual saved entry ${U.price(trade.entry)}, stop ${trade.stop==null?'unknown':U.price(trade.stop)}, exit ${U.price(trade.exit)}. Entry setup grade ${U.esc(trade.setup_grade||'unknown')}.</p>
++        <p class="field-note">This is a retrospective HUMAN report, not broker-verified compliance or an actual fresh entry/exit emotion. It does not grant an entry, resize a setup, complete core writing/routine or remove any guard stop. Outcome is not execution quality. Changed saved records require a new current screen.</p>
++        <label class="field"><span>How closely did you follow your plan? (your 1–5 self-rating)</span><select id="xr-adherence"><option value="">Unknown / not reviewed</option>${[1,2,3,4,5].map(a=>`<option value="${a}" ${trade.adherence===a?'selected':''}>${a} / 5</option>`).join('')}</select></label>
++        <label class="field"><span>Did you honour the planned stop, including only moves the plan allowed?</span><select id="xr-stop"><option value="" ${validStop==null?'selected':''}>Unknown / not reviewed</option><option value="true" ${validStop===true?'selected':''}>Yes — my explicit report</option><option value="false" ${validStop===false?'selected':''}>No — I violated it</option></select></label>
++        <div class="tiny muted">A moved stop may be protective. A gap/slippage-like result beyond1R is not by itself a violation. Missing answers remain unreviewed, not bad/good. Rubric: adherence1/2/3/4/5 →20/40/60/75/95 points, explicit stop violation capped39; P&L/R/RR/session/excursions add no points. This is an app display rubric, not an empirically validated edge.</div>`;
++      return global.App.modal({title:'Review saved execution',body,wide:true,actions:[{label:'Cancel — no review recorded',ghost:true},{label:'Save execution self-review',primary:true,onClick:async close=>{
++        if(!same(before))return global.App.toast('Workspace/account changed; reopen the current saved record.','err');
++        const a=body.querySelector('#xr-adherence').value,stop=body.querySelector('#xr-stop').value;
++        try{
++          const out=await global.API.post('/trades/'+id+'/execution-review',{adherence:a===''?null:Number(a),stop_honoured:stop===''?null:stop==='true',record_revision:g.record_revision});
++          global.Store.invalidate();close();global.App.toast(`Execution ${state(out.trade.execution_review)} recorded as your self-report; other stops/core writing unchanged.`,'ok');if(same(before))global.App.refresh();
++        }catch(e){global.App.toast(e.message||'Execution review could not be recorded.','err');}
++      }}]});
++    },
++    summaryCard(summary={}){
++      const node=U.h('div',{class:'card',style:'margin-top:14px'});
++      node.appendChild(U.h('div',{class:'card-head',html:'<h3>Best / worst by reported execution</h3>'}));
++      node.appendChild(U.h('div',{class:'tiny muted',text:summary.note||'Execution summary unavailable; money is not an execution fallback.'}));
++      for(const [key,label] of [['best','Best among reviewed'],['worst','Worst among reviewed']]){
++        const value=summary[key],box=U.h('div',{style:'padding:8px',dataset:{[key==='best'?'executionBest':'executionWorst']:'true'}});
++        box.appendChild(U.h('div',{class:'small',text:label+': '+(value?`${value.grade} · ${value.score}/100${value.tie_count>1?' · '+value.tie_count+' tied':''}`:'Unavailable / no reviewed execution')}));
++        for(const t of value?.trades||[])box.appendChild(U.h('button',{class:'btn xs ghost',type:'button',text:`#${t.trade_id} ${t.symbol} — review`,onclick:()=>X.open(Number(t.trade_id))}));node.appendChild(box);
++      }
++      node.appendChild(U.h('div',{class:'tiny muted',text:`${summary.ranked??'unavailable'} ranked · ${summary.unranked??'unavailable'} unranked. Relative extremes, not a declaration that an unknown trade was worst or a good trade is profitable.`}));
++      const p=summary.pnl||{};node.appendChild(U.h('div',{class:'small',text:`Money-only P&L extremes: max ${money(p.best)} / min ${money(p.worst)} · ${p.known??'unavailable'} known / ${p.unavailable??'unavailable'} unavailable. Separate from execution, no P&L tiebreak.`}));return node;
++    },
++    correctionCard(c,{onRefresh=null}={}){
++      const node=U.h('div',{class:'card'}),rows=c.grades||[],value=v=>v==null?'Unavailable':U.esc(v);
++      node.innerHTML=`<div class="card-head"><strong>Execution self-reviews</strong><span class="muted">human reports, not automatic entry setup grades</span></div>
++        <div class="table-wrap"><table class="table"><thead><tr><th>Execution</th><th>Closed journals</th><th>Known outcomes</th><th>Win rate (descriptive)</th><th>Known net</th><th>Known R mean</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${U.esc(r.grade)}</td><td>${r.trades}</td><td>${r.known_outcomes} / ${r.trades}</td><td>${value(r.win_rate)}${r.win_rate==null?'':'%'}</td><td>${money(r.net)}</td><td>${value(r.expectancy_r)}${r.expectancy_r==null?'':'R'}</td></tr>`).join('')||'<tr><td colspan="6">No closed journals in this cohort.</td></tr>'}</tbody></table></div>
++        <div class="tiny muted">Current self-reported execution is derived on read, including Unreviewed evidence. No score is manufactured from outcome, and these associations are not causal or sizing guidance.</div>
++        <h4>Entry setup grades — separate stored history</h4><div class="tiny muted">Legacy source may be manual, model or earlier unproven auto-backfill. Values are preserved, not reclassified or promoted into execution.</div>
++        <div class="small">${(c.setup_grades||[]).map(r=>U.esc(r.grade)+': '+r.trades).join(' · ')||'No stored entry setup grades.'}</div>`;
++      node.appendChild(U.h('button',{class:'btn sm',dataset:{executionRefresh:'true'},text:'Refresh derived execution reviews — no backfill',onclick:async()=>{
++        try{const id=global.Store.accountId,r=await global.API.post('/bots/correction/backfill',id==null?{}:{account_id:Number(id)});global.App.toast(`Checked ${r.evaluated}; ${r.reviewed} reviewed, ${r.unreviewed} unreviewed. Entry setup grades unchanged.`,'ok');if(onRefresh)onRefresh();}
++        catch(e){global.App.toast(e.message,'err');}
++      }}));return node;
++    },
++    feedbackCard(r){
++      const node=U.h('div',{class:'bot-col'});node.appendChild(U.h('div',{class:'bot-plan',text:`${r.symbol} — execution ${state(r)}: ${r.summary}`}));
++      node.appendChild(U.h('div',{class:'tiny muted',text:`Entry setup grade ${r.entry_setup_grade||'unknown'} is separate; retrospective self-report, not verified broker execution.`}));
++      for(const n of r.notes||[])node.appendChild(U.h('div',{class:n.tone==='bad'?'bot-warn':n.tone==='good'?'bot-good':'bot-detail',text:n.text}));return node;
++    },
++  };
++})(window);
 diff --git a/public/js/views/journal.js b/public/js/views/journal.js
-index 1d22619..3d9fdc6 100644
+index 1d22619..5d76f80 100644
 --- a/public/js/views/journal.js
 +++ b/public/js/views/journal.js
 @@ -6,7 +6,7 @@
@@ -1689,7 +1928,7 @@ index 1d22619..3d9fdc6 100644
        layout.appendChild(listCol);
  
        /* goals column */
-@@ -111,13 +124,27 @@
+@@ -111,18 +124,35 @@
      });
    }
  
@@ -1708,17 +1947,29 @@ index 1d22619..3d9fdc6 100644
 +
    async function openEditor(dateISO, root) {
 -    const day = await API.get('/journal/' + dateISO);
-+    const day = await API.get('/journal/' + dateISO,{account_id:Store.accountId});
++    const accountId=Store.accountId,userId=Store.user?.id;
++    const sameContext=()=>accountId===Store.accountId&&userId===Store.user?.id;
++    const day = await API.get('/journal/' + dateISO,{account_id:accountId});
++    if(!sameContext())return global.App.toast('Workspace/account changed while loading the day; reopen it.','err');
      const e = day.entry || {};
      const trades = day.trades || [];
-     const pnl = trades.filter((t) => t.status !== 'open').reduce((s, t) => s + (t.net_pnl || 0), 0);
+-    const pnl = trades.filter((t) => t.status !== 'open').reduce((s, t) => s + (t.net_pnl || 0), 0);
++    const pnl=day.execution_summary?.pnl?.realised_total??null,totalR=day.execution_summary?.pnl?.recorded_total_r??null;
      const body = U.h('div');
      body.innerHTML = `
 +      <div class="small">Core journal ${day.journal_summary?.journaled ?? 'unavailable'} / ${day.journal_summary?.total ?? 'unavailable'} · ${U.esc(day.journal_summary?.state || 'unavailable')} — notebook review and trading P&L are separate.</div>
        <div class="grid g4" style="margin-bottom:14px">
          <div class="kpi"><div class="k-label">Date</div><div class="k-value" style="font-size:1rem">${U.esc(dateISO)}</div></div>
-         <div class="kpi ${pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">Day P&L</div><div class="k-value ${U.cls(pnl)}">${U.moneySign(pnl)}</div></div>
-@@ -135,21 +162,33 @@
+-        <div class="kpi ${pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">Day P&L</div><div class="k-value ${U.cls(pnl)}">${U.moneySign(pnl)}</div></div>
+-        <div class="kpi"><div class="k-label">Trades</div><div class="k-value">${trades.length}</div></div>
+-        <div class="kpi"><div class="k-label">Total R</div><div class="k-value">${U.signed(trades.reduce((s, t) => s + (t.r_multiple || 0), 0), 2)}R</div></div>
++        <div class="kpi ${pnl==null?'':pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">UTC close-day realised P&L</div><div class="k-value ${pnl==null?'':U.cls(pnl)}" data-day-realised-pnl>${pnl==null?'Unavailable':U.moneySign(pnl)}</div></div>
++        <div class="kpi"><div class="k-label">Records (incl. open)</div><div class="k-value">${trades.length}</div></div>
++        <div class="kpi"><div class="k-label">Recorded realised R</div><div class="k-value" data-day-total-r>${totalR==null?'Unavailable':U.signed(totalR,2)+'R'}</div></div>
+       </div>
+       <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
+         <label class="field"><span>Market bias</span><select id="j-bias">${['', 'Bullish', 'Bearish', 'Neutral', 'Choppy'].map((v) => `<option ${e.market_bias === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+@@ -135,21 +165,35 @@
        <label class="field"><span>Lessons</span><textarea id="j-lessons">${U.esc(e.lessons)}</textarea></label>
        <label class="field"><span>Tomorrow</span><textarea id="j-tomorrow">${U.esc(e.tomorrow)}</textarea></label>
        <label class="field"><span>Screen time (minutes)</span><input id="j-screen" type="number" value="${e.screen_time_minutes ?? ''}" /></label>
@@ -1728,6 +1979,7 @@ index 1d22619..3d9fdc6 100644
          <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
 +        <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
          <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
 +    let routineDirty=false;
 +    if(Views.routine){
 +      body.prepend(Views.routine.dayCard(day.pre_market||{}));
@@ -1742,9 +1994,10 @@ index 1d22619..3d9fdc6 100644
        title: 'Day review — ' + dateISO, body, wide: true,
        actions: [{ label: 'Cancel', ghost: true }, {
          label: 'Save review', primary: true, onClick: async (close) => {
++          if(!sameContext())return global.App.toast('Workspace/account changed; reopen this day before saving.','err');
            const payload = {
 -            entry_date: dateISO,
-+            entry_date: dateISO,account_id:Store.accountId,
++            entry_date: dateISO,account_id:accountId,
              market_bias: U.$('#j-bias', body).value, mood: U.$('#j-mood', body).value || null, energy: U.$('#j-energy', body).value || null,
              focus: U.$('#j-focus', body).value, plan: U.$('#j-plan', body).value, review: U.$('#j-review', body).value,
              lessons: U.$('#j-lessons', body).value, tomorrow: U.$('#j-tomorrow', body).value,
@@ -1986,10 +2239,10 @@ index b72afdb..18856dc 100644
                await Store.reloadAll(); close(); global.App.toast('Account saved', 'ok'); global.App.refresh();
              },
 diff --git a/public/js/views/trades.js b/public/js/views/trades.js
-index ffdec3d..be55a5a 100644
+index ffdec3d..c06d71c 100644
 --- a/public/js/views/trades.js
 +++ b/public/js/views/trades.js
-@@ -8,6 +8,40 @@
+@@ -8,6 +8,41 @@
    const TAGS = ['A+ setup', 'B setup', 'News play', 'Pullback', 'Range', 'Breakout', 'Reversal', 'Trend day', 'Scaled in', 'Partial taken', 'Held overnight', 'Paper trade'];
    const EXIT_REASONS = ['Target', 'Stop loss', 'Trailing stop', 'Time stop', 'Discretionary win', 'Discretionary loss', 'Breakeven / scratch', 'Manual close', 'News exit'];
  
@@ -2009,6 +2262,7 @@ index ffdec3d..be55a5a 100644
 +      <label class="row gap-8"><input id="jr-none" type="checkbox" ${trade.mistakes_none===1?'checked':''} /><span>Explicitly followed plan; no mistakes to report (not inferred from a win)</span></label>
 +      <label class="field"><span>3. What would you do differently / repeat?</span><textarea id="jr-different" maxlength="2000">${U.esc(trade.lesson||'')}</textarea></label>
 +      <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
++    if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
 +    const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
 +    return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
 +      actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
@@ -2030,7 +2284,7 @@ index ffdec3d..be55a5a 100644
    Views.trades = {
      title: 'Trade log',
      async render(root) {
-@@ -99,6 +133,7 @@
+@@ -99,6 +134,7 @@
        r: trades.reduce((s, t) => s + (t.r_multiple || 0), 0),
        wins: trades.filter((t) => t.is_win).length,
      };
@@ -2038,7 +2292,7 @@ index ffdec3d..be55a5a 100644
      const draw = () => {
        const rows = [...trades].sort((a, b) => {
          const va = val(a, sortKey), vb = val(b, sortKey);
-@@ -111,6 +146,7 @@
+@@ -111,6 +147,7 @@
              <div><div class="l k-label">Showing</div><div class="mono">${trades.length}${total > trades.length ? ' / ' + total : ''}</div></div>
              <div><div class="k-label">Filtered net</div><div class="mono ${U.cls(sum.net)}">${U.moneySign(sum.net)}</div></div>
              <div><div class="k-label">Filtered R</div><div class="mono ${U.cls(sum.r)}">${U.signed(sum.r, 1)}R</div></div>
@@ -2046,18 +2300,18 @@ index ffdec3d..be55a5a 100644
              <div><div class="k-label">Win rate</div><div class="mono">${U.pct((sum.wins / trades.length) * 100, 1)}</div></div>
            </div>
            <div class="row" style="gap:8px">
-@@ -122,8 +158,8 @@
+@@ -122,8 +159,8 @@
            <thead><tr>
              <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
              ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
 -              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['session_label', 'Session'],
 -              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', '']].map(([k, l]) =>
-+              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
-+              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Journal'], ['', '']].map(([k, l]) =>
++              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
++              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', '']].map(([k, l]) =>
                `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
            </tr></thead>
            <tbody>
-@@ -140,9 +176,11 @@
+@@ -140,9 +177,12 @@
              <td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
              <td class="tiny nowrap">${U.esc(t.strategy_name || '<span class="muted">untagged</span>').replace(/&lt;|&gt;/g, '')}</td>
              <td class="tiny">${U.esc(t.setup_grade || '—')}</td>
@@ -2065,23 +2319,25 @@ index ffdec3d..be55a5a 100644
              <td class="tiny nowrap">${U.esc(t.session_label || '—')}</td>
              <td class="tiny"><span class="rating ${t.adherence >= 4 ? 'strong' : t.adherence <= 2 ? 'weak' : ''}">${U.rating(t.adherence)}</span></td>
              <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
++            <td class="tiny"><span data-execution-state>${U.esc(Views.execution?Views.execution.state(t.execution_review):'Unreviewed')}</span>${t.status==='closed'?` <button class="btn xs ghost" data-execution="${t.id}">Execution</button>`:''}</td>
 +            <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
              <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
            </tr>`).join('')}
            </tbody>
-@@ -153,9 +191,10 @@
+@@ -153,9 +193,11 @@
          if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = -1; }
          draw();
        }));
++      U.$$('[data-execution]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.execution)Views.execution.open(Number(b.dataset.execution));else global.App.toast('Execution review UI unavailable; no grade inferred.','err');}));
 +      U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
        U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
        U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
 -        if (e.target.type === 'checkbox' || e.target.closest('[data-edit]')) return;
-+        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal]')) return;
++        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution]')) return;
          global.App.openTrade(Number(tr.dataset.id));
        }));
        const chkAll = U.$('#chk-all', body);
-@@ -200,6 +239,12 @@
+@@ -200,6 +242,12 @@
      const symOptions = Store.instruments.map((i) => `<option value="${i.symbol}" ${t.symbol === i.symbol ? 'selected' : ''}>${i.symbol} — ${U.esc(i.name || '')}</option>`).join('');
  
      node.innerHTML = `
@@ -2094,8 +2350,12 @@ index ffdec3d..be55a5a 100644
        <div class="form-grid">
          <label class="field"><span>Symbol</span>
            <input id="tf-symbol" list="tf-symbols" value="${U.esc(t.symbol || '')}" placeholder="EURUSD, ES, AAPL, BTCUSDT…" />
-@@ -232,6 +277,12 @@
-         <label class="field"><span>Setup grade</span>
+@@ -229,9 +277,15 @@
+         <label class="field span2"><span>Strategy / setup</span>
+           <select id="tf-strategy"><option value="">— untagged —</option>${strategyOptions}</select>
+         </label>
+-        <label class="field"><span>Setup grade</span>
++        <label class="field"><span>Entry setup grade</span>
            <select id="tf-grade"><option value="">—</option>${list(['A+', 'A', 'B', 'C', 'D'], t.setup_grade)}</select>
          </label>
 +        <label class="field"><span>Entry model</span>
@@ -2107,7 +2367,7 @@ index ffdec3d..be55a5a 100644
          <label class="field"><span>Exit reason</span>
            <select id="tf-exitreason"><option value="">—</option>${list(EXIT_REASONS, t.exit_reason)}</select>
          </label>
-@@ -241,7 +292,7 @@
+@@ -241,7 +295,7 @@
          <label class="field"><span>MFE (best excursion, R)</span><input id="tf-mfe" type="number" step="any" value="${t.mfe_r ?? ''}" placeholder="e.g. 2.4" /></label>
          <label class="field"><span>Timeframe(s)</span><input id="tf-timeframes" value="${U.esc(t.timeframes || '')}" placeholder="H1 / M15" /></label>
  
@@ -2116,7 +2376,7 @@ index ffdec3d..be55a5a 100644
          <label class="field"><span>Emotion after</span><select id="tf-emo-after"><option value="">—</option>${list(EMOTIONS, t.emotion_after)}</select></label>
          <label class="field"><span>Confidence (1–5)</span><input id="tf-confidence" type="number" min="1" max="5" value="${t.confidence ?? ''}" /></label>
          <label class="field"><span>Rule adherence (1–5)</span><input id="tf-adherence" type="number" min="1" max="5" value="${t.adherence ?? ''}" /></label>
-@@ -365,6 +416,7 @@
+@@ -365,6 +419,7 @@
  
      function collect() {
        const body = {
@@ -2124,7 +2384,7 @@ index ffdec3d..be55a5a 100644
          symbol: g('symbol').value.toUpperCase().trim(),
          direction: g('direction').value,
          status: g('status').value,
-@@ -377,6 +429,8 @@
+@@ -377,6 +432,8 @@
          strategy_id: g('strategy').value || null,
          strategy_name: g('strategy').value ? (Store.strategyById(g('strategy').value) || {}).name : '',
          setup_grade: g('grade').value,
@@ -2133,7 +2393,7 @@ index ffdec3d..be55a5a 100644
          exit_reason: g('exitreason').value,
          planned_r: g('plannedr').value,
          mae_r: g('mae').value, mfe_r: g('mfe').value,
-@@ -388,6 +442,7 @@
+@@ -388,6 +445,7 @@
          screenshot_url: shotData || g('shot').value,
          rule_checks: U.$$('[data-chk]', chkWrap).map((c, i) => ({ label: c.parentElement.textContent.trim(), passed: c.checked })),
        };
@@ -2141,7 +2401,7 @@ index ffdec3d..be55a5a 100644
        if (body.status === 'closed' && !body.exit) throw new Error('A closed trade needs an exit price (or set the status to Open).');
        if (!body.symbol) throw new Error('Symbol is required.');
        if (!body.entry) throw new Error('Entry price is required.');
-@@ -415,17 +470,51 @@
+@@ -415,17 +473,52 @@
        syncTv();
        const symInput = U.$('#tf-symbol', node);
        if (symInput) symInput.addEventListener('change', syncTv);
@@ -2193,6 +2453,7 @@ index ffdec3d..be55a5a 100644
 +    g('entrytf').addEventListener('change',refreshGuard);
 +    U.$('#tf-guardrail-refresh',node).addEventListener('click',refreshGuard);
 +    refreshGuard();
++    if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
 +    return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
    };
  
@@ -3013,18 +3274,19 @@ index 9b28a41..307549d 100644
  
  module.exports = { app, handler, bootPromise, start, startScheduler };
 diff --git a/src/bots/correction.js b/src/bots/correction.js
-index 5aeb214..e0fb389 100644
+index 5aeb214..d88ea31 100644
 --- a/src/bots/correction.js
 +++ b/src/bots/correction.js
-@@ -18,6 +18,7 @@
+@@ -18,6 +18,8 @@
  
  const { db } = require('../db');
  const SMC = require('./smc');
 +const Guards = require('./guardrails');
++const Execution = require('../execution-review');
  
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  const dayKey = (iso) => String(iso || '').slice(0, 10);
-@@ -34,11 +35,11 @@ const sessionQuality = (s) => {
+@@ -34,11 +36,11 @@ const sessionQuality = (s) => {
  
  /* ═══════════════════════════════════════════════════════════ data loading */
  
@@ -3040,7 +3302,7 @@ index 5aeb214..e0fb389 100644
    return rows.filter((t) => t.status === 'closed' && t.exit != null);
  }
  
-@@ -64,11 +65,11 @@ function statsOf(trades) {
+@@ -64,11 +66,11 @@ function statsOf(trades) {
  }
  
  /** The account the bots should size and guard against. */
@@ -3056,7 +3318,7 @@ index 5aeb214..e0fb389 100644
  }
  
  function median(arr) {
-@@ -89,6 +90,39 @@ function percentile(arr, p) {
+@@ -89,6 +91,39 @@ function percentile(arr, p) {
   * Every detector returns null (not enough evidence / nothing wrong) or:
   *   { key, title, severity, count, impact, impact_unit, evidence[], fix, metric }
   */
@@ -3096,7 +3358,7 @@ index 5aeb214..e0fb389 100644
  function detectMistakes(trades) {
    const out = [];
    const n = trades.length;
-@@ -101,7 +135,7 @@ function detectMistakes(trades) {
+@@ -101,7 +136,7 @@ function detectMistakes(trades) {
    const widenedAvgR = widened.length ? r2(widened.reduce((s, t) => s + (t.r_multiple || 0), 0) / widened.length) : 0;
    const widenedDrag = r2(widened.reduce((s, t) => s + Math.min(0, (t.r_multiple || 0) + 1), 0)); // R lost beyond the 1R the plan allowed
    push(widened.length >= 2 && {
@@ -3105,7 +3367,7 @@ index 5aeb214..e0fb389 100644
      title: 'You move your stop away from the entry',
      count: widened.length,
      impact: widenedDrag, impact_unit: 'R lost beyond the 1R limit',
-@@ -113,7 +147,7 @@ function detectMistakes(trades) {
+@@ -113,7 +148,7 @@ function detectMistakes(trades) {
    /* --- held past the stop --- */
    const past = trades.filter((t) => (t.r_multiple || 0) < -1.15 && !t.stop_moved);
    push(past.length >= 3 && {
@@ -3114,7 +3376,7 @@ index 5aeb214..e0fb389 100644
      title: 'Losers are being held past 1R',
      count: past.length, impact: r2(past.reduce((s, t) => s + ((t.r_multiple || 0) + 1), 0)), impact_unit: 'R',
      metric: `avg loss ${r2(past.reduce((s, t) => s + (t.r_multiple || 0), 0) / past.length)}R across ${past.length} trades`,
-@@ -125,7 +159,7 @@ function detectMistakes(trades) {
+@@ -125,7 +160,7 @@ function detectMistakes(trades) {
    const cut = trades.filter((t) => (t.mfe_r || 0) >= 1 && ((t.mfe_r || 0) - (t.r_multiple || 0)) >= 1);
    const leftR = cut.reduce((s, t) => s + ((t.mfe_r || 0) - (t.r_multiple || 0)), 0);
    push(cut.length >= 3 && {
@@ -3123,7 +3385,7 @@ index 5aeb214..e0fb389 100644
      title: 'You are cutting winners before they reach the target',
      count: cut.length, impact: r2(leftR), impact_unit: 'R left on the table',
      metric: `${cut.length} trades closed an average of ${r2(leftR / cut.length)}R before the move was over`,
-@@ -137,7 +171,7 @@ function detectMistakes(trades) {
+@@ -137,7 +172,7 @@ function detectMistakes(trades) {
    const gaveBack = trades.filter((t) => (t.mfe_r || 0) >= 1 && (t.r_multiple || 0) <= 0.2);
    const given = gaveBack.reduce((s, t) => s + ((t.mfe_r || 0) - Math.max(0, t.r_multiple || 0)), 0);
    push(gaveBack.length >= 3 && {
@@ -3132,7 +3394,7 @@ index 5aeb214..e0fb389 100644
      title: 'Trades that ran at least +1R and still finished flat or negative',
      count: gaveBack.length, impact: r2(given), impact_unit: 'R round-tripped',
      metric: `${gaveBack.length} of ${n} trades (${r2((gaveBack.length / n) * 100)}%) reached +1R or better and closed at ${r2(gaveBack.reduce((s, t) => s + (t.r_multiple || 0), 0) / gaveBack.length)}R on average`,
-@@ -151,7 +185,7 @@ function detectMistakes(trades) {
+@@ -151,7 +186,7 @@ function detectMistakes(trades) {
    const oversized = trades.filter((t) => (t.risk_amount || 0) > med * 1.5 && med > 0);
    const oversizeLoss = oversized.reduce((s, t) => s + Math.min(0, t.net_pnl || 0), 0);
    push(oversized.length >= 3 && {
@@ -3141,7 +3403,7 @@ index 5aeb214..e0fb389 100644
      title: 'Position sizes are inconsistent (spikes in risk)',
      count: oversized.length, impact: r2(oversizeLoss), impact_unit: '$ lost on oversized trades',
      metric: `median risk $${r2(med)} vs ${oversized.length} trades at $${r2(oversized.reduce((s, t) => s + t.risk_amount, 0) / oversized.length)} average`,
-@@ -169,7 +203,7 @@ function detectMistakes(trades) {
+@@ -169,7 +204,7 @@ function detectMistakes(trades) {
    }
    const revengeCost = revenge.reduce((s, x) => s + Math.min(0, x.t.net_pnl || 0), 0);
    push(revenge.length >= 3 && {
@@ -3150,7 +3412,7 @@ index 5aeb214..e0fb389 100644
      title: 'Revenge trading window (re-entry within 30 min of a loss)',
      count: revenge.length, impact: r2(revengeCost), impact_unit: '$ lost in these re-entries',
      metric: `${revenge.length} trades re-entered within 30 minutes of a loss; ${revenge.filter((x) => x.bigger).length} of them were BIGGER than the losing trade`,
-@@ -194,7 +228,7 @@ function detectMistakes(trades) {
+@@ -194,7 +229,7 @@ function detectMistakes(trades) {
    const heavyAvg = heavyDays.length ? heavyPnl / heavyDays.length : 0;
    const lightAvg = lightDays.length ? lightDays.reduce((s, d) => s + d.pnl, 0) / lightDays.length : 0;
    push(heavyDays.length >= 3 && heavyPnl < 0 && heavyAvg < lightAvg && {
@@ -3159,7 +3421,7 @@ index 5aeb214..e0fb389 100644
      title: 'Your busiest days are your worst days',
      count: heavyDays.length, impact: r2(heavyPnl), impact_unit: '$ across your heaviest days',
      metric: `days with ${heavyCut}+ trades: ${heavyDays.length} days averaging $${r2(heavyAvg)}/day, versus $${r2(lightAvg)}/day on your lighter days`,
-@@ -207,7 +241,7 @@ function detectMistakes(trades) {
+@@ -207,7 +242,7 @@ function detectMistakes(trades) {
    const lowRR = trades.filter((t) => t.planned_r && t.planned_r < 1.8);
    const lowRRpnl = lowRR.reduce((s, t) => s + (t.net_pnl || 0), 0);
    push(lowRR.length >= 4 && {
@@ -3168,7 +3430,7 @@ index 5aeb214..e0fb389 100644
      title: 'Taking trades with less than 1:2 planned',
      count: lowRR.length, impact: r2(lowRRpnl), impact_unit: '$',
      metric: `${lowRR.length} trades planned under 1.8R (avg ${r2(lowRR.reduce((s, t) => s + t.planned_r, 0) / lowRR.length)}R)`,
-@@ -240,7 +274,7 @@ function detectMistakes(trades) {
+@@ -240,7 +275,7 @@ function detectMistakes(trades) {
    const impulseTags = trades.filter((t) => /impulse|fomo|revenge|tilt|angry|greed|bored/i.test(`${t.tags || ''},${t.mistakes || ''}`));
    const impulseStats = statsOf(impulseTags);
    push(impulseTags.length >= 3 && {
@@ -3177,7 +3439,96 @@ index 5aeb214..e0fb389 100644
      title: 'Emotion-tagged trades are dragging your results',
      count: impulseTags.length,
      impact: impulseStats ? r2(impulseStats.expectancy_r) : null, impact_unit: 'R expectancy',
-@@ -379,26 +413,50 @@ async function backfillGrades(userId) {
+@@ -305,72 +340,23 @@ function detectMistakes(trades) {
+ 
+ /* ══════════════════════════════════════════════════════ 2. AUTO-GRADING */
+ 
+-/**
+- * Grade a trade from its own data (no opinions). Used to backfill `setup_grade`
+- * so the analytics "grade" breakdown is never empty again.
+- * @returns {{score:number, grade:string, reasons:string[]}}
+- */
+-function autograde(trade) {
+-  const reasons = [];
+-  let score = 50;
+-
+-  // 1. planned R:R (the model's minimum is 2)
+-  const planned = trade.planned_r || null;
+-  if (planned == null) { reasons.push('No planned R:R logged (-10)'); score -= 10; }
+-  else if (planned >= 3) { score += 20; reasons.push(`Planned ${r2(planned)}R — excellent pay-off (+20)`); }
+-  else if (planned >= 2) { score += 14; reasons.push(`Planned ${r2(planned)}R — meets the 2R minimum (+14)`); }
+-  else if (planned >= 1.5) { score += 2; reasons.push(`Planned ${r2(planned)}R — below the 2R minimum (+2)`); }
+-  else { score -= 10; reasons.push(`Planned only ${r2(planned)}R (-10)`); }
+-
+-  // 2. execution quality: outcome vs plan
+-  const r = trade.r_multiple || 0;
+-  if (r >= 2) { score += 16; reasons.push(`Closed ${r2(r)}R — plan executed (+16)`); }
+-  else if (r > 0.5) { score += 12; reasons.push(`Closed ${r2(r)}R — winner, but short of a full target (+12)`); }
+-  else if (r > 0) { score += 4; reasons.push(`Closed ${r2(r)}R — small win (+4)`); }
+-  else if (r >= -1.05) { score += 6; reasons.push(`Loss of ${r2(r)}R — within the 1R limit, that is a good loss (+6)`); }
+-  else { score -= 12; reasons.push(`Loss of ${r2(r)}R exceeds the 1R stop (-12)`); }
+-
+-  // 3. risk discipline
+-  if (trade.stop_moved) { score -= 18; reasons.push('Stop was moved away from entry (-18)'); }
+-  else if (r < -1.05) { reasons.push('Stop not honoured (-6)'); score -= 6; }
+-  else { score += 6; reasons.push('Stop left where the plan put it (+6)'); }
+-
+-  // 4. excursion discipline (entry timing + exit timing)
+-  if (trade.mae_r != null && trade.mae_r > -0.9 && r < 0) { score += 4; reasons.push('Entry was not run over (MAE under 0.9R) (+4)'); }
+-  if (trade.mae_r != null && trade.mae_r < -1.2) { score -= 6; reasons.push(`Entry was immediately underwater (MAE ${r2(trade.mae_r)}R) (-6)`); }
+-  if (trade.mfe_r != null && r > 0 && trade.mfe_r - r <= 0.75) { score += 8; reasons.push('Exited near the peak excursion (+8)'); }
+-  if (trade.mfe_r != null && r > 0 && trade.mfe_r - r >= 1.5) { score -= 8; reasons.push(`Left ${r2(trade.mfe_r - r)}R on the table (MFE was ${r2(trade.mfe_r)}R) (-8)`); }
+-
+-  // 5. adherence self-score
+-  if (trade.adherence != null) {
+-    if (trade.adherence >= 4) { score += 6; reasons.push(`Rule adherence ${trade.adherence}/5 (+6)`); }
+-    else if (trade.adherence <= 2) { score -= 10; reasons.push(`Rule adherence only ${trade.adherence}/5 (-10)`); }
+-  }
+-
+-  // 6. session quality (killzone windows)
+-  const sess = String(trade.session || '').toLowerCase();
+-  if (sess) {
+-    const quality = sessionQuality(sess);
+-    if (quality != null && quality < 0.55) { score -= 6; reasons.push(`Traded the ${sess} session — low-probability window (-6)`); }
+-    else if (quality != null && quality >= 0.85) { score += 4; reasons.push(`Traded the ${sess} killzone (+4)`); }
+-  }
+-
+-  score = Math.max(0, Math.min(100, score));
+-  const grade = score >= 80 ? 'A+' : score >= 68 ? 'A' : score >= 54 ? 'B' : score >= 40 ? 'C' : 'D';
+-  return { score, grade, reasons };
+-}
+-
+-/** Fill in setup_grade for trades that have none. */
+-async function backfillGrades(userId) {
+-  const rows = await db.prepare(`SELECT * FROM trades WHERE user_id=? AND status='closed' AND (setup_grade IS NULL OR setup_grade='')`).all(userId);
+-  const upd = await db.prepare(`UPDATE trades SET setup_grade=?, updated_at=datetime('now') WHERE id=?`);
+-  const dist = {};
+-  for (const t of rows) {
+-    const g = autograde(t);
+-    await upd.run(g.grade, t.id);
+-    dist[g.grade] = (dist[g.grade] || 0) + 1;
++/** M86 retrospective self-report execution rubric, separate from entry setup
++ * quality. Pure current facts, no outcome/session/excursion points or risk input. */
++function autograde(trade) { return Execution.review(trade); }
++
++/** Compatibility endpoint: READ-ONLY current execution reviews. Old automatic
++ * setup_grade writes were outcome-derived and unproven. Never guess which
++ * legacy grade was manual/bot/old backfill, erase it or route it into capital. */
++async function backfillGrades(userId,{accountId=null}={}) {
++  if(accountId!==null) {
++    if(!Number.isSafeInteger(accountId)||accountId<=0) {const e=new Error('A positive owned account ID is required.');e.code='execution_review_invalid';e.status=400;throw e;}
++    if(!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,userId)) {const e=new Error('Account not found');e.code='execution_review_invalid';e.status=404;throw e;}
+   }
+-  return { updated: rows.length, distribution: dist };
++  const rows=await db.prepare(`SELECT * FROM trades WHERE user_id=? AND status='closed'${accountId===null?'':' AND account_id=?'} ORDER BY id`).all(...(accountId===null?[userId]:[userId,accountId]));
++  const groups=Execution.distribution(rows),reviewed=groups.reduce((n,g)=>n+g.reviewed,0);
++  return {updated:0,evaluated:rows.length,reviewed,unreviewed:rows.length-reviewed,distribution:Object.fromEntries(groups.map(g=>[g.grade,g.trades])),read_only:true,
++    basis:Execution.BASIS,rubric_version:Execution.VERSION,account_id:accountId,
++    note:'Live-derived self-report execution reviews only. No trade, pre-entry setup grade, capital rule or historical completion is backfilled.'};
+ }
+ 
+ /* ══════════════════════════════════════════════════ 3. GUARDRAILS (ep 21/31) */
+@@ -379,26 +365,50 @@ async function backfillGrades(userId) {
   * Derive personal risk guardrails from the trader's own distribution — not from
   * generic advice. These are the numbers the app will hold them to.
   */
@@ -3236,7 +3587,7 @@ index 5aeb214..e0fb389 100644
  
    // their own best days set the trade cap
    const byDay = new Map();
-@@ -431,7 +489,9 @@ async function guardrails(userId, { accountId = null } = {}) {
+@@ -431,7 +441,9 @@ async function guardrails(userId, { accountId = null } = {}) {
  
    const g = {
      max_risk_pct: maxRiskPct,
@@ -3247,7 +3598,7 @@ index 5aeb214..e0fb389 100644
      cooldown_min: 30,
      max_consecutive_losses: 2,
      daily_loss_limit_pct: dailyLossLimit,
-@@ -439,7 +499,8 @@ async function guardrails(userId, { accountId = null } = {}) {
+@@ -439,7 +451,8 @@ async function guardrails(userId, { accountId = null } = {}) {
      basis: `Derived from your last ${trades.length} closed trades (${byDay.size} trading days, ${consecutive} losers in the sample).`,
      evidence: {
        risk_p90_of_winners: r2(riskCap), median_risk: r2(median(risks)),
@@ -3257,7 +3608,7 @@ index 5aeb214..e0fb389 100644
        trades_past_cap: lateCount ? { count: lateCount, win_rate: lateRate } : null,
      },
    };
-@@ -447,37 +508,51 @@ async function guardrails(userId, { accountId = null } = {}) {
+@@ -447,37 +460,51 @@ async function guardrails(userId, { accountId = null } = {}) {
  }
  
  /** Today's live risk state — what the guardrails say RIGHT NOW. */
@@ -3340,7 +3691,74 @@ index 5aeb214..e0fb389 100644
  }
  
  /* ═════════════════════════════════════════════════ 4. PER-TRADE FEEDBACK */
-@@ -557,7 +632,18 @@ async function analyse(userId, { accountId = null, backfill = false, days = 365
+@@ -489,17 +516,18 @@ async function dailyState(userId, { accountId = null } = {}) {
+ function feedback(trade, { guardrails: g = null, siblings = null } = {}) {
+   const auto = autograde(trade);
+   const notes = [];
+-  const r = trade.r_multiple || 0, mfe = trade.mfe_r, mae = trade.mae_r;
+-
+-  if (trade.stop_moved) notes.push({ tone: 'bad', text: `You moved the stop on this one. That single decision turned a ${r2(Math.abs(1))}R planned loss into ${r2(r)}R.` });
+-  if (r < -1.15 && !trade.stop_moved) notes.push({ tone: 'bad', text: `Loss was ${r2(r)}R — beyond the 1R limit. Either the stop was too tight for the volatility, or the exit was late.` });
+-  if (mfe != null && mfe >= 1 && r >= 0 && mfe - r >= 1) notes.push({ tone: 'warn', text: `Price reached ${r2(mfe)}R but you closed at ${r2(r)}R — ${r2(mfe - r)}R left for someone else.` });
+-  if (mfe != null && mfe < 0.5 && r < 0) notes.push({ tone: 'info', text: `The trade never worked (MFE ${r2(mfe)}R). That is a location problem, not an exit problem — the entry was early or against the flow.` });
+-  if (mae != null && mae < -1 && r >= 0) notes.push({ tone: 'info', text: `It went ${r2(mae)}R against you before working — your entry could be moved deeper into the zone (the 50% level).` });
+-  if (trade.planned_r && trade.planned_r >= 2 && r >= trade.planned_r * 0.9) notes.push({ tone: 'good', text: `Full target executed at ${r2(r)}R. This is the trade that pays for the losers — repeat it.` });
+-  else if (r >= 1) notes.push({ tone: 'good', text: `Banked ${r2(r)}R. ${trade.planned_r ? `Plan was ${r2(trade.planned_r)}R target.` : ''}` });
+-  if (trade.adherence != null && trade.adherence <= 3) notes.push({ tone: 'bad', text: `You rated your own adherence ${trade.adherence}/5. Trades you cannot grade highly should not be taken.` });
+-  if (g && trade.risk_amount && g.stats && g.stats.median_risk && trade.risk_amount > g.stats.median_risk * 1.5) notes.push({ tone: 'warn', text: `Risked $${r2(trade.risk_amount)} against your usual $${r2(g.stats.median_risk)} — the size is what makes the loss hurt, not the loss itself.` });
++  const metric=v=>typeof v==='number'&&Number.isFinite(v)?v:null;
++  const r = auto.outcome.r_multiple, mfe = metric(trade.mfe_r), mae = metric(trade.mae_r);
++
++  if(auto.state==='unreviewed')notes.push({tone:'info',text:'Execution review is incomplete/stale. No rating is inferred from P&L, legacy stop flags or an entry setup grade.'});
++  if(auto.execution_quality==='plan_violated'||auto.execution_quality==='known_violation_in_incomplete_review')notes.push({tone:'bad',text:'Your current valid self-report identifies a plan/stop violation. A profitable outcome does not make that execution good.'});
++  if(auto.execution_quality==='plan_followed')notes.push({tone:'good',text:'You report following the plan and honouring its stop. This is a retrospective self-review, not verified broker/plan compliance.'});
++  if(trade.stop_moved===1||trade.stop_moved===true)notes.push({tone:'info',text:'The journal records stop movement. Movement may be protective or planned; it is not by itself evidence of widening or a loss cause.'});
++  if(auto.outcome.state==='known')notes.push({tone:'info',text:`Recorded realised net ${auto.outcome.net_pnl}${auto.outcome.r_multiple===null?'':` (${r2(auto.outcome.r_multiple)}R)`}. Outcome is separate from the execution grade.`});
++  else notes.push({tone:'info',text:'Realised outcome unavailable/contradictory; not treated as zero, a win or a loss.'});
++  if(r < -1.05)notes.push({tone:'info',text:`Recorded ${r2(r)}R exceeds1R in size. Fees/gaps/slippage or plan choices may be involved; this result alone does not establish a stop violation.`});
++  if(mfe!=null || mae!=null)notes.push({tone:'info',text:`Recorded excursions: MAE ${mae==null?'unavailable':r2(mae)+'R'}, MFE ${mfe==null?'unavailable':r2(mfe)+'R'}. Excursions alone do not prove bad entry/exit execution or justify changing targets.`});
++  if(g&&trade.risk_amount&&g.stats&&g.stats.median_risk&&trade.risk_amount>g.stats.median_risk*1.5)notes.push({tone:'warn',text:`Recorded risk $${r2(trade.risk_amount)} vs journal median $${r2(g.stats.median_risk)}. Descriptive sizing observation, not an execution-score input.`});
+ 
+   const today = dayKey(trade.opened_at);
+   if (siblings && siblings.length) {
+@@ -508,18 +536,20 @@ function feedback(trade, { guardrails: g = null, siblings = null } = {}) {
+     const last = before[before.length - 1];
+     if (last && (last.net_pnl || 0) < 0) {
+       const gapMin = (new Date(trade.opened_at) - new Date(last.closed_at || last.opened_at)) / 60000;
+-      if (gapMin <= 30) notes.push({ tone: 'bad', text: `This entry came ${r2(gapMin)} minutes after a loss (#${last.id}). That is the revenge window — the next trade after a loss should be after a break, not immediately.` });
++      if (gapMin <= 30) notes.push({ tone: 'bad', text: `This entry came ${r2(gapMin)} minutes after a loss (#${last.id}). Compare this recorded timing with the independent break/full-candle rules; the timestamp does not establish your emotional motive.` });
+     }
+     if (before.length + 1 > (g ? g.max_trades_day : 99)) notes.push({ tone: 'warn', text: `This was trade #${before.length + 1} of the day; your cap is ${g ? g.max_trades_day : '—'}.` });
+   }
+ 
+   return {
+-    trade_id: trade.id, symbol: trade.symbol, grade: auto.grade, score: auto.score,
+-    reasons: auto.reasons, notes,
+-    summary: auto.grade === 'A+' || auto.grade === 'A'
+-      ? 'Textbook execution — this is the behaviour to repeat.'
+-      : auto.grade === 'B' ? 'Decent trade with fixable leaks — see notes.'
+-        : auto.grade === 'C' ? 'Process errors here; the P&L is beside the point.' : 'This trade should not have been taken in this form.',
++    ...auto,trade_id:trade.id,symbol:trade.symbol,notes,
++    summary:auto.state==='unreviewed'
++      ? 'Execution unreviewed/incomplete — complete your own current adherence and stop-honour assessment; no outcome judgement.'
++      : auto.execution_quality==='plan_violated'
++        ? `Reported plan violation${auto.outcome.kind==='win'?' despite a profitable outcome':''}; P&L does not excuse the execution.`
++        : auto.loss_quality==='good_loss'
++          ? 'Reported plan followed and stop honoured: a good loss by execution, not by its size.'
++          : 'Reported plan followed and stop honoured; outcome remains a separate descriptive fact, not verified textbook execution.',
+   };
+ }
+ 
+@@ -531,7 +561,7 @@ async function analyse(userId, { accountId = null, backfill = false, days = 365
+   const mistakes = detectMistakes(trades);
+   const g = await guardrails(userId, { accountId });
+   const state = await dailyState(userId, { accountId });
+-  const graded = backfill ? await backfillGrades(userId) : null;
++  const graded = backfill ? await backfillGrades(userId,{accountId}) : null;
+   const accountRow = await accountOf(userId, accountId);
+ 
+   const byGrade = {};
+@@ -557,11 +587,24 @@ async function analyse(userId, { accountId = null, backfill = false, days = 365
      sample: { trades: trades.length, from: trades.length ? dayKey(trades[0].opened_at) : null, to: trades.length ? dayKey(trades[trades.length - 1].opened_at) : null },
      overall,
      behavior_score: behaviourScore,
@@ -3360,6 +3778,13 @@ index 5aeb214..e0fb389 100644
      mistakes,
      guardrails: g,
      daily: state,
+-    grades: gradeTable,
++    grades: Execution.distribution(trades),
++    grades_basis: Execution.BASIS, execution_rubric_version: Execution.VERSION,
++    setup_grades: gradeTable, setup_grades_basis: 'stored_entry_setup_grade_legacy_provenance_may_be_unknown',
+     backfill: graded,
+     top_fix: mistakes.length ? { title: mistakes[0].title, fix: mistakes[0].fix, impact: mistakes[0].impact, impact_unit: mistakes[0].impact_unit } : null,
+     session_state: SMC.sessionState(),
 diff --git a/src/bots/entry-models.js b/src/bots/entry-models.js
 new file mode 100644
 index 0000000..916e992
@@ -9010,7 +9435,7 @@ index a5aa93c..e446945 100644
        reasons,
      },
 diff --git a/src/db.js b/src/db.js
-index 7e2fd68..70ba4fa 100644
+index 7e2fd68..b2c37ab 100644
 --- a/src/db.js
 +++ b/src/db.js
 @@ -97,12 +97,26 @@ async function tx(fn) {
@@ -9297,7 +9722,16 @@ index 7e2fd68..70ba4fa 100644
  CREATE TABLE IF NOT EXISTS trades (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -261,13 +486,19 @@ CREATE TABLE IF NOT EXISTS trades (
+@@ -256,18 +481,28 @@ CREATE TABLE IF NOT EXISTS trades (
+   mae_r REAL,                                 -- worst excursion in R (negative number)
+   mfe_r REAL,                                 -- best excursion in R (positive number)
+   stop_moved INTEGER DEFAULT 0,
++  stop_honoured INTEGER CHECK(stop_honoured IS NULL OR stop_honoured IN (0,1)),
++  stop_honoured_source TEXT,
++  stop_honoured_recorded_at TEXT,
++  execution_review_hash TEXT,
+   exit_reason TEXT DEFAULT '',
+   notes TEXT DEFAULT '',
    strategy_id INTEGER REFERENCES strategies(id) ON DELETE SET NULL,
    strategy_name TEXT DEFAULT '',
    setup_grade TEXT DEFAULT '',                -- A+ / A / B / C
@@ -9318,7 +9752,7 @@ index 7e2fd68..70ba4fa 100644
    tags TEXT DEFAULT '',                       -- comma separated
    thesis TEXT DEFAULT '',
    lesson TEXT DEFAULT '',
-@@ -369,11 +600,192 @@ async function migrate() {
+@@ -369,11 +604,197 @@ async function migrate() {
      if (!(cols || []).some((c) => c.name === col)) await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
    };
    await add('trades', 'legs', 'TEXT');
@@ -9351,6 +9785,11 @@ index 7e2fd68..70ba4fa 100644
 +  await add('trades','mistakes_none','INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1))');
 +  await add('trades','journal_reviewed_at','TEXT');
 +  await add('trades','journal_review_hash','TEXT');
++  // M86 retrospective self-report only, no default/legacy stop/grade inference.
++  await add('trades','stop_honoured','INTEGER CHECK(stop_honoured IS NULL OR stop_honoured IN (0,1))');
++  await add('trades','stop_honoured_source','TEXT');
++  await add('trades','stop_honoured_recorded_at','TEXT');
++  await add('trades','execution_review_hash','TEXT');
 +  await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
 +  await add('journal_entries','pre_market_basis','TEXT');
 +  await add('journal_entries','pre_market_recorded_at','TEXT');
@@ -9511,7 +9950,7 @@ index 7e2fd68..70ba4fa 100644
  /* ------------------------------------------------------------------- meta */
  
  async function getMeta(k) {
-@@ -553,10 +965,25 @@ async function userFromWebhookToken(token) {
+@@ -553,10 +974,25 @@ async function userFromWebhookToken(token) {
  
  /** Wipe every table for a workspace (used by the "fresh workspace" flow). */
  async function clearWorkspace(userId) {
@@ -9541,7 +9980,7 @@ index 7e2fd68..70ba4fa 100644
  }
  
  module.exports = {
-@@ -564,7 +991,9 @@ module.exports = {
+@@ -564,7 +1000,9 @@ module.exports = {
    client, db, prepare, exec, batch, tx, ready,
    DB_URL, DB_PATH, REMOTE, DATA_DIR, SCHEMA_VERSION,
    getMeta, setMeta, seedGlobalInstruments, createUser, hashPassword, verifyPassword,
@@ -9554,6 +9993,133 @@ index 7e2fd68..70ba4fa 100644
 -};
 +  DEFAULT_CHECKLIST, DEFAULT_STRATEGIES, currentStrategyVersion, snapshotStrategyVersion, strategyRulesChanged, STRATEGY_RULE_FIELDS};
 \ No newline at end of file
+diff --git a/src/execution-review.js b/src/execution-review.js
+new file mode 100644
+index 0000000..18ffa92
+--- /dev/null
++++ b/src/execution-review.js
+@@ -0,0 +1,121 @@
++'use strict';
++/** M86: retrospective HUMAN execution review, never a pre-entry checklist
++ * grade/risk input. Unknown evidence is not a manufactured poor/good trade.
++ * Outcome/excursions do not award points or prove stop violations. */
++const crypto = require('crypto');
++const VERSION = 'execution-v1';
++const BASIS = 'self_reported_execution';
++const SCORES = Object.freeze({1:20,2:40,3:60,4:75,5:95});
++const number = v => typeof v === 'number' && Number.isFinite(v) ? v : null;
++const stamp = v => {
++  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(v)) return null;
++  const d = new Date(v), n = d.getTime();
++  return Number.isFinite(n) && d.toISOString().replace('.000Z','Z') === v.replace('.000Z','Z') ? n : null;
++};
++// Binds HUMAN acknowledgement to relevant current record, never a persisted
++// score. Truthful correction invalidates stale evidence without blocking CRUD.
++const HASH_KEYS = ['id','user_id','account_id','symbol','direction','status','opened_at','closed_at','entry','exit','stop','target','size','fees','strategy_id','strategy_version','adherence','stop_moved','stop_honoured','stop_honoured_source','stop_honoured_recorded_at'];
++function fingerprint(trade) { return crypto.createHash('sha256').update(JSON.stringify([VERSION,...HASH_KEYS.map(k=>[k,trade[k]??null])])).digest('hex'); }
++function invalid(message,status=400) { const e=new Error(message);e.status=status;e.code='execution_review_invalid';return e; }
++async function acknowledge(userId,id,body) {
++  if(!Number.isSafeInteger(id)||id<=0)throw invalid('Trade not found',404);
++  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['adherence','stop_honoured','record_revision'].includes(k))
++    ||!Object.hasOwn(body,'adherence')||!Object.hasOwn(body,'stop_honoured'))throw invalid('Provide only adherence, stop_honoured and the displayed record_revision, including explicit unknown/null when appropriate.');
++  if(typeof body.record_revision!=='string'||!/^[a-f0-9]{64}$/.test(body.record_revision))throw invalid('Read the saved record and supply its current displayed record_revision.');
++  const a=body.adherence,flag=body.stop_honoured;
++  if(a!==null && (!Number.isInteger(a)||a<1||a>5))throw invalid('Adherence must be a literal whole number1–5 or null.');
++  if(flag!==null && typeof flag!=='boolean')throw invalid('Stop honour must be literal true/false/null.');
++  const {db}=require('./db');
++  return db.tx(async tx=>{const store=db.transactionStore(tx),row=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);
++    if(!row)throw invalid('Trade not found',404);
++    if(body.record_revision!==fingerprint(row))throw invalid('The saved trade changed after display. Reopen its current record before reviewing execution.',409);
++    const now=Date.now(),closed=stamp(row.closed_at);
++    if(row.status!=='closed'||number(row.exit)===null||closed===null||closed>now)throw invalid('Record the actual close before this retrospective execution review.',409);
++    if(flag!==null && (number(row.stop)===null||row.stop<=0))throw invalid('Record the actual planned stop before reporting whether it was honoured.');
++    const at=new Date(now).toISOString(),fields={adherence:a,stop_honoured:flag===null?null:flag?1:0,stop_honoured_source:'self_reported',stop_honoured_recorded_at:at},hash=fingerprint({...row,...fields});
++    await store.prepare("UPDATE trades SET adherence=?,stop_honoured=?,stop_honoured_source=?,stop_honoured_recorded_at=?,execution_review_hash=?,updated_at=datetime('now') WHERE id=? AND user_id=?")
++      .run(a,fields.stop_honoured,fields.stop_honoured_source,at,hash,id,userId);
++    return store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);
++  });
++}
++function outcome(trade) {
++  const net = number(trade.net_pnl), r = number(trade.r_multiple);
++  if (net === null || r !== null && Math.sign(net) !== Math.sign(r)) {
++    return {state:'unknown',kind:null,net_pnl:net,r_multiple:r,basis:'unavailable_or_contradictory_realised_outcome'};
++  }
++  const v = net;
++  return {state:'known',kind:v < 0 ? 'loss' : v > 0 ? 'win' : 'breakeven',net_pnl:net,r_multiple:r,basis:'recorded_realised_net_pnl'};
++}
++function review(trade, {nowMs=Date.now()}={}) {
++  const reasons = ['Execution basis: self-reported journal evidence, not broker-verified adherence.'];
++  const a = number(trade.adherence), validAdherence = Number.isInteger(a) && a >= 1 && a <= 5;
++  const flag = trade.stop_honoured, validFlag = flag === 1 || flag === true || flag === 0 || flag === false;
++  const recorded = stamp(trade.stop_honoured_recorded_at), close = stamp(trade.closed_at);
++  const validClock = number(nowMs) !== null && close !== null && close <= nowMs;
++  const stop = number(trade.stop);
++  const completed = trade.status === 'closed' && number(trade.exit) !== null && validClock;
++  // A partial CURRENT human acknowledgement can report an explicit violation,
++  // but raw legacy/default/stale/corrupt ratings cannot manufacture that claim.
++  const acknowledged = completed && (validAdherence || trade.adherence===null) && (validFlag || flag===null)
++    && ['self_reported','imported_self_report'].includes(trade.stop_honoured_source)
++    && recorded !== null && recorded <= nowMs && recorded >= close
++    && typeof trade.execution_review_hash==='string' && trade.execution_review_hash===fingerprint(trade);
++  const validStop = acknowledged && validFlag && stop !== null && stop > 0;
++  const honoured = validStop ? flag === 1 || flag === true : null;
++  const facts = completed ? outcome(trade) : {state:'unknown',kind:null,basis:'not_known_closed_outcome',net_pnl:null,r_multiple:null};
++  reasons.push(validAdherence ? `Recorded rule adherence ${a}/5: ${acknowledged?'current acknowledged self-report':'not acknowledged for the current record; provisional only'}.` : 'Rule adherence unavailable/invalid: no rating is inferred from P&L.');
++  reasons.push(validStop ? `Stop honour explicitly reported ${honoured ? 'yes' : 'no'} (${trade.stop_honoured_source}).`
++    : 'Stop honour unreviewed/invalid: not inferred from movement, realised R, default zero or a legacy row.');
++  const complete = completed && validAdherence && validStop;
++  const violated = acknowledged && (validAdherence && a < 4 || validStop && !honoured);
++  const quality = complete ? violated ? 'plan_violated' : 'plan_followed' : violated ? 'known_violation_in_incomplete_review' : 'unreviewed';
++  let score = null, grade = 'Unreviewed', loss = 'unknown';
++  if (complete) {
++    score = honoured ? SCORES[a] : Math.min(SCORES[a],39);
++    grade = score >= 80 ? 'A+' : score >= 68 ? 'A' : score >= 54 ? 'B' : score >= 40 ? 'C' : 'D';
++    reasons.push(`Execution rubric ${VERSION}: adherence points ${SCORES[a]}${honoured ? '' : ', explicit stop violation caps score below C at39'}.`);
++    if (facts.state === 'known') {
++      loss = facts.kind === 'loss' ? violated ? 'bad_loss' : 'good_loss' : 'not_loss';
++      if (loss === 'good_loss') reasons.push('Good loss by reported plan adherence and honoured stop — not by its size.');
++      else if (loss === 'bad_loss') reasons.push('Bad loss by an explicit reported execution violation, not by red P&L alone.');
++    }
++  } else reasons.push('Execution grade withheld until an actual closed journal and complete valid self-review exist.');
++  reasons.push('Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect.');
++  return {state:complete ? 'reviewed' : 'unreviewed',grade,score,reasons,basis:BASIS,rubric_version:VERSION,
++    execution_quality:quality,loss_quality:loss,outcome:facts,evidence:{adherence:acknowledged&&validAdherence?a:null,stop_honoured:honoured,
++      stop_honoured_source:validStop?trade.stop_honoured_source:null,stop_honoured_recorded_at:validStop?trade.stop_honoured_recorded_at:null},
++    retrospective:true,broker_verified:false,entry_setup_grade:trade.setup_grade || null,record_revision:fingerprint(trade)};
++}
++function distribution(trades) {
++  const groups=new Map();
++  for(const trade of trades) {
++    const g=review(trade),key=g.grade;
++    if(!groups.has(key))groups.set(key,{grade:key,trades:0,reviewed:0,known_outcomes:0,unavailable_outcomes:0,wins:0,net_sum:0,r_sum:0,r_count:0});
++    const row=groups.get(key);row.trades++;if(g.state==='reviewed')row.reviewed++;
++    if(g.outcome.state==='known') {row.known_outcomes++;if(g.outcome.kind==='win')row.wins++;row.net_sum+=g.outcome.net_pnl;
++      if(g.outcome.r_multiple!==null){row.r_count++;row.r_sum+=g.outcome.r_multiple;}
++    } else row.unavailable_outcomes++;
++  }
++  const round=v=>Math.round(v*100)/100,order=['A+','A','B','C','D','Unreviewed'];
++  return [...groups.values()].map(r=>({grade:r.grade,trades:r.trades,reviewed:r.reviewed,unreviewed:r.trades-r.reviewed,known_outcomes:r.known_outcomes,unavailable_outcomes:r.unavailable_outcomes,
++    win_rate:r.known_outcomes?round(r.wins/r.known_outcomes*100):null,net:r.known_outcomes?round(r.net_sum):null,expectancy_r:r.r_count?round(r.r_sum/r.r_count):null,
++    basis:BASIS,rubric_version:VERSION,descriptive_only:true})).sort((a,b)=>order.indexOf(a.grade)-order.indexOf(b.grade));
++}
++/** M92 relative retrospective execution extremes; ties kept, unknown unranked.
++ * Money-only extrema/day totals are explicitly independent. No P&L tiebreak. */
++function summary(trades,{accountId=null,date=null,timezone='recorded_closed_cohort',nowMs=Date.now()}={}) {
++  const closed=trades.filter(t=>t.status==='closed'),ranked=[];
++  for(const t of closed) {const g=review(t,{nowMs});if(g.state==='reviewed')ranked.push({trade_id:t.id,symbol:t.symbol,grade:g.grade,score:g.score,adherence:g.evidence.adherence,
++    stop_honoured:g.evidence.stop_honoured,loss_quality:g.loss_quality,outcome:g.outcome,entry_setup_grade:g.entry_setup_grade,basis:BASIS});}
++  const pick=max=>{if(!ranked.length)return null;const score=(max?Math.max:Math.min)(...ranked.map(r=>r.score)),ties=ranked.filter(r=>r.score===score).sort((a,b)=>a.trade_id-b.trade_id);
++    return {score,grade:ties[0].grade,trade_ids:ties.map(r=>r.trade_id),tie_count:ties.length,trades:ties};};
++  const observed=t=>{const c=stamp(t.closed_at);return c!==null&&c<=nowMs&&number(t.exit)!==null;};
++  const money=closed.filter(t=>observed(t)&&number(t.net_pnl)!==null),rs=closed.filter(t=>observed(t)&&outcome(t).state==='known'&&number(t.r_multiple)!==null);
++  const pnl=money.map(t=>t.net_pnl),net=pnl.reduce((a,b)=>a+b,0),unavailable=closed.length-money.length;
++  return {state:!closed.length?'empty':ranked.length?'ranked':'unreviewed',closed:closed.length,ranked:ranked.length,unranked:closed.length-ranked.length,best:pick(true),worst:pick(false),
++    account_id:accountId,date,timezone,basis:BASIS,rubric_version:VERSION,descriptive_only:true,broker_verified:false,
++    note:'Relative best/worst among reviewed closed journals by self-reported execution only. Ties kept, unreviewed evidence unranked. No P&L tie-break or strategy/risk/causal claim. Entry setup grade is separate.',
++    pnl:{basis:'realised_money_not_execution',known:money.length,unavailable,best:pnl.length?Math.max(...pnl):null,worst:pnl.length?Math.min(...pnl):null,
++      realised_total:unavailable?null:net,known_partial_sum:money.length?net:null,recorded_total_r:rs.length===closed.length?rs.reduce((n,t)=>n+t.r_multiple,0):null}};
++}
++module.exports = {review,outcome,distribution,summary,acknowledge,fingerprint,HASH_KEYS,VERSION,BASIS,SCORES};
 diff --git a/src/instruments.js b/src/instruments.js
 index e58249b..2292b54 100644
 --- a/src/instruments.js
@@ -9782,10 +10348,37 @@ index 0000000..36e58eb
 +}
 +module.exports={invalid,text,reviewFields,fingerprint,knownNet,info,summary,days,reviewTrade,syncLosses,reflectionsForDay,reflectLoss};
 diff --git a/src/performance.js b/src/performance.js
-index 97110a5..ad741f1 100644
+index 97110a5..5ac760a 100644
 --- a/src/performance.js
 +++ b/src/performance.js
-@@ -529,7 +529,7 @@ function fullAnalytics(trades, opts = {}) {
+@@ -8,6 +8,8 @@
+  * normalised `risk_amount`, `net_pnl` and `r_multiple`.
+  */
+ 
++const Execution = require('./execution-review');
++
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+ const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
+@@ -99,6 +101,7 @@ function decorate(t, tz) {
+   out.weighted_exit = legsArr.length
+     ? r4(legsArr.reduce((acc, l) => acc + num(l.pct) * num(l.price), 0) / legsArr.reduce((acc, l) => acc + num(l.pct), 0))
+     : null;
++  out.execution_review = Execution.review(t);
+   return out;
+ }
+ function splitTags(s) {
+@@ -208,6 +211,9 @@ function kpis(trades, opts = {}) {
+     expectancy: r2(expectancy), expectancy_r: r4(expectancyR),
+     total_r: r2(sum(rs)), avg_r: r4(mean(rs)), median_r: r4(median(rs)),
+     std_r: r4(sdR), sqn: r2(sqn), kelly: r2(kelly * 100),
++    // Compatibility money fields retained, never process-ranked execution.
++    trade_extremes_basis:'legacy_realised_money_use_execution_summary_for_process',
++    execution_summary:Execution.summary(closed),
+     best_trade: closed.length ? r2(Math.max(...pnls)) : 0,
+     worst_trade: closed.length ? r2(Math.min(...pnls)) : 0,
+     best_r: rs.length ? r4(Math.max(...rs)) : 0,
+@@ -529,7 +535,7 @@ function fullAnalytics(trades, opts = {}) {
        i: i + 1, id: t.id, symbol: t.symbol, r: r4(num(t.r_multiple)), risk: r2(num(t.risk_amount)),
        mae: t.mae_r === null || t.mae_r === undefined ? null : r4(num(t.mae_r)),
        mfe: t.mfe_r === null || t.mfe_r === undefined ? null : r4(num(t.mfe_r)),
@@ -9794,7 +10387,7 @@ index 97110a5..ad741f1 100644
        adherence: t.adherence || null, mistakes: t.mistakes || '', hold: num(t.hold_minutes),
        hour: t.hour, session: t.session_label, dir: String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long',
      })),
-@@ -537,11 +537,21 @@ function fullAnalytics(trades, opts = {}) {
+@@ -537,11 +543,21 @@ function fullAnalytics(trades, opts = {}) {
      daily: dailySeries(trades.filter((t) => t.status !== 'open')),
      monthly: monthlySeries(trades.filter((t) => t.status !== 'open')),
      distribution: rDistribution(trades.filter((t) => t.status !== 'open')),
@@ -9818,10 +10411,10 @@ index 97110a5..ad741f1 100644
      by_mistake: segment(trades, (t) => splitTags(t.mistakes)),
      by_tag: segment(trades, (t) => splitTags(t.tags)),
 diff --git a/src/routes/api.js b/src/routes/api.js
-index 0bb768c..06e88a8 100644
+index 0bb768c..20a189f 100644
 --- a/src/routes/api.js
 +++ b/src/routes/api.js
-@@ -1,12 +1,19 @@
+@@ -1,12 +1,20 @@
  'use strict';
  const { asyncRouter } = require('./async-router');
 -const { db, createUser, verifyPassword, createSession, userFromToken, destroySession, getMeta, DEFAULT_CHECKLIST } = require('../db');
@@ -9838,11 +10431,12 @@ index 0bb768c..06e88a8 100644
 +const J = require('../journaling');
 +const RR = require('../routine-records');
 +const Routine = require('../routine');
-+const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t)});
++const Execution = require('../execution-review');
++const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t)});
  const O = require('../options');
  const Exp = require('../exposure');
  const Prop = require('../prop');
-@@ -14,6 +21,13 @@ const N = require('../notify');
+@@ -14,6 +22,13 @@ const N = require('../notify');
  const createBotsRouter = require('./bots');
  
  const router = asyncRouter();
@@ -9856,7 +10450,7 @@ index 0bb768c..06e88a8 100644
  const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  
-@@ -40,7 +54,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
+@@ -40,7 +55,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
  async function requireAuth(req, res, next) {
    try {
      const user = await userFromToken(readToken(req));
@@ -9884,7 +10478,7 @@ index 0bb768c..06e88a8 100644
      req.user = user;
      next();
    } catch (e) { next(e); }
-@@ -237,6 +270,7 @@ function tradeFilters(req) {
+@@ -237,6 +271,7 @@ function tradeFilters(req) {
      status: req.query.status && req.query.status !== 'all' ? req.query.status : null,
      symbol: req.query.symbol || null,
      strategy_id: req.query.strategy_id || null,
@@ -9892,7 +10486,7 @@ index 0bb768c..06e88a8 100644
      from: req.query.from || null, to: req.query.to || null,
      asset_class: req.query.asset_class || null,
      tag: req.query.tag || null,
-@@ -278,13 +312,13 @@ router.get('/trades', requireAuth, async (req, res) => {
+@@ -278,13 +313,13 @@ router.get('/trades', requireAuth, async (req, res) => {
        .some((v) => String(v || '').toLowerCase().includes(q)));
    }
    const total = (await db.prepare(`SELECT COUNT(*) n FROM trades WHERE ${where}`).get({ ...params, user_id: req.user.id })).n;
@@ -9908,7 +10502,7 @@ index 0bb768c..06e88a8 100644
  });
  
  router.post('/trades', requireAuth, async (req, res) => {
-@@ -294,14 +328,45 @@ router.post('/trades', requireAuth, async (req, res) => {
+@@ -294,14 +329,45 @@ router.post('/trades', requireAuth, async (req, res) => {
    const accountId = num(body.account_id, 0) || (await db.prepare('SELECT id FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
    if (!body.symbol) return res.status(400).json({ error: 'Symbol is required' });
    if (!body.entry) return res.status(400).json({ error: 'Entry price is required' });
@@ -9958,7 +10552,7 @@ index 0bb768c..06e88a8 100644
  });
  
  router.put('/trades/:id', requireAuth, async (req, res) => {
-@@ -311,14 +376,32 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+@@ -311,14 +377,45 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
    const instruments = await instrumentMap(req.user.id);
    const merged = { ...existing, ...req.body };
    const spec = instruments[String(merged.symbol || '').toUpperCase()] || null;
@@ -9988,13 +10582,26 @@ index 0bb768c..06e88a8 100644
 +  res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
 +});
 +
++// Optional post-close HUMAN execution review is separate from financial CRUD
++// and mandatory core/loss writing. It cannot backfill pre-entry setup grades.
++router.post('/trades/:id/execution-review',requireAuth,async(req,res)=>{
++  try {
++    if(!/^[1-9]\d*$/.test(req.params.id))return res.status(404).json({error:'Trade not found'});
++    const row=await Execution.acknowledge(req.user.id,Number(req.params.id),req.body);
++    res.json({ok:true,trade:journalTrade(row,(await settingsOf(req)).timezone)});
++  } catch(e) {
++    if(e.code==='execution_review_invalid')return res.status(e.status).json({error:e.message,code:e.code});
++    res.status(503).json({error:'Execution review could not be recorded.'});
++  }
++});
++
 +router.post('/trades/:id/journal', requireAuth,async(req,res)=>{
 +  try { const row=await J.reviewTrade(req.user.id,Number(req.params.id),req.body||{});res.json({ok:true,trade:journalTrade(row,(await settingsOf(req)).timezone)}); }
 +  catch(e){if(e.code==='journal_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Journal review could not be recorded.'});}
  });
  
  router.post('/trades/:id/close', requireAuth, async (req, res) => {
-@@ -341,29 +424,81 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+@@ -341,29 +438,81 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
    };
    const instruments = await instrumentMap(req.user.id);
    const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
@@ -10081,7 +10688,7 @@ index 0bb768c..06e88a8 100644
  router.get('/analytics', requireAuth, async (req, res) => {
    const tz = (await settingsOf(req)).timezone;
    const f = tradeFilters(req);
-@@ -380,6 +515,9 @@ router.get('/analytics', requireAuth, async (req, res) => {
+@@ -380,6 +529,9 @@ router.get('/analytics', requireAuth, async (req, res) => {
      || await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id)
      || { starting_balance: 10000, id: null };
    const analytics = P.fullAnalytics(closed, { startingBalance: acc.starting_balance });
@@ -10091,7 +10698,7 @@ index 0bb768c..06e88a8 100644
    analytics.account = acc;
    analytics.open_positions = decorated.filter((t) => t.status === 'open');
    res.json(analytics);
-@@ -393,9 +531,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+@@ -393,9 +545,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const rs = rows.map((t) => num(t.r_multiple));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
@@ -10110,7 +10717,7 @@ index 0bb768c..06e88a8 100644
    res.json({
      monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
      optimal_risk: P.optimalRisk(rs),
-@@ -425,39 +570,99 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+@@ -425,39 +584,100 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
    const symbols = [...new Set([...(settings.focus_symbols || []), ...rows.slice(-25).map((t) => t.symbol)])].slice(0, 12);
    const [cal, quotes] = await Promise.all([M.getCalendar({ timezone: tz }), M.getQuotes(symbols)]);
    const events = (cal.events || []).filter((e) => ['high', 'medium'].includes(e.impact) && new Date(e.date) > new Date(Date.now() - 6 * 3600e3)).slice(0, 40);
@@ -10179,11 +10786,12 @@ index 0bb768c..06e88a8 100644
    const tz = (await settingsOf(req)).timezone;
 -  const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)`).all(req.user.id, req.params.date)).map((t) => P.decorate(t, tz));
 -  res.json({ entry: row || null, trades });
-+  const accountId=req.query.account_id?Number(req.query.account_id):null;
-+  if(accountId!==null && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Account not found'});
++  if(req.query.account_id!==undefined && (typeof req.query.account_id!=='string'||!/^([1-9]\d*)$/.test(req.query.account_id)))return res.status(400).json({error:'Select a canonical positive owned account ID.'});
++  const account=await accountOr404(req,res);if(!account)return;
++  const accountId=account.id;
 +  const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
 +  const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
-+  res.json({ entry: row || null, trades,pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
  });
  router.post('/journal', requireAuth, async (req, res) => {
    const b = req.body || {};
@@ -10221,7 +10829,7 @@ index 0bb768c..06e88a8 100644
  });
  router.delete('/journal/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM journal_entries WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -470,11 +675,12 @@ router.get('/strategies', requireAuth, async (req, res) => {
+@@ -470,11 +690,12 @@ router.get('/strategies', requireAuth, async (req, res) => {
    const stats = {};
    const tz = (await settingsOf(req)).timezone;
    const rows = (await db.prepare("SELECT * FROM trades WHERE user_id=? AND status='closed'").all(req.user.id)).map((t) => P.decorate(t, tz));
@@ -10235,7 +10843,7 @@ index 0bb768c..06e88a8 100644
    }
    res.json({ strategies, stats });
  });
-@@ -486,17 +692,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
+@@ -486,17 +707,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
      req.user.id, b.name, b.description || '', b.market_conditions || '', b.timeframes || '',
      JSON.stringify(b.entry_rules || []), JSON.stringify(b.exit_rules || []), JSON.stringify(b.checklist || []),
      b.risk_rules || '', num(b.target_r_multiple, 2), b.colour || '#4f8cff', b.active === false ? 0 : 1);
@@ -10271,7 +10879,7 @@ index 0bb768c..06e88a8 100644
      name: b.name !== undefined ? b.name : cur.name,
      description: b.description !== undefined ? b.description : cur.description,
      market_conditions: b.market_conditions !== undefined ? b.market_conditions : cur.market_conditions,
-@@ -508,8 +727,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
+@@ -508,8 +742,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
      target_r_multiple: b.target_r_multiple !== undefined ? num(b.target_r_multiple, 2) : cur.target_r_multiple,
      colour: b.colour || cur.colour,
      active: b.active === undefined ? cur.active : (b.active ? 1 : 0),
@@ -10326,7 +10934,7 @@ index 0bb768c..06e88a8 100644
  });
  router.delete('/strategies/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM strategies WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -541,21 +805,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
+@@ -541,21 +820,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
  router.post('/accounts', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.name) return res.status(400).json({ error: 'Account name is required' });
@@ -10395,7 +11003,7 @@ index 0bb768c..06e88a8 100644
      prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
      id, user_id: req.user.id,
      name: b.name !== undefined ? b.name : cur.name,
-@@ -563,7 +867,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -563,7 +882,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
      currency: b.currency !== undefined ? b.currency : cur.currency,
      starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
@@ -10409,7 +11017,7 @@ index 0bb768c..06e88a8 100644
      daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
      max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
      prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
-@@ -571,7 +880,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -571,7 +895,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
      archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
    });
@@ -10422,7 +11030,7 @@ index 0bb768c..06e88a8 100644
  });
  router.delete('/accounts/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -708,7 +1021,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -708,7 +1036,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
    const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
    const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
    const balance = num(b.balance, acc ? acc.current_balance : 10000);
@@ -10443,7 +11051,7 @@ index 0bb768c..06e88a8 100644
    const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
    const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
    const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
-@@ -722,6 +1047,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -722,6 +1062,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
      pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
      pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
      percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,
@@ -10454,7 +11062,7 @@ index 0bb768c..06e88a8 100644
    });
  });
  
-@@ -782,7 +1111,7 @@ router.get('/export/csv', requireAuth, async (req, res) => {
+@@ -782,7 +1126,7 @@ router.get('/export/csv', requireAuth, async (req, res) => {
    const rows = (await db.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({ ...params, user_id: req.user.id })).map((t) => P.decorate(t, tz));
    const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
      'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
@@ -10463,7 +11071,7 @@ index 0bb768c..06e88a8 100644
      'thesis', 'lesson', 'execution_notes', 'notes'];
    const esc = (v) => {
      const s = v === null || v === undefined ? '' : String(v);
-@@ -831,7 +1160,8 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -831,7 +1175,8 @@ router.post('/import/csv', requireAuth, async (req, res) => {
      opened: findCol(['opened_at', 'open_time', 'entry_time', 'date', 'datetime', 'open_date', 'time_open', 'opened']),
      closed: findCol(['closed_at', 'close_time', 'exit_time', 'close_date', 'time_close', 'closed']),
      fees: findCol(['fees', 'commission', 'fee', 'cost', 'swap']),
@@ -10473,7 +11081,7 @@ index 0bb768c..06e88a8 100644
      tags: findCol(['tags', 'tag', 'labels']),
      notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
      net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
-@@ -864,11 +1194,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -864,11 +1209,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
            closed_at: map.closed > -1 ? r[map.closed] : null,
            fees: map.fees > -1 ? r[map.fees] : 0,
            strategy_name: map.strategy > -1 ? r[map.strategy] : '',
@@ -10490,7 +11098,7 @@ index 0bb768c..06e88a8 100644
          if (map.net > -1 && String(r[map.net] || '').trim() && !isNaN(Number(String(r[map.net]).replace(/[^0-9.\-]/g, '')))) {
            const net = Number(String(r[map.net]).replace(/[^0-9.\-]/g, ''));
            if (net !== 0) {
-@@ -931,6 +1266,8 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -931,6 +1281,8 @@ router.post('/import/json', requireAuth, async (req, res) => {
        const spec = instruments[String(t.symbol).toUpperCase()] || null;
        const trade = T.normalise(t, { instrument: spec, tz });
        trade.account_id = accountMap[t.account_id] || (def ? def.id : null);
@@ -10499,7 +11107,7 @@ index 0bb768c..06e88a8 100644
        if (!trade.account_id) continue;
        collected.push(trade);
        inserted++;
-@@ -971,6 +1308,16 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -971,6 +1323,16 @@ router.put('/settings', requireAuth, async (req, res) => {
      risk_defaults: b.risk_defaults || cur.risk_defaults || { risk_pct: 1, daily_limit_pct: 3, max_trades: 5 },
      // the floor every plan is judged against: below it a plan may still be shown,
      // but it is labelled and never reads as a plain order
@@ -10517,18 +11125,19 @@ index 0bb768c..06e88a8 100644
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
 diff --git a/src/routes/bots.js b/src/routes/bots.js
-index 2c6ff6c..4d65de9 100644
+index 2c6ff6c..c4c9d6f 100644
 --- a/src/routes/bots.js
 +++ b/src/routes/bots.js
-@@ -16,6 +16,7 @@ function createBotsRouter({ requireAuth }) {
+@@ -16,6 +16,8 @@ function createBotsRouter({ requireAuth }) {
    const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch((err) => {
      console.error(`BOT API error on ${req.method} ${req.originalUrl}:`, err.message);
      if (res.headersSent) return;
++    if(err.code==='execution_review_invalid')return res.status(err.status).json({error:err.message,code:err.code});
 +    if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
      res.status(500).json({ error: err.message || 'Bot error' });
    });
    const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));
-@@ -28,11 +29,26 @@ function createBotsRouter({ requireAuth }) {
+@@ -28,11 +30,26 @@ function createBotsRouter({ requireAuth }) {
   * scenario". `?min_rr=` overrides it for a single request so a probe or a test
   * can measure the same plan against a different floor.
   */
@@ -10556,7 +11165,7 @@ index 2c6ff6c..4d65de9 100644
      const set = row && row.settings ? JSON.parse(row.settings) : {};
      const v = Number(set.min_rr);
      if (Number.isFinite(v) && v > 0) return Math.min(Math.max(v, 0.1), 10);
-@@ -88,6 +104,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -88,6 +105,7 @@ router.get('/markets', requireAuth, (req, res) => {
        predictionBars: Math.min(Math.max(num(req.query.bars, 1200), 300), 3000),
        step: Math.min(Math.max(num(req.query.step, 2), 1), 6),
        minRR: await floorOf(req),
@@ -10564,7 +11173,7 @@ index 2c6ff6c..4d65de9 100644
        force: req.query.force === '1',
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),       // bar replay: drop the last N candles
        as_of: req.query.as_of || null,                                  // bar replay: read as of this instant
-@@ -113,6 +130,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -113,6 +131,7 @@ router.get('/markets', requireAuth, (req, res) => {
        userId: req.user.id,
        accountId: req.query.account_id ? Number(req.query.account_id) : null,
        minRR: await floorOf(req),
@@ -10572,7 +11181,7 @@ index 2c6ff6c..4d65de9 100644
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),
        as_of: req.query.as_of || null,
      });
-@@ -128,6 +146,8 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -128,6 +147,8 @@ router.get('/markets', requireAuth, (req, res) => {
      const tf = String(req.query.tf || '15m');
      const out = await Bots.chart(symbol, tf, {
        bars: Math.min(Math.max(num(req.query.bars, 300), 80), 900), userId: req.user.id,
@@ -10581,7 +11190,7 @@ index 2c6ff6c..4d65de9 100644
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
      });
      res.json({
-@@ -137,8 +157,8 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -137,8 +158,8 @@ router.get('/markets', requireAuth, (req, res) => {
        checks: out.topdown.checks, score: out.topdown.score, grade: out.topdown.grade,
        status: out.topdown.status, direction: out.topdown.direction,
        headline: out.topdown.headline, playbook: out.topdown.playbook,
@@ -10592,7 +11201,7 @@ index 2c6ff6c..4d65de9 100644
        verdict: out.setups.verdict, meta: out.meta,
      });
    }));
-@@ -150,7 +170,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -150,7 +171,7 @@ router.get('/markets', requireAuth, (req, res) => {
        .split(',').map((s) => s.trim()).filter(Boolean);
      if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
      const tf = String(req.query.tf || '15m');
@@ -10601,7 +11210,16 @@ index 2c6ff6c..4d65de9 100644
      res.json(out);
    }));
  
-@@ -221,8 +241,9 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -215,14 +236,17 @@ router.get('/markets', requireAuth, (req, res) => {
+   }));
+ 
+   router.post('/correction/backfill', requireAuth, wrap(async (req, res) => {
+-    const out = await Bots.correction.backfillGrades(req.user.id);
++    const value=req.body?.account_id;
++    if(value!==undefined && !(typeof value==='number'&&Number.isSafeInteger(value)&&value>0))return res.status(400).json({error:'account_id must be a positive whole number when selected.'});
++    const out = await Bots.correction.backfillGrades(req.user.id,{accountId:value===undefined?null:value});
+     res.json({ ok: true, ...out });
+   }));
  
    router.get('/guardrails', requireAuth, wrap(async (req, res) => {
      const accountId = req.query.account_id ? Number(req.query.account_id) : null;
@@ -10613,7 +11231,7 @@ index 2c6ff6c..4d65de9 100644
      res.json({ ok: true, guardrails: g.guardrails, stats: g.stats, evidence: g.evidence, daily });
    }));
  
-@@ -252,8 +273,8 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -252,8 +276,8 @@ router.get('/markets', requireAuth, (req, res) => {
        accountId: (req.body && req.body.account_id) || null,
        includePrediction: req.body && req.body.prediction !== false,
      });
@@ -10624,7 +11242,7 @@ index 2c6ff6c..4d65de9 100644
    }));
  
    /**
-@@ -262,12 +283,29 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -262,12 +286,29 @@ router.get('/markets', requireAuth, (req, res) => {
     */
    router.post('/signals/save-plan', requireAuth, wrap(async (req, res) => {
      const b = req.body || {};

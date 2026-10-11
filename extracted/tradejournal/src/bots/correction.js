@@ -19,6 +19,7 @@
 const { db } = require('../db');
 const SMC = require('./smc');
 const Guards = require('./guardrails');
+const Execution = require('../execution-review');
 
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 const dayKey = (iso) => String(iso || '').slice(0, 10);
@@ -339,72 +340,23 @@ function detectMistakes(trades) {
 
 /* ══════════════════════════════════════════════════════ 2. AUTO-GRADING */
 
-/**
- * Grade a trade from its own data (no opinions). Used to backfill `setup_grade`
- * so the analytics "grade" breakdown is never empty again.
- * @returns {{score:number, grade:string, reasons:string[]}}
- */
-function autograde(trade) {
-  const reasons = [];
-  let score = 50;
+/** M86 retrospective self-report execution rubric, separate from entry setup
+ * quality. Pure current facts, no outcome/session/excursion points or risk input. */
+function autograde(trade) { return Execution.review(trade); }
 
-  // 1. planned R:R (the model's minimum is 2)
-  const planned = trade.planned_r || null;
-  if (planned == null) { reasons.push('No planned R:R logged (-10)'); score -= 10; }
-  else if (planned >= 3) { score += 20; reasons.push(`Planned ${r2(planned)}R — excellent pay-off (+20)`); }
-  else if (planned >= 2) { score += 14; reasons.push(`Planned ${r2(planned)}R — meets the 2R minimum (+14)`); }
-  else if (planned >= 1.5) { score += 2; reasons.push(`Planned ${r2(planned)}R — below the 2R minimum (+2)`); }
-  else { score -= 10; reasons.push(`Planned only ${r2(planned)}R (-10)`); }
-
-  // 2. execution quality: outcome vs plan
-  const r = trade.r_multiple || 0;
-  if (r >= 2) { score += 16; reasons.push(`Closed ${r2(r)}R — plan executed (+16)`); }
-  else if (r > 0.5) { score += 12; reasons.push(`Closed ${r2(r)}R — winner, but short of a full target (+12)`); }
-  else if (r > 0) { score += 4; reasons.push(`Closed ${r2(r)}R — small win (+4)`); }
-  else if (r >= -1.05) { score += 6; reasons.push(`Loss of ${r2(r)}R — within the 1R limit, that is a good loss (+6)`); }
-  else { score -= 12; reasons.push(`Loss of ${r2(r)}R exceeds the 1R stop (-12)`); }
-
-  // 3. risk discipline
-  if (trade.stop_moved) { score -= 18; reasons.push('Stop was moved away from entry (-18)'); }
-  else if (r < -1.05) { reasons.push('Stop not honoured (-6)'); score -= 6; }
-  else { score += 6; reasons.push('Stop left where the plan put it (+6)'); }
-
-  // 4. excursion discipline (entry timing + exit timing)
-  if (trade.mae_r != null && trade.mae_r > -0.9 && r < 0) { score += 4; reasons.push('Entry was not run over (MAE under 0.9R) (+4)'); }
-  if (trade.mae_r != null && trade.mae_r < -1.2) { score -= 6; reasons.push(`Entry was immediately underwater (MAE ${r2(trade.mae_r)}R) (-6)`); }
-  if (trade.mfe_r != null && r > 0 && trade.mfe_r - r <= 0.75) { score += 8; reasons.push('Exited near the peak excursion (+8)'); }
-  if (trade.mfe_r != null && r > 0 && trade.mfe_r - r >= 1.5) { score -= 8; reasons.push(`Left ${r2(trade.mfe_r - r)}R on the table (MFE was ${r2(trade.mfe_r)}R) (-8)`); }
-
-  // 5. adherence self-score
-  if (trade.adherence != null) {
-    if (trade.adherence >= 4) { score += 6; reasons.push(`Rule adherence ${trade.adherence}/5 (+6)`); }
-    else if (trade.adherence <= 2) { score -= 10; reasons.push(`Rule adherence only ${trade.adherence}/5 (-10)`); }
+/** Compatibility endpoint: READ-ONLY current execution reviews. Old automatic
+ * setup_grade writes were outcome-derived and unproven. Never guess which
+ * legacy grade was manual/bot/old backfill, erase it or route it into capital. */
+async function backfillGrades(userId,{accountId=null}={}) {
+  if(accountId!==null) {
+    if(!Number.isSafeInteger(accountId)||accountId<=0) {const e=new Error('A positive owned account ID is required.');e.code='execution_review_invalid';e.status=400;throw e;}
+    if(!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,userId)) {const e=new Error('Account not found');e.code='execution_review_invalid';e.status=404;throw e;}
   }
-
-  // 6. session quality (killzone windows)
-  const sess = String(trade.session || '').toLowerCase();
-  if (sess) {
-    const quality = sessionQuality(sess);
-    if (quality != null && quality < 0.55) { score -= 6; reasons.push(`Traded the ${sess} session — low-probability window (-6)`); }
-    else if (quality != null && quality >= 0.85) { score += 4; reasons.push(`Traded the ${sess} killzone (+4)`); }
-  }
-
-  score = Math.max(0, Math.min(100, score));
-  const grade = score >= 80 ? 'A+' : score >= 68 ? 'A' : score >= 54 ? 'B' : score >= 40 ? 'C' : 'D';
-  return { score, grade, reasons };
-}
-
-/** Fill in setup_grade for trades that have none. */
-async function backfillGrades(userId) {
-  const rows = await db.prepare(`SELECT * FROM trades WHERE user_id=? AND status='closed' AND (setup_grade IS NULL OR setup_grade='')`).all(userId);
-  const upd = await db.prepare(`UPDATE trades SET setup_grade=?, updated_at=datetime('now') WHERE id=?`);
-  const dist = {};
-  for (const t of rows) {
-    const g = autograde(t);
-    await upd.run(g.grade, t.id);
-    dist[g.grade] = (dist[g.grade] || 0) + 1;
-  }
-  return { updated: rows.length, distribution: dist };
+  const rows=await db.prepare(`SELECT * FROM trades WHERE user_id=? AND status='closed'${accountId===null?'':' AND account_id=?'} ORDER BY id`).all(...(accountId===null?[userId]:[userId,accountId]));
+  const groups=Execution.distribution(rows),reviewed=groups.reduce((n,g)=>n+g.reviewed,0);
+  return {updated:0,evaluated:rows.length,reviewed,unreviewed:rows.length-reviewed,distribution:Object.fromEntries(groups.map(g=>[g.grade,g.trades])),read_only:true,
+    basis:Execution.BASIS,rubric_version:Execution.VERSION,account_id:accountId,
+    note:'Live-derived self-report execution reviews only. No trade, pre-entry setup grade, capital rule or historical completion is backfilled.'};
 }
 
 /* ══════════════════════════════════════════════════ 3. GUARDRAILS (ep 21/31) */
@@ -564,17 +516,18 @@ async function dailyState(userId, { accountId = null, store = db, nowMs = Date.n
 function feedback(trade, { guardrails: g = null, siblings = null } = {}) {
   const auto = autograde(trade);
   const notes = [];
-  const r = trade.r_multiple || 0, mfe = trade.mfe_r, mae = trade.mae_r;
+  const metric=v=>typeof v==='number'&&Number.isFinite(v)?v:null;
+  const r = auto.outcome.r_multiple, mfe = metric(trade.mfe_r), mae = metric(trade.mae_r);
 
-  if (trade.stop_moved) notes.push({ tone: 'bad', text: `You moved the stop on this one. That single decision turned a ${r2(Math.abs(1))}R planned loss into ${r2(r)}R.` });
-  if (r < -1.15 && !trade.stop_moved) notes.push({ tone: 'bad', text: `Loss was ${r2(r)}R — beyond the 1R limit. Either the stop was too tight for the volatility, or the exit was late.` });
-  if (mfe != null && mfe >= 1 && r >= 0 && mfe - r >= 1) notes.push({ tone: 'warn', text: `Price reached ${r2(mfe)}R but you closed at ${r2(r)}R — ${r2(mfe - r)}R left for someone else.` });
-  if (mfe != null && mfe < 0.5 && r < 0) notes.push({ tone: 'info', text: `The trade never worked (MFE ${r2(mfe)}R). That is a location problem, not an exit problem — the entry was early or against the flow.` });
-  if (mae != null && mae < -1 && r >= 0) notes.push({ tone: 'info', text: `It went ${r2(mae)}R against you before working — your entry could be moved deeper into the zone (the 50% level).` });
-  if (trade.planned_r && trade.planned_r >= 2 && r >= trade.planned_r * 0.9) notes.push({ tone: 'good', text: `Full target executed at ${r2(r)}R. This is the trade that pays for the losers — repeat it.` });
-  else if (r >= 1) notes.push({ tone: 'good', text: `Banked ${r2(r)}R. ${trade.planned_r ? `Plan was ${r2(trade.planned_r)}R target.` : ''}` });
-  if (trade.adherence != null && trade.adherence <= 3) notes.push({ tone: 'bad', text: `You rated your own adherence ${trade.adherence}/5. Trades you cannot grade highly should not be taken.` });
-  if (g && trade.risk_amount && g.stats && g.stats.median_risk && trade.risk_amount > g.stats.median_risk * 1.5) notes.push({ tone: 'warn', text: `Risked $${r2(trade.risk_amount)} against your usual $${r2(g.stats.median_risk)} — the size is what makes the loss hurt, not the loss itself.` });
+  if(auto.state==='unreviewed')notes.push({tone:'info',text:'Execution review is incomplete/stale. No rating is inferred from P&L, legacy stop flags or an entry setup grade.'});
+  if(auto.execution_quality==='plan_violated'||auto.execution_quality==='known_violation_in_incomplete_review')notes.push({tone:'bad',text:'Your current valid self-report identifies a plan/stop violation. A profitable outcome does not make that execution good.'});
+  if(auto.execution_quality==='plan_followed')notes.push({tone:'good',text:'You report following the plan and honouring its stop. This is a retrospective self-review, not verified broker/plan compliance.'});
+  if(trade.stop_moved===1||trade.stop_moved===true)notes.push({tone:'info',text:'The journal records stop movement. Movement may be protective or planned; it is not by itself evidence of widening or a loss cause.'});
+  if(auto.outcome.state==='known')notes.push({tone:'info',text:`Recorded realised net ${auto.outcome.net_pnl}${auto.outcome.r_multiple===null?'':` (${r2(auto.outcome.r_multiple)}R)`}. Outcome is separate from the execution grade.`});
+  else notes.push({tone:'info',text:'Realised outcome unavailable/contradictory; not treated as zero, a win or a loss.'});
+  if(r < -1.05)notes.push({tone:'info',text:`Recorded ${r2(r)}R exceeds1R in size. Fees/gaps/slippage or plan choices may be involved; this result alone does not establish a stop violation.`});
+  if(mfe!=null || mae!=null)notes.push({tone:'info',text:`Recorded excursions: MAE ${mae==null?'unavailable':r2(mae)+'R'}, MFE ${mfe==null?'unavailable':r2(mfe)+'R'}. Excursions alone do not prove bad entry/exit execution or justify changing targets.`});
+  if(g&&trade.risk_amount&&g.stats&&g.stats.median_risk&&trade.risk_amount>g.stats.median_risk*1.5)notes.push({tone:'warn',text:`Recorded risk $${r2(trade.risk_amount)} vs journal median $${r2(g.stats.median_risk)}. Descriptive sizing observation, not an execution-score input.`});
 
   const today = dayKey(trade.opened_at);
   if (siblings && siblings.length) {
@@ -583,18 +536,20 @@ function feedback(trade, { guardrails: g = null, siblings = null } = {}) {
     const last = before[before.length - 1];
     if (last && (last.net_pnl || 0) < 0) {
       const gapMin = (new Date(trade.opened_at) - new Date(last.closed_at || last.opened_at)) / 60000;
-      if (gapMin <= 30) notes.push({ tone: 'bad', text: `This entry came ${r2(gapMin)} minutes after a loss (#${last.id}). That is the revenge window — the next trade after a loss should be after a break, not immediately.` });
+      if (gapMin <= 30) notes.push({ tone: 'bad', text: `This entry came ${r2(gapMin)} minutes after a loss (#${last.id}). Compare this recorded timing with the independent break/full-candle rules; the timestamp does not establish your emotional motive.` });
     }
     if (before.length + 1 > (g ? g.max_trades_day : 99)) notes.push({ tone: 'warn', text: `This was trade #${before.length + 1} of the day; your cap is ${g ? g.max_trades_day : '—'}.` });
   }
 
   return {
-    trade_id: trade.id, symbol: trade.symbol, grade: auto.grade, score: auto.score,
-    reasons: auto.reasons, notes,
-    summary: auto.grade === 'A+' || auto.grade === 'A'
-      ? 'Textbook execution — this is the behaviour to repeat.'
-      : auto.grade === 'B' ? 'Decent trade with fixable leaks — see notes.'
-        : auto.grade === 'C' ? 'Process errors here; the P&L is beside the point.' : 'This trade should not have been taken in this form.',
+    ...auto,trade_id:trade.id,symbol:trade.symbol,notes,
+    summary:auto.state==='unreviewed'
+      ? 'Execution unreviewed/incomplete — complete your own current adherence and stop-honour assessment; no outcome judgement.'
+      : auto.execution_quality==='plan_violated'
+        ? `Reported plan violation${auto.outcome.kind==='win'?' despite a profitable outcome':''}; P&L does not excuse the execution.`
+        : auto.loss_quality==='good_loss'
+          ? 'Reported plan followed and stop honoured: a good loss by execution, not by its size.'
+          : 'Reported plan followed and stop honoured; outcome remains a separate descriptive fact, not verified textbook execution.',
   };
 }
 
@@ -606,7 +561,7 @@ async function analyse(userId, { accountId = null, backfill = false, days = 365 
   const mistakes = detectMistakes(trades);
   const g = await guardrails(userId, { accountId });
   const state = await dailyState(userId, { accountId });
-  const graded = backfill ? await backfillGrades(userId) : null;
+  const graded = backfill ? await backfillGrades(userId,{accountId}) : null;
   const accountRow = await accountOf(userId, accountId);
 
   const byGrade = {};
@@ -647,7 +602,9 @@ async function analyse(userId, { accountId = null, backfill = false, days = 365 
     mistakes,
     guardrails: g,
     daily: state,
-    grades: gradeTable,
+    grades: Execution.distribution(trades),
+    grades_basis: Execution.BASIS, execution_rubric_version: Execution.VERSION,
+    setup_grades: gradeTable, setup_grades_basis: 'stored_entry_setup_grade_legacy_provenance_may_be_unknown',
     backfill: graded,
     top_fix: mistakes.length ? { title: mistakes[0].title, fix: mistakes[0].fix, impact: mistakes[0].impact, impact_unit: mistakes[0].impact_unit } : null,
     session_state: SMC.sessionState(),

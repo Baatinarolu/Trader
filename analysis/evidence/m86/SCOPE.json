@@ -1,0 +1,138 @@
+{
+  "date": "2026-10-11",
+  "parent_commit": "c22d5b9f6db4eca17f5981f5b87230f5ec343b86",
+  "branch": "arena/762c0295-trader",
+  "ledger_before": {
+    "total": 132,
+    "done": 87,
+    "partial": 3,
+    "todo": 42,
+    "groups": 8
+  },
+  "finding": "M86 execution-weighted good/bad-loss and per-trade autograde, NOT loss drill",
+  "handoff_correction": "Prior M64 handoff/report called M86 loss drill. Actual ledger/saved Ep23 identifies execution grading; no invented drill implemented.",
+  "paired_scope": "M92 execution-ranked best/worst day review, measured separately after M86. Existing P&L extremes retained with explicit money basis.",
+  "sources": [
+    {
+      "episode": 23,
+      "id": "Gx6KAhhWn10",
+      "saved": "EPISODE-AUDIT.md complete3/3",
+      "paraphrase": "Execution is what we are grading here. A good loss follows the trading plan; a bad loss neglects it.",
+      "url": "https://www.youtube.com/watch?v=Gx6KAhhWn10",
+      "quotation_status": "Paraphrase, not a claimed verbatim quote; authoritative saved transcript EPISODE-AUDIT.md"
+    },
+    {
+      "episode": 24,
+      "id": "4sN-gnJKRtA",
+      "saved": "EPISODE-AUDIT.md complete4/4",
+      "paraphrase": "Best/worst day review asks good/bad loss and whether a winner bent rules.",
+      "url": "https://www.youtube.com/watch?v=4sN-gnJKRtA",
+      "quotation_status": "Paraphrase, not a claimed verbatim quote; authoritative saved transcript EPISODE-AUDIT.md"
+    },
+    {
+      "episode": 26,
+      "id": "xoUlvwdBVJ4",
+      "saved": "EPISODE-AUDIT.md complete3/3 content chunks, Best/worst verbatim at saved section",
+      "paraphrase": "Best does not mean biggest profit, worst does not mean biggest loss; tie to process not outcome.",
+      "url": "https://www.youtube.com/watch?v=xoUlvwdBVJ4",
+      "quotation_status": "Paraphrase, not a claimed verbatim quote; authoritative saved transcript EPISODE-AUDIT.md"
+    }
+  ],
+  "plan": [
+    "Pure execution rubric: explicit valid self-rated adherence +nullable human stop-honour evidence; no P&L/R/plannedRR/session/MAE/MFE score. Known rule breaker cannot earn A/A+ even with a win. Unknown never fabricated good/bad/numeric grade.",
+    "Additive nullable stop-honour/source/server review time, explicit UI and strict wire validation; no legacy stop inference or meditation/broker proof.",
+    "Replace destructive setup_grade backfill with READ-ONLY live-derived execution reviews, updated:0/evaluated counts. No guessed persistent grade or cache staleness. Existing setup grades preserved including unproven legacy auto/manual provenance; separate execution and entry-grade analytics.",
+    "Per-trade feedback self-attested execution vs separate descriptive outcomes, not outcome-based repeat/retune advice.",
+    "Separate M92 day execution ranking, unknown unranked/ties acknowledged; show P&L extremes separately.",
+    "Measure each source stage/control, retain negatives, inherited/raw vs declared isolation, byte proofs and deterministic secret-free ZIP."
+  ],
+  "protected": [
+    "Model/setup checklist grades and thresholds",
+    "A+/A x1, B x.5, C x.25 risk factors",
+    "Floor30 and intentional M103 n>=5",
+    "Entry/RR/stop/target geometry, coefficients, caps/cooldowns/loss reflection/routine observations",
+    "No 70% target, shrinking exits, outcome causation, provider/broker/production/pixel claim",
+    "M87/M88/M89/M106/M108/M111/M112 stay unresolved at their current scope"
+  ],
+  "implementation": {
+    "review_mode": "Owned current-record self-report, four nullable metadata columns + existing bounded adherence; relevant-field versioned SHA and required displayed revision",
+    "no_persisted_score": true,
+    "backfill_read_only": true,
+    "loss_branch": "adherence>=4 AND explicitly honoured stop AND known consistent loss",
+    "score_map_app_choice_not_course_formula": {
+      "1": 20,
+      "2": 40,
+      "3": 60,
+      "4": 75,
+      "5": 95,
+      "explicit_stop_violation_cap": 39
+    },
+    "m92": "Separately measured day/current execution ranking; ties kept, unknowns unranked; finance-compatible fields explicitly money-only",
+    "unknowns": "No legacy/stale/corrupt current violation or numeric score; valid current partial self-review may name explicit violation, not fullgrade"
+  },
+  "ledger_after": {
+    "total": 132,
+    "done": 89,
+    "partial": 3,
+    "todo": 40,
+    "no_action": 0,
+    "partition_groups": 8,
+    "partial_ids": [
+      "M30",
+      "M103",
+      "M108"
+    ],
+    "todo_ids": [
+      "M125",
+      "M45",
+      "M46",
+      "M49",
+      "M53",
+      "M55",
+      "M67",
+      "M72",
+      "M73",
+      "M74",
+      "M112",
+      "M12",
+      "M13",
+      "M15",
+      "M56",
+      "M59",
+      "M60",
+      "M65",
+      "M66",
+      "M87",
+      "M88",
+      "M89",
+      "M91",
+      "M93",
+      "M99",
+      "M100",
+      "M101",
+      "M104",
+      "M105",
+      "M106",
+      "M107",
+      "M115",
+      "M17",
+      "M18",
+      "M19",
+      "M62",
+      "M109",
+      "M110",
+      "M111",
+      "M117"
+    ]
+  },
+  "limits": {
+    "broker_verified": false,
+    "score_is_course_formula": false,
+    "owned_strategy_routine_ui_freshness": "UNMEASURED (prior M64 distinct scope)",
+    "new_current_saved_execution_review_ui": "actual33/0 fixedUTC HTTP/SQL/DOM, not pixels",
+    "M87_M88_M89_M106_M111_M112": "TODO",
+    "M108": "PARTIAL, same routine timer subset only",
+    "smoke_exit": null,
+    "no_70_percent_or_strategy_causation": true
+  }
+}

@@ -481,6 +481,10 @@ CREATE TABLE IF NOT EXISTS trades (
   mae_r REAL,                                 -- worst excursion in R (negative number)
   mfe_r REAL,                                 -- best excursion in R (positive number)
   stop_moved INTEGER DEFAULT 0,
+  stop_honoured INTEGER CHECK(stop_honoured IS NULL OR stop_honoured IN (0,1)),
+  stop_honoured_source TEXT,
+  stop_honoured_recorded_at TEXT,
+  execution_review_hash TEXT,
   exit_reason TEXT DEFAULT '',
   notes TEXT DEFAULT '',
   strategy_id INTEGER REFERENCES strategies(id) ON DELETE SET NULL,
@@ -629,6 +633,11 @@ async function migrate() {
   await add('trades','mistakes_none','INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1))');
   await add('trades','journal_reviewed_at','TEXT');
   await add('trades','journal_review_hash','TEXT');
+  // M86 retrospective self-report only, no default/legacy stop/grade inference.
+  await add('trades','stop_honoured','INTEGER CHECK(stop_honoured IS NULL OR stop_honoured IN (0,1))');
+  await add('trades','stop_honoured_source','TEXT');
+  await add('trades','stop_honoured_recorded_at','TEXT');
+  await add('trades','execution_review_hash','TEXT');
   await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
   await add('journal_entries','pre_market_basis','TEXT');
   await add('journal_entries','pre_market_recorded_at','TEXT');

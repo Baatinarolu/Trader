@@ -431,3 +431,66 @@ research plans, and survives journal edits/deletion independently. Late completi
 or a human flag cannot rewrite its original preparation basis. Current done and
 on-time/before-first-entry prepared are different facts. Neither is broker activity,
 a live emotional/feed clearance or proof of a profitable causal effect.
+
+
+## Retrospective execution self-review (M86) and day extremes (M92)
+
+`GET /trades/:id` (and trade lists/day rows) adds a **derived** `execution_review`:
+`state`, `grade`, nullable `score`, `execution_quality`, `loss_quality`, separate
+`outcome`, `evidence`, `basis:"self_reported_execution"`, `rubric_version`,
+`broker_verified:false`, original `entry_setup_grade`, and opaque
+`record_revision`. Missing/invalid/stale/future/open evidence is **Unreviewed**,
+not an inferred0 or good/bad loss. A current acknowledged partial report can
+identify a specific violation, but cannot receive a full grade/good/bad-loss label.
+
+`POST /trades/:id/execution-review` is optional and owned/authenticated:
+
+```json
+{"adherence":5,"stop_honoured":true,"record_revision":"<copy current GET execution_review.record_revision>"}
+```
+
+- Only those three keys. Adherence is a literal whole number1–5 or null; stop
+  honour is literal true/false/null. Read the **saved current** record first.
+- Server records nullable `stop_honoured`, `stop_honoured_source`,
+  `stop_honoured_recorded_at`, and versioned `execution_review_hash`, atomically
+  with the bounded existing `adherence`. Hash binds relevant current trade fields,
+  not a cached score or broker signature. No client clock/source/hash/grade spoofing.
+- No actual close/open/future evidence or changed displayed revision:409. Bad
+  input/unknown recorded stop for an honour claim:400. Foreign/missing ID:404.
+  Storage uncertainty:503 without a partial write. Literal nullable answers may
+  remain unreviewed; legacy populated notes/default0 movement do not prove honour.
+- Core writing remains `/trades/:id/journal`; financial create/update/close/delete
+  remains legal without an execution review. Financial CRUD does not mint review
+  flags/source/clocks/hash. JSON/CSV record-only imports do not replay these
+  server-owned acknowledgements or infer historic completion; re-review explicitly.
+- App display rubric `execution-v1`: adherence1/2/3/4/5 →20/40/60/75/95; explicit
+  stop violation caps39/D. Good loss requires >=4 **and** explicit honoured stop,
+  with known consistent realised loss. P&L/R/RR/session/MAE/MFE earn no points.
+  This mapping is an app display choice, **not a numeric course quotation** or
+  entry sizing input. Current same-record evidence required even for partial flags.
+
+`POST /bots/correction/backfill` is retained for compatibility but **READ-ONLY**:
+optional literal positive integer `account_id`, otherwise all own closed journals.
+Returns `updated:0`, `evaluated`, `reviewed`, `unreviewed`, `distribution`,
+`read_only:true`, basis/version. Foreign account404, malformed ID400. No stored
+`setup_grade` writes, cache, guessed legacy source or any capital-rule change.
+`GET /bots/correction` exposes execution `grades` plus independent original
+`setup_grades` with legacy provenance warning. Its `backfill=1` is read-only too.
+Feedback uses current human execution versus separately descriptive outcome,
+not outcome-only repeat-it praise or stop/entry-location blame from excursions.
+
+`GET /journal/:date?account_id=…` adds `account_id` and `execution_summary` scoped
+to one owned account and UTC close day. Omitted account resolves the actual
+default (not mixed-account trades beside a default routine). Noncanonical/repeated
+account query400; foreign404. Shared notebook text is still shared, not new
+per-account duplicate notes. `best`/`worst` rank known current self-review scores;
+`trade_ids`/`tie_count` retain ties, unknowns unranked, no P&L tie-break. `pnl` is
+money-only known/unavailable extrema and nullable realised day total/recorded R;
+open/future/unknown data never silently becomes realised0.
+
+Performance retains every prior numeric metric including `best_trade`/`worst_trade`
+as money fields. New `trade_extremes_basis` labels that compatibility basis, and
+`execution_summary` is separate; finance is not renamed or used as execution.
+All ranking/grade/outcome associations are descriptive, self-reported and
+retrospective, not statistical edge, causation, live emotion/provider/broker proof,
+fresh entry readiness, permission or risk advice.

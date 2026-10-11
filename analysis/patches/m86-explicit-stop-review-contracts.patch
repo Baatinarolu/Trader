@@ -1,0 +1,120 @@
+diff --git a/src/db.js b/src/db.js
+index 70ba4fa..b2c37ab 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -481,6 +481,10 @@ CREATE TABLE IF NOT EXISTS trades (
+   mae_r REAL,                                 -- worst excursion in R (negative number)
+   mfe_r REAL,                                 -- best excursion in R (positive number)
+   stop_moved INTEGER DEFAULT 0,
++  stop_honoured INTEGER CHECK(stop_honoured IS NULL OR stop_honoured IN (0,1)),
++  stop_honoured_source TEXT,
++  stop_honoured_recorded_at TEXT,
++  execution_review_hash TEXT,
+   exit_reason TEXT DEFAULT '',
+   notes TEXT DEFAULT '',
+   strategy_id INTEGER REFERENCES strategies(id) ON DELETE SET NULL,
+@@ -629,6 +633,11 @@ async function migrate() {
+   await add('trades','mistakes_none','INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1))');
+   await add('trades','journal_reviewed_at','TEXT');
+   await add('trades','journal_review_hash','TEXT');
++  // M86 retrospective self-report only, no default/legacy stop/grade inference.
++  await add('trades','stop_honoured','INTEGER CHECK(stop_honoured IS NULL OR stop_honoured IN (0,1))');
++  await add('trades','stop_honoured_source','TEXT');
++  await add('trades','stop_honoured_recorded_at','TEXT');
++  await add('trades','execution_review_hash','TEXT');
+   await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
+   await add('journal_entries','pre_market_basis','TEXT');
+   await add('journal_entries','pre_market_recorded_at','TEXT');
+diff --git a/src/execution-review.js b/src/execution-review.js
+index d351fa8..a72f6cb 100644
+--- a/src/execution-review.js
++++ b/src/execution-review.js
+@@ -2,6 +2,7 @@
+ /** M86: retrospective HUMAN execution review, never a pre-entry checklist
+  * grade/risk input. Unknown evidence is not a manufactured poor/good trade.
+  * Outcome/excursions do not award points or prove stop violations. */
++const crypto = require('crypto');
+ const VERSION = 'execution-v1';
+ const BASIS = 'self_reported_execution';
+ const SCORES = Object.freeze({1:20,2:40,3:60,4:75,5:95});
+@@ -11,6 +12,30 @@ const stamp = v => {
+   const d = new Date(v), n = d.getTime();
+   return Number.isFinite(n) && d.toISOString().replace('.000Z','Z') === v.replace('.000Z','Z') ? n : null;
+ };
++// Binds HUMAN acknowledgement to relevant current record, never a persisted
++// score. Truthful correction invalidates stale evidence without blocking CRUD.
++const HASH_KEYS = ['id','user_id','account_id','symbol','direction','status','opened_at','closed_at','entry','exit','stop','target','size','fees','strategy_id','strategy_version','adherence','stop_moved','stop_honoured','stop_honoured_source','stop_honoured_recorded_at'];
++function fingerprint(trade) { return crypto.createHash('sha256').update(JSON.stringify([VERSION,...HASH_KEYS.map(k=>[k,trade[k]??null])])).digest('hex'); }
++function invalid(message,status=400) { const e=new Error(message);e.status=status;e.code='execution_review_invalid';return e; }
++async function acknowledge(userId,id,body) {
++  if(!Number.isSafeInteger(id)||id<=0)throw invalid('Trade not found',404);
++  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['adherence','stop_honoured'].includes(k))
++    ||!Object.hasOwn(body,'adherence')||!Object.hasOwn(body,'stop_honoured'))throw invalid('Provide only adherence and stop_honoured, including explicit unknown/null when appropriate.');
++  const a=body.adherence,flag=body.stop_honoured;
++  if(a!==null && (!Number.isInteger(a)||a<1||a>5))throw invalid('Adherence must be a literal whole number1–5 or null.');
++  if(flag!==null && typeof flag!=='boolean')throw invalid('Stop honour must be literal true/false/null.');
++  const {db}=require('./db');
++  return db.tx(async tx=>{const store=db.transactionStore(tx),row=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);
++    if(!row)throw invalid('Trade not found',404);
++    const now=Date.now(),closed=stamp(row.closed_at);
++    if(row.status!=='closed'||number(row.exit)===null||closed===null||closed>now)throw invalid('Record the actual close before this retrospective execution review.',409);
++    if(flag!==null && (number(row.stop)===null||row.stop<=0))throw invalid('Record the actual planned stop before reporting whether it was honoured.');
++    const at=new Date(now).toISOString(),fields={adherence:a,stop_honoured:flag===null?null:flag?1:0,stop_honoured_source:'self_reported',stop_honoured_recorded_at:at},hash=fingerprint({...row,...fields});
++    await store.prepare("UPDATE trades SET adherence=?,stop_honoured=?,stop_honoured_source=?,stop_honoured_recorded_at=?,execution_review_hash=?,updated_at=datetime('now') WHERE id=? AND user_id=?")
++      .run(a,fields.stop_honoured,fields.stop_honoured_source,at,hash,id,userId);
++    return store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);
++  });
++}
+ function outcome(trade) {
+   const net = number(trade.net_pnl), r = number(trade.r_multiple);
+   if (net === null && r === null || net !== null && r !== null && Math.sign(net) !== Math.sign(r)) {
+@@ -27,7 +52,8 @@ function review(trade, {nowMs=Date.now()}={}) {
+   const validClock = number(nowMs) !== null && close !== null && close <= nowMs;
+   const stop = number(trade.stop);
+   const validStop = validFlag && stop !== null && stop > 0 && ['self_reported','imported_self_report'].includes(trade.stop_honoured_source)
+-    && recorded !== null && recorded <= nowMs && close !== null && recorded >= close;
++    && recorded !== null && recorded <= nowMs && close !== null && recorded >= close
++    && typeof trade.execution_review_hash==='string' && trade.execution_review_hash===fingerprint(trade);
+   const completed = trade.status === 'closed' && number(trade.exit) !== null && validClock;
+   const honoured = validStop ? flag === 1 || flag === true : null;
+   const facts = completed ? outcome(trade) : {state:'unknown',kind:null,basis:'not_known_closed_outcome',net_pnl:null,r_multiple:null};
+@@ -54,4 +80,4 @@ function review(trade, {nowMs=Date.now()}={}) {
+       stop_honoured_source:validStop?trade.stop_honoured_source:null,stop_honoured_recorded_at:validStop?trade.stop_honoured_recorded_at:null},
+     retrospective:true,broker_verified:false,entry_setup_grade:trade.setup_grade || null};
+ }
+-module.exports = {review,outcome,VERSION,BASIS,SCORES};
++module.exports = {review,outcome,acknowledge,fingerprint,HASH_KEYS,VERSION,BASIS,SCORES};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 06e88a8..da48896 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -13,7 +13,8 @@ const SessionTime = require('../session-time');
+ const J = require('../journaling');
+ const RR = require('../routine-records');
+ const Routine = require('../routine');
+-const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t)});
++const Execution = require('../execution-review');
++const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+ const Prop = require('../prop');
+@@ -399,6 +400,19 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
+ });
+ 
++// Optional post-close HUMAN execution review is separate from financial CRUD
++// and mandatory core/loss writing. It cannot backfill pre-entry setup grades.
++router.post('/trades/:id/execution-review',requireAuth,async(req,res)=>{
++  try {
++    if(!/^[1-9]\d*$/.test(req.params.id))return res.status(404).json({error:'Trade not found'});
++    const row=await Execution.acknowledge(req.user.id,Number(req.params.id),req.body);
++    res.json({ok:true,trade:journalTrade(row,(await settingsOf(req)).timezone)});
++  } catch(e) {
++    if(e.code==='execution_review_invalid')return res.status(e.status).json({error:e.message,code:e.code});
++    res.status(503).json({error:'Execution review could not be recorded.'});
++  }
++});
++
+ router.post('/trades/:id/journal', requireAuth,async(req,res)=>{
+   try { const row=await J.reviewTrade(req.user.id,Number(req.params.id),req.body||{});res.json({ok:true,trade:journalTrade(row,(await settingsOf(req)).timezone)}); }
+   catch(e){if(e.code==='journal_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Journal review could not be recorded.'});}

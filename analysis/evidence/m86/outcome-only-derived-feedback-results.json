@@ -1,0 +1,338 @@
+{
+  "app": "/tmp/m86-outcome-stage/app",
+  "pass": 3,
+  "fail": 20,
+  "results": [
+    {
+      "label": "legacy backfill compatibility now READ-ONLY, no setup_grade overwrite",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "updated": 2,
+          "distribution": {
+            "Unreviewed": 2
+          }
+        }
+      }
+    },
+    {
+      "label": "derived review evaluated selected own4 closed rows, unknown separately labelled",
+      "passed": false,
+      "detail": {
+        "ok": true,
+        "updated": 2,
+        "distribution": {
+          "Unreviewed": 2
+        }
+      }
+    },
+    {
+      "label": "known execution grade vs deliberately opposite pre-entry grade never overwrites",
+      "passed": false
+    },
+    {
+      "label": "repeated derived refresh remains idempotent/read-only",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "updated": 0,
+          "distribution": {}
+        }
+      }
+    },
+    {
+      "label": "foreign account cannot trigger another cohort refresh404",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "updated": 0,
+          "distribution": {}
+        }
+      }
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write [1]",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "updated": 0,
+          "distribution": {}
+        }
+      }
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write 0",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "updated": 0,
+          "distribution": {}
+        }
+      }
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write -1",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "updated": 0,
+          "distribution": {}
+        }
+      }
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write 1.1",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "updated": 0,
+          "distribution": {}
+        }
+      }
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write \"1e0\"",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "updated": 0,
+          "distribution": {}
+        }
+      }
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write \"oops\"",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "updated": 0,
+          "distribution": {}
+        }
+      }
+    },
+    {
+      "label": "actual correction table exposes execution grades not entry setup quality",
+      "passed": false,
+      "detail": [
+        {
+          "grade": "A+",
+          "trades": 1,
+          "win_rate": 100,
+          "net": 1000,
+          "expectancy_r": 10
+        },
+        {
+          "grade": "B",
+          "trades": 1,
+          "win_rate": 100,
+          "net": 400,
+          "expectancy_r": 4
+        },
+        {
+          "grade": "C",
+          "trades": 1,
+          "win_rate": 0,
+          "net": -80,
+          "expectancy_r": -0.8
+        },
+        {
+          "grade": "Unreviewed",
+          "trades": 1,
+          "win_rate": 0,
+          "net": -80,
+          "expectancy_r": -0.8
+        }
+      ]
+    },
+    {
+      "label": "entry setup-grade analytics remain separate/current (no empty-grade guesses)",
+      "passed": false
+    },
+    {
+      "label": "samplefloor30/behaviour/routine/old loss-writing gate still independent",
+      "passed": true
+    },
+    {
+      "label": "legacy GET backfill has same read-only semantics/current grades",
+      "passed": false,
+      "detail": {
+        "updated": 0,
+        "distribution": {}
+      }
+    },
+    {
+      "label": "actual feedback clean losing trade is good by owner plan/stop, not negative R size",
+      "passed": false,
+      "detail": {
+        "ok": true,
+        "trade_id": 1,
+        "symbol": "DECLARED_STOCK",
+        "grade": "A+",
+        "score": 95,
+        "reasons": [
+          "Execution basis: self-reported journal evidence, not broker-verified adherence.",
+          "Rule adherence 5/5: the owner's retrospective report.",
+          "Stop honour explicitly reported yes (self_reported).",
+          "Execution rubric execution-v1: adherence points 95.",
+          "Good loss by reported plan adherence and honoured stop — not by its size.",
+          "Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect."
+        ],
+        "notes": [],
+        "summary": "Textbook execution — this is the behaviour to repeat."
+      }
+    },
+    {
+      "label": "actual feedback profitable rule breaker D, never textbook/repeat praise",
+      "passed": false,
+      "detail": {
+        "ok": true,
+        "trade_id": 2,
+        "symbol": "DECLARED_STOCK",
+        "grade": "D",
+        "score": 20,
+        "reasons": [
+          "Execution basis: self-reported journal evidence, not broker-verified adherence.",
+          "Rule adherence 1/5: the owner's retrospective report.",
+          "Stop honour explicitly reported yes (self_reported).",
+          "Execution rubric execution-v1: adherence points 20.",
+          "Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect."
+        ],
+        "notes": [
+          {
+            "tone": "good",
+            "text": "Full target executed at 10R. This is the trade that pays for the losers — repeat it."
+          },
+          {
+            "tone": "bad",
+            "text": "You rated your own adherence 1/5. Trades you cannot grade highly should not be taken."
+          }
+        ],
+        "summary": "This trade should not have been taken in this form."
+      }
+    },
+    {
+      "label": "actual feedback winning explicit stop violation remains D",
+      "passed": false,
+      "detail": {
+        "ok": true,
+        "trade_id": 3,
+        "symbol": "DECLARED_STOCK",
+        "grade": "D",
+        "score": 39,
+        "reasons": [
+          "Execution basis: self-reported journal evidence, not broker-verified adherence.",
+          "Rule adherence 5/5: the owner's retrospective report.",
+          "Stop honour explicitly reported no (self_reported).",
+          "Execution rubric execution-v1: adherence points 95, explicit stop violation caps score below C at39.",
+          "Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect."
+        ],
+        "notes": [
+          {
+            "tone": "good",
+            "text": "Full target executed at 4R. This is the trade that pays for the losers — repeat it."
+          }
+        ],
+        "summary": "This trade should not have been taken in this form."
+      }
+    },
+    {
+      "label": "unknown legacy stop stays unreviewed/no punitive claim or invented0 score",
+      "passed": false,
+      "detail": {
+        "ok": true,
+        "trade_id": 4,
+        "symbol": "DECLARED_STOCK",
+        "grade": "Unreviewed",
+        "score": null,
+        "reasons": [
+          "Execution basis: self-reported journal evidence, not broker-verified adherence.",
+          "Rule adherence 5/5: the owner's retrospective report.",
+          "Stop honour unreviewed/invalid: not inferred from movement, realised R, default zero or a legacy row.",
+          "Execution grade withheld until an actual closed journal and complete valid self-review exist.",
+          "Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect."
+        ],
+        "notes": [],
+        "summary": "This trade should not have been taken in this form."
+      }
+    },
+    {
+      "label": "recorded protective stop move is not falsely described as moved-away loss cause",
+      "passed": false,
+      "detail": {
+        "ok": true,
+        "trade_id": 7,
+        "symbol": "DECLARED_STOCK",
+        "grade": "A+",
+        "score": 95,
+        "reasons": [
+          "Execution basis: self-reported journal evidence, not broker-verified adherence.",
+          "Rule adherence 5/5: the owner's retrospective report.",
+          "Stop honour explicitly reported yes (self_reported).",
+          "Execution rubric execution-v1: adherence points 95.",
+          "Good loss by reported plan adherence and honoured stop — not by its size.",
+          "Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect."
+        ],
+        "notes": [
+          {
+            "tone": "bad",
+            "text": "You moved the stop on this one. That single decision turned a 1R planned loss into -0.8R."
+          }
+        ],
+        "summary": "Textbook execution — this is the behaviour to repeat."
+      }
+    },
+    {
+      "label": "large slippage-like loss does not itself prove missed stop or grade penalty",
+      "passed": false,
+      "detail": {
+        "ok": true,
+        "trade_id": 8,
+        "symbol": "DECLARED_STOCK",
+        "grade": "A+",
+        "score": 95,
+        "reasons": [
+          "Execution basis: self-reported journal evidence, not broker-verified adherence.",
+          "Rule adherence 5/5: the owner's retrospective report.",
+          "Stop honour explicitly reported yes (self_reported).",
+          "Execution rubric execution-v1: adherence points 95.",
+          "Good loss by reported plan adherence and honoured stop — not by its size.",
+          "Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect."
+        ],
+        "notes": [
+          {
+            "tone": "bad",
+            "text": "Loss was -5R — beyond the 1R limit. Either the stop was too tight for the volatility, or the exit was late."
+          }
+        ],
+        "summary": "Textbook execution — this is the behaviour to repeat."
+      }
+    },
+    {
+      "label": "foreign feedback retains real owner404",
+      "passed": true
+    },
+    {
+      "label": "metadata grading never refunds entry caps/admissions or completes loss reflection writing",
+      "passed": true
+    }
+  ],
+  "scope": "M86 derived grade and feedback: real auth/HTTP/SQL on literal/fixedUTC journals, no legacy/native routine adapter, broker/provider/real-human/pixel/outcome or financial retune proof"
+}

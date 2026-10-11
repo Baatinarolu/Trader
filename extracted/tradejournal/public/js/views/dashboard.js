@@ -170,7 +170,7 @@
           <div><div class="l">Peak</div><div class="v">${U.money(Math.max(...an.equity.map((p) => p.equity)))}</div></div>
           <div><div class="l">Recovery factor</div><div class="v">${U.num(k.recovery_factor, 2)}</div></div>
           <div><div class="l">Streak</div><div class="v ${k.streaks.current_type === 'loss' ? 'neg' : 'pos'}">${k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + 'W' : Math.abs(k.streaks.current) + 'L')}</div></div>
-          <div><div class="l">Best / worst</div><div class="v">${U.money(k.best_trade)} / ${U.money(k.worst_trade)}</div></div>
+          <div><div class="l">P&L max / min (money only)</div><div class="v">${U.money(k.best_trade)} / ${U.money(k.worst_trade)}</div></div>
           <div><div class="l">Avg hold</div><div class="v">${U.dur(k.avg_hold_minutes)}</div></div>
         </div>`;
       row3.appendChild(eqCard);

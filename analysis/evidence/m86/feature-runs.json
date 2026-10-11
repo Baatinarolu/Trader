@@ -1,0 +1,101 @@
+[
+  {
+    "name": "rubric",
+    "script": "analysis/probe-m86-execution-rubric.js",
+    "expected_pass": 60,
+    "pass": 60,
+    "fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "feature-rubric.txt",
+    "scope": "Actual new M86/M92 runtime, NO legacy/native prerequisite adapter; declared fixed clocks/literal journals/market or DOM IO only"
+  },
+  {
+    "name": "contracts",
+    "script": "analysis/probe-m86-review-contracts.js",
+    "expected_pass": 42,
+    "pass": 42,
+    "fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "feature-contracts.txt",
+    "scope": "Actual new M86/M92 runtime, NO legacy/native prerequisite adapter; declared fixed clocks/literal journals/market or DOM IO only"
+  },
+  {
+    "name": "feedback",
+    "script": "analysis/probe-m86-derived-feedback.js",
+    "expected_pass": 23,
+    "pass": 23,
+    "fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "feature-feedback.txt",
+    "scope": "Actual new M86/M92 runtime, NO legacy/native prerequisite adapter; declared fixed clocks/literal journals/market or DOM IO only"
+  },
+  {
+    "name": "freshness",
+    "script": "analysis/probe-m86-review-freshness.js",
+    "expected_pass": 14,
+    "pass": 14,
+    "fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "feature-freshness.txt",
+    "scope": "Actual new M86/M92 runtime, NO legacy/native prerequisite adapter; declared fixed clocks/literal journals/market or DOM IO only"
+  },
+  {
+    "name": "day",
+    "script": "analysis/probe-m92-execution-day.js",
+    "expected_pass": 24,
+    "pass": 24,
+    "fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "feature-day.txt",
+    "scope": "Actual new M86/M92 runtime, NO legacy/native prerequisite adapter; declared fixed clocks/literal journals/market or DOM IO only"
+  },
+  {
+    "name": "ui",
+    "script": "analysis/probe-m86-execution-ui.js",
+    "expected_pass": 33,
+    "pass": 33,
+    "fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "feature-ui.txt",
+    "scope": "Actual new M86/M92 runtime, NO legacy/native prerequisite adapter; declared fixed clocks/literal journals/market or DOM IO only"
+  },
+  {
+    "name": "noninterference",
+    "script": "analysis/probe-m86-grading-noninterference.js",
+    "expected_pass": 34,
+    "pass": 34,
+    "fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "feature-noninterference.txt",
+    "scope": "Actual new M86/M92 runtime, NO legacy/native prerequisite adapter; declared fixed clocks/literal journals/market or DOM IO only"
+  },
+  {
+    "name": "migration",
+    "script": "analysis/probe-m86-review-migration.js",
+    "expected_pass": 15,
+    "pass": 15,
+    "fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "feature-migration.txt",
+    "scope": "Actual new M86/M92 runtime, NO legacy/native prerequisite adapter; declared fixed clocks/literal journals/market or DOM IO only"
+  },
+  {
+    "name": "hardening",
+    "script": "analysis/probe-m86-evidence-hardening.js",
+    "expected_pass": 15,
+    "pass": 15,
+    "fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "feature-hardening.txt",
+    "scope": "Actual new M86/M92 runtime, NO legacy/native prerequisite adapter; declared fixed clocks/literal journals/market or DOM IO only"
+  }
+]

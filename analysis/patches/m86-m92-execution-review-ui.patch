@@ -1,0 +1,261 @@
+diff --git a/public/index.html b/public/index.html
+index 5560dda..3b7f3d9 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -25,6 +25,7 @@
+ <script src="/js/api.js?v={{V}}"></script>
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
++<script src="/js/views/execution.js?v={{V}}"></script>
+ <script src="/js/views/dashboard.js?v={{V}}"></script>
+ <script src="/js/views/bots.js?v={{V}}"></script>
+ <script src="/js/views/trades.js?v={{V}}"></script>
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index a5dc09b..b696929 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -24,7 +24,7 @@
+           const cards = [
+             ['Profitability', [['Net P&L', U.moneySign(k.net_pnl), U.cls(k.net_pnl)], ['Gross profit', U.money(k.gross_profit), 'pos'], ['Gross loss', U.money(-k.gross_loss), 'neg'], ['Fees & costs', U.money(-k.fees), 'neg'], ['Expectancy / trade', U.moneySign(k.expectancy), U.cls(k.expectancy)], ['Expectancy (R)', U.signed(k.expectancy_r, 3) + 'R', U.cls(k.expectancy_r)], ['Profit factor', k.profit_factor === null ? '∞' : U.num(k.profit_factor, 2), ''], ['Payoff ratio', U.num(k.payoff, 2), ''], ['Kelly optimum', U.pct(k.kelly, 1), '']]],
+             ['Discipline', [['Compliance (per trade)', k.compliance === null ? '—' : U.pct(k.compliance, 1), ''], ['Compliance (pooled steps)', k.compliance_pooled === null ? '—' : U.pct(k.compliance_pooled, 1), ''], ['Trades with a checklist', k.compliance_trades === undefined ? '—' : k.compliance_trades, ''], ['Checklist steps followed', (k.compliance_checks ? k.compliance_passed + ' / ' + k.compliance_checks : '—'), '']]],
+-            ['Trade outcomes', [['Total trades', k.trades, ''], ['Winners', `${k.wins} (${U.pct(k.win_rate, 1)})`, 'pos'], ['Losers', `${k.losses} (${U.pct(k.loss_rate, 1)})`, 'neg'], ['Break-even', k.breakevens, ''], ['Avg win', U.money(k.avg_win), 'pos'], ['Avg loss', U.money(-k.avg_loss), 'neg'], ['Largest win', U.money(k.best_trade), 'pos'], ['Largest loss', U.money(k.worst_trade), 'neg'], ['Best / worst R', `${U.signed(k.best_r, 1)}R / ${U.signed(k.worst_r, 1)}R`, '']]],
++            ['Trade outcomes', [['Total trades', k.trades, ''], ['Winners', `${k.wins} (${U.pct(k.win_rate, 1)})`, 'pos'], ['Losers', `${k.losses} (${U.pct(k.loss_rate, 1)})`, 'neg'], ['Break-even', k.breakevens, ''], ['Avg win', U.money(k.avg_win), 'pos'], ['Avg loss', U.money(-k.avg_loss), 'neg'], ['Max realised P&L (money only)', U.money(k.best_trade), 'pos'], ['Min realised P&L (money only)', U.money(k.worst_trade), 'neg'], ['Max / min realised R', `${U.signed(k.best_r, 1)}R / ${U.signed(k.worst_r, 1)}R`, '']]],
+             ['Risk-adjusted', [['Sharpe (ann.)', U.num(k.sharpe, 2), k.sharpe > 1 ? 'pos' : ''], ['Sortino (ann.)', U.num(k.sortino, 2), k.sortino > 1 ? 'pos' : ''], ['SQN', U.num(k.sqn, 2), ''], ['Calmar', U.num(k.calmar, 2), ''], ['Recovery factor', U.num(k.recovery_factor, 2), ''], ['Std dev of R', U.num(k.std_r, 2), ''], ['Median R', U.signed(k.median_r, 2) + 'R', ''], ['Total R', U.signed(k.total_r, 1) + 'R', U.cls(k.total_r)], ['Profit concentration', U.pct(k.profit_concentration, 0), '']]],
+             ['Discipline', [['Avg adherence', k.avg_adherence ? U.num(k.avg_adherence, 2) + ' / 5' : '—', ''], ['Risk consistency', '±' + U.pct(k.risk_consistency, 0), k.risk_consistency < 35 ? 'pos' : 'warn'], ['Avg risk / trade', U.money(k.avg_risk), ''], ['Avg risk % of balance', U.pct(k.avg_risk_pct_of_balance, 2), ''], ['Trades without stop', k.stops_overshot ? `${an.by_symbol.length ? '' : ''}${k.stops_overshot} over -1R` : '0', ''], ['Current streak', k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + ' wins' : Math.abs(k.streaks.current) + ' losses'), k.streaks.current_type === 'loss' ? 'neg' : 'pos'], ['Longest win streak', k.streaks.longest_win, ''], ['Longest loss streak', k.streaks.longest_loss, 'neg'], ['Trading days', `${k.trading_days} (${U.num(k.avg_trades_per_day, 1)}/day)`, '']]],
+           ];
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 4f2861a..540c469 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -1176,18 +1176,8 @@
+       left.appendChild(card);
+     });
+ 
+-    const grades = h('div', { class: 'card' });
+-    grades.appendChild(h('div', { class: 'card-head', html: `<strong>Auto-graded setups</strong> <span class="muted">every trade graded from its own data</span>` }));
+-    grades.appendChild(h('div', { class: 'table-wrap', html: `<table class="table"><thead><tr><th>Grade</th><th>Trades</th><th>Win rate</th><th>Net</th><th>Expectancy</th></tr></thead><tbody>${(c.grades || []).map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.trades}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.net > 0 ? 'pos' : 'neg'}">${global.U.moneySign(x.net)}</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No graded trades yet.</td></tr>'}</tbody></table>` }));
+-    const backfill = h('button', { class: 'btn sm', text: 'Auto-grade the trades that have no grade' });
+-    backfill.addEventListener('click', async () => {
+-      try {
+-        const r = await global.API.post('/bots/correction/backfill', {});
+-        global.App.toast(`Graded ${r.updated} trade(s)`, 'ok');
+-        B.correction = null; global.App.refresh();
+-      } catch (e) { global.App.toast(e.message, 'err'); }
+-    });
+-    grades.appendChild(h('div', { class: 'card' }, backfill));
++    const grades = Views.execution ? Views.execution.correctionCard(c,{onRefresh:()=>{B.correction=null;global.App.refresh();}})
++      : h('div',{class:'card',text:'Execution review UI unavailable. No execution grade is inferred from entry quality or P&L.'});
+     right.appendChild(grades);
+ 
+     const fb = h('div', { class: 'card' });
+@@ -1199,9 +1189,7 @@
+       try {
+         const r = await global.API.get('/bots/feedback/' + Number(idIn.value));
+         global.U.clear(fbOut);
+-        fbOut.appendChild(h('div', { class: 'bot-plan', html: `<b>${esc(r.symbol)}</b> — grade <b>${esc(r.grade)}</b> (${r.score}/100): ${esc(r.summary)}` }));
+-        (r.notes || []).forEach((n) => fbOut.appendChild(h('div', { class: 'bot-' + (n.tone === 'bad' ? 'warn' : n.tone === 'good' ? 'good' : 'detail'), text: (n.tone === 'good' ? 'Kept: ' : n.tone === 'bad' ? 'Fix: ' : '') + n.text })));
+-        if (!r.notes || !r.notes.length) fbOut.appendChild(h('div', { class: 'muted', text: 'No behavioural flags on this trade.' }));
++        fbOut.appendChild(Views.execution?Views.execution.feedbackCard(r):h('div',{class:'muted',text:'Execution feedback UI unavailable; no numeric grade fabricated.'}));
+       } catch (e) { global.App.toast(e.message, 'err'); }
+     });
+     fb.appendChild(h('div', { class: 'row gap-8' }, idIn, fbBtn));
+diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
+index c4c988f..f81408b 100644
+--- a/public/js/views/dashboard.js
++++ b/public/js/views/dashboard.js
+@@ -170,7 +170,7 @@
+           <div><div class="l">Peak</div><div class="v">${U.money(Math.max(...an.equity.map((p) => p.equity)))}</div></div>
+           <div><div class="l">Recovery factor</div><div class="v">${U.num(k.recovery_factor, 2)}</div></div>
+           <div><div class="l">Streak</div><div class="v ${k.streaks.current_type === 'loss' ? 'neg' : 'pos'}">${k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + 'W' : Math.abs(k.streaks.current) + 'L')}</div></div>
+-          <div><div class="l">Best / worst</div><div class="v">${U.money(k.best_trade)} / ${U.money(k.worst_trade)}</div></div>
++          <div><div class="l">P&L max / min (money only)</div><div class="v">${U.money(k.best_trade)} / ${U.money(k.worst_trade)}</div></div>
+           <div><div class="l">Avg hold</div><div class="v">${U.dur(k.avg_hold_minutes)}</div></div>
+         </div>`;
+       row3.appendChild(eqCard);
+diff --git a/public/js/views/execution.js b/public/js/views/execution.js
+new file mode 100644
+index 0000000..89a16ef
+--- /dev/null
++++ b/public/js/views/execution.js
+@@ -0,0 +1,70 @@
++/* M86/M92 — HUMAN retrospective execution review, separate from entry setup
++ * quality, financial edits, core writing, routine and permission. */
++(function(global){
++  'use strict';
++  const Views=global.Views=global.Views||{},U=global.U;let opened=0;
++  const state=g=>g?.state==='reviewed'&&typeof g.score==='number'&&Number.isFinite(g.score)?`${g.grade} · ${g.score}/100`:'Unreviewed';
++  const money=v=>typeof v==='number'&&Number.isFinite(v)?U.moneySign(v):'Unavailable';
++  const context=()=>({account:global.Store.accountId,user:global.Store.user?.id});
++  const same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id;
++  const X=Views.execution={state,
++    card(trade){
++      const g=trade.execution_review||{},node=U.h('div',{class:'card',style:'margin-top:12px'});
++      node.innerHTML=`<div class="card-head"><h3>Execution self-review</h3><span class="chip muted" data-execution-state>${U.esc(state(g))}</span></div>
++        <div class="small">Entry setup grade ${U.esc(trade.setup_grade||'unknown')} is separate from the execution review.</div>
++        <div class="field-note">Retrospective human assessment, not broker-verified plan compliance or fresh emotional capture. It does not complete core writing/routine or alter risk/permission. Review the saved record — save financial edits first.</div>
++        <div class="tiny muted">${U.esc(g.state==='reviewed'?'Reported '+g.execution_quality.replace(/_/g,' '):'Missing or stale execution evidence; no score is inferred from P&L.')}</div>`;
++      if(trade.id&&trade.status==='closed')node.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{executionOpen:String(trade.id)},text:'Review saved execution',onclick:()=>X.open(Number(trade.id))}));
++      else node.appendChild(U.h('div',{class:'tiny muted',text:'Record the actual close before reviewing execution.'}));return node;
++    },
++    async open(id){
++      const before=context(),serial=++opened;let trade;
++      try{trade=(await global.API.get('/trades/'+id)).trade;}catch(e){return global.App.toast(e.message||'Current record unavailable','err');}
++      if(!same(before)||serial!==opened)return global.App.toast('Workspace/account changed while loading; reopen the current record.','err');
++      if(trade.status!=='closed')return global.App.toast('Record the actual close before reviewing execution.','err');
++      const body=U.h('div'),g=trade.execution_review||{},validStop=g.evidence?.stop_honoured;
++      body.innerHTML=`<p class="small"><b>#${U.esc(trade.id)} ${U.esc(trade.symbol)}</b> · account #${U.esc(trade.account_id)}<br>Actual saved entry ${U.price(trade.entry)}, stop ${trade.stop==null?'unknown':U.price(trade.stop)}, exit ${U.price(trade.exit)}. Entry setup grade ${U.esc(trade.setup_grade||'unknown')}.</p>
++        <p class="field-note">This is a retrospective HUMAN report, not broker-verified compliance or an actual fresh entry/exit emotion. It does not grant an entry, resize a setup, complete core writing/routine or remove any guard stop. Outcome is not execution quality. Changed saved records require a new current screen.</p>
++        <label class="field"><span>How closely did you follow your plan? (your 1–5 self-rating)</span><select id="xr-adherence"><option value="">Unknown / not reviewed</option>${[1,2,3,4,5].map(a=>`<option value="${a}" ${trade.adherence===a?'selected':''}>${a} / 5</option>`).join('')}</select></label>
++        <label class="field"><span>Did you honour the planned stop, including only moves the plan allowed?</span><select id="xr-stop"><option value="" ${validStop==null?'selected':''}>Unknown / not reviewed</option><option value="true" ${validStop===true?'selected':''}>Yes — my explicit report</option><option value="false" ${validStop===false?'selected':''}>No — I violated it</option></select></label>
++        <div class="tiny muted">A moved stop may be protective. A gap/slippage-like result beyond1R is not by itself a violation. Missing answers remain unreviewed, not bad/good. Rubric: adherence1/2/3/4/5 →20/40/60/75/95 points, explicit stop violation capped39; P&L/R/RR/session/excursions add no points. This is an app display rubric, not an empirically validated edge.</div>`;
++      return global.App.modal({title:'Review saved execution',body,wide:true,actions:[{label:'Cancel — no review recorded',ghost:true},{label:'Save execution self-review',primary:true,onClick:async close=>{
++        if(!same(before))return global.App.toast('Workspace/account changed; reopen the current saved record.','err');
++        const a=body.querySelector('#xr-adherence').value,stop=body.querySelector('#xr-stop').value;
++        try{
++          const out=await global.API.post('/trades/'+id+'/execution-review',{adherence:a===''?null:Number(a),stop_honoured:stop===''?null:stop==='true',record_revision:g.record_revision});
++          global.Store.invalidate();close();global.App.toast(`Execution ${state(out.trade.execution_review)} recorded as your self-report; other stops/core writing unchanged.`,'ok');if(same(before))global.App.refresh();
++        }catch(e){global.App.toast(e.message||'Execution review could not be recorded.','err');}
++      }}]});
++    },
++    summaryCard(summary={}){
++      const node=U.h('div',{class:'card',style:'margin-top:14px'});
++      node.appendChild(U.h('div',{class:'card-head',html:'<h3>Best / worst by reported execution</h3>'}));
++      node.appendChild(U.h('div',{class:'tiny muted',text:summary.note||'Execution summary unavailable; money is not an execution fallback.'}));
++      for(const [key,label] of [['best','Best among reviewed'],['worst','Worst among reviewed']]){
++        const value=summary[key],box=U.h('div',{style:'padding:8px',dataset:{[key==='best'?'executionBest':'executionWorst']:'true'}});
++        box.appendChild(U.h('div',{class:'small',text:label+': '+(value?`${value.grade} · ${value.score}/100${value.tie_count>1?' · '+value.tie_count+' tied':''}`:'Unavailable / no reviewed execution')}));
++        for(const t of value?.trades||[])box.appendChild(U.h('button',{class:'btn xs ghost',type:'button',text:`#${t.trade_id} ${t.symbol} — review`,onclick:()=>X.open(Number(t.trade_id))}));node.appendChild(box);
++      }
++      node.appendChild(U.h('div',{class:'tiny muted',text:`${summary.ranked??'unavailable'} ranked · ${summary.unranked??'unavailable'} unranked. Relative extremes, not a declaration that an unknown trade was worst or a good trade is profitable.`}));
++      const p=summary.pnl||{};node.appendChild(U.h('div',{class:'small',text:`Money-only P&L extremes: max ${money(p.best)} / min ${money(p.worst)} · ${p.known??'unavailable'} known / ${p.unavailable??'unavailable'} unavailable. Separate from execution, no P&L tiebreak.`}));return node;
++    },
++    correctionCard(c,{onRefresh=null}={}){
++      const node=U.h('div',{class:'card'}),rows=c.grades||[],value=v=>v==null?'Unavailable':U.esc(v);
++      node.innerHTML=`<div class="card-head"><strong>Execution self-reviews</strong><span class="muted">human reports, not automatic entry setup grades</span></div>
++        <div class="table-wrap"><table class="table"><thead><tr><th>Execution</th><th>Closed journals</th><th>Known outcomes</th><th>Win rate (descriptive)</th><th>Known net</th><th>Known R mean</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${U.esc(r.grade)}</td><td>${r.trades}</td><td>${r.known_outcomes} / ${r.trades}</td><td>${value(r.win_rate)}${r.win_rate==null?'':'%'}</td><td>${money(r.net)}</td><td>${value(r.expectancy_r)}${r.expectancy_r==null?'':'R'}</td></tr>`).join('')||'<tr><td colspan="6">No closed journals in this cohort.</td></tr>'}</tbody></table></div>
++        <div class="tiny muted">Current self-reported execution is derived on read, including Unreviewed evidence. No score is manufactured from outcome, and these associations are not causal or sizing guidance.</div>
++        <h4>Entry setup grades — separate stored history</h4><div class="tiny muted">Legacy source may be manual, model or earlier unproven auto-backfill. Values are preserved, not reclassified or promoted into execution.</div>
++        <div class="small">${(c.setup_grades||[]).map(r=>U.esc(r.grade)+': '+r.trades).join(' · ')||'No stored entry setup grades.'}</div>`;
++      node.appendChild(U.h('button',{class:'btn sm',dataset:{executionRefresh:'true'},text:'Refresh derived execution reviews — no backfill',onclick:async()=>{
++        try{const id=global.Store.accountId,r=await global.API.post('/bots/correction/backfill',id==null?{}:{account_id:Number(id)});global.App.toast(`Checked ${r.evaluated}; ${r.reviewed} reviewed, ${r.unreviewed} unreviewed. Entry setup grades unchanged.`,'ok');if(onRefresh)onRefresh();}
++        catch(e){global.App.toast(e.message,'err');}
++      }}));return node;
++    },
++    feedbackCard(r){
++      const node=U.h('div',{class:'bot-col'});node.appendChild(U.h('div',{class:'bot-plan',text:`${r.symbol} — execution ${state(r)}: ${r.summary}`}));
++      node.appendChild(U.h('div',{class:'tiny muted',text:`Entry setup grade ${r.entry_setup_grade||'unknown'} is separate; retrospective self-report, not verified broker execution.`}));
++      for(const n of r.notes||[])node.appendChild(U.h('div',{class:n.tone==='bad'?'bot-warn':n.tone==='good'?'bot-good':'bot-detail',text:n.text}));return node;
++    },
++  };
++})(window);
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 3d9fdc6..5d76f80 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -138,18 +138,21 @@
+   };
+ 
+   async function openEditor(dateISO, root) {
+-    const day = await API.get('/journal/' + dateISO,{account_id:Store.accountId});
++    const accountId=Store.accountId,userId=Store.user?.id;
++    const sameContext=()=>accountId===Store.accountId&&userId===Store.user?.id;
++    const day = await API.get('/journal/' + dateISO,{account_id:accountId});
++    if(!sameContext())return global.App.toast('Workspace/account changed while loading the day; reopen it.','err');
+     const e = day.entry || {};
+     const trades = day.trades || [];
+-    const pnl = trades.filter((t) => t.status !== 'open').reduce((s, t) => s + (t.net_pnl || 0), 0);
++    const pnl=day.execution_summary?.pnl?.realised_total??null,totalR=day.execution_summary?.pnl?.recorded_total_r??null;
+     const body = U.h('div');
+     body.innerHTML = `
+       <div class="small">Core journal ${day.journal_summary?.journaled ?? 'unavailable'} / ${day.journal_summary?.total ?? 'unavailable'} · ${U.esc(day.journal_summary?.state || 'unavailable')} — notebook review and trading P&L are separate.</div>
+       <div class="grid g4" style="margin-bottom:14px">
+         <div class="kpi"><div class="k-label">Date</div><div class="k-value" style="font-size:1rem">${U.esc(dateISO)}</div></div>
+-        <div class="kpi ${pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">Day P&L</div><div class="k-value ${U.cls(pnl)}">${U.moneySign(pnl)}</div></div>
+-        <div class="kpi"><div class="k-label">Trades</div><div class="k-value">${trades.length}</div></div>
+-        <div class="kpi"><div class="k-label">Total R</div><div class="k-value">${U.signed(trades.reduce((s, t) => s + (t.r_multiple || 0), 0), 2)}R</div></div>
++        <div class="kpi ${pnl==null?'':pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">UTC close-day realised P&L</div><div class="k-value ${pnl==null?'':U.cls(pnl)}" data-day-realised-pnl>${pnl==null?'Unavailable':U.moneySign(pnl)}</div></div>
++        <div class="kpi"><div class="k-label">Records (incl. open)</div><div class="k-value">${trades.length}</div></div>
++        <div class="kpi"><div class="k-label">Recorded realised R</div><div class="k-value" data-day-total-r>${totalR==null?'Unavailable':U.signed(totalR,2)+'R'}</div></div>
+       </div>
+       <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
+         <label class="field"><span>Market bias</span><select id="j-bias">${['', 'Bullish', 'Bearish', 'Neutral', 'Choppy'].map((v) => `<option ${e.market_bias === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+@@ -167,6 +170,7 @@
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+     if(Views.routine){
+       body.prepend(Views.routine.dayCard(day.pre_market||{}));
+@@ -181,8 +185,9 @@
+       title: 'Day review — ' + dateISO, body, wide: true,
+       actions: [{ label: 'Cancel', ghost: true }, {
+         label: 'Save review', primary: true, onClick: async (close) => {
++          if(!sameContext())return global.App.toast('Workspace/account changed; reopen this day before saving.','err');
+           const payload = {
+-            entry_date: dateISO,account_id:Store.accountId,
++            entry_date: dateISO,account_id:accountId,
+             market_bias: U.$('#j-bias', body).value, mood: U.$('#j-mood', body).value || null, energy: U.$('#j-energy', body).value || null,
+             focus: U.$('#j-focus', body).value, plan: U.$('#j-plan', body).value, review: U.$('#j-review', body).value,
+             lessons: U.$('#j-lessons', body).value, tomorrow: U.$('#j-tomorrow', body).value,
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index be55a5a..c06d71c 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -24,6 +24,7 @@
+       <label class="row gap-8"><input id="jr-none" type="checkbox" ${trade.mistakes_none===1?'checked':''} /><span>Explicitly followed plan; no mistakes to report (not inferred from a win)</span></label>
+       <label class="field"><span>3. What would you do differently / repeat?</span><textarea id="jr-different" maxlength="2000">${U.esc(trade.lesson||'')}</textarea></label>
+       <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
++    if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
+     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
+     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
+       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
+@@ -158,8 +159,8 @@
+           <thead><tr>
+             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
+             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
+-              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Journal'], ['', '']].map(([k, l]) =>
++              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
++              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', '']].map(([k, l]) =>
+               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
+           </tr></thead>
+           <tbody>
+@@ -180,6 +181,7 @@
+             <td class="tiny nowrap">${U.esc(t.session_label || '—')}</td>
+             <td class="tiny"><span class="rating ${t.adherence >= 4 ? 'strong' : t.adherence <= 2 ? 'weak' : ''}">${U.rating(t.adherence)}</span></td>
+             <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
++            <td class="tiny"><span data-execution-state>${U.esc(Views.execution?Views.execution.state(t.execution_review):'Unreviewed')}</span>${t.status==='closed'?` <button class="btn xs ghost" data-execution="${t.id}">Execution</button>`:''}</td>
+             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
+             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
+           </tr>`).join('')}
+@@ -191,10 +193,11 @@
+         if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = -1; }
+         draw();
+       }));
++      U.$$('[data-execution]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.execution)Views.execution.open(Number(b.dataset.execution));else global.App.toast('Execution review UI unavailable; no grade inferred.','err');}));
+       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
+       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
+       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
+-        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal]')) return;
++        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution]')) return;
+         global.App.openTrade(Number(tr.dataset.id));
+       }));
+       const chkAll = U.$('#chk-all', body);
+@@ -274,7 +277,7 @@
+         <label class="field span2"><span>Strategy / setup</span>
+           <select id="tf-strategy"><option value="">— untagged —</option>${strategyOptions}</select>
+         </label>
+-        <label class="field"><span>Setup grade</span>
++        <label class="field"><span>Entry setup grade</span>
+           <select id="tf-grade"><option value="">—</option>${list(['A+', 'A', 'B', 'C', 'D'], t.setup_grade)}</select>
+         </label>
+         <label class="field"><span>Entry model</span>
+@@ -514,6 +517,7 @@
+     g('entrytf').addEventListener('change',refreshGuard);
+     U.$('#tf-guardrail-refresh',node).addEventListener('click',refreshGuard);
+     refreshGuard();
++    if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
+     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
+   };
+ 

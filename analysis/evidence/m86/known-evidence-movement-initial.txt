@@ -1,0 +1,16 @@
+ok unknown/corrupt atom cannot claim CURRENT violation/adherence {"stop_honoured":null,"stop_honoured_source":null,"stop_honoured_recorded_at":null,"execution_review_hash":null}
+ok unknown/corrupt atom cannot claim CURRENT violation/adherence {"execution_review_hash":"corrupt"}
+ok unknown/corrupt atom cannot claim CURRENT violation/adherence {"execution_review_hash":null}
+ok unknown/corrupt atom cannot claim CURRENT violation/adherence {"stop_honoured_source":"broker_verified"}
+ok unknown/corrupt atom cannot claim CURRENT violation/adherence {"stop_honoured_source":null}
+ok unknown/corrupt atom cannot claim CURRENT violation/adherence {"stop_honoured_recorded_at":"2026-10-11T10:30:00.000Z"}
+ok unknown/corrupt atom cannot claim CURRENT violation/adherence {"stop_honoured_recorded_at":"2026-10-11T12:30:00.000Z"}
+ok unknown/corrupt atom cannot claim CURRENT violation/adherence {"stop_honoured":"true"}
+ok unknown/corrupt atom cannot claim CURRENT violation/adherence {"stop_honoured":[]}
+ok unknown/corrupt atom cannot claim CURRENT violation/adherence {"adherence":6,"stop_honoured":0}
+ok stale assessment is unknown even when newly raw rating is low, not current violation proof
+ok actual valid partial own report may name low adherence but never fullgrade/badloss
+ok actual valid explicit stop violation with unknown adherence remains partial, not graded
+ok feedback never coerces corrupt excursions/stringR into numeric0 or real violation
+FAIL invalid/string-zero stop-movement flag cannot manufacture a movement fact [{"tone":"good","text":"You report following the plan and honouring its stop. This is a retrospective self-review, not verified broker/plan compliance."},{"tone":"info","text":"The journal records stop movement. Movement may be protective or planned; it is not by itself evidence of widening or a loss cause."},{"tone":"info","text":"Recorded realised net -80 (-0.8R). Outcome is separate from the execution grade."}]
+M86 current evidence uncertainty: 14 passed, 1 failed

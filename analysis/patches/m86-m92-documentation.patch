@@ -1,0 +1,150 @@
+diff --git a/README.md b/README.md
+index ce03d77..6522a7a 100644
+--- a/README.md
++++ b/README.md
+@@ -11,6 +11,27 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+ 
+ ---
+ 
++## Execution self-review (separate from entry setup grade)
++
++After recording the actual close, use **Trade log → Execution** (also in saved
++trade/core-writing forms). Explicitly review your own adherence1–5 and whether
++you honoured the planned stop; unknown stays **Unreviewed**, never a made-up0.
++P&L/R/planned RR/session/excursions add **no execution points**. The human
++assessment is not broker verification or live emotional capture, does not
++complete core writing/routine or change entry permission/risk. Save financial
++edits first; a changed saved record requires reopening the current review.
++
++Daily review shows **best/worst by reported execution**, retaining ties and
++leaving unknowns unranked. Money-only extrema remain separately labelled; unknown
++realised net is unavailable, not zero, and open floating data is excluded from
++the realised day values. Existing numeric P&L statistics remain compatible.
++The old “backfill grades” API is now a **read-only derived refresh**: `updated:0`,
++with reviewed/unreviewed counts. It never overwrites `setup_grade`. Earlier stored
++manual/model/auto-grade provenance cannot be reconstructed; values are retained
++and explicitly separate from execution. See [API](docs/API.md) and
++[guardrails](docs/GUARDRAILS.md). Entry models/checklist grades/risk factors,
++price geometry and deliberate sample thresholds are unchanged.
++
+ ## Personal-rule admission
+ 
+ New trade/reopen and prospective plan actions now recheck scoped personal rules
+diff --git a/docs/API.md b/docs/API.md
+index d2a4cf7..f63a6aa 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -431,3 +431,66 @@ research plans, and survives journal edits/deletion independently. Late completi
+ or a human flag cannot rewrite its original preparation basis. Current done and
+ on-time/before-first-entry prepared are different facts. Neither is broker activity,
+ a live emotional/feed clearance or proof of a profitable causal effect.
++
++
++## Retrospective execution self-review (M86) and day extremes (M92)
++
++`GET /trades/:id` (and trade lists/day rows) adds a **derived** `execution_review`:
++`state`, `grade`, nullable `score`, `execution_quality`, `loss_quality`, separate
++`outcome`, `evidence`, `basis:"self_reported_execution"`, `rubric_version`,
++`broker_verified:false`, original `entry_setup_grade`, and opaque
++`record_revision`. Missing/invalid/stale/future/open evidence is **Unreviewed**,
++not an inferred0 or good/bad loss. A current acknowledged partial report can
++identify a specific violation, but cannot receive a full grade/good/bad-loss label.
++
++`POST /trades/:id/execution-review` is optional and owned/authenticated:
++
++```json
++{"adherence":5,"stop_honoured":true,"record_revision":"<copy current GET execution_review.record_revision>"}
++```
++
++- Only those three keys. Adherence is a literal whole number1–5 or null; stop
++  honour is literal true/false/null. Read the **saved current** record first.
++- Server records nullable `stop_honoured`, `stop_honoured_source`,
++  `stop_honoured_recorded_at`, and versioned `execution_review_hash`, atomically
++  with the bounded existing `adherence`. Hash binds relevant current trade fields,
++  not a cached score or broker signature. No client clock/source/hash/grade spoofing.
++- No actual close/open/future evidence or changed displayed revision:409. Bad
++  input/unknown recorded stop for an honour claim:400. Foreign/missing ID:404.
++  Storage uncertainty:503 without a partial write. Literal nullable answers may
++  remain unreviewed; legacy populated notes/default0 movement do not prove honour.
++- Core writing remains `/trades/:id/journal`; financial create/update/close/delete
++  remains legal without an execution review. Financial CRUD does not mint review
++  flags/source/clocks/hash. JSON/CSV record-only imports do not replay these
++  server-owned acknowledgements or infer historic completion; re-review explicitly.
++- App display rubric `execution-v1`: adherence1/2/3/4/5 →20/40/60/75/95; explicit
++  stop violation caps39/D. Good loss requires >=4 **and** explicit honoured stop,
++  with known consistent realised loss. P&L/R/RR/session/MAE/MFE earn no points.
++  This mapping is an app display choice, **not a numeric course quotation** or
++  entry sizing input. Current same-record evidence required even for partial flags.
++
++`POST /bots/correction/backfill` is retained for compatibility but **READ-ONLY**:
++optional literal positive integer `account_id`, otherwise all own closed journals.
++Returns `updated:0`, `evaluated`, `reviewed`, `unreviewed`, `distribution`,
++`read_only:true`, basis/version. Foreign account404, malformed ID400. No stored
++`setup_grade` writes, cache, guessed legacy source or any capital-rule change.
++`GET /bots/correction` exposes execution `grades` plus independent original
++`setup_grades` with legacy provenance warning. Its `backfill=1` is read-only too.
++Feedback uses current human execution versus separately descriptive outcome,
++not outcome-only repeat-it praise or stop/entry-location blame from excursions.
++
++`GET /journal/:date?account_id=…` adds `account_id` and `execution_summary` scoped
++to one owned account and UTC close day. Omitted account resolves the actual
++default (not mixed-account trades beside a default routine). Noncanonical/repeated
++account query400; foreign404. Shared notebook text is still shared, not new
++per-account duplicate notes. `best`/`worst` rank known current self-review scores;
++`trade_ids`/`tie_count` retain ties, unknowns unranked, no P&L tie-break. `pnl` is
++money-only known/unavailable extrema and nullable realised day total/recorded R;
++open/future/unknown data never silently becomes realised0.
++
++Performance retains every prior numeric metric including `best_trade`/`worst_trade`
++as money fields. New `trade_extremes_basis` labels that compatibility basis, and
++`execution_summary` is separate; finance is not renamed or used as execution.
++All ranking/grade/outcome associations are descriptive, self-reported and
++retrospective, not statistical edge, causation, live emotion/provider/broker proof,
++fresh entry readiness, permission or risk advice.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index b6556fc..526d0c8 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -271,6 +271,34 @@ this does **not** attribute each trade to its own entry routine. Small/selected
+ samples, human/retrospective reports and close-day association do not establish
+ causation or justify risk sizing, strategy changes or a win-rate promise.
+ 
++## Optional execution self-review is not capital, writing or permission
++
++M86 replaces outcome-weighted journal grading with **retrospective human
++execution**. Adherence1–5 plus explicit nullable stop-honour answers are captured
++for an actual closed current saved record. Its source/server time/versioned hash
++and displayed-record revision are owned; relevant edits withhold stale evidence.
++Missing/corrupt/future/legacy data stays Unreviewed with null score. Current valid
++partial answers may identify a specific reported violation, never a full grade.
++Stop movement may be protective; default0, loss size, fees/gaps/slippage and
++MAE/MFE do not establish compliance/violation. Self-report is never broker proof.
++
++`execution-v1` maps1/2/3/4/5 to20/40/60/75/95; explicit stop violation caps39.
++Good-loss classification requires >=4 and explicit honour, not the amount lost.
++There are **no** points for P&L/R/planned RR/session/excursions. This is an app
++display rubric, not a newly quoted course coefficient or a pre-entry setup score.
++M92 ranks a day's known current execution reviews, not biggest profit/loss.
++Unknowns unranked; ties explicit; separately labelled money-only extremes and
++unknown realised-day totals are not converted to zero/floating profit.
++
++No execution score is persisted. The old grade-backfill endpoint now reports
++read-only `updated:0` and evaluated/reviewed/unreviewed counts. Original stored
++`setup_grade` values remain untouched; unknown old manual/model/auto provenance
++cannot be recovered. Entry checklist grades and **A+/A×1, B×.5, C×.25** factors
++are unchanged. Neither grade, explicit stop answer nor a process rank completes
++core loss writing, fresh emotional gate, routine/timer or any first-admission fact,
++waives unknown state or refunds cap/loss/streak/cooldown observations. Truthful
++financial close/correction/deletion/import and record-only entries remain legal.
++
+ ## Scope still open
+ 
+ M108's full Sanctuary presets/ambient/intention/toolkit/independent session log
+@@ -280,6 +308,6 @@ stay open. **Correction:** M116 is already classified APPLIED in the ledger; the
+ prior guide/summaries incorrectly listed it open. No new closure/retuning is counted.
+ M84/M85 complete their scoped input-capture/manual-marker gaps, not adaptive sizing.
+ These changes do not change
+-entry models, target/stop geometry, RR floors, grade policies, the course's
++entry models, target/stop geometry, RR floors, entry setup-grade policies, the course's
+ 30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
+ edge, win-rate improvement, live-provider or production-deployment claim is made.

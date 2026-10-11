@@ -11,6 +11,27 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About �
 
 ---
 
+## Execution self-review (separate from entry setup grade)
+
+After recording the actual close, use **Trade log → Execution** (also in saved
+trade/core-writing forms). Explicitly review your own adherence1–5 and whether
+you honoured the planned stop; unknown stays **Unreviewed**, never a made-up0.
+P&L/R/planned RR/session/excursions add **no execution points**. The human
+assessment is not broker verification or live emotional capture, does not
+complete core writing/routine or change entry permission/risk. Save financial
+edits first; a changed saved record requires reopening the current review.
+
+Daily review shows **best/worst by reported execution**, retaining ties and
+leaving unknowns unranked. Money-only extrema remain separately labelled; unknown
+realised net is unavailable, not zero, and open floating data is excluded from
+the realised day values. Existing numeric P&L statistics remain compatible.
+The old “backfill grades” API is now a **read-only derived refresh**: `updated:0`,
+with reviewed/unreviewed counts. It never overwrites `setup_grade`. Earlier stored
+manual/model/auto-grade provenance cannot be reconstructed; values are retained
+and explicitly separate from execution. See [API](docs/API.md) and
+[guardrails](docs/GUARDRAILS.md). Entry models/checklist grades/risk factors,
+price geometry and deliberate sample thresholds are unchanged.
+
 ## Personal-rule admission
 
 New trade/reopen and prospective plan actions now recheck scoped personal rules

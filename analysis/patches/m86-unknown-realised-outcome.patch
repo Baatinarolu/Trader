@@ -1,0 +1,19 @@
+diff --git a/src/execution-review.js b/src/execution-review.js
+index a72f6cb..a7703bf 100644
+--- a/src/execution-review.js
++++ b/src/execution-review.js
+@@ -38,11 +38,11 @@ async function acknowledge(userId,id,body) {
+ }
+ function outcome(trade) {
+   const net = number(trade.net_pnl), r = number(trade.r_multiple);
+-  if (net === null && r === null || net !== null && r !== null && Math.sign(net) !== Math.sign(r)) {
++  if (net === null || r !== null && Math.sign(net) !== Math.sign(r)) {
+     return {state:'unknown',kind:null,net_pnl:net,r_multiple:r,basis:'unavailable_or_contradictory_realised_outcome'};
+   }
+-  const v = net === null ? r : net;
+-  return {state:'known',kind:v < 0 ? 'loss' : v > 0 ? 'win' : 'breakeven',net_pnl:net,r_multiple:r,basis:net === null ? 'recorded_realised_r' : 'recorded_realised_net_pnl'};
++  const v = net;
++  return {state:'known',kind:v < 0 ? 'loss' : v > 0 ? 'win' : 'breakeven',net_pnl:net,r_multiple:r,basis:'recorded_realised_net_pnl'};
+ }
+ function review(trade, {nowMs=Date.now()}={}) {
+   const reasons = ['Execution basis: self-reported journal evidence, not broker-verified adherence.'];

@@ -1,0 +1,82 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 14,
+  "fail": 1,
+  "results": [
+    {
+      "label": "unknown/corrupt atom cannot claim CURRENT violation/adherence {\"stop_honoured\":null,\"stop_honoured_source\":null,\"stop_honoured_recorded_at\":null,\"execution_review_hash\":null}",
+      "passed": true
+    },
+    {
+      "label": "unknown/corrupt atom cannot claim CURRENT violation/adherence {\"execution_review_hash\":\"corrupt\"}",
+      "passed": true
+    },
+    {
+      "label": "unknown/corrupt atom cannot claim CURRENT violation/adherence {\"execution_review_hash\":null}",
+      "passed": true
+    },
+    {
+      "label": "unknown/corrupt atom cannot claim CURRENT violation/adherence {\"stop_honoured_source\":\"broker_verified\"}",
+      "passed": true
+    },
+    {
+      "label": "unknown/corrupt atom cannot claim CURRENT violation/adherence {\"stop_honoured_source\":null}",
+      "passed": true
+    },
+    {
+      "label": "unknown/corrupt atom cannot claim CURRENT violation/adherence {\"stop_honoured_recorded_at\":\"2026-10-11T10:30:00.000Z\"}",
+      "passed": true
+    },
+    {
+      "label": "unknown/corrupt atom cannot claim CURRENT violation/adherence {\"stop_honoured_recorded_at\":\"2026-10-11T12:30:00.000Z\"}",
+      "passed": true
+    },
+    {
+      "label": "unknown/corrupt atom cannot claim CURRENT violation/adherence {\"stop_honoured\":\"true\"}",
+      "passed": true
+    },
+    {
+      "label": "unknown/corrupt atom cannot claim CURRENT violation/adherence {\"stop_honoured\":[]}",
+      "passed": true
+    },
+    {
+      "label": "unknown/corrupt atom cannot claim CURRENT violation/adherence {\"adherence\":6,\"stop_honoured\":0}",
+      "passed": true
+    },
+    {
+      "label": "stale assessment is unknown even when newly raw rating is low, not current violation proof",
+      "passed": true
+    },
+    {
+      "label": "actual valid partial own report may name low adherence but never fullgrade/badloss",
+      "passed": true
+    },
+    {
+      "label": "actual valid explicit stop violation with unknown adherence remains partial, not graded",
+      "passed": true
+    },
+    {
+      "label": "feedback never coerces corrupt excursions/stringR into numeric0 or real violation",
+      "passed": true
+    },
+    {
+      "label": "invalid/string-zero stop-movement flag cannot manufacture a movement fact",
+      "passed": false,
+      "detail": [
+        {
+          "tone": "good",
+          "text": "You report following the plan and honouring its stop. This is a retrospective self-review, not verified broker/plan compliance."
+        },
+        {
+          "tone": "info",
+          "text": "The journal records stop movement. Movement may be protective or planned; it is not by itself evidence of widening or a loss cause."
+        },
+        {
+          "tone": "info",
+          "text": "Recorded realised net -80 (-0.8R). Outcome is separate from the execution grade."
+        }
+      ]
+    }
+  ],
+  "scope": "M86 current evidence uncertainty: real auth/HTTP/SQL on literal/fixedUTC journals, no legacy/native routine adapter, broker/provider/real-human/pixel/outcome or financial retune proof"
+}

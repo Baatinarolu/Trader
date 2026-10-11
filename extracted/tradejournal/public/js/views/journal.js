@@ -138,18 +138,21 @@
   };
 
   async function openEditor(dateISO, root) {
-    const day = await API.get('/journal/' + dateISO,{account_id:Store.accountId});
+    const accountId=Store.accountId,userId=Store.user?.id;
+    const sameContext=()=>accountId===Store.accountId&&userId===Store.user?.id;
+    const day = await API.get('/journal/' + dateISO,{account_id:accountId});
+    if(!sameContext())return global.App.toast('Workspace/account changed while loading the day; reopen it.','err');
     const e = day.entry || {};
     const trades = day.trades || [];
-    const pnl = trades.filter((t) => t.status !== 'open').reduce((s, t) => s + (t.net_pnl || 0), 0);
+    const pnl=day.execution_summary?.pnl?.realised_total??null,totalR=day.execution_summary?.pnl?.recorded_total_r??null;
     const body = U.h('div');
     body.innerHTML = `
       <div class="small">Core journal ${day.journal_summary?.journaled ?? 'unavailable'} / ${day.journal_summary?.total ?? 'unavailable'} · ${U.esc(day.journal_summary?.state || 'unavailable')} — notebook review and trading P&L are separate.</div>
       <div class="grid g4" style="margin-bottom:14px">
         <div class="kpi"><div class="k-label">Date</div><div class="k-value" style="font-size:1rem">${U.esc(dateISO)}</div></div>
-        <div class="kpi ${pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">Day P&L</div><div class="k-value ${U.cls(pnl)}">${U.moneySign(pnl)}</div></div>
-        <div class="kpi"><div class="k-label">Trades</div><div class="k-value">${trades.length}</div></div>
-        <div class="kpi"><div class="k-label">Total R</div><div class="k-value">${U.signed(trades.reduce((s, t) => s + (t.r_multiple || 0), 0), 2)}R</div></div>
+        <div class="kpi ${pnl==null?'':pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">UTC close-day realised P&L</div><div class="k-value ${pnl==null?'':U.cls(pnl)}" data-day-realised-pnl>${pnl==null?'Unavailable':U.moneySign(pnl)}</div></div>
+        <div class="kpi"><div class="k-label">Records (incl. open)</div><div class="k-value">${trades.length}</div></div>
+        <div class="kpi"><div class="k-label">Recorded realised R</div><div class="k-value" data-day-total-r>${totalR==null?'Unavailable':U.signed(totalR,2)+'R'}</div></div>
       </div>
       <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
         <label class="field"><span>Market bias</span><select id="j-bias">${['', 'Bullish', 'Bearish', 'Neutral', 'Choppy'].map((v) => `<option ${e.market_bias === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
@@ -167,6 +170,7 @@
         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+    if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
     let routineDirty=false;
     if(Views.routine){
       body.prepend(Views.routine.dayCard(day.pre_market||{}));
@@ -181,8 +185,9 @@
       title: 'Day review — ' + dateISO, body, wide: true,
       actions: [{ label: 'Cancel', ghost: true }, {
         label: 'Save review', primary: true, onClick: async (close) => {
+          if(!sameContext())return global.App.toast('Workspace/account changed; reopen this day before saving.','err');
           const payload = {
-            entry_date: dateISO,account_id:Store.accountId,
+            entry_date: dateISO,account_id:accountId,
             market_bias: U.$('#j-bias', body).value, mood: U.$('#j-mood', body).value || null, energy: U.$('#j-energy', body).value || null,
             focus: U.$('#j-focus', body).value, plan: U.$('#j-plan', body).value, review: U.$('#j-review', body).value,
             lessons: U.$('#j-lessons', body).value, tomorrow: U.$('#j-tomorrow', body).value,

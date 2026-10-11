@@ -1,0 +1,37 @@
+DECLARED M64 prerequisite isolation: routine held fulfilled, new first-entry routine capture not exercised. NOT full current policy proof. Original runs/negatives retained.
+DECLARED legacy guard-rule prerequisite isolation: writing fulfilled / explicit synthetic Neutral / new UI prompt fulfilled / additive table names. Original negatives kept; not M85 integrated-policy proof.
+Error: DECLARED M64 prerequisite isolation: routine held fulfilled, new first-entry routine capture not exercised. NOT full current policy proof. Original runs/negatives retained.
+node:internal/modules/cjs/loader:1433
+  throw err;
+  ^
+
+Error: Cannot find module '/tmp/m79-parent/extracted/tradejournal/src/db'
+Require stack:
+- /home/user/Trader/[eval]
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1216:25)
+    at Module._load (/home/user/Trader/analysis/m64-legacy-prerequisite.js:11:63)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.require (node:internal/modules/cjs/loader:1527:12)
+    at require (node:internal/modules/helpers:147:16)
+    at [eval]:1:9
+    at runScriptInThisContext (node:internal/vm:209:10) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/home/user/Trader/[eval]' ]
+}
+
+Node.js v22.22.3
+
+    at child (/home/user/Trader/analysis/probe-m79-migration.js:12:411)
+    at /home/user/Trader/analysis/probe-m79-migration.js:14:16
+    at Object.<anonymous> (/home/user/Trader/analysis/probe-m79-migration.js:27:469)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object.<anonymous> (/home/user/Trader/analysis/legacy-guard-fixture-runner.js:44:109)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1309:12)
+    at Module._load (/home/user/Trader/analysis/m64-legacy-prerequisite.js:11:63)
+M79 migration: 0 passed, 1 failed

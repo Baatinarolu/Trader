@@ -1,6 +1,38 @@
 # Full-playlist episode audit — running ledger
 
-## Current M14/M64/M94 routine follow-through — 2026-10-11
+## Current M86/M92 execution follow-through — 2026-10-11
+
+**132:89 done /3 partial /40 todo /0 no-action**, exact eight groups. M86 is
+execution-based journal grading, **NOT loss drill**; M92 is separately staged
+process-ranked day best/worst. Pure current human adherence/explicit stop honour,
+nullable source/server clock/versioned record SHA and required displayed revision.
+Unknown/legacy/stale/corrupt evidence unreviewed, no score or false current
+violation; valid current partial human answers not full grades. No outcome/RR/
+session/excursion points, no setup_grade backfill or persistent score cache.
+Original entry/setup grades and A+/A×1,B×.5,C×.25 risk factors/geometry unchanged.
+Day ties kept, unknowns unranked; P&L/extrema compatibility explicitly money-only.
+Optional execution review does not complete core writing/preparation, revive a
+technical veto or refund any cap/loss/streak/cooldown/first-admission observation.
+
+**260/0 across9 new actual/no-prerequisite-adapter probes**, coexisting actual
+routine321/0 across10. Original raw legacy597/155 plus one90s timeout/early aborts;
+DECLARED isolated828/0 is not raw/integrated preparation proof. Explicit synthetic
+offline pure178/0, DECLARED market325/0. Original native prepared parent/current
+API121/0,Bots206/0; currentraw APIexit2/no summary,Bots202/4exit1 retained. Current
+smoke later21/21 conditional rows/0style-console,8canvas,exitNULL/unobserved; no
+pixel/provider/broker/production/human meditation/70% edge claim.
+
+Nine incremental stages +combined+pristine clean forward/reverse byte proofs,
+secret-free deterministic ZIP and source/evidence guards:
+[execution report](M86-M92-EXECUTION-REVIEW.md),
+`evidence/m86/feature-summary.json`, `patches/M86-EXECUTION-STAGES.json`,
+`evidence/m86/archive-sha256.json`. Parent **c22d5b9**; actual source119 files.
+Partials M30/M103/M108; all40TODOs retained. **Next M87 screenshots, then M88/M89**.
+Morning checks ≠M106 fresh entry gate; broader M108 partial, M111/M112 open,
+M116 alreadyAPPLIED. Older routine owned-strategy UI freshness remains UNMEASURED.
+No new source fetch/full missing bonus transcript; no credential storage/rotation.
+
+## Historical M14/M64/M94 routine delivery — 2026-10-11
 
 **132:87 done /3 partial /42 todo /0 no-action**, exact eight groups. M14/M64/M94
 complete together; M108 **PARTIAL** for the mandatory routine15-minute timer only,
@@ -21,7 +53,7 @@ parity fills/0mismatches, unchanged thresholds. Changed cohort is not edge. Smok
 22/22,0style/console,8canvas limits; completed log after tool timeout, exit unobserved.
 M89/M106/M111/M112 stay open; morning confirmations are not the separate fresh
 in-session gate, calendar review not feed clearance, clock not actual meditation.
-M30/M103/M108 partial; all42TODOs retained. Next M86 loss-drill workflow, then M87–M89
+M30/M103/M108 partial; all42TODOs retained. At that delivery next was M86 execution grading (not loss drill), paired M92; now applied; next M87–M89
 capture/provenance in mechanism order. No70%/target shrink or production/broker claim.
 
 ## Historical M84/M85 follow-through — 2026-10-11

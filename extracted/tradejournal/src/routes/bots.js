@@ -16,6 +16,7 @@ function createBotsRouter({ requireAuth }) {
   const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch((err) => {
     console.error(`BOT API error on ${req.method} ${req.originalUrl}:`, err.message);
     if (res.headersSent) return;
+    if(err.code==='execution_review_invalid')return res.status(err.status).json({error:err.message,code:err.code});
     if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
     res.status(500).json({ error: err.message || 'Bot error' });
   });
@@ -235,7 +236,9 @@ router.get('/markets', requireAuth, (req, res) => {
   }));
 
   router.post('/correction/backfill', requireAuth, wrap(async (req, res) => {
-    const out = await Bots.correction.backfillGrades(req.user.id);
+    const value=req.body?.account_id;
+    if(value!==undefined && !(typeof value==='number'&&Number.isSafeInteger(value)&&value>0))return res.status(400).json({error:'account_id must be a positive whole number when selected.'});
+    const out = await Bots.correction.backfillGrades(req.user.id,{accountId:value===undefined?null:value});
     res.json({ ok: true, ...out });
   }));
 
