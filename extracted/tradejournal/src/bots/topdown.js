@@ -58,15 +58,15 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /** tf → the two timeframes around it, with the job each one does. */
 const STACK = {
-  '1m': { bias: '15m', zone: '5m', entry: '1m', trigger: '1m', style: 'scalp' },
-  '3m': { bias: '30m', zone: '15m', entry: '3m', trigger: '1m', style: 'scalp' },
-  '5m': { bias: '1h', zone: '15m', entry: '5m', trigger: '1m', style: 'scalp' },
-  '15m': { bias: '4h', zone: '1h', entry: '15m', trigger: '5m', style: 'day' },
-  '30m': { bias: '4h', zone: '1h', entry: '30m', trigger: '15m', style: 'day' },
-  '1h': { bias: '1d', zone: '4h', entry: '1h', trigger: '15m', style: 'swing' },
-  '4h': { bias: '1w', zone: '1d', entry: '4h', trigger: '1h', style: 'swing' },
-  '1d': { bias: '1w', zone: '1d', entry: '1d', trigger: '4h', style: 'position' },
-  '1w': { bias: '1w', zone: '1d', entry: '1w', trigger: '1d', style: 'position' },
+  '1m': { bias: '15m', entry: '1m', trigger: '1m', style: 'scalp' },
+  '3m': { bias: '30m', entry: '3m', trigger: '1m', style: 'scalp' },
+  '5m': { bias: '1h', entry: '5m', trigger: '1m', style: 'scalp' },
+  '15m': { bias: '4h', entry: '15m', trigger: '5m', style: 'day' },
+  '30m': { bias: '4h', entry: '30m', trigger: '15m', style: 'day' },
+  '1h': { bias: '1d', entry: '1h', trigger: '15m', style: 'swing' },
+  '4h': { bias: '1w', entry: '4h', trigger: '1h', style: 'swing' },
+  '1d': { bias: '1w', entry: '1d', trigger: '4h', style: 'position' },
+  '1w': { bias: '1w', entry: '1w', trigger: '1d', style: 'position' },
 };
 
 const TF_MS = {
@@ -102,14 +102,9 @@ function layersFor(tf) {
   return {
     style: s.style,
     bias_tf: s.bias,
-    // M20: DEAD CONFIG. `s.zone` is declared per-timeframe in STACK above (e.g. '15m'
-    // declares zone:'1h') and this field computes it, but NOTHING reads `zone_tf` —
-    // verified: it appears exactly once in all of src/. Callers fetch series for
-    // `bias_tf` and `trigger_tf` only, so the location layer silently runs on `entryTf`.
-    // The API report is honest about that (layers.zone.tf === entryTf at :697); it is the
-    // STACK declaration that is misleading. Wiring this up changes where zones are found,
-    // so it belongs in a backtested batch, not here. Kept for the future fix.
-    zone_tf: s.zone === s.bias ? s.bias : s.zone,
+    // M34 / M20: location IS the trading/medium timeframe, not an unfetched fourth
+    // chart. Ep 11 recommends three roles (4h/15m/5m day; 1h/5m/1m scalp). His
+    // personal four-chart variant is optional; do not advertise it as a live layer.
     entry_tf: tf,          // the chart the trader is actually trading
     trigger_tf: s.trigger, // the chart used for the confirmation
   };
@@ -483,7 +478,7 @@ function confirmation(trigger, dir, atr) {
  * @param {object} [args.biasSeries]  pre-fetched higher-timeframe series (recommended)
  * @param {object} [args.triggerSeries] pre-fetched lower-timeframe series
  */
-function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, zoneSeries = null, opts = {} }) {
+function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, opts = {} }) {
   const L = layersFor(tf);
   const entrySeries = series;
   const entryTf = tf;

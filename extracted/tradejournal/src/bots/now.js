@@ -64,7 +64,9 @@ function nextKillzone(ms) {
   if (!b) return null;
   const mins = b.minutes_to_start > 0 ? b.minutes_to_start : 1440;
   return { key: slug(b.name), label: shortLabel(b.name), name: b.name, quality: b.quality,
-    window: b.window, note: b.note || null, at: ms + mins * 60000 };
+    // M129 — countdowns are whole minutes; don't carry the request's seconds into
+    // a window that starts on the minute. They already include any DST offset change.
+    window: b.window, note: b.note || null, at: Math.floor(ms / 60000) * 60000 + mins * 60000 };
 }
 
 const num = (v) => (v === null || v === undefined || isNaN(Number(v)) ? null : Number(v));

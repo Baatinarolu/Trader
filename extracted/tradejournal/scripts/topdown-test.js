@@ -145,6 +145,11 @@ ok(chasedRange.plan && chasedRange.plan.chase === true, 'price that has run most
 
 section('the hierarchy: higher timeframe decides, lower timeframes time');
 
+ok(Object.values(TD.STACK).every((s) => !Object.hasOwn(s, 'zone')),
+  'the stack declares only the three fetched roles, no unfetched fourth timeframe');
+ok(Object.keys(TD.STACK).every((tf) => !Object.hasOwn(TD.layersFor(tf), 'zone_tf')),
+  'layersFor does not advertise a dead zone_tf layer');
+
 const biasSmc = {
   structure: { trend: 'bearish', last_break: { type: 'BOS', dir: 'down', bars_ago: 3, level: 95 } },
   liquidity: { pools: levels.map((l) => ({ ...l, label: l.label })), pdh: 96, pdl: 93.4, pwh: 97, pwl: 93 },

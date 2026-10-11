@@ -9,22 +9,47 @@
 - M127 was discovered by M3’s final-verdict test: explicit candidate vetoes had no consumer
   in the summary, Now order or Copy plan. Fixed and separately measured with M3 OFF:
   306 phantom directions out of 920 reads → 0, candidate-array differences 0/920.
-- Ledger: **127 rows; 59 done / 2 partial / 66 todo / 0 deliberate no-action**.
+- Ledger: **129 rows; 63 done / 2 partial / 64 todo / 0 deliberate no-action**.
   `gen-progress.py` remains the sole writer of PROGRESS.md and asserts the exact partition.
 - Current regression baseline: `--seeds 60 --bars 1500 --window 300` **n=24 / 29.2% /
   +0.7908R / PF2.33** (below 30; NO performance claim). Parent `29fa456`: n=25 / +0.7191R.
   At 200 seeds: M3 OFF n=99 / −0.0111R / PF0.98; ON n=97 / +0.0108R / PF1.02.
   Net two fills and cooldown composition shifts do not demonstrate improvement.
-- Verified suites: **api 121/0, bots 206/0, chart 36/0, now 41/0, topdown 66/0**;
+- Verified suites: **api 121/0, bots 206/0, chart 36/0, now 43/0, topdown 68/0**;
   smoke **21/21 views**, 0 errors. Parity floors currently pass at 22 filled trades.
 - New probes: `probe-m3-chase-guard.js` **36/0**, pristine **0/7**;
   `probe-m127-verdict-vetoes.js` **21/0** (TJ_CONTROL parent; parent negative **9/10**).
   Full fleet green, `probe-reverify-applied.js` **67/0** (three new verdict invariants).
   Run `probe-candles-yahoo.js` with TJ_OFFLINE_CANDLES UNSET (its fetch is stubbed);
   API-backed probes/suites need the flag and a restarted live server.
-- Next mechanism rows: **M33/M34 (Ep 11; cross-check M33 against Ep 15), then M126**.
-  The old Ep 11 diagnostic probe checks `setup_action` without verifying candidate.ok;
-  do not take its historical grade-B examples as newly measured tradeable signals.
+- Next mechanism row: **M33** (Ep 11 + Ep 15), then the remaining 64 todo rows.
+  Its old diagnostic now yields ranging/ranging on BOS/nested defaults and 0 sole-blocker
+  cases in 400 seeds; rebuild a VALID confirmed-shift fixture, not a slope-only proxy.
+  The old examples checked grade-derived setup_action, not candidate.ok. A sanctioned
+  counter-HTF pullback execution direction is not a reset of the held daily bias.
+  Before wiring it, re-check M50's moving-goalposts invariant across SUCCESSIVE calls:
+  applyBiasHysteresis tests the stored level but also computes/stores levelFor(h.bias)
+  each call. Whether that can drift the held invalidation has not yet been probed;
+  do not trust the comment or the existing same-range fixture as proof.
+- M34 now removes the dead fourth-timeframe declaration (zone/zone_tf/zoneSeries),
+  preserving the recommended three-role sets: **12/0**, 110 full topdown outputs unchanged,
+  including confirmed +/-1. M20's annotation-only resolution is superseded by this removal.
+- M126 adopts documented option (b): original **coarse UTC overlay**, not invented ET
+  exchange hours; killzones supply quality while open, calendar stays UTC. Its last stale
+  outside-window UTC hint now uses the next bullet's own label.
+- New M128 corrects open_session=always Sydney and next_session=array-index overlap;
+  **336 wrong metadata pairs of 384 -> 0**. Combined provenance/overlay probe **19/0**.
+- New M129 resolves each NY boundary on its own local date, active/NEXT occurrence:
+  spring gap, fall repeated hour, tomorrow's offset and sub-minute timestamps.
+  Probe **44/0**, parent negative **30/14**. 732 UTC labels /144 countdowns corrected in
+  1536 bullet reads; **0 gate/quality/pair/calendar changes**. Default 60-seed harness
+  FULL output remains identical to M3 after normalizing only runtime.
+- Negative controls matter: **M127 must use 29fa456**, which precedes its fix;
+  **M34/M126/M128/M129 use b7ec114**. A parent that already contains a fix cannot show
+  its historical defect. Temp worktrees do not survive resets; rebuild detached controls.
+  M41's absolute <250ms cost check is CPU-load-sensitive: 475ms during concurrent heavy
+  benchmarks, 247ms on a narrowed rerun, with the threshold and nyWhen body unchanged.
+- Cumulative source patch: **29 files**, clean apply and **0 round-trip differences**.
 - The app source is tracked; dependencies/tmp controls may need restoring after a reset.
   Keep `.env`, databases and fixtures untracked. Rebuild the cumulative source patch by
   overlaying the app onto a pristine unzip, excluding `.env`, data, node_modules and .git;

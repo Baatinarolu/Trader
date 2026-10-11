@@ -17,6 +17,14 @@
  *                 target the opposing liquidity pool — minimum 1:2
  *    8. filters   killzones, premium/discount, news blackout, CRT range play
  *
+ *  Session-clock provenance (M126): SILVER_BULLETS are Ep 12's trading windows,
+ *  stated in New York local time and converted with DST. SESSIONS is a COARSE UTC
+ *  OVERLAY inherited from the original app, NOT transcript-anchored exchange hours.
+ *  Its quality is consulted only outside every killzone; active/open/next session
+ *  names are approximate context, never an entry window. Calendar/day filters stay
+ *  UTC to match candle timestamps. Do not turn this overlay into invented course ET
+ *  hours: the transcript gives killzone hours, not five full session schedules.
+ *
  *  Everything here is deterministic and side-effect free: same candles in, same
  *  analysis out. No opinions on size or money — that lives in setup.js.
  */
@@ -911,6 +919,9 @@ function crt(htfCandles, ltfCandles, atr) {
 
 /* ═══════════════════════════════════════════════════════════ 9. KILLZONES */
 
+// Legacy, coarse UTC overlay — not the course's killzones or actual exchange schedules.
+// Keep these original hours; M39 makes an active SILVER_BULLETS window authoritative
+// for quality. The numerical weights in both arrays are implementation choices too.
 const SESSIONS = [
   { key: 'sydney', name: 'Sydney', start: 21, end: 6, quality: 0.3 },
   { key: 'tokyo', name: 'Tokyo / Asia', start: 0, end: 7, quality: 0.5 },
@@ -964,13 +975,53 @@ function nyMinutes(date) {
   return get('hour') * 60 + get('minute');
 }
 
-/** The same window rendered back in UTC, so the UI label is still truthful. */
-function utcLabel(date, startMins, endMins) {
-  const base = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-  // nyMinutes(base) is New York's own midnight, expressed in minutes-past-UTC-midnight.
-  const nyOffset = nyMinutes(new Date(base)) ;
-  const fmt = (m) => new Date(base + (m - nyOffset) * 60000).toISOString().slice(11, 16);
-  return `${fmt(startMins)}–${fmt(endMins)} UTC`;
+/* M129 — a midnight UTC offset is not the offset at both window boundaries.
+ * On a DST change day the old label contradicted the active window/countdown;
+ * adding a wall-clock minute difference to UTC also skipped the repeated fall hour.
+ * Resolve each New York wall-time boundary through IANA, on its own local date.
+ * A nonexistent spring 02:00 resolves forward to the first available instant (03:00),
+ * matching inWindowNY: that day's London window is shorter, not shifted to 03–06.
+ * None of the course's boundaries falls in the ambiguous fall 01:00 hour.
+ */
+const NY_LABEL_CLOCK = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+});
+const NY_WINDOW_CACHE = new Map();
+function nyWallUtc(wallMs) {
+  let guess = wallMs + 5 * 3600000, previous = null;
+  for (let i = 0; i < 4; i++) {
+    const parts = NY_LABEL_CLOCK.formatToParts(new Date(guess));
+    const get = (type) => Number((parts.find((p) => p.type === type) || {}).value);
+    const observed = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'));
+    const delta = wallMs - observed;
+    if (delta === 0) return guess;
+    const next = guess + delta;
+    if (next === previous) return Math.max(guess, next); // spring gap: first valid instant
+    previous = guess;
+    guess = next;
+  }
+  return guess;
+}
+function nyWindowOn(dayMs, startMins, endMins) {
+  const key = `${dayMs}:${startMins}:${endMins}`;
+  let value = NY_WINDOW_CACHE.get(key);
+  if (!value) {
+    const start = nyWallUtc(dayMs + startMins * 60000);
+    const end = nyWallUtc(dayMs + endMins * 60000);
+    const fmt = (ms) => new Date(ms).toISOString().slice(11, 16);
+    value = { start, end, label: `${fmt(start)}–${fmt(end)} UTC` };
+    if (NY_WINDOW_CACHE.size > 2000) NY_WINDOW_CACHE.clear();
+    NY_WINDOW_CACHE.set(key, value);
+  }
+  return value;
+}
+/** Active window or its NEXT occurrence — label and countdown refer to the same date. */
+function nyWindow(date, startMins, endMins) {
+  const ms = date.getTime();
+  const day = Date.parse(nyWhen(ms).key + 'T00:00:00Z');
+  const current = nyWindowOn(day, startMins, endMins);
+  return ms < current.end ? current : nyWindowOn(day + 86400000, startMins, endMins);
 }
 
 /* ------------------------------------------------------------- M26 windows
@@ -1053,18 +1104,28 @@ function sessionState(date = new Date()) {
   const inWindow = (s, e) => (e > s ? mins >= s && mins < e : mins >= s || mins < e);
   const sessions = SESSIONS.map((s) => ({ ...s, active: inWindow(s.start * 60, s.end * 60), window: `${String(s.start).padStart(2, '0')}:00–${String(s.end).padStart(2, '0')}:00 UTC` }));
   const active = sessions.filter((s) => s.active);
-  const open = sessions[0];
-  const nextIdx = (sessions.findIndex((s) => s.active) + 1) % sessions.length;
+  // M128 — the old `sessions[0]` named Sydney at every hour, and incrementing
+  // the first active array index could name an ALREADY OPEN overlapping session
+  // as "next". These labels describe the coarse UTC overlay, not the killzones.
+  const open = active[0] || null;
+  const next = sessions.map((s) => ({ session: s,
+    // At the exact start it is open now; the next occurrence is tomorrow.
+    minutes: ((s.start * 60 - mins + 1440) % 1440) || 1440,
+  })).sort((a, b) => a.minutes - b.minutes)[0];
   const nyMins = nyMinutes(date);
   const inWindowNY = (s, e) => (e > s ? nyMins >= s && nyMins < e : nyMins >= s || nyMins < e);
   const bullets = SILVER_BULLETS.map((b) => {
     const s = b.startH * 60 + b.startM, e = b.endH * 60 + b.endM;
     const open_ = inWindowNY(s, e);
-    const until = (e - nyMins + 1440) % 1440;
+    const timing = nyWindow(date, s, e);
+    const until = Math.ceil((timing.end - date.getTime()) / 60000);
+    const toStart = Math.ceil((timing.start - date.getTime()) / 60000);
     const et = `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} ET`;
-    return { key: b.key, name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted, note: b.note || null };
+    return { key: b.key, name: b.name, window: `${et} (${timing.label})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : toStart, quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted, note: b.note || null };
   });
   const activeBullet = bullets.find((b) => b.active) || null;
+  const nextBullet = bullets.filter((b) => b.minutes_to_start > 0)
+    .sort((a, b) => a.minutes_to_start - b.minutes_to_start)[0] || null;
   return {
     now_utc: date.toISOString().slice(0, 16) + 'Z',
     // M10 — Ep 19's stand-down is a CALENDAR rule, so the calendar has to be visible to
@@ -1085,10 +1146,13 @@ function sessionState(date = new Date()) {
      * row complains of: "its hours are reported as the highest-quality window". Outside
      * every killzone the session table still governs, as before. */
     quality: activeBullet ? activeBullet.quality : (active.length ? Math.max(...active.map((s) => s.quality)) : 0.3),
-    best_time: !activeBullet ? `Next high-quality window: ${bullets.filter((b) => b.minutes_to_start > 0).sort((a, b) => a.minutes_to_start - b.minutes_to_start)[0].name}` : null,
-    note: activeBullet ? (activeBullet.note || `${activeBullet.name} — highest-probability window for the entry models.`) : 'Outside the killzones: entries here have materially lower odds. Wait for London (07:00) or the NY overlap (12:00 UTC).',
-    open_session: open.name,
-    next_session: { name: sessions[nextIdx].name, starts: sessions[nextIdx].window },
+    best_time: !activeBullet && nextBullet ? `Next high-quality window: ${nextBullet.name}` : null,
+    // M126 / M37 follow-up: the last hardcoded 07:00/12:00 UTC hint contradicted the
+    // DST-aware windows. Render the next bullet's own label, never a second clock.
+    note: activeBullet ? (activeBullet.note || `${activeBullet.name} — highest-probability window for the entry models.`)
+      : `Outside the killzones: wait for ${nextBullet ? `${nextBullet.name} ${nextBullet.window}` : 'the next trading window'}.`,
+    open_session: open ? open.name : null,
+    next_session: next ? { name: next.session.name, starts: next.session.window } : null,
   };
 }
 

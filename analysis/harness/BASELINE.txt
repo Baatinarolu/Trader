@@ -2667,3 +2667,125 @@ Source changes in this milestone: setup.js (phase veto + verdict consumption), n
 The cumulative pristine-zip source patch is 28 files, applies cleanly to a second pristine
 unzip and reproduces the app with 0 round-trip diff lines. Progress: 59 done / 2 partial /
 66 todo / 0 no-action / 127 total.
+
+
+==============================================================================
+M34 — remove the unfetched fourth timeframe (Ep 11)
+2026-10-10. Control b7ec114. Independent of the session metadata changes below.
+==============================================================================
+Removed nine STACK.zone columns, layersFor.zone_tf and unused build({zoneSeries}).
+Location stays the actual medium/trading timeframe. Recommended spoken sets remain
+4h/15m/5m (day), 1h/5m/1m (scalp). His personal four-chart set is explicitly optional,
+not the recommendation; it was not invented as a new feature here.
+probe-m34-three-layer-stack.js: 12/0 with TJ_CONTROL=b7ec114;
+parent negative: 8 passed / 3 failed.
+110 full TD.build outputs are JSON-identical before/after: all nine supported stacks,
+108 synthetic builds plus hand-built CONFIRMED long and short. The first 108 all said
+WAIT (independent price histories), so the directional fixtures were added before
+making the neutrality claim. Direction values 0,+1,-1. 0 output differences.
+Standard topdown-test adds two dead-config guards (66 -> 68). M20's annotation-only
+resolution is now superseded by removal, not by an unrequested fourth-timeframe feature.
+
+==============================================================================
+M126 — coarse UTC overlay provenance (Ep 12)
+2026-10-10. Control b7ec114. Choose the row's documented option (b).
+==============================================================================
+The transcript supplies FOUR New York-local killzones, not five full-session ET
+schedules. SESSIONS retains all original UTC hours/weights and is explicitly labelled
+in the module header and declaration as a COARSE UTC OVERLAY, not transcript-anchored
+exchange hours. Open killzones override its quality (M39); it supplies fallback
+quality only outside every window. Active/open/next overlay names are context, never
+an alternative entry gate. Calendar/day filtering stays UTC (M10).
+The final stale inactive hint, London07/NY12UTC, is replaced by the next real bullet's
+own ET/UTC window label. No second clock copy and no invented full-session schedule.
+probe-m126-m128-session-overlay.js: 19/0 with TJ_CONTROL=b7ec114;
+parent negative: 4 passed / 9 failed. M126 and M128 have distinct sections/projections.
+384 quarter-hour reads on January14, July15, March8, November1 (2026):
+  quality-value differences                    0
+  coarse table/activity differences            0
+  UTC day/month differences                    0
+  killzone gate/active/pair differences         0
+  corrected inactive note text               196
+This is a provenance/display fix, not a claim legacy overlay hours are real exchange
+sessions. It deliberately does not shift that overlay into an invented ET schedule.
+
+==============================================================================
+M128 — open/next names under the overlay's OWN UTC rules
+2026-10-10. Control b7ec114. Separate metadata defect discovered during M126.
+==============================================================================
+open_session was always Sydney (sessions[0]), including London/NY hours when closed.
+next_session incremented the first active array index; during Sydney/Tokyo overlap
+it called an already-open Tokyo "next". Neither follows even the legacy UTC table.
+Fix: first actually active session (or null), with the full active list preserving
+overlaps; earliest strictly future positive UTC opening distance for next. Existing
+name/starts response shape remains; hours and quality are unchanged.
+In the SAME 384-read sample above: 336 incorrect open/next pairs BEFORE; 0 AFTER;
+exactly 336 label pairs change. Quality, table activity, UTC calendar and killzone
+activation/pairs have zero differences. Pins UTC midnight, overlap and day rollover.
+No trade selection or return claim.
+
+==============================================================================
+M129 — UTC labels/checkpoints at DST boundaries (Ep 12)
+2026-10-10. Control b7ec114. Separate from provenance and coarse overlay names.
+==============================================================================
+The existing activation gate was DST-aware; its output clock still was not:
+  Mar8 07:30Z London label ended10:00Z, countdown ended09:00Z
+  Nov1 07:30Z London label ended09:00Z, countdown ended10:00Z
+  Nov1 05:30Z (FIRST 01:30ET): London checkpoint06:00Z, actual opening07:00Z
+The label used UTC-midnight's offset for both endpoints. A NY wall-clock minute delta
+was added directly to UTC, skipping the repeated fall hour. Tomorrow's windows used
+today's offset; request seconds also leaked into minute-aligned opening timestamps.
+
+Each NY-local start/end is now individually resolved through IANA on its local date,
+memoised per date/window. UTC label and countdown reference the same active or NEXT
+occurrence, not yesterday's window. Spring's nonexistent02:00 resolves FORWARD to
+03:00, matching the existing NY activation gate (London on that date is07:00-09:00Z,
+shorter rather than a shifted three-hour window). None of the course's boundaries is
+in the ambiguous fall01:00 hour. The New-York-minute activation test itself is unchanged.
+Now.nextKillzone floors the request to the minute before adding the corrected countdown;
+a request at06:59:59.999Z cannot shift a07:00 opening to07:00:59.999.
+
+probe-m129-dst-boundaries.js: 44/0; parent negative30 passed /14 failed.
+Covers normal EST/EDT, both change dates, both occurrences of the repeated hour,
+exact opening/closing seconds, tomorrow's offset, Asia midnight and sub-minute input.
+The initial probe incorrectly expected GLOBAL nextKillzone to return London on an
+evening when Asia opens first. Fixed to test the chosen London countdown separately,
+and then pin the earliest next Asia occurrence. No clock rule was changed to fit it.
+Across1536 bullet reads (384 times x4): 732 corrected UTC labels and144 corrected
+countdowns, with ZERO differences in window activation, pairs, quality or UTC calendar.
+Standard Now suite adds two timestamp regression checks (41 ->43).
+
+Regression after ALL these changes:
+  --seeds60 --bars1500 --window300
+  n=24 win=29.2% exp=+0.7908R PF2.33; A+ n11 -0.0326R, A n13 +1.4875R
+  FULL output matches the pre-metadata M3 run exactly after normalizing ONLY runtime.
+  0 textual differences in summary AND per-seed output. Below30, regression only;
+  no performance claim. These fixes affect displayed configuration/clock metadata,
+  not trade gates or risk/targets, and the unchanged numbers are expected.
+
+Final suites after restart: api121/0, bots206/0, chart36/0, now43/0, topdown68/0.
+Smoke:21/21 views OK,0 UI-style failures,0 console errors; jsdom canvas limitation only.
+Fleet: m34 12/0, m126-m128 19/0, m129 44/0, m3 36/0, m12721/0, m26 49/0,
+ m37 20/0, m38-m40 51/0, m39 34/0, m41 27/0, m57 6/0, m69 16/0, groupa18/18,
+ groupb10/10, m36 17/17, batch0 11/0, m58 23/0, m21 10/0, m124 5/0, m10230/0,
+ engine51/0, candles-yahoo62/0, m50 44/0, m52 33/0, reverify67/0, m11 25/0.
+Two attribution checks during the fleet:
+  - M127 must use its PRE-fix control29fa456, not this milestone's parentb7ec114,
+    which already includes M127. Using the latter correctly failed the assertion
+    that the parent exhibits phantom directions; rerun against29fa456 is21/0,
+    306 ->0 phantom directions, candidate-array diffs0/920.
+  - M41's unchanged Asia-range cost check was475ms under a concurrently running
+    harness/diagnostic and247ms on the narrowed rerun (budget250ms unchanged).
+    Recorded as load-sensitive, not silently weakened or attributed to new trade logic.
+
+M33 remains OPEN and its old execution evidence is corrected, not hidden:
+  Current probe-ep11-countertrend.js reports ranging/ranging, not the claimed
+  bullish/bearish fixture. 0 sole-blocker cases in400 seeds. Its old positive examples
+  checked grade-derived setup_action, not candidate.ok. M127 makes that false proxy
+  visible. None of this proves the sanctioned counter-HTF pullback works; the fixture
+  must be rebuilt before adding an execution-direction path. Ep15 confirms that
+  daily bias is a HTF plan with invalidation, NOT a license for MTF trend labels to
+  reset it. Counter-HTF pullback execution and stored daily bias are different roles.
+
+Progress:63 done /2 partial /64 todo /0 no-action /129 total. Cumulative source patch:
+29 files, clean application to a second pristine unzip, 0 round-trip diff lines.

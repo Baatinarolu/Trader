@@ -179,6 +179,10 @@ const S = series({ nowMs: NOW });
 /* ------------------------------------------------------------ 7. pure helpers */
 {
   ok(Now.nextBarClose(Date.UTC(2026, 9, 6, 14, 7), '15m') === Date.UTC(2026, 9, 6, 14, 15), 'nextBarClose rounds up to the 15m boundary');
+  ok(Now.nextKillzone(Date.parse('2026-11-01T05:30:00Z')).at === Date.parse('2026-11-01T07:00:00Z'),
+    'nextKillzone includes the repeated fall DST hour');
+  ok(Now.nextKillzone(Date.parse('2026-11-01T06:59:59.999Z')).at === Date.parse('2026-11-01T07:00:00Z'),
+    'request seconds never shift the killzone opening checkpoint');
   ok(Now.nextBarClose(Date.UTC(2026, 9, 6, 14, 7), '1h') === Date.UTC(2026, 9, 6, 15, 0), 'nextBarClose rounds up to the hourly boundary');
   ok((Now.killzoneAt(Date.UTC(2026, 9, 6, 13, 0)) || {}).key === 'ny_am', 'killzoneAt knows the New York AM window');
   ok(Now.killzoneAt(Date.UTC(2026, 9, 6, 20, 0)) === null, 'outside every killzone is reported as outside');
