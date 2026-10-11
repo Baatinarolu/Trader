@@ -1,6 +1,91 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M68 continuation state — 2026-10-11
+## Current M54/M77 continuation state — 2026-10-11
+
+- Fixed branch **arena/762c0295-trader**, `/home/user/Trader`. M54/M77 complete in
+  this milestone; read git for exact commit/push state. Control/base **c326651**.
+  Ledger **132:71 done/2 partial/59 todo/0 no-action**. Only gen-progress.py writes
+  PROGRESS; all132 IDs partition into eight groups. Partial rows are **M30/M103**;
+  M125 is TODO (older continuation prose calling it partial was wrong).
+- Actual opposing unmitigated/unbreached OB + remaining unfilled-FVG edges join
+  liquidity/structure. Nearest BEFORE RR; sub0.9R walls stay visible; subfloor
+  refuses, no farther weak/measured rescue. Weak label/exact-price tie preserved.
+  Default single target, no fictional two-stage verdict; optional old ladder remains.
+- Physical source TF differs from PDH/PWL period TF. Named actual entry TF else
+  analysis.tf; ordinary same/one-above legal band rejects missing/mismatched/outside
+  source. **1m→5m course-explicit**;3m→5m,5m→15m,15m/30m→1h,1h→4h,4h→1d,1d→1w,
+  1w same-only are documented engineering adjacency. Real sources only; no extra
+  loader or guessed lower catalogue. Availability/window/forming-bar concerns are
+  not universally solved here.
+- Ordinary CRT range may compete ONLY in a legal physical band; all HTF tables/
+  Momentum crtView are projection-only. **M33 alone** bounded_counter_htf /
+  m33_internal_pullback: ONE prescribed HTF zone, unchanged narrative/key and half
+  ordinary same-grade/range risk. Missing prescribed target refuses without crash
+  or fallback. M68 actual causal entry/stop, M70 extreme/fuel policies stay intact.
+- Now/chart/scan/Copy/eligible Save use candidate authority, not projected safer/
+  aggressive prices. Honest target TF/kind; stored provenance in existing note,
+  not a new target column. New geometry's live/refined legacy odds withheld,
+  supplied99% cannot enter a revised signal/Save plan. Browser also guards stale/
+  mixed payloads, Mechanics teaser, empty frontier and prediction-disabled reads.
+  Browser gets prediction from /analyse, NOT a separate /predict fetch; earlier
+  investigation assumption was corrected. Standalone predictor research isn't
+  new-strategy calibration.
+- RR floor uses min(working,published exact geometry), tolerance1e−9R. True1.999R
+  displaying2.00R refuses. Broad M125 outlier-tail finding remains open.
+- Separately measured control→M54 additions→complete: bare n24/29.2%/+0.7908R/PF2.33
+  →n21/23.8%/−0.2090R/PF0.69→n30/23.3%/−0.1568R/PF0.78. Real15 n10/40%/+0.7250R/PF2.45
+  →n7/42.9%/+0.7857R/PF2.38→n8/25%/+0.2500R/PF1.40. Complete-parent **−0.9476R bare/
+  −0.4750R real**. Negative retained; differing cohorts/cooldown, no optimization.
+- M77 alignment/exact-RR/final defensive stage: entire printed outputs identical
+  to complete M54 for all4 profiles except numeric runtime. Native13,750 reads/
+  known1006/ready0/outcomes0; real-native4761/known677/ready0/outcomes0. ZERO model
+  outcome/calibration sample. Addition-only native profiles were NOT run.
+- Final feature checks **M54 54/0 vs21/33**, actual OHLC targets **6/0 vs3/3**;
+  M77core **87/0** vs M54 16/71/parent14/73; consumers **41/0 vs4/37**. **188/0**.
+  Detector1152 reads/6727 OB/8986 FVG candidates,73/107 respective selections,
+  0 lifecycle/source/nearest errors. No injected detector facts. Other fixtures
+  explicitly supply structure/CRT REPORT, not native HTF discovery or market edge.
+- Final safety corrections independently tested: core82/5→87/0; consumers36/3→39/0
+  then41/0. Final headline correction52/2→54/0 with216 comparisons (200 actual SMC
+  reads+16 named contexts),0 full-candidate/0 non-headline differences,9 headlines.
+  `probe-m54-summary-invariance.js` reconstructs the immutable before source.
+- Latest geometry/consumer regressions: Now46/0,TD77/0,chart36/0,API121/0,M33 67/0,
+  M68entry62/0,M70 30/0,M21 11/0,reverify67/0 (17198 single/0 multi). Other same-pass
+  checks:M68storage46/0 WITHOUT optional migration,detector16/0,M26 49/0,M34 11/0/
+  110 neutral isolated builds,M12719/0. Do not inflate counts to older runs.
+- Matching current/parent bots **204/2**,19 fills/0 parity mismatches, same minimum20
+  sample floor failures. Thresholds untouched. Original smokecurrent19/21 vsparent
+  21/21 had current-only live-card failures. Explicit withholding requires marker+
+  text+ZERO live cards; retain nonempty assertions. Nextcurrent21/22 revealed a
+  hardcoded full-default test: existing n≥10 policy falls back to all on thin full.
+  Final current **22/22 (full n7→all)** vs parent with SAME revised test **21/21
+  (full n12→full)**; current optional view-switch adds one check. Both0 console/
+  style errors. Segments72-char is informational on BOTH, not counted. Negative
+  logs/scaffold errors/DB cleanup mismatch/missing-offline error preserved.
+- Durable logs/data provenance/hashes: **analysis/evidence/m54-m77/**. Downloaded
+  4 native datasets/transcripts remain ignored; re-fetch using existing scripts.
+  Stage patches+core/tree hashes **analysis/patches/M54-M77-STAGES.json**. Complete
+  measured UI briefly overwritten AFTER its measurement, then restored from
+  immutable alignment snapshot; measured core unchanged. Defensive-measured and
+  final patches distinguish last headline-only correction. Rebuild generator uses
+  fresh scratch trees/durable patches, not already-patched `/tmp` controls.
+- Cumulative pristine source patch/fixed ZIP clean-apply/byte-roundtrip0, no actual
+  env/credentials/.git/dependencies/data included. See current manifest/report for
+  exact byte/SHA counts. Live preview3000 is labelled OFFLINE synthetic/local SQLite/
+  scheduler disabled; parent control3001 stopped. Production401/providers/Turso/
+  Vercel/auth/cron and chart pan/zoom pixels remain unvalidated. No secrets rotated.
+- **NEXT M76/M75**: protected levels THEN nearer valid stop/invalidation geometry;
+  separate annotation and stop measurements. Preserve causal named entry, buffer,
+  actual sweep/fuel, M33 half-risk, nearest targets/no-RR-rescue and all vetoes.
+  **M78 is internal-structure entry aggression, NOT stop buffer.** Keep all59 todo
+  plus2 partial visible. Course30 sample floor/M103 deliberate≥5 gate unchanged;
+  do not pursue70% through small targets. User skipped clarifications: proceed on
+  documented judgment, report exact counts.
+
+Everything below is historical. Older counts, scopes and branch/push instructions
+must not override the current state above. Do all work on the fixed session branch.
+
+## Prior M68 continuation state — historical (superseded below/above) — 2026-10-11
 
 - Fixed branch `arena/762c0295-trader`, `/home/user/Trader`. M68 complete; read git for
   commit/push state. Parent/control **663659a**. Ledger **132:69 done/2 partial/61 todo/0 no-action**.

@@ -189,13 +189,15 @@ function build(p = {}) {
     side = direction; action = direction > 0 ? 'BUY' : 'SELL';
     order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the confirmed lower zone',
       entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
+      target_tf: lv.target_tf || target.source_tf || target.tf || null,
+      target_kind: target.kind, target_policy: lv.target_policy || null,
       entry_model: allowed.entry_model, entry_tf: allowed.entry_tf, entry_evidence: allowed.entry_evidence,
       mode: td.countertrend ? 'countertrend-pullback' : 'named-entry',
       risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
       size_note: td.countertrend ? 'Counter-HTF pullback: at most half ordinary same-grade risk.' : 'Use the actual candidate risk plan; model name is not a sizing override.',
       rr_warning: null };
     headline = `${symbol}: ${allowed.entry_tf} ${allowed.entry_model} entry at ${lv.entry}, after the causal zone pullback.`
-      + (td.countertrend ? ` Bounded internal pullback; the HTF narrative is still ${td.countertrend.htf_bias > 0 ? 'bullish' : 'bearish'}.` : ' The higher-timeframe method still decides direction and target.');
+      + (td.countertrend ? ` Bounded internal pullback; the HTF narrative is still ${td.countertrend.htf_bias > 0 ? 'bullish' : 'bearish'}.` : ` HTF decides direction; the ${lv.target_tf || 'entry-aligned'} magnet defines the exit.`);
     watch = { level: lv.entry, kind: 'entry', condition: 'causal lower zone and sweep extreme must still hold',
       text: `Limit ${lv.entry}, stop ${lv.stop}, target ${target.price} (${target.rr}R).` };
     invalidate = lv.invalidation;
@@ -207,6 +209,8 @@ function build(p = {}) {
     action = direction > 0 ? 'BUY' : 'SELL';
     order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the confirmed point of interest',
       entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
+      target_tf: lv.target_tf || target.source_tf || target.tf || null,
+      target_kind: target.kind, target_policy: lv.target_policy || null,
       mode: 'countertrend-pullback', risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
       size_note: 'Counter-HTF pullback: at most half ordinary same-grade risk; the daily narrative stays intact.',
       rr_warning: null };
@@ -214,6 +218,23 @@ function build(p = {}) {
     watch = { level: lv.entry, kind: 'entry', condition: 'the confirmed POI and counter-leg stop must still hold',
       text: `Limit ${lv.entry}, stop ${lv.stop}, ONE target ${target.price} (${target.rr}R). No farther runner.` };
     invalidate = `${td.countertrend.ltf_tf} close beyond the counter-leg stop voids this execution, not the held daily bias. ${lv.invalidation}`;
+  } else if (direction && plan && allowed && allowed.ok && allowed.levels
+      && allowed.levels.target_policy && allowed.levels.target_policy.rule === 'entry_or_one_above') {
+    // M77: ordinary CRT's HTF range is narrative, not a parallel executable order.
+    // The SAME final candidate owns entry, stop, target, RR and actual risk in every consumer.
+    const lv = allowed.levels, target = lv.targets[0];
+    side = direction; action = direction > 0 ? 'BUY' : 'SELL';
+    order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the eligible entry zone',
+      entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
+      entry_tf: lv.entry_tf, target_tf: lv.target_tf, target_kind: target.kind, target_policy: lv.target_policy,
+      mode: 'entry-aligned', risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
+      size_note: Setup.methodRiskMult(td, direction) < 1
+        ? 'Counter-HTF CRT rotation: at most half ordinary same-grade risk.'
+        : 'Use the actual candidate risk plan; the HTF projection is not an alternative exit.', rr_warning: null };
+    headline = `${symbol}: ${direction > 0 ? 'long' : 'short'} at ${lv.entry}; ONE ${lv.target_tf} opposing magnet at ${target.price} (${target.rr}R).`;
+    watch = { level: lv.entry, kind: 'entry', condition: 'the entry zone and defining stop must still hold',
+      text: `Limit ${lv.entry}, stop ${lv.stop}, target ${target.price}. Do not substitute the HTF projected range edge.` };
+    invalidate = lv.invalidation;
   } else if (direction && plan) {
     side = direction;
     action = direction > 0 ? 'BUY' : 'SELL';

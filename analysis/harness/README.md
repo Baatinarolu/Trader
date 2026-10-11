@@ -7,8 +7,16 @@ M131 found HTF lookahead: the harness precomputed complete higher bars and expos
 FIRST child time. It now stores the actual last constituent (`last_t`) and requires it to be
 observed. Prior contaminated return/grade figures must not be quoted as validated performance.
 
-- Bare setup-engine regression: `--seeds 60 --bars 1500 --window 300` = **24 trades,
-  29.2%, +0.7908R, PF2.33**; **below 30**, not an edge claim and blind to topdown.
+- Current M54/M77 bare regression: `--seeds 60 --bars 1500 --window 300` = **30 trades,
+  23.3%, −0.1568R, PF0.78**. Parent c326651 was24/29.2%/+0.7908R/PF2.33. Negative
+  result retained; synthetic, not an edge claim and blind to full named topdown.
+  Real15 parent n10/+0.7250R→current n8/+0.2500R, dependent/thin. Separately measured
+  addition-only n21/−0.2090R bare,n7/+0.7857R real; complete nearest-before-RR n30/n8.
+  M77 alignment/exact-RR/defensive stage all four outputs identical to complete M54
+  except numeric runtime; last headline-only correction has216 comparisons/0
+  candidate/0 non-headline differences. Native known1006/ready0/outcomes0 and
+  real-native known677/ready0/outcomes0: no named sample/calibration.
+  See [staged report](../M54-M77-TARGETS.md) and [durable evidence](../evidence/m54-m77/README.md).
 - `--bias held` exercises the actual immutable-anchor lifecycle after M130. Changes count
   **plan resets**, including same-direction reassessment after an invalidation, not just flips.
 - `--topdown` exercises **4h narrative /15m POI /5m execution**. It generates native5m
@@ -31,7 +39,8 @@ observed. Prior contaminated return/grade figures must not be quoted as validate
   synthetic result, not an edge or a model ranking.** Preference-only is a research
   preloader, never a production relaxation:
   `node --require ./analysis/helpers/m70-preference-only.js analysis/harness/backtest.js --breakers --seeds 60 --bars 1500 --window 300`.
-  M68 causal named LTF composition and journal persistence remain open.
+  These are historical M70 numbers. M68 causal composition/persistence and
+  M54/M77 target policy have since shipped; read the current state above.
 
 M33's controlled regression fixtures validate actual order/chart/copy/storage consumers
 and unchanged daily narrative; they are **explicit structural inputs**, not historical prices

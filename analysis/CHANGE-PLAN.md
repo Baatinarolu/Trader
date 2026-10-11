@@ -1,5 +1,20 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
+## Current plan status — 2026-10-11
+
+Ledger **132 findings:71 done/2 partial/59 todo/0 no-action**; authoritative
+[MISMATCHES](MISMATCHES.md) and generated [PROGRESS](PROGRESS.md). M54/M77 real
+magnet/nearest selection/physical TF band complete, measured separately including
+negative outcomes. [Full staged record](M54-M77-TARGETS.md). Next **M76/M75** protected
+levels and nearer valid stop; **M78** concerns entry aggression, not a buffer.
+No omitted IDs, reduced RR floor, invented calibration or manufactured70% objective.
+
+## Historical initial plan — figures/scopes below are superseded
+
+The original116-row counts, pristine/no-applied claims and earlier return figures
+below document the planning history, NOT the present source or progress. Read each
+ledger row's current status and latest baseline section before acting on them.
+
 Derived mechanically from `analysis/MISMATCHES.md` (**116 rows**: S1 13, S2 39, S3 58, S4 5,
 plus 1 downgraded). Action verbs as recorded: **fix 52 · add 45 · decide 8 · patch-ready 3 ·
 other 8**.

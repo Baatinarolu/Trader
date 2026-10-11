@@ -171,8 +171,12 @@ console.log('\n=== 2b. Old CRT priority and actual counter-CRT risk consumption 
   const n = Now.build({ td, setups, series: normal.input.series, symbol: 'TEST', tf: '15m', nowMs: normal.END });
   ok('legacy counter-CRT’s promised half risk now reaches actual sizing, not just prose',
     c.risk && c.risk.method_risk_multiplier === .5 && c.risk.risk_pct === .25);
-  ok('confirmed counter-CRT keeps its original safer entry but not a full-risk flag',
-    n.order && n.order.mode === 'safer' && n.order.entry === 96.8 && n.full_risk === false);
+  // M77 deliberately replaces the parallel safer/aggressive order with the
+  // actual eligible candidate; M33's counter-CRT HALF-RISK promise must survive.
+  ok('M77 confirmed counter-CRT uses the actual candidate geometry, still at half risk',
+    n.order && n.order.mode === 'entry-aligned' && n.order.entry === c.levels.entry
+    && n.order.stop === c.levels.stop && n.order.target === c.levels.targets[0].price
+    && n.order.risk_pct === c.risk.risk_pct && n.full_risk === false);
 }
 
 console.log('\n=== 3. Actual orchestration, state, chart, scan, and signal storage ===');

@@ -1,0 +1,200 @@
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index bb998c5..0913bc0 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -40,6 +40,12 @@
+     ['signals', 'Signals'],
+   ];
+ 
++  function liveGeometryUncalibrated(d) {
++    return !!(d && ((d.topdown && d.topdown.entry_setup && d.topdown.entry_setup.applies)
++      || (d.setups && (d.setups.candidates || []).some((c) =>
++        c.levels && c.levels.target_policy && c.levels.target_policy.rule === 'entry_or_one_above'))));
++  }
++
+   const fmt = (v, dp = 4) => (v === null || v === undefined || isNaN(v)) ? '—' : Number(v).toLocaleString(undefined, { maximumFractionDigits: dp });
+   const chip = (text, cls) => h('span', { class: 'chip ' + (cls || ''), text });
+ 
+@@ -700,7 +706,7 @@
+     }
+ 
+     /* --- prediction teaser inside mechanic panel --- */
+-    if (d.prediction && d.prediction.ok) {
++    if (d.prediction && d.prediction.ok && !liveGeometryUncalibrated(d)) {
+       const p = h('div', { class: 'card' });
+       p.appendChild(h('div', { class: 'card-head', html: `<strong>Odds</strong> <span class="muted">from the historical replay</span>` }));
+       (d.prediction.summary || []).forEach((x) => p.appendChild(h('div', { class: 'bot-detail', text: '• ' + x })));
+@@ -741,7 +747,14 @@
+ 
+   function panelPredict(pane) {
+     const p = B.predict || (B.data && B.data.prediction);
+-    if (!p) { pane.appendChild(h('div', { class: 'empty', text: 'Run an analysis first (or open this tab after analysing) — prediction replays the model over history.' })); return; }
++    const uncalibrated = liveGeometryUncalibrated(B.data);
++    const withholding = () => pane.appendChild(h('div', { class: 'card bot-warn live-calibration-withheld',
++      text: 'Historical research uses different entry/target geometry. Live probabilities and refined legacy plans are withheld for the current execution until separately calibrated.' }));
++    if (!p) {
++      if (uncalibrated) withholding();
++      else pane.appendChild(h('div', { class: 'empty', text: 'Run an analysis first (or open this tab after analysing) — prediction replays the model over history.' }));
++      return;
++    }
+     if (p.ok === false) { pane.appendChild(h('div', { class: 'card', text: 'Prediction unavailable: ' + (p.error || 'unknown error') })); return; }
+ 
+     const strip = h('div', { class: 'card' });
+@@ -825,7 +838,7 @@
+      * ------------------------------------------------------------------ */
+     const views = bt.frontier_views || {};
+     const plain = bt.target_frontier || [];
+-    if (!plain.length) return;
++    if (!plain.length) { if (uncalibrated) withholding(); return; }
+     const hc = h('div', { class: 'card' });
+     hc.appendChild(h('div', { class: 'card-head', html: `<strong>Win rate is a dial, not a skill badge</strong> <span class="muted">measured on ${esc(p.symbol || (B.data && B.data.symbol) || '')} with its own costs</span>` }));
+     hc.appendChild(h('div', { class: 'bot-detail', text: `Every row below exits the whole position at that target. Two questions are separated on purpose: how often price reached the target before the stop (the mechanical hit rate) and how often the trade actually finished in profit after costs. On this market the round-trip cost is ${bt.meta && bt.meta.cost_r_median != null ? bt.meta.cost_r_median + 'R' : '—'} per trade (${bt.meta && bt.meta.cost_bps != null ? bt.meta.cost_bps + ' bp of price' : '—'}${bt.meta && bt.meta.cost_source ? ', ' + esc(bt.meta.cost_source) : ''}) — so a target smaller than the cost cannot win, however often it is touched.` }));
+@@ -885,8 +898,10 @@
+     const grid = h('div', { class: 'bot-grid' });
+     const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
+ 
+-    if (B.data && B.data.topdown && B.data.topdown.entry_setup && B.data.topdown.entry_setup.applies) {
+-      pane.appendChild(h('div', { class: 'card bot-warn', text: 'Historical research above uses legacy entry geometry. Live probabilities and refined legacy plans are withheld for the current named LTF execution until separately calibrated.' }));
++    if (uncalibrated) {
++      // M77: a stale/mixed legacy prediction payload cannot bypass the
++      // analyse-level calibration guard. Research remains labelled above.
++      withholding();
+       return;
+     }
+ 
+diff --git a/scripts/smoke-test.js b/scripts/smoke-test.js
+index 52f56ff..9649b17 100644
+--- a/scripts/smoke-test.js
++++ b/scripts/smoke-test.js
+@@ -38,6 +38,7 @@ const warnings = [];
+   vc.on('warn', (...a) => warnings.push('console.warn: ' + a.join(' ')));
+   vc.on('log', () => {});
+ 
++  let lastAnalysisPrediction = null;
+   const dom = await JSDOM.fromURL(BASE, {
+     runScripts: 'dangerously',
+     resources: new TvBlockedLoader(),
+@@ -52,6 +53,9 @@ const warnings = [];
+         if (tok) headers['x-session'] = tok;
+         return fetch(u, { ...opts, headers, duplex: 'half' }).then(async (res) => {
+           const body = await res.text();
++          if (/\/api\/bots\/analyse(?:\?|$)/.test(u)) {
++            try { lastAnalysisPrediction = JSON.parse(body).prediction || null; } catch {}
++          }
+           return {
+             ok: res.ok, status: res.status, headers: res.headers,
+             text: async () => body,
+@@ -171,15 +175,33 @@ const warnings = [];
+   if (predBtn) { predBtn.click(); await wait(5000); }
+   const predPane = window.document.querySelector('#content');
+   const predText = predPane.textContent.replace(/\s+/g, ' ');
++  // A valid refusal/calibration guard need not manufacture a live setup merely
++  // to populate these chips. Keep the nonempty checks intact; verify the explicit
++  // withheld state has ZERO live plan cards instead. Parent exercises nonempty.
++  const liveWithheld = !!predPane.querySelector('.live-calibration-withheld')
++    && predPane.querySelectorAll('.bot-prob').length === 0
++    && /Live probabilities and refined legacy plans are withheld/.test(predText);
++  // Match the real payload and its existing 10-trade default-view policy; do
++  // not demand full when the server legitimately falls back to all on a thin
++  // sample. This verifies the selected/marked chip, not just that a chip exists.
++  const frontier = (lastAnalysisPrediction && lastAnalysisPrediction.backtest) || {};
++  const fullSample = ((frontier.frontier_views || {}).full || {}).trades;
++  const expectedDefault = Number(fullSample) >= 10 ? 'full' : 'all';
++  const defaultChip = [...predPane.querySelectorAll('button.chip')].find((b) =>
++    b.textContent.startsWith(expectedDefault + ' · default (n='));
++  const defaultViewOk = frontier.default_view === expectedDefault && !!defaultChip
++    && defaultChip.classList.contains('ok')
++    && (expectedDefault !== 'full' || /View shown by default: full/.test(predText));
++  console.log(` prediction default policy: full sample=${fullSample} · expected=${expectedDefault} · payload=${frontier.default_view}`);
+   const predChecks = [
+     ['prediction: exit-frontier table with break-even column', /Exit frontier/.test(predText) && /Needs to break even/.test(predText)],
+     ['prediction: measured playlist filters table', /own filters, measured/.test(predText)],
+     ['prediction: the win-rate dial', /win rate is a dial/i.test(predText)],
+     ['prediction: five filter views offered', ['all', 'refined', 'strict', 'cost_floor', 'full'].every((k) => new RegExp(`${k}(?: · default)? \\(n=`).test(predText))],
+     ['prediction: the selected view explains itself', /every setup|video's refinement loop|refinement at once|displacement leg \+ stop|maximum-expectancy/.test(predText)],
+-    ['prediction: the measured view is the default and is marked', /full · default \(n=/.test(predText) && /View shown by default: full/.test(predText)],
+-    ['prediction: measured gate chips on live setups', predPane.querySelectorAll('.chip').length > 0 && /Stop ≥ 0\.6 ATR/.test(predText) && /Target ≥ 3R/.test(predText)],
+-    ['prediction: LTF confirmation state shown', /LTF confirmation/.test(predText)],
++    ['prediction: payload-backed default is selected/marked; thin full sample falls back to all', defaultViewOk],
++    ['prediction: measured gate chips on live setups OR explicit uncalibrated withholding', liveWithheld || (predPane.querySelectorAll('.bot-prob').length > 0 && /Stop ≥ 0\.6 ATR/.test(predText) && /Target ≥ 3R/.test(predText))],
++    ['prediction: LTF confirmation shown on live setups OR no live plans when withheld', liveWithheld || (predPane.querySelectorAll('.bot-prob').length > 0 && /LTF confirmation/.test(predText))],
+     ['prediction: refined plan is saveable when actionable', !/Save refined plan to signals/.test(predText) || /Refined plan \(/.test(predText)],
+     ['prediction: second-chance re-entry is reported', /Second-chance re-entry/.test(predText)],
+   ];
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index 9b29b76..1551487 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -500,11 +500,20 @@ function buildSetups(analysis, ctx = {}) {
+     const entryTf = useModel ? model.entry_tf : (analysis && analysis.tf) || null;
+     const scopedTargets = Targets.scopeSources([{ tf: (analysis && analysis.tf) || null, analysis },
+       ...((ctx.targetSources || (td && td.target_sources)) || [])], entryTf);
+-    const targetPolicy = counter ? { rule: 'bounded_counter_htf', state: 'known',
+-      entry_tf: entryTf, allowed_tfs: [counter.target.tf], exception: 'm33_internal_pullback',
+-      source_tfs: [counter.target.tf], rejected_sources: [] }
++    const counterTarget = counter && counter.target;
++    const counterTargetTf = counterTarget && typeof counterTarget.tf === 'string' ? counterTarget.tf : null;
++    const counterTargetKnown = !!(counterTargetTf && Targets.timeframePolicy(counterTargetTf).state === 'known'
++      && Number.isFinite(counterTarget.price) && counterTarget.price > 0);
++    const targetPolicy = counter ? { rule: 'bounded_counter_htf', state: counterTargetKnown ? 'known' : 'unknown',
++      entry_tf: entryTf, allowed_tfs: counterTargetKnown ? [counterTargetTf] : [], exception: 'm33_internal_pullback',
++      source_tfs: counterTargetKnown ? [counterTargetTf] : [], rejected_sources: [] }
+       : targetAlignment ? scopedTargets.policy : { rule: 'pre_m77_research', state: 'unscoped',
+         entry_tf: entryTf, allowed_tfs: null, exception: null };
++    const noTargetReason = counter
++      ? 'No real prescribed counter-HTF target — wait; no ordinary or farther-target fallback.'
++      : targetAlignment
++        ? 'No real opposing target on the entry timeframe or one level above — wait; the HTF projection is not an executable exit, and no measured-move or farther-target rescue is allowed.'
++        : 'No real opposing target — wait for a valid magnet; no measured-move or farther-target rescue.';
+     const entryAtr = useModel ? model.atr : atr;
+     const ladderTargets = !!ctx.ladderTargets && !counter && !boundedCRT; // a bounded pullback has ONE HTF target
+     const triggerRead = useModel ? model : counter ? counter.confirmation : null;
+@@ -658,8 +667,8 @@ function buildSetups(analysis, ctx = {}) {
+         if (rr < 0.9) continue;                       // ignore pools the entry already sits on
+         targets.push({ label: p.label, kind: p.kind, price: r4(p.price), rr: r2(rr), strength: p.strength, touches: p.touches || null });
+       }
+-      if (counter) {
+-        const target = counter.target || {};
++      if (counter && counterTargetKnown) {
++        const target = counterTarget;
+         // No 0.9R discard, measured move, weak-structure override or farther runner:
+         // keep the prescribed target even when it FAILS the floor; the veto then says so.
+         targets.push({ label: target.label || 'HTF opposing zone', kind: 'htf_order_block',
+@@ -720,7 +729,7 @@ function buildSetups(analysis, ctx = {}) {
+             ? `Partial at ${first.label} (${first.rr}R), runner to ${runner.label} at ${runner.price} = ${runner.rr}R`
+             : `One target: ${first.label} at ${first.price} = ${first.rr}R — pick one and manage one position.`)
+           : first ? `The nearest selected magnet (${first.label}, ${first.price}) is only ${first.rr}R away — refuse the idea, not substitute a farther target.`
+-            : 'No real opposing magnet beyond entry — wait, do not invent a measured-move target.');
++            : noTargetReason);
+ 
+       // M51 - Ep 15 step 4: "Take profit, JUST PICK ONE TARGET... they mark 10 different
+       // targets... THAT'S NOT HOW YOU DO IT... you're going to PANIC and you're going to MANAGE
+@@ -798,7 +807,7 @@ function buildSetups(analysis, ctx = {}) {
+       levels = {
+         target_policy: targetPolicy, target_tf: ladder[0] ? ladder[0].source_tf || ladder[0].tf || null : null,
+         entry_tf: entryTf, stop_tf: entryTf,
+-        ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counter.target.tf } : {}),
++        ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counterTargetKnown ? counterTargetTf : null } : {}),
+         ...(useModel ? { entry_model: model.entry_model, entry_tf: model.entry_tf,
+           stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: Entry.evidence(model),
+           ...(boundedCRT ? { target_tf: boundedCRT.tf } : {}) } : {}),
+@@ -911,7 +920,7 @@ function buildSetups(analysis, ctx = {}) {
+     if (levels && ((floorRR > 0 && floorRR + 1e-9 < minRR) || ((counter || boundedCRT || targetMagnets || targetAlignment) && !(floorRR + 1e-9 >= minRR)))) {
+       vetoes.push(levels.targets.length
+         ? `Risk:reward ${Math.round(floorRR * 10000) / 10000}R (unrounded geometry) is below the ${minRR}R floor — passing on the trade.`
+-        : 'No real opposing target — wait for a valid magnet; no measured-move or farther-target rescue.');
++        : noTargetReason);
+     }
+     if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
+     if (blackout) vetoes.push('High-impact news inside the window.');
+@@ -1140,7 +1149,9 @@ function buildSetups(analysis, ctx = {}) {
+   } else {
+     const t1 = best.levels && best.levels.targets && best.levels.targets[0] ? best.levels.targets[0] : null;
+     const headline = best.levels
+-      ? `${best.grade} ${best.side} setup — partial ${best.levels.rr_primary}R at ${t1 ? t1.label : 'the first pool'}, runner to ${best.levels.rr_final}R`
++      ? best.levels.targets.length === 1
++        ? `${best.grade} ${best.side} setup — one target ${best.levels.rr_primary}R at ${t1.label}; manage one position`
++        : `${best.grade} ${best.side} setup — partial ${best.levels.rr_primary}R at ${t1 ? t1.label : 'the first pool'}, runner to ${best.levels.rr_final}R`
+       : `${best.grade} ${best.side} setup`;
+     const methodOk = !td ? null : (td.direction !== 0 && td.direction === best.dir);
+     verdict = {

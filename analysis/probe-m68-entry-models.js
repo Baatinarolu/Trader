@@ -98,11 +98,13 @@ for(const [name,mutate]of guards){const f=fresh(-1,name.includes('flip')?'flip':
  names.input.triggerSeries.smc.order_blocks[0].structure_causes[0].shift.type='non-taxonomy physical event';
  ok('type names remain report-only, not eligibility gates',read(names).c.ok);
  const ordinary=read(f);ordinary.td.countertrend=null;ordinary.td.crt_plan={tf:'4h',aggressive:{entry:94,stop:98,target:f.target},safer:{entry:95,stop:98,target:f.target}};
- const s=SU.buildSetups(f.input.series.smc,{price:96.5,bias:-1,topdown:ordinary.td,balance:10000,riskPct:.5});
+ // Isolate M68's historical CRT geometry guarantee. M77 now applies ordinary
+ // entry-aligned exits; its separate probe checks the modern target authority.
+ const s=SU.buildSetups(f.input.series.smc,{price:96.5,bias:-1,topdown:ordinary.td,balance:10000,riskPct:.5,targetAlignment:false});
  const c=s.candidates.find(x=>x.dir===-1),n=Now.build({td:ordinary.td,setups:s,series:f.input.series,symbol:'TEST',tf:'15m',nowMs:f.END});
  ok('a parallel CRT scenario cannot override the named LTF entry/stop',c.ok&&n.order?.entry===96.55&&n.order.stop===c.levels.stop&&n.order.target===f.target);
  ordinary.td.crt_plan.aggressive.target=96.4;
- const tiny=SU.buildSetups(f.input.series.smc,{price:96.5,bias:-1,topdown:ordinary.td,minRR:2}).candidates.find(x=>x.dir===-1);
+ const tiny=SU.buildSetups(f.input.series.smc,{price:96.5,bias:-1,topdown:ordinary.td,minRR:2,targetAlignment:false}).candidates.find(x=>x.dir===-1);
  ok('the ORIGINAL target below RR floor refuses; no farther replacement',!tiny.ok&&tiny.levels?.targets.length===1&&tiny.levels.targets[0].price===96.4);
 }
 console.log(`\nM68 entries: ${pass} passed / ${fail} failed`);process.exitCode=fail?1:0;

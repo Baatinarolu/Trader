@@ -1,8 +1,8 @@
-diff --git a/tradejournal/.vercelignore b/tradejournal/.vercelignore
+diff --git a/.vercelignore b/.vercelignore
 new file mode 100644
 index 0000000..7b4fa49
 --- /dev/null
-+++ b/tradejournal/.vercelignore
++++ b/.vercelignore
 @@ -0,0 +1,12 @@
 +# Not needed at runtime, and uploading it costs build time and deploy size.
 +#
@@ -16,11 +16,11 @@ index 0000000..7b4fa49
 +data/
 +.vercel/
 +*.log
-diff --git a/tradejournal/DEPLOY.md b/tradejournal/DEPLOY.md
+diff --git a/DEPLOY.md b/DEPLOY.md
 new file mode 100644
 index 0000000..bd0e991
 --- /dev/null
-+++ b/tradejournal/DEPLOY.md
++++ b/DEPLOY.md
 @@ -0,0 +1,292 @@
 +# Deploying TradeJournal Pro to Vercel
 +
@@ -314,10 +314,10 @@ index 0000000..bd0e991
 +Whichever way it deploys, `npm run test:vercel` must still report the shell guarantees —
 +no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
 +Those four are what distinguish a working deploy from one that merely builds.
-diff --git a/tradejournal/public/css/app.css b/tradejournal/public/css/app.css
+diff --git a/public/css/app.css b/public/css/app.css
 index 34cc0ff..39a6d52 100644
---- a/tradejournal/public/css/app.css
-+++ b/tradejournal/public/css/app.css
+--- a/public/css/app.css
++++ b/public/css/app.css
 @@ -431,7 +431,11 @@ fieldset,legend{border-color:var(--border)}
    font:inherit;font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:2px;cursor:pointer}
  .chart-tog:hover,.chart-btn:hover{color:var(--text);border-color:var(--border-strong)}
@@ -331,10 +331,10 @@ index 34cc0ff..39a6d52 100644
  .chart-plot{position:relative;width:100%}
  .chart-plot canvas{display:block;width:100%;cursor:crosshair}
  .chart-empty{padding:18px;color:var(--steel);font-family:var(--mono);font-size:.72rem}
-diff --git a/tradejournal/public/js/chart.js b/tradejournal/public/js/chart.js
+diff --git a/public/js/chart.js b/public/js/chart.js
 index 8e16034..ed4e333 100644
---- a/tradejournal/public/js/chart.js
-+++ b/tradejournal/public/js/chart.js
+--- a/public/js/chart.js
++++ b/public/js/chart.js
 @@ -21,11 +21,17 @@
    'use strict';
  
@@ -470,25 +470,27 @@ index 8e16034..ed4e333 100644
  
      // the plot box is often laid out after the first paint; observe it
      if (global.ResizeObserver) {
-diff --git a/tradejournal/public/js/tv.js b/tradejournal/public/js/tv.js
-index 4ca4e5e..2f7ce9d 100644
---- a/tradejournal/public/js/tv.js
-+++ b/tradejournal/public/js/tv.js
-@@ -125,7 +125,9 @@
+diff --git a/public/js/tv.js b/public/js/tv.js
+index 4ca4e5e..8ea7cc9 100644
+--- a/public/js/tv.js
++++ b/public/js/tv.js
+@@ -124,8 +124,10 @@
+     planText(symbol, tf, plan) {
        if (!plan) return '';
        const lv = plan.levels || plan;
-       const targets = (lv.targets || []).map((t) => `${t.label || t.role || 'T'} ${Number(t.price).toFixed(4)}`).join(' → ');
+-      const targets = (lv.targets || []).map((t) => `${t.label || t.role || 'T'} ${Number(t.price).toFixed(4)}`).join(' → ');
 -      return `${plan.action} ${symbol} ${tf} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
++      const targets = (lv.targets || []).map((t) => `${t.label || t.role || 'T'} ${Number(t.price).toFixed(4)}${t.source_tf || t.tf || lv.target_tf ? ' [' + (t.source_tf || t.tf || lv.target_tf) + ']' : ''}`).join(' → ');
 +      const model = plan.entry_model || lv.entry_model;
 +      const execution = plan.entry_tf || lv.entry_tf;
 +      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
      },
  
      /**
-diff --git a/tradejournal/public/js/views/analytics.js b/tradejournal/public/js/views/analytics.js
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
 index a3eb318..a5dc09b 100644
---- a/tradejournal/public/js/views/analytics.js
-+++ b/tradejournal/public/js/views/analytics.js
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
 @@ -23,6 +23,7 @@
            const w = U.h('div', { class: 'grid' });
            const cards = [
@@ -514,10 +516,10 @@ index a3eb318..a5dc09b 100644
                <div class="table-wrap" style="max-height:300px"><table><thead><tr><th>Group</th><th class="num">n</th><th class="num">Win %</th><th class="num">Exp.</th><th class="num">PF</th><th class="num">Total R</th><th class="num">Net</th><th style="width:100px"></th></tr></thead>
                <tbody>${rows.sort((a, b) => b.net_pnl - a.net_pnl).map((r) => `<tr><td>${U.esc(r.key)}</td><td class="num">${r.trades}</td><td class="num">${U.pct(r.win_rate, 0)}</td>
                  <td class="num ${U.cls(r.expectancy_r)}">${U.signed(r.expectancy_r, 2)}R</td><td class="num">${r.profit_factor === null ? '∞' : U.num(r.profit_factor, 2)}</td>
-diff --git a/tradejournal/public/js/views/bots.js b/tradejournal/public/js/views/bots.js
-index 2222ac3..c655462 100644
---- a/tradejournal/public/js/views/bots.js
-+++ b/tradejournal/public/js/views/bots.js
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 2222ac3..0913bc0 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
 @@ -13,6 +13,11 @@
      prediction: true,
      minRR: Number(((global.Store.user || {}).settings || {}).min_rr) > 0 ? Number(global.Store.user.settings.min_rr) : 1,
@@ -530,7 +532,20 @@ index 2222ac3..c655462 100644
      data: null, predict: null, scan: null, correction: null, signals: null, chart: null,
      scanList: ['EURUSD', 'GBPUSD', 'XAUUSD', 'BTCUSDT', 'ETHUSDT', 'ES', 'NAS100', 'US30'],
      busy: '', error: '', updated: null,
-@@ -95,7 +100,11 @@
+@@ -35,6 +40,12 @@
+     ['signals', 'Signals'],
+   ];
+ 
++  function liveGeometryUncalibrated(d) {
++    return !!(d && ((d.topdown && d.topdown.entry_setup && d.topdown.entry_setup.applies)
++      || (d.setups && (d.setups.candidates || []).some((c) =>
++        c.levels && c.levels.target_policy && c.levels.target_policy.rule === 'entry_or_one_above'))));
++  }
++
+   const fmt = (v, dp = 4) => (v === null || v === undefined || isNaN(v)) ? '—' : Number(v).toLocaleString(undefined, { maximumFractionDigits: dp });
+   const chip = (text, cls) => h('span', { class: 'chip ' + (cls || ''), text });
+ 
+@@ -95,7 +106,11 @@
        sizeRow.appendChild(b);
      });
      sizeRow.appendChild(h('span', { class: 'tiny muted', style: 'margin-left:auto',
@@ -543,7 +558,7 @@ index 2222ac3..c655462 100644
      wrap.appendChild(sizeRow);
      return wrap;
    }
-@@ -141,6 +150,20 @@
+@@ -141,6 +156,20 @@
      symbols.forEach((s) => dl.appendChild(h('option', { value: s })));
      const tfSel = h('select', { class: 'input', style: 'max-width:110px' });
      tfs.forEach((t) => tfSel.appendChild(h('option', { value: t, text: t, selected: t === B.tf ? 'selected' : null })));
@@ -564,7 +579,7 @@ index 2222ac3..c655462 100644
      const predChk = h('label', { class: 'row gap-4 muted', style: 'align-items:center' });
      const predBox = h('input', { type: 'checkbox', checked: B.prediction ? 'checked' : null });
      predChk.appendChild(predBox); predChk.appendChild(document.createTextNode('prediction'));
-@@ -157,9 +180,25 @@
+@@ -157,9 +186,25 @@
        global.App.go('market');
      });
      const levelsBtn = h('button', { class: 'btn ghost sm', text: 'Copy plan', title: 'Copy entry / stop / targets as text — handy for a TradingView alert' });
@@ -590,7 +605,7 @@ index 2222ac3..c655462 100644
      predBox.addEventListener('change', () => { B.prediction = predBox.checked; });
      runBtn.addEventListener('click', async () => {
        B.symbol = symInput.value.trim().toUpperCase();
-@@ -184,11 +223,16 @@
+@@ -184,11 +229,16 @@
      });
  
      levelsBtn.addEventListener('click', () => {
@@ -611,7 +626,7 @@ index 2222ac3..c655462 100644
      const wrap = h('div', { class: 'card' });
      wrap.appendChild(row);
      wrap.appendChild(dl);
-@@ -201,7 +245,7 @@
+@@ -201,7 +251,7 @@
          line.appendChild(h('span', {
            class: 'chip ' + (hl.method_blocked ? 'warn' : 'pos'),
            text: `method ${hl.method_status}${hl.method_direction ? (hl.method_direction > 0 ? ' · long' : ' · short') : ''}`,
@@ -620,7 +635,7 @@ index 2222ac3..c655462 100644
          }));
        }
        line.appendChild(h('span', { class: 'chip', text: `mechanics ${hl.mechanics}` }));
-@@ -255,7 +299,7 @@
+@@ -255,7 +305,7 @@
        box.appendChild(h('div', { class: 'muted-2 td-layer-note', text: lay.role_note || '' }));
        if (key === 'bias') {
          box.appendChild(h('div', { class: 'kv', html: `<span>structure</span><b>${esc(lay.structure || 'ranging')}</b>` }));
@@ -629,7 +644,7 @@ index 2222ac3..c655462 100644
          if (lay.range) box.appendChild(h('div', { class: 'kv', html: `<span>range</span><b>${fmt(lay.range.low, 5)} – ${fmt(lay.range.high, 5)}</b>` }));
          if (lay.right_candle) {
            box.appendChild(h('div', { class: 'kv', html: `<span>right candle</span><b>${esc(lay.right_candle.level.label)} ${fmt(lay.right_candle.level.price, 5)}</b>` }));
-@@ -288,6 +332,16 @@
+@@ -288,11 +338,21 @@
        card.appendChild(pb);
      }
  
@@ -646,7 +661,39 @@ index 2222ac3..c655462 100644
      /* the CRT plan, when there is one */
      if (td.crt_plan) {
        const p = td.crt_plan;
-@@ -363,9 +417,11 @@
+       const box = h('div', { class: 'td-plan' });
+-      box.appendChild(h('div', { class: 'td-sub', text: `${p.side.toUpperCase()} · ${td.layers.bias.tf} CRT range ${fmt(p.range.low, 5)} – ${fmt(p.range.high, 5)}` }));
++      box.appendChild(h('div', { class: 'td-sub', text: `${p.side.toUpperCase()} · ${td.layers.bias.tf} HTF projection (not an order) · range ${fmt(p.range.low, 5)} – ${fmt(p.range.high, 5)}` }));
+       const tbl = h('table', { class: 'data-table' });
+       tbl.innerHTML = '<thead><tr><th>entry</th><th>stop</th><th>target</th><th>R:R</th><th>when to use</th></tr></thead><tbody>'
+         + `<tr><td class="num">${fmt(p.aggressive.entry, 5)}</td><td class="num">${fmt(p.aggressive.stop, 5)}</td><td class="num">${fmt(p.aggressive.target, 5)}</td><td class="num">${p.aggressive.rr}R</td><td class="muted">aggressive — at the confirmation</td></tr>`
+@@ -303,14 +363,21 @@
+         box.appendChild(h('div', { class: 'bot-warn', text: `Below your minimum: this pays ${p.safer.rr}R against a ${p.min_rr}R floor. The method is not hiding it — but it is a scenario, not an order.` }));
+       }
+       box.appendChild(h('div', { class: 'muted-2 td-layer-note', text: `Stop goes beyond the candle that made the sweep (${fmt(p.sweep.level, 5)} swept to ${fmt(p.sweep.extreme, 5)}, ${p.sweep.wick_atr} ATR). ${p.invalidation}` }));
+-      const save = h('button', { class: 'btn sm', text: 'Save this CRT plan' });
++      const active = (d.setups && d.setups.candidates || []).find((c) => c.dir === td.direction && c.ok);
++      const executable = d.now && d.now.armed && d.now.order && active && active.levels;
++      box.appendChild(h('div', { class: 'muted-2', text: 'This table is the HTF narrative projection only. Entry-aligned exit and risk come from the eligible candidate / Now order below; this is not a second executable plan.' }));
++      const save = h('button', { class: 'btn sm', text: executable ? 'Save eligible entry-aligned plan' : 'Nothing eligible to save', disabled: !executable });
+       save.addEventListener('click', async () => {
++        if (!executable) return;
+         try {
++          const lv = active.levels, o = d.now.order;
+           const r = await global.API.post('/bots/signals/save-plan', {
+-            symbol: d.symbol, timeframe: d.timeframe, entry: p.safer.entry, stop: p.safer.stop,
+-            targets: [{ price: p.safer.target }], note: `CRT ${p.side} — ${td.layers.bias.tf} range ${p.range.low}–${p.range.high}`, entry_mode: 'crt', mtf_tf: td.layers.bias.tf,
++            symbol: d.symbol, timeframe: d.timeframe, entry: o.entry, stop: o.stop,
++            targets: lv.targets.map((t) => ({ ...t })), note: `Entry-aligned CRT ${p.side}: ${lv.entry_tf} entry; ${lv.target_tf} ${lv.targets[0].kind} target. HTF ${td.layers.bias.tf} range is narrative only.`,
++            entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence,
++            grade: active.grade, score: active.score, target_policy: lv.target_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
+           });
+-          global.App.toast(r.saved ? 'CRT plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
++          global.App.toast(r.saved ? 'Eligible plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
+         } catch (e) { global.App.toast(e.message, 'err'); }
+       });
+       box.appendChild(save);
+@@ -363,9 +430,11 @@
      // a size is only claimed when the method has actually graded the setup:
      // "conviction none · half size" would be a promise the engine is not making
      const tier = n.conviction && String(n.conviction).toUpperCase();
@@ -659,7 +706,16 @@ index 2222ac3..c655462 100644
      card.appendChild(head);
  
      // the four facts a decision needs, side by side
-@@ -566,6 +622,7 @@
+@@ -374,7 +443,7 @@
+       grid.appendChild(h('div', { class: 'now-cell' },
+         h('span', { class: 'now-k', text: 'The order' }),
+         h('b', { class: 'mono', text: `${n.order.side} ${fmt(n.order.entry, 5)}` }),
+-        h('em', { text: `stop ${fmt(n.order.stop, 5)} · target ${fmt(n.order.target, 5)} · ${n.order.rr}R` })));
++        h('em', { text: `stop ${fmt(n.order.stop, 5)} · target ${fmt(n.order.target, 5)} · ${n.order.rr}R${n.order.target_tf ? ' · ' + n.order.target_tf : ''}` })));
+     } else {
+       grid.appendChild(h('div', { class: 'now-cell' },
+         h('span', { class: 'now-k', text: 'The order' }),
+@@ -566,6 +635,7 @@
        card.appendChild(h('div', { class: 'card-head', html: `<strong class="${c.dir > 0 ? 'pos' : 'neg'}">${heading} · ${esc(c.grade)}</strong> <span class="muted">${esc(c.grade_label || '')} — score ${c.score}/100 (${c.passed}/${c.total_checks} checks)${isCall ? '' : ' · the entry model only'}</span>` }));
        if (dirAllowed && c.dir !== dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: 'This side is not the one the higher timeframe permits — it is shown for context only, and no order belongs here.' }));
        else if (!dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: `The method has not permitted a side yet${(d.topdown && d.topdown.blocked) ? ' (it is blocking this market)' : ''}, so this is the entry model's best read rather than a trade. Nothing here is armed.` }));
@@ -667,7 +723,7 @@ index 2222ac3..c655462 100644
        if (c.levels) {
          const L = c.levels;
          const rows = (L.targets || []).map((t) => `<tr><td>${esc(t.role)}</td><td>${esc(t.label)}</td><td class="mono">${fmt(t.price, 5)}</td><td class="mono">${t.rr}R</td></tr>`).join('');
-@@ -607,8 +664,8 @@
+@@ -607,8 +677,8 @@
            direction: c.dir > 0 ? 'long' : 'short',
            entry: L.entry, stop: L.stop, target: L.targets[0] ? L.targets[0].price : null,
            size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
@@ -678,19 +734,55 @@ index 2222ac3..c655462 100644
            thesis: `${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
            tags: 'bot,smc', adherence: 5,
          });
-@@ -821,6 +878,11 @@
+@@ -636,7 +706,7 @@
+     }
+ 
+     /* --- prediction teaser inside mechanic panel --- */
+-    if (d.prediction && d.prediction.ok) {
++    if (d.prediction && d.prediction.ok && !liveGeometryUncalibrated(d)) {
+       const p = h('div', { class: 'card' });
+       p.appendChild(h('div', { class: 'card-head', html: `<strong>Odds</strong> <span class="muted">from the historical replay</span>` }));
+       (d.prediction.summary || []).forEach((x) => p.appendChild(h('div', { class: 'bot-detail', text: '• ' + x })));
+@@ -677,7 +747,14 @@
+ 
+   function panelPredict(pane) {
+     const p = B.predict || (B.data && B.data.prediction);
+-    if (!p) { pane.appendChild(h('div', { class: 'empty', text: 'Run an analysis first (or open this tab after analysing) — prediction replays the model over history.' })); return; }
++    const uncalibrated = liveGeometryUncalibrated(B.data);
++    const withholding = () => pane.appendChild(h('div', { class: 'card bot-warn live-calibration-withheld',
++      text: 'Historical research uses different entry/target geometry. Live probabilities and refined legacy plans are withheld for the current execution until separately calibrated.' }));
++    if (!p) {
++      if (uncalibrated) withholding();
++      else pane.appendChild(h('div', { class: 'empty', text: 'Run an analysis first (or open this tab after analysing) — prediction replays the model over history.' }));
++      return;
++    }
+     if (p.ok === false) { pane.appendChild(h('div', { class: 'card', text: 'Prediction unavailable: ' + (p.error || 'unknown error') })); return; }
+ 
+     const strip = h('div', { class: 'card' });
+@@ -761,7 +838,7 @@
+      * ------------------------------------------------------------------ */
+     const views = bt.frontier_views || {};
+     const plain = bt.target_frontier || [];
+-    if (!plain.length) return;
++    if (!plain.length) { if (uncalibrated) withholding(); return; }
+     const hc = h('div', { class: 'card' });
+     hc.appendChild(h('div', { class: 'card-head', html: `<strong>Win rate is a dial, not a skill badge</strong> <span class="muted">measured on ${esc(p.symbol || (B.data && B.data.symbol) || '')} with its own costs</span>` }));
+     hc.appendChild(h('div', { class: 'bot-detail', text: `Every row below exits the whole position at that target. Two questions are separated on purpose: how often price reached the target before the stop (the mechanical hit rate) and how often the trade actually finished in profit after costs. On this market the round-trip cost is ${bt.meta && bt.meta.cost_r_median != null ? bt.meta.cost_r_median + 'R' : '—'} per trade (${bt.meta && bt.meta.cost_bps != null ? bt.meta.cost_bps + ' bp of price' : '—'}${bt.meta && bt.meta.cost_source ? ', ' + esc(bt.meta.cost_source) : ''}) — so a target smaller than the cost cannot win, however often it is touched.` }));
+@@ -821,6 +898,13 @@
      const grid = h('div', { class: 'bot-grid' });
      const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
  
-+    if (B.data && B.data.topdown && B.data.topdown.entry_setup && B.data.topdown.entry_setup.applies) {
-+      pane.appendChild(h('div', { class: 'card bot-warn', text: 'Historical research above uses legacy entry geometry. Live probabilities and refined legacy plans are withheld for the current named LTF execution until separately calibrated.' }));
++    if (uncalibrated) {
++      // M77: a stale/mixed legacy prediction payload cannot bypass the
++      // analyse-level calibration guard. Research remains labelled above.
++      withholding();
 +      return;
 +    }
 +
      /* live probabilities */
      const live = h('div', { class: 'card' });
      live.appendChild(h('div', { class: 'card-head', html: `<strong>Live setups</strong> <span class="muted">probability to reach the first target before the stop</span>` }));
-@@ -1094,13 +1156,15 @@
+@@ -1094,13 +1178,15 @@
        <td>#${g.id}</td><td><b>${esc(g.symbol)}</b> <span class="muted">${esc(g.timeframe)}</span></td>
        <td class="${g.dir > 0 ? 'pos' : 'neg'}">${esc(g.side.toUpperCase())}</td>
        <td>${esc(g.grade)} <span class="muted">${g.score}</span></td>
@@ -707,7 +799,7 @@ index 2222ac3..c655462 100644
      if ((st.by_grade || []).length) {
        pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Signal quality by grade</strong></div><div class="table-wrap"><table class="table"><thead><tr><th>Grade</th><th>Resolved</th><th>Win rate</th><th>Expectancy</th></tr></thead><tbody>${st.by_grade.map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.resolved}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('')}</tbody></table></div>` }));
      }
-@@ -1161,8 +1225,10 @@
+@@ -1161,8 +1247,10 @@
          const sym = B.symbol, tf = B.tf;
          const trim = B.trim || 0;
          Promise.all([
@@ -720,10 +812,10 @@ index 2222ac3..c655462 100644
            API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
          ]).then(([d, ch, dr]) => {
            B.data = d; B.predict = d.prediction; B.chart = ch; B.candles = (ch && ch.candles) || [];
-diff --git a/tradejournal/public/js/views/settings.js b/tradejournal/public/js/views/settings.js
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
 index b72afdb..6d78f3c 100644
---- a/tradejournal/public/js/views/settings.js
-+++ b/tradejournal/public/js/views/settings.js
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
 @@ -312,11 +312,36 @@
                <div class="field-note">This checklist appears on every new trade and in the briefing. Keep it short enough that you will actually use it.</div>
                <button class="btn primary sm" id="s-save-rules" style="margin-top:12px">Save checklist</button>
@@ -761,10 +853,10 @@ index b72afdb..6d78f3c 100644
                default_checklist: (Store.user.settings.default_checklist || []),
              });
              await Store.reloadAll(); global.App.toast('Preferences saved', 'ok');
-diff --git a/tradejournal/public/js/views/trades.js b/tradejournal/public/js/views/trades.js
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
 index ffdec3d..fb2c891 100644
---- a/tradejournal/public/js/views/trades.js
-+++ b/tradejournal/public/js/views/trades.js
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
 @@ -122,7 +122,7 @@
            <thead><tr>
              <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
@@ -804,10 +896,10 @@ index ffdec3d..fb2c891 100644
          exit_reason: g('exitreason').value,
          planned_r: g('plannedr').value,
          mae_r: g('mae').value, mfe_r: g('mfe').value,
-diff --git a/tradejournal/scripts/bots-test.js b/tradejournal/scripts/bots-test.js
+diff --git a/scripts/bots-test.js b/scripts/bots-test.js
 index c463eda..7622dec 100644
---- a/tradejournal/scripts/bots-test.js
-+++ b/tradejournal/scripts/bots-test.js
+--- a/scripts/bots-test.js
++++ b/scripts/bots-test.js
 @@ -57,7 +57,13 @@ async function call(path, opts = {}) {
  
    const sessions = await call('/api/bots/sessions');
@@ -838,11 +930,11 @@ index c463eda..7622dec 100644
    const resolve = await call('/api/bots/signals/resolve', { method: 'POST', body: JSON.stringify({ limit: 10 }) });
    ok(resolve.status === 200 && resolve.json.ok, `/signals/resolve checked ${resolve.json.checked} signals`);
    ok(resolve.json.stats && typeof resolve.json.stats.total === 'number', `stats: ${resolve.json.stats.total} tracked, ${resolve.json.stats.resolved} resolved`);
-diff --git a/tradejournal/scripts/fixtures/countertrend-fixture.js b/tradejournal/scripts/fixtures/countertrend-fixture.js
+diff --git a/scripts/fixtures/countertrend-fixture.js b/scripts/fixtures/countertrend-fixture.js
 new file mode 100644
 index 0000000..5a5d74a
 --- /dev/null
-+++ b/tradejournal/scripts/fixtures/countertrend-fixture.js
++++ b/scripts/fixtures/countertrend-fixture.js
 @@ -0,0 +1,108 @@
 +'use strict';
 +/** Controlled, time-consistent structural INPUTS for M33, NOT historical prices.
@@ -952,11 +1044,11 @@ index 0000000..5a5d74a
 +  sync(input.biasSeries.candles, input.series.candles, 14400000, 16);
 +  return { END, execDir, htfDir, target: mirror(92.5), input };
 +};
-diff --git a/tradejournal/scripts/fixtures/entry-model-fixture.js b/tradejournal/scripts/fixtures/entry-model-fixture.js
+diff --git a/scripts/fixtures/entry-model-fixture.js b/scripts/fixtures/entry-model-fixture.js
 new file mode 100644
 index 0000000..f2bd3f3
 --- /dev/null
-+++ b/tradejournal/scripts/fixtures/entry-model-fixture.js
++++ b/scripts/fixtures/entry-model-fixture.js
 @@ -0,0 +1,30 @@
 +'use strict';
 +/** Explicit M68 structural-input composition cases, NOT OHLC-only discovery. */
@@ -988,10 +1080,10 @@ index 0000000..f2bd3f3
 +  }
 +  return f;
 +};
-diff --git a/tradejournal/scripts/now-test.js b/tradejournal/scripts/now-test.js
+diff --git a/scripts/now-test.js b/scripts/now-test.js
 index e5a185d..62681e2 100644
---- a/tradejournal/scripts/now-test.js
-+++ b/tradejournal/scripts/now-test.js
+--- a/scripts/now-test.js
++++ b/scripts/now-test.js
 @@ -64,7 +64,7 @@ const armedTd = (over = {}) => baseTd({
  
  const setups = (dirs = [{ dir: -1, side: 'short', grade: 'B', score: 78 }, { dir: 1, side: 'long', grade: 'C', score: 52 }]) => ({
@@ -1041,10 +1133,69 @@ index e5a185d..62681e2 100644
    ok(Now.nextBarClose(Date.UTC(2026, 9, 6, 14, 7), '1h') === Date.UTC(2026, 9, 6, 15, 0), 'nextBarClose rounds up to the hourly boundary');
    ok((Now.killzoneAt(Date.UTC(2026, 9, 6, 13, 0)) || {}).key === 'ny_am', 'killzoneAt knows the New York AM window');
    ok(Now.killzoneAt(Date.UTC(2026, 9, 6, 20, 0)) === null, 'outside every killzone is reported as outside');
-diff --git a/tradejournal/scripts/topdown-test.js b/tradejournal/scripts/topdown-test.js
+diff --git a/scripts/smoke-test.js b/scripts/smoke-test.js
+index 52f56ff..9649b17 100644
+--- a/scripts/smoke-test.js
++++ b/scripts/smoke-test.js
+@@ -38,6 +38,7 @@ const warnings = [];
+   vc.on('warn', (...a) => warnings.push('console.warn: ' + a.join(' ')));
+   vc.on('log', () => {});
+ 
++  let lastAnalysisPrediction = null;
+   const dom = await JSDOM.fromURL(BASE, {
+     runScripts: 'dangerously',
+     resources: new TvBlockedLoader(),
+@@ -52,6 +53,9 @@ const warnings = [];
+         if (tok) headers['x-session'] = tok;
+         return fetch(u, { ...opts, headers, duplex: 'half' }).then(async (res) => {
+           const body = await res.text();
++          if (/\/api\/bots\/analyse(?:\?|$)/.test(u)) {
++            try { lastAnalysisPrediction = JSON.parse(body).prediction || null; } catch {}
++          }
+           return {
+             ok: res.ok, status: res.status, headers: res.headers,
+             text: async () => body,
+@@ -171,15 +175,33 @@ const warnings = [];
+   if (predBtn) { predBtn.click(); await wait(5000); }
+   const predPane = window.document.querySelector('#content');
+   const predText = predPane.textContent.replace(/\s+/g, ' ');
++  // A valid refusal/calibration guard need not manufacture a live setup merely
++  // to populate these chips. Keep the nonempty checks intact; verify the explicit
++  // withheld state has ZERO live plan cards instead. Parent exercises nonempty.
++  const liveWithheld = !!predPane.querySelector('.live-calibration-withheld')
++    && predPane.querySelectorAll('.bot-prob').length === 0
++    && /Live probabilities and refined legacy plans are withheld/.test(predText);
++  // Match the real payload and its existing 10-trade default-view policy; do
++  // not demand full when the server legitimately falls back to all on a thin
++  // sample. This verifies the selected/marked chip, not just that a chip exists.
++  const frontier = (lastAnalysisPrediction && lastAnalysisPrediction.backtest) || {};
++  const fullSample = ((frontier.frontier_views || {}).full || {}).trades;
++  const expectedDefault = Number(fullSample) >= 10 ? 'full' : 'all';
++  const defaultChip = [...predPane.querySelectorAll('button.chip')].find((b) =>
++    b.textContent.startsWith(expectedDefault + ' · default (n='));
++  const defaultViewOk = frontier.default_view === expectedDefault && !!defaultChip
++    && defaultChip.classList.contains('ok')
++    && (expectedDefault !== 'full' || /View shown by default: full/.test(predText));
++  console.log(` prediction default policy: full sample=${fullSample} · expected=${expectedDefault} · payload=${frontier.default_view}`);
+   const predChecks = [
+     ['prediction: exit-frontier table with break-even column', /Exit frontier/.test(predText) && /Needs to break even/.test(predText)],
+     ['prediction: measured playlist filters table', /own filters, measured/.test(predText)],
+     ['prediction: the win-rate dial', /win rate is a dial/i.test(predText)],
+     ['prediction: five filter views offered', ['all', 'refined', 'strict', 'cost_floor', 'full'].every((k) => new RegExp(`${k}(?: · default)? \\(n=`).test(predText))],
+     ['prediction: the selected view explains itself', /every setup|video's refinement loop|refinement at once|displacement leg \+ stop|maximum-expectancy/.test(predText)],
+-    ['prediction: the measured view is the default and is marked', /full · default \(n=/.test(predText) && /View shown by default: full/.test(predText)],
+-    ['prediction: measured gate chips on live setups', predPane.querySelectorAll('.chip').length > 0 && /Stop ≥ 0\.6 ATR/.test(predText) && /Target ≥ 3R/.test(predText)],
+-    ['prediction: LTF confirmation state shown', /LTF confirmation/.test(predText)],
++    ['prediction: payload-backed default is selected/marked; thin full sample falls back to all', defaultViewOk],
++    ['prediction: measured gate chips on live setups OR explicit uncalibrated withholding', liveWithheld || (predPane.querySelectorAll('.bot-prob').length > 0 && /Stop ≥ 0\.6 ATR/.test(predText) && /Target ≥ 3R/.test(predText))],
++    ['prediction: LTF confirmation shown on live setups OR no live plans when withheld', liveWithheld || (predPane.querySelectorAll('.bot-prob').length > 0 && /LTF confirmation/.test(predText))],
+     ['prediction: refined plan is saveable when actionable', !/Save refined plan to signals/.test(predText) || /Refined plan \(/.test(predText)],
+     ['prediction: second-chance re-entry is reported', /Second-chance re-entry/.test(predText)],
+   ];
+diff --git a/scripts/topdown-test.js b/scripts/topdown-test.js
 index 57628cc..6b0f2f7 100644
---- a/tradejournal/scripts/topdown-test.js
-+++ b/tradejournal/scripts/topdown-test.js
+--- a/scripts/topdown-test.js
++++ b/scripts/topdown-test.js
 @@ -145,6 +145,11 @@ ok(chasedRange.plan && chasedRange.plan.chase === true, 'price that has run most
  
  section('the hierarchy: higher timeframe decides, lower timeframes time');
@@ -1100,10 +1251,10 @@ index 57628cc..6b0f2f7 100644
    ok(Array.isArray(real.conflict_detail) && real.conflict_detail.every((c) => c.rule && c.resolution && 'blocks_trade' in c),
      'every conflict carries a rule and a resolution', `${(real.conflict_detail || []).length} conflict(s)`);
    ok(real.topdown.conviction && ['A', 'B', 'watch', 'none'].includes(real.topdown.conviction.tier),
-diff --git a/tradejournal/scripts/vercel-check.js b/tradejournal/scripts/vercel-check.js
+diff --git a/scripts/vercel-check.js b/scripts/vercel-check.js
 index 818bf26..08bbea4 100644
---- a/tradejournal/scripts/vercel-check.js
-+++ b/tradejournal/scripts/vercel-check.js
+--- a/scripts/vercel-check.js
++++ b/scripts/vercel-check.js
 @@ -89,16 +89,148 @@ async function call(pathname, opts = {}) {
    ok('the platform cron endpoint refuses unauthenticated calls', cron.status === 401 || cron.status === 403, `HTTP ${cron.status}`);
  
@@ -1258,10 +1409,10 @@ index 818bf26..08bbea4 100644
    console.log(`\n${pass} passed, ${fail} failed · cold start ${Date.now() - t0} ms`);
    server.close();
    fs.rmSync(TMP, { recursive: true, force: true });
-diff --git a/tradejournal/server.js b/tradejournal/server.js
+diff --git a/server.js b/server.js
 index 9b28a41..307549d 100644
---- a/tradejournal/server.js
-+++ b/tradejournal/server.js
+--- a/server.js
++++ b/server.js
 @@ -4,6 +4,34 @@
   *   Express + libSQL (a local SQLite file by default, Turso when TURSO_DATABASE_URL is set).
   *   No build step, no bundler, zero client-side dependencies.
@@ -1444,10 +1595,10 @@ index 9b28a41..307549d 100644
  }
  
  module.exports = { app, handler, bootPromise, start, startScheduler };
-diff --git a/tradejournal/src/bots/correction.js b/tradejournal/src/bots/correction.js
+diff --git a/src/bots/correction.js b/src/bots/correction.js
 index 5aeb214..7b7911a 100644
---- a/tradejournal/src/bots/correction.js
-+++ b/tradejournal/src/bots/correction.js
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
 @@ -68,7 +68,7 @@ async function accountOf(userId, accountId = null) {
    const acc = accountId
      ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(accountId, userId)
@@ -1639,11 +1790,11 @@ index 5aeb214..7b7911a 100644
      mistakes,
      guardrails: g,
      daily: state,
-diff --git a/tradejournal/src/bots/entry-models.js b/tradejournal/src/bots/entry-models.js
+diff --git a/src/bots/entry-models.js b/src/bots/entry-models.js
 new file mode 100644
 index 0000000..52a81fc
 --- /dev/null
-+++ b/tradejournal/src/bots/entry-models.js
++++ b/src/bots/entry-models.js
 @@ -0,0 +1,188 @@
 +'use strict';
 +/** Named entry composition (Ep 18). This module contains no IO/account state.
@@ -1833,10 +1984,10 @@ index 0000000..52a81fc
 +  return encoded;
 +}
 +module.exports.encodeEvidence = encodeEvidence;
-diff --git a/tradejournal/src/bots/index.js b/tradejournal/src/bots/index.js
-index 0007b01..fd5fd97 100644
---- a/tradejournal/src/bots/index.js
-+++ b/tradejournal/src/bots/index.js
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 0007b01..674df89 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
 @@ -16,17 +16,40 @@
   *      so the bot's own hit rate is on the record (no vibes, no cherry-picking).
   */
@@ -2049,16 +2200,21 @@ index 0007b01..fd5fd97 100644
    });
  
    let prediction = null;
-@@ -137,13 +293,22 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -137,13 +293,27 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      }
    }
  
 +  // Historical legacy research has DIFFERENT entry/stop/target geometry. Keep
 +  // its historical table, but never turn it into live named-model probabilities.
-+  if (prediction && momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) {
++  const targetRevision = setups.candidates.some((c) => c.levels && c.levels.target_policy
++    && c.levels.target_policy.rule === 'entry_or_one_above');
++  if (prediction && ((momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) || targetRevision)) {
 +    prediction = { ...prediction, setups: [], buy: null, sell: null, live_model_calibration: 'unvalidated',
-+      withheld_for_entry_model: momentum.topdown.entry_setup.entry_model,
-+      summary: ['Historical results use legacy research geometry, not this named LTF execution.',
++      withheld_for_entry_model: momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies
++        ? momentum.topdown.entry_setup.entry_model : null,
++      live_target_calibration: targetRevision ? 'unvalidated' : null,
++      withheld_for_target_policy: targetRevision ? 'm54_m77_targets' : null,
++      summary: ['Historical results use legacy research geometry, not the current entry/target policy.',
 +        'Live probabilities and refined legacy plans are withheld until separately calibrated.'] };
 +  }
 +
@@ -2074,7 +2230,7 @@ index 0007b01..fd5fd97 100644
  
  
    // The method's own verdict, kept separate from the setup model's. Anything
-@@ -168,8 +333,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -168,8 +338,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      // build the *untrimmed* read as well, so a replay can say what happened after
      const L2 = Momentum.topdown.layersFor(tf);
      const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
@@ -2085,7 +2241,7 @@ index 0007b01..fd5fd97 100644
      replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
    }
    const now = Now.build({
-@@ -189,7 +354,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -189,7 +359,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      method_verdict: methodVerdict,
      topdown: td,
      momentum: {
@@ -2101,15 +2257,15 @@ index 0007b01..fd5fd97 100644
        alignment: momentum.alignment, mechanics: momentum.mechanics,
        narrative: momentum.narrative, conflicts: momentum.conflicts,
        htf: momentum.htf, quote: momentum.quote, series: momentum.series,
-@@ -213,6 +385,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -213,6 +390,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
        direction: prediction.direction, setups: prediction.setups, buy: prediction.buy, sell: prediction.sell,
        model: prediction.model, backtest: prediction.backtest, summary: prediction.summary,
        current: predRow || null, error: prediction.error || null,
-+      live_model_calibration: prediction.live_model_calibration || null, withheld_for_entry_model: prediction.withheld_for_entry_model || null,
++      live_model_calibration: prediction.live_model_calibration || null, live_target_calibration: prediction.live_target_calibration || null, withheld_for_target_policy: prediction.withheld_for_target_policy || null, withheld_for_entry_model: prediction.withheld_for_entry_model || null,
      } : null,
      news,
      daily,
-@@ -227,8 +400,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -227,8 +405,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
    parts.push(`${sym} ${tf}: ${v.action}${v.grade && v.grade !== 'no-trade' ? ` (${v.grade}, ${v.score}/100)` : ''} — ${v.headline}`);
    if (td.headline) parts.push(`${td.status === 'confirmed' ? 'Method: confirmed' : 'Method: waiting'} — ${td.headline}`);
    if (td.playbook && td.playbook.length) parts.push(`Next: ${td.playbook[0]}`);
@@ -2120,7 +2276,7 @@ index 0007b01..fd5fd97 100644
    if (news.blackout) parts.push(`NEWS BLACKOUT: ${news.blackout}`);
    if (daily && daily.status !== 'clear') parts.push(`Personal guardrail: ${daily.message}`);
    if (momentum.conflicts.length) parts.push(`Caution: ${momentum.conflicts.join(' ')}`);
-@@ -266,6 +439,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -266,6 +444,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
   * @param {string} tf
   * @param {{bars?:number, userId?:number, accountId?:number, minRR?:number, balance?:number, riskPct?:number}} opts
   */
@@ -2128,7 +2284,7 @@ index 0007b01..fd5fd97 100644
  async function chart(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const bars = Math.min(Math.max(Number(opts.bars) || 400, 80), 1200);
-@@ -279,30 +453,35 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -279,39 +458,45 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // never disagree about the same market (they did once: the chart asked for 200
    // higher-timeframe candles and the method read a different range from them).
    const [entry, bias, triggerRaw] = await Promise.all([
@@ -2171,17 +2327,22 @@ index 0007b01..fd5fd97 100644
 +    sessionPref: opts.sessionPref || null,   // M26
    });
  
-   // The plan drawn on the chart: the method's own CRT plan when it has one,
-@@ -311,7 +490,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+-  // The plan drawn on the chart: the method's own CRT plan when it has one,
+-  // otherwise the best graded setup on the side the method allows. A blocked
+-  // method draws no directional plan at all — the chart shows levels, not a trade.
++  // M77: the actual eligible candidate is the chart's order authority. An HTF
++  // CRT projection is context only, never a second LTF exit/entry. Keep the old
++  // unscoped display branch solely for legacy research payloads.
    const crt = td.crt_plan;
    const best = setups.candidates.find((c) => c.levels && c.dir === td.direction) || setups.candidates[0] || null;
    let plan = null;
 -  if (crt && td.direction !== 0) {
-+  if (crt && td.direction !== 0 && !td.blocked && best && best.ok && !['flip', 'market_shift'].includes(best.entry_model)) {
++  if (crt && td.direction !== 0 && !td.blocked && best && best.ok && !['flip', 'market_shift'].includes(best.entry_model)
++      && !(best.levels && best.levels.target_policy && best.levels.target_policy.rule === 'entry_or_one_above')) {
      plan = {
        source: 'crt', dir: crt.dir, side: crt.side, method: td.method.name,
        entry: crt.safer.entry, stop: crt.safer.stop,
-@@ -325,9 +504,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -325,9 +510,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
        },
        note: `${crt.side} after the ${crt.sweep.level} sweep failed to hold · ${crt.target_note}`,
      };
@@ -2193,7 +2354,7 @@ index 0007b01..fd5fd97 100644
        ...best.levels,
        entry_status: best.levels.entry_status,
      };
-@@ -349,7 +528,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -349,7 +534,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const stack = {
      bias: {
@@ -2202,7 +2363,7 @@ index 0007b01..fd5fd97 100644
        structure: bias.smc.structure ? bias.smc.structure.trend : null,
        state: td.layers.bias.state,
        level: td.layers.bias.range ? { low: td.layers.bias.range.low, high: td.layers.bias.range.high, label: 'CRT range' } : null,
-@@ -387,17 +566,29 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -387,17 +572,29 @@ async function chart(symbol, tf = '15m', opts = {}) {
        last_price: entry.meta.last_price, warnings: entry.meta.warnings,
        sources: { bias: `${L.bias_tf} via ${bias.meta.provider}`, trigger: `${trig.tf} via ${trig.meta.provider}` },
      },
@@ -2235,7 +2396,7 @@ index 0007b01..fd5fd97 100644
    const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
    const rows = [];
    let cursor = 0;
-@@ -406,12 +597,19 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -406,12 +603,19 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
        const sym = list[cursor++];
        try {
          const [momentum, series] = await Promise.all([
@@ -2258,7 +2419,7 @@ index 0007b01..fd5fd97 100644
          });
          // one row per market: the side the method permits (a scan that lists both
          // a buy and a sell for the same symbol is not a scan, it is a coin toss)
-@@ -421,10 +619,15 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -421,10 +625,17 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
          rows.push({
            symbol: sym, timeframe: tf, ok: true,
            price: series.price, atr: series.atr,
@@ -2272,11 +2433,13 @@ index 0007b01..fd5fd97 100644
            action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
 -          setup_side: best ? best.side : null,
 +          setup_side: best ? best.side : null, entry_model: best ? best.entry_model : null,
++          target_tf: best && best.levels ? best.levels.target_tf : null,
++          target_kind: best && best.levels && best.levels.targets[0] ? best.levels.targets[0].kind : null,
 +          entry_tf: best ? best.entry_tf : null, entry_evidence: best ? best.entry_evidence : null,
            entry_status: best && best.levels ? best.levels.entry_status : null,
            entry: best && best.levels ? best.levels.entry : null,
            stop: best && best.levels ? best.levels.stop : null,
-@@ -469,6 +672,7 @@ async function ensureSignalsTable() {
+@@ -469,6 +680,7 @@ async function ensureSignalsTable() {
      rr_primary REAL, rr_final REAL,
      mechanics REAL,
      sentiment TEXT,           -- the read-aloud headline at the time
@@ -2284,7 +2447,7 @@ index 0007b01..fd5fd97 100644
      entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf
      mtf_tf TEXT,
      risk_atr REAL,
-@@ -486,7 +690,8 @@ async function ensureSignalsTable() {
+@@ -486,7 +698,8 @@ async function ensureSignalsTable() {
    const cols = await db.prepare('PRAGMA table_info(bot_signals)').all();
    const have = new Set((cols || []).map((c) => c.name));
    for (const [name, type] of [['entry_mode', 'TEXT'], ['mtf_tf', 'TEXT'], ['risk_atr', 'REAL'],
@@ -2294,7 +2457,7 @@ index 0007b01..fd5fd97 100644
      if (!have.has(name)) await db.exec(`ALTER TABLE bot_signals ADD COLUMN ${name} ${type}`);
    }
  }
-@@ -505,6 +710,8 @@ async function savePlan(userId, p = {}) {
+@@ -505,6 +718,8 @@ async function savePlan(userId, p = {}) {
    if (!symbol || !Number.isFinite(entry) || !Number.isFinite(stop) || entry === stop) {
      return { saved: 0, reason: 'symbol, entry and stop (entry ≠ stop) are required' };
    }
@@ -2303,7 +2466,7 @@ index 0007b01..fd5fd97 100644
    const dir = stop < entry ? 1 : -1;
    const risk = Math.abs(entry - stop);
    const prices = (Array.isArray(p.targets) ? p.targets : [])
-@@ -514,14 +721,15 @@ async function savePlan(userId, p = {}) {
+@@ -514,14 +729,15 @@ async function savePlan(userId, p = {}) {
    const rr = (price) => (price == null ? null : Math.round((Math.abs(price - entry) / risk) * 100) / 100);
    const info = await db.prepare(`INSERT INTO bot_signals
      (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final,
@@ -2313,7 +2476,7 @@ index 0007b01..fd5fd97 100644
 +    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
      userId, symbol, timeframe, dir, dir > 0 ? 'long' : 'short',
 -    p.grade || null, p.score == null ? null : Number(p.score), p.p_win == null ? null : Number(p.p_win),
-+    p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.p_win == null ? null : Number(p.p_win),
++    p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.target_policy || p.p_win == null ? null : Number(p.p_win),
      entry, stop, t1, t2, rr(t1), rr(t2),
      p.mechanics == null ? null : Number(p.mechanics), p.note ? String(p.note).slice(0, 400) : null,
      p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
@@ -2322,7 +2485,7 @@ index 0007b01..fd5fd97 100644
    );
    return { saved: 1, ids: [info.lastInsertRowid] };
  }
-@@ -530,22 +738,25 @@ async function savePlan(userId, p = {}) {
+@@ -530,22 +746,25 @@ async function savePlan(userId, p = {}) {
  async function saveSignals(userId, payload) {
    await ensureSignalsTable();
    const cands = (payload.setups && payload.setups.candidates ? payload.setups.candidates : [])
@@ -2349,19 +2512,22 @@ index 0007b01..fd5fd97 100644
      const L = c.levels;
 -    const predRow = payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
 +    const model = Entry.normaliseName(c.entry_model || L.entry_model);
-+    const predRow = !['flip', 'market_shift'].includes(model) && !(td && td.countertrend) && payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
++    const predRow = !L.target_policy && !['flip', 'market_shift'].includes(model) && !(td && td.countertrend) && payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
      const info = await ins.run(
        userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
        predRow ? predRow.p_win : null,
-@@ -555,6 +766,7 @@ async function saveSignals(userId, payload) {
+@@ -553,8 +772,9 @@ async function saveSignals(userId, payload) {
+       L.targets.length > 1 ? L.targets[L.targets.length - 1].price : null,
+       L.rr_primary, L.rr_final,
        payload.momentum ? payload.momentum.mechanics.score : null,
-       payload.headline ? payload.headline.text.slice(0, 400) : null,
+-      payload.headline ? payload.headline.text.slice(0, 400) : null,
++      L.target_policy ? (`Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
        td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
 +      model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
      );
      out.push(info.lastInsertRowid);
      saved++;
-@@ -633,9 +845,13 @@ async function signalStats(userId) {
+@@ -633,9 +853,13 @@ async function signalStats(userId) {
    const resolved = all.filter((s) => ['win', 'loss', 'expired'].includes(s.status));
    const wins = resolved.filter((s) => s.status === 'win');
    const byGrade = {};
@@ -2375,7 +2541,7 @@ index 0007b01..fd5fd97 100644
    }
    return {
      total: all.length,
-@@ -646,6 +862,8 @@ async function signalStats(userId) {
+@@ -646,6 +870,8 @@ async function signalStats(userId) {
      win_rate: resolved.length ? r2((wins.length / resolved.length) * 100) : null,
      total_r: r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0)),
      expectancy_r: resolved.length ? r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0) / resolved.length) : null,
@@ -2384,10 +2550,10 @@ index 0007b01..fd5fd97 100644
      by_grade: Object.values(byGrade).map((b) => ({ grade: b.grade, resolved: b.n, win_rate: r2((b.wins / b.n) * 100), expectancy_r: r2(b.r / b.n) })).sort((a, b) => String(a.grade).localeCompare(String(b.grade))),
    };
  }
-diff --git a/tradejournal/src/bots/momentum.js b/tradejournal/src/bots/momentum.js
-index 2e664e5..49b12c5 100644
---- a/tradejournal/src/bots/momentum.js
-+++ b/tradejournal/src/bots/momentum.js
+diff --git a/src/bots/momentum.js b/src/bots/momentum.js
+index 2e664e5..b6c1ef1 100644
+--- a/src/bots/momentum.js
++++ b/src/bots/momentum.js
 @@ -66,6 +66,13 @@ async function series(symbol, tf, limit = 500, opts = {}) {
      const kept = candles.filter((c) => Number(c.t) < cut);
      if (kept.length >= 60) candles = kept;
@@ -2628,7 +2794,23 @@ index 2e664e5..49b12c5 100644
    const L = td.layers.bias;
    const plan = L.plan;
    const price = td.price;
-@@ -396,16 +525,17 @@ function regimeOf(htf) {
+@@ -370,12 +499,13 @@ function crtView(td, tf) {
+     position: price > L.range.high ? 'above range' : price < L.range.low ? 'below range' : 'inside range',
+     state: L.state,
+     setup: plan ? {
++      projection_only: true, execution_authority: 'setup_candidate',
+       dir: plan.dir, side: plan.side,
+       sweep_level: plan.sweep.level, sweep_extreme: plan.sweep.extreme, sweep_at: plan.sweep.at,
+       entry: plan.safer.entry, stop: plan.safer.stop, target: plan.safer.target,
+-      target_label: plan.target_note, rr: plan.safer.rr,
++      target_label: 'HTF projection only: ' + plan.target_note, rr: plan.safer.rr,
+       aggressive: plan.aggressive, safer: plan.safer,
+-      note: `Sweep of ${plan.sweep.level} (${plan.sweep.wick_atr} ATR wick beyond the range) failed to hold — CRT expects the opposite side of the ${L.tf} range.`,
++      note: `Sweep of ${plan.sweep.level} (${plan.sweep.wick_atr} ATR wick beyond the range) failed to hold — HTF narrative projection only, not an executable exit: CRT expects the opposite side of the ${L.tf} range.`,
+     } : null,
+     steps: (td.steps || []).filter((s) => s.n >= 2 && s.n <= 4).map((s) => `${s.done ? '' : '[waiting] '}${s.title}: ${s.text}`),
+     topdown: { status: td.status, direction: td.direction, blocked: td.blocked, playbook: td.playbook, method: td.method.name, timeframe: tf },
+@@ -396,16 +526,17 @@ function regimeOf(htf) {
  async function analyse(symbol, tf = '15m', opts = {}) {
    const L = TD.layersFor(tf);
    const cut = { trim: opts.trim || 0, asOf: opts.asOf || null };
@@ -2651,18 +2833,18 @@ index 2e664e5..49b12c5 100644
    const read = narrative({ symbol, mtf, htf, ltf, align, mech, td });
    mtf.smc.crt = crtView(td, tf);
  
-@@ -418,7 +548,9 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -418,7 +549,9 @@ async function analyse(symbol, tf = '15m', opts = {}) {
        method: td.method, layers: td.layers, steps: td.steps, checks: td.checks,
        score: td.score, grade: td.grade, status: td.status, direction: td.direction,
        headline: td.headline, playbook: td.playbook, blocked: td.blocked,
 -      conviction: td.conviction,
-+      conviction: td.conviction, entry_setup: td.entry_setup,
++      conviction: td.conviction, entry_setup: td.entry_setup, target_sources: td.target_sources,
 +      ...(td.countertrend ? { countertrend: td.countertrend } : {}),
 +      conflicts: td.conflicts, // both aliases survive; Now/method gate consume this one
        conflict_detail: td.conflicts, crt_plan: td.crt_plan, levels: td.levels,
        inputs: td.inputs,
      },
-@@ -451,4 +583,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -451,4 +584,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
  module.exports = {
    analyse, series, alignment, mechanics, narrative, crtView, regimeOf,
    MTF, htfOf, ltfOf, topdown: TD,
@@ -2670,10 +2852,10 @@ index 2e664e5..49b12c5 100644
 +  // walk that found the defect, without any caller having to own a state store first.
 +  biasHysteresis, nextBiasInvalidation,
  };
-diff --git a/tradejournal/src/bots/now.js b/tradejournal/src/bots/now.js
-index 66e0bbb..bfb1762 100644
---- a/tradejournal/src/bots/now.js
-+++ b/tradejournal/src/bots/now.js
+diff --git a/src/bots/now.js b/src/bots/now.js
+index 66e0bbb..365ec92 100644
+--- a/src/bots/now.js
++++ b/src/bots/now.js
 @@ -21,6 +21,8 @@
   * Inputs are the objects the API already builds; this file adds no new data feeds.
   */
@@ -2755,7 +2937,7 @@ index 66e0bbb..bfb1762 100644
        watch = {
          level: side ? bias.range.low : null, kind: 'level',
          condition: 'wait for a fresh right candle at the range edge, then a sweep that closes back inside',
-@@ -152,21 +166,70 @@ function build(p = {}) {
+@@ -152,21 +166,91 @@ function build(p = {}) {
        };
      }
      invalidate = 'This is not a bearish or bullish opinion — it is the absence of a qualifying setup. It stops applying when a new right candle forms at a level that matters.';
@@ -2782,13 +2964,15 @@ index 66e0bbb..bfb1762 100644
 +    side = direction; action = direction > 0 ? 'BUY' : 'SELL';
 +    order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the confirmed lower zone',
 +      entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
++      target_tf: lv.target_tf || target.source_tf || target.tf || null,
++      target_kind: target.kind, target_policy: lv.target_policy || null,
 +      entry_model: allowed.entry_model, entry_tf: allowed.entry_tf, entry_evidence: allowed.entry_evidence,
 +      mode: td.countertrend ? 'countertrend-pullback' : 'named-entry',
 +      risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
 +      size_note: td.countertrend ? 'Counter-HTF pullback: at most half ordinary same-grade risk.' : 'Use the actual candidate risk plan; model name is not a sizing override.',
 +      rr_warning: null };
 +    headline = `${symbol}: ${allowed.entry_tf} ${allowed.entry_model} entry at ${lv.entry}, after the causal zone pullback.`
-+      + (td.countertrend ? ` Bounded internal pullback; the HTF narrative is still ${td.countertrend.htf_bias > 0 ? 'bullish' : 'bearish'}.` : ' The higher-timeframe method still decides direction and target.');
++      + (td.countertrend ? ` Bounded internal pullback; the HTF narrative is still ${td.countertrend.htf_bias > 0 ? 'bullish' : 'bearish'}.` : ` HTF decides direction; the ${lv.target_tf || 'entry-aligned'} magnet defines the exit.`);
 +    watch = { level: lv.entry, kind: 'entry', condition: 'causal lower zone and sweep extreme must still hold',
 +      text: `Limit ${lv.entry}, stop ${lv.stop}, target ${target.price} (${target.rr}R).` };
 +    invalidate = lv.invalidation;
@@ -2800,6 +2984,8 @@ index 66e0bbb..bfb1762 100644
 +    action = direction > 0 ? 'BUY' : 'SELL';
 +    order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the confirmed point of interest',
 +      entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
++      target_tf: lv.target_tf || target.source_tf || target.tf || null,
++      target_kind: target.kind, target_policy: lv.target_policy || null,
 +      mode: 'countertrend-pullback', risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
 +      size_note: 'Counter-HTF pullback: at most half ordinary same-grade risk; the daily narrative stays intact.',
 +      rr_warning: null };
@@ -2807,6 +2993,23 @@ index 66e0bbb..bfb1762 100644
 +    watch = { level: lv.entry, kind: 'entry', condition: 'the confirmed POI and counter-leg stop must still hold',
 +      text: `Limit ${lv.entry}, stop ${lv.stop}, ONE target ${target.price} (${target.rr}R). No farther runner.` };
 +    invalidate = `${td.countertrend.ltf_tf} close beyond the counter-leg stop voids this execution, not the held daily bias. ${lv.invalidation}`;
++  } else if (direction && plan && allowed && allowed.ok && allowed.levels
++      && allowed.levels.target_policy && allowed.levels.target_policy.rule === 'entry_or_one_above') {
++    // M77: ordinary CRT's HTF range is narrative, not a parallel executable order.
++    // The SAME final candidate owns entry, stop, target, RR and actual risk in every consumer.
++    const lv = allowed.levels, target = lv.targets[0];
++    side = direction; action = direction > 0 ? 'BUY' : 'SELL';
++    order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the eligible entry zone',
++      entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
++      entry_tf: lv.entry_tf, target_tf: lv.target_tf, target_kind: target.kind, target_policy: lv.target_policy,
++      mode: 'entry-aligned', risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
++      size_note: Setup.methodRiskMult(td, direction) < 1
++        ? 'Counter-HTF CRT rotation: at most half ordinary same-grade risk.'
++        : 'Use the actual candidate risk plan; the HTF projection is not an alternative exit.', rr_warning: null };
++    headline = `${symbol}: ${direction > 0 ? 'long' : 'short'} at ${lv.entry}; ONE ${lv.target_tf} opposing magnet at ${target.price} (${target.rr}R).`;
++    watch = { level: lv.entry, kind: 'entry', condition: 'the entry zone and defining stop must still hold',
++      text: `Limit ${lv.entry}, stop ${lv.stop}, target ${target.price}. Do not substitute the HTF projected range edge.` };
++    invalidate = lv.invalidation;
    } else if (direction && plan) {
      side = direction;
      action = direction > 0 ? 'BUY' : 'SELL';
@@ -2831,7 +3034,7 @@ index 66e0bbb..bfb1762 100644
        // the trader asked for these to be shown rather than hidden — but never silently
        rr_warning: (Number(num(chosen.rr)) > 0 && Number(num(chosen.rr)) < minRR)
          ? `Below your ${minRR}R minimum — this pays ${num(chosen.rr)}R. The range is real; the reward does not pay for the risk. Treat it as a scenario, not an order.`
-@@ -230,7 +293,9 @@ function build(p = {}) {
+@@ -230,7 +314,9 @@ function build(p = {}) {
  
    /* ------------------------------------------------- the other side ------- */
    let otherSide = null;
@@ -2842,7 +3045,7 @@ index 66e0bbb..bfb1762 100644
      otherSide = {
        dir: -direction,
        side: otherDir.side,
-@@ -306,6 +371,7 @@ function build(p = {}) {
+@@ -306,6 +392,7 @@ function build(p = {}) {
      },
      live: quote ? { price: num(quote.price), at: quote.at ? new Date(quote.at).toISOString() : null, provider: quote.provider || null, drift_atr: drift === null ? null : Number(drift.toFixed(2)) } : null,
      action, side, headline,
@@ -2850,7 +3053,7 @@ index 66e0bbb..bfb1762 100644
      armed: !!order,
      order,
      watch,
-@@ -319,7 +385,7 @@ function build(p = {}) {
+@@ -319,7 +406,7 @@ function build(p = {}) {
      steps_done: doneSteps,
      steps_total: (td.steps || []).length,
      pending_step: pendingStep ? { n: pendingStep.n, title: pendingStep.title, text: pendingStep.text } : null,
@@ -2859,10 +3062,10 @@ index 66e0bbb..bfb1762 100644
      range: bias.range ? { low: num(bias.range.low), high: num(bias.range.high), mid: num(bias.range.mid) } : null,
      since,
    };
-diff --git a/tradejournal/src/bots/predict.js b/tradejournal/src/bots/predict.js
+diff --git a/src/bots/predict.js b/src/bots/predict.js
 index bacfca7..38ec2fa 100644
---- a/tradejournal/src/bots/predict.js
-+++ b/tradejournal/src/bots/predict.js
+--- a/src/bots/predict.js
++++ b/src/bots/predict.js
 @@ -443,9 +443,13 @@ function mtfTrigger(cand, ltf, fromT, { sweepLookback = 20, sweepFresh = 10 } =
  }
  
@@ -2891,11 +3094,11 @@ index bacfca7..38ec2fa 100644
   * price often comes back to the same level — a "second chance" entry. This walks
   * the same candle series and reports, honestly, what taking that second tap did:
   * whether it happened, and whether re-risking 1R on it made money.
-diff --git a/tradejournal/src/bots/setup.js b/tradejournal/src/bots/setup.js
-index 138beb4..d79431a 100644
---- a/tradejournal/src/bots/setup.js
-+++ b/tradejournal/src/bots/setup.js
-@@ -15,13 +15,23 @@
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index 138beb4..1551487 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -15,13 +15,24 @@
   *    - exact entry / stop / targets with R:R per target
   *    - a position-size risk plan in the journal's own instrument maths
   *    - invalidation + management rules
@@ -2916,11 +3119,12 @@ index 138beb4..d79431a 100644
  
  const I = require('../instruments');
 +const Entry = require('./entry-models');
++const Targets = require('./targets');
 +const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
  
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
-@@ -35,12 +45,252 @@ const GRADES = [
+@@ -35,13 +46,255 @@ const GRADES = [
    { min: -Infinity, grade: 'no-trade', label: 'Not an A+ setup — the edge is not there' },
  ];
  
@@ -3072,6 +3276,7 @@ index 138beb4..d79431a 100644
  }
  
  /** Liquidity pools that matter for a target, sorted outward from `entry`. */
+-function targetPools(analysis, dir, entry) {
 +/**
 + * M21 — strong / weak structure.
 + *
@@ -3170,10 +3375,13 @@ index 138beb4..d79431a 100644
 +    note: `No break of structure in the last ${RECENT} bars while the trend holds${ago === null ? '' : ` (last one ${ago} bars ago)`} — price is retracing. This is the stage the entry models want.` };
 +}
 +
- function targetPools(analysis, dir, entry) {
++function targetPools(analysis, dir, entry, { magnets = true } = {}) {
++  if (magnets) return Targets.catalogue(analysis, dir, entry, (strongWeak(analysis) || {}).weak);
++  // Explicit research control for the pre-M54 pool/weak-only composition.
    const pools = (analysis.liquidity && analysis.liquidity.pools) || [];
    const outward = pools
-@@ -49,6 +299,17 @@ function targetPools(analysis, dir, entry) {
+     .filter((p) => (dir > 0 ? p.price > entry : p.price < entry))
+@@ -49,6 +302,17 @@ function targetPools(analysis, dir, entry) {
      .sort((a, b) => (dir > 0 ? a.price - b.price : b.price - a.price));
    const seen = new Set();
    const out = [];
@@ -3191,7 +3399,7 @@ index 138beb4..d79431a 100644
    for (const p of outward) {
      const key = p.price.toFixed(5);
      if (seen.has(key)) continue;
-@@ -70,12 +331,147 @@ function targetPools(analysis, dir, entry) {
+@@ -70,12 +334,149 @@ function targetPools(analysis, dir, entry) {
   *                                    only that side can be armed.
   * @returns {{candidates:Array, verdict:object}}
   */
@@ -3277,6 +3485,8 @@ index 138beb4..d79431a 100644
    const atr = Number(ctx.atr || (analysis && analysis.atr)) || price * 0.001;
    const bias = Number(ctx.bias || 0);            // -1 / 0 / +1 from the MTF + momentum layer
    const minRR = Number(ctx.minRR || 2);
++  const targetAlignment = ctx.targetAlignment !== false; // M77; false = frozen M54 research arm
++  const targetMagnets = ctx.targetMagnets !== false; // M54 default; false = measurement control
    const sessions = (analysis && analysis.sessions) || {};
 +  /* M38/M40 — the session view THIS SYMBOL is entitled to. The calendar fields (dow,
 +   * month) are preserved by the copy, so M10's stand-down is unaffected. */
@@ -3339,7 +3549,7 @@ index 138beb4..d79431a 100644
    const strike = sessions.quality != null ? sessions.quality : 0.5;
    const blackout = ctx.newsBlackout || null;
    const ind = ctx.indicators || null;
-@@ -83,47 +479,57 @@ function buildSetups(analysis, ctx = {}) {
+@@ -83,47 +484,77 @@ function buildSetups(analysis, ctx = {}) {
    const td = ctx.topdown || null;                   // the method gate
  
    const candidates = [];
@@ -3353,7 +3563,27 @@ index 138beb4..d79431a 100644
 +      && td.countertrend.dir === dir ? td.countertrend : null;
 +    const model = td && td.entry_setup && td.entry_setup.dir === dir ? td.entry_setup : null;
 +    const useModel = !!(model && model.applies);
-+    const boundedCRT = useModel && td.crt_plan ? td.crt_plan : null;
++    const crtProjection = useModel && td.crt_plan ? td.crt_plan : null;
++    // M77: ordinary CRT is not a second universal HTF exit exception. Retain the
++    // old exclusive HTF range edge ONLY in the explicit pre-M77 research arm.
++    const boundedCRT = !targetAlignment ? crtProjection : null;
++    const entryTf = useModel ? model.entry_tf : (analysis && analysis.tf) || null;
++    const scopedTargets = Targets.scopeSources([{ tf: (analysis && analysis.tf) || null, analysis },
++      ...((ctx.targetSources || (td && td.target_sources)) || [])], entryTf);
++    const counterTarget = counter && counter.target;
++    const counterTargetTf = counterTarget && typeof counterTarget.tf === 'string' ? counterTarget.tf : null;
++    const counterTargetKnown = !!(counterTargetTf && Targets.timeframePolicy(counterTargetTf).state === 'known'
++      && Number.isFinite(counterTarget.price) && counterTarget.price > 0);
++    const targetPolicy = counter ? { rule: 'bounded_counter_htf', state: counterTargetKnown ? 'known' : 'unknown',
++      entry_tf: entryTf, allowed_tfs: counterTargetKnown ? [counterTargetTf] : [], exception: 'm33_internal_pullback',
++      source_tfs: counterTargetKnown ? [counterTargetTf] : [], rejected_sources: [] }
++      : targetAlignment ? scopedTargets.policy : { rule: 'pre_m77_research', state: 'unscoped',
++        entry_tf: entryTf, allowed_tfs: null, exception: null };
++    const noTargetReason = counter
++      ? 'No real prescribed counter-HTF target — wait; no ordinary or farther-target fallback.'
++      : targetAlignment
++        ? 'No real opposing target on the entry timeframe or one level above — wait; the HTF projection is not an executable exit, and no measured-move or farther-target rescue is allowed.'
++        : 'No real opposing target — wait for a valid magnet; no measured-move or farther-target rescue.';
 +    const entryAtr = useModel ? model.atr : atr;
 +    const ladderTargets = !!ctx.ladderTargets && !counter && !boundedCRT; // a bounded pullback has ONE HTF target
 +    const triggerRead = useModel ? model : counter ? counter.confirmation : null;
@@ -3420,7 +3650,7 @@ index 138beb4..d79431a 100644
  
      if (zone && zone.overlap) add('nested', 'Zone + imbalance overlap (confluence)', true, 8, 'The order block contains an unfilled FVG — two reasons for price to react at the same price.');
  
-@@ -135,10 +541,57 @@ function buildSetups(analysis, ctx = {}) {
+@@ -135,10 +566,57 @@ function buildSetups(analysis, ctx = {}) {
  
      /* ------------------------------------------------------------- 5. trend alignment */
      const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
@@ -3480,7 +3710,7 @@ index 138beb4..d79431a 100644
      if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
  
      /* ------------------------------------------------------------- 6. higher-timeframe bias */
-@@ -155,12 +608,16 @@ function buildSetups(analysis, ctx = {}) {
+@@ -155,12 +633,16 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      /* ------------------------------------------------------- 8. session / killzone */
@@ -3499,7 +3729,7 @@ index 138beb4..d79431a 100644
  
      /* ------------------------------------------------------------- 10. volatility */
      const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
-@@ -169,13 +626,13 @@ function buildSetups(analysis, ctx = {}) {
+@@ -169,22 +651,49 @@ function buildSetups(analysis, ctx = {}) {
  
      /* --------------------------------------------------------- 11. liquidity runway */
      let levels = null;
@@ -3513,20 +3743,24 @@ index 138beb4..d79431a 100644
        const stop = long ? stopBase - buffer : stopBase + buffer;
        const risk = Math.abs(entry - stop);
 -      const pools = targetPools(analysis, dir, entry);
-+      const pools = counter || boundedCRT ? [] : targetPools(analysis, dir, entry);
-       const targets = [];
-       for (const p of pools) {
+-      const targets = [];
+-      for (const p of pools) {
++      const ordinarySources = targetAlignment ? scopedTargets.sources.map((s) => s.analysis) : [analysis];
++      const pools = counter || boundedCRT ? [] : ordinarySources.flatMap((a) =>
++        targetPools(a, dir, entry, { magnets: targetMagnets }));
++      const targets = targetMagnets ? Targets.levels(pools, dir, entry, risk) : [];
++      for (const p of targetMagnets ? [] : pools) {
          const reward = Math.abs(p.price - entry);
-@@ -183,8 +640,23 @@ function buildSetups(analysis, ctx = {}) {
+         const rr = risk ? reward / risk : 0;
          if (rr < 0.9) continue;                       // ignore pools the entry already sits on
          targets.push({ label: p.label, kind: p.kind, price: r4(p.price), rr: r2(rr), strength: p.strength, touches: p.touches || null });
        }
-+      if (counter) {
-+        const target = counter.target || {};
++      if (counter && counterTargetKnown) {
++        const target = counterTarget;
 +        // No 0.9R discard, measured move, weak-structure override or farther runner:
 +        // keep the prescribed target even when it FAILS the floor; the veto then says so.
 +        targets.push({ label: target.label || 'HTF opposing zone', kind: 'htf_order_block',
-+          tf: target.tf, price: r4(target.price), rr: risk ? r2(dir * (target.price - entry) / risk) : 0,
++          tf: target.tf, source_tf: target.tf, price: r4(target.price), rr: risk ? r2(dir * (target.price - entry) / risk) : 0,
 +          strength: 1, touches: null });
 +      }
 +      if (boundedCRT) {
@@ -3536,40 +3770,62 @@ index 138beb4..d79431a 100644
 +        targets.push({ label: 'Original CRT range edge', kind: 'crt_range', tf: boundedCRT.tf,
 +          price: r4(price), rr: risk ? r2(dir * (price - entry) / risk) : 0, strength: 1 });
 +      }
++      if (!counter && targetAlignment && crtProjection
++          && targetPolicy.allowed_tfs.includes(crtProjection.tf)
++          && td.layers && td.layers.bias && td.layers.bias.tf === crtProjection.tf
++          && dir * (crtProjection.aggressive.target - entry) > 0) {
++        // A CRT range can be an ordinary target ONLY on a legal actual source TF,
++        // and competes by proximity, rather than replacing nearer opposing magnets.
++        targets.push({ label: 'Entry-aligned CRT range edge', kind: 'crt_range',
++          tf: crtProjection.tf, source_tf: crtProjection.tf, price: r4(crtProjection.aggressive.target),
++          rr: risk ? r2(dir * (crtProjection.aggressive.target - entry) / risk) : 0, strength: 1 });
++      }
        // dealing-range extreme as a structural target
 -      if (pd) {
-+      if (pd && !counter && !boundedCRT) {
++      if (pd && !counter && !boundedCRT && !targetMagnets) {
          const extreme = long ? pd.range_high : pd.range_low;
          const reward = Math.abs(extreme - entry);
          if (reward > 0) {
-@@ -195,6 +667,15 @@ function buildSetups(analysis, ctx = {}) {
+@@ -194,28 +703,60 @@ function buildSetups(analysis, ctx = {}) {
+           }
          }
        }
-       targets.sort((a, b) => a.rr - b.rr);
-+      // M21 BUG, found by strengthening the M21 probe: targetPools() deliberately pushes the
-+      // weak structural extreme FIRST, because "in a bullish market structure you want to
-+      // trade from strong structure and TARGET WEAK STRUCTURE". This sort by rr then silently
-+      // undid that ordering, so the weak extreme only led when it happened to be the nearest
-+      // pool - measured at 77 of 1174 eligible candidates. The placement had been dead code.
-+      // It only looked alive because the old three-rung ladder could surface the weak extreme
-+      // in ANY rung, and the probe accepted that.
+-      targets.sort((a, b) => a.rr - b.rr);
+-      // The FIRST pool is a wall, not a nuisance: price usually reacts there. The model
+-      // banks a partial on it, protects the trade, and runs the rest to the 2R+ pool.
++      targets.sort(targetMagnets ? Targets.byProximity(dir) : (a, b) => a.rr - b.rr);
++      // M21 keeps the weak label/candidate. M54 refines its old unconditional
++      // priority: an actual nearer opposing magnet is a wall, not permission
++      // to skip ahead to weak structure. Legacy precedence is research-only.
 +      const wkIdx = targets.findIndex((t) => t.kind === 'weak_structure');
-+      if (wkIdx > 0) targets.unshift(targets.splice(wkIdx, 1)[0]);
-       // The FIRST pool is a wall, not a nuisance: price usually reacts there. The model
-       // banks a partial on it, protects the trade, and runs the rest to the 2R+ pool.
++      if (!targetMagnets && wkIdx > 0) targets.unshift(targets.splice(wkIdx, 1)[0]);
        const first = targets[0] || null;
-@@ -203,16 +684,47 @@ function buildSetups(analysis, ctx = {}) {
+-      const runner = targets.find((t) => t.rr >= minRR) || targets[targets.length - 1] || null;
++      // Display rounding must not turn a 1.999R nearest magnet into a permitted
++      // 2R trade. Check BOTH working and published entry/stop/target geometry;
++      // 1e-9R only absorbs floating-point subtraction, not centesimal rounding.
++      const publishedRisk = Math.abs(r4(entry) - r4(stop));
++      const targetRR = (t) => !t ? 0 : !targetAlignment ? t.rr
++        : risk > 0 && publishedRisk > 0
++          ? Math.min(dir * (t.price - entry) / risk, dir * (r4(t.price) - r4(entry)) / publishedRisk) : 0;
++      const meetsFloor = (t) => !!t && targetRR(t) + 1e-9 >= minRR;
++      const runner = targets.find((t) => meetsFloor(t)) || targets[targets.length - 1] || null;
+       const wallRisk = first && first.rr < 1.3 ? first : null;
++      const runwayTarget = ladderTargets ? runner : first;
  
-       add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
-         runner && runner.rr >= minRR
+-      add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
+-        runner && runner.rr >= minRR
 -          ? `Partial at ${first.label} (${first.rr}R), runner to ${runner.label} at ${runner.price} = ${runner.rr}R`
-+          // M51: this described a partial that no longer exists by default. Re-read every
-+          // string that describes a decision whenever the decision changes.
+-          : first ? `The furthest real pool (${first.label}, ${first.price}) is only ${first.rr}R away — not enough runway for the risk taken.`
+-            : 'No liquidity pool beyond entry to target — no reason for price to travel.');
++      add('runway', `Open runway to the selected opposing magnet (target ≥ 1:${minRR})`,
++        meetsFloor(runwayTarget), 14,
++        meetsFloor(runwayTarget)
 +          ? (ladderTargets
 +            ? `Partial at ${first.label} (${first.rr}R), runner to ${runner.label} at ${runner.price} = ${runner.rr}R`
-+            : `One target: ${runner.label} at ${runner.price} = ${runner.rr}R — pick one and manage one position.`)
-           : first ? `The furthest real pool (${first.label}, ${first.price}) is only ${first.rr}R away — not enough runway for the risk taken.`
-             : 'No liquidity pool beyond entry to target — no reason for price to travel.');
++            : `One target: ${first.label} at ${first.price} = ${first.rr}R — pick one and manage one position.`)
++          : first ? `The nearest selected magnet (${first.label}, ${first.price}) is only ${first.rr}R away — refuse the idea, not substitute a farther target.`
++            : noTargetReason);
  
 -      // target ladder: T1 (wall, partial), T2 (runner), T3 (extension if one exists)
 +      // M51 - Ep 15 step 4: "Take profit, JUST PICK ONE TARGET... they mark 10 different
@@ -3580,39 +3836,35 @@ index 138beb4..d79431a 100644
 +      // Collapsed to a SINGLE target by default. `ctx.ladderTargets` restores the ladder as an
 +      // optional management view, which is where the ledger says it belongs - a trader's own
 +      // plan, not the model's default.
-+      // The single target is the runner (the first pool at or beyond minRR), falling back to
-+      // the nearest pool: that keeps the minRR floor meaningful rather than letting the choice
-+      // of one target quietly drop the risk:reward requirement.
++      // The default is the nearest real magnet, selected BEFORE the RR floor.
++      // The ladder remains an explicit research/management opt-in, never a rescue
++      // of a default single-target trade that fails the floor.
        const ladder = [];
 -      if (first) ladder.push({ ...first, role: 'T1' });
 -      if (runner && (!first || runner.rr > first.rr + 0.3)) ladder.push({ ...runner, role: 'T2' });
 -      const beyond = targets.filter((t) => runner && t.rr > runner.rr + 0.6).slice(0, 1);
 -      beyond.forEach((t) => ladder.push({ ...t, role: 'T3' }));
+-      if (!ladder.length) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
+-      const rrPrimary = ladder[0].rr;
+-      const rrFinal = ladder[ladder.length - 1].rr;
 +      if (ladderTargets) {
 +        if (first) ladder.push({ ...first, role: 'T1' });
 +        if (runner && (!first || runner.rr > first.rr + 0.3)) ladder.push({ ...runner, role: 'T2' });
 +        const beyond = targets.filter((t) => runner && t.rr > runner.rr + 0.6).slice(0, 1);
 +        beyond.forEach((t) => ladder.push({ ...t, role: 'T3' }));
 +      } else {
-+        // M21 put the WEAK STRUCTURAL EXTREME first in the target list on purpose - "target
-+        // weak structure" is the course's primary magnet. Selecting the runner here discarded
-+        // it, and probe-m21 caught that (0 of 48 candidates reached the ladder). The two rules
-+        // are not in conflict once resolved correctly: ONE target, and that target is the weak
-+        // extreme. Fall back to the runner only when the weak extreme cannot carry the minRR
-+        // floor, so the risk:reward requirement is not quietly dropped.
-+        // The weak extreme IS the one target. Falling back to the runner when it sits under
-+        // minRR was the wrong resolution - it silently swapped the course's magnet for a
-+        // farther pool just to clear the ratio floor. If the weak structure is only 1R away
-+        // the idea does not meet the 2R requirement and should not be taken at all; the
-+        // existing runway/minRR veto says so, which keeps both rules intact instead of
-+        // satisfying one by violating the other.
++        // M54: labels do not outrank price distance; sub-floor means no trade.
 +        const single = first || runner || null;
 +        if (single) ladder.push({ ...single, role: 'T1' });
 +      }
-       if (!ladder.length) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
-       const rrPrimary = ladder[0].rr;
-       const rrFinal = ladder[ladder.length - 1].rr;
-@@ -230,6 +742,26 @@ function buildSetups(analysis, ctx = {}) {
++      if (!ladder.length && !counter && !boundedCRT && !targetMagnets) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
++      const rrPrimary = ladder.length ? ladder[0].rr : 0;
++      const rrFinal = ladder.length ? ladder[ladder.length - 1].rr : 0;
++      const rrFinalExact = ladder.length ? targetRR(ladder[ladder.length - 1]) : 0;
+ 
+       // entry status: are we at the zone, or chasing?
+       let entryStatus, entryNote;
+@@ -230,6 +771,26 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
@@ -3639,17 +3891,21 @@ index 138beb4..d79431a 100644
        // Distance still to travel to the zone we would enter at. An FVG-only read has
        // no order-block `reach` — measure to its near edge instead of dereferencing null.
        const zoneReach = bestOB ? bestOB.reach
-@@ -237,31 +769,45 @@ function buildSetups(analysis, ctx = {}) {
+@@ -237,31 +798,49 @@ function buildSetups(analysis, ctx = {}) {
            : 6;
        add('entry', 'Entry not chased (price at/near the zone)', entryStatus !== 'waiting' || zoneReach <= 2.5, 8, entryNote);
        add('management', 'Risk plan protects the trade at the first pool', rrFinal >= minRR, 0,
 -        `Take 50% at ${ladder[0].label} (${rrPrimary}R), move the stop to break-even, run the rest to ${ladder[ladder.length - 1].label} (${rrFinal}R).`);
-+        counter ? `One target at ${ladder[0].label} (${rrPrimary}R) — the counter-HTF pullback ends there.`
-+          : `Take 50% at ${ladder[0].label} (${rrPrimary}R), move the stop to break-even, run the rest to ${ladder[ladder.length - 1].label} (${rrFinal}R).`);
++        !ladder.length ? 'No real target — no executable trade.'
++          : counter ? `One target at ${ladder[0].label} (${rrPrimary}R) — the counter-HTF pullback ends there.`
++            : ladder.length === 1 ? `One target at ${ladder[0].label} (${rrPrimary}R); manage one position, no partials.`
++              : `Take 50% at ${ladder[0].label} (${rrPrimary}R), move the stop to break-even, run the rest to ${ladder[ladder.length - 1].label} (${rrFinal}R).`);
        if (entryStatus === 'invalid') add('entry_valid', 'Zone not already invalidated', false, 0, entryNote);
  
        levels = {
-+        ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counter.target.tf } : {}),
++        target_policy: targetPolicy, target_tf: ladder[0] ? ladder[0].source_tf || ladder[0].tf || null : null,
++        entry_tf: entryTf, stop_tf: entryTf,
++        ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counterTargetKnown ? counterTargetTf : null } : {}),
 +        ...(useModel ? { entry_model: model.entry_model, entry_tf: model.entry_tf,
 +          stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: Entry.evidence(model),
 +          ...(boundedCRT ? { target_tf: boundedCRT.tf } : {}) } : {}),
@@ -3659,6 +3915,8 @@ index 138beb4..d79431a 100644
 -        stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
 -          ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(atr * 0.18)} buffer`
 -          : `Beyond the ${zone.kind === 'order_block' ? 'order block' : 'FVG'} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(atr * 0.18)} buffer`,
+-        targets: ladder, primary_target: ladder[0] ? { ...ladder[0] } : null,
+-        rr_primary: rrPrimary, rr_final: rrFinal,
 +        stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / entryAtr),
 +        stop_reason: stopSweep && Math.abs(stopBase - stopSweep.extreme) < 1e-9
 +          ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(entryAtr * 0.18)} buffer`
@@ -3666,8 +3924,8 @@ index 138beb4..d79431a 100644
 +          // zone an "FVG" - the recurring trap of a string that describes a decision no
 +          // longer being updated when the decision changes.
 +          : `Beyond the ${{ order_block: 'order block', flip_zone: 'flip zone', fvg: 'FVG' }[zone.kind] || zone.kind} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(entryAtr * 0.18)} buffer`,
-         targets: ladder, primary_target: ladder[0] ? { ...ladder[0] } : null,
-         rr_primary: rrPrimary, rr_final: rrFinal,
++        targets: ladder, target_candidates: targets.map((t) => ({ ...t })), primary_target: ladder[0] ? { ...ladder[0] } : null,
++        rr_primary: rrPrimary, rr_final: rrFinal, rr_final_exact: rrFinalExact,
          management: {
 -          partial_at: ladder[0] ? { price: ladder[0].price, rr: ladder[0].rr, label: ladder[0].label, size: '50%' } : null,
 -          break_even_after: ladder[0] ? ladder[0].price : null,
@@ -3691,12 +3949,12 @@ index 138beb4..d79431a 100644
          invalidation: long
 -          ? `A 15m close below ${r4(Math.min(zone.bottom, recentSweep ? recentSweep.extreme : zone.bottom))} invalidates the idea.`
 -          : `A 15m close above ${r4(Math.max(zone.top, recentSweep ? recentSweep.extreme : zone.top))} invalidates the idea.`,
-+          ? `A ${useModel ? model.entry_tf : '15m'} close below ${r4(Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom))} invalidates the idea.`
-+          : `A ${useModel ? model.entry_tf : '15m'} close above ${r4(Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top))} invalidates the idea.`,
++          ? `A ${entryTf || 'entry-timeframe'} close below ${r4(Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom))} invalidates the idea.`
++          : `A ${entryTf || 'entry-timeframe'} close above ${r4(Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top))} invalidates the idea.`,
        };
      } else {
        add('runway', 'Open runway to opposing liquidity', false, 14, 'No zone, so no defined risk — the model needs a level to trade against.');
-@@ -271,8 +817,14 @@ function buildSetups(analysis, ctx = {}) {
+@@ -271,37 +850,183 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -3713,7 +3971,13 @@ index 138beb4..d79431a 100644
      // a missing trigger or zone is disqualifying regardless of the rest
      const hasTrigger = checks.find((c) => c.key === 'sweep').pass;
      const hasZone = checks.find((c) => c.key === 'zone').pass;
-@@ -284,24 +836,161 @@ function buildSetups(analysis, ctx = {}) {
+     if (!hasTrigger) score = Math.min(score, 38);
+     if (!hasZone) score = Math.min(score, 34);
+-    if (levels && levels.rr_final > 0 && levels.rr_final < minRR) score = Math.min(score, 45);
++    const floorRR = levels ? (targetAlignment ? levels.rr_final_exact : levels.rr_final) : null;
++    if (levels && floorRR > 0 && floorRR + 1e-9 < minRR) score = Math.min(score, 45);
+     if (levels && levels.entry_status === 'invalid') score = Math.min(score, 20);
+     if (blackout) score = Math.min(score, 40);
      if (levels && levels.entry_status === 'waiting') score = Math.min(score, 66); // great idea, not yet valid
      score = round1(clamp(score, 0, 100));
  
@@ -3764,8 +4028,10 @@ index 138beb4..d79431a 100644
 +    // M7 / M96 — "no matter how many confluences I have, no matter how confident I am,
 +    // I'm going to be passing on the trade." This is arithmetic, not taste: at the measured
 +    // ~21% win rate, break-even needs (1 - 0.21) / 0.21 = 3.8R, so a sub-2R idea cannot win.
-+    if (levels && ((levels.rr_final > 0 && levels.rr_final < minRR) || ((counter || boundedCRT) && !(levels.rr_final >= minRR)))) {
-+      vetoes.push(`Risk:reward ${levels.rr_final}R is below the ${minRR}R floor — passing on the trade.`);
++    if (levels && ((floorRR > 0 && floorRR + 1e-9 < minRR) || ((counter || boundedCRT || targetMagnets || targetAlignment) && !(floorRR + 1e-9 >= minRR)))) {
++      vetoes.push(levels.targets.length
++        ? `Risk:reward ${Math.round(floorRR * 10000) / 10000}R (unrounded geometry) is below the ${minRR}R floor — passing on the trade.`
++        : noTargetReason);
 +    }
 +    if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
 +    if (blackout) vetoes.push('High-impact news inside the window.');
@@ -3878,7 +4144,7 @@ index 138beb4..d79431a 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +1000,59 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +1036,59 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -3895,7 +4161,7 @@ index 138beb4..d79431a 100644
        dir, side, score, grade: g.grade, grade_label: g.label,
 -      ok: g.grade !== 'no-trade' && (!levels || levels.entry_status !== 'invalid'),
 +      ...(td && td.entry_setup ? { entry_model: useModel ? model.entry_model : 'none',
-+        entry_tf: model ? model.entry_tf : null,
++        entry_tf: levels ? levels.entry_tf : model ? model.entry_tf : null,
 +        entry_model_state: model ? model.state : 'not_permitted_direction',
 +        entry_evidence: useModel ? Entry.evidence(model) : null } : {}),
 +      // M25: the market phase, so the trader (and any review) can tell an impulse they are
@@ -3944,7 +4210,7 @@ index 138beb4..d79431a 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -331,7 +1061,11 @@ function buildSetups(analysis, ctx = {}) {
+@@ -331,7 +1097,11 @@ function buildSetups(analysis, ctx = {}) {
    candidates.sort((a, b) => b.score - a.score);
  
    /* --------------------------------------------------------------- top verdict */
@@ -3957,7 +4223,7 @@ index 138beb4..d79431a 100644
    const buy = candidates.find((c) => c.dir === 1);
    const sell = candidates.find((c) => c.dir === -1);
  
-@@ -350,8 +1084,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -350,8 +1120,7 @@ function buildSetups(analysis, ctx = {}) {
      const aligned = candidates.find((c) => c.dir === td.direction);
      if (aligned) best = aligned;                    // the higher timeframe chooses the side
    }
@@ -3967,7 +4233,7 @@ index 138beb4..d79431a 100644
    const methodBlocked = !!(td && (td.blocked || (td.direction !== 0 && (!best || best.dir !== td.direction))));
  
    let verdict;
-@@ -367,13 +1100,13 @@ function buildSetups(analysis, ctx = {}) {
+@@ -367,20 +1136,22 @@ function buildSetups(analysis, ctx = {}) {
        detail: `${why}${pendingStep(td)}`,
        next_trigger: [td.playbook && td.playbook.length ? td.playbook[0] : null, nextTriggerHint(analysis)].filter(Boolean),
        source: 'topdown-gate', method, setup_action: setupAction,
@@ -3985,7 +4251,17 @@ index 138beb4..d79431a 100644
        next_trigger: nextTriggerHint(analysis),
        source: 'setup-model', method, setup_action: setupAction,
      };
-@@ -399,7 +1132,52 @@ function buildSetups(analysis, ctx = {}) {
+   } else {
+     const t1 = best.levels && best.levels.targets && best.levels.targets[0] ? best.levels.targets[0] : null;
+     const headline = best.levels
+-      ? `${best.grade} ${best.side} setup — partial ${best.levels.rr_primary}R at ${t1 ? t1.label : 'the first pool'}, runner to ${best.levels.rr_final}R`
++      ? best.levels.targets.length === 1
++        ? `${best.grade} ${best.side} setup — one target ${best.levels.rr_primary}R at ${t1.label}; manage one position`
++        : `${best.grade} ${best.side} setup — partial ${best.levels.rr_primary}R at ${t1 ? t1.label : 'the first pool'}, runner to ${best.levels.rr_final}R`
+       : `${best.grade} ${best.side} setup`;
+     const methodOk = !td ? null : (td.direction !== 0 && td.direction === best.dir);
+     verdict = {
+@@ -399,7 +1170,52 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -4038,7 +4314,7 @@ index 138beb4..d79431a 100644
        news_blackout: blackout || null,
        min_rr: minRR,
      },
-@@ -430,4 +1208,8 @@ function pendingStep(td) {
+@@ -430,4 +1246,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  
@@ -4048,10 +4324,10 @@ index 138beb4..d79431a 100644
 +// engine run that has to happen to produce a mid-range candidate.
 +module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK,
 +  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX, SWEEP_LOOKBACK, methodRiskMult, selectZone };
-diff --git a/tradejournal/src/bots/smc.js b/tradejournal/src/bots/smc.js
+diff --git a/src/bots/smc.js b/src/bots/smc.js
 index 2ccb576..15cb746 100644
---- a/tradejournal/src/bots/smc.js
-+++ b/tradejournal/src/bots/smc.js
+--- a/src/bots/smc.js
++++ b/src/bots/smc.js
 @@ -17,6 +17,14 @@
   *                 target the opposing liquidity pool — minimum 1:2
   *    8. filters   killzones, premium/discount, news blackout, CRT range play
@@ -5084,10 +5360,173 @@ index 2ccb576..15cb746 100644
 +  SESSIONS, SILVER_BULLETS, dayKey, weekKey, sessionAffinity, asiaRange,
 +  WINDOW_BY_KEY, WINDOW_KEYS, windowLabel, normalizeWindowPref, pairCountsFor, legsOf,
  };
-diff --git a/tradejournal/src/bots/topdown.js b/tradejournal/src/bots/topdown.js
-index 7870e51..dbec55b 100644
---- a/tradejournal/src/bots/topdown.js
-+++ b/tradejournal/src/bots/topdown.js
+diff --git a/src/bots/targets.js b/src/bots/targets.js
+new file mode 100644
+index 0000000..d0315c1
+--- /dev/null
++++ b/src/bots/targets.js
+@@ -0,0 +1,157 @@
++'use strict';
++/**
++ * M54 — Ep 15, 20:39–22:57: ONE next magnet, not a list of hoped-for exits.
++ * Liquidity/weak structure, an unmitigated opposing OB, and the remaining part
++ * of an unfilled opposing FVG are different target kinds. They are NOT entries.
++ * This module never alters the entry, stop, direction, or risk policy.
++ *
++ * Proximity is physical price distance, BEFORE an RR gate. A nearer <2R magnet
++ * refuses the idea; a farther pool must not be used to rescue its RR. A weak
++ * extreme remains a structural candidate/label, not permission to skip a wall.
++ * Detector lifecycle is window-bounded (M30); no whole-history claim is made.
++ */
++const number = (v) => v === null || v === undefined || v === '' || typeof v === 'boolean'
++  ? null : Number.isFinite(Number(v)) ? Number(v) : null;
++const r4 = (v) => Math.round(v * 10000) / 10000;
++const r2 = (v) => Math.round(v * 100) / 100;
++
++// Only break an EXACT-price tie. Never place weak structure ahead of a nearer zone.
++const TIE = { weak_structure: 0, opposing_order_block: 1, unfilled_fvg: 2, range: 4 };
++function byProximity(dir) {
++  return (a, b) => dir * (a.price - b.price)
++    || (TIE[a.kind] ?? 3) - (TIE[b.kind] ?? 3);
++}
++
++function ordered(rows, dir) {
++  const out = [], seen = new Map();
++  for (const row of rows.slice().sort(byProximity(dir))) {
++    // Keep honest source TFs distinct even when the prices coincide.
++    const key = `${row.source_tf || '?'}:${row.price.toFixed(4)}`;
++    const kept = seen.get(key);
++    if (kept) {
++      kept.also_targets = (kept.also_targets || []).concat({ ...row });
++      continue;
++    }
++    const copy = { ...row };
++    seen.set(key, copy);
++    out.push(copy);
++  }
++  return out;
++}
++
++function catalogue(analysis, dir, entry, weak = null) {
++  if (!analysis || ![1, -1].includes(dir) || number(entry) === null) return [];
++  const sourceTf = typeof analysis.tf === 'string' ? analysis.tf : null;
++  const rows = [];
++  const push = (row) => {
++    const raw = number(row.price);
++    if (raw === null || raw <= 0) return;
++    const price = r4(raw);
++    if (!(dir * (price - entry) > 0)) return;
++    rows.push({ ...row, price, source_tf: sourceTf });
++  };
++
++  if (weak) push({ price: weak.price, strength: 0.9, kind: 'weak_structure',
++    label: `Weak ${weak.label} — the level structure is expected to take out`, touches: null,
++    origin_t: number(weak.t), status: 'structural_extreme' });
++  for (const p of (analysis.liquidity && analysis.liquidity.pools) || []) {
++    if (!p || p.swept === true || !(number(p.strength) >= 0.5)) continue;
++    push({ ...p, origin_t: number(p.t), status: p.swept === false ? 'unswept' : 'unknown',
++      // A day's timebox is NOT the TF of a structural detector. PDH may be
++      // measured from real 5m candles; do not relabel that catalogue as 1d/1m.
++      ...(/^PD[HL]$/.test(p.kind) ? { period_tf: '1d' }
++        : /^PW[HL]$/.test(p.kind) ? { period_tf: '1w' } : {}) });
++  }
++  for (const z of analysis.order_blocks || []) {
++    if (!z || z.dir !== -dir || z.breached !== false || z.mitigated !== false) continue;
++    const bottom = number(z.bottom), top = number(z.top);
++    if (!(bottom > 0 && top > bottom)) continue;
++    push({ price: dir > 0 ? bottom : top, kind: 'opposing_order_block',
++      label: `Next opposing ${dir > 0 ? 'supply' : 'demand'} order block`,
++      strength: number(z.strength), origin_t: number(z.t),
++      formed_t: number(z.displacement_t), status: 'unmitigated', zone: [bottom, top] });
++  }
++  for (const g of analysis.fvgs || []) {
++    if (!g || g.dir !== -dir || g.filled !== false) continue;
++    const bottom = number(g.bottom), top = number(g.top), pct = number(g.fill_pct);
++    if (!(bottom > 0 && top > bottom) || pct === null || pct < 0 || pct >= 100) continue;
++    // Fill tracking enters a bearish gap from below / bullish gap from above.
++    // Aim at the first STILL UNFILLED edge, not an already-consumed original edge.
++    const remainingBottom = g.dir < 0 ? bottom + (top - bottom) * pct / 100 : bottom;
++    const remainingTop = g.dir > 0 ? top - (top - bottom) * pct / 100 : top;
++    push({ price: dir > 0 ? remainingBottom : remainingTop, kind: 'unfilled_fvg',
++      label: `Unfilled opposing ${dir > 0 ? 'bearish' : 'bullish'} FVG${pct > 0 ? ' (remaining gap)' : ''}`,
++      strength: number(g.strength), origin_t: number(g.t), status: pct > 0 ? 'partially_unfilled' : 'unfilled',
++      fill_pct: pct, zone: [r4(remainingBottom), r4(remainingTop)], original_zone: [bottom, top] });
++  }
++  const pd = analysis.premium_discount;
++  if (pd) push({ price: dir > 0 ? pd.range_high : pd.range_low, kind: 'range',
++    label: dir > 0 ? 'Dealing range high' : 'Dealing range low', strength: 0.9,
++    origin_t: null, status: 'structural_range' });
++  return ordered(rows, dir);
++}
++
++function levels(rows, dir, entry, risk) {
++  if (!(number(risk) > 0)) return [];
++  // Do NOT discard the nearest magnet because it is inside 0.9R/2R.
++  return ordered(rows, dir).filter((p) => dir * (p.price - entry) > 0).map((p) => ({
++    ...p, price: r4(p.price), rr: r2(dir * (p.price - entry) / risk),
++  }));
++}
++
++module.exports = { catalogue, levels, ordered, byProximity };
++
++/** M77 — Ep20 13:32–16:15. The course explicitly allows 1m -> 5m,
++ * not 1m -> 1h. It does not enumerate a full ladder. The remaining core
++ * adjacency and the app's 3m/30m extensions are documented engineering policy,
++ * not a claim that the teacher supplied these nine mappings. Never use the
++ * narrative/bias stack as an exit-TF ladder (15m's boss is 4h, not its next TF).
++ */
++const NEXT_TF = Object.freeze({ '1m': '5m', '3m': '5m', '5m': '15m',
++  '15m': '1h', '30m': '1h', '1h': '4h', '4h': '1d', '1d': '1w', '1w': null });
++function timeframePolicy(entryTf) {
++  const known = typeof entryTf === 'string' && Object.hasOwn(NEXT_TF, entryTf);
++  return { rule: 'entry_or_one_above', state: known ? 'known' : 'unknown',
++    entry_tf: known ? entryTf : null,
++    allowed_tfs: known ? [entryTf, NEXT_TF[entryTf]].filter(Boolean) : [], exception: null };
++}
++
++// These are real observed analyses, NOT MTF targets relabelled with an LTF name.
++// Only the small target-relevant facts cross the TD/Setup boundary, no OHLC copy.
++function sourceFrames(series) {
++  return (series || []).filter((s) => s && s.smc).map((s) => {
++    const a = s.smc, st = a.structure || {};
++    return { tf: typeof s.tf === 'string' ? s.tf : null, analysis: {
++      tf: typeof a.tf === 'string' ? a.tf : null,
++      structure: { trend: st.trend, last_swing_high: st.last_swing_high || null,
++        last_swing_low: st.last_swing_low || null },
++      liquidity: { pools: (a.liquidity && a.liquidity.pools) || [] },
++      order_blocks: (a.order_blocks || []).map((z) => ({ kind: z.kind, dir: z.dir,
++        bottom: z.bottom, top: z.top, breached: z.breached, mitigated: z.mitigated,
++        strength: z.strength, t: z.t, displacement_t: z.displacement_t })),
++      fvgs: (a.fvgs || []).map((g) => ({ dir: g.dir, bottom: g.bottom, top: g.top,
++        filled: g.filled, fill_pct: g.fill_pct, strength: g.strength, t: g.t })),
++      premium_discount: a.premium_discount ? { range_high: a.premium_discount.range_high,
++        range_low: a.premium_discount.range_low } : null,
++    } };
++  });
++}
++
++function scopeSources(sources, entryTf) {
++  const policy = timeframePolicy(entryTf), accepted = [], rejected = [], seen = new Set();
++  for (const s of sources || []) {
++    const tf = s && s.tf, analysisTf = s && s.analysis && s.analysis.tf;
++    let reason = null;
++    if (!tf || !analysisTf) reason = 'unknown_source_tf';
++    else if (tf !== analysisTf) reason = 'source_tf_mismatch';
++    else if (!policy.allowed_tfs.includes(tf)) reason = 'outside_entry_target_band';
++    if (reason) { rejected.push({ source_tf: tf || null, analysis_tf: analysisTf || null, reason }); continue; }
++    if (seen.has(tf)) continue; // do not let a secondary catalogue override the actual primary
++    seen.add(tf); accepted.push(s);
++  }
++  return { sources: accepted, policy: { ...policy, source_tfs: [...seen], rejected_sources: rejected } };
++}
++module.exports.NEXT_TF = NEXT_TF;
++module.exports.timeframePolicy = timeframePolicy;
++module.exports.sourceFrames = sourceFrames;
++module.exports.scopeSources = scopeSources;
+diff --git a/src/bots/topdown.js b/src/bots/topdown.js
+index 7870e51..ab1e1ab 100644
+--- a/src/bots/topdown.js
++++ b/src/bots/topdown.js
 @@ -1,11 +1,13 @@
  'use strict';
  /**
@@ -5105,16 +5544,17 @@ index 7870e51..dbec55b 100644
   *
   *    STEP 1  Pick the timeframe stack and give every timeframe ONE job.
   *              higher timeframe = bias + the range    ("where are we going")
-@@ -49,6 +51,8 @@
+@@ -49,6 +51,9 @@
   */
  
  const C = require('../candles');
 +const Setup = require('./setup');
 +const Entry = require('./entry-models');
++const Targets = require('./targets');
  
  const r4 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 10000) / 10000);
  const r2 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
-@@ -58,15 +62,15 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+@@ -58,15 +63,15 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
  
  /** tf → the two timeframes around it, with the job each one does. */
  const STACK = {
@@ -5139,7 +5579,7 @@ index 7870e51..dbec55b 100644
  };
  
  const TF_MS = {
-@@ -102,7 +106,9 @@ function layersFor(tf) {
+@@ -102,7 +107,9 @@ function layersFor(tf) {
    return {
      style: s.style,
      bias_tf: s.bias,
@@ -5150,7 +5590,7 @@ index 7870e51..dbec55b 100644
      entry_tf: tf,          // the chart the trader is actually trading
      trigger_tf: s.trigger, // the chart used for the confirmation
    };
-@@ -378,6 +384,13 @@ function readRange(right, htf, ltf, atr, { tolerance = 0.05 } = {}) {
+@@ -378,6 +385,13 @@ function readRange(right, htf, ltf, atr, { tolerance = 0.05 } = {}) {
              : null,
        target_note: `opposite side of the range (${dir === -1 ? 'range low' : 'range high'} ${r4(opposite)})`,
        invalidation: dir === -1 ? `a close back above ${r4(sweepPrice || R.h)} voids the short` : `a close back below ${r4(sweepPrice || R.l)} voids the long`,
@@ -5164,7 +5604,7 @@ index 7870e51..dbec55b 100644
      };
    }
  
-@@ -459,6 +472,138 @@ function confirmation(trigger, dir, atr) {
+@@ -459,6 +473,138 @@ function confirmation(trigger, dir, atr) {
  
  /* ---------------------------------------------------------- the three layers */
  
@@ -5303,7 +5743,7 @@ index 7870e51..dbec55b 100644
  /**
   * The full top-down object.
   *
-@@ -469,7 +614,50 @@ function confirmation(trigger, dir, atr) {
+@@ -469,7 +615,57 @@ function confirmation(trigger, dir, atr) {
   * @param {object} [args.biasSeries]  pre-fetched higher-timeframe series (recommended)
   * @param {object} [args.triggerSeries] pre-fetched lower-timeframe series
   */
@@ -5312,6 +5752,13 @@ index 7870e51..dbec55b 100644
 + * CRT scenario/narrative is retained; it never overrides a missing model/pullback. */
 +function build(args) {
 +  const report = buildBase(args), opts = args.opts || {};
++  // M77: preserve physical source TFs even when the entry is a smaller M68 zone.
++  report.target_sources = Targets.sourceFrames([args.triggerSeries, args.series, args.biasSeries]);
++  if (report.crt_plan) {
++    report.crt_plan.projection_only = true;
++    report.crt_plan.execution_authority = 'setup_candidate';
++    report.crt_plan.target_note += ' HTF projection only; the final candidate selects an entry-aligned exit (M77).';
++  }
 +  if (opts.entryModels === false) return report; // isolated pre-M68 research arm
 +  const lower = args.triggerSeries || args.series;
 +  const model = report.direction ? Entry.compose({ medium: args.series, lower,
@@ -5355,7 +5802,7 @@ index 7870e51..dbec55b 100644
    const L = layersFor(tf);
    const entrySeries = series;
    const entryTf = tf;
-@@ -505,6 +693,13 @@ function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, zo
+@@ -505,6 +701,13 @@ function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, zo
  
    // ---- Layer 3: the trigger ----------------------------------------------
    const trigger = triggerSeries || entrySeries;
@@ -5369,10 +5816,10 @@ index 7870e51..dbec55b 100644
    const dirForConfirm = (biasRange && biasRange.dir) || (biasSmc && biasSmc.structure && biasSmc.structure.trend === 'bullish' ? 1 : biasSmc && biasSmc.structure && biasSmc.structure.trend === 'bearish' ? -1 : 0);
    const conf = dirForConfirm ? confirmation(trigger, dirForConfirm, entrySeries.atr) : { ok: false, note: 'No direction yet, so there is nothing to confirm.' };
  
-diff --git a/tradejournal/src/candles.js b/tradejournal/src/candles.js
+diff --git a/src/candles.js b/src/candles.js
 index c7de369..107d946 100644
---- a/tradejournal/src/candles.js
-+++ b/tradejournal/src/candles.js
+--- a/src/candles.js
++++ b/src/candles.js
 @@ -111,32 +111,238 @@ function clearCache() { cache.clear(); }
  
  /* ------------------------------------------------------------------ fetch */
@@ -5830,10 +6277,10 @@ index c7de369..107d946 100644
 +  // M123: exported so the offline source is testable without a second process per assertion.
 +  OFFLINE, OFFLINE_WARNING, OFFLINE_PROVIDER, offlineCandles, offlineSeed,
  };
-diff --git a/tradejournal/src/coach.js b/tradejournal/src/coach.js
+diff --git a/src/coach.js b/src/coach.js
 index a5aa93c..50478ce 100644
---- a/tradejournal/src/coach.js
-+++ b/tradejournal/src/coach.js
+--- a/src/coach.js
++++ b/src/coach.js
 @@ -9,6 +9,13 @@
   */
  const P = require('./performance');
@@ -5924,10 +6371,10 @@ index a5aa93c..50478ce 100644
    const suggestedRisk = r2(bank * (suggestedRiskPct / 100) * riskMultiplier);
  
    return {
-diff --git a/tradejournal/src/db.js b/tradejournal/src/db.js
+diff --git a/src/db.js b/src/db.js
 index 7e2fd68..f9fdbfc 100644
---- a/tradejournal/src/db.js
-+++ b/tradejournal/src/db.js
+--- a/src/db.js
++++ b/src/db.js
 @@ -117,7 +117,10 @@ CREATE TABLE IF NOT EXISTS accounts (
    currency TEXT DEFAULT 'USD',
    starting_balance REAL DEFAULT 10000,
@@ -6246,10 +6693,10 @@ index 7e2fd68..f9fdbfc 100644
 -};
 +  DEFAULT_CHECKLIST, DEFAULT_STRATEGIES, currentStrategyVersion, snapshotStrategyVersion, strategyRulesChanged, STRATEGY_RULE_FIELDS};
 \ No newline at end of file
-diff --git a/tradejournal/src/instruments.js b/tradejournal/src/instruments.js
+diff --git a/src/instruments.js b/src/instruments.js
 index e58249b..2292b54 100644
---- a/tradejournal/src/instruments.js
-+++ b/tradejournal/src/instruments.js
+--- a/src/instruments.js
++++ b/src/instruments.js
 @@ -39,10 +39,18 @@ const CLASS_LABELS = {
  // instruments whose spreads are not class-typical (oil, nat gas, silver).
  // ---------------------------------------------------------------------------
@@ -6362,10 +6809,10 @@ index e58249b..2292b54 100644
    positionSize, sizeFromMoneyRisk, pipsMoved, num, round2,
 +  RISK_GUARDRAIL, clampRiskPct, riskGuardrailNote,
  };
-diff --git a/tradejournal/src/performance.js b/tradejournal/src/performance.js
+diff --git a/src/performance.js b/src/performance.js
 index 97110a5..ad741f1 100644
---- a/tradejournal/src/performance.js
-+++ b/tradejournal/src/performance.js
+--- a/src/performance.js
++++ b/src/performance.js
 @@ -529,7 +529,7 @@ function fullAnalytics(trades, opts = {}) {
        i: i + 1, id: t.id, symbol: t.symbol, r: r4(num(t.r_multiple)), risk: r2(num(t.risk_amount)),
        mae: t.mae_r === null || t.mae_r === undefined ? null : r4(num(t.mae_r)),
@@ -6398,10 +6845,10 @@ index 97110a5..ad741f1 100644
      by_emotion: segment(trades, (t) => splitTags(t.emotion_before)),
      by_mistake: segment(trades, (t) => splitTags(t.mistakes)),
      by_tag: segment(trades, (t) => splitTags(t.tags)),
-diff --git a/tradejournal/src/routes/api.js b/tradejournal/src/routes/api.js
+diff --git a/src/routes/api.js b/src/routes/api.js
 index 0bb768c..3e54492 100644
---- a/tradejournal/src/routes/api.js
-+++ b/tradejournal/src/routes/api.js
+--- a/src/routes/api.js
++++ b/src/routes/api.js
 @@ -1,6 +1,7 @@
  'use strict';
  const { asyncRouter } = require('./async-router');
@@ -6849,10 +7296,10 @@ index 0bb768c..3e54492 100644
      min_rr: Number.isFinite(Number(b.min_rr)) && Number(b.min_rr) > 0
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
-diff --git a/tradejournal/src/routes/bots.js b/tradejournal/src/routes/bots.js
-index 2c6ff6c..5be5177 100644
---- a/tradejournal/src/routes/bots.js
-+++ b/tradejournal/src/routes/bots.js
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 2c6ff6c..89d46b8 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
 @@ -28,6 +28,21 @@ function createBotsRouter({ requireAuth }) {
   * scenario". `?min_rr=` overrides it for a single request so a probe or a test
   * can measure the same plan against a different floor.
@@ -6899,6 +7346,15 @@ index 2c6ff6c..5be5177 100644
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
      });
      res.json({
+@@ -138,7 +156,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       status: out.topdown.status, direction: out.topdown.direction,
+       headline: out.topdown.headline, playbook: out.topdown.playbook,
+       blocked: out.topdown.blocked, conflicts: out.topdown.conflicts,
+-      crt_plan: out.topdown.crt_plan, levels: out.topdown.levels, inputs: out.topdown.inputs,
++      crt_plan: out.topdown.crt_plan, target_sources: out.topdown.target_sources, levels: out.topdown.levels, inputs: out.topdown.inputs,
+       verdict: out.setups.verdict, meta: out.meta,
+     });
+   }));
 @@ -150,7 +168,7 @@ router.get('/markets', requireAuth, (req, res) => {
        .split(',').map((s) => s.trim()).filter(Boolean);
      if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
@@ -6921,14 +7377,14 @@ index 2c6ff6c..5be5177 100644
        symbol: b.symbol, timeframe: b.timeframe, entry: b.entry, stop: b.stop,
        targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
 -      mechanics: b.mechanics, note: b.note, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr,
-+      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr,
++      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy,
      });
      res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
    }));
-diff --git a/tradejournal/src/trades.js b/tradejournal/src/trades.js
+diff --git a/src/trades.js b/src/trades.js
 index 171df43..efa0873 100644
---- a/tradejournal/src/trades.js
-+++ b/tradejournal/src/trades.js
+--- a/src/trades.js
++++ b/src/trades.js
 @@ -5,6 +5,7 @@
   */
  const I = require('./instruments');
@@ -7019,10 +7475,10 @@ index 171df43..efa0873 100644
    if (filters.strategy_id) { where.push('strategy_id = @strategy_id'); params.strategy_id = Number(filters.strategy_id); }
    if (filters.from) { where.push("date(COALESCE(closed_at, opened_at)) >= date(@from)"); params.from = filters.from; }
    if (filters.to) { where.push("date(COALESCE(closed_at, opened_at)) <= date(@to)"); params.to = filters.to; }
-diff --git a/tradejournal/vercel.json b/tradejournal/vercel.json
+diff --git a/vercel.json b/vercel.json
 index 3dba89a..8635890 100644
---- a/tradejournal/vercel.json
-+++ b/tradejournal/vercel.json
+--- a/vercel.json
++++ b/vercel.json
 @@ -1,14 +1,18 @@
  {
    "$schema": "https://openapi.vercel.sh/vercel.json",

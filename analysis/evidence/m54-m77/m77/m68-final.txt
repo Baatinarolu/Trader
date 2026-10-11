@@ -1,0 +1,64 @@
+ ok   short market_shift: explicit fixture preserves every complete overlapping MTF/HTF constituent bucket
+ ok   short market_shift: a named model is derived from the full causal sequence
+ ok   short market_shift: the LTF zone, NOT the original MTF zone, decides actual entry
+ ok   short market_shift: model and evidence survive on the candidate and its levels
+ ok   short market_shift: Now uses exactly the same model/entry/stop/target
+ ok   short market_shift: narrative and original bounded target/risk stay intact
+ ok   short flip: explicit fixture preserves every complete overlapping MTF/HTF constituent bucket
+ ok   short flip: a named model is derived from the full causal sequence
+ ok   short flip: the LTF zone, NOT the original MTF zone, decides actual entry
+ ok   short flip: model and evidence survive on the candidate and its levels
+ ok   short flip: Now uses exactly the same model/entry/stop/target
+ ok   short flip: narrative and original bounded target/risk stay intact
+ ok   short: a flip-only pattern is not activated by default
+ ok   short: a stronger unrelated LTF OB cannot substitute for the cause
+ ok   short: the final instruction step and pending check cannot claim completion before pullback
+ ok   short: edge/body-price touch without midpoint pullback is no trade
+ ok   short: old retested=true before confirmation is not a valid flip entry
+ ok   short: M70 retains the causal extreme preference through mitigation
+ ok   short: a known failed-reaction pool not taken remains a refusal
+ ok   short: actual later fuel re-arms and the stop stays beyond that excursion
+ ok   long market_shift: explicit fixture preserves every complete overlapping MTF/HTF constituent bucket
+ ok   long market_shift: a named model is derived from the full causal sequence
+ ok   long market_shift: the LTF zone, NOT the original MTF zone, decides actual entry
+ ok   long market_shift: model and evidence survive on the candidate and its levels
+ ok   long market_shift: Now uses exactly the same model/entry/stop/target
+ ok   long market_shift: narrative and original bounded target/risk stay intact
+ ok   long flip: explicit fixture preserves every complete overlapping MTF/HTF constituent bucket
+ ok   long flip: a named model is derived from the full causal sequence
+ ok   long flip: the LTF zone, NOT the original MTF zone, decides actual entry
+ ok   long flip: model and evidence survive on the candidate and its levels
+ ok   long flip: Now uses exactly the same model/entry/stop/target
+ ok   long flip: narrative and original bounded target/risk stay intact
+ ok   long: a flip-only pattern is not activated by default
+ ok   long: a stronger unrelated LTF OB cannot substitute for the cause
+ ok   long: the final instruction step and pending check cannot claim completion before pullback
+ ok   long: edge/body-price touch without midpoint pullback is no trade
+ ok   long: old retested=true before confirmation is not a valid flip entry
+ ok   long: M70 retains the causal extreme preference through mitigation
+ ok   long: a known failed-reaction pool not taken remains a refusal
+ ok   long: actual later fuel re-arms and the stop stays beyond that excursion
+ ok   no measured LTF ATR cannot borrow the MTF one: no executable order
+ ok   no causal LTF zone: no executable order
+ ok   a causally tagged zone from a different location: no executable order
+ ok   an old POI touch followed by a sweep completely away from that POI: no executable order
+ ok   wrong causal event identity: no executable order
+ ok   a future displacement association: no executable order
+ ok   a pre-leg event mislabeled as its cause: no executable order
+ ok   missing lower sweep cannot borrow the MTF one: no executable order
+ ok   missing lower break cannot be replaced by expansion: no executable order
+ ok   a trend label is not a closed break: no executable order
+ ok   same-bar sweep/shift does not prove intrabar ordering: no executable order
+ ok   an unconfirmed flip: no executable order
+ ok   no failed reaction in a flip: no executable order
+ ok   an unrelated flip-confirming event: no executable order
+ ok   no post-shift pullback: no executable order
+ ok   zone closes through after confirmation: no executable order
+ ok   missing distinct lower data stays explicit unknown, never falsely named
+ ok   a still-forming structural close is not confirmed
+ ok   future lower prices cannot alter the observed model/entry/evidence
+ ok   type names remain report-only, not eligibility gates
+ ok   a parallel CRT scenario cannot override the named LTF entry/stop
+ ok   the ORIGINAL target below RR floor refuses; no farther replacement
+
+M68 entries: 62 passed / 0 failed

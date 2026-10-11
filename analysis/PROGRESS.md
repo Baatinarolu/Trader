@@ -6,7 +6,7 @@ to write** unless the groups below are an exact partition of `MISMATCHES.md` —
 missing, none duplicated, none invented. That assertion is what makes "nothing left out"
 a property of the file rather than a promise.
 
-**69 done · 2 partial · 61 todo · 0 deliberate no-action · 132 total**
+**71 done · 2 partial · 59 todo · 0 deliberate no-action · 132 total**
 
 ## A — scoring, vetoes & the tradeability gate  (setup.js)
 
@@ -33,7 +33,7 @@ _15 of 16 done_
 
 ## B — structure, zones & liquidity  (smc.js)
 
-_21 of 36 done, 1 partial_
+_23 of 36 done, 1 partial_
 
 | item | ep | sev | status |
 |---|---|---|---|
@@ -61,7 +61,7 @@ _21 of 36 done, 1 partial_
 | M51 | Ep 15 | S2 | done |
 | M52 | Ep 15 | S3 | done |
 | M53 | Ep 15 | S3 | todo |
-| M54 | Ep 15 | S3 | todo |
+| M54 | Ep 15 | S3 | done |
 | M55 | Ep 15 | S3 | todo |
 | M67 | Ep 17 | S3 | todo |
 | M71 | Ep 18 | S3 | todo |
@@ -69,7 +69,7 @@ _21 of 36 done, 1 partial_
 | M73 | Ep 18 | S3 | todo |
 | M75 | Ep 20 | S2 | todo |
 | M76 | Ep 20 | S3 | todo |
-| M77 | Ep 20 | S2 | todo |
+| M77 | Ep 20 | S2 | done |
 | M78 | Ep 20 | S3 | todo |
 | M119 | Ep 5 | S2 | done |
 | M130 | audit (M50 successive-call dependency check for M33) | S1 | done |

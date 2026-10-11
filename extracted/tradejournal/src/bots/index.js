@@ -295,10 +295,15 @@ async function analyse(symbol, tf = '15m', opts = {}) {
 
   // Historical legacy research has DIFFERENT entry/stop/target geometry. Keep
   // its historical table, but never turn it into live named-model probabilities.
-  if (prediction && momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) {
+  const targetRevision = setups.candidates.some((c) => c.levels && c.levels.target_policy
+    && c.levels.target_policy.rule === 'entry_or_one_above');
+  if (prediction && ((momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) || targetRevision)) {
     prediction = { ...prediction, setups: [], buy: null, sell: null, live_model_calibration: 'unvalidated',
-      withheld_for_entry_model: momentum.topdown.entry_setup.entry_model,
-      summary: ['Historical results use legacy research geometry, not this named LTF execution.',
+      withheld_for_entry_model: momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies
+        ? momentum.topdown.entry_setup.entry_model : null,
+      live_target_calibration: targetRevision ? 'unvalidated' : null,
+      withheld_for_target_policy: targetRevision ? 'm54_m77_targets' : null,
+      summary: ['Historical results use legacy research geometry, not the current entry/target policy.',
         'Live probabilities and refined legacy plans are withheld until separately calibrated.'] };
   }
 
@@ -385,7 +390,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
       direction: prediction.direction, setups: prediction.setups, buy: prediction.buy, sell: prediction.sell,
       model: prediction.model, backtest: prediction.backtest, summary: prediction.summary,
       current: predRow || null, error: prediction.error || null,
-      live_model_calibration: prediction.live_model_calibration || null, withheld_for_entry_model: prediction.withheld_for_entry_model || null,
+      live_model_calibration: prediction.live_model_calibration || null, live_target_calibration: prediction.live_target_calibration || null, withheld_for_target_policy: prediction.withheld_for_target_policy || null, withheld_for_entry_model: prediction.withheld_for_entry_model || null,
     } : null,
     news,
     daily,
@@ -484,13 +489,14 @@ async function chart(symbol, tf = '15m', opts = {}) {
     sessionPref: opts.sessionPref || null,   // M26
   });
 
-  // The plan drawn on the chart: the method's own CRT plan when it has one,
-  // otherwise the best graded setup on the side the method allows. A blocked
-  // method draws no directional plan at all — the chart shows levels, not a trade.
+  // M77: the actual eligible candidate is the chart's order authority. An HTF
+  // CRT projection is context only, never a second LTF exit/entry. Keep the old
+  // unscoped display branch solely for legacy research payloads.
   const crt = td.crt_plan;
   const best = setups.candidates.find((c) => c.levels && c.dir === td.direction) || setups.candidates[0] || null;
   let plan = null;
-  if (crt && td.direction !== 0 && !td.blocked && best && best.ok && !['flip', 'market_shift'].includes(best.entry_model)) {
+  if (crt && td.direction !== 0 && !td.blocked && best && best.ok && !['flip', 'market_shift'].includes(best.entry_model)
+      && !(best.levels && best.levels.target_policy && best.levels.target_policy.rule === 'entry_or_one_above')) {
     plan = {
       source: 'crt', dir: crt.dir, side: crt.side, method: td.method.name,
       entry: crt.safer.entry, stop: crt.safer.stop,
@@ -627,6 +633,8 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
           mechanics: momentum.mechanics.score, mechanics_grade: momentum.mechanics.grade,
           action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
           setup_side: best ? best.side : null, entry_model: best ? best.entry_model : null,
+          target_tf: best && best.levels ? best.levels.target_tf : null,
+          target_kind: best && best.levels && best.levels.targets[0] ? best.levels.targets[0].kind : null,
           entry_tf: best ? best.entry_tf : null, entry_evidence: best ? best.entry_evidence : null,
           entry_status: best && best.levels ? best.levels.entry_status : null,
           entry: best && best.levels ? best.levels.entry : null,
@@ -724,7 +732,7 @@ async function savePlan(userId, p = {}) {
      mechanics, sentiment, entry_mode, mtf_tf, risk_atr, entry_model, entry_tf, entry_evidence)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     userId, symbol, timeframe, dir, dir > 0 ? 'long' : 'short',
-    p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.p_win == null ? null : Number(p.p_win),
+    p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.target_policy || p.p_win == null ? null : Number(p.p_win),
     entry, stop, t1, t2, rr(t1), rr(t2),
     p.mechanics == null ? null : Number(p.mechanics), p.note ? String(p.note).slice(0, 400) : null,
     p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
@@ -756,7 +764,7 @@ async function saveSignals(userId, payload) {
   for (const c of cands) {
     const L = c.levels;
     const model = Entry.normaliseName(c.entry_model || L.entry_model);
-    const predRow = !['flip', 'market_shift'].includes(model) && !(td && td.countertrend) && payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
+    const predRow = !L.target_policy && !['flip', 'market_shift'].includes(model) && !(td && td.countertrend) && payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
     const info = await ins.run(
       userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
       predRow ? predRow.p_win : null,
@@ -764,7 +772,7 @@ async function saveSignals(userId, payload) {
       L.targets.length > 1 ? L.targets[L.targets.length - 1].price : null,
       L.rr_primary, L.rr_final,
       payload.momentum ? payload.momentum.mechanics.score : null,
-      payload.headline ? payload.headline.text.slice(0, 400) : null,
+      L.target_policy ? (`Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
       td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
       model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
     );

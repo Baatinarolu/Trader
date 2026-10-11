@@ -13,8 +13,9 @@
  * Run from extracted/tradejournal:  node ../../analysis/probe-m21-strongweak.js
  */
 const path = require('path');
-const Setup = require(path.join(process.cwd(), 'src/bots/setup.js'));
-const SMC = require(path.join(process.cwd(), 'src/bots/smc.js'));
+const APP = process.env.TJ_APP || path.join(__dirname, '..', 'extracted/tradejournal');
+const Setup = require(path.join(APP, 'src/bots/setup.js'));
+const SMC = require(path.join(APP, 'src/bots/smc.js'));
 const Synth = require('./harness/synth.js');
 
 let pass = 0, fail = 0;
@@ -25,13 +26,11 @@ ok(typeof Setup.strongWeak === 'function', 'strongWeak() is exported');
 /* ---- the derivation, on synthetic structures of each direction ---- */
 let sawBull = 0, sawBear = 0, sawRange = 0;
 let badDir = 0, badSide = 0, withTarget = 0, candidates = 0;
-// M51 note: the assertion below used to be `withTarget > 0` over TRADEABLE candidates only.
-// That conflated two things - whether M21's wiring works, and whether at least one tradeable
-// trade happened to land on a weak extreme. When M51 collapsed the ladder to a single target
-// the tradeable set roughly halved and that coincidence went to zero, failing the probe even
-// though the wiring was intact. The replacement tests the guarantee itself, over every
-// candidate rather than the handful that survive the vetoes - a far larger sample.
-let wkExpected = 0, wkFirst = 0, wkViolations = 0;
+// M54 deliberately refines the old unconditional weak-first guarantee. Keep the
+// label AND the candidate, but never jump over a nearer physical opposing magnet.
+// Historical M21 priority evidence is retained in the ledger/M54 report, not
+// silently treated as the new contract. Include refusals and sub-0.9R magnets.
+let wkExpected = 0, wkFirst = 0, wkViolations = 0, nearestViolations = 0;
 
 for (let seed = 1; seed <= 10; seed++) {
   const candles = Synth.series({ seed, bars: 700 });
@@ -65,21 +64,15 @@ for (let seed = 1; seed <= 10; seed++) {
     for (const c of (r.candidates || [])) {
       if (!c.levels || !c.levels.targets) continue;
       const d = c.dir > 0 ? 1 : -1;
-      // targetPools() tests "beyond entry" against the ZONE ENTRY price, not the current
-      // close - the first version of this check used candles[i].c and reported 841 false
-      // violations. Compare against the level the candidate actually enters at.
       const entryPx = c.levels.entry;
-      if (sw && sw.weak && entryPx != null
-          && (d > 0 ? sw.weak.price > entryPx : sw.weak.price < entryPx)) {
-        // Only count it when the weak extreme actually SURVIVED into the target list. A
-        // handful of cases drop it legitimately - setup.js discards any pool inside 0.9R of
-        // the entry, and a level you are already sitting on is not a target. Counting those
-        // as ordering failures would be wrong; verified separately that 6 of 6 remaining
-        // mismatches are exactly this, with none left unexplained.
-        if (!c.levels.targets.some((t) => t.kind === 'weak_structure')) continue;
+      const catalogue = c.levels.target_candidates || [];
+      if (catalogue.length && c.levels.targets.length
+          && c.levels.targets[0].price !== catalogue[0].price) nearestViolations++;
+      if (sw && sw.weak && entryPx != null && d * (sw.weak.price - entryPx) > 0) {
         wkExpected++;
+        const kept = catalogue.some((t) => t.kind === 'weak_structure' && t.price === sw.weak.price);
+        if (!kept || (c.levels.targets[0] && d * (c.levels.targets[0].price - sw.weak.price) > 0)) wkViolations++;
         if (c.levels.targets[0] && c.levels.targets[0].kind === 'weak_structure') wkFirst++;
-        else wkViolations++;
       }
       if (!c.ok) continue;
       candidates++;
@@ -94,8 +87,9 @@ ok(sawRange > 0, 'the sample contained a ranging structure, so the no-invention 
 ok(badDir === 0, `a stale trend label assigns nothing rather than a wrong-side target (${badDir} violations)`);
 ok(badSide === 0, `the weak extreme is on the correct side of the strong one (${badSide} violations)`);
 ok(wkExpected > 0, `the sample contained cases where a weak extreme lay beyond entry (${wkExpected})`);
-ok(wkViolations === 0, `the weak extreme is the LEADING target whenever it lies beyond entry (${wkFirst}/${wkExpected}, ${wkViolations} violations)`);
-console.log(`  weak-structure target leads in ${wkFirst} of ${wkExpected} eligible candidates`);
+ok(wkViolations === 0, `weak extreme survives in the catalogue and no farther target replaces it (${wkFirst}/${wkExpected} selected, ${wkViolations} violations)`);
+ok(nearestViolations === 0, `M54's nearest magnet is the actual single target (${nearestViolations} violations)`);
+console.log(`  nearest weak-structure target is selected in ${wkFirst} of ${wkExpected} eligible candidates`);
 console.log(`  (informational) present in ${withTarget} of ${candidates} tradeable candidates`);
 
 /* ---- a ranging structure must say so rather than guess ---- */

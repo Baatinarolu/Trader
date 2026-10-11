@@ -1,0 +1,68 @@
+
+==============================================================================
+ INDEPENDENT WALK-FORWARD BACKTEST  —  REAL MARKET DATA
+==============================================================================
+ REAL DATA (5m) — 2 fixture(s): EURUSD-5m.csv, XAUUSD-5m.csv  ·  windows=300 warmup=120 maxBars=20 fillWindow=12 cooldown=12
+ engine: src/bots/smc.js analyse() + src/bots/setup.js buildSetups()  (unmodified paths)
+ M33 three-role arm: native 5m → complete 15m/4h buckets; held HTF narrative; counter path ON
+ method reads=4761 counter reads=81 ready=0 completed=27 permitted=0 fills=0
+ counter unmet prerequisites (overlap, not a partition): POI=71 phase=8 LTF=79
+ M68 named-entry arm: ON · reads=4761 known=677 ready=0 market_shift=0 flip=0
+ M68 states: {"waiting_direction":4084,"waiting_poi":527,"waiting_shift":143,"waiting_sweep":4,"waiting_zone":3}
+ M3 chase guard (Ep 5 BOS timing / Ep 2 anti-chase): ON — a candidate graded during an expansion is refused  ·  M26 window restriction: none
+ M10 stand-down arm: course (Monday + Friday + December — what ships)
+
+ ALL SIGNALS WHERE ok===true (the CURRENT gate, includes B and C)
+  n=0
+
+ BIAS HYSTERESIS (M50) — the shipped rule, run over the walk
+   bias reads evaluated        4761
+   ...held against a fresh read 3058 (64.2%)
+   ...where fresh disagreed     3058 (64.2%)
+   bias plan resets             64 (1.34%)  · includes same-direction re-reads after invalidation
+   ...with an invalidating close 60 of 64
+   fresh reads that were flat    2806 (held, not invalidated)
+   bars with no usable HTF range 0 (no level to store)
+
+ THE M95 DECISION, MEASURED
+   A+ and A only   n=0
+   B and C only    n=0
+   -> dropping B and C changes expectancy by 0.0000R
+
+ DECLARED R:R vs REALISED (is the target actually reachable?)
+
+ M58 — FLAT vs GRADE-SIZED DEPLOYMENT ($10k account, 1% configured risk)
+   flat  1% on every trade   total $     0   maxDD $    0   sd/trade $0.00
+   sized by grade            total $     0   maxDD $    0   sd/trade $0.00
+   -> expectancy in R is unchanged by design (0.0000R); sizing moves dollars and variance
+   -> no change in dollars
+
+ M33 — ACTUAL GRADE x RANGE x COUNTER-METHOD DEPLOYMENT (same trades)
+   before counter reduction $0.00; after $0.00; counter-method reductions on 0/0 fills
+   The M58 table above isolates grade ONLY; this table consumes the actual emitted risk_pct. No sizing policy changes expectancy in R.
+
+ M10 PREMISE, MEASURED ON REAL WEEKDAYS (does Mon/Fri actually underperform?)
+   Sun  n=  0
+   Mon  n=  0
+   Tue  n=  0
+   Wed  n=  0
+   Thu  n=  0
+   Fri  n=  0
+   Sat  n=  0
+   Mon+Fri combined  n=0
+   Tue-Thu combined  n=0
+   ⚠ n is small and the buckets smaller. This tests a DIRECTION, nothing more.
+
+ PER-SEED (is one series dominating the result?)
+   seed 1  n=0
+   seed 2  n=0
+   seed 3  n=0
+   seed 4  n=0
+   seed 5  n=0
+
+⚠ REAL bars, but a SMALL and DEPENDENT sample. 2 fixture(s), 2 walk(s),
+  overlapping 300-bar windows on one continuous series, so consecutive trades are NOT
+  independent and the effective n is far below the count printed. The course's own
+  threshold (Ep 27) is 30-50 trades minimum and 100 preferred before any conclusion;
+  treat this as a direction and a check on the synthetic distortion, never as a
+  confidence interval, and never as evidence of edge either way.

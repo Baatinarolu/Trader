@@ -191,14 +191,19 @@ console.log('— does the value survive to the emitted object? —');
   check('M21 no labelled candidate puts weak on the wrong side of strong', contradictory.length === 0,
     `${labelled.length - contradictory.length}/${labelled.length} geometrically consistent`);
 
-  // The guarantee the old probe missed: when a weak_structure target exists in the
-  // emitted ladder, it must LEAD — not merely appear somewhere in it.
+  // M54 refines weak-first into nearest-magnet, without dropping weak labels or
+  // candidates. The original 77/1174 dead-wiring result remains historical evidence.
   const withTargets = cand.filter((c) => c.levels && Array.isArray(c.levels.targets) && c.levels.targets.length);
-  const hasWeak = withTargets.filter((c) => c.levels.targets.some((t) => t.kind === 'weak_structure'));
-  const weakLeads = hasWeak.filter((c) => c.levels.targets[0].kind === 'weak_structure');
-  check('M21 weak_structure LEADS the emitted target ladder',
-    hasWeak.length > 0 && weakLeads.length === hasWeak.length,
-    `${weakLeads.length}/${hasWeak.length} (the dead-wiring figure was 77/1174)`);
+  const withCatalogue = withTargets.filter((c) => c.levels.target_candidates && c.levels.target_candidates.length);
+  const expectedWeak = withCatalogue.filter((c) => c.strong_weak && c.strong_weak.weak
+    && c.dir * (c.strong_weak.weak.price - c.levels.entry) > 0);
+  const keptWeak = expectedWeak.filter((c) => c.levels.target_candidates.some((t) => t.kind === 'weak_structure'
+    && t.price === c.strong_weak.weak.price));
+  const nearest = withCatalogue.filter((c) => c.levels.targets[0].price === c.levels.target_candidates[0].price);
+  check('M21/M54 weak candidate survives; the actual nearest magnet leads',
+    expectedWeak.length > 0 && keptWeak.length === expectedWeak.length
+      && withCatalogue.length === withTargets.length && nearest.length === withCatalogue.length,
+    `${keptWeak.length}/${expectedWeak.length} weak retained; ${nearest.length}/${withCatalogue.length} nearest selected`);
 
   // .map()/spread survival: primary_target is `{...ladder[0]}`, so kind must survive.
   const pt = withTargets.filter((c) => c.levels.primary_target);

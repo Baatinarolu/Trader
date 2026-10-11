@@ -1,0 +1,27 @@
+=== 1. Same input, no M3 gate: measure verdict propagation separately ===
+ measured: 920 analyses, 3 directional summaries, 0 point to refused candidates, 0 phantom setup actions
+ ok   the sample includes both directional and refused verdicts
+ ok   every directional summary points to an ok=true candidate
+ ok   when every candidate is refused, setup_action is null
+
+=== 2. The visible Now order consumes the same-side veto ===
+ ok   a refused priced candidate exists in the sample
+ ok   an allowed priced candidate exists in the sample
+ ok   a valid method scenario cannot arm a refused candidate
+ ok   a refusal has neither order nor armed flag
+ ok   a refused call has no permitted side or live opposite scenario
+ ok   the headline carries the engine veto verbatim
+ ok   NO TRADE still supplies a re-check clock
+ ok   an ok=true same-side candidate still arms the method plan
+ ok   missing eligibility is unknown, not a fabricated refusal (legacy/sentinel inputs)
+ ok   an allowed candidate never overrides a blocking topdown method
+ ok   the verdict never substitutes an allowed opposite side for the method side
+
+=== 3. Copy plan cannot export a refused highest score ===
+ ok   Copy plan is disabled after a NO TRADE verdict
+ ok   even a forced click exports no refused plan
+ ok   B remains copyable when it is allowed (the user keeps B/C tradeable)
+ ok   Copy plan exports the permitted side, not candidates[0]
+ ok   M26's closed-window hard stop remains independent
+
+19 passed, 0 failed

@@ -1,5 +1,8 @@
 # Backtest baselines — what changed, and why the older numbers must not be quoted
 
+LATEST: M54/M77 section at the end; earlier labels saying CURRENT are historical.
+Current ledger132:71 done/2 partial (M30/M103)/59 todo; M125 stays todo.
+
 `node analysis/harness/backtest.js --seeds 60 --bars 1500 --window 300`
 Engine: `src/bots/smc.js analyse()` + `src/bots/setup.js buildSetups()`, unmodified call paths.
 
@@ -3103,3 +3106,88 @@ same1h bar clock also14/14/0. Never lower those floors to turn an insufficient s
 Local labelled synthetic feeds/SQLite do NOT validate production401, live providers,
 Turso/Vercel/session/cron. Progress69 done/2 partial/61 todo/0 no-action/132 total.
 M54/M77 and partial M30/M125 remain later; no 70%-win-rate target shrinking.
+
+===============================================================================
+M54 / M77 — TARGET CATALOGUE, NEAREST SELECTION AND PHYSICAL TF BAND
+===============================================================================
+2026-10-11. Parent c326651 (M68). Full record: analysis/M54-M77-TARGETS.md.
+Course fidelity, NOT performance manufacture. Negative results retained.
+
+Separately measured stages, n / win / expectancy / PF:
+                            bare60x1500/window300          real15/window300
+parent c326651              24 /29.2%/+0.7908R/2.33       10 /40.0%/+0.7250R/2.45
+M54 additions ONLY           21 /23.8%/-0.2090R/0.69        7 /42.9%/+0.7857R/2.38
+complete M54 nearest         30 /23.3%/-0.1568R/0.78        8 /25.0%/+0.2500R/1.40
+M77 alignment ONLY           30 /23.3%/-0.1568R/0.78        8 /25.0%/+0.2500R/1.40
+M77 exact working/pub RR     30 /23.3%/-0.1568R/0.78        8 /25.0%/+0.2500R/1.40
+final defensive/UI stage     30 /23.3%/-0.1568R/0.78        8 /25.0%/+0.2500R/1.40
+Complete-parent delta -0.9476R bare / -0.4750R real. Different selected cohorts /
+fill-cooldown interactions, NOT matched-trade causal estimates. Addition-only real
+improvement is n7, no reason to retain the wrong rule. Synthetic travel/ranges are
+unlike market data; real windows dependent, all real cuts below course30. Current
+bare A+11/-0.4245R/PF0.48,A19/-0.0018R/PF1.00. No optimizing/gates relaxed.
+
+Complete M54→alignment→exact-RR→final defensive: ENTIRE printed output of all4
+profiles identical except numeric runtime ([0-9]+ms). Source/core/stage hashes and
+logs in analysis/evidence/m54-m77. Last headline-only correction separately:
+216 cases (200 actual SMC+16 named contexts),0 full candidate-array/0 non-headline
+result diffs,9 headline changes. No geometry/gate/risk change at that last stage.
+
+Native topdown parent/complete M54/M77/default all ZERO fills. Addition-only native
+was NOT run. Native13750 reads/known1006/ready0; states direction12744,POI997,sweep4,
+zone1,shift4. Real-native4761/known677/ready0; direction4084,POI527,shift143,sweep4,
+zone3. No named outcome sample, model ranking, edge or calibration. Real15 inputs
+EURUSD4032/XAUUSD4534; real5m EURUSD12054/XAUUSD3081. True native spacing; no lower
+interpolation, rejected90m/270m gold. EURUSD1h NOT fetched this pass.
+
+Feature tests: M54composition54/0 vsparent21/33; actual detector6/0 vs3/3. M77core
+87/0 vsM54control16/71/parent14/73; consumers41/0 vsM54control4/37.188/0 final.
+Actual SMC targets1152 reads,6727 OB/8986 FVG candidates,73 OB/107 FVG selected,
+0 lifecycle/source/physical-edge/nearest errors. No injected detector facts.
+Other fixtures are explicit structure/CRT REPORT boundaries, not full HTF discovery.
+
+Mechanism: unmitigated/unbreached opposing OB/remaining-unfilled FVG join liquidity /
+weak structure/range; physical near edge. Nearest BEFORE RR, retain sub0.9R walls,
+no farther weak/measured rescue. Ordinary actual-entry same/one-above band; only
+1m→5m course-explicit, other adjacency documented judgment. Physical source_tf !=
+period_tf. Missing/mismatch/outside source rejects. Ordinary CRT HTF table is not
+an order/exception; M33 ALONE one prescribed HTF target/unchanged narrative/half
+ordinary risk. Missing prescribed target unknown/refused, no crash/fallback.
+Exact min(working,published) RR rejects1.999R displayed2R,tolerance1e-9. Broader
+M125 outlier-tail issue stays TODO, not claimed closed by arithmetic scope.
+
+Candidate-authority Now/chart/scan/Copy/eligible Save, honest TF/kind. Exit provenance
+in existing signal note; p_win null for revised geometry even supplied99. Actual
+Mechanics/Prediction browser scripts guard stale mixed payloads, empty/no research.
+Browser reads prediction from /analyse, NOT a separate /predict fetch (early
+investigation assumption corrected). Historical study remains labelled other
+geometry, not live calibration. No new target DB column or guessed history.
+
+Safety corrections core82/5→87/0; consumers36/3→39/0 then41/0. Single-target final
+verdict52/2→54/0. All separate negative outputs and proof retained. Measured complete
+UI briefly overwritten after its run; restored byte-for-byte from immutable
+alignment version. Original measured core unchanged; defensive-measured vs final
+stage patches distinguish last wording fix. Fresh artifact generator avoids
+already-patched scratch controls.
+
+Regressions: Now46/0,TD77/0,chart36/0,API121/0,M33 67/0,M68entry62/0,M70 30/0,
+M21 11/0,reverify67/0/17198 single/0 multi. Same-pass others:M68storage46/0 WITHOUT
+optional historical migration,detector16/0,M26 49/0,M34 11/0/110 isolated neutral
+builds,M12719/0. Matching botscurrent/parent204/2,19 fills/0 parity mismatches;
+both unchanged minimum20 sample floors. Never lower them to obtain green.
+
+Smokecurrent ORIGINAL19/21 vsparent21/21 (current-only live-card failures; both0
+console/style). Withheld alternative demands explicit marker/text AND zero live
+cards; nonempty assertions retained. Nextcurrent21/22 exposed hardcoded full view
+expectation; existing n>=10 full else all policy now payload-backed, floor unchanged.
+Finalcurrent22/22 full n7/all vs same-test parent21/21 full n12/full; optional
+view-switch adds current's extra check. Both0 style/console; Segments72 chars printed
+on BOTH, informational not counted. DB cleanup120/1 mismatch→121/0; one missing-
+offline TD transport error→77/0 with exported flag. All negative logs retained.
+
+Labelled OFFLINE synthetic/local SQLite/scheduler0 tests are NOT production401 /
+Turso/Yahoo/OKX/Vercel/auth/cron validation or chart pixel/pan/zoom evidence. No keys
+committed or rotated. Ledger132/71 done/2 partial(M30/M103)/59 todo/0 no-action.
+Next M76 protected-level annotation/M75 nearer-valid stop geometry, separately;
+M78 internal-structure ENTRY aggression, not stop-buffer. M125 outlier-tail stays
+open. No todo omitted or 70% manufacture via tiny targets.

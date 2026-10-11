@@ -1,0 +1,54 @@
+
+==============================================================================
+ INDEPENDENT WALK-FORWARD BACKTEST  —  REAL MARKET DATA
+==============================================================================
+ REAL DATA (15m) — 2 fixture(s): EURUSD-15m.csv, XAUUSD-15m.csv  ·  windows=300 warmup=120 maxBars=20 fillWindow=12 cooldown=12
+ engine: src/bots/smc.js analyse() + src/bots/setup.js buildSetups()  (unmodified paths)
+ M3 chase guard (Ep 5 BOS timing / Ep 2 anti-chase): ON — a candidate graded during an expansion is refused  ·  M26 window restriction: none
+ M10 stand-down arm: course (Monday + Friday + December — what ships)
+
+ ALL SIGNALS WHERE ok===true (the CURRENT gate, includes B and C)
+  n=   8  win= 25.0%  exp=+0.2500R  PF=1.40
+   grade A+  n=   4  win=  0.0%  exp=-1.0000R  PF=0.00
+   grade A   n=   4  win= 50.0%  exp=+1.5000R  PF=7.00
+
+ THE M95 DECISION, MEASURED
+   A+ and A only   n=   8  win= 25.0%  exp=+0.2500R  PF=1.40
+   B and C only    n=0
+   -> dropping B and C changes expectancy by 0.0000R
+
+ DECLARED R:R vs REALISED (is the target actually reachable?)
+   avg declared 4.23R   avg realised 0.250R   ratio 0.059
+   target 2  ·  stop 5  ·  expired 0
+
+ M58 — FLAT vs GRADE-SIZED DEPLOYMENT ($10k account, 1% configured risk)
+   flat  1% on every trade   total $   200   maxDD $  500   sd/trade $196.85
+   sized by grade            total $   200   maxDD $  500   sd/trade $196.85
+   -> expectancy in R is unchanged by design (0.2500R); sizing moves dollars and variance
+   -> no change in dollars
+
+ M10 PREMISE, MEASURED ON REAL WEEKDAYS (does Mon/Fri actually underperform?)
+   Sun  n=  0
+   Mon  n=  0
+   Tue  n=  0
+   Wed  n=   3  win=  0.0%  exp=-0.6667R  PF=0.00   vs all +0.2500R  -> worse
+   Thu  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00   vs all +0.2500R  -> worse
+   Fri  n=   4  win= 50.0%  exp=+1.2500R  PF=3.50   vs all +0.2500R  -> BETTER
+   Sat  n=  0
+   Mon+Fri combined  n=   4  win= 50.0%  exp=+1.2500R  PF=3.50
+   Tue-Thu combined  n=   4  win=  0.0%  exp=-0.7500R  PF=0.00
+   ⚠ n is small and the buckets smaller. This tests a DIRECTION, nothing more.
+
+ PER-SEED (is one series dominating the result?)
+   seed 1  n=   6  win= 33.3%  exp=+0.5000R  PF=1.75
+   seed 2  n=   2  win=  0.0%  exp=-0.5000R  PF=0.00
+   seed 3  n=0
+   seed 4  n=0
+   seed 5  n=0
+
+⚠ REAL bars, but a SMALL and DEPENDENT sample. 2 fixture(s), 2 walk(s),
+  overlapping 300-bar windows on one continuous series, so consecutive trades are NOT
+  independent and the effective n is far below the count printed. The course's own
+  threshold (Ep 27) is 30-50 trades minimum and 100 preferred before any conclusion;
+  treat this as a direction and a check on the synthetic distortion, never as a
+  confidence interval, and never as evidence of edge either way.

@@ -156,7 +156,7 @@ router.get('/markets', requireAuth, (req, res) => {
       status: out.topdown.status, direction: out.topdown.direction,
       headline: out.topdown.headline, playbook: out.topdown.playbook,
       blocked: out.topdown.blocked, conflicts: out.topdown.conflicts,
-      crt_plan: out.topdown.crt_plan, levels: out.topdown.levels, inputs: out.topdown.inputs,
+      crt_plan: out.topdown.crt_plan, target_sources: out.topdown.target_sources, levels: out.topdown.levels, inputs: out.topdown.inputs,
       verdict: out.setups.verdict, meta: out.meta,
     });
   }));
@@ -288,7 +288,7 @@ router.get('/markets', requireAuth, (req, res) => {
     const out = await Bots.savePlan(req.user.id, {
       symbol: b.symbol, timeframe: b.timeframe, entry: b.entry, stop: b.stop,
       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
-      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr,
+      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy,
     });
     res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
   }));

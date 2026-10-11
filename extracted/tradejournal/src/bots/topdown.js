@@ -53,6 +53,7 @@
 const C = require('../candles');
 const Setup = require('./setup');
 const Entry = require('./entry-models');
+const Targets = require('./targets');
 
 const r4 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 10000) / 10000);
 const r2 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
@@ -618,6 +619,13 @@ function counterTrendReport({ counter: ct, L, series, biasSeries, trigger, level
  * CRT scenario/narrative is retained; it never overrides a missing model/pullback. */
 function build(args) {
   const report = buildBase(args), opts = args.opts || {};
+  // M77: preserve physical source TFs even when the entry is a smaller M68 zone.
+  report.target_sources = Targets.sourceFrames([args.triggerSeries, args.series, args.biasSeries]);
+  if (report.crt_plan) {
+    report.crt_plan.projection_only = true;
+    report.crt_plan.execution_authority = 'setup_candidate';
+    report.crt_plan.target_note += ' HTF projection only; the final candidate selects an entry-aligned exit (M77).';
+  }
   if (opts.entryModels === false) return report; // isolated pre-M68 research arm
   const lower = args.triggerSeries || args.series;
   const model = report.direction ? Entry.compose({ medium: args.series, lower,

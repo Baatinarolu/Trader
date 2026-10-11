@@ -40,6 +40,12 @@
     ['signals', 'Signals'],
   ];
 
+  function liveGeometryUncalibrated(d) {
+    return !!(d && ((d.topdown && d.topdown.entry_setup && d.topdown.entry_setup.applies)
+      || (d.setups && (d.setups.candidates || []).some((c) =>
+        c.levels && c.levels.target_policy && c.levels.target_policy.rule === 'entry_or_one_above'))));
+  }
+
   const fmt = (v, dp = 4) => (v === null || v === undefined || isNaN(v)) ? '—' : Number(v).toLocaleString(undefined, { maximumFractionDigits: dp });
   const chip = (text, cls) => h('span', { class: 'chip ' + (cls || ''), text });
 
@@ -346,7 +352,7 @@
     if (td.crt_plan) {
       const p = td.crt_plan;
       const box = h('div', { class: 'td-plan' });
-      box.appendChild(h('div', { class: 'td-sub', text: `${p.side.toUpperCase()} · ${td.layers.bias.tf} CRT range ${fmt(p.range.low, 5)} – ${fmt(p.range.high, 5)}` }));
+      box.appendChild(h('div', { class: 'td-sub', text: `${p.side.toUpperCase()} · ${td.layers.bias.tf} HTF projection (not an order) · range ${fmt(p.range.low, 5)} – ${fmt(p.range.high, 5)}` }));
       const tbl = h('table', { class: 'data-table' });
       tbl.innerHTML = '<thead><tr><th>entry</th><th>stop</th><th>target</th><th>R:R</th><th>when to use</th></tr></thead><tbody>'
         + `<tr><td class="num">${fmt(p.aggressive.entry, 5)}</td><td class="num">${fmt(p.aggressive.stop, 5)}</td><td class="num">${fmt(p.aggressive.target, 5)}</td><td class="num">${p.aggressive.rr}R</td><td class="muted">aggressive — at the confirmation</td></tr>`
@@ -357,14 +363,21 @@
         box.appendChild(h('div', { class: 'bot-warn', text: `Below your minimum: this pays ${p.safer.rr}R against a ${p.min_rr}R floor. The method is not hiding it — but it is a scenario, not an order.` }));
       }
       box.appendChild(h('div', { class: 'muted-2 td-layer-note', text: `Stop goes beyond the candle that made the sweep (${fmt(p.sweep.level, 5)} swept to ${fmt(p.sweep.extreme, 5)}, ${p.sweep.wick_atr} ATR). ${p.invalidation}` }));
-      const save = h('button', { class: 'btn sm', text: 'Save this CRT plan' });
+      const active = (d.setups && d.setups.candidates || []).find((c) => c.dir === td.direction && c.ok);
+      const executable = d.now && d.now.armed && d.now.order && active && active.levels;
+      box.appendChild(h('div', { class: 'muted-2', text: 'This table is the HTF narrative projection only. Entry-aligned exit and risk come from the eligible candidate / Now order below; this is not a second executable plan.' }));
+      const save = h('button', { class: 'btn sm', text: executable ? 'Save eligible entry-aligned plan' : 'Nothing eligible to save', disabled: !executable });
       save.addEventListener('click', async () => {
+        if (!executable) return;
         try {
+          const lv = active.levels, o = d.now.order;
           const r = await global.API.post('/bots/signals/save-plan', {
-            symbol: d.symbol, timeframe: d.timeframe, entry: p.safer.entry, stop: p.safer.stop,
-            targets: [{ price: p.safer.target }], note: `CRT ${p.side} — ${td.layers.bias.tf} range ${p.range.low}–${p.range.high}`, entry_mode: 'crt', mtf_tf: td.layers.bias.tf,
+            symbol: d.symbol, timeframe: d.timeframe, entry: o.entry, stop: o.stop,
+            targets: lv.targets.map((t) => ({ ...t })), note: `Entry-aligned CRT ${p.side}: ${lv.entry_tf} entry; ${lv.target_tf} ${lv.targets[0].kind} target. HTF ${td.layers.bias.tf} range is narrative only.`,
+            entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence,
+            grade: active.grade, score: active.score, target_policy: lv.target_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
           });
-          global.App.toast(r.saved ? 'CRT plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
+          global.App.toast(r.saved ? 'Eligible plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
         } catch (e) { global.App.toast(e.message, 'err'); }
       });
       box.appendChild(save);
@@ -430,7 +443,7 @@
       grid.appendChild(h('div', { class: 'now-cell' },
         h('span', { class: 'now-k', text: 'The order' }),
         h('b', { class: 'mono', text: `${n.order.side} ${fmt(n.order.entry, 5)}` }),
-        h('em', { text: `stop ${fmt(n.order.stop, 5)} · target ${fmt(n.order.target, 5)} · ${n.order.rr}R` })));
+        h('em', { text: `stop ${fmt(n.order.stop, 5)} · target ${fmt(n.order.target, 5)} · ${n.order.rr}R${n.order.target_tf ? ' · ' + n.order.target_tf : ''}` })));
     } else {
       grid.appendChild(h('div', { class: 'now-cell' },
         h('span', { class: 'now-k', text: 'The order' }),
@@ -693,7 +706,7 @@
     }
 
     /* --- prediction teaser inside mechanic panel --- */
-    if (d.prediction && d.prediction.ok) {
+    if (d.prediction && d.prediction.ok && !liveGeometryUncalibrated(d)) {
       const p = h('div', { class: 'card' });
       p.appendChild(h('div', { class: 'card-head', html: `<strong>Odds</strong> <span class="muted">from the historical replay</span>` }));
       (d.prediction.summary || []).forEach((x) => p.appendChild(h('div', { class: 'bot-detail', text: '• ' + x })));
@@ -734,7 +747,14 @@
 
   function panelPredict(pane) {
     const p = B.predict || (B.data && B.data.prediction);
-    if (!p) { pane.appendChild(h('div', { class: 'empty', text: 'Run an analysis first (or open this tab after analysing) — prediction replays the model over history.' })); return; }
+    const uncalibrated = liveGeometryUncalibrated(B.data);
+    const withholding = () => pane.appendChild(h('div', { class: 'card bot-warn live-calibration-withheld',
+      text: 'Historical research uses different entry/target geometry. Live probabilities and refined legacy plans are withheld for the current execution until separately calibrated.' }));
+    if (!p) {
+      if (uncalibrated) withholding();
+      else pane.appendChild(h('div', { class: 'empty', text: 'Run an analysis first (or open this tab after analysing) — prediction replays the model over history.' }));
+      return;
+    }
     if (p.ok === false) { pane.appendChild(h('div', { class: 'card', text: 'Prediction unavailable: ' + (p.error || 'unknown error') })); return; }
 
     const strip = h('div', { class: 'card' });
@@ -818,7 +838,7 @@
      * ------------------------------------------------------------------ */
     const views = bt.frontier_views || {};
     const plain = bt.target_frontier || [];
-    if (!plain.length) return;
+    if (!plain.length) { if (uncalibrated) withholding(); return; }
     const hc = h('div', { class: 'card' });
     hc.appendChild(h('div', { class: 'card-head', html: `<strong>Win rate is a dial, not a skill badge</strong> <span class="muted">measured on ${esc(p.symbol || (B.data && B.data.symbol) || '')} with its own costs</span>` }));
     hc.appendChild(h('div', { class: 'bot-detail', text: `Every row below exits the whole position at that target. Two questions are separated on purpose: how often price reached the target before the stop (the mechanical hit rate) and how often the trade actually finished in profit after costs. On this market the round-trip cost is ${bt.meta && bt.meta.cost_r_median != null ? bt.meta.cost_r_median + 'R' : '—'} per trade (${bt.meta && bt.meta.cost_bps != null ? bt.meta.cost_bps + ' bp of price' : '—'}${bt.meta && bt.meta.cost_source ? ', ' + esc(bt.meta.cost_source) : ''}) — so a target smaller than the cost cannot win, however often it is touched.` }));
@@ -878,8 +898,10 @@
     const grid = h('div', { class: 'bot-grid' });
     const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
 
-    if (B.data && B.data.topdown && B.data.topdown.entry_setup && B.data.topdown.entry_setup.applies) {
-      pane.appendChild(h('div', { class: 'card bot-warn', text: 'Historical research above uses legacy entry geometry. Live probabilities and refined legacy plans are withheld for the current named LTF execution until separately calibrated.' }));
+    if (uncalibrated) {
+      // M77: a stale/mixed legacy prediction payload cannot bypass the
+      // analyse-level calibration guard. Research remains labelled above.
+      withholding();
       return;
     }
 

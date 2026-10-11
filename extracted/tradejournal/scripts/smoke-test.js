@@ -38,6 +38,7 @@ const warnings = [];
   vc.on('warn', (...a) => warnings.push('console.warn: ' + a.join(' ')));
   vc.on('log', () => {});
 
+  let lastAnalysisPrediction = null;
   const dom = await JSDOM.fromURL(BASE, {
     runScripts: 'dangerously',
     resources: new TvBlockedLoader(),
@@ -52,6 +53,9 @@ const warnings = [];
         if (tok) headers['x-session'] = tok;
         return fetch(u, { ...opts, headers, duplex: 'half' }).then(async (res) => {
           const body = await res.text();
+          if (/\/api\/bots\/analyse(?:\?|$)/.test(u)) {
+            try { lastAnalysisPrediction = JSON.parse(body).prediction || null; } catch {}
+          }
           return {
             ok: res.ok, status: res.status, headers: res.headers,
             text: async () => body,
@@ -171,15 +175,33 @@ const warnings = [];
   if (predBtn) { predBtn.click(); await wait(5000); }
   const predPane = window.document.querySelector('#content');
   const predText = predPane.textContent.replace(/\s+/g, ' ');
+  // A valid refusal/calibration guard need not manufacture a live setup merely
+  // to populate these chips. Keep the nonempty checks intact; verify the explicit
+  // withheld state has ZERO live plan cards instead. Parent exercises nonempty.
+  const liveWithheld = !!predPane.querySelector('.live-calibration-withheld')
+    && predPane.querySelectorAll('.bot-prob').length === 0
+    && /Live probabilities and refined legacy plans are withheld/.test(predText);
+  // Match the real payload and its existing 10-trade default-view policy; do
+  // not demand full when the server legitimately falls back to all on a thin
+  // sample. This verifies the selected/marked chip, not just that a chip exists.
+  const frontier = (lastAnalysisPrediction && lastAnalysisPrediction.backtest) || {};
+  const fullSample = ((frontier.frontier_views || {}).full || {}).trades;
+  const expectedDefault = Number(fullSample) >= 10 ? 'full' : 'all';
+  const defaultChip = [...predPane.querySelectorAll('button.chip')].find((b) =>
+    b.textContent.startsWith(expectedDefault + ' · default (n='));
+  const defaultViewOk = frontier.default_view === expectedDefault && !!defaultChip
+    && defaultChip.classList.contains('ok')
+    && (expectedDefault !== 'full' || /View shown by default: full/.test(predText));
+  console.log(` prediction default policy: full sample=${fullSample} · expected=${expectedDefault} · payload=${frontier.default_view}`);
   const predChecks = [
     ['prediction: exit-frontier table with break-even column', /Exit frontier/.test(predText) && /Needs to break even/.test(predText)],
     ['prediction: measured playlist filters table', /own filters, measured/.test(predText)],
     ['prediction: the win-rate dial', /win rate is a dial/i.test(predText)],
     ['prediction: five filter views offered', ['all', 'refined', 'strict', 'cost_floor', 'full'].every((k) => new RegExp(`${k}(?: · default)? \\(n=`).test(predText))],
     ['prediction: the selected view explains itself', /every setup|video's refinement loop|refinement at once|displacement leg \+ stop|maximum-expectancy/.test(predText)],
-    ['prediction: the measured view is the default and is marked', /full · default \(n=/.test(predText) && /View shown by default: full/.test(predText)],
-    ['prediction: measured gate chips on live setups', predPane.querySelectorAll('.chip').length > 0 && /Stop ≥ 0\.6 ATR/.test(predText) && /Target ≥ 3R/.test(predText)],
-    ['prediction: LTF confirmation state shown', /LTF confirmation/.test(predText)],
+    ['prediction: payload-backed default is selected/marked; thin full sample falls back to all', defaultViewOk],
+    ['prediction: measured gate chips on live setups OR explicit uncalibrated withholding', liveWithheld || (predPane.querySelectorAll('.bot-prob').length > 0 && /Stop ≥ 0\.6 ATR/.test(predText) && /Target ≥ 3R/.test(predText))],
+    ['prediction: LTF confirmation shown on live setups OR no live plans when withheld', liveWithheld || (predPane.querySelectorAll('.bot-prob').length > 0 && /LTF confirmation/.test(predText))],
     ['prediction: refined plan is saveable when actionable', !/Save refined plan to signals/.test(predText) || /Refined plan \(/.test(predText)],
     ['prediction: second-chance re-entry is reported', /Second-chance re-entry/.test(predText)],
   ];

@@ -4,6 +4,27 @@
 each transcript returns — roughly the first quarter of each video. This ledger tracks a complete pass:
 every episode, every chunk, in playlist order (Ep 0 → 33, then bonuses, then the EdgeFlo tool episodes).
 
+## Current implementation follow-through — M54/M77, 2026-10-11
+
+**132 findings:71 done/2 partial/59 todo/0 no-action.** The two partial rows are
+**M30 and M103**; M125 remains todo, not a partial row. Read status in MISMATCHES
+and generated PROGRESS before treating the historical findings below as current.
+
+Opposing unmitigated zones/unfilled imbalances now join genuine target candidates;
+nearest before RR. Actual entry/one-above TF scope is enforced with honest source
+provenance; M33 alone preserves the bounded opposing-HTF-zone exception. Candidate,
+Now/chart/scan/Copy/Save agree; incompatible legacy live odds are withheld. Single
+selected-target verdicts no longer describe a fictitious two-stage exit.
+
+**Negative measurements retained:** parent→complete M54 bare +0.7908R→−0.1568R,
+real15 +0.7250R→+0.2500R (n10→8). M77/final defensive outputs identical to complete
+M54 across four profiles, except runtime; native outcomes zero. No edge claim.
+Final target/consumer checks **188/0**; single-headline-only correction has216
+comparisons/0 candidate differences. Local smoke22/22 vs same-test parent21/21,
+zero console/style failures; original19/21 and later21/22 negatives retained.
+[Complete staged record](M54-M77-TARGETS.md). Next: M76 protected levels/M75 stop
+selection; M78 is entry aggression, not a stop-buffer item.
+
 Route: `https://youtubetotranscript.com/transcript?v=<ID>` — always the plain URL, with an explicit
 `chunkIndex`. YouTube's own `watch?v=` page truncates at ~1 000 words and must not be used.
 
@@ -2274,6 +2295,15 @@ His instruction is explicit on both: *"I'm going to be taking profit at the **ne
 zone**"* and *"the third place where you can place your takeprofit is an **unfilled
 imbalance**."*
 
+**Applied follow-through,2026-10-11 — M54.** All three magnets are actual
+candidates; unmitigated/unbreached opposing OBs and remaining unfilled FVG edges
+have lifecycle/kind/source provenance. Nearest comes before RR; no weak/farther
+rescue or fabricated measured target. Composition54/0 versus parent21/33;
+actual OHLC detector6/0 versus3/3 (1152 reads;6727 OB/8986 FVG discoveries;0 errors).
+Separate additions and selection measurements include the negative complete result:
+bare n24/+0.7908R→n30/−0.1568R; real15 n10/+0.7250R→n8/+0.2500R. Not an edge.
+Full staged evidence: `analysis/M54-M77-TARGETS.md`.
+
 **M55 (S3) — longs are allowed 5 points past his equilibrium.** His rule is strictly the 50 %
 level: *"when price comes down to the discount, **below the equilibrium level, which is the 50 %
 level**… I'm looking for longs."* `setup.js:131` accepts `position_pct < 55` for longs (and
@@ -2907,6 +2937,15 @@ otherwise the zone."*
 timeframe's analysis, the misalignment he warns about **largely cannot occur today** — the gap
 is that the rule is **unenforced**, so it would break the moment multi-TF targets are added, and
 (per **M54**) the candidates are liquidity **pools** rather than the **zones** he names.
+
+**Applied follow-through,2026-10-11 — M77.** Actual entry TF and physical target
+catalogue TF now define the legal same/one-above band. Ordinary CRT's HTF prices
+are projections only, not a universal exception; M33's single bounded opposing-HTF
+zone/half-risk exception survives. Exact working/published RR refuses1.999R even
+when displayed2.00R. Core87/0 and actual function/storage/HTTP/browser consumers41/0;
+all four measured outputs unchanged from M54 except runtime. Named native outcome
+sample remains zero. Only1m→5m is course-explicit; broader adjacency is documented
+engineering policy. `analysis/M54-M77-TARGETS.md` has exact scope/limitations.
 
 **M78 (S3) — the aggressive/conservative selection criterion is not implemented.** Ep 18 left
 the choice to *"your personality"*; Ep 20 gives a rule — **internal structure on your side →

@@ -1,0 +1,130 @@
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index d79431a..19f2eec 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -31,6 +31,7 @@
+ 
+ const I = require('../instruments');
+ const Entry = require('./entry-models');
++const Targets = require('./targets');
+ const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
+ 
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+@@ -316,6 +317,9 @@ function targetPools(analysis, dir, entry) {
+     seen.add(key);
+     out.push(p);
+   }
++  // Frozen M54 addition-only experiment: keep every parent selection/RR rule.
++  out.push(...Targets.catalogue(analysis, dir, entry).filter((p) =>
++    ['opposing_order_block', 'unfilled_fvg'].includes(p.kind)));
+   return out;
+ }
+ 
+diff --git a/src/bots/targets.js b/src/bots/targets.js
+new file mode 100644
+index 0000000..2634694
+--- /dev/null
++++ b/src/bots/targets.js
+@@ -0,0 +1,102 @@
++'use strict';
++/**
++ * M54 — Ep 15, 20:39–22:57: ONE next magnet, not a list of hoped-for exits.
++ * Liquidity/weak structure, an unmitigated opposing OB, and the remaining part
++ * of an unfilled opposing FVG are different target kinds. They are NOT entries.
++ * This module never alters the entry, stop, direction, or risk policy.
++ *
++ * Proximity is physical price distance, BEFORE an RR gate. A nearer <2R magnet
++ * refuses the idea; a farther pool must not be used to rescue its RR. A weak
++ * extreme remains a structural candidate/label, not permission to skip a wall.
++ * Detector lifecycle is window-bounded (M30); no whole-history claim is made.
++ */
++const number = (v) => v === null || v === undefined || v === '' || typeof v === 'boolean'
++  ? null : Number.isFinite(Number(v)) ? Number(v) : null;
++const r4 = (v) => Math.round(v * 10000) / 10000;
++const r2 = (v) => Math.round(v * 100) / 100;
++
++// Only break an EXACT-price tie. Never place weak structure ahead of a nearer zone.
++const TIE = { weak_structure: 0, opposing_order_block: 1, unfilled_fvg: 2, range: 4 };
++function byProximity(dir) {
++  return (a, b) => dir * (a.price - b.price)
++    || (TIE[a.kind] ?? 3) - (TIE[b.kind] ?? 3);
++}
++
++function ordered(rows, dir) {
++  const out = [], seen = new Map();
++  for (const row of rows.slice().sort(byProximity(dir))) {
++    // Keep honest source TFs distinct even when the prices coincide.
++    const key = `${row.source_tf || '?'}:${row.price.toFixed(4)}`;
++    const kept = seen.get(key);
++    if (kept) {
++      kept.also_targets = (kept.also_targets || []).concat({ ...row });
++      continue;
++    }
++    const copy = { ...row };
++    seen.set(key, copy);
++    out.push(copy);
++  }
++  return out;
++}
++
++function catalogue(analysis, dir, entry, weak = null) {
++  if (!analysis || ![1, -1].includes(dir) || number(entry) === null) return [];
++  const sourceTf = typeof analysis.tf === 'string' ? analysis.tf : null;
++  const rows = [];
++  const push = (row) => {
++    const raw = number(row.price);
++    if (raw === null || raw <= 0) return;
++    const price = r4(raw);
++    if (!(dir * (price - entry) > 0)) return;
++    rows.push({ ...row, price, source_tf: sourceTf });
++  };
++
++  if (weak) push({ price: weak.price, strength: 0.9, kind: 'weak_structure',
++    label: `Weak ${weak.label} — the level structure is expected to take out`, touches: null,
++    origin_t: number(weak.t), status: 'structural_extreme' });
++  for (const p of (analysis.liquidity && analysis.liquidity.pools) || []) {
++    if (!p || p.swept === true || !(number(p.strength) >= 0.5)) continue;
++    push({ ...p, origin_t: number(p.t), status: p.swept === false ? 'unswept' : 'unknown',
++      // A day's timebox is NOT the TF of a structural detector. PDH may be
++      // measured from real 5m candles; do not relabel that catalogue as 1d/1m.
++      ...(/^PD[HL]$/.test(p.kind) ? { period_tf: '1d' }
++        : /^PW[HL]$/.test(p.kind) ? { period_tf: '1w' } : {}) });
++  }
++  for (const z of analysis.order_blocks || []) {
++    if (!z || z.dir !== -dir || z.breached !== false || z.mitigated !== false) continue;
++    const bottom = number(z.bottom), top = number(z.top);
++    if (!(bottom > 0 && top > bottom)) continue;
++    push({ price: dir > 0 ? bottom : top, kind: 'opposing_order_block',
++      label: `Next opposing ${dir > 0 ? 'supply' : 'demand'} order block`,
++      strength: number(z.strength), origin_t: number(z.t),
++      formed_t: number(z.displacement_t), status: 'unmitigated', zone: [bottom, top] });
++  }
++  for (const g of analysis.fvgs || []) {
++    if (!g || g.dir !== -dir || g.filled !== false) continue;
++    const bottom = number(g.bottom), top = number(g.top), pct = number(g.fill_pct);
++    if (!(bottom > 0 && top > bottom) || pct === null || pct < 0 || pct >= 100) continue;
++    // Fill tracking enters a bearish gap from below / bullish gap from above.
++    // Aim at the first STILL UNFILLED edge, not an already-consumed original edge.
++    const remainingBottom = g.dir < 0 ? bottom + (top - bottom) * pct / 100 : bottom;
++    const remainingTop = g.dir > 0 ? top - (top - bottom) * pct / 100 : top;
++    push({ price: dir > 0 ? remainingBottom : remainingTop, kind: 'unfilled_fvg',
++      label: `Unfilled opposing ${dir > 0 ? 'bearish' : 'bullish'} FVG${pct > 0 ? ' (remaining gap)' : ''}`,
++      strength: number(g.strength), origin_t: number(g.t), status: pct > 0 ? 'partially_unfilled' : 'unfilled',
++      fill_pct: pct, zone: [r4(remainingBottom), r4(remainingTop)], original_zone: [bottom, top] });
++  }
++  const pd = analysis.premium_discount;
++  if (pd) push({ price: dir > 0 ? pd.range_high : pd.range_low, kind: 'range',
++    label: dir > 0 ? 'Dealing range high' : 'Dealing range low', strength: 0.9,
++    origin_t: null, status: 'structural_range' });
++  return ordered(rows, dir);
++}
++
++function levels(rows, dir, entry, risk) {
++  if (!(number(risk) > 0)) return [];
++  // Do NOT discard the nearest magnet because it is inside 0.9R/2R.
++  return ordered(rows, dir).filter((p) => dir * (p.price - entry) > 0).map((p) => ({
++    ...p, price: r4(p.price), rr: r2(dir * (p.price - entry) / risk),
++  }));
++}
++
++module.exports = { catalogue, levels, ordered, byProximity };

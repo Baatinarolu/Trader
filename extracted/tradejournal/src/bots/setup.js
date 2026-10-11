@@ -31,6 +31,7 @@
 
 const I = require('../instruments');
 const Entry = require('./entry-models');
+const Targets = require('./targets');
 const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
 
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -291,7 +292,9 @@ function marketPhase(analysis) {
     note: `No break of structure in the last ${RECENT} bars while the trend holds${ago === null ? '' : ` (last one ${ago} bars ago)`} — price is retracing. This is the stage the entry models want.` };
 }
 
-function targetPools(analysis, dir, entry) {
+function targetPools(analysis, dir, entry, { magnets = true } = {}) {
+  if (magnets) return Targets.catalogue(analysis, dir, entry, (strongWeak(analysis) || {}).weak);
+  // Explicit research control for the pre-M54 pool/weak-only composition.
   const pools = (analysis.liquidity && analysis.liquidity.pools) || [];
   const outward = pools
     .filter((p) => (dir > 0 ? p.price > entry : p.price < entry))
@@ -413,6 +416,8 @@ function buildSetups(analysis, ctx = {}) {
   const atr = Number(ctx.atr || (analysis && analysis.atr)) || price * 0.001;
   const bias = Number(ctx.bias || 0);            // -1 / 0 / +1 from the MTF + momentum layer
   const minRR = Number(ctx.minRR || 2);
+  const targetAlignment = ctx.targetAlignment !== false; // M77; false = frozen M54 research arm
+  const targetMagnets = ctx.targetMagnets !== false; // M54 default; false = measurement control
   const sessions = (analysis && analysis.sessions) || {};
   /* M38/M40 — the session view THIS SYMBOL is entitled to. The calendar fields (dow,
    * month) are preserved by the copy, so M10's stand-down is unaffected. */
@@ -488,7 +493,27 @@ function buildSetups(analysis, ctx = {}) {
       && td.countertrend.dir === dir ? td.countertrend : null;
     const model = td && td.entry_setup && td.entry_setup.dir === dir ? td.entry_setup : null;
     const useModel = !!(model && model.applies);
-    const boundedCRT = useModel && td.crt_plan ? td.crt_plan : null;
+    const crtProjection = useModel && td.crt_plan ? td.crt_plan : null;
+    // M77: ordinary CRT is not a second universal HTF exit exception. Retain the
+    // old exclusive HTF range edge ONLY in the explicit pre-M77 research arm.
+    const boundedCRT = !targetAlignment ? crtProjection : null;
+    const entryTf = useModel ? model.entry_tf : (analysis && analysis.tf) || null;
+    const scopedTargets = Targets.scopeSources([{ tf: (analysis && analysis.tf) || null, analysis },
+      ...((ctx.targetSources || (td && td.target_sources)) || [])], entryTf);
+    const counterTarget = counter && counter.target;
+    const counterTargetTf = counterTarget && typeof counterTarget.tf === 'string' ? counterTarget.tf : null;
+    const counterTargetKnown = !!(counterTargetTf && Targets.timeframePolicy(counterTargetTf).state === 'known'
+      && Number.isFinite(counterTarget.price) && counterTarget.price > 0);
+    const targetPolicy = counter ? { rule: 'bounded_counter_htf', state: counterTargetKnown ? 'known' : 'unknown',
+      entry_tf: entryTf, allowed_tfs: counterTargetKnown ? [counterTargetTf] : [], exception: 'm33_internal_pullback',
+      source_tfs: counterTargetKnown ? [counterTargetTf] : [], rejected_sources: [] }
+      : targetAlignment ? scopedTargets.policy : { rule: 'pre_m77_research', state: 'unscoped',
+        entry_tf: entryTf, allowed_tfs: null, exception: null };
+    const noTargetReason = counter
+      ? 'No real prescribed counter-HTF target — wait; no ordinary or farther-target fallback.'
+      : targetAlignment
+        ? 'No real opposing target on the entry timeframe or one level above — wait; the HTF projection is not an executable exit, and no measured-move or farther-target rescue is allowed.'
+        : 'No real opposing target — wait for a valid magnet; no measured-move or farther-target rescue.';
     const entryAtr = useModel ? model.atr : atr;
     const ladderTargets = !!ctx.ladderTargets && !counter && !boundedCRT; // a bounded pullback has ONE HTF target
     const triggerRead = useModel ? model : counter ? counter.confirmation : null;
@@ -632,20 +657,22 @@ function buildSetups(analysis, ctx = {}) {
       const buffer = entryAtr * 0.18;
       const stop = long ? stopBase - buffer : stopBase + buffer;
       const risk = Math.abs(entry - stop);
-      const pools = counter || boundedCRT ? [] : targetPools(analysis, dir, entry);
-      const targets = [];
-      for (const p of pools) {
+      const ordinarySources = targetAlignment ? scopedTargets.sources.map((s) => s.analysis) : [analysis];
+      const pools = counter || boundedCRT ? [] : ordinarySources.flatMap((a) =>
+        targetPools(a, dir, entry, { magnets: targetMagnets }));
+      const targets = targetMagnets ? Targets.levels(pools, dir, entry, risk) : [];
+      for (const p of targetMagnets ? [] : pools) {
         const reward = Math.abs(p.price - entry);
         const rr = risk ? reward / risk : 0;
         if (rr < 0.9) continue;                       // ignore pools the entry already sits on
         targets.push({ label: p.label, kind: p.kind, price: r4(p.price), rr: r2(rr), strength: p.strength, touches: p.touches || null });
       }
-      if (counter) {
-        const target = counter.target || {};
+      if (counter && counterTargetKnown) {
+        const target = counterTarget;
         // No 0.9R discard, measured move, weak-structure override or farther runner:
         // keep the prescribed target even when it FAILS the floor; the veto then says so.
         targets.push({ label: target.label || 'HTF opposing zone', kind: 'htf_order_block',
-          tf: target.tf, price: r4(target.price), rr: risk ? r2(dir * (target.price - entry) / risk) : 0,
+          tf: target.tf, source_tf: target.tf, price: r4(target.price), rr: risk ? r2(dir * (target.price - entry) / risk) : 0,
           strength: 1, touches: null });
       }
       if (boundedCRT) {
@@ -655,8 +682,18 @@ function buildSetups(analysis, ctx = {}) {
         targets.push({ label: 'Original CRT range edge', kind: 'crt_range', tf: boundedCRT.tf,
           price: r4(price), rr: risk ? r2(dir * (price - entry) / risk) : 0, strength: 1 });
       }
+      if (!counter && targetAlignment && crtProjection
+          && targetPolicy.allowed_tfs.includes(crtProjection.tf)
+          && td.layers && td.layers.bias && td.layers.bias.tf === crtProjection.tf
+          && dir * (crtProjection.aggressive.target - entry) > 0) {
+        // A CRT range can be an ordinary target ONLY on a legal actual source TF,
+        // and competes by proximity, rather than replacing nearer opposing magnets.
+        targets.push({ label: 'Entry-aligned CRT range edge', kind: 'crt_range',
+          tf: crtProjection.tf, source_tf: crtProjection.tf, price: r4(crtProjection.aggressive.target),
+          rr: risk ? r2(dir * (crtProjection.aggressive.target - entry) / risk) : 0, strength: 1 });
+      }
       // dealing-range extreme as a structural target
-      if (pd && !counter && !boundedCRT) {
+      if (pd && !counter && !boundedCRT && !targetMagnets) {
         const extreme = long ? pd.range_high : pd.range_low;
         const reward = Math.abs(extreme - entry);
         if (reward > 0) {
@@ -666,31 +703,33 @@ function buildSetups(analysis, ctx = {}) {
           }
         }
       }
-      targets.sort((a, b) => a.rr - b.rr);
-      // M21 BUG, found by strengthening the M21 probe: targetPools() deliberately pushes the
-      // weak structural extreme FIRST, because "in a bullish market structure you want to
-      // trade from strong structure and TARGET WEAK STRUCTURE". This sort by rr then silently
-      // undid that ordering, so the weak extreme only led when it happened to be the nearest
-      // pool - measured at 77 of 1174 eligible candidates. The placement had been dead code.
-      // It only looked alive because the old three-rung ladder could surface the weak extreme
-      // in ANY rung, and the probe accepted that.
+      targets.sort(targetMagnets ? Targets.byProximity(dir) : (a, b) => a.rr - b.rr);
+      // M21 keeps the weak label/candidate. M54 refines its old unconditional
+      // priority: an actual nearer opposing magnet is a wall, not permission
+      // to skip ahead to weak structure. Legacy precedence is research-only.
       const wkIdx = targets.findIndex((t) => t.kind === 'weak_structure');
-      if (wkIdx > 0) targets.unshift(targets.splice(wkIdx, 1)[0]);
-      // The FIRST pool is a wall, not a nuisance: price usually reacts there. The model
-      // banks a partial on it, protects the trade, and runs the rest to the 2R+ pool.
+      if (!targetMagnets && wkIdx > 0) targets.unshift(targets.splice(wkIdx, 1)[0]);
       const first = targets[0] || null;
-      const runner = targets.find((t) => t.rr >= minRR) || targets[targets.length - 1] || null;
+      // Display rounding must not turn a 1.999R nearest magnet into a permitted
+      // 2R trade. Check BOTH working and published entry/stop/target geometry;
+      // 1e-9R only absorbs floating-point subtraction, not centesimal rounding.
+      const publishedRisk = Math.abs(r4(entry) - r4(stop));
+      const targetRR = (t) => !t ? 0 : !targetAlignment ? t.rr
+        : risk > 0 && publishedRisk > 0
+          ? Math.min(dir * (t.price - entry) / risk, dir * (r4(t.price) - r4(entry)) / publishedRisk) : 0;
+      const meetsFloor = (t) => !!t && targetRR(t) + 1e-9 >= minRR;
+      const runner = targets.find((t) => meetsFloor(t)) || targets[targets.length - 1] || null;
       const wallRisk = first && first.rr < 1.3 ? first : null;
+      const runwayTarget = ladderTargets ? runner : first;
 
-      add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
-        runner && runner.rr >= minRR
-          // M51: this described a partial that no longer exists by default. Re-read every
-          // string that describes a decision whenever the decision changes.
+      add('runway', `Open runway to the selected opposing magnet (target ≥ 1:${minRR})`,
+        meetsFloor(runwayTarget), 14,
+        meetsFloor(runwayTarget)
           ? (ladderTargets
             ? `Partial at ${first.label} (${first.rr}R), runner to ${runner.label} at ${runner.price} = ${runner.rr}R`
-            : `One target: ${runner.label} at ${runner.price} = ${runner.rr}R — pick one and manage one position.`)
-          : first ? `The furthest real pool (${first.label}, ${first.price}) is only ${first.rr}R away — not enough runway for the risk taken.`
-            : 'No liquidity pool beyond entry to target — no reason for price to travel.');
+            : `One target: ${first.label} at ${first.price} = ${first.rr}R — pick one and manage one position.`)
+          : first ? `The nearest selected magnet (${first.label}, ${first.price}) is only ${first.rr}R away — refuse the idea, not substitute a farther target.`
+            : noTargetReason);
 
       // M51 - Ep 15 step 4: "Take profit, JUST PICK ONE TARGET... they mark 10 different
       // targets... THAT'S NOT HOW YOU DO IT... you're going to PANIC and you're going to MANAGE
@@ -700,9 +739,9 @@ function buildSetups(analysis, ctx = {}) {
       // Collapsed to a SINGLE target by default. `ctx.ladderTargets` restores the ladder as an
       // optional management view, which is where the ledger says it belongs - a trader's own
       // plan, not the model's default.
-      // The single target is the runner (the first pool at or beyond minRR), falling back to
-      // the nearest pool: that keeps the minRR floor meaningful rather than letting the choice
-      // of one target quietly drop the risk:reward requirement.
+      // The default is the nearest real magnet, selected BEFORE the RR floor.
+      // The ladder remains an explicit research/management opt-in, never a rescue
+      // of a default single-target trade that fails the floor.
       const ladder = [];
       if (ladderTargets) {
         if (first) ladder.push({ ...first, role: 'T1' });
@@ -710,24 +749,14 @@ function buildSetups(analysis, ctx = {}) {
         const beyond = targets.filter((t) => runner && t.rr > runner.rr + 0.6).slice(0, 1);
         beyond.forEach((t) => ladder.push({ ...t, role: 'T3' }));
       } else {
-        // M21 put the WEAK STRUCTURAL EXTREME first in the target list on purpose - "target
-        // weak structure" is the course's primary magnet. Selecting the runner here discarded
-        // it, and probe-m21 caught that (0 of 48 candidates reached the ladder). The two rules
-        // are not in conflict once resolved correctly: ONE target, and that target is the weak
-        // extreme. Fall back to the runner only when the weak extreme cannot carry the minRR
-        // floor, so the risk:reward requirement is not quietly dropped.
-        // The weak extreme IS the one target. Falling back to the runner when it sits under
-        // minRR was the wrong resolution - it silently swapped the course's magnet for a
-        // farther pool just to clear the ratio floor. If the weak structure is only 1R away
-        // the idea does not meet the 2R requirement and should not be taken at all; the
-        // existing runway/minRR veto says so, which keeps both rules intact instead of
-        // satisfying one by violating the other.
+        // M54: labels do not outrank price distance; sub-floor means no trade.
         const single = first || runner || null;
         if (single) ladder.push({ ...single, role: 'T1' });
       }
-      if (!ladder.length) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
-      const rrPrimary = ladder[0].rr;
-      const rrFinal = ladder[ladder.length - 1].rr;
+      if (!ladder.length && !counter && !boundedCRT && !targetMagnets) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
+      const rrPrimary = ladder.length ? ladder[0].rr : 0;
+      const rrFinal = ladder.length ? ladder[ladder.length - 1].rr : 0;
+      const rrFinalExact = ladder.length ? targetRR(ladder[ladder.length - 1]) : 0;
 
       // entry status: are we at the zone, or chasing?
       let entryStatus, entryNote;
@@ -769,12 +798,16 @@ function buildSetups(analysis, ctx = {}) {
           : 6;
       add('entry', 'Entry not chased (price at/near the zone)', entryStatus !== 'waiting' || zoneReach <= 2.5, 8, entryNote);
       add('management', 'Risk plan protects the trade at the first pool', rrFinal >= minRR, 0,
-        counter ? `One target at ${ladder[0].label} (${rrPrimary}R) — the counter-HTF pullback ends there.`
-          : `Take 50% at ${ladder[0].label} (${rrPrimary}R), move the stop to break-even, run the rest to ${ladder[ladder.length - 1].label} (${rrFinal}R).`);
+        !ladder.length ? 'No real target — no executable trade.'
+          : counter ? `One target at ${ladder[0].label} (${rrPrimary}R) — the counter-HTF pullback ends there.`
+            : ladder.length === 1 ? `One target at ${ladder[0].label} (${rrPrimary}R); manage one position, no partials.`
+              : `Take 50% at ${ladder[0].label} (${rrPrimary}R), move the stop to break-even, run the rest to ${ladder[ladder.length - 1].label} (${rrFinal}R).`);
       if (entryStatus === 'invalid') add('entry_valid', 'Zone not already invalidated', false, 0, entryNote);
 
       levels = {
-        ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counter.target.tf } : {}),
+        target_policy: targetPolicy, target_tf: ladder[0] ? ladder[0].source_tf || ladder[0].tf || null : null,
+        entry_tf: entryTf, stop_tf: entryTf,
+        ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counterTargetKnown ? counterTargetTf : null } : {}),
         ...(useModel ? { entry_model: model.entry_model, entry_tf: model.entry_tf,
           stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: Entry.evidence(model),
           ...(boundedCRT ? { target_tf: boundedCRT.tf } : {}) } : {}),
@@ -787,8 +820,8 @@ function buildSetups(analysis, ctx = {}) {
           // zone an "FVG" - the recurring trap of a string that describes a decision no
           // longer being updated when the decision changes.
           : `Beyond the ${{ order_block: 'order block', flip_zone: 'flip zone', fvg: 'FVG' }[zone.kind] || zone.kind} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(entryAtr * 0.18)} buffer`,
-        targets: ladder, primary_target: ladder[0] ? { ...ladder[0] } : null,
-        rr_primary: rrPrimary, rr_final: rrFinal,
+        targets: ladder, target_candidates: targets.map((t) => ({ ...t })), primary_target: ladder[0] ? { ...ladder[0] } : null,
+        rr_primary: rrPrimary, rr_final: rrFinal, rr_final_exact: rrFinalExact,
         management: {
           // M51: with a single target there is no partial to take and nothing to move to
           // break-even at - the old code emitted `partial_at` at 50% and a `runner_target` at
@@ -806,8 +839,8 @@ function buildSetups(analysis, ctx = {}) {
         entry_status: entryStatus, entry_note: entryNote,
         risk_warning: risk < entryAtr * 0.35 ? 'Stop is tighter than 0.35 ATR — normal noise can take you out. Consider using the sweep extreme instead.' : null,
         invalidation: long
-          ? `A ${useModel ? model.entry_tf : '15m'} close below ${r4(Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom))} invalidates the idea.`
-          : `A ${useModel ? model.entry_tf : '15m'} close above ${r4(Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top))} invalidates the idea.`,
+          ? `A ${entryTf || 'entry-timeframe'} close below ${r4(Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom))} invalidates the idea.`
+          : `A ${entryTf || 'entry-timeframe'} close above ${r4(Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top))} invalidates the idea.`,
       };
     } else {
       add('runway', 'Open runway to opposing liquidity', false, 14, 'No zone, so no defined risk — the model needs a level to trade against.');
@@ -830,7 +863,8 @@ function buildSetups(analysis, ctx = {}) {
     const hasZone = checks.find((c) => c.key === 'zone').pass;
     if (!hasTrigger) score = Math.min(score, 38);
     if (!hasZone) score = Math.min(score, 34);
-    if (levels && levels.rr_final > 0 && levels.rr_final < minRR) score = Math.min(score, 45);
+    const floorRR = levels ? (targetAlignment ? levels.rr_final_exact : levels.rr_final) : null;
+    if (levels && floorRR > 0 && floorRR + 1e-9 < minRR) score = Math.min(score, 45);
     if (levels && levels.entry_status === 'invalid') score = Math.min(score, 20);
     if (blackout) score = Math.min(score, 40);
     if (levels && levels.entry_status === 'waiting') score = Math.min(score, 66); // great idea, not yet valid
@@ -883,8 +917,10 @@ function buildSetups(analysis, ctx = {}) {
     // M7 / M96 — "no matter how many confluences I have, no matter how confident I am,
     // I'm going to be passing on the trade." This is arithmetic, not taste: at the measured
     // ~21% win rate, break-even needs (1 - 0.21) / 0.21 = 3.8R, so a sub-2R idea cannot win.
-    if (levels && ((levels.rr_final > 0 && levels.rr_final < minRR) || ((counter || boundedCRT) && !(levels.rr_final >= minRR)))) {
-      vetoes.push(`Risk:reward ${levels.rr_final}R is below the ${minRR}R floor — passing on the trade.`);
+    if (levels && ((floorRR > 0 && floorRR + 1e-9 < minRR) || ((counter || boundedCRT || targetMagnets || targetAlignment) && !(floorRR + 1e-9 >= minRR)))) {
+      vetoes.push(levels.targets.length
+        ? `Risk:reward ${Math.round(floorRR * 10000) / 10000}R (unrounded geometry) is below the ${minRR}R floor — passing on the trade.`
+        : noTargetReason);
     }
     if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
     if (blackout) vetoes.push('High-impact news inside the window.');
@@ -1012,7 +1048,7 @@ function buildSetups(analysis, ctx = {}) {
       },
       dir, side, score, grade: g.grade, grade_label: g.label,
       ...(td && td.entry_setup ? { entry_model: useModel ? model.entry_model : 'none',
-        entry_tf: model ? model.entry_tf : null,
+        entry_tf: levels ? levels.entry_tf : model ? model.entry_tf : null,
         entry_model_state: model ? model.state : 'not_permitted_direction',
         entry_evidence: useModel ? Entry.evidence(model) : null } : {}),
       // M25: the market phase, so the trader (and any review) can tell an impulse they are
@@ -1113,7 +1149,9 @@ function buildSetups(analysis, ctx = {}) {
   } else {
     const t1 = best.levels && best.levels.targets && best.levels.targets[0] ? best.levels.targets[0] : null;
     const headline = best.levels
-      ? `${best.grade} ${best.side} setup — partial ${best.levels.rr_primary}R at ${t1 ? t1.label : 'the first pool'}, runner to ${best.levels.rr_final}R`
+      ? best.levels.targets.length === 1
+        ? `${best.grade} ${best.side} setup — one target ${best.levels.rr_primary}R at ${t1.label}; manage one position`
+        : `${best.grade} ${best.side} setup — partial ${best.levels.rr_primary}R at ${t1 ? t1.label : 'the first pool'}, runner to ${best.levels.rr_final}R`
       : `${best.grade} ${best.side} setup`;
     const methodOk = !td ? null : (td.direction !== 0 && td.direction === best.dir);
     verdict = {

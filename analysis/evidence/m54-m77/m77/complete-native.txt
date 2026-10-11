@@ -1,0 +1,58 @@
+
+==============================================================================
+ INDEPENDENT WALK-FORWARD BACKTEST  —  SYNTHETIC DATA
+==============================================================================
+ seeds=10 bars=1500 window=300 warmup=120 maxBars=20 fillWindow=12 cooldown=12  gate=entry_status==='at-entry'  ·  0 trades  ·  66011ms
+ engine: src/bots/smc.js analyse() + src/bots/setup.js buildSetups()  (unmodified paths)
+ M33 three-role arm: native 5m → complete 15m/4h buckets; held HTF narrative; counter path ON
+ method reads=13750 counter reads=220 ready=0 completed=167 permitted=0 fills=0
+ counter unmet prerequisites (overlap, not a partition): POI=220 phase=14 LTF=220
+ M68 named-entry arm: ON · reads=13750 known=1006 ready=0 market_shift=0 flip=0
+ M68 states: {"waiting_direction":12744,"waiting_poi":997,"waiting_sweep":4,"waiting_zone":1,"waiting_shift":4}
+ M3 chase guard (Ep 5 BOS timing / Ep 2 anti-chase): ON — a candidate graded during an expansion is refused  ·  M26 window restriction: none
+ M10 stand-down arm: course (Monday + Friday + December — what ships)
+
+ ALL SIGNALS WHERE ok===true (the CURRENT gate, includes B and C)
+  n=0
+
+ BIAS HYSTERESIS (M50) — the shipped rule, run over the walk
+   bias reads evaluated        13750
+   ...held against a fresh read 5004 (36.4%)
+   ...where fresh disagreed     5004 (36.4%)
+   bias plan resets             787 (5.72%)  · includes same-direction re-reads after invalidation
+   ...with an invalidating close 768 of 787
+   fresh reads that were flat    8582 (held, not invalidated)
+   bars with no usable HTF range 0 (no level to store)
+
+ THE M95 DECISION, MEASURED
+   A+ and A only   n=0
+   B and C only    n=0
+   -> dropping B and C changes expectancy by 0.0000R
+
+ DECLARED R:R vs REALISED (is the target actually reachable?)
+
+ M58 — FLAT vs GRADE-SIZED DEPLOYMENT ($10k account, 1% configured risk)
+   flat  1% on every trade   total $     0   maxDD $    0   sd/trade $0.00
+   sized by grade            total $     0   maxDD $    0   sd/trade $0.00
+   -> expectancy in R is unchanged by design (0.0000R); sizing moves dollars and variance
+   -> no change in dollars
+
+ M33 — ACTUAL GRADE x RANGE x COUNTER-METHOD DEPLOYMENT (same trades)
+   before counter reduction $0.00; after $0.00; counter-method reductions on 0/0 fills
+   The M58 table above isolates grade ONLY; this table consumes the actual emitted risk_pct. No sizing policy changes expectancy in R.
+
+ PER-SEED (is one series dominating the result?)
+   seed 1  n=0
+   seed 2  n=0
+   seed 3  n=0
+   seed 4  n=0
+   seed 5  n=0
+   seed 6  n=0
+   seed 7  n=0
+   seed 8  n=0
+   seed 9  n=0
+   seed 10  n=0
+
+⚠ Synthetic data. This measures internal consistency of the entry/stop/target
+  logic, NOT real-market edge. Do not quote these figures as performance.
+

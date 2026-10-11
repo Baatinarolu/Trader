@@ -1,0 +1,48 @@
+ ok   both DB schema owners expose all three nullable model columns
+ ok   real lower loader filters forming/future OHLC BEFORE ATR, structure and causal zones
+ ok   analyse and chart obey the SAME explicit clock, before the mitigation close
+ ok   market_shift -1: analyse candidate → Now → chart ALL retain the actual LTF identity/prices
+ ok   market_shift -1: scan keeps the same named executable candidate
+ ok   market_shift -1: saved signal keeps exact model/timeframe/evidence/geometry, NOT legacy p_win
+ ok   market_shift 1: analyse candidate → Now → chart ALL retain the actual LTF identity/prices
+ ok   market_shift 1: scan keeps the same named executable candidate
+ ok   market_shift 1: saved signal keeps exact model/timeframe/evidence/geometry, NOT legacy p_win
+ ok   flip -1: analyse candidate → Now → chart ALL retain the actual LTF identity/prices
+ ok   flip -1: scan keeps the same named executable candidate
+ ok   flip -1: saved signal keeps exact model/timeframe/evidence/geometry, NOT legacy p_win
+ ok   flip 1: analyse candidate → Now → chart ALL retain the actual LTF identity/prices
+ ok   flip 1: scan keeps the same named executable candidate
+ ok   flip 1: saved signal keeps exact model/timeframe/evidence/geometry, NOT legacy p_win
+ ok   API prediction withholds live legacy probabilities/refined plans for the named model
+ ok   refined savePlan preserves identity/evidence and withholds uncalibrated p_win
+ ok   resolved signal review separates flip/market_shift/none/unknown, below-floor marked thin
+ ok   another user cannot list or aggregate the saved named signals
+ ok   storage still refuses ok=false, regardless of letter/model tag
+ ok   Index-owned migration ALSO restores all model columns without inventing history
+ ok   migration round trip keeps all original saved rows
+ ok   POST /trades persists the actual Log-trade fields
+ ok   arrays cannot impersonate a scalar model enum
+ ok   malformed journal evidence fails validation without a write
+ ok   invalid manual model names are rejected, not silently relabeled
+ ok   another user cannot update a tagged journal trade
+ ok   partial PUT preserves the nullable model/evidence snapshot
+ ok   closing a trade preserves its executed entry model, not a fresh guess
+ ok   closed journal review separates all four cohorts and marks thin samples
+ ok   model filter and unknown filter are distinct and owner-scoped
+ ok   malformed model query is an explicit 400
+ ok   CSV and JSON exports retain model/timeframe/evidence
+ ok   CSV round trip keeps real model/timeframe/evidence and historical-null rows
+ ok   JSON round trip preserves the same cohorts and snapshots
+ ok   manual retag cannot carry contradictory flip evidence forward
+ ok   malformed refined-plan evidence is a clear 400, not a server error
+ ok   save-plan HTTP rejects unknown enum values
+ ok   actual trade modal round trips model/timeframe/evidence
+ ok   historical-null trade modal remains Unknown, never defaults to none
+ ok   real Bots Log-trade prefill carries executable identity and evidence
+ ok   real Bots Copy-plan keeps named prices, not a parallel CRT
+ ok   actual chart clipboard names the 5m market-shift execution
+ ok   actual Analytics Segments renders all models plus the course sample warning
+ ok   actual Signals tab displays identity and per-model thin-sample review
+ ok   all actual browser scripts ran without JS errors
+
+M68 consumers/storage: 46 passed / 0 failed

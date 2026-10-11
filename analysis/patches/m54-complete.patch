@@ -1,0 +1,282 @@
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index d79431a..8508efa 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -31,6 +31,7 @@
+ 
+ const I = require('../instruments');
+ const Entry = require('./entry-models');
++const Targets = require('./targets');
+ const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
+ 
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+@@ -291,7 +292,9 @@ function marketPhase(analysis) {
+     note: `No break of structure in the last ${RECENT} bars while the trend holds${ago === null ? '' : ` (last one ${ago} bars ago)`} — price is retracing. This is the stage the entry models want.` };
+ }
+ 
+-function targetPools(analysis, dir, entry) {
++function targetPools(analysis, dir, entry, { magnets = true } = {}) {
++  if (magnets) return Targets.catalogue(analysis, dir, entry, (strongWeak(analysis) || {}).weak);
++  // Explicit research control for the pre-M54 pool/weak-only composition.
+   const pools = (analysis.liquidity && analysis.liquidity.pools) || [];
+   const outward = pools
+     .filter((p) => (dir > 0 ? p.price > entry : p.price < entry))
+@@ -413,6 +416,7 @@ function buildSetups(analysis, ctx = {}) {
+   const atr = Number(ctx.atr || (analysis && analysis.atr)) || price * 0.001;
+   const bias = Number(ctx.bias || 0);            // -1 / 0 / +1 from the MTF + momentum layer
+   const minRR = Number(ctx.minRR || 2);
++  const targetMagnets = ctx.targetMagnets !== false; // M54 default; false = measurement control
+   const sessions = (analysis && analysis.sessions) || {};
+   /* M38/M40 — the session view THIS SYMBOL is entitled to. The calendar fields (dow,
+    * month) are preserved by the copy, so M10's stand-down is unaffected. */
+@@ -632,9 +636,9 @@ function buildSetups(analysis, ctx = {}) {
+       const buffer = entryAtr * 0.18;
+       const stop = long ? stopBase - buffer : stopBase + buffer;
+       const risk = Math.abs(entry - stop);
+-      const pools = counter || boundedCRT ? [] : targetPools(analysis, dir, entry);
+-      const targets = [];
+-      for (const p of pools) {
++      const pools = counter || boundedCRT ? [] : targetPools(analysis, dir, entry, { magnets: targetMagnets });
++      const targets = targetMagnets ? Targets.levels(pools, dir, entry, risk) : [];
++      for (const p of targetMagnets ? [] : pools) {
+         const reward = Math.abs(p.price - entry);
+         const rr = risk ? reward / risk : 0;
+         if (rr < 0.9) continue;                       // ignore pools the entry already sits on
+@@ -656,7 +660,7 @@ function buildSetups(analysis, ctx = {}) {
+           price: r4(price), rr: risk ? r2(dir * (price - entry) / risk) : 0, strength: 1 });
+       }
+       // dealing-range extreme as a structural target
+-      if (pd && !counter && !boundedCRT) {
++      if (pd && !counter && !boundedCRT && !targetMagnets) {
+         const extreme = long ? pd.range_high : pd.range_low;
+         const reward = Math.abs(extreme - entry);
+         if (reward > 0) {
+@@ -666,31 +670,25 @@ function buildSetups(analysis, ctx = {}) {
+           }
+         }
+       }
+-      targets.sort((a, b) => a.rr - b.rr);
+-      // M21 BUG, found by strengthening the M21 probe: targetPools() deliberately pushes the
+-      // weak structural extreme FIRST, because "in a bullish market structure you want to
+-      // trade from strong structure and TARGET WEAK STRUCTURE". This sort by rr then silently
+-      // undid that ordering, so the weak extreme only led when it happened to be the nearest
+-      // pool - measured at 77 of 1174 eligible candidates. The placement had been dead code.
+-      // It only looked alive because the old three-rung ladder could surface the weak extreme
+-      // in ANY rung, and the probe accepted that.
++      targets.sort(targetMagnets ? Targets.byProximity(dir) : (a, b) => a.rr - b.rr);
++      // M21 keeps the weak label/candidate. M54 refines its old unconditional
++      // priority: an actual nearer opposing magnet is a wall, not permission
++      // to skip ahead to weak structure. Legacy precedence is research-only.
+       const wkIdx = targets.findIndex((t) => t.kind === 'weak_structure');
+-      if (wkIdx > 0) targets.unshift(targets.splice(wkIdx, 1)[0]);
+-      // The FIRST pool is a wall, not a nuisance: price usually reacts there. The model
+-      // banks a partial on it, protects the trade, and runs the rest to the 2R+ pool.
++      if (!targetMagnets && wkIdx > 0) targets.unshift(targets.splice(wkIdx, 1)[0]);
+       const first = targets[0] || null;
+       const runner = targets.find((t) => t.rr >= minRR) || targets[targets.length - 1] || null;
+       const wallRisk = first && first.rr < 1.3 ? first : null;
++      const runwayTarget = ladderTargets ? runner : first;
+ 
+-      add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
+-        runner && runner.rr >= minRR
+-          // M51: this described a partial that no longer exists by default. Re-read every
+-          // string that describes a decision whenever the decision changes.
++      add('runway', `Open runway to the selected opposing magnet (target ≥ 1:${minRR})`,
++        !!runwayTarget && runwayTarget.rr >= minRR, 14,
++        runwayTarget && runwayTarget.rr >= minRR
+           ? (ladderTargets
+             ? `Partial at ${first.label} (${first.rr}R), runner to ${runner.label} at ${runner.price} = ${runner.rr}R`
+-            : `One target: ${runner.label} at ${runner.price} = ${runner.rr}R — pick one and manage one position.`)
+-          : first ? `The furthest real pool (${first.label}, ${first.price}) is only ${first.rr}R away — not enough runway for the risk taken.`
+-            : 'No liquidity pool beyond entry to target — no reason for price to travel.');
++            : `One target: ${first.label} at ${first.price} = ${first.rr}R — pick one and manage one position.`)
++          : first ? `The nearest selected magnet (${first.label}, ${first.price}) is only ${first.rr}R away — refuse the idea, not substitute a farther target.`
++            : 'No real opposing magnet beyond entry — wait, do not invent a measured-move target.');
+ 
+       // M51 - Ep 15 step 4: "Take profit, JUST PICK ONE TARGET... they mark 10 different
+       // targets... THAT'S NOT HOW YOU DO IT... you're going to PANIC and you're going to MANAGE
+@@ -700,9 +698,9 @@ function buildSetups(analysis, ctx = {}) {
+       // Collapsed to a SINGLE target by default. `ctx.ladderTargets` restores the ladder as an
+       // optional management view, which is where the ledger says it belongs - a trader's own
+       // plan, not the model's default.
+-      // The single target is the runner (the first pool at or beyond minRR), falling back to
+-      // the nearest pool: that keeps the minRR floor meaningful rather than letting the choice
+-      // of one target quietly drop the risk:reward requirement.
++      // The default is the nearest real magnet, selected BEFORE the RR floor.
++      // The ladder remains an explicit research/management opt-in, never a rescue
++      // of a default single-target trade that fails the floor.
+       const ladder = [];
+       if (ladderTargets) {
+         if (first) ladder.push({ ...first, role: 'T1' });
+@@ -710,24 +708,13 @@ function buildSetups(analysis, ctx = {}) {
+         const beyond = targets.filter((t) => runner && t.rr > runner.rr + 0.6).slice(0, 1);
+         beyond.forEach((t) => ladder.push({ ...t, role: 'T3' }));
+       } else {
+-        // M21 put the WEAK STRUCTURAL EXTREME first in the target list on purpose - "target
+-        // weak structure" is the course's primary magnet. Selecting the runner here discarded
+-        // it, and probe-m21 caught that (0 of 48 candidates reached the ladder). The two rules
+-        // are not in conflict once resolved correctly: ONE target, and that target is the weak
+-        // extreme. Fall back to the runner only when the weak extreme cannot carry the minRR
+-        // floor, so the risk:reward requirement is not quietly dropped.
+-        // The weak extreme IS the one target. Falling back to the runner when it sits under
+-        // minRR was the wrong resolution - it silently swapped the course's magnet for a
+-        // farther pool just to clear the ratio floor. If the weak structure is only 1R away
+-        // the idea does not meet the 2R requirement and should not be taken at all; the
+-        // existing runway/minRR veto says so, which keeps both rules intact instead of
+-        // satisfying one by violating the other.
++        // M54: labels do not outrank price distance; sub-floor means no trade.
+         const single = first || runner || null;
+         if (single) ladder.push({ ...single, role: 'T1' });
+       }
+-      if (!ladder.length) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
+-      const rrPrimary = ladder[0].rr;
+-      const rrFinal = ladder[ladder.length - 1].rr;
++      if (!ladder.length && !counter && !boundedCRT && !targetMagnets) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
++      const rrPrimary = ladder.length ? ladder[0].rr : 0;
++      const rrFinal = ladder.length ? ladder[ladder.length - 1].rr : 0;
+ 
+       // entry status: are we at the zone, or chasing?
+       let entryStatus, entryNote;
+@@ -769,8 +756,10 @@ function buildSetups(analysis, ctx = {}) {
+           : 6;
+       add('entry', 'Entry not chased (price at/near the zone)', entryStatus !== 'waiting' || zoneReach <= 2.5, 8, entryNote);
+       add('management', 'Risk plan protects the trade at the first pool', rrFinal >= minRR, 0,
+-        counter ? `One target at ${ladder[0].label} (${rrPrimary}R) — the counter-HTF pullback ends there.`
+-          : `Take 50% at ${ladder[0].label} (${rrPrimary}R), move the stop to break-even, run the rest to ${ladder[ladder.length - 1].label} (${rrFinal}R).`);
++        !ladder.length ? 'No real target — no executable trade.'
++          : counter ? `One target at ${ladder[0].label} (${rrPrimary}R) — the counter-HTF pullback ends there.`
++            : ladder.length === 1 ? `One target at ${ladder[0].label} (${rrPrimary}R); manage one position, no partials.`
++              : `Take 50% at ${ladder[0].label} (${rrPrimary}R), move the stop to break-even, run the rest to ${ladder[ladder.length - 1].label} (${rrFinal}R).`);
+       if (entryStatus === 'invalid') add('entry_valid', 'Zone not already invalidated', false, 0, entryNote);
+ 
+       levels = {
+@@ -787,7 +776,7 @@ function buildSetups(analysis, ctx = {}) {
+           // zone an "FVG" - the recurring trap of a string that describes a decision no
+           // longer being updated when the decision changes.
+           : `Beyond the ${{ order_block: 'order block', flip_zone: 'flip zone', fvg: 'FVG' }[zone.kind] || zone.kind} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(entryAtr * 0.18)} buffer`,
+-        targets: ladder, primary_target: ladder[0] ? { ...ladder[0] } : null,
++        targets: ladder, target_candidates: targets.map((t) => ({ ...t })), primary_target: ladder[0] ? { ...ladder[0] } : null,
+         rr_primary: rrPrimary, rr_final: rrFinal,
+         management: {
+           // M51: with a single target there is no partial to take and nothing to move to
+@@ -883,8 +872,10 @@ function buildSetups(analysis, ctx = {}) {
+     // M7 / M96 — "no matter how many confluences I have, no matter how confident I am,
+     // I'm going to be passing on the trade." This is arithmetic, not taste: at the measured
+     // ~21% win rate, break-even needs (1 - 0.21) / 0.21 = 3.8R, so a sub-2R idea cannot win.
+-    if (levels && ((levels.rr_final > 0 && levels.rr_final < minRR) || ((counter || boundedCRT) && !(levels.rr_final >= minRR)))) {
+-      vetoes.push(`Risk:reward ${levels.rr_final}R is below the ${minRR}R floor — passing on the trade.`);
++    if (levels && ((levels.rr_final > 0 && levels.rr_final < minRR) || ((counter || boundedCRT || targetMagnets) && !(levels.rr_final >= minRR)))) {
++      vetoes.push(levels.targets.length
++        ? `Risk:reward ${levels.rr_final}R is below the ${minRR}R floor — passing on the trade.`
++        : 'No real opposing target — wait for a valid magnet; no measured-move or farther-target rescue.');
+     }
+     if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
+     if (blackout) vetoes.push('High-impact news inside the window.');
+diff --git a/src/bots/targets.js b/src/bots/targets.js
+new file mode 100644
+index 0000000..2634694
+--- /dev/null
++++ b/src/bots/targets.js
+@@ -0,0 +1,102 @@
++'use strict';
++/**
++ * M54 — Ep 15, 20:39–22:57: ONE next magnet, not a list of hoped-for exits.
++ * Liquidity/weak structure, an unmitigated opposing OB, and the remaining part
++ * of an unfilled opposing FVG are different target kinds. They are NOT entries.
++ * This module never alters the entry, stop, direction, or risk policy.
++ *
++ * Proximity is physical price distance, BEFORE an RR gate. A nearer <2R magnet
++ * refuses the idea; a farther pool must not be used to rescue its RR. A weak
++ * extreme remains a structural candidate/label, not permission to skip a wall.
++ * Detector lifecycle is window-bounded (M30); no whole-history claim is made.
++ */
++const number = (v) => v === null || v === undefined || v === '' || typeof v === 'boolean'
++  ? null : Number.isFinite(Number(v)) ? Number(v) : null;
++const r4 = (v) => Math.round(v * 10000) / 10000;
++const r2 = (v) => Math.round(v * 100) / 100;
++
++// Only break an EXACT-price tie. Never place weak structure ahead of a nearer zone.
++const TIE = { weak_structure: 0, opposing_order_block: 1, unfilled_fvg: 2, range: 4 };
++function byProximity(dir) {
++  return (a, b) => dir * (a.price - b.price)
++    || (TIE[a.kind] ?? 3) - (TIE[b.kind] ?? 3);
++}
++
++function ordered(rows, dir) {
++  const out = [], seen = new Map();
++  for (const row of rows.slice().sort(byProximity(dir))) {
++    // Keep honest source TFs distinct even when the prices coincide.
++    const key = `${row.source_tf || '?'}:${row.price.toFixed(4)}`;
++    const kept = seen.get(key);
++    if (kept) {
++      kept.also_targets = (kept.also_targets || []).concat({ ...row });
++      continue;
++    }
++    const copy = { ...row };
++    seen.set(key, copy);
++    out.push(copy);
++  }
++  return out;
++}
++
++function catalogue(analysis, dir, entry, weak = null) {
++  if (!analysis || ![1, -1].includes(dir) || number(entry) === null) return [];
++  const sourceTf = typeof analysis.tf === 'string' ? analysis.tf : null;
++  const rows = [];
++  const push = (row) => {
++    const raw = number(row.price);
++    if (raw === null || raw <= 0) return;
++    const price = r4(raw);
++    if (!(dir * (price - entry) > 0)) return;
++    rows.push({ ...row, price, source_tf: sourceTf });
++  };
++
++  if (weak) push({ price: weak.price, strength: 0.9, kind: 'weak_structure',
++    label: `Weak ${weak.label} — the level structure is expected to take out`, touches: null,
++    origin_t: number(weak.t), status: 'structural_extreme' });
++  for (const p of (analysis.liquidity && analysis.liquidity.pools) || []) {
++    if (!p || p.swept === true || !(number(p.strength) >= 0.5)) continue;
++    push({ ...p, origin_t: number(p.t), status: p.swept === false ? 'unswept' : 'unknown',
++      // A day's timebox is NOT the TF of a structural detector. PDH may be
++      // measured from real 5m candles; do not relabel that catalogue as 1d/1m.
++      ...(/^PD[HL]$/.test(p.kind) ? { period_tf: '1d' }
++        : /^PW[HL]$/.test(p.kind) ? { period_tf: '1w' } : {}) });
++  }
++  for (const z of analysis.order_blocks || []) {
++    if (!z || z.dir !== -dir || z.breached !== false || z.mitigated !== false) continue;
++    const bottom = number(z.bottom), top = number(z.top);
++    if (!(bottom > 0 && top > bottom)) continue;
++    push({ price: dir > 0 ? bottom : top, kind: 'opposing_order_block',
++      label: `Next opposing ${dir > 0 ? 'supply' : 'demand'} order block`,
++      strength: number(z.strength), origin_t: number(z.t),
++      formed_t: number(z.displacement_t), status: 'unmitigated', zone: [bottom, top] });
++  }
++  for (const g of analysis.fvgs || []) {
++    if (!g || g.dir !== -dir || g.filled !== false) continue;
++    const bottom = number(g.bottom), top = number(g.top), pct = number(g.fill_pct);
++    if (!(bottom > 0 && top > bottom) || pct === null || pct < 0 || pct >= 100) continue;
++    // Fill tracking enters a bearish gap from below / bullish gap from above.
++    // Aim at the first STILL UNFILLED edge, not an already-consumed original edge.
++    const remainingBottom = g.dir < 0 ? bottom + (top - bottom) * pct / 100 : bottom;
++    const remainingTop = g.dir > 0 ? top - (top - bottom) * pct / 100 : top;
++    push({ price: dir > 0 ? remainingBottom : remainingTop, kind: 'unfilled_fvg',
++      label: `Unfilled opposing ${dir > 0 ? 'bearish' : 'bullish'} FVG${pct > 0 ? ' (remaining gap)' : ''}`,
++      strength: number(g.strength), origin_t: number(g.t), status: pct > 0 ? 'partially_unfilled' : 'unfilled',
++      fill_pct: pct, zone: [r4(remainingBottom), r4(remainingTop)], original_zone: [bottom, top] });
++  }
++  const pd = analysis.premium_discount;
++  if (pd) push({ price: dir > 0 ? pd.range_high : pd.range_low, kind: 'range',
++    label: dir > 0 ? 'Dealing range high' : 'Dealing range low', strength: 0.9,
++    origin_t: null, status: 'structural_range' });
++  return ordered(rows, dir);
++}
++
++function levels(rows, dir, entry, risk) {
++  if (!(number(risk) > 0)) return [];
++  // Do NOT discard the nearest magnet because it is inside 0.9R/2R.
++  return ordered(rows, dir).filter((p) => dir * (p.price - entry) > 0).map((p) => ({
++    ...p, price: r4(p.price), rr: r2(dir * (p.price - entry) / risk),
++  }));
++}
++
++module.exports = { catalogue, levels, ordered, byProximity };
