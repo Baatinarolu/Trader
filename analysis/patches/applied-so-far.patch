@@ -483,10 +483,22 @@ index a3eb318..f9d364b 100644
              ['Risk-adjusted', [['Sharpe (ann.)', U.num(k.sharpe, 2), k.sharpe > 1 ? 'pos' : ''], ['Sortino (ann.)', U.num(k.sortino, 2), k.sortino > 1 ? 'pos' : ''], ['SQN', U.num(k.sqn, 2), ''], ['Calmar', U.num(k.calmar, 2), ''], ['Recovery factor', U.num(k.recovery_factor, 2), ''], ['Std dev of R', U.num(k.std_r, 2), ''], ['Median R', U.signed(k.median_r, 2) + 'R', ''], ['Total R', U.signed(k.total_r, 1) + 'R', U.cls(k.total_r)], ['Profit concentration', U.pct(k.profit_concentration, 0), '']]],
              ['Discipline', [['Avg adherence', k.avg_adherence ? U.num(k.avg_adherence, 2) + ' / 5' : '—', ''], ['Risk consistency', '±' + U.pct(k.risk_consistency, 0), k.risk_consistency < 35 ? 'pos' : 'warn'], ['Avg risk / trade', U.money(k.avg_risk), ''], ['Avg risk % of balance', U.pct(k.avg_risk_pct_of_balance, 2), ''], ['Trades without stop', k.stops_overshot ? `${an.by_symbol.length ? '' : ''}${k.stops_overshot} over -1R` : '0', ''], ['Current streak', k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + ' wins' : Math.abs(k.streaks.current) + ' losses'), k.streaks.current_type === 'loss' ? 'neg' : 'pos'], ['Longest win streak', k.streaks.longest_win, ''], ['Longest loss streak', k.streaks.longest_loss, 'neg'], ['Trading days', `${k.trading_days} (${U.num(k.avg_trades_per_day, 1)}/day)`, '']]],
 diff --git a/public/js/views/bots.js b/public/js/views/bots.js
-index 2222ac3..682e865 100644
+index 2222ac3..cf3df7a 100644
 --- a/public/js/views/bots.js
 +++ b/public/js/views/bots.js
-@@ -95,7 +95,11 @@
+@@ -13,6 +13,11 @@
+     prediction: true,
+     minRR: Number(((global.Store.user || {}).settings || {}).min_rr) > 0 ? Number(global.Store.user.settings.min_rr) : 1,
+     bars: 1200,
++    /* M26 — the ONE window this trader trades, read from the saved preference so the bots
++     * view, the settings view and the API cannot disagree. The hours are never restated
++     * here: the server sends back its own label (session_pref.label), built from the
++     * window definition, so the clock still lives in exactly one place. */
++    sessionPref: String(((global.Store.user || {}).settings || {}).session_pref || ''),
+     data: null, predict: null, scan: null, correction: null, signals: null, chart: null,
+     scanList: ['EURUSD', 'GBPUSD', 'XAUUSD', 'BTCUSDT', 'ETHUSDT', 'ES', 'NAS100', 'US30'],
+     busy: '', error: '', updated: null,
+@@ -95,7 +100,11 @@
        sizeRow.appendChild(b);
      });
      sizeRow.appendChild(h('span', { class: 'tiny muted', style: 'margin-left:auto',
@@ -499,6 +511,113 @@ index 2222ac3..682e865 100644
      wrap.appendChild(sizeRow);
      return wrap;
    }
+@@ -141,6 +150,20 @@
+     symbols.forEach((s) => dl.appendChild(h('option', { value: s })));
+     const tfSel = h('select', { class: 'input', style: 'max-width:110px' });
+     tfs.forEach((t) => tfSel.appendChild(h('option', { value: t, text: t, selected: t === B.tf ? 'selected' : null })));
++    /* M26 — "find one specific window and just focus on that window ... but just stick to
++     * one." Option text carries no hours on purpose; the label the server returns does. */
++    const WINDOWS = [['', 'Any window'], ['asia', 'Asia'], ['london', 'London'], ['ny_am', 'NY AM'], ['london_close', 'London close']];
++    const winSel = h('select', { class: 'input', style: 'max-width:150px',
++      title: 'Restrict the bots to one window. Outside it a signal is refused, not downgraded — "you\'re not relying on discipline. You are just implementing that discipline into your trading system itself."' });
++    WINDOWS.forEach((pair) => winSel.appendChild(h('option', { value: pair[0], text: pair[1], selected: pair[0] === B.sessionPref ? 'selected' : null })));
++    /* It rides in `filters`, beside stand_down / killzone_quality / min_rr: the restriction
++     * is gate configuration, not a per-candidate field. */
++    const sp = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.session_pref) || null;
++    const winNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:440px', text: !sp ? ''
++      : sp.error ? sp.note
++      : sp.conflict ? sp.conflict
++      : sp.blocked_now ? `Outside your window (${sp.label}) — ${sp.open_now || 'no killzone open now'}; signals are refused.`
++      : `Restricted to ${sp.label}${sp.phase ? ` · phase ${sp.phase}` : ''}${sp.phase_note ? ` — ${sp.phase_note}` : ''}` });
+     const predChk = h('label', { class: 'row gap-4 muted', style: 'align-items:center' });
+     const predBox = h('input', { type: 'checkbox', checked: B.prediction ? 'checked' : null });
+     predChk.appendChild(predBox); predChk.appendChild(document.createTextNode('prediction'));
+@@ -160,6 +183,16 @@
+ 
+     symInput.addEventListener('change', () => { B.symbol = symInput.value.trim().toUpperCase(); onChange(); });
+     tfSel.addEventListener('change', () => { B.tf = tfSel.value; onChange(); });
++    winSel.addEventListener('change', async () => {
++      B.sessionPref = winSel.value;
++      /* Saved, not just applied: a restriction that only lives in this tab is a reminder,
++       * and the whole point of Ep 12's version is that it survives the trader's mood. */
++      try {
++        await global.API.put('/settings', { session_pref: B.sessionPref });
++        if (global.Store.reloadAll) await global.Store.reloadAll();
++      } catch (e) { /* the request below still carries the query value */ }
++      if (runBtn && runBtn.click) runBtn.click(); else onChange();
++    });
+     predBox.addEventListener('change', () => { B.prediction = predBox.checked; });
+     runBtn.addEventListener('click', async () => {
+       B.symbol = symInput.value.trim().toUpperCase();
+@@ -188,7 +221,13 @@
+       if (!best) return global.App.toast('Analyse a market first', 'warn');
+       global.TV.copy(global.TV.planText(B.symbol, B.tf, best), 'Trade plan');
+     });
+-    [symInput, tfSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
++    [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
++    row.appendChild(winNote);
++    /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
++     * button will be blocked ... grayed out ... You physically can't press the trade
++     * button." The nearest thing here is the control that hands you an order to place, so
++     * when the chosen window is closed it is disabled rather than left to argue with. */
++    levelsBtn.disabled = !!(sp && sp.blocked_now);
+     const wrap = h('div', { class: 'card' });
+     wrap.appendChild(row);
+     wrap.appendChild(dl);
+@@ -1161,8 +1200,10 @@
+         const sym = B.symbol, tf = B.tf;
+         const trim = B.trim || 0;
+         Promise.all([
+-          API.get('/bots/analyse', { symbol: sym, tf, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim }),
+-          API.get('/bots/chart', { symbol: sym, tf, bars: 600, min_rr: B.minRR, trim }).catch(() => null),
++          API.get('/bots/analyse', { symbol: sym, tf, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
++            ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }),                     // M26
++          API.get('/bots/chart', { symbol: sym, tf, bars: 600, min_rr: B.minRR, trim,
++            ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }).catch(() => null),    // M26
+           API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
+         ]).then(([d, ch, dr]) => {
+           B.data = d; B.predict = d.prediction; B.chart = ch; B.candles = (ch && ch.candles) || [];
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index b72afdb..6d78f3c 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -312,11 +312,36 @@
+               <div class="field-note">This checklist appears on every new trade and in the briefing. Keep it short enough that you will actually use it.</div>
+               <button class="btn primary sm" id="s-save-rules" style="margin-top:12px">Save checklist</button>
+             </div>`;
++          /* M26 — the bots' window restriction lives with the other preferences. Built in
++           * JS rather than added to the template string so the option labels stay free of
++           * hours: the server owns the clock and sends its own label back. */
++          (function addWindowPref() {
++            const grid = U.$('.form-grid', w); if (!grid) return;
++            const lab = document.createElement('label');
++            lab.className = 'field';
++            lab.innerHTML = '<span>Trading window for the bots</span>';
++            const sel = document.createElement('select');
++            sel.id = 's-window';
++            [['', 'Any window'], ['asia', 'Asia'], ['london', 'London'], ['ny_am', 'NY AM'], ['london_close', 'London close']]
++              .forEach((o) => {
++                const op = document.createElement('option');
++                op.value = o[0]; op.textContent = o[1];
++                if (String(s.session_pref || '') === o[0]) op.selected = true;
++                sel.appendChild(op);
++              });
++            lab.appendChild(sel);
++            grid.appendChild(lab);
++            const note = document.createElement('div');
++            note.className = 'field-note';
++            note.textContent = 'Pick one window and the bots refuse signals outside it — a refusal, not a downgrade. "Just stick to one."';
++            grid.parentNode.insertBefore(note, grid.nextSibling);
++          })();
+           U.$('#s-save', w).addEventListener('click', async () => {
+             await API.put('/settings', {
+               name: U.$('#s-name', w).value, timezone: U.$('#s-tz', w).value,
+               focus_symbols: U.$('#s-focus', w).value.split(',').map((x) => x.trim().toUpperCase()).filter(Boolean),
+               min_rr: Number(U.$('#s-minrr', w).value) || 1,
++              session_pref: U.$('#s-window', w) ? U.$('#s-window', w).value : undefined,   // M26
+               default_checklist: (Store.user.settings.default_checklist || []),
+             });
+             await Store.reloadAll(); global.App.toast('Preferences saved', 'ok');
 diff --git a/scripts/bots-test.js b/scripts/bots-test.js
 index c463eda..9865d46 100644
 --- a/scripts/bots-test.js
@@ -1058,7 +1177,7 @@ index 5aeb214..7b7911a 100644
      guardrails: g,
      daily: state,
 diff --git a/src/bots/index.js b/src/bots/index.js
-index 0007b01..93f74c7 100644
+index 0007b01..1e001d7 100644
 --- a/src/bots/index.js
 +++ b/src/bots/index.js
 @@ -16,7 +16,7 @@
@@ -1230,7 +1349,7 @@ index 0007b01..93f74c7 100644
  async function analyse(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const spec = specOf(sym);
-@@ -114,16 +260,24 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -114,18 +260,27 @@ async function analyse(symbol, tf = '15m', opts = {}) {
    ]);
  
    // the setup model needs the raw trading-timeframe handle (zones, sweeps, indicators)
@@ -1258,8 +1377,11 @@ index 0007b01..93f74c7 100644
 +    balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
      newsBlackout: news.blackout, minRR: floorRR(opts.minRR),
      topdown: momentum.topdown,          // the method decides whether a side may be armed
++    sessionPref: opts.sessionPref || null,   // M26 — the trader's one window
    });
-@@ -143,7 +297,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+ 
+   let prediction = null;
+@@ -143,7 +298,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
    let daily = null;
    if (opts.userId) { try { daily = await Cor.dailyState(opts.userId, { accountId: opts.accountId }); } catch (e) { daily = null; } }
  
@@ -1268,7 +1390,7 @@ index 0007b01..93f74c7 100644
  
  
    // The method's own verdict, kept separate from the setup model's. Anything
-@@ -189,7 +343,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -189,7 +344,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      method_verdict: methodVerdict,
      topdown: td,
      momentum: {
@@ -1282,7 +1404,7 @@ index 0007b01..93f74c7 100644
        alignment: momentum.alignment, mechanics: momentum.mechanics,
        narrative: momentum.narrative, conflicts: momentum.conflicts,
        htf: momentum.htf, quote: momentum.quote, series: momentum.series,
-@@ -266,6 +425,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -266,6 +426,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
   * @param {string} tf
   * @param {{bars?:number, userId?:number, accountId?:number, minRR?:number, balance?:number, riskPct?:number}} opts
   */
@@ -1290,7 +1412,7 @@ index 0007b01..93f74c7 100644
  async function chart(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const bars = Math.min(Math.max(Number(opts.bars) || 400, 80), 1200);
-@@ -279,7 +439,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -279,7 +440,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // never disagree about the same market (they did once: the chart asked for 200
    // higher-timeframe candles and the method read a different range from them).
    const [entry, bias, triggerRaw] = await Promise.all([
@@ -1299,7 +1421,7 @@ index 0007b01..93f74c7 100644
      Momentum.series(sym, L.bias_tf, 400, cut),
      L.trigger_tf === tf ? Promise.resolve(null) : Momentum.series(sym, L.trigger_tf, 400, cut),
    ]);
-@@ -294,14 +454,18 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -294,15 +455,20 @@ async function chart(symbol, tf = '15m', opts = {}) {
      alignment: { reason: td.headline },
      topdown: td,
    };
@@ -1319,9 +1441,11 @@ index 0007b01..93f74c7 100644
 +    price: entry.price, atr: entry.atr, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
 +    indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
      assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td,
++    sessionPref: opts.sessionPref || null,   // M26
    });
  
-@@ -387,11 +551,22 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   // The plan drawn on the chart: the method's own CRT plan when it has one,
+@@ -387,17 +553,28 @@ async function chart(symbol, tf = '15m', opts = {}) {
        last_price: entry.meta.last_price, warnings: entry.meta.warnings,
        sources: { bias: `${L.bias_tf} via ${bias.meta.provider}`, trigger: `${trig.tf} via ${trig.meta.provider}` },
      },
@@ -1346,7 +1470,14 @@ index 0007b01..93f74c7 100644
      },
      quote: { price: entry.price, atr: entry.atr, change_pct: entry.candles.length > 1 ? r2(((entry.price - entry.candles[0].c) / entry.candles[0].c) * 100) : null },
    };
-@@ -409,8 +584,12 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+ }
+ 
+-async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3 } = {}) {
++async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, sessionPref = null } = {}) {
+   const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
+   const rows = [];
+   let cursor = 0;
+@@ -409,9 +586,16 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
            Momentum.analyse(sym, tf, { limit: 400 }),
            Momentum.series(sym, tf, 400),
          ]);
@@ -1358,9 +1489,13 @@ index 0007b01..93f74c7 100644
 -          price: series.price, atr: series.atr, bias: momentum.bias, biasReason: momentum.alignment.reason,
 +          price: series.price, atr: series.atr, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
            indicators: series.ind, minRR: 2, topdown: momentum.topdown,
++          sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
++                         // No symbol on this path either, so the pair-conflict note stays
++                         // null rather than false.
          });
          // one row per market: the side the method permits (a scan that lists both
-@@ -421,7 +600,9 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+         // a buy and a sell for the same symbol is not a scan, it is a coin toss)
+@@ -421,7 +605,9 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
          rows.push({
            symbol: sym, timeframe: tf, ok: true,
            price: series.price, atr: series.atr,
@@ -1621,7 +1756,7 @@ index bacfca7..38ec2fa 100644
   * the same candle series and reports, honestly, what taking that second tap did:
   * whether it happened, and whether re-risking 1R on it made money.
 diff --git a/src/bots/setup.js b/src/bots/setup.js
-index 138beb4..cd4f207 100644
+index 138beb4..34ffe52 100644
 --- a/src/bots/setup.js
 +++ b/src/bots/setup.js
 @@ -15,7 +15,15 @@
@@ -1912,7 +2047,7 @@ index 138beb4..cd4f207 100644
    for (const p of outward) {
      const key = p.price.toFixed(5);
      if (seen.has(key)) continue;
-@@ -70,12 +329,24 @@ function targetPools(analysis, dir, entry) {
+@@ -70,12 +329,49 @@ function targetPools(analysis, dir, entry) {
   *                                    only that side can be armed.
   * @returns {{candidates:Array, verdict:object}}
   */
@@ -1927,6 +2062,31 @@ index 138beb4..cd4f207 100644
 +  /* M38/M40 — the session view THIS SYMBOL is entitled to. The calendar fields (dow,
 +   * month) are preserved by the copy, so M10's stand-down is unaffected. */
 +  const sess = SMC.sessionAffinity(ctx.symbol, sessions);
++  /* M26 — the trader's OWN window. Until now the bot could refuse a setup for being
++   * outside A killzone, but nothing could tell it which killzone this trader actually
++   * trades, so a London trader was handed NY AM signals and an Asia trader was handed
++   * London ones. "Find one specific window and just focus on that window ... but just
++   * stick to one." When ctx.sessionPref names one of the four, a candidate armed in any
++   * other window — or in none — is refused, which is what turns the restriction into a
++   * rule instead of advice: "you're not relying on discipline. You are just implementing
++   * that discipline into your trading system itself."
++   * Read off the CALENDAR (bullets[].active), not off sess.killzone: sessionAffinity
++   * nulls killzone when the open window is not this pair's, and that case is already
++   * refused by M8's veto with a better message. */
++  const winPref = SMC.normalizeWindowPref(ctx.sessionPref);
++  const prefOpenBullet = (sess.bullets || []).find((b) => b.active) || null;
++  const prefBlocked = !!(winPref && winPref.key && (!prefOpenBullet || prefOpenBullet.key !== winPref.key));
++  /* M26 + M40: a window's pairs are part of the window. Restricting EURUSD to Asia
++   * (AUD/NZD/JPY only) is a setting that can never fire, so it is said out loud rather
++   * than left to look like a quiet market. Null — not false — when the caller gave no
++   * symbol (the scan path), because unknown must never read as a conflict. */
++  const prefCounts = (winPref && winPref.key && ctx.symbol)
++    ? SMC.pairCountsFor(ctx.symbol, SMC.WINDOW_BY_KEY[winPref.key]) : null;
++  /* M26 + M25: the window says WHEN, the phase says whether there is anything to trade
++   * in it. Inside the chosen window the phase is read once, so consolidation is visible
++   * there instead of being mistaken for a slow market. Gating on the phase is M3's
++   * timing rule and is deliberately not done here. */
++  const prefPhase = (winPref && winPref.restricted && !prefBlocked) ? marketPhase(analysis) : null;
 +  /* M10 — computed ONCE here rather than per candidate: it depends only on the bar's
 +   * calendar and the caller's configuration, not on anything about an individual setup.
 +   * It was originally declared inside the scoring loop, which put it out of scope for the
@@ -1937,7 +2097,7 @@ index 138beb4..cd4f207 100644
    const strike = sessions.quality != null ? sessions.quality : 0.5;
    const blackout = ctx.newsBlackout || null;
    const ind = ctx.indicators || null;
-@@ -83,7 +354,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -83,7 +379,7 @@ function buildSetups(analysis, ctx = {}) {
    const td = ctx.topdown || null;                   // the method gate
  
    const candidates = [];
@@ -1946,7 +2106,7 @@ index 138beb4..cd4f207 100644
  
    for (const dir of [1, -1]) {
      const long = dir > 0;
-@@ -108,22 +379,62 @@ function buildSetups(analysis, ctx = {}) {
+@@ -108,22 +404,62 @@ function buildSetups(analysis, ctx = {}) {
      const obs = ((analysis && analysis.order_blocks) || []).filter((z) => z.dir === dir && !z.breached);
      const fvgs = ((analysis && analysis.fvgs) || []).filter((g) => g.dir === dir && !g.filled);
      // prefer a fresh, strong OB with an unfilled FVG overlapping or nested
@@ -2016,7 +2176,7 @@ index 138beb4..cd4f207 100644
  
      if (zone && zone.overlap) add('nested', 'Zone + imbalance overlap (confluence)', true, 8, 'The order block contains an unfilled FVG — two reasons for price to react at the same price.');
  
-@@ -135,10 +446,57 @@ function buildSetups(analysis, ctx = {}) {
+@@ -135,10 +471,57 @@ function buildSetups(analysis, ctx = {}) {
  
      /* ------------------------------------------------------------- 5. trend alignment */
      const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
@@ -2076,7 +2236,7 @@ index 138beb4..cd4f207 100644
      if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
  
      /* ------------------------------------------------------------- 6. higher-timeframe bias */
-@@ -155,12 +513,16 @@ function buildSetups(analysis, ctx = {}) {
+@@ -155,12 +538,16 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      /* ------------------------------------------------------- 8. session / killzone */
@@ -2095,7 +2255,7 @@ index 138beb4..cd4f207 100644
  
      /* ------------------------------------------------------------- 10. volatility */
      const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
-@@ -195,6 +557,15 @@ function buildSetups(analysis, ctx = {}) {
+@@ -195,6 +582,15 @@ function buildSetups(analysis, ctx = {}) {
          }
        }
        targets.sort((a, b) => a.rr - b.rr);
@@ -2111,7 +2271,7 @@ index 138beb4..cd4f207 100644
        // The FIRST pool is a wall, not a nuisance: price usually reacts there. The model
        // banks a partial on it, protects the trade, and runs the rest to the 2R+ pool.
        const first = targets[0] || null;
-@@ -203,16 +574,47 @@ function buildSetups(analysis, ctx = {}) {
+@@ -203,16 +599,47 @@ function buildSetups(analysis, ctx = {}) {
  
        add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
          runner && runner.rr >= minRR
@@ -2165,7 +2325,7 @@ index 138beb4..cd4f207 100644
        if (!ladder.length) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
        const rrPrimary = ladder[0].rr;
        const rrFinal = ladder[ladder.length - 1].rr;
-@@ -230,6 +632,22 @@ function buildSetups(analysis, ctx = {}) {
+@@ -230,6 +657,22 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
@@ -2188,7 +2348,7 @@ index 138beb4..cd4f207 100644
        // Distance still to travel to the zone we would enter at. An FVG-only read has
        // no order-block `reach` — measure to its near edge instead of dereferencing null.
        const zoneReach = bestOB ? bestOB.reach
-@@ -245,12 +663,19 @@ function buildSetups(analysis, ctx = {}) {
+@@ -245,12 +688,19 @@ function buildSetups(analysis, ctx = {}) {
          stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / atr),
          stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
            ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(atr * 0.18)} buffer`
@@ -2211,7 +2371,7 @@ index 138beb4..cd4f207 100644
            runner_target: ladder[ladder.length - 1] ? { price: ladder[ladder.length - 1].price, rr: ladder[ladder.length - 1].rr, label: ladder[ladder.length - 1].label, size: ladder.length > 1 ? '50%' : '100%' } : null,
            rule: ladder.length > 1
              ? `Bank 50% at T1 (${ladder[0].rr}R) and move the stop to entry. The runner is free — let the pool at ${ladder[ladder.length - 1].price} do the work.`
-@@ -271,8 +696,14 @@ function buildSetups(analysis, ctx = {}) {
+@@ -271,8 +721,14 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -2228,7 +2388,7 @@ index 138beb4..cd4f207 100644
      // a missing trigger or zone is disqualifying regardless of the rest
      const hasTrigger = checks.find((c) => c.key === 'sweep').pass;
      const hasZone = checks.find((c) => c.key === 'zone').pass;
-@@ -284,24 +715,131 @@ function buildSetups(analysis, ctx = {}) {
+@@ -284,24 +740,138 @@ function buildSetups(analysis, ctx = {}) {
      if (levels && levels.entry_status === 'waiting') score = Math.min(score, 66); // great idea, not yet valid
      score = round1(clamp(score, 0, 100));
  
@@ -2284,7 +2444,14 @@ index 138beb4..cd4f207 100644
 +    if (blackout) vetoes.push('High-impact news inside the window.');
 +    // M8 — tested against the boolean, not truthiness: when analysis is the short-series
 +    // sentinel, `sessions` is {} and in_killzone is undefined, which must NOT veto.
-+    if (sess.in_killzone === false) {
++    /* M26 — the specific-window veto. It SUPERSEDES the generic one when it applies,
++     * because "outside the killzone" is true but less true than "outside YOUR window":
++     * the trader chose this window, so the refusal has to name it. */
++    if (prefBlocked) {
++      vetoes.push(`Outside your window — this bot is restricted to ${winPref.label}; `
++        + `${prefOpenBullet ? `the window open now is ${prefOpenBullet.name}` : 'no killzone is open now'}.`
++        + ` "Just stick to one."${sess.best_time ? ` ${sess.best_time}` : ''}`);
++    } else if (sess.in_killzone === false) {
 +      vetoes.push(`Outside the killzone — "if the setup appears before or after that window, I personally will not enter."${sess.best_time ? ` ${sess.best_time}` : ''}`);
 +    }
 +    // M35 — a cap at 66 left this tradeable as a B. The course stands it down instead:
@@ -2363,7 +2530,7 @@ index 138beb4..cd4f207 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +849,55 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +881,55 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -2425,7 +2592,7 @@ index 138beb4..cd4f207 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -399,6 +974,23 @@ function buildSetups(analysis, ctx = {}) {
+@@ -399,7 +1006,44 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -2447,9 +2614,30 @@ index 138beb4..cd4f207 100644
 +        note_friday: standDown.applies ? standDown.note_friday : null,
 +      },
        killzone_quality: strike,
++      /* M26 — the restriction this analysis ran under, so the UI and the journal can say
++       * why a signal was refused without re-deriving it from the clock. */
++      session_pref: (winPref && winPref.restricted) ? {
++        key: winPref.key, label: winPref.label, restricted: true,
++        open_now: prefOpenBullet ? prefOpenBullet.name : null,
++        blocked_now: prefBlocked,
++        pair_counts: prefCounts,
++        conflict: prefCounts === false
++          ? `${String(ctx.symbol || '').toUpperCase()} is not one of ${winPref.label}'s pairs — this restriction can never fire.`
++          : null,
++        phase: prefPhase ? prefPhase.phase : null,
++        phase_note: (prefPhase && prefPhase.phase === 'balance')
++          ? 'Inside your window, but the market is in balance — consolidation. The window decides when; whether there is anything to trade in it is the phase.'
++          : null,
++        note: '"Find one specific window and just focus on that window ... but just stick to one."',
++      } : (winPref && winPref.error ? {
++        key: null, label: null, restricted: false, error: winPref.error,
++        note: `Unknown window "${winPref.error}" — the restriction was NOT applied. Expected one of: `
++          + Object.keys(SMC.WINDOW_BY_KEY).join(', ') + ', or "any".',
++      } : null),
        news_blackout: blackout || null,
        min_rr: minRR,
-@@ -430,4 +1022,8 @@ function pendingStep(td) {
+     },
+@@ -430,4 +1074,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  
@@ -2460,7 +2648,7 @@ index 138beb4..cd4f207 100644
 +module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK,
 +  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX };
 diff --git a/src/bots/smc.js b/src/bots/smc.js
-index 2ccb576..646072e 100644
+index 2ccb576..13e2cc6 100644
 --- a/src/bots/smc.js
 +++ b/src/bots/smc.js
 @@ -35,6 +35,13 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -2964,7 +3152,7 @@ index 2ccb576..646072e 100644
      ote: ote || oteShort ? (ote ? 'long' : 'short') : null,
      ote_band: [r4(rangeLow + span * 0.62), r4(rangeLow + span * 0.79)],
      levels: {
-@@ -614,13 +918,61 @@ const SESSIONS = [
+@@ -614,13 +918,135 @@ const SESSIONS = [
    { key: 'ny_am', name: 'New York AM', start: 12, end: 16, quality: 1.0 },
    { key: 'ny_pm', name: 'New York PM', start: 16, end: 21, quality: 0.6 },
  ];
@@ -2999,13 +3187,13 @@ index 2ccb576..646072e 100644
 -  { name: 'London killzone', startH: 6, startM: 0, endH: 9, endM: 0, quality: 1.0 },
 -  { name: 'NY AM killzone', startH: 12, startM: 0, endH: 15, endM: 0, quality: 1.0 },
 -  { name: 'NY PM killzone', startH: 15, startM: 0, endH: 18, endM: 0, quality: 0.7 },
-+  { name: 'Asia killzone', startH: 20, startM: 0, endH: 24, endM: 0, quality: 0.5, restricted: true, pairs: ['AUD', 'NZD', 'JPY'],
++  { key: 'asia', name: 'Asia killzone', startH: 20, startM: 0, endH: 24, endM: 0, quality: 0.5, restricted: true, pairs: ['AUD', 'NZD', 'JPY'],
 +    note: 'Asia — the Australian dollar, New Zealand dollar and Japanese yen pairs. Lower volume; not where the explosive moves on the USD pairs happen.' },
-+  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0, pairs: ['EUR', 'GBP'],
++  { key: 'london', name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0, pairs: ['EUR', 'GBP'],
 +    note: 'London killzone — highest-probability window for the entry models.' },
-+  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0, pairs: ['USD'],
++  { key: 'ny_am', name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0, pairs: ['USD'],
 +    note: 'New York AM killzone — highest-probability window for the entry models.' },
-+  { name: 'London close killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.5, pairs: ['USD'],
++  { key: 'london_close', name: 'London close killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.5, pairs: ['USD'],
 +    note: 'London close — lower volume; price tends to retrace back into the daily range. Small retracement bases, not fresh expansion.' },
  ];
  
@@ -3027,10 +3215,84 @@ index 2ccb576..646072e 100644
 +  return `${fmt(startMins)}–${fmt(endMins)} UTC`;
 +}
 +
++/* ------------------------------------------------------------- M26 windows
++ * The four windows he teaches are the only ones a trader may restrict the bot to:
++ * "find one specific window and just focus on that window ... but just stick to
++ * one." Everything about a window here — its hours, its pairs, its label — is read
++ * from SILVER_BULLETS, so this cannot become a third stale copy of the hours the
++ * way now.js's private table and chart.js's bands were before M39 unified them.
++ */
++const WINDOW_BY_KEY = {};
++const WINDOW_KEYS = {};                       // lower-cased bullet name -> key
++SILVER_BULLETS.forEach((b) => { WINDOW_BY_KEY[b.key] = b; WINDOW_KEYS[b.name.toLowerCase()] = b.key; });
++
++/* Accepted spellings. Anything not in here and not a window key is reported back as
++ * an error rather than silently reinterpreted: a restriction that quietly means
++ * something else is worse than one that visibly failed to apply. */
++const WINDOW_ALIASES = {
++  asia: 'asia', asian: 'asia', asia_killzone: 'asia',
++  london: 'london', ldn: 'london', london_killzone: 'london',
++  ny_am: 'ny_am', nyam: 'ny_am', ny: 'ny_am', new_york_am: 'ny_am', ny_am_killzone: 'ny_am',
++  london_close: 'london_close', londonclose: 'london_close', close: 'london_close',
++  london_close_killzone: 'london_close',
++};
++
++/** "London killzone 02:00–05:00 New York" — hours read from the bullet, never restated. */
++function windowLabel(key) {
++  const b = WINDOW_BY_KEY[key];
++  if (!b) return String(key);
++  const p = (n) => String(n).padStart(2, '0');
++  return `${b.name} ${p(b.startH)}:${p(b.startM)}–${p(b.endH)}:${p(b.endM)} New York`;
++}
++
++/**
++ * The window a trader has restricted the bot to.
++ * @returns {null} when nothing was supplied; otherwise
++ *   { key, label, restricted, error } — `restricted:false` for "any window",
++ *   `error` set (and key null) when the value named no window at all.
++ */
++function normalizeWindowPref(v) {
++  if (v == null) return null;
++  const raw = String(v).trim().toLowerCase();
++  if (!raw) return null;
++  if (/^(any|all|every|none|off)$/.test(raw)) return { key: null, label: 'any window', restricted: false, error: null };
++  const flat = raw.replace(/[\s-]+/g, '_');
++  const key = WINDOW_ALIASES[flat] || (WINDOW_BY_KEY[flat] ? flat : null) || WINDOW_KEYS[raw] || null;
++  if (!key) return { key: null, label: null, restricted: false, error: raw };
++  return { key, label: windowLabel(key), restricted: true, error: null };
++}
++
++/** Symbol legs, taken positionally: symbols carry no separator ('EURUSD', 'XAUUSD',
++ *  'BTCUSDT'), and splitting on non-letters yields ONE leg for every symbol. */
++function legsOf(symbol) {
++  const base = String(symbol || '').toUpperCase().replace(/[^A-Z]/g, '');
++  return base.length >= 6 ? [base.slice(0, 3), base.slice(3)] : (base ? [base] : []);
++}
++
++/**
++ * Does this window's pair list count for this instrument? The same three rules
++ * sessionAffinity applies, because M26's restriction has to compose with M40's
++ * affinity: a window and its pairs are one statement, not two.
++ *  - a RESTRICTED window (Asia) exists only for its pairs;
++ *  - an instrument with a leg outside his named set (gold, crypto — he placed neither
++ *    in any session, and absence of a statement is not a rule) is welcome everywhere;
++ *  - a governed FX pair counts when either leg is listed.
++ */
++function pairCountsFor(symbol, bullet) {
++  if (!bullet) return false;
++  const pairs = bullet.pairs;
++  if (!pairs || !pairs.length) return true;
++  const legs = legsOf(symbol);
++  const match = legs.some((l) => pairs.indexOf(l) !== -1);
++  if (bullet.restricted) return match;
++  if (legs.length !== 2 || legs.some((l) => NAMED_SESSION_CURRENCIES.indexOf(l) === -1)) return true;
++  return match;
++}
++
  function sessionState(date = new Date()) {
    const h = date.getUTCHours(), m = date.getUTCMinutes();
    const mins = h * 60 + m;
-@@ -629,47 +981,177 @@ function sessionState(date = new Date()) {
+@@ -629,47 +1055,176 @@ function sessionState(date = new Date()) {
    const active = sessions.filter((s) => s.active);
    const open = sessions[0];
    const nextIdx = (sessions.findIndex((s) => s.active) + 1) % sessions.length;
@@ -3043,7 +3305,7 @@ index 2ccb576..646072e 100644
 +    const open_ = inWindowNY(s, e);
 +    const until = (e - nyMins + 1440) % 1440;
 +    const et = `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} ET`;
-+    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted, note: b.note || null };
++    return { key: b.key, name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted, note: b.note || null };
    });
    const activeBullet = bullets.find((b) => b.active) || null;
    return {
@@ -3107,8 +3369,7 @@ index 2ccb576..646072e 100644
 +  /* Symbols carry no separator ('EURUSD', 'XAUUSD', 'BTCUSDT'), so legs are taken
 +   * positionally: first three characters against the remainder. Splitting on
 +   * non-letters yields ONE leg for every symbol and silently disables the whole map. */
-+  const base = String(symbol || '').toUpperCase().replace(/[^A-Z]/g, '');
-+  const legs = base.length >= 6 ? [base.slice(0, 3), base.slice(3)] : (base ? [base] : []);
++  const legs = legsOf(symbol);        // M26: extracted — pairCountsFor needs the same split
 +  const match = legs.some((l) => pairs.indexOf(l) !== -1);
 +  /* A RESTRICTED window exists only for its pairs: Asia was added BY this fix for AUD, NZD
 +   * and JPY, so for every other instrument it must not exist at all — admitting XAUUSD or
@@ -3218,7 +3479,7 @@ index 2ccb576..646072e 100644
    const sweeps = findSweeps(candles, liq.pools, atr);
    const pd = premiumDiscount(candles, majorSwings.length ? majorSwings : minorSwings);
    const crtRes = htfCandles ? crt(htfCandles, candles, atr) : null;
-@@ -679,12 +1161,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -679,12 +1234,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
      const pool = liq.pools.find((p) => p.kind === s.pool && Math.abs(p.price - s.level) < 1e-9);
      if (pool) { pool.swept = true; pool.swept_t = s.t; }
    }
@@ -3248,7 +3509,7 @@ index 2ccb576..646072e 100644
    }
    // inducement: a minor pool sitting between price and a major pool, on the way to it
    const big = liq.pools.filter((p) => p.strength >= 0.8 && !p.swept);
-@@ -705,7 +1198,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -705,7 +1271,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
    out.ok = true;
    out.price = r4(price);
    out.atr = r4(atr);
@@ -3260,7 +3521,7 @@ index 2ccb576..646072e 100644
    out.structure = structure;
    out.htf_structure = htfStructure ? { trend: htfStructure.trend, last_break: htfStructure.last_break, recent_labels: htfStructure.recent_labels } : null;
    out.displacement = displacement.slice(-8).reverse();
-@@ -716,10 +1212,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -716,10 +1285,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
    out.sweeps = sweeps;
    out.premium_discount = pd;
    out.crt = crtRes;
@@ -3273,7 +3534,7 @@ index 2ccb576..646072e 100644
      order_blocks: orderBlocks.filter((z) => !z.breached).length, fvgs: fvgs.filter((g) => !g.filled).length,
      sweeps: sweeps.length, pools: liq.pools.length,
    };
-@@ -727,7 +1223,7 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -727,7 +1296,8 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
  }
  
  module.exports = {
@@ -3282,6 +3543,7 @@ index 2ccb576..646072e 100644
    liquidity, findSweeps, premiumDiscount, crt, sessionState, analyse, clusterLevels,
 -  SESSIONS, SILVER_BULLETS, dayKey, weekKey,
 +  SESSIONS, SILVER_BULLETS, dayKey, weekKey, sessionAffinity, asiaRange,
++  WINDOW_BY_KEY, WINDOW_KEYS, windowLabel, normalizeWindowPref, pairCountsFor, legsOf,
  };
 diff --git a/src/bots/topdown.js b/src/bots/topdown.js
 index 7870e51..2e84f99 100644
@@ -4275,7 +4537,7 @@ index 97110a5..ff8d382 100644
      by_session: segment(trades, (t) => t.session_label),
      by_direction: segment(trades, (t) => (String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long')),
 diff --git a/src/routes/api.js b/src/routes/api.js
-index 0bb768c..bd2d979 100644
+index 0bb768c..14f9c6d 100644
 --- a/src/routes/api.js
 +++ b/src/routes/api.js
 @@ -1,6 +1,7 @@
@@ -4641,6 +4903,82 @@ index 0bb768c..bd2d979 100644
 +    risk_note: riskNote,
    });
  });
+ 
+@@ -971,6 +1159,16 @@ router.put('/settings', requireAuth, async (req, res) => {
+     risk_defaults: b.risk_defaults || cur.risk_defaults || { risk_pct: 1, daily_limit_pct: 3, max_trades: 5 },
+     // the floor every plan is judged against: below it a plan may still be shown,
+     // but it is labelled and never reads as a plain order
++    /* M26 — one window, chosen once and stored, so the bots enforce it instead of the
++     * trader having to remember it. Folded to the canonical key here; a value that names
++     * no window keeps whatever was stored rather than silently clearing the restriction
++     * (setup.js reports an unknown value back to the caller as an error). */
++    session_pref: (() => {
++      if (b.session_pref === undefined) return cur.session_pref || null;
++      const v = String(b.session_pref == null ? '' : b.session_pref).trim().toLowerCase().replace(/[\s-]+/g, '_');
++      if (!v || v === 'any' || v === 'all' || v === 'every' || v === 'none' || v === 'off') return null;
++      return ['asia', 'london', 'ny_am', 'london_close'].indexOf(v) !== -1 ? v : (cur.session_pref || null);
++    })(),
+     min_rr: Number.isFinite(Number(b.min_rr)) && Number(b.min_rr) > 0
+       ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
+       : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 2c6ff6c..ddb664b 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -28,6 +28,21 @@ function createBotsRouter({ requireAuth }) {
+  * scenario". `?min_rr=` overrides it for a single request so a probe or a test
+  * can measure the same plan against a different floor.
+  */
++/* M26 — the trader's own window restriction. The query wins (that is the UI's
++ * selector), then the saved preference, so a bot run from the journal and the same bot
++ * run from the API cannot disagree about which window is being traded. Read the way
++ * floorOf reads min_rr: the restriction is per-user, so it lives in per-user settings. */
++async function prefOf(req) {
++  const q = req.query.session_pref;
++  if (q != null && String(q).trim() !== '') return String(q).trim();
++  try {
++    const row = await db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
++    const set = row && row.settings ? JSON.parse(row.settings) : {};
++    if (set.session_pref != null && String(set.session_pref).trim() !== '') return String(set.session_pref).trim();
++  } catch (e) { /* no row, no settings — no restriction */ }
++  return null;
++}
++
+ async function floorOf(req) {
+   const q = Number(req.query.min_rr);
+   if (Number.isFinite(q) && q > 0) return Math.min(Math.max(q, 0.1), 10);
+@@ -88,6 +103,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       predictionBars: Math.min(Math.max(num(req.query.bars, 1200), 300), 3000),
+       step: Math.min(Math.max(num(req.query.step, 2), 1), 6),
+       minRR: await floorOf(req),
++      sessionPref: await prefOf(req),                                  // M26
+       force: req.query.force === '1',
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),       // bar replay: drop the last N candles
+       as_of: req.query.as_of || null,                                  // bar replay: read as of this instant
+@@ -113,6 +129,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       userId: req.user.id,
+       accountId: req.query.account_id ? Number(req.query.account_id) : null,
+       minRR: await floorOf(req),
++      sessionPref: await prefOf(req),                                  // M26
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),
+       as_of: req.query.as_of || null,
+     });
+@@ -128,6 +145,7 @@ router.get('/markets', requireAuth, (req, res) => {
+     const tf = String(req.query.tf || '15m');
+     const out = await Bots.chart(symbol, tf, {
+       bars: Math.min(Math.max(num(req.query.bars, 300), 80), 900), userId: req.user.id,
++      sessionPref: await prefOf(req),                                  // M26
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
+     });
+     res.json({
+@@ -150,7 +168,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       .split(',').map((s) => s.trim()).filter(Boolean);
+     if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
+     const tf = String(req.query.tf || '15m');
+-    const out = await Bots.scan(symbols, tf, { userId: req.user.id });
++    const out = await Bots.scan(symbols, tf, { userId: req.user.id, sessionPref: await prefOf(req) });  // M26
+     res.json(out);
+   }));
  
 diff --git a/src/trades.js b/src/trades.js
 index 171df43..8c1e888 100644

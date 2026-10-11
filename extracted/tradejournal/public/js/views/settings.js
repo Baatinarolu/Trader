@@ -312,11 +312,36 @@
               <div class="field-note">This checklist appears on every new trade and in the briefing. Keep it short enough that you will actually use it.</div>
               <button class="btn primary sm" id="s-save-rules" style="margin-top:12px">Save checklist</button>
             </div>`;
+          /* M26 — the bots' window restriction lives with the other preferences. Built in
+           * JS rather than added to the template string so the option labels stay free of
+           * hours: the server owns the clock and sends its own label back. */
+          (function addWindowPref() {
+            const grid = U.$('.form-grid', w); if (!grid) return;
+            const lab = document.createElement('label');
+            lab.className = 'field';
+            lab.innerHTML = '<span>Trading window for the bots</span>';
+            const sel = document.createElement('select');
+            sel.id = 's-window';
+            [['', 'Any window'], ['asia', 'Asia'], ['london', 'London'], ['ny_am', 'NY AM'], ['london_close', 'London close']]
+              .forEach((o) => {
+                const op = document.createElement('option');
+                op.value = o[0]; op.textContent = o[1];
+                if (String(s.session_pref || '') === o[0]) op.selected = true;
+                sel.appendChild(op);
+              });
+            lab.appendChild(sel);
+            grid.appendChild(lab);
+            const note = document.createElement('div');
+            note.className = 'field-note';
+            note.textContent = 'Pick one window and the bots refuse signals outside it — a refusal, not a downgrade. "Just stick to one."';
+            grid.parentNode.insertBefore(note, grid.nextSibling);
+          })();
           U.$('#s-save', w).addEventListener('click', async () => {
             await API.put('/settings', {
               name: U.$('#s-name', w).value, timezone: U.$('#s-tz', w).value,
               focus_symbols: U.$('#s-focus', w).value.split(',').map((x) => x.trim().toUpperCase()).filter(Boolean),
               min_rr: Number(U.$('#s-minrr', w).value) || 1,
+              session_pref: U.$('#s-window', w) ? U.$('#s-window', w).value : undefined,   // M26
               default_checklist: (Store.user.settings.default_checklist || []),
             });
             await Store.reloadAll(); global.App.toast('Preferences saved', 'ok');

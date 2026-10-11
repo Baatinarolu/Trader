@@ -280,6 +280,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
     balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
     newsBlackout: news.blackout, minRR: floorRR(opts.minRR),
     topdown: momentum.topdown,          // the method decides whether a side may be armed
+    sessionPref: opts.sessionPref || null,   // M26 — the trader's one window
   });
 
   let prediction = null;
@@ -467,6 +468,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
     price: entry.price, atr: entry.atr, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
     indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td,
+    sessionPref: opts.sessionPref || null,   // M26
   });
 
   // The plan drawn on the chart: the method's own CRT plan when it has one,
@@ -572,7 +574,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
   };
 }
 
-async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3 } = {}) {
+async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, sessionPref = null } = {}) {
   const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
   const rows = [];
   let cursor = 0;
@@ -591,6 +593,9 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
         const specs = Setup.buildSetups(series.smc, {
           price: series.price, atr: series.atr, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
           indicators: series.ind, minRR: 2, topdown: momentum.topdown,
+          sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
+                         // No symbol on this path either, so the pair-conflict note stays
+                         // null rather than false.
         });
         // one row per market: the side the method permits (a scan that lists both
         // a buy and a sell for the same symbol is not a scan, it is a coin toss)

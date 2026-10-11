@@ -2493,3 +2493,55 @@ NOT implemented: the directional playbook (bullish daily -> fade the Asia high i
 sweep strategy works really, really well") and points to a video outside this playlist.
 Probe analysis/probe-m41-asia-range.js 27/0; pristine via TJ_APP= 0/3 (negative control).
 Suites: api 121/0 · bots 206/0 (parity sample 21 trades, 0 mismatches) · chart 36/0 · now 36/0.
+
+=== M26 — restrict the bot to ONE trading window (APPLIED) ===
+Ep 3: "a much smarter trading approach is to find one specific window and just focus on that window...
+but just stick to one." Ep 12 makes it a product requirement he ships: "we have actually built a
+feature that allows you to define your own trading window... this trade button will be blocked...
+grayed out... You physically can't press the trade button", because "you're not relying on discipline.
+You are just implementing that discipline into your trading system itself."
+What was actually missing (the row's own claim that in_killzone is never a veto had gone stale — M8
+added that veto at setup.js:770 and M38/M40 made it read the pair-affinity view): a refusal existed,
+but nothing could say WHICH window this trader trades. All four were equally welcome.
+SHIPPED: ctx.sessionPref -> SMC.normalizeWindowPref(); keys/labels/hours read from SILVER_BULLETS via
+WINDOW_BY_KEY + windowLabel() (never restated — M39's lesson; the row's own "NY PM" is the name M39
+removed). sessionState()'s explicit-field bullet map now carries the new `key`. The window veto
+SUPERSEDES M8's generic one instead of stacking; when the chosen window is open but M40's affinity
+excludes the pair, M8's message fires alone. Reported as filters.session_pref {key,label,open_now,
+blocked_now,pair_counts,conflict,phase,phase_note,error}. Stored per user (PUT /api/settings
+whitelist) and read by prefOf(req) in routes/bots.js — query first, then settings — threaded through
+analyse/chart/scan. UI: selector in the bots toolbar + the same choice in Settings, a line saying what
+the restriction did, and Ep 12's hard stop as levelsBtn.disabled (Copy plan) when blocked_now.
+Composes with M40 (pairCountsFor via an extracted legsOf: EURUSD+Asia reports "can never fire"; gold
+and crypto never falsely conflicted; the symbol-less scan path yields null, not false) and with M25
+(phase read inside the chosen window; balance adds a consolidation note; GATING on phase stays M3's).
+Bug caught by bots-test, not by node --check: scan() destructures its params, so `opts` was out of
+scope and threw ReferenceError (scan check -> 4 errors / 0 rows). Fixed with sessionPref = null in the
+signature.
+INVARIANCE (the default arm must not move): the harness gained an opt-in --session-pref, absent by
+default. At --seeds 60 the post-M26 default arm and a control worktree at 19eb0ab give a **0-line diff
+across the entire harness output** — not equal aggregates, identical text — because with no preference
+winPref is null, prefBlocked is false and the original `else if` branch runs unchanged.
+WHAT THE RESTRICTION DOES, above the trade floor (--seeds 200 --bars 1500 --window 300):
+  no restriction   n= 99  win= 24.2%  exp=-0.0111R  PF= 0.98   [recorded post-M41 default]
+  --session-pref ny_am           n= 43  win= 32.6%  exp=+0.4388R  PF=1.74   (A+ 11 +0.4664R, A 32 +0.4293R)
+  --session-pref london_close    n= 34  win=  8.8%  exp=-0.5082R  PF=0.26
+At --seeds 60 (default config): default n=15 -0.2188R PF0.68; asia n=0; london n=4 -1.0000R;
+ny_am n=7 +0.5311R PF2.15; london_close n=6 -0.2644R.
+READ THIS AS A RECORDED NEGATIVE, NOT AS A RANKING. Both window arms above clear M11's 30-trade floor
+and point in OPPOSITE directions on a random walk that contains no session structure at all, so no
+window can have predictive value there: +0.4388R for NY AM and -0.5082R for London close are the same
+phenomenon, which is sampling variance across disjoint subsets. The 60-seed NY AM arm makes the point
+on its own — +0.5311R on 7 trades became +0.0826R on 25 (default config) and +0.4388R on 43 at 1500
+bars. What the harness DOES establish is that the restriction is operative and selective: it removes
+57-66% of the signals, which is the entire point of Ep 3's rule. NO performance claim, and specifically
+no claim that NY AM is the window to trade.
+Probe analysis/probe-m26-window-restriction.js 49/0; pristine via TJ_APP= 0/7 (tallies, does not throw).
+Suites: api 121/0 · bots 204/2 · chart 36/0 · now 36/0. Both bots failures are ATTRIBUTED, not
+accepted: the control tree at 19eb0ab, run at the same clock, fails the same two — PC.backtest
+('BTCUSDT','1h') filled 15 trades against a >20 sample floor, and its bar timestamps come from
+Date.now() at candles.js:278, so that count moves with the wall clock. (The 21-trade sample recorded
+under M41 was the same gate at a different hour.)
+Fleet re-run because the legsOf() extraction touched a shared path: m37 20/0, m38-m40 51/0, m39 34/0,
+m41 27/0, m57 6/0, m69 16/0, groupa 18, groupb 10, m36 17, batch0 11/0, m58 23/0, m21 10/0, m124 5/0,
+m102 30/0, engine 51/0, candles-yahoo 62/0, m50 44/0, m52 33/0, reverify 64/0, m11 25/0.

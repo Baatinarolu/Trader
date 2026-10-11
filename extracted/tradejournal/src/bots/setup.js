@@ -340,6 +340,31 @@ function buildSetups(analysis, ctx = {}) {
   /* M38/M40 — the session view THIS SYMBOL is entitled to. The calendar fields (dow,
    * month) are preserved by the copy, so M10's stand-down is unaffected. */
   const sess = SMC.sessionAffinity(ctx.symbol, sessions);
+  /* M26 — the trader's OWN window. Until now the bot could refuse a setup for being
+   * outside A killzone, but nothing could tell it which killzone this trader actually
+   * trades, so a London trader was handed NY AM signals and an Asia trader was handed
+   * London ones. "Find one specific window and just focus on that window ... but just
+   * stick to one." When ctx.sessionPref names one of the four, a candidate armed in any
+   * other window — or in none — is refused, which is what turns the restriction into a
+   * rule instead of advice: "you're not relying on discipline. You are just implementing
+   * that discipline into your trading system itself."
+   * Read off the CALENDAR (bullets[].active), not off sess.killzone: sessionAffinity
+   * nulls killzone when the open window is not this pair's, and that case is already
+   * refused by M8's veto with a better message. */
+  const winPref = SMC.normalizeWindowPref(ctx.sessionPref);
+  const prefOpenBullet = (sess.bullets || []).find((b) => b.active) || null;
+  const prefBlocked = !!(winPref && winPref.key && (!prefOpenBullet || prefOpenBullet.key !== winPref.key));
+  /* M26 + M40: a window's pairs are part of the window. Restricting EURUSD to Asia
+   * (AUD/NZD/JPY only) is a setting that can never fire, so it is said out loud rather
+   * than left to look like a quiet market. Null — not false — when the caller gave no
+   * symbol (the scan path), because unknown must never read as a conflict. */
+  const prefCounts = (winPref && winPref.key && ctx.symbol)
+    ? SMC.pairCountsFor(ctx.symbol, SMC.WINDOW_BY_KEY[winPref.key]) : null;
+  /* M26 + M25: the window says WHEN, the phase says whether there is anything to trade
+   * in it. Inside the chosen window the phase is read once, so consolidation is visible
+   * there instead of being mistaken for a slow market. Gating on the phase is M3's
+   * timing rule and is deliberately not done here. */
+  const prefPhase = (winPref && winPref.restricted && !prefBlocked) ? marketPhase(analysis) : null;
   /* M10 — computed ONCE here rather than per candidate: it depends only on the bar's
    * calendar and the caller's configuration, not on anything about an individual setup.
    * It was originally declared inside the scoring loop, which put it out of scope for the
@@ -767,7 +792,14 @@ function buildSetups(analysis, ctx = {}) {
     if (blackout) vetoes.push('High-impact news inside the window.');
     // M8 — tested against the boolean, not truthiness: when analysis is the short-series
     // sentinel, `sessions` is {} and in_killzone is undefined, which must NOT veto.
-    if (sess.in_killzone === false) {
+    /* M26 — the specific-window veto. It SUPERSEDES the generic one when it applies,
+     * because "outside the killzone" is true but less true than "outside YOUR window":
+     * the trader chose this window, so the refusal has to name it. */
+    if (prefBlocked) {
+      vetoes.push(`Outside your window — this bot is restricted to ${winPref.label}; `
+        + `${prefOpenBullet ? `the window open now is ${prefOpenBullet.name}` : 'no killzone is open now'}.`
+        + ` "Just stick to one."${sess.best_time ? ` ${sess.best_time}` : ''}`);
+    } else if (sess.in_killzone === false) {
       vetoes.push(`Outside the killzone — "if the setup appears before or after that window, I personally will not enter."${sess.best_time ? ` ${sess.best_time}` : ''}`);
     }
     // M35 — a cap at 66 left this tradeable as a B. The course stands it down instead:
@@ -992,6 +1024,26 @@ function buildSetups(analysis, ctx = {}) {
         note_friday: standDown.applies ? standDown.note_friday : null,
       },
       killzone_quality: strike,
+      /* M26 — the restriction this analysis ran under, so the UI and the journal can say
+       * why a signal was refused without re-deriving it from the clock. */
+      session_pref: (winPref && winPref.restricted) ? {
+        key: winPref.key, label: winPref.label, restricted: true,
+        open_now: prefOpenBullet ? prefOpenBullet.name : null,
+        blocked_now: prefBlocked,
+        pair_counts: prefCounts,
+        conflict: prefCounts === false
+          ? `${String(ctx.symbol || '').toUpperCase()} is not one of ${winPref.label}'s pairs — this restriction can never fire.`
+          : null,
+        phase: prefPhase ? prefPhase.phase : null,
+        phase_note: (prefPhase && prefPhase.phase === 'balance')
+          ? 'Inside your window, but the market is in balance — consolidation. The window decides when; whether there is anything to trade in it is the phase.'
+          : null,
+        note: '"Find one specific window and just focus on that window ... but just stick to one."',
+      } : (winPref && winPref.error ? {
+        key: null, label: null, restricted: false, error: winPref.error,
+        note: `Unknown window "${winPref.error}" — the restriction was NOT applied. Expected one of: `
+          + Object.keys(SMC.WINDOW_BY_KEY).join(', ') + ', or "any".',
+      } : null),
       news_blackout: blackout || null,
       min_rr: minRR,
     },

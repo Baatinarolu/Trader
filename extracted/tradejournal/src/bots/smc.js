@@ -945,13 +945,13 @@ const SESSIONS = [
  * Each window now carries its own `note`, because one shared sentence cannot describe
  * both an expansion window and a retrace window. */
 const SILVER_BULLETS = [
-  { name: 'Asia killzone', startH: 20, startM: 0, endH: 24, endM: 0, quality: 0.5, restricted: true, pairs: ['AUD', 'NZD', 'JPY'],
+  { key: 'asia', name: 'Asia killzone', startH: 20, startM: 0, endH: 24, endM: 0, quality: 0.5, restricted: true, pairs: ['AUD', 'NZD', 'JPY'],
     note: 'Asia — the Australian dollar, New Zealand dollar and Japanese yen pairs. Lower volume; not where the explosive moves on the USD pairs happen.' },
-  { name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0, pairs: ['EUR', 'GBP'],
+  { key: 'london', name: 'London killzone', startH: 2, startM: 0, endH: 5, endM: 0, quality: 1.0, pairs: ['EUR', 'GBP'],
     note: 'London killzone — highest-probability window for the entry models.' },
-  { name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0, pairs: ['USD'],
+  { key: 'ny_am', name: 'NY AM killzone', startH: 7, startM: 0, endH: 10, endM: 0, quality: 1.0, pairs: ['USD'],
     note: 'New York AM killzone — highest-probability window for the entry models.' },
-  { name: 'London close killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.5, pairs: ['USD'],
+  { key: 'london_close', name: 'London close killzone', startH: 10, startM: 0, endH: 12, endM: 0, quality: 0.5, pairs: ['USD'],
     note: 'London close — lower volume; price tends to retrace back into the daily range. Small retracement bases, not fresh expansion.' },
 ];
 
@@ -973,6 +973,80 @@ function utcLabel(date, startMins, endMins) {
   return `${fmt(startMins)}–${fmt(endMins)} UTC`;
 }
 
+/* ------------------------------------------------------------- M26 windows
+ * The four windows he teaches are the only ones a trader may restrict the bot to:
+ * "find one specific window and just focus on that window ... but just stick to
+ * one." Everything about a window here — its hours, its pairs, its label — is read
+ * from SILVER_BULLETS, so this cannot become a third stale copy of the hours the
+ * way now.js's private table and chart.js's bands were before M39 unified them.
+ */
+const WINDOW_BY_KEY = {};
+const WINDOW_KEYS = {};                       // lower-cased bullet name -> key
+SILVER_BULLETS.forEach((b) => { WINDOW_BY_KEY[b.key] = b; WINDOW_KEYS[b.name.toLowerCase()] = b.key; });
+
+/* Accepted spellings. Anything not in here and not a window key is reported back as
+ * an error rather than silently reinterpreted: a restriction that quietly means
+ * something else is worse than one that visibly failed to apply. */
+const WINDOW_ALIASES = {
+  asia: 'asia', asian: 'asia', asia_killzone: 'asia',
+  london: 'london', ldn: 'london', london_killzone: 'london',
+  ny_am: 'ny_am', nyam: 'ny_am', ny: 'ny_am', new_york_am: 'ny_am', ny_am_killzone: 'ny_am',
+  london_close: 'london_close', londonclose: 'london_close', close: 'london_close',
+  london_close_killzone: 'london_close',
+};
+
+/** "London killzone 02:00–05:00 New York" — hours read from the bullet, never restated. */
+function windowLabel(key) {
+  const b = WINDOW_BY_KEY[key];
+  if (!b) return String(key);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${b.name} ${p(b.startH)}:${p(b.startM)}–${p(b.endH)}:${p(b.endM)} New York`;
+}
+
+/**
+ * The window a trader has restricted the bot to.
+ * @returns {null} when nothing was supplied; otherwise
+ *   { key, label, restricted, error } — `restricted:false` for "any window",
+ *   `error` set (and key null) when the value named no window at all.
+ */
+function normalizeWindowPref(v) {
+  if (v == null) return null;
+  const raw = String(v).trim().toLowerCase();
+  if (!raw) return null;
+  if (/^(any|all|every|none|off)$/.test(raw)) return { key: null, label: 'any window', restricted: false, error: null };
+  const flat = raw.replace(/[\s-]+/g, '_');
+  const key = WINDOW_ALIASES[flat] || (WINDOW_BY_KEY[flat] ? flat : null) || WINDOW_KEYS[raw] || null;
+  if (!key) return { key: null, label: null, restricted: false, error: raw };
+  return { key, label: windowLabel(key), restricted: true, error: null };
+}
+
+/** Symbol legs, taken positionally: symbols carry no separator ('EURUSD', 'XAUUSD',
+ *  'BTCUSDT'), and splitting on non-letters yields ONE leg for every symbol. */
+function legsOf(symbol) {
+  const base = String(symbol || '').toUpperCase().replace(/[^A-Z]/g, '');
+  return base.length >= 6 ? [base.slice(0, 3), base.slice(3)] : (base ? [base] : []);
+}
+
+/**
+ * Does this window's pair list count for this instrument? The same three rules
+ * sessionAffinity applies, because M26's restriction has to compose with M40's
+ * affinity: a window and its pairs are one statement, not two.
+ *  - a RESTRICTED window (Asia) exists only for its pairs;
+ *  - an instrument with a leg outside his named set (gold, crypto — he placed neither
+ *    in any session, and absence of a statement is not a rule) is welcome everywhere;
+ *  - a governed FX pair counts when either leg is listed.
+ */
+function pairCountsFor(symbol, bullet) {
+  if (!bullet) return false;
+  const pairs = bullet.pairs;
+  if (!pairs || !pairs.length) return true;
+  const legs = legsOf(symbol);
+  const match = legs.some((l) => pairs.indexOf(l) !== -1);
+  if (bullet.restricted) return match;
+  if (legs.length !== 2 || legs.some((l) => NAMED_SESSION_CURRENCIES.indexOf(l) === -1)) return true;
+  return match;
+}
+
 function sessionState(date = new Date()) {
   const h = date.getUTCHours(), m = date.getUTCMinutes();
   const mins = h * 60 + m;
@@ -988,7 +1062,7 @@ function sessionState(date = new Date()) {
     const open_ = inWindowNY(s, e);
     const until = (e - nyMins + 1440) % 1440;
     const et = `${String(b.startH).padStart(2, '0')}:${String(b.startM).padStart(2, '0')}–${String(b.endH).padStart(2, '0')}:${String(b.endM).padStart(2, '0')} ET`;
-    return { name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted, note: b.note || null };
+    return { key: b.key, name: b.name, window: `${et} (${utcLabel(date, s, e)})`, window_et: et, active: open_, minutes_to_end: open_ ? until : null, minutes_to_start: open_ ? 0 : ((s - nyMins + 1440) % 1440), quality: b.quality, pairs: b.pairs || null, restricted: !!b.restricted, note: b.note || null };
   });
   const activeBullet = bullets.find((b) => b.active) || null;
   return {
@@ -1050,8 +1124,7 @@ function sessionAffinity(symbol, sessions) {
   /* Symbols carry no separator ('EURUSD', 'XAUUSD', 'BTCUSDT'), so legs are taken
    * positionally: first three characters against the remainder. Splitting on
    * non-letters yields ONE leg for every symbol and silently disables the whole map. */
-  const base = String(symbol || '').toUpperCase().replace(/[^A-Z]/g, '');
-  const legs = base.length >= 6 ? [base.slice(0, 3), base.slice(3)] : (base ? [base] : []);
+  const legs = legsOf(symbol);        // M26: extracted — pairCountsFor needs the same split
   const match = legs.some((l) => pairs.indexOf(l) !== -1);
   /* A RESTRICTED window exists only for its pairs: Asia was added BY this fix for AUD, NZD
    * and JPY, so for every other instrument it must not exist at all — admitting XAUUSD or
@@ -1226,4 +1299,5 @@ module.exports = {
   findSwings, alternate, bosSwings, marketStructure, findDisplacement, findOrderBlocks, findFvgs, findBreakers,
   liquidity, findSweeps, premiumDiscount, crt, sessionState, analyse, clusterLevels,
   SESSIONS, SILVER_BULLETS, dayKey, weekKey, sessionAffinity, asiaRange,
+  WINDOW_BY_KEY, WINDOW_KEYS, windowLabel, normalizeWindowPref, pairCountsFor, legsOf,
 };

@@ -13,6 +13,11 @@
     prediction: true,
     minRR: Number(((global.Store.user || {}).settings || {}).min_rr) > 0 ? Number(global.Store.user.settings.min_rr) : 1,
     bars: 1200,
+    /* M26 — the ONE window this trader trades, read from the saved preference so the bots
+     * view, the settings view and the API cannot disagree. The hours are never restated
+     * here: the server sends back its own label (session_pref.label), built from the
+     * window definition, so the clock still lives in exactly one place. */
+    sessionPref: String(((global.Store.user || {}).settings || {}).session_pref || ''),
     data: null, predict: null, scan: null, correction: null, signals: null, chart: null,
     scanList: ['EURUSD', 'GBPUSD', 'XAUUSD', 'BTCUSDT', 'ETHUSDT', 'ES', 'NAS100', 'US30'],
     busy: '', error: '', updated: null,
@@ -145,6 +150,20 @@
     symbols.forEach((s) => dl.appendChild(h('option', { value: s })));
     const tfSel = h('select', { class: 'input', style: 'max-width:110px' });
     tfs.forEach((t) => tfSel.appendChild(h('option', { value: t, text: t, selected: t === B.tf ? 'selected' : null })));
+    /* M26 — "find one specific window and just focus on that window ... but just stick to
+     * one." Option text carries no hours on purpose; the label the server returns does. */
+    const WINDOWS = [['', 'Any window'], ['asia', 'Asia'], ['london', 'London'], ['ny_am', 'NY AM'], ['london_close', 'London close']];
+    const winSel = h('select', { class: 'input', style: 'max-width:150px',
+      title: 'Restrict the bots to one window. Outside it a signal is refused, not downgraded — "you\'re not relying on discipline. You are just implementing that discipline into your trading system itself."' });
+    WINDOWS.forEach((pair) => winSel.appendChild(h('option', { value: pair[0], text: pair[1], selected: pair[0] === B.sessionPref ? 'selected' : null })));
+    /* It rides in `filters`, beside stand_down / killzone_quality / min_rr: the restriction
+     * is gate configuration, not a per-candidate field. */
+    const sp = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.session_pref) || null;
+    const winNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:440px', text: !sp ? ''
+      : sp.error ? sp.note
+      : sp.conflict ? sp.conflict
+      : sp.blocked_now ? `Outside your window (${sp.label}) — ${sp.open_now || 'no killzone open now'}; signals are refused.`
+      : `Restricted to ${sp.label}${sp.phase ? ` · phase ${sp.phase}` : ''}${sp.phase_note ? ` — ${sp.phase_note}` : ''}` });
     const predChk = h('label', { class: 'row gap-4 muted', style: 'align-items:center' });
     const predBox = h('input', { type: 'checkbox', checked: B.prediction ? 'checked' : null });
     predChk.appendChild(predBox); predChk.appendChild(document.createTextNode('prediction'));
@@ -164,6 +183,16 @@
 
     symInput.addEventListener('change', () => { B.symbol = symInput.value.trim().toUpperCase(); onChange(); });
     tfSel.addEventListener('change', () => { B.tf = tfSel.value; onChange(); });
+    winSel.addEventListener('change', async () => {
+      B.sessionPref = winSel.value;
+      /* Saved, not just applied: a restriction that only lives in this tab is a reminder,
+       * and the whole point of Ep 12's version is that it survives the trader's mood. */
+      try {
+        await global.API.put('/settings', { session_pref: B.sessionPref });
+        if (global.Store.reloadAll) await global.Store.reloadAll();
+      } catch (e) { /* the request below still carries the query value */ }
+      if (runBtn && runBtn.click) runBtn.click(); else onChange();
+    });
     predBox.addEventListener('change', () => { B.prediction = predBox.checked; });
     runBtn.addEventListener('click', async () => {
       B.symbol = symInput.value.trim().toUpperCase();
@@ -192,7 +221,13 @@
       if (!best) return global.App.toast('Analyse a market first', 'warn');
       global.TV.copy(global.TV.planText(B.symbol, B.tf, best), 'Trade plan');
     });
-    [symInput, tfSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
+    [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
+    row.appendChild(winNote);
+    /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
+     * button will be blocked ... grayed out ... You physically can't press the trade
+     * button." The nearest thing here is the control that hands you an order to place, so
+     * when the chosen window is closed it is disabled rather than left to argue with. */
+    levelsBtn.disabled = !!(sp && sp.blocked_now);
     const wrap = h('div', { class: 'card' });
     wrap.appendChild(row);
     wrap.appendChild(dl);
@@ -1165,8 +1200,10 @@
         const sym = B.symbol, tf = B.tf;
         const trim = B.trim || 0;
         Promise.all([
-          API.get('/bots/analyse', { symbol: sym, tf, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim }),
-          API.get('/bots/chart', { symbol: sym, tf, bars: 600, min_rr: B.minRR, trim }).catch(() => null),
+          API.get('/bots/analyse', { symbol: sym, tf, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
+            ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }),                     // M26
+          API.get('/bots/chart', { symbol: sym, tf, bars: 600, min_rr: B.minRR, trim,
+            ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }).catch(() => null),    // M26
           API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
         ]).then(([d, ch, dr]) => {
           B.data = d; B.predict = d.prediction; B.chart = ch; B.candles = (ch && ch.candles) || [];

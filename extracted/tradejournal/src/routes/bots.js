@@ -28,6 +28,21 @@ function createBotsRouter({ requireAuth }) {
  * scenario". `?min_rr=` overrides it for a single request so a probe or a test
  * can measure the same plan against a different floor.
  */
+/* M26 — the trader's own window restriction. The query wins (that is the UI's
+ * selector), then the saved preference, so a bot run from the journal and the same bot
+ * run from the API cannot disagree about which window is being traded. Read the way
+ * floorOf reads min_rr: the restriction is per-user, so it lives in per-user settings. */
+async function prefOf(req) {
+  const q = req.query.session_pref;
+  if (q != null && String(q).trim() !== '') return String(q).trim();
+  try {
+    const row = await db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
+    const set = row && row.settings ? JSON.parse(row.settings) : {};
+    if (set.session_pref != null && String(set.session_pref).trim() !== '') return String(set.session_pref).trim();
+  } catch (e) { /* no row, no settings — no restriction */ }
+  return null;
+}
+
 async function floorOf(req) {
   const q = Number(req.query.min_rr);
   if (Number.isFinite(q) && q > 0) return Math.min(Math.max(q, 0.1), 10);
@@ -88,6 +103,7 @@ router.get('/markets', requireAuth, (req, res) => {
       predictionBars: Math.min(Math.max(num(req.query.bars, 1200), 300), 3000),
       step: Math.min(Math.max(num(req.query.step, 2), 1), 6),
       minRR: await floorOf(req),
+      sessionPref: await prefOf(req),                                  // M26
       force: req.query.force === '1',
       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),       // bar replay: drop the last N candles
       as_of: req.query.as_of || null,                                  // bar replay: read as of this instant
@@ -113,6 +129,7 @@ router.get('/markets', requireAuth, (req, res) => {
       userId: req.user.id,
       accountId: req.query.account_id ? Number(req.query.account_id) : null,
       minRR: await floorOf(req),
+      sessionPref: await prefOf(req),                                  // M26
       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),
       as_of: req.query.as_of || null,
     });
@@ -128,6 +145,7 @@ router.get('/markets', requireAuth, (req, res) => {
     const tf = String(req.query.tf || '15m');
     const out = await Bots.chart(symbol, tf, {
       bars: Math.min(Math.max(num(req.query.bars, 300), 80), 900), userId: req.user.id,
+      sessionPref: await prefOf(req),                                  // M26
       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
     });
     res.json({
@@ -150,7 +168,7 @@ router.get('/markets', requireAuth, (req, res) => {
       .split(',').map((s) => s.trim()).filter(Boolean);
     if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
     const tf = String(req.query.tf || '15m');
-    const out = await Bots.scan(symbols, tf, { userId: req.user.id });
+    const out = await Bots.scan(symbols, tf, { userId: req.user.id, sessionPref: await prefOf(req) });  // M26
     res.json(out);
   }));
 

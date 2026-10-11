@@ -208,6 +208,16 @@ if (!['course', 'mondec', 'off'].includes(STANDDOWN_MODE)) {
 const SYM_I = process.argv.indexOf('--symbol');
 const SYMBOL = SYM_I > -1 && process.argv[SYM_I + 1] ? String(process.argv[SYM_I + 1]) : null;
 
+/* M26 — `--session-pref` feeds ctx.sessionPref: the ONE window the trader restricts the
+ * bot to ("find one specific window and just focus on that window ... but just stick to
+ * one"). Absent by default, so every recorded baseline stays comparable and the default
+ * arm is an INVARIANCE test: with no preference, buildSetups takes exactly the branch it
+ * always took (M8's killzone veto) and reports session_pref: null.
+ * Unlike --symbol this option is expected to move the numbers — a window restriction is a
+ * real veto, not a reported field, so it removes trades rather than re-labelling them. */
+const SP_I = process.argv.indexOf('--session-pref');
+const SESSION_PREF = SP_I > -1 && process.argv[SP_I + 1] ? String(process.argv[SP_I + 1]) : null;
+
 const REAL = process.argv.includes('--real');
 // NOTE: `arg()` above coerces with Number(), so it cannot carry a string value —
 // passing '15m' through it produced NaN and matched no fixture. Read strings separately.
@@ -297,7 +307,7 @@ for (let wi = 0; wi < NWALK; wi++) {
       heldState = { bias: h.bias, level: fresh === -1 && hasRange ? hh : fresh === 1 && hasRange ? ll : null, side: fresh === -1 ? 'above' : fresh === 1 ? 'below' : null };
       biasDir = h.bias;
     }
-    try { res = Setup.buildSetups(analysis, { price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex', ...(SYMBOL ? { symbol: SYMBOL } : {}), useBreakers: USE_BREAKERS, standDownOnWall: STAND_DOWN_WALL, ladderTargets: LADDER, ...(STANDDOWN_CFG !== undefined ? { standDown: STANDDOWN_CFG } : {}), ...(biasDir !== null ? { bias: biasDir } : {}) }); }
+    try { res = Setup.buildSetups(analysis, { price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex', ...(SYMBOL ? { symbol: SYMBOL } : {}), ...(SESSION_PREF ? { sessionPref: SESSION_PREF } : {}), useBreakers: USE_BREAKERS, standDownOnWall: STAND_DOWN_WALL, ladderTargets: LADDER, ...(STANDDOWN_CFG !== undefined ? { standDown: STANDDOWN_CFG } : {}), ...(biasDir !== null ? { bias: biasDir } : {}) }); }
     catch (e) { continue; }
 
     const cands = (res && res.candidates) || [];

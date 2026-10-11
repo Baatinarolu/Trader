@@ -1159,6 +1159,16 @@ router.put('/settings', requireAuth, async (req, res) => {
     risk_defaults: b.risk_defaults || cur.risk_defaults || { risk_pct: 1, daily_limit_pct: 3, max_trades: 5 },
     // the floor every plan is judged against: below it a plan may still be shown,
     // but it is labelled and never reads as a plain order
+    /* M26 — one window, chosen once and stored, so the bots enforce it instead of the
+     * trader having to remember it. Folded to the canonical key here; a value that names
+     * no window keeps whatever was stored rather than silently clearing the restriction
+     * (setup.js reports an unknown value back to the caller as an error). */
+    session_pref: (() => {
+      if (b.session_pref === undefined) return cur.session_pref || null;
+      const v = String(b.session_pref == null ? '' : b.session_pref).trim().toLowerCase().replace(/[\s-]+/g, '_');
+      if (!v || v === 'any' || v === 'all' || v === 'every' || v === 'none' || v === 'off') return null;
+      return ['asia', 'london', 'ny_am', 'london_close'].indexOf(v) !== -1 ? v : (cur.session_pref || null);
+    })(),
     min_rr: Number.isFinite(Number(b.min_rr)) && Number(b.min_rr) > 0
       ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
       : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
