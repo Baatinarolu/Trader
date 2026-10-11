@@ -1,6 +1,85 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M81/M82 continuation state — 2026-10-11
+## Current M84/M85 continuation state — 2026-10-11
+
+- Fixed branch **arena/762c0295-trader**; measured parent **446e705d1fb0ae03d6bbfcd0913145619bd395fe**.
+  Read git for current commit/push. **132:84done/2partial/46todo/0no-action**, exact8groups.
+  M30/M103 partial, M125 TODO. User CONTINUE; no more clarifiers, keep floor30/
+  deliberateM103n>=5, no70%/target shrinking/missing findings or invented edge.
+- [Authoritative M84/M85 report](M84-M85-SESSION-JOURNAL.md), evidence/m84 +m85,
+  guarded114-file final app/112parent/eight stages in M84-M85-STAGES.json and
+  build-m84-m85-artifacts.py. **244/0 across9 new probes**, actual policies/no legacy
+  adapters. Initial probes/our new-layer defects retained; see report.
+- M84 nullable max_session_minutes1–1440 integer/app range, legacy/new defaultOFF;
+  two-hour example not universal. Owned explicit server manual start/end/recheck,
+  frozen limit/idempotence, one perUTCstartday/active unique; active survives midnight,
+  end retains history, future startday afterend can startnew. Always ADVISORY, not a
+  broker/chart screen-time fact/new entry veto or permission/refund. Unknown time
+  remains unknown elapsed, never0; corruption cannot secretly veto entry.
+  Backend39/0vs3/36, actual Settings/Dashboard(first-run too)/Corrections UI14/0vs3/11.
+- M85 reuses before/after emotion, execution_notes/what, mistakes-or-explicit-none,
+  lesson/different. New mistakes_none0, journal_reviewed_at/hashNULL, no legacy
+  completed-at backfill. Owned review validates plain text<=2000/emotion<=100,
+  conflict/empty mistakes+none, actual closed/known result/notfuture. Fingerprint
+  covers relevant facts/text; generic write cannot forge serverack; unrelated note
+  preserves, relevant edits incomplete. P&L/A+/notebook is not completion. Core33/0vs3/30.
+- Live new/reopen requires explicit nonblank emotion, genuine record-only/history
+  still accepted blank. This is INPUT capture only: namedFOMO allowed, M106 four
+  questions TODO; M89 real entry/exit capture-time provenance/exclusion TODO.
+- guardrail_reflections has independent original observed loss snapshot/key/time,
+  NO tradeFK, current UTC known losses. Migration creates no capture automatically;
+  first observed current legacy loss capturedNOW, not backdated historic violation.
+  Pending writing STOP is RESOLVABLE, NOT added to DAY_STOP_RULES. Survives truth
+  correction/deletion and restart; core ack or retained-loss endpoint can resolve
+  without recreating/refunding/admitting. Captured completion idempotent/immutable;
+  newday priorpending notnewveto, oldloss clock still crossesmidnight. All other
+  stops/timed rules remain, known one-action reason doesn't complete/unlock writing,
+  unknown cannotwaive. Actual close always recordable. Gate34/0vs7/27, four actual
+  model/direction analyse/chart/scan/Now/signal cases64/0vs24/40 (declared candle/CRT/
+  exact-net/fixed-cash seams, not OHLC discovery/equity compounding).
+- Independently measured new-layer fixes: gate-only8/5→contracts13/0 (futurecomplete,
+  storednone2, invalidID local404 vsdriver503). UI-stage1/4→retention5/0: newwriting
+  unknown previously returned before retaining known old cap. Now preserve known
+  cap/count/loss-clock and observed original breach before returning unavailable;
+  actual truthful bulk delete cannot replenish cap. No silent grade/policy retune.
+- Actual UI25/0vs10/15: entry before-POST validation; close saves then prompts3lines;
+  deferring leavesgrey reason dialog; explicit editor/none, escapedmarkup, grey log
+  marker/owned UTCcounter/day without notebook,0/0empty. Dashboard/Corrections/day
+  retained-loss writing evenafterdelete; no recreatedtrade. Core complete scope
+  explicit (NOT allcourse screenshots/confluences/timing/state/routine).
+- Actual prior446e705 schema/multiple fresh-process migration/restart17/0: all
+  original account/trade/cap/state/event/admission bytes preserved; optionalOff/
+  completionNULL/no speculative captures, active marker/pending/completion persists.
+- Original inherited old probes retained **465/73 /11nonzero exits**, earlyaborts
+  make538measured not584total. Lack of new live emotion/writing +owned404 changed
+  contracts. DECLARED legacy-guard-fixture-runner.js holds writing/newprompt fulfilled,
+  supplies syntheticNeutral to oldfixtures and adapts additive table/owned404
+  assertions. **584/0 scoped guard isolation**, NOT full current-policy proof.
+  Initial isolatedhistory21/1 and runner remain; original probe files unchanged.
+  Actual new244checks and native suites have NO adapter. Do not conceal negatives.
+- Native actual unchanged scripts/IO explicitly synthetic, serialperDB/scheduler0:
+  API121/0both, bots205/1both,20parityfills/0mismatches, existing>20samplefail/exit1.
+  15neutral files:10models/geometry+shared risk/P&L/lock/native scripts. Native
+  Now50/0,Topdown77/0,Chart36/0,M33 67/0,M78 169/0,M77 41/0,M71 48/0/settings15/0.
+  Smoke**21/21**,0style/console,8canvaslimits; full-default sample10 skips conditional
+  "switch tofull" check (oldsmoke22). EmptySegments/integrationpeekfalse not passes.
+- Preview3000 currentruntime,/tmp/m84-final-regressions.db,explicitly synthetic,
+  scheduler0/blank remotecredentials. Process tradejournal-synthetic-test-prev-f5a685f1;
+  verify liveness nextturn. Previous446 preview stopped/replaced. Parent3001 control
+  stopped aftermeasurement. Host/originhealth/root200, not publicauth/feed/cron/Turso/
+  Vercel/pixel/broker/edge proof. User no-keyrotation respected; no credential commit/use.
+- Final114appfiles/eightstage+combined+pristine forward/reverse0byte proofs/sourceZIP;
+  archivehash companion evidence/m84/archive-sha256.json outsideZIP; no env/DB/deps/
+  datasets. Documentation stage runtime-neutral. Source/tmp/deps notpersistassumed.
+- **Scope bookkeeping correction:** M116 already APPLIED in ledger/PROGRESS, not
+  open. Previous summaries incorrectly listed it TODO; corrected docs, no extra
+  closure/retuning or inferred rolling100/provisional implementation.
+- **NEXT M94 paired with M64/M14 routine and M108 meditation step.** Saved Ep17/bonus
+  timing/step sequence must be scoped together withdaily tracking/reset; boolean
+  alone insufficient. M89/M106 stayseparate, all46TODOs/2partials visible. No claim
+  incompleteitems causedlosses; do not repeat completed M71 twelve-run study.
+
+## Historical M81/M82 continuation state — 2026-10-11
 
 - Fixed branch **arena/762c0295-trader**; measured parent **7f1122dade0b9022b595aadc08bbb29badff51f6**.
   Read git for current commit/push. **132:82done/2partial/48todo/0no-action**;
@@ -60,7 +139,7 @@
   outsideZIP; eight incremental+combined+pristine forward/reverse0byte differences,
   no DB/deps/datasets/secrets. Documentation stage runtime unchanged.
 - **NEXT M84 optional session-duration marker, then M85 required post-loss reflection
-  /journal completeness**, then remaining risk/review mechanisms. M94/M111/M112/M116
+  /journal completeness**, then remaining risk/review mechanisms. M94/M111/M112 (M116 was already APPLIED; earlier open-label corrected)
   remain open, all48TODOs/2partials visible. Do not infer incomplete items caused losses
   or repeat the completed M71 twelve-run measurements. Existing M79 admitted-count
   and durable-loss-clock policies continue as documented below.

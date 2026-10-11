@@ -1,6 +1,21 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
-## Current M81/M82 status — 2026-10-11
+## Current M84/M85 status — 2026-10-11
+
+**132:84 done/2partial/46todo/0no-action**, exact eight groups. Optional manual
+time marker +required post-loss/core-journal writing complete.244/0 new checks;
+original legacy465/73/11nonzero exits retained;584/0 under DECLARED prerequisites-
+fulfilled isolation only. Unchanged actual native scripts/no adapter:API121/0 both,
+bots205/1 both (20synthetic parity fills/0mismatches; unchanged>20floor failure).
+[Report](M84-M85-SESSION-JOURNAL.md). Native scripts/15neutral files unchanged;
+floor30, deliberateM103n>=5, RR/targets/grades/risk geometry untouched.
+M116 already APPLIED; previous open label corrected, no extra closure. M89 capture
+provenance/M106 four-question gate are not silently closed by naming input.
+**Next M94 paired with M64/M14 pre-market routine and M108 meditation step**. Scope
+step/reset/window/visibility/data capture together, not a standalone checkbox.
+M30/M103 remain partial; all46TODOs visible. No70%/target shrink/outcome claim.
+
+## Historical M81/M82 status — 2026-10-11
 
 **132:82 done/2 partial/48 todo/0 no-action**, exact eight-group partition.
 Optional realised UTC profit ceiling and streak-independent risk complete;
@@ -188,7 +203,7 @@ BOS-relative extremes) are the same layer.
 | **M90** | Guardrail breaches are computed live for today and never persisted → the cross-day pattern his review depends on is unmeasurable. Needs a table. |
 | **M91** | The "rewarded for bad behaviour" case is not detected — *"I have made $2.5 million but it shows that I'm **at risk**"*. Depends on M90. |
 | **M80** | Override = grey out → **required reason** → write to the journal keyed to the day → surface per day. Ship with M79. |
-| **M94** | No max-daily-profit guardrail (his default 5 %, optionally 3 %; Ep 31 said 1 % — the course is internally inconsistent here). |
+| **M81** | Historical plan attribution correction: this max-daily-profit item was mislabeled M94. Optional/configurable realised profit now shipped; M94 is the pre-market routine flag paired with M64/M14. |
 
 ## Batch 4 — entry model.
 
@@ -244,7 +259,7 @@ selection:
 | **M7 / M8** | Hard veto, or keep as weights? (Resolved by M95 if you accept that fix.) |
 | **M22** | Derive one swing tier from the other, or keep them independent? |
 | **M24** | Blocked on M21. |
-| **M94** | Max daily profit 5 %, 3 %, or 1 %? His own course says different things in different episodes. |
+| **M81** | Historical attribution correction: optional configurable realised profit choice shipped; no universal course example. M94 is routine tracking, not this profit question. |
 
 ## What I am deliberately NOT changing
 

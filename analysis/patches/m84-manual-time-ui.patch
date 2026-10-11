@@ -1,0 +1,101 @@
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 367ad46..240ecc9 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -1156,6 +1156,7 @@
+     gr.appendChild(h('div', { class: 'muted bot-detail', text: g.basis || '' }));
+     gr.appendChild(h('div', { class: 'bot-plan ' + (c.daily.status === 'stop' ? 'neg' : c.daily.status === 'caution' ? 'warn' : ''), text: c.daily.message || '' }));
+     pane.appendChild(gr);
++    if(Views.sessionTimeCard) pane.appendChild(Views.sessionTimeCard(c.daily.session_time || {}));
+ 
+     const grid = h('div', { class: 'bot-grid' });
+     const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
+diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
+index 6a170b7..c354a5c 100644
+--- a/public/js/views/dashboard.js
++++ b/public/js/views/dashboard.js
+@@ -3,6 +3,26 @@
+   'use strict';
+   const Views = global.Views = global.Views || {};
+ 
++  // Shared with Corrections: explicit server marker, not broker time/permission.
++  Views.sessionTimeCard = function(session = {}) {
++    const accountId=Number(session.account_id || Store.accountId),node=U.h('div',{class:'card',style:'margin-top:14px','data-session-time':''});
++    function draw(s){
++      const ongoing=!!s.started_at && !s.ended_at;
++      node.innerHTML=`<div class="card-head"><h3>Manual session time</h3><span class="chip ${s.warning?'warn':'muted'}">${U.esc(s.state || 'unavailable')}</span></div>
++        <div class="small ${s.warning?'warn':'muted'}">${U.esc(s.message || 'Manual time unavailable; no broker activity is inferred.')}</div>
++        <div class="tiny muted">Optional warning only, not measured broker/chart screen time or entry permission. Recheck for current server elapsed time. Other rule stops and admissions are unchanged.</div>
++        <div class="row" style="gap:8px;margin-top:8px">${s.state==='not_started'?'<button class="btn sm" data-session-action="start">Start manual marker</button>':''}${ongoing && s.state!=='unavailable'?'<button class="btn sm ghost" data-session-action="end">End manual marker</button>':''}<button class="btn xs ghost" data-session-action="refresh">Recheck session time</button></div>`;
++      node.querySelectorAll('[data-session-action]').forEach(b=>b.addEventListener('click',async()=>{
++        node.querySelectorAll('button').forEach(x=>{x.disabled=true;});
++        try{const result=b.dataset.sessionAction==='refresh'?await API.get('/session-time',{account_id:accountId}):await API.post('/session-time/'+b.dataset.sessionAction,{account_id:accountId});
++          if(Number(Store.accountId)!==accountId || Number(result.session?.account_id)!==accountId)return;draw(result.session);
++        }catch(e){global.App.toast(e.message||'Session marker unavailable','err');}
++        finally{node.querySelectorAll('button').forEach(x=>{x.disabled=false;});}
++      }));
++    }
++    draw(session);return node;
++  };
++
+   Views.dashboard = {
+     title: 'Dashboard',
+     async render(root) {
+@@ -50,6 +70,8 @@
+         go('first-bots', () => global.App.go('bots'));
+       }
+ 
++      root.appendChild(Views.sessionTimeCard(briefing?.daily?.session_time || {}));
++
+       /* ---------------------------------------------------- briefing strip */
+       if (briefing) {
+         const rp = briefing.risk_plan || {};
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index 27d6a24..6e08954 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -422,6 +422,7 @@
+           <label class="field"><span>Starting balance</span><input id="a-bal" type="number" step="any" value="${v.starting_balance}" /></label>
+           <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /><div class="field-note">Default 0.5%; above it requires a deliberate manual unlock. The course maximum is 1%, never increased by a win/loss streak.</div></label>
+           <label class="field"><span>Max trades per UTC day</span><input id="a-trades" type="number" min="1" max="100" step="1" value="${v.max_trades_day ?? 3}" /><div class="field-note">Course guidance: 3 intraday / 5 scalping. Frozen on the day's first guardrail check; changes then apply tomorrow. History never raises this cap.</div></label>
++          <div class="field span2"><label class="row gap-8"><input id="a-session-enabled" type="checkbox" ${v.max_session_minutes != null ? 'checked' : ''} /><span>Optional manual session-duration warning</span></label><label for="a-session">Ceiling in minutes</label><input id="a-session" type="number" min="1" max="1440" step="1" value="${U.esc(v.max_session_minutes ?? 120)}" ${v.max_session_minutes == null ? 'disabled' : ''} /><div class="field-note">Off by default. Two hours is an example, not a universal ceiling. Start the marker yourself before the session; it measures only elapsed server time since that click, not broker/chart screen time. The selected duration freezes at start; edits do not reset it or other guardrails.</div></div>
+           <label class="field"><span>Daily loss limit (%)</span><input id="a-daily" type="number" step="0.1" value="${v.daily_loss_limit_pct}" /></label>
+           <label class="field"><span>Max drawdown (%)</span><input id="a-dd" type="number" step="0.1" value="${v.max_drawdown_pct}" /></label>
+           <label class="field span2"><span><input id="a-profit-enabled" type="checkbox" ${v.daily_profit_limit_pct != null ? 'checked' : ''} /> Enable optional daily realised profit stop</span><input id="a-profit" type="number" min="0" max="100" step="any" value="${U.esc(v.daily_profit_limit_pct ?? 1)}" ${v.daily_profit_limit_pct == null ? 'disabled' : ''} /><div class="field-note">Percentage of UTC day-start realised equity, not floating P&L or the lifetime target. Examples: 1%, 3%, 5%; choose your own. Off by default. Frozen on the first profit-policy check; later edits apply tomorrow. An observed stop lasts for the UTC day even after corrections.</div></label>
+@@ -430,6 +431,8 @@
+         <div class="field-note">Prop-firm rules live here: the app tracks how much of your daily loss limit and max drawdown you have actually used.</div>`;
+         const profitEnabled = U.$('#a-profit-enabled', body), profitInput = U.$('#a-profit', body);
+         profitEnabled.addEventListener('change', () => { profitInput.disabled = !profitEnabled.checked; });
++        const sessionEnabled = U.$('#a-session-enabled',body),sessionInput = U.$('#a-session',body);
++        sessionEnabled.addEventListener('change',()=>{sessionInput.disabled=!sessionEnabled.checked;});
+         global.App.modal({
+           title: isNew ? 'New account' : 'Edit account', body, small: true,
+           actions: [{ label: 'Cancel', ghost: true }, {
+@@ -440,10 +443,13 @@
+                 risk_per_trade_pct: U.$('#a-risk', body).value, max_trades_day: U.$('#a-trades', body).value, daily_loss_limit_pct: U.$('#a-daily', body).value,
+                 max_drawdown_pct: U.$('#a-dd', body).value, profit_target_pct: U.$('#a-target', body).value,
+                 daily_profit_limit_pct: profitEnabled.checked ? profitInput.value : null,
++                max_session_minutes: sessionEnabled.checked ? sessionInput.value : null,
+               };
+               if (!payload.name) return global.App.toast('Account needs a name', 'err');
+               if (profitEnabled.checked && !(Number(profitInput.value)>0 && Number(profitInput.value)<=100))
+                 return global.App.toast('Daily profit stop needs a positive percentage up to 100, or turn it off.', 'err');
++              if (sessionEnabled.checked && (!Number.isInteger(Number(sessionInput.value)) || Number(sessionInput.value)<1 || Number(sessionInput.value)>1440))
++                return global.App.toast('Session ceiling needs whole minutes from 1 to 1440, or turn it off.','err');
+               if (isNew) await API.post('/accounts', payload); else await API.put('/accounts/' + a.id, payload);
+               await Store.reloadAll(); close(); global.App.toast('Account saved', 'ok'); global.App.refresh();
+             },
+diff --git a/src/bots/correction.js b/src/bots/correction.js
+index 1e8d3eb..4d40e3c 100644
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
+@@ -516,6 +516,9 @@ async function dailyState(userId, { accountId = null, store = db, nowMs = Date.n
+   const rows = await store.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY opened_at ASC').all(userId,account.id);
+   const retained = await Guards.retainedState(store,userId,account.id,nowMs);
+   const daily = Guards.evaluate({account,guardrails:g,rows,nowMs,entryTf,forEntry,retained});
++  // M84 is an optional manual warning, never an additional permission veto.
++  try { daily.session_time = await require('../session-time').inspect(userId,{account,store,nowMs}); }
++  catch { daily.session_time = require('../session-time').unavailable(); }
+   await Guards.retainState(store,userId,daily);
+   await Guards.observe(store,userId,daily);
+   return daily;

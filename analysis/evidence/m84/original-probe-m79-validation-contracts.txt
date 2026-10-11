@@ -1,0 +1,27 @@
+ok existing HTTP input validation remains 400 without writing: model name
+ok direct plan admission preserves trusted 400 instead of masking as outage: model name
+ok existing HTTP input validation remains 400 without writing: model type
+ok direct plan admission preserves trusted 400 instead of masking as outage: model type
+ok existing HTTP input validation remains 400 without writing: stop provenance
+ok direct plan admission preserves trusted 400 instead of masking as outage: stop provenance
+ok existing HTTP input validation remains 400 without writing: entry variant
+ok direct plan admission preserves trusted 400 instead of masking as outage: entry variant
+ok existing HTTP input validation remains 400 without writing: evidence array
+ok direct plan admission preserves trusted 400 instead of masking as outage: evidence array
+ok existing HTTP input validation remains 400 without writing: evidence malformed JSON
+ok direct plan admission preserves trusted 400 instead of masking as outage: evidence malformed JSON
+ok existing HTTP input validation remains 400 without writing: oversized evidence
+ok direct plan admission preserves trusted 400 instead of masking as outage: oversized evidence
+ok zero saved actions do not claim personal permission
+ok valid plan retains levels, grade-free semantics and real permission
+ok stopped-day validation stays 400 and cannot fabricate an override
+ok reason plus no action does not fabricate override permission or audit
+BOT API error on POST /api/bots/signals/save-plan: Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.
+ok unavailable state still cannot be reason-waived
+ok tagged validation survives transaction boundary with exact public contract
+ok validation after a provisional insert rolls back that insert
+ok arbitrary driver 4xx is NOT treated as public validation
+ok a missing/no-op trade write cannot mint a durable entry admission
+BOT API error on POST /api/bots/signals/save-plan: Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.
+ok database write failure remains generic 503 with no secret/detail leak or signal
+M79 input contracts: 24 passed, 0 failed

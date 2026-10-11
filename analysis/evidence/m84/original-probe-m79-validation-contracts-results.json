@@ -1,0 +1,104 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 24,
+  "fail": 0,
+  "results": [
+    {
+      "label": "existing HTTP input validation remains 400 without writing: model name",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: model name",
+      "passed": true
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: model type",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: model type",
+      "passed": true
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: stop provenance",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: stop provenance",
+      "passed": true
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: entry variant",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: entry variant",
+      "passed": true
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: evidence array",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: evidence array",
+      "passed": true
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: evidence malformed JSON",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: evidence malformed JSON",
+      "passed": true
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: oversized evidence",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: oversized evidence",
+      "passed": true
+    },
+    {
+      "label": "zero saved actions do not claim personal permission",
+      "passed": true
+    },
+    {
+      "label": "valid plan retains levels, grade-free semantics and real permission",
+      "passed": true
+    },
+    {
+      "label": "stopped-day validation stays 400 and cannot fabricate an override",
+      "passed": true
+    },
+    {
+      "label": "reason plus no action does not fabricate override permission or audit",
+      "passed": true
+    },
+    {
+      "label": "unavailable state still cannot be reason-waived",
+      "passed": true
+    },
+    {
+      "label": "tagged validation survives transaction boundary with exact public contract",
+      "passed": true
+    },
+    {
+      "label": "validation after a provisional insert rolls back that insert",
+      "passed": true
+    },
+    {
+      "label": "arbitrary driver 4xx is NOT treated as public validation",
+      "passed": true
+    },
+    {
+      "label": "a missing/no-op trade write cannot mint a durable entry admission",
+      "passed": true
+    },
+    {
+      "label": "database write failure remains generic 503 with no secret/detail leak or signal",
+      "passed": true
+    }
+  ],
+  "scope": "Real HTTP/auth/SQL, declared local validation and driver-failure seams; transaction contract, not broker/live-feed/outcome proof"
+}

@@ -138,12 +138,83 @@ prescriptions and not the engine's grade sizing. Dashboard labels the base unit,
 advisory adjustment/loss budget and live personal state separately. Advice is
 **not entry permission** and cannot clear a stopped day.
 
+## Optional manual session-duration warning (M84)
+
+In **Settings → Accounts**, choose whole `max_session_minutes` from1–1440, or leave
+it OFF/NULL. That range is app validation. Ep22's "two hours" is an example, not
+an imposed default. Dashboard and Corrections expose **Start manual marker**,
+**End manual marker** and **Recheck session time**. This measures only server-clock
+elapsed time since your own start click, **not actual broker/chart screen time**.
+
+Starting freezes the selected duration. Repeated starts, a larger saved duration,
+OFF edits and same-UTC-start-day end/restart do not replenish the old marker. An
+ongoing marker survives midnight and warns inclusively at its chosen minute.
+Explicit end preserves the start/duration/end history; a later UTC start day can
+start a genuinely new marker after ending the old one. An unstarted/invalid marker
+is unknown elapsed time, not zero. Recheck updates the displayed server state.
+
+This is an **optional advisory warning**, not an extra execution veto. It neither
+waives nor resets admission counts, profit/loss/streak stops or cooldowns. You are
+responsible for the selected session ceiling outside the app; no broker is connected.
+
+## Mandatory post-loss writing and core journal completeness (M85)
+
+A prospective new entry/reopen requires an explicit nonblank named emotional state.
+It is input capture, **not the four-question calm/clear state gate** (M106) or verified
+entry-time emotion provenance (M89). Already-executed/open/historical truth can be
+recorded even when the state was never captured; do not invent an emotion afterward.
+
+Closing a position is **never refused because reflection is missing**. The actual
+trade form saves the close and immediately prompts for core journal writing:
+
+1. **What happened?** (`execution_notes`)
+2. **Which rule/mistake?** (`mistakes`), OR explicitly **"followed plan, nothing to
+   note"** (`mistakes_none`). Blank is not a clean record; both choices conflict.
+3. **What would you do differently/repeat?** (`lesson`)
+
+Name the entry/exit emotional states too. If entry state was not recorded, say so
+honestly; the review does not pretend a reconstructed state was captured live.
+Each line is plain nonblank text up to2,000 submitted characters; emotional state
+up to100. Arbitrary types, contradictory none/mistakes and future/unknown actual
+close results cannot be completed. No automatic grade/adherence/P&L rewrite occurs.
+
+An explicit **Complete core journal** action records server acknowledgement and a
+fingerprint of the current relevant facts/text. Changed review facts require a new
+acknowledgement; an unrelated note does not. Legacy populated notes get **no invented
+review timestamp**, and winning/P&L/A+ grade or a saved daily notebook is not a
+completed trade journal. A grey **Journal missing** marker and **journaled / closed**
+count are visible in the log and UTC day review, including days without notebook
+entries. Empty0/0 is "empty", not "complete".
+
+Known losses closed on the current UTC rule day require this writing before normal
+next-entry permission, **in addition to** the existing30-minute/full-next-candle
+pause. The observed loss is stored independently of the editable trade: truthful
+correction/deletion cannot silently erase its pending reflection. Dashboard/
+Corrections/day review retain a **Write reflection** action even after the trade was
+deleted. Resolving that captured writing does not recreate a trade, consume/refund
+an admission, or clear another cap/loss/streak stop. Writing resolution survives a
+fresh process. Past-day pending writing stays inspectable, but is not a new-day
+reflection veto; a midnight-crossing loss cooldown still follows its original clock.
+
+Known exceptions continue under the existing **one-action typed reason** rule. An
+exception does not mark writing complete or unlock subsequent actions. Unknown/
+corrupt writing/result state cannot be reason-waived; truthful record-only writes
+and repairs remain possible. Independently known legacy cap/loss-clock observations
+are retained even while the new writing state is unavailable.
+
+**"Core complete" is deliberately scoped to the fields above.** It does not claim
+all course screenshots/confluences/timing/routine/state checks are implemented.
+M87/M88/M89/M94/M106 and all other unresolved findings stay visible in the ledger.
+
 ## Scope still open
 
-M84's optional session-duration marker, M85's **post-loss reflection/completeness**,
-M94's pre-market routine, M111's news fail-closed policy, M112's time restrictions
-and M116's composite-score honesty remain open, along with every unresolved ID
-in the audit ledger. M85 is not an adaptive-sizing finding. M81/M82 do not change
+M94's pre-market routine (paired with M64/M14 and the M108 meditation step),
+M111's news fail-closed policy, M112's time restrictions, M89's verified emotion
+capture timing, M106's four-question state gate and all other unresolved findings
+stay open. **Correction:** M116 is already classified APPLIED in the ledger; the
+prior guide/summaries incorrectly listed it open. No new closure/retuning is counted.
+M84/M85 complete their scoped input-capture/manual-marker gaps, not adaptive sizing.
+These changes do not change
 entry models, target/stop geometry, RR floors, grade policies, the course's
 30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
 edge, win-rate improvement, live-provider or production-deployment claim is made.

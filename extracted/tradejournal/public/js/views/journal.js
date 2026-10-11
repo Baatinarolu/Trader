@@ -6,7 +6,7 @@
   Views.journal = {
     title: 'Journal',
     async render(root) {
-      const [entries, goals] = await Promise.all([API.get('/journal'), API.get('/goals')]);
+      const [entries, goals] = await Promise.all([API.get('/journal',{account_id:Store.accountId}), API.get('/goals')]);
       root.innerHTML = '';
       const layout = U.h('div', { class: 'grid g-2-1' });
       root.appendChild(layout);
@@ -42,6 +42,9 @@
           </div>`).join('');
       }
       listCol.appendChild(list);
+      const counts=U.h('div',{class:'card',style:'margin-top:14px'});
+      counts.innerHTML=`<div class="card-head"><h3>Core journal completeness (UTC close day)</h3></div><div class="tiny muted">Explicit closed-trade writing, not notebook text/P&L/grade or all course fields. Unknown close dates need truthful repair.</div>${(entries.journal_days||[]).map(d=>`<div class="row-between" style="padding:8px"><span>${U.esc(d.date)} · ${d.journaled} / ${d.total} journaled · ${U.esc(d.state)}</span>${/^\d{4}-\d{2}-\d{2}$/.test(d.date)?`<button class="btn xs ghost" data-day-journal="${U.esc(d.date)}">Review trades</button>`:''}</div>`).join('')||'<div class="empty">No closed trade journals yet; 0/0 is not a completed day.</div>'}`;
+      counts.querySelectorAll('[data-day-journal]').forEach(b=>b.addEventListener('click',()=>openEditor(b.dataset.dayJournal,root)));listCol.appendChild(counts);
       const captured = U.h('div', {class:'card',style:'margin-top:14px'});
       captured.innerHTML = `<div class="card-head"><h3>Captured guardrail days (UTC)</h3></div>
         ${(entries.guardrail_days || []).map(d=>`<div class="row-between" style="padding:8px"><span class="mono">${U.esc(d.rule_date)} · ${d.events} events · ${d.overrides || 0} overrides</span><button class="btn xs ghost" data-open="${U.esc(d.rule_date)}">Review rules & reasons</button></div>`).join('') || '<div class="empty">No stops captured yet. Older violations are not inferred or backfilled.</div>'}`;
@@ -130,12 +133,13 @@
   };
 
   async function openEditor(dateISO, root) {
-    const day = await API.get('/journal/' + dateISO);
+    const day = await API.get('/journal/' + dateISO,{account_id:Store.accountId});
     const e = day.entry || {};
     const trades = day.trades || [];
     const pnl = trades.filter((t) => t.status !== 'open').reduce((s, t) => s + (t.net_pnl || 0), 0);
     const body = U.h('div');
     body.innerHTML = `
+      <div class="small">Core journal ${day.journal_summary?.journaled ?? 'unavailable'} / ${day.journal_summary?.total ?? 'unavailable'} · ${U.esc(day.journal_summary?.state || 'unavailable')} — notebook review and trading P&L are separate.</div>
       <div class="grid g4" style="margin-bottom:14px">
         <div class="kpi"><div class="k-label">Date</div><div class="k-value" style="font-size:1rem">${U.esc(dateISO)}</div></div>
         <div class="kpi ${pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">Day P&L</div><div class="k-value ${U.cls(pnl)}">${U.moneySign(pnl)}</div></div>
@@ -153,10 +157,13 @@
       <label class="field"><span>Lessons</span><textarea id="j-lessons">${U.esc(e.lessons)}</textarea></label>
       <label class="field"><span>Tomorrow</span><textarea id="j-tomorrow">${U.esc(e.tomorrow)}</textarea></label>
       <label class="field"><span>Screen time (minutes)</span><input id="j-screen" type="number" value="${e.screen_time_minutes ?? ''}" /></label>
-      ${trades.length ? `<div class="sep"></div><h3>Trades this day</h3><table><thead><tr><th>Time</th><th>Symbol</th><th>R</th><th>P&L</th><th>Note</th></tr></thead><tbody>
+      ${trades.length ? `<div class="sep"></div><h3>Trades this day</h3><table><thead><tr><th>Time</th><th>Symbol</th><th>R</th><th>P&L</th><th>Core journal</th><th>Note</th></tr></thead><tbody>
         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+        <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+    body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
+    if(Views.lossWritingCard)body.appendChild(Views.lossWritingCard({pending:(day.loss_reflections||[]).filter(r=>r.completed_at===null),pending_count:(day.loss_reflections||[]).filter(r=>r.completed_at===null).length}));
     body.appendChild(Views.guardrailHistory(day.guardrail_events || []));
     global.App.modal({
       title: 'Day review — ' + dateISO, body, wide: true,

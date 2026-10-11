@@ -1,0 +1,171 @@
+{
+  "base_commit": "446e705d1fb0ae03d6bbfcd0913145619bd395fe",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 84,
+    "partial": 2,
+    "todo": 46,
+    "no_action": 0,
+    "partition_groups": 8,
+    "new_closures": [
+      "M84",
+      "M85"
+    ],
+    "partials": [
+      "M30",
+      "M103"
+    ],
+    "next": [
+      "M94",
+      "M64",
+      "M14",
+      "M108"
+    ]
+  },
+  "feature_assertions": {
+    "pass": 244,
+    "fail": 0,
+    "probes": 9,
+    "isolated_inherited_pass": 584,
+    "isolated_inherited_fail": 0,
+    "isolated_probes": 22,
+    "original_inherited_pass": 465,
+    "original_inherited_fail": 73,
+    "original_nonzero_exits": 11,
+    "isolation": "New M85 writing/prompt prerequisites held fulfilled and syntheticNeutral; NOT full current-policy claim. Actual new/native tests no adapter."
+  },
+  "stages": [
+    {
+      "stage": "policy",
+      "source_manifest": "policy-source.json",
+      "source_files": 113,
+      "patch": "m84-manual-time-policy.patch",
+      "files": 3,
+      "bytes": 14455,
+      "sha256": "ecbd3386cd2cf91d0327358a7b829c3f29b7b11f7f7028f90c194b6f710cad26",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "ui",
+      "source_manifest": "ui-source.json",
+      "source_files": 113,
+      "patch": "m84-manual-time-ui.patch",
+      "files": 4,
+      "bytes": 9084,
+      "sha256": "782afe40fe12e52eb1beead8e5d8c524993806831f7aee276fb4d2976d1fd5ba",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "core",
+      "source_manifest": "core-source.json",
+      "source_files": 114,
+      "patch": "m85-core-journal.patch",
+      "files": 4,
+      "bytes": 14974,
+      "sha256": "f16308d1aab4157100836957f3d1979f0da7940b75ec6d92b7ac2a35b6f610f2",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "gate",
+      "source_manifest": "gate-source.json",
+      "source_files": 114,
+      "patch": "m85-writing-admission.patch",
+      "files": 4,
+      "bytes": 12932,
+      "sha256": "2ed6ded21255753913eada5ee581c998a18666afa75394a39dc13febb35f52aa",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "contract",
+      "source_manifest": "contract-source.json",
+      "source_files": 114,
+      "patch": "m85-data-contracts.patch",
+      "files": 1,
+      "bytes": 4346,
+      "sha256": "4bfcb4dcb995cefccbce51f8de197148b36aa76fb2eddf47a9c76940d00b4f50",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "journal-ui",
+      "source_manifest": "journal-ui-source.json",
+      "source_files": 114,
+      "patch": "m85-journal-ui.patch",
+      "files": 6,
+      "bytes": 20028,
+      "sha256": "7fa218bf37253e695026de15c0e45c0e062e35d315405f1d04d8c754549b948e",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "retention",
+      "source_manifest": "retention-source.json",
+      "source_files": 114,
+      "patch": "m85-coexisting-retention.patch",
+      "files": 1,
+      "bytes": 1996,
+      "sha256": "c0af8bcc75c9c8d140356b7acdec515f7d333f421419cb44073c6585e97483f8",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "full",
+      "source_manifest": "full-source.json",
+      "source_files": 114,
+      "patch": "m84-m85-documentation.patch",
+      "files": 2,
+      "bytes": 8905,
+      "sha256": "0c891e8213b32d9b2c323fd2ce281fda688c9bde75fb6a9754b6da01c487efd7",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 14,
+    "bytes": 75613,
+    "sha256": "a78cad39a42b4ddc76c77b8425a58badf055982a661091ecf45a025342f547be",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 48,
+    "bytes": 714906,
+    "sha256": "491759f3a41d4c1d395008d0f94a53632833dba3cf463c09a9c6f6fbe12d2c53",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 114,
+    "application_byte_differences": 0,
+    "credential_db_dependency_dataset_files": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/setup.js",
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "other_neutral_files": [
+    "package-lock.json",
+    "src/instruments.js",
+    "src/performance.js",
+    "scripts/api-test.js",
+    "scripts/bots-test.js"
+  ],
+  "package_lock_sha256": "33e859914328605792ab71c75957b752716748828b0b2bef164956525cffb74c",
+  "scope": "Optional manual-time warning and mandatory post-loss/core journaling; truthful recording and old observations preserved; legacy584 isolated, actual new/native no adapter. Native both205/1,20 synthetic fills/0 mismatches, unchanged>20 failure. No broker/provider/pixel/production/edge claim."
+}

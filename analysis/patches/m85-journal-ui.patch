@@ -1,0 +1,219 @@
+diff --git a/public/js/app.js b/public/js/app.js
+index 02799d3..6081139 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -364,7 +364,8 @@
+         const t = d.trade || {};
+         this.toast(`${id ? 'Updated' : 'Logged'} ${t.symbol} · ${U.R(t.r_multiple)}${t.net_pnl ? ' · ' + U.moneySign(t.net_pnl) : ''}`, t.net_pnl >= 0 ? 'ok' : 'warn');
+         this.refresh();
+-        if (andNew) this.openTrade(null);
++        if(t.status==='closed' && t.journal?.state==='incomplete' && Views.openJournalReview)await Views.openJournalReview(t.id,{onComplete:()=>{this.refresh();if(andNew)this.openTrade(null);}});
++        else if (andNew) this.openTrade(null);
+       } catch (e) { this.toast(e.message, 'err'); }
+     },
+ 
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 240ecc9..4f2861a 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -1157,6 +1157,7 @@
+     gr.appendChild(h('div', { class: 'bot-plan ' + (c.daily.status === 'stop' ? 'neg' : c.daily.status === 'caution' ? 'warn' : ''), text: c.daily.message || '' }));
+     pane.appendChild(gr);
+     if(Views.sessionTimeCard) pane.appendChild(Views.sessionTimeCard(c.daily.session_time || {}));
++    if(Views.lossWritingCard)pane.appendChild(Views.lossWritingCard(c.daily.post_loss_journal || {}));
+ 
+     const grid = h('div', { class: 'bot-grid' });
+     const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
+diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
+index c354a5c..c4c988f 100644
+--- a/public/js/views/dashboard.js
++++ b/public/js/views/dashboard.js
+@@ -71,6 +71,7 @@
+       }
+ 
+       root.appendChild(Views.sessionTimeCard(briefing?.daily?.session_time || {}));
++      if(Views.lossWritingCard)root.appendChild(Views.lossWritingCard(briefing?.daily?.post_loss_journal || {}));
+ 
+       /* ---------------------------------------------------- briefing strip */
+       if (briefing) {
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index efe9ff7..1e75de3 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -6,7 +6,7 @@
+   Views.journal = {
+     title: 'Journal',
+     async render(root) {
+-      const [entries, goals] = await Promise.all([API.get('/journal'), API.get('/goals')]);
++      const [entries, goals] = await Promise.all([API.get('/journal',{account_id:Store.accountId}), API.get('/goals')]);
+       root.innerHTML = '';
+       const layout = U.h('div', { class: 'grid g-2-1' });
+       root.appendChild(layout);
+@@ -42,6 +42,9 @@
+           </div>`).join('');
+       }
+       listCol.appendChild(list);
++      const counts=U.h('div',{class:'card',style:'margin-top:14px'});
++      counts.innerHTML=`<div class="card-head"><h3>Core journal completeness (UTC close day)</h3></div><div class="tiny muted">Explicit closed-trade writing, not notebook text/P&L/grade or all course fields. Unknown close dates need truthful repair.</div>${(entries.journal_days||[]).map(d=>`<div class="row-between" style="padding:8px"><span>${U.esc(d.date)} · ${d.journaled} / ${d.total} journaled · ${U.esc(d.state)}</span>${/^\d{4}-\d{2}-\d{2}$/.test(d.date)?`<button class="btn xs ghost" data-day-journal="${U.esc(d.date)}">Review trades</button>`:''}</div>`).join('')||'<div class="empty">No closed trade journals yet; 0/0 is not a completed day.</div>'}`;
++      counts.querySelectorAll('[data-day-journal]').forEach(b=>b.addEventListener('click',()=>openEditor(b.dataset.dayJournal,root)));listCol.appendChild(counts);
+       const captured = U.h('div', {class:'card',style:'margin-top:14px'});
+       captured.innerHTML = `<div class="card-head"><h3>Captured guardrail days (UTC)</h3></div>
+         ${(entries.guardrail_days || []).map(d=>`<div class="row-between" style="padding:8px"><span class="mono">${U.esc(d.rule_date)} · ${d.events} events · ${d.overrides || 0} overrides</span><button class="btn xs ghost" data-open="${U.esc(d.rule_date)}">Review rules & reasons</button></div>`).join('') || '<div class="empty">No stops captured yet. Older violations are not inferred or backfilled.</div>'}`;
+@@ -130,12 +133,13 @@
+   };
+ 
+   async function openEditor(dateISO, root) {
+-    const day = await API.get('/journal/' + dateISO);
++    const day = await API.get('/journal/' + dateISO,{account_id:Store.accountId});
+     const e = day.entry || {};
+     const trades = day.trades || [];
+     const pnl = trades.filter((t) => t.status !== 'open').reduce((s, t) => s + (t.net_pnl || 0), 0);
+     const body = U.h('div');
+     body.innerHTML = `
++      <div class="small">Core journal ${day.journal_summary?.journaled ?? 'unavailable'} / ${day.journal_summary?.total ?? 'unavailable'} · ${U.esc(day.journal_summary?.state || 'unavailable')} — notebook review and trading P&L are separate.</div>
+       <div class="grid g4" style="margin-bottom:14px">
+         <div class="kpi"><div class="k-label">Date</div><div class="k-value" style="font-size:1rem">${U.esc(dateISO)}</div></div>
+         <div class="kpi ${pnl >= 0 ? 'pos' : 'neg'}"><div class="k-label">Day P&L</div><div class="k-value ${U.cls(pnl)}">${U.moneySign(pnl)}</div></div>
+@@ -153,10 +157,13 @@
+       <label class="field"><span>Lessons</span><textarea id="j-lessons">${U.esc(e.lessons)}</textarea></label>
+       <label class="field"><span>Tomorrow</span><textarea id="j-tomorrow">${U.esc(e.tomorrow)}</textarea></label>
+       <label class="field"><span>Screen time (minutes)</span><input id="j-screen" type="number" value="${e.screen_time_minutes ?? ''}" /></label>
+-      ${trades.length ? `<div class="sep"></div><h3>Trades this day</h3><table><thead><tr><th>Time</th><th>Symbol</th><th>R</th><th>P&L</th><th>Note</th></tr></thead><tbody>
++      ${trades.length ? `<div class="sep"></div><h3>Trades this day</h3><table><thead><tr><th>Time</th><th>Symbol</th><th>R</th><th>P&L</th><th>Core journal</th><th>Note</th></tr></thead><tbody>
+         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
++        <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
++    if(Views.lossWritingCard)body.appendChild(Views.lossWritingCard({pending:(day.loss_reflections||[]).filter(r=>r.completed_at===null),pending_count:(day.loss_reflections||[]).filter(r=>r.completed_at===null).length}));
+     body.appendChild(Views.guardrailHistory(day.guardrail_events || []));
+     global.App.modal({
+       title: 'Day review — ' + dateISO, body, wide: true,
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index 1b9a4d1..be55a5a 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -8,6 +8,40 @@
+   const TAGS = ['A+ setup', 'B setup', 'News play', 'Pullback', 'Range', 'Breakout', 'Reversal', 'Trend day', 'Scaled in', 'Partial taken', 'Held overnight', 'Paper trade'];
+   const EXIT_REASONS = ['Target', 'Stop loss', 'Trailing stop', 'Time stop', 'Discretionary win', 'Discretionary loss', 'Breakeven / scratch', 'Manual close', 'News exit'];
+ 
++  // Explicit core review; missing fields never silently become "no mistakes".
++  // Not broker-time capture provenance or screenshots/confluence completeness.
++  Views.openJournalReview = async function(id,{capture=null,onComplete=null}={}) {
++    let trade;
++    try{trade=capture?capture.snapshot:(await API.get('/trades/'+id)).trade;}
++    catch(e){return global.App.toast(e.message||'Trade not found','err');}
++    if(!capture && trade.status!=='closed')return global.App.toast('Record the actual close before completing its journal.','err');
++    const body=U.h('div');
++    body.innerHTML=`<p class="small muted">${capture?`Writing for the <b>observed</b> loss #${U.esc(capture.loss_trade_id)} · ${U.esc(trade.symbol)} · ${U.moneySign(trade.net_pnl)}. Corrected/deleted journal truth is not recreated.`:'Core review of the current closed journal record.'} Name what happened, the rule/mistake (or explicitly none), and what you would do differently. If entry emotion was not recorded, say so; do not reconstruct it as live capture.</p>
++      <div class="form-grid" style="grid-template-columns:1fr 1fr"><label class="field"><span>Entry emotional state (or honestly not recorded)</span><input id="jr-before" maxlength="100" value="${U.esc(trade.emotion_before||'')}" /></label>
++      <label class="field"><span>Exit emotional state</span><input id="jr-after" maxlength="100" value="${U.esc(trade.emotion_after||'')}" /></label></div>
++      <label class="field"><span>1. What happened?</span><textarea id="jr-what" maxlength="2000">${U.esc(trade.execution_notes||'')}</textarea></label>
++      <label class="field"><span>2. What rule/mistake?</span><input id="jr-mistakes" maxlength="2000" value="${U.esc(trade.mistakes||'')}" /></label>
++      <label class="row gap-8"><input id="jr-none" type="checkbox" ${trade.mistakes_none===1?'checked':''} /><span>Explicitly followed plan; no mistakes to report (not inferred from a win)</span></label>
++      <label class="field"><span>3. What would you do differently / repeat?</span><textarea id="jr-different" maxlength="2000">${U.esc(trade.lesson||'')}</textarea></label>
++      <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
++    const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
++    return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
++      actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
++        const payload={emotion_before:f('jr-before').value,emotion_after:f('jr-after').value,execution_notes:f('jr-what').value,lesson:f('jr-different').value,mistakes:none.checked?'':f('jr-mistakes').value,mistakes_none:none.checked};
++        if([payload.emotion_before,payload.emotion_after,payload.execution_notes,payload.lesson].some(v=>!v.trim())||(!none.checked&&!payload.mistakes.trim()))return global.App.toast('Name both emotional states and complete all three reflection lines; choose mistakes or explicit none.','err');
++        try{await API.post(capture?'/journal/reflections/'+capture.id:'/trades/'+id+'/journal',payload);Store.invalidate();close();global.App.toast('Core journal acknowledged; other rule stops remain.','ok');if(onComplete)onComplete();else global.App.refresh();}
++        catch(e){global.App.toast(e.message||'Journal review could not be recorded.','err');}
++      }}]});
++  };
++  Views.lossWritingCard = function(writing={}) {
++    const node=U.h('div',{class:'card',style:'margin-top:14px'}),pending=writing.pending||[];
++    node.innerHTML=`<div class="card-head"><h3>Post-loss writing</h3><span class="chip ${pending.length?'warn':'muted'}">${writing.pending_count===undefined?'unavailable':pending.length+' pending'}</span></div>
++      <div class="tiny muted">Required after observed current-day losses: pause AND write. A reasoned action exception does not complete the reflection; other day stops/cooldowns remain. No pending loss does not mean every historical journal is complete.</div>
++      ${pending.map(p=>`<div class="row-between" style="padding:8px"><span class="small">Observed #${U.esc(p.loss_trade_id)} ${U.esc(p.snapshot?.symbol||'')} · ${U.moneySign(p.snapshot?.net_pnl)} · ${U.esc(p.observed_at)}</span><button class="btn sm" data-loss-reflect="${p.id}">Write reflection</button></div>`).join('')}`;
++    node.querySelectorAll('[data-loss-reflect]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(null,{capture:pending.find(p=>p.id===Number(b.dataset.lossReflect))})));
++    return node;
++  };
++
+   Views.trades = {
+     title: 'Trade log',
+     async render(root) {
+@@ -99,6 +133,7 @@
+       r: trades.reduce((s, t) => s + (t.r_multiple || 0), 0),
+       wins: trades.filter((t) => t.is_win).length,
+     };
++    const closed=trades.filter(t=>t.status==='closed'),journaled=closed.filter(t=>t.journal?.complete).length;
+     const draw = () => {
+       const rows = [...trades].sort((a, b) => {
+         const va = val(a, sortKey), vb = val(b, sortKey);
+@@ -111,6 +146,7 @@
+             <div><div class="l k-label">Showing</div><div class="mono">${trades.length}${total > trades.length ? ' / ' + total : ''}</div></div>
+             <div><div class="k-label">Filtered net</div><div class="mono ${U.cls(sum.net)}">${U.moneySign(sum.net)}</div></div>
+             <div><div class="k-label">Filtered R</div><div class="mono ${U.cls(sum.r)}">${U.signed(sum.r, 1)}R</div></div>
++            <div><div class="k-label">Core journal (loaded closed trades)</div><div class="mono">${journaled} / ${closed.length}</div></div>
+             <div><div class="k-label">Win rate</div><div class="mono">${U.pct((sum.wins / trades.length) * 100, 1)}</div></div>
+           </div>
+           <div class="row" style="gap:8px">
+@@ -123,7 +159,7 @@
+             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
+             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
+               ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', '']].map(([k, l]) =>
++              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Journal'], ['', '']].map(([k, l]) =>
+               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
+           </tr></thead>
+           <tbody>
+@@ -144,6 +180,7 @@
+             <td class="tiny nowrap">${U.esc(t.session_label || '—')}</td>
+             <td class="tiny"><span class="rating ${t.adherence >= 4 ? 'strong' : t.adherence <= 2 ? 'weak' : ''}">${U.rating(t.adherence)}</span></td>
+             <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
++            <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
+             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
+           </tr>`).join('')}
+           </tbody>
+@@ -154,9 +191,10 @@
+         if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = -1; }
+         draw();
+       }));
++      U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
+       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
+       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
+-        if (e.target.type === 'checkbox' || e.target.closest('[data-edit]')) return;
++        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal]')) return;
+         global.App.openTrade(Number(tr.dataset.id));
+       }));
+       const chkAll = U.$('#chk-all', body);
+@@ -254,7 +292,7 @@
+         <label class="field"><span>MFE (best excursion, R)</span><input id="tf-mfe" type="number" step="any" value="${t.mfe_r ?? ''}" placeholder="e.g. 2.4" /></label>
+         <label class="field"><span>Timeframe(s)</span><input id="tf-timeframes" value="${U.esc(t.timeframes || '')}" placeholder="H1 / M15" /></label>
+ 
+-        <label class="field"><span>Emotion before</span><select id="tf-emo-before"><option value="">—</option>${list(EMOTIONS, t.emotion_before)}</select></label>
++        <label class="field"><span>Emotion before (required for prospective entry)</span><select id="tf-emo-before"><option value="">—</option>${list(EMOTIONS, t.emotion_before)}</select></label>
+         <label class="field"><span>Emotion after</span><select id="tf-emo-after"><option value="">—</option>${list(EMOTIONS, t.emotion_after)}</select></label>
+         <label class="field"><span>Confidence (1–5)</span><input id="tf-confidence" type="number" min="1" max="5" value="${t.confidence ?? ''}" /></label>
+         <label class="field"><span>Rule adherence (1–5)</span><input id="tf-adherence" type="number" min="1" max="5" value="${t.adherence ?? ''}" /></label>
+@@ -404,6 +442,7 @@
+         screenshot_url: shotData || g('shot').value,
+         rule_checks: U.$$('[data-chk]', chkWrap).map((c, i) => ({ label: c.parentElement.textContent.trim(), passed: c.checked })),
+       };
++      if(requiresAdmission() && !body.emotion_before.trim())throw new Error('Name your emotional state before a prospective entry. Already-executed/historical truth can remain incomplete.');
+       if (body.status === 'closed' && !body.exit) throw new Error('A closed trade needs an exit price (or set the status to Open).');
+       if (!body.symbol) throw new Error('Symbol is required.');
+       if (!body.entry) throw new Error('Entry price is required.');
+@@ -452,6 +491,7 @@
+     async function refreshGuard() {
+       const request = ++guardRequest;
+       const note = U.$('#tf-guardrail-state',node);
++      g('emo-before').required=requiresAdmission();
+       if (!requiresAdmission()) {
+         guard = null; note.textContent = 'Journal record/correction only. It records what happened; it does not authorise a new entry.';
+         if (opts.onPermissionChange) opts.onPermissionChange(null); return;
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 6f3f419..c0eebef 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -618,7 +618,7 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
+   if(accountId!==null && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Account not found'});
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
+-  res.json({ entry: row || null, trades, journal_summary:J.summary(trades),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
++  res.json({ entry: row || null, trades, journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};

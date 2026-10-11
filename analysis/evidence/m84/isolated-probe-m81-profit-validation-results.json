@@ -1,0 +1,72 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 16,
+  "fail": 0,
+  "results": [
+    {
+      "label": "SQL CHECK rejects enabled zero percentage",
+      "passed": true
+    },
+    {
+      "label": "SQL CHECK rejects above-app-range percentage",
+      "passed": true
+    },
+    {
+      "label": "SQL daily freeze also rejects negative percentage",
+      "passed": true
+    },
+    {
+      "label": "corrupt selected-profit clock is masked unavailable, never waived",
+      "passed": true
+    },
+    {
+      "label": "bad selection clock writes no trade or admission",
+      "passed": true
+    },
+    {
+      "label": "corrupt stored percentage fails closed, without leaking driver detail",
+      "passed": true
+    },
+    {
+      "label": "unknown PRIOR realised net cannot be assumed day-start equity zero",
+      "passed": true
+    },
+    {
+      "label": "invalid current closed net cannot silently become0",
+      "passed": true
+    },
+    {
+      "label": "invalid net result blocks actual entry despite typed reason",
+      "passed": true
+    },
+    {
+      "label": "unknown profit date still permits honest record-only open reality",
+      "passed": true
+    },
+    {
+      "label": "unknown recording is labelled unknown, not an inferred historic profit violation",
+      "passed": true
+    },
+    {
+      "label": "OFF preserves legacy older-undated handling without a new forced policy",
+      "passed": true
+    },
+    {
+      "label": "amount underflow cannot silently turn enabled into zero/off",
+      "passed": true
+    },
+    {
+      "label": "pure profit boundary also ignores another user journal row",
+      "passed": true
+    },
+    {
+      "label": "pure evaluator rejects unknown optional policy rather than coercing OFF",
+      "passed": true
+    },
+    {
+      "label": "truthful repair can recover unknown profit state, not a permanent stop",
+      "passed": true
+    }
+  ],
+  "scope": "Local SQL/auth/explicit corruption/precision contracts; no credentials, broker/feed/outcome or production validation"
+}

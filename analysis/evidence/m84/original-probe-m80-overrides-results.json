@@ -1,0 +1,227 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 11,
+  "fail": 18,
+  "results": [
+    {
+      "label": "missing/blank reason cannot override: undefined",
+      "passed": false,
+      "detail": {
+        "status": 400,
+        "data": {
+          "error": "Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.",
+          "code": "guardrail_input_invalid"
+        }
+      }
+    },
+    {
+      "label": "missing/blank reason cannot override: null",
+      "passed": false,
+      "detail": {
+        "status": 400,
+        "data": {
+          "error": "Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.",
+          "code": "guardrail_input_invalid"
+        }
+      }
+    },
+    {
+      "label": "missing/blank reason cannot override: \"\"",
+      "passed": false,
+      "detail": {
+        "status": 400,
+        "data": {
+          "error": "Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.",
+          "code": "guardrail_input_invalid"
+        }
+      }
+    },
+    {
+      "label": "missing/blank reason cannot override: \"  \\n  \"",
+      "passed": false,
+      "detail": {
+        "status": 400,
+        "data": {
+          "error": "Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.",
+          "code": "guardrail_input_invalid"
+        }
+      }
+    },
+    {
+      "label": "invalid plain-text reason rejected without a write: boolean",
+      "passed": true
+    },
+    {
+      "label": "invalid plain-text reason rejected without a write: number",
+      "passed": true
+    },
+    {
+      "label": "invalid plain-text reason rejected without a write: object",
+      "passed": true
+    },
+    {
+      "label": "invalid plain-text reason rejected without a write: object",
+      "passed": true
+    },
+    {
+      "label": "invalid plain-text reason rejected without a write: string",
+      "passed": true
+    },
+    {
+      "label": "known stop plus nonblank reason admits exactly this action",
+      "passed": false,
+      "detail": {
+        "status": 400,
+        "data": {
+          "error": "Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.",
+          "code": "guardrail_input_invalid"
+        }
+      }
+    },
+    {
+      "label": "server trims and persists reason on trade",
+      "passed": false
+    },
+    {
+      "label": "server persists stopped rule snapshot, never client-supplied clear",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "override snapshot uses actual account/server date/time",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "reason/rule/id committed together in durable day audit",
+      "passed": false
+    },
+    {
+      "label": "ordinary edit cannot rewrite the captured reason/violated rule",
+      "passed": false,
+      "detail": {
+        "status": 0,
+        "data": {}
+      }
+    },
+    {
+      "label": "one override does not unlock the rest of the day",
+      "passed": false,
+      "detail": {
+        "status": 400,
+        "data": {
+          "error": "Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.",
+          "code": "guardrail_input_invalid"
+        }
+      }
+    },
+    {
+      "label": "save-plan requires and records the same reasoned server override",
+      "passed": true
+    },
+    {
+      "label": "plan override cannot move entry/stop/target to fake permission",
+      "passed": true
+    },
+    {
+      "label": "eligible signal storage uses fresh override, not stale read permission",
+      "passed": false,
+      "detail": {
+        "saved": 1,
+        "ids": [
+          2
+        ],
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "overridden",
+          "override_reason": "I accept this cap violation deliberately; this is not an automatic unlock.",
+          "action": "save_signal",
+          "account_id": 1,
+          "evaluated_at": "2026-10-11T12:00:00.000Z",
+          "scope": "personal rules for this recorded action only, not broker execution or future permission"
+        }
+      }
+    },
+    {
+      "label": "personal override cannot waive a TECHNICAL candidate veto",
+      "passed": true
+    },
+    {
+      "label": "public save-signal uses server analysis veto, not supplied client approval",
+      "passed": true
+    },
+    {
+      "label": "even a reason cannot override an unavailable guardrail check",
+      "passed": false,
+      "detail": {
+        "status": 400,
+        "data": {
+          "error": "Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.",
+          "code": "guardrail_input_invalid"
+        }
+      }
+    },
+    {
+      "label": "override is not an account-ownership bypass",
+      "passed": true
+    },
+    {
+      "label": "reopened prospective entry records reason and fresh stop",
+      "passed": false,
+      "detail": {
+        "status": 400,
+        "data": {
+          "error": "Name your current emotional state before reopening requires plain nonblank text, at most 100 characters.",
+          "code": "guardrail_input_invalid"
+        }
+      }
+    },
+    {
+      "label": "audit failure rolls back BOTH entry and override, never an unlogged exception",
+      "passed": false,
+      "detail": {
+        "response": {
+          "status": 400,
+          "data": {
+            "error": "Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.",
+            "code": "guardrail_input_invalid"
+          }
+        },
+        "count": 4
+      }
+    },
+    {
+      "label": "day review actually returns override reason AND violated rule",
+      "passed": true
+    },
+    {
+      "label": "trade deletion cannot erase override reasons in day audit",
+      "passed": false,
+      "detail": 2
+    },
+    {
+      "label": "a reason submitted while CLEAR is not falsely called an override",
+      "passed": false,
+      "detail": {
+        "status": 400,
+        "data": {
+          "error": "Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.",
+          "code": "guardrail_input_invalid"
+        }
+      }
+    },
+    {
+      "label": "no-next-candle unknown TF cannot be waived by reason",
+      "passed": false,
+      "detail": {
+        "status": 400,
+        "data": {
+          "error": "Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.",
+          "code": "guardrail_input_invalid"
+        }
+      }
+    }
+  ],
+  "scope": "Actual local API/transaction overrides and audit rollback; no broker/production/market-edge claim"
+}

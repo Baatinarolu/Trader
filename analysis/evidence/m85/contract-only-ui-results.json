@@ -1,0 +1,114 @@
+{
+  "app": "/tmp/m85-contract-stage/app",
+  "pass": 10,
+  "fail": 15,
+  "results": [
+    {
+      "label": "actual prospective entry form explicitly labels/requires emotional input",
+      "passed": false
+    },
+    {
+      "label": "missing live emotion is rejected by actual collect handler BEFORE trade POST",
+      "passed": false
+    },
+    {
+      "label": "actual live save captures explicitly selected emotion through real API",
+      "passed": true
+    },
+    {
+      "label": "actual close handler records realised truth even when reflection is unfinished",
+      "passed": true
+    },
+    {
+      "label": "actual loss close immediately opens three-line reflection prompt",
+      "passed": false
+    },
+    {
+      "label": "closing prompt leaves observable pending writing if user defers",
+      "passed": true
+    },
+    {
+      "label": "actual next trade is grey reason-required while writing missing after timer expires",
+      "passed": true
+    },
+    {
+      "label": "actual missing-writing override uses typed-reason dialog, not automatic day unlock",
+      "passed": true
+    },
+    {
+      "label": "actual trade log exposes grey journal-missing marker and review action",
+      "passed": false,
+      "detail": "\n        \n          \n            7D30D90DYTDAll\n            \n            \n            \n              All statuses\n              Closed\n              Open\n            \n            All setupsBreakout / Range ExpansionMean Reversion (range fade)Trend Pullback (continuation)\n            \n            Clear\n          \n          \n            + New trade\n            Export CSV\n            Import\n          \n        \n        \n          \n            Showing1\n            Filtered net-$1.00\n            Filtered R-1.0R\n            Win rate0.0%\n          \n          \n            Select all\n            Delete selected\n          \n        \n        \n          \n            \n            Closed descSymbolSideSizeEntryExitStopRNet P&LSetupGradeEntry modelSessionAdhMistakes\n          \n          \n          \n            \n            11 Oct, 12:00\n            TEST Sto\n            long\n            1.00 shares\n            100.00\n            99.000\n            99.000\n            -1.00R\n            -$1.00\n            span class=\"muted\"untagged/span\n            —\n            Unknown · 5m\n            London/NY Overlap\n            —\n            \n            Edit\n          \n          \n        "
+    },
+    {
+      "label": "actual notebook index shows journaled/total day even with no saved daily note",
+      "passed": false,
+      "detail": "\n          Daily reviews0 entries — the habit that turns a log into a system.\n          + Today's reviewNo reviews yet. Write one at the end of every session — three sentences is enough to start.Captured guardrail days (UTC)\n        2026-10-11 · 2 events · 0 overridesReview rules & reasonsTargets in progress\n        No targets set. Discipline needs a scoreboard.\n        + Add a targetReview prompts\n        \n          1. Did I trade my plan, or did I trade my mood?\n          2. Which single decision cost me the most money today?\n          3. What did the market teach me that I will write down for tomorrow?\n          4. Am I still within my risk rules — risk per trade, daily loss, trade count?\n          5. If today repeated for a month, would I still be profitable?\n        "
+    },
+    {
+      "label": "actual day-review modal shows incomplete core0of1 separately from notebook content",
+      "passed": false,
+      "detail": "Day review — 2026-10-11Close\n      \n        Date2026-10-11\n        Day P&L-$1.00\n        Trades1\n        Total R-1.00R\n      \n      \n        Market biasBullishBearishNeutralChoppy\n        Mood (1–5)\n        Energy (1–5)\n      \n      Focus for the session\n      Plan (written before the session)\n      Review (what actually happened)\n      Lessons\n      Tomorrow\n      Screen time (minutes)\n      Trades this dayTimeSymbolRP&LNote\n        12:00TEST\n        -1.00R-$1.00\n        Guardrail history — UTC rule day\n      Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Recording-time flags do not infer what happened at a historical entry.\n      Captured at (UTC)Account / actionViolated rule(s)Reason / decision\n        2026-10-11T12:00:00.000Z\n          #1 · state_observedbreach\n          post_loss_cooldown: After a loss, no new entry until 2026-10-11T12:30:00.000Z (30-minute cooldown).no_next_candle: Do not enter the very next 5m candle after the loss; wait until 2026-10-11T12:05:00.000Z.post_loss_reflection: 1 observed loss(es) need the three-line post-loss review: what happened, rule/mistake or explicit followed-plan none, what differently. A pause alone is not completed writing.\n          No override take"
+    },
+    {
+      "label": "saving daily notebook never falsely marks its trade reflection complete",
+      "passed": true
+    },
+    {
+      "label": "actual per-trade Journal action opens owned three-line completion editor",
+      "passed": false
+    },
+    {
+      "label": "blank three-line review is refused without a completion POST",
+      "passed": false
+    },
+    {
+      "label": "no-mistakes choice is not silently preselected",
+      "passed": false
+    },
+    {
+      "label": "actual completion handler persists explicit none/three lines/server review time",
+      "passed": false
+    },
+    {
+      "label": "actual writing resolution removes its pending stop after cooldown, not via risk rescale",
+      "passed": true
+    },
+    {
+      "label": "actual log marks1of1 journaled only after explicit completion",
+      "passed": false,
+      "detail": "\n        \n          \n            7D30D90DYTDAll\n            \n            \n            \n              All statuses\n              Closed\n              Open\n            \n            All setupsBreakout / Range ExpansionMean Reversion (range fade)Trend Pullback (continuation)\n            \n            Clear\n          \n          \n            + New trade\n            Export CSV\n            Import\n          \n        \n        \n          \n            Showing1\n            Filtered net-$1.00\n            Filtered R-1.0R\n            Win rate0.0%\n          \n          \n            Select all\n            Delete selected\n          \n        \n        \n          \n            \n            Closed descSymbolSideSizeEntryExitStopRNet P&LSetupGradeEntry modelSessionAdhMistakes\n          \n          \n          \n            \n            11 Oct, 12:00\n            TEST Sto\n            long\n            1.00 shares\n            100.00\n            99.000\n            99.000\n            -1.00R\n            -$1.00\n            span class=\"muted\"untagged/span\n            —\n            Unknown · 5m\n            London/NY Overlap\n            —\n            \n            Edit\n          \n          \n        "
+    },
+    {
+      "label": "actual day review becomes complete with1of1 core count",
+      "passed": false
+    },
+    {
+      "label": "stored reflection markup is escaped text, not executable DOM/image",
+      "passed": true
+    },
+    {
+      "label": "a fresh A+ winner still makes day1of2 incomplete until its own review",
+      "passed": true
+    },
+    {
+      "label": "actual Dashboard retains writing review action even after loss row deletion",
+      "passed": false,
+      "detail": "\n          Start here0 trades in this workspace\n          \n            \n              1. Log a trade\n              Everything in this app is built on your own rows: expectancy, the coach, the correctional bot. Two minutes per trade is enough.\n              + Log a trade\n              Import CSV\n            \n            \n              2. Or study the walkthrough\n              The bot desk, the charts and the measured edge reports work with no data at all. If you want to see the analytics populated before you have history, load the 235-trade sample workspace — clearly labelled, removable in one click.\n              Load sample workspace\n              Open the bot desk\n            \n          Manual session timeoff\n        Session-duration warning is Off (optional).\n        Optional warning only, not measured broker/chart screen time or entry permission. Recheck for current server elapsed time. Other rule stops and admissions are unchanged.\n        Recheck session time\n          \n            \n              Pre-session briefingSun 2026-10-11\n              Calendar live\n              Good afternoon, UI — here is your plan.\n              \n                No flags from your history — trade the playbook, log everything, review at the close.\n              \n              \n                Ba"
+    },
+    {
+      "label": "deleted-loss action opens captured-loss reflection rather than recreating a trade",
+      "passed": false
+    },
+    {
+      "label": "actual retained-loss completion POST resolves writing with no invented journal row",
+      "passed": false
+    },
+    {
+      "label": "actual UI/event composition has no runtime errors",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Actual trade/close/prompt/review/log/day/Dashboard and retained-loss UI with real HTTP/auth/SQL; declared bootstrap/news/chart IO, no pixels/provider/broker/production/whole-course completeness claim"
+}

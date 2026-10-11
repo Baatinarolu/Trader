@@ -1156,6 +1156,8 @@
     gr.appendChild(h('div', { class: 'muted bot-detail', text: g.basis || '' }));
     gr.appendChild(h('div', { class: 'bot-plan ' + (c.daily.status === 'stop' ? 'neg' : c.daily.status === 'caution' ? 'warn' : ''), text: c.daily.message || '' }));
     pane.appendChild(gr);
+    if(Views.sessionTimeCard) pane.appendChild(Views.sessionTimeCard(c.daily.session_time || {}));
+    if(Views.lossWritingCard)pane.appendChild(Views.lossWritingCard(c.daily.post_loss_journal || {}));
 
     const grid = h('div', { class: 'bot-grid' });
     const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });

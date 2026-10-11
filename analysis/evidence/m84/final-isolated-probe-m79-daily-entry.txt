@@ -1,0 +1,52 @@
+DECLARED legacy guard-rule prerequisite isolation: writing fulfilled / explicit synthetic Neutral / new UI prompt fulfilled / additive table names. Original negatives kept; not M85 integrated-policy proof.
+ok resolved rule numbers, never a Promise/empty object
+ok empty positive account is clear,3 remain
+ok two OPEN attempts count; last remaining entry is caution, not a stop
+ok three OPEN attempts exhaust the cap
+ok three CLOSED attempts also exhaust the cap
+ok foreign account and foreign user do not consume count/P&L/streak
+ok omitted account resolves ONE owned default, not combined accounts
+ok foreign account cannot receive clear permission
+ok archived account cannot receive clear permission
+ok daily realised loss stops at EXACT3% boundary
+ok one cent short of daily loss limit does not trigger that rule
+ok floating/open P&L never triggers realised loss stop
+ok overnight trade CLOSED today enters today realised loss
+ok a close yesterday is not today realised P&L
+ok percentage loss anchor is day-start realised11000, boundary330
+ok two consecutive losses today stop
+ok later non-loss resets current streak but not an already observed rule-day stop
+ok yesterday loss streak does not lock the new day
+ok post-loss cooldown is a STOP one millisecond before30min
+ok cooldown expires at exact30min boundary
+ok very next1h candle still blocks after30min cooldown
+ok next-candle barrier expires on its exact close
+ok loss inside a bar excludes the next FULL candle
+ok unknown prospective entry TF is not guessed: null
+ok unknown prospective entry TF is not guessed: bad
+ok today closed record with unknown close time fails closed, not a fabricated cooldown
+ok future journal timestamps do not count as already occurred
+ok zero day-start equity is unavailable, not silently clear
+ok Now cannot arm a technically qualifying order during stop
+ok Now cannot arm a technically qualifying order during unknown
+ok clear live entry is admitted
+ok live entry timestamp is server-stamped, cannot dodge count by backdating
+ok authenticated POST mechanically blocks open entry at cap
+ok blocked POST creates no extra trade
+ok honest already-executed OPEN record remains recordable, no permission
+ok historical CLOSED record remains recordable at stop, no permission
+ok closed-to-open update cannot evade the new-entry gate
+ok historical correction is not blocked by current permission
+ok recording an actual close is never blocked by entry stop
+BOT API error on POST /api/bots/signals/save-plan: Stand down: 4 entries today — your preselected cap is 3. After a loss, no new entry until 2026-10-11T12:30:00.000Z (30-minute cooldown). Do not enter the very next 5m candle after the loss; wait until 2026-10-11T12:05:00.000Z.
+ok save-plan route rechecks cap, not just client snapshot
+ok explicit research plan is recordable, never permission
+ok saveSignals cannot replay a formerly clear client/analysis payload through current stop
+ok atomic concurrent admission never exceeds the3-entry cap
+ok remaining concurrent requests are guardrail stops, not duplicate admissions/errors
+ok entry gate still requires real authentication
+ok daily-state read error fails closed, no entry record
+BOT API error on POST /api/bots/signals/save-plan: Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.
+ok plan daily-state read error fails closed
+ok daily state leaves no unhandled guardrail Promise rejection
+M79 daily/entry: 48 passed, 0 failed

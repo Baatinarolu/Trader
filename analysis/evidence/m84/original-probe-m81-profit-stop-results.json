@@ -1,0 +1,230 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 36,
+  "fail": 15,
+  "results": [
+    {
+      "label": "active profit rule is inspectable before any closed history",
+      "passed": true
+    },
+    {
+      "label": "profit rule is separate from lifetime8% prop objective",
+      "passed": true
+    },
+    {
+      "label": "active rule with zero realised P&L permits otherwise-clear entry",
+      "passed": true
+    },
+    {
+      "label": "honest overnight profitable close records reality, not an admission",
+      "passed": true
+    },
+    {
+      "label": "overnight win counts on CLOSE day, not opening day",
+      "passed": true
+    },
+    {
+      "label": "exact inclusive1% realised threshold stops the day",
+      "passed": true
+    },
+    {
+      "label": "profit stop can use existing explicit single-action reason path",
+      "passed": true
+    },
+    {
+      "label": "observed profit stop is durably latched before an entry attempt",
+      "passed": true
+    },
+    {
+      "label": "actual POST rechecks server day; forged clock/OFF cannot bypass profit",
+      "passed": false,
+      "detail": 400
+    },
+    {
+      "label": "blocked profit POST writes no trade or admission",
+      "passed": true
+    },
+    {
+      "label": "whitespace reason does not waive profit rule",
+      "passed": false,
+      "detail": 400
+    },
+    {
+      "label": "reasoned profit exception admits exactly the scoped action",
+      "passed": false,
+      "detail": 400
+    },
+    {
+      "label": "profit exception stores reason and actual stopped snapshot",
+      "passed": false
+    },
+    {
+      "label": "profit override has atomic audit linked to actual owned trade",
+      "passed": false
+    },
+    {
+      "label": "one profit exception is not a reusable unlock",
+      "passed": false,
+      "detail": 400
+    },
+    {
+      "label": "day-review API retains realised profit breach and typed exception",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "truthful P&L correction is allowed and visible",
+      "passed": true
+    },
+    {
+      "label": "P&L correction cannot erase the observed profit day stop",
+      "passed": true
+    },
+    {
+      "label": "honest deletion remains possible, with zero present journal P&L",
+      "passed": true
+    },
+    {
+      "label": "deleted winners cannot reset the retained profit stop",
+      "passed": true
+    },
+    {
+      "label": "profit admission provenance/audited reason survive journal deletion",
+      "passed": false
+    },
+    {
+      "label": "disabling setting midday cannot erase frozen profit selection/stop",
+      "passed": true
+    },
+    {
+      "label": "fresh server process retains profit latch after deletion/setting OFF",
+      "passed": true
+    },
+    {
+      "label": "UTC rollover clears old day latch and adopts chosen OFF",
+      "passed": true
+    },
+    {
+      "label": "another owned account is not poisoned by a prior profit stop",
+      "passed": true
+    },
+    {
+      "label": "profit override cannot cross account ownership",
+      "passed": true
+    },
+    {
+      "label": "profit admission requires actual authentication",
+      "passed": true
+    },
+    {
+      "label": "floating/open profit cannot trigger a realised profit stop",
+      "passed": true
+    },
+    {
+      "label": "prior-day win changes equity basis, not current realised profit",
+      "passed": true
+    },
+    {
+      "label": "future close cannot trigger today before server observes its time",
+      "passed": true
+    },
+    {
+      "label": "prior realised equity anchors profit limit, excluding today gain from basis",
+      "passed": true
+    },
+    {
+      "label": "display rounding to105 cannot prematurely trip104.9999 realised",
+      "passed": true
+    },
+    {
+      "label": "exact105 threshold triggers inclusively with prior equity",
+      "passed": true
+    },
+    {
+      "label": "fractional chosen percentage uses same realised inclusive comparison",
+      "passed": true
+    },
+    {
+      "label": "exact UTC midnight close belongs to the new profit rule day",
+      "passed": true
+    },
+    {
+      "label": "OFF stays neutral even when realised profit exceeds old examples",
+      "passed": true
+    },
+    {
+      "label": "unused reason on OFF clear state is not falsely recorded as override",
+      "passed": false,
+      "detail": 400
+    },
+    {
+      "label": "active ceiling cannot guess whether an undated overnight close is today",
+      "passed": true
+    },
+    {
+      "label": "reason cannot waive unknown profit close-day history",
+      "passed": false,
+      "detail": 400
+    },
+    {
+      "label": "unknown closed net P&L is fail-closed, not coerced to zero",
+      "passed": true
+    },
+    {
+      "label": "nonpositive equity remains unavailable, not a zero-dollar profit ceiling",
+      "passed": true
+    },
+    {
+      "label": "six concurrent actual entry requests all honor already-observed profit stop",
+      "passed": false,
+      "detail": [
+        400,
+        400,
+        400,
+        400,
+        400,
+        400
+      ]
+    },
+    {
+      "label": "concurrent blocked requests create zero admissions and no extra trades",
+      "passed": true
+    },
+    {
+      "label": "profit exception audit failure rolls back actual trade and admission",
+      "passed": false,
+      "detail": 400
+    },
+    {
+      "label": "failed exception creates no false override audit",
+      "passed": true
+    },
+    {
+      "label": "reopen is prospective; observed profit stop still blocks it",
+      "passed": false,
+      "detail": 400
+    },
+    {
+      "label": "reasoned profit reopen is one new admission, not loss of latch",
+      "passed": false,
+      "detail": 400
+    },
+    {
+      "label": "already-executed OPEN reality records at profit stop without permission",
+      "passed": true
+    },
+    {
+      "label": "record-only write does not fabricate another entry admission",
+      "passed": false
+    },
+    {
+      "label": "profit and cap may coexist without one hiding another",
+      "passed": true
+    },
+    {
+      "label": "retained-state validator recognizes profit as a legitimate day-stop key",
+      "passed": true
+    }
+  ],
+  "scope": "Actual local HTTP/auth/SQL/durable state/CRUD/restart; declared exact-net inputs, no broker/live-feed/market-edge or production claim"
+}

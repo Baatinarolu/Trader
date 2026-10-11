@@ -1,0 +1,192 @@
+diff --git a/src/db.js b/src/db.js
+index e6c91b4..f1feb87 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -409,7 +409,10 @@ CREATE TABLE IF NOT EXISTS trades (
+   emotion_after TEXT DEFAULT '',
+   confidence INTEGER,                         -- 1-5
+   adherence INTEGER,                          -- 1-5 rule-adherence self score
+-  mistakes TEXT DEFAULT '',                   -- comma separated
++  mistakes TEXT DEFAULT '',
++  mistakes_none INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1)),
++  journal_reviewed_at TEXT, -- explicit core journal review, never inferred from grade/legacy fields
++  journal_review_hash TEXT,                   -- comma separated
+   tags TEXT DEFAULT '',                       -- comma separated
+   thesis TEXT DEFAULT '',
+   lesson TEXT DEFAULT '',
+@@ -537,6 +540,9 @@ async function migrate() {
+   // M102: which version of its strategy a trade was taken under. NULL means the trade
+   // predates versioning or has no strategy at all - it is never guessed at read time.
+   await add('trades', 'strategy_version', 'INTEGER');
++  await add('trades','mistakes_none','INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1))');
++  await add('trades','journal_reviewed_at','TEXT');
++  await add('trades','journal_review_hash','TEXT');
+   // M68: never backfill a named model from grade/zone guesses. Unknown != none.
+   for (const table of ['trades', 'bot_signals']) {
+     await add(table, 'entry_model', 'TEXT');
+diff --git a/src/journaling.js b/src/journaling.js
+new file mode 100644
+index 0000000..7a26f6a
+--- /dev/null
++++ b/src/journaling.js
+@@ -0,0 +1,56 @@
++'use strict';
++/** M85 core input-capture/completeness only. No score, grade, risk or market
++ * retuning. Explicit review acknowledgement, never a legacy completion backfill.
++ * Entry/exit emotion capture-time provenance (M89) is a separate remaining scope. */
++const crypto=require('crypto');const {db}=require('./db');const {msOf,dayKey}=require('./bots/guardrails');
++function invalid(message,status=400){const e=new Error(message);e.status=status;e.code='journal_input_invalid';return e;}
++function text(value,label,max=2000){
++  if(typeof value!=='string'||!value.trim()||value.length>max)throw invalid(`${label} requires plain nonblank text, at most ${max} characters.`);return value.trim();
++}
++function reviewFields(body={}){
++  const emotion_before=text(body.emotion_before,'Entry emotion (say not recorded if genuinely unknown)',100),emotion_after=text(body.emotion_after,'Exit emotion',100);
++  const execution_notes=text(body.execution_notes,'What happened'),lesson=text(body.lesson,'What you would do differently');
++  if(body.mistakes_none!==undefined && typeof body.mistakes_none!=='boolean')throw invalid('mistakes_none must be an explicit true/false selection.');
++  let mistakes=body.mistakes??'';
++  if(Array.isArray(mistakes)){if(mistakes.some(x=>typeof x!=='string'))throw invalid('Mistakes must be plain text tags.');mistakes=mistakes.map(x=>x.trim()).filter(Boolean).join(', ');}
++  if(typeof mistakes!=='string'||mistakes.length>2000)throw invalid('Mistakes must be plain text, at most 2000 characters.');mistakes=mistakes.trim();
++  const mistakes_none=body.mistakes_none===true?1:0;
++  if((mistakes_none && mistakes)||(!mistakes_none&&!mistakes))throw invalid('Name the broken rule/mistakes OR explicitly confirm followed plan, nothing to note; not both.');
++  return {emotion_before,emotion_after,execution_notes,lesson,mistakes,mistakes_none};
++}
++const CORE=['emotion_before','emotion_after','execution_notes','lesson'];
++const HASH_KEYS=['user_id','account_id','id','status','opened_at','closed_at','entry','exit','stop','target','size','fees','net_pnl',...CORE,'mistakes','mistakes_none'];
++function fingerprint(t){return crypto.createHash('sha256').update(JSON.stringify(HASH_KEYS.map(k=>[k,t[k]??null]))).digest('hex');}
++function knownNet(t){return t.net_pnl!==null&&t.net_pnl!==undefined&&t.net_pnl!==''&&Number.isFinite(Number(t.net_pnl));}
++function info(t,nowMs=Date.now()){
++  if(t.status!=='closed')return {state:'awaiting_close',complete:false,missing:[],reflection_required:false,reviewed_at:null,scope:'Core journal; awaiting actual close, not entry permission'};
++  const missing=CORE.filter(k=>typeof t[k]!=='string'||!t[k].trim()||t[k].length>(k.startsWith('emotion_')?100:2000));
++  if(!knownNet(t))missing.push('known_realised_result');
++  if(!Number.isFinite(msOf(t.closed_at)))missing.push('actual_close_time');
++  const mistakes=typeof t.mistakes==='string'?t.mistakes.trim():'';
++  if(!(t.mistakes_none===1&&!mistakes) && !(t.mistakes_none===0&&mistakes&&mistakes.length<=2000))missing.push('mistakes_or_explicit_none');
++  const at=msOf(t.journal_reviewed_at),ack=Number.isFinite(at)&&at<=nowMs&&t.journal_review_hash===fingerprint(t);
++  if(!ack)missing.push('explicit_review_acknowledgement');
++  const complete=missing.length===0;
++  return {state:complete?'complete':'incomplete',complete,missing,reflection_required:knownNet(t)&&Number(t.net_pnl)<0,reviewed_at:t.journal_reviewed_at||null,
++    scope:'Explicit core review of the current journal record; not broker-time emotion provenance, screenshots, confluences or whole-course completeness'};
++}
++function summary(trades,nowMs=Date.now()){
++  const closed=trades.filter(t=>t.status==='closed'),journaled=closed.filter(t=>info(t,nowMs).complete).length,total=closed.length;
++  return {total,journaled,missing:total-journaled,complete:total>0&&journaled===total,state:total===0?'empty':journaled===total?'complete':'incomplete',timezone:'UTC',scope:'Closed-trade core journal acknowledgement only, not P&L/grade or every course field'};
++}
++function days(trades,nowMs=Date.now()){
++  const grouped=new Map();for(const t of trades.filter(t=>t.status==='closed')){const ms=msOf(t.closed_at),date=Number.isFinite(ms)?dayKey(ms):'unknown_close_date';if(!grouped.has(date))grouped.set(date,[]);grouped.get(date).push(t);}
++  return [...grouped].map(([date,rows])=>({date,...summary(rows,nowMs)})).sort((a,b)=>b.date.localeCompare(a.date));
++}
++async function reviewTrade(userId,id,body){
++  return db.tx(async tx=>{const store=db.transactionStore(tx),row=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);
++    if(!row)throw invalid('Trade not found',404);
++    if(row.status!=='closed'||!knownNet(row)||!Number.isFinite(msOf(row.closed_at)))throw invalid('Record the actual close time and realised result before completing its journal.');
++    const fields=reviewFields(body),at=new Date().toISOString(),hash=fingerprint({...row,...fields});
++    await store.prepare(`UPDATE trades SET emotion_before=?,emotion_after=?,execution_notes=?,lesson=?,mistakes=?,mistakes_none=?,journal_reviewed_at=?,journal_review_hash=?,updated_at=datetime('now') WHERE id=? AND user_id=?`)
++      .run(fields.emotion_before,fields.emotion_after,fields.execution_notes,fields.lesson,fields.mistakes,fields.mistakes_none,at,hash,id,userId);
++    return await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);
++  });
++}
++module.exports={invalid,text,reviewFields,fingerprint,knownNet,info,summary,days,reviewTrade};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 49bccc8..f911faf 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -10,6 +10,8 @@ const M = require('../market');
+ const T = require('../trades');
+ const Guards = require('../bots/guardrails');
+ const SessionTime = require('../session-time');
++const J = require('../journaling');
++const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+ const Prop = require('../prop');
+@@ -308,13 +310,13 @@ router.get('/trades', requireAuth, async (req, res) => {
+       .some((v) => String(v || '').toLowerCase().includes(q)));
+   }
+   const total = (await db.prepare(`SELECT COUNT(*) n FROM trades WHERE ${where}`).get({ ...params, user_id: req.user.id })).n;
+-  res.json({ trades: rows.map((t) => P.decorate(t, tz)), total });
++  res.json({ trades: rows.map((t) => journalTrade(t, tz)), total });
+ });
+ 
+ router.get('/trades/:id', requireAuth, async (req, res) => {
+   const row = await db.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(Number(req.params.id), req.user.id);
+   if (!row) return res.status(404).json({ error: 'Trade not found' });
+-  res.json({ trade: P.decorate(row, (await settingsOf(req)).timezone) });
++  res.json({ trade: journalTrade(row, (await settingsOf(req)).timezone) });
+ });
+ 
+ router.post('/trades', requireAuth, async (req, res) => {
+@@ -360,7 +362,7 @@ router.post('/trades', requireAuth, async (req, res) => {
+     for (const rc of body.rule_checks) await ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
+   }
+   const saved = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
+-  res.json({ ok: true, permission, trade: P.decorate(saved, (await settingsOf(req)).timezone) });
++  res.json({ ok: true, permission, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
+ });
+ 
+ router.put('/trades/:id', requireAuth, async (req, res) => {
+@@ -388,7 +390,12 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
+     for (const rc of req.body.rule_checks) ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
+   }
+-  res.json({ ok: true, trade: P.decorate(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
++  res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
++});
++
++router.post('/trades/:id/journal', requireAuth,async(req,res)=>{
++  try { const row=await J.reviewTrade(req.user.id,Number(req.params.id),req.body||{});res.json({ok:true,trade:journalTrade(row,(await settingsOf(req)).timezone)}); }
++  catch(e){if(e.code==='journal_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Journal review could not be recorded.'});}
+ });
+ 
+ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+@@ -416,7 +423,7 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+   if (req.body && req.body.notify !== false) {
+     notifyEvent(req.user.id, 'trade_closed', `${trade.symbol} ${trade.direction} closed ${fresh.net_pnl >= 0 ? '+' : ''}${fresh.net_pnl} (${fresh.r_multiple}R)${trade.legs_n ? ` · ${trade.legs_n} scale-outs` : ''}`, { trade_id: id, symbol: trade.symbol, net_pnl: fresh.net_pnl, r_multiple: fresh.r_multiple }).catch(() => {});
+   }
+-  res.json({ ok: true, trade: P.decorate(fresh, (await settingsOf(req)).timezone) });
++  res.json({ ok: true, trade: journalTrade(fresh, (await settingsOf(req)).timezone) });
+ });
+ 
+ router.delete('/trades/:id', requireAuth, async (req, res) => {
+@@ -588,14 +595,18 @@ for(const action of ['start','end'])router.post('/session-time/'+action,requireA
+ router.get('/journal', requireAuth, async (req, res) => {
+   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
+   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
+-  res.json({ entries: rows, guardrail_days:guardrailDays });
++  if(req.query.account_id && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(Number(req.query.account_id),req.user.id))return res.status(404).json({error:'Account not found'});
++  const journalRows=await db.prepare('SELECT * FROM trades WHERE user_id=?'+(req.query.account_id?' AND account_id=?':'')).all(...(req.query.account_id?[req.user.id,Number(req.query.account_id)]:[req.user.id]));
++  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),journal_timezone:'UTC' });
+ });
+ router.get('/journal/:date', requireAuth, async (req, res) => {
+   const row = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, req.params.date);
+   const tz = (await settingsOf(req)).timezone;
+-  const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)`).all(req.user.id, req.params.date)).map((t) => P.decorate(t, tz));
++  const accountId=req.query.account_id?Number(req.query.account_id):null;
++  if(accountId!==null && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Account not found'});
++  const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
+-  res.json({ entry: row || null, trades, guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
++  res.json({ entry: row || null, trades, journal_summary:J.summary(trades),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+diff --git a/src/trades.js b/src/trades.js
+index 08d7cc8..ded2586 100644
+--- a/src/trades.js
++++ b/src/trades.js
+@@ -51,6 +51,7 @@ function normalise(raw, ctx = {}) {
+     confidence: raw.confidence === '' || raw.confidence == null ? null : num(raw.confidence),
+     adherence: raw.adherence === '' || raw.adherence == null ? null : num(raw.adherence),
+     mistakes: arrayToCsv(raw.mistakes),
++    mistakes_none: raw.mistakes_none === true || raw.mistakes_none === 1 ? 1 : 0,
+     tags: arrayToCsv(raw.tags),
+     thesis: raw.thesis || '',
+     lesson: raw.lesson || '',
+@@ -170,7 +171,7 @@ function numOrNull(v) { return v === null || v === undefined || v === '' || isNa
+ const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at',
+   'entry', 'exit', 'stop', 'target', 'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'planned_r',
+   'mae_r', 'mfe_r', 'stop_moved', 'exit_reason', 'strategy_id', 'strategy_name', 'setup_grade', 'session', 'timeframes',
+-  'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags', 'thesis', 'lesson', 'execution_notes',
++  'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'mistakes_none', 'tags', 'thesis', 'lesson', 'execution_notes',
+   'strategy_version', 'entry_model', 'entry_tf', 'entry_evidence', 'guardrail_snapshot', 'entry_permission', 'override_reason',
+   'notes', 'screenshot_url', 'legs', 'entries'];
+ 

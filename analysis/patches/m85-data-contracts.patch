@@ -1,0 +1,41 @@
+diff --git a/src/journaling.js b/src/journaling.js
+index 0778902..36e58eb 100644
+--- a/src/journaling.js
++++ b/src/journaling.js
+@@ -27,6 +27,7 @@ function info(t,nowMs=Date.now()){
+   const missing=CORE.filter(k=>typeof t[k]!=='string'||!t[k].trim()||t[k].length>(k.startsWith('emotion_')?100:2000));
+   if(!knownNet(t))missing.push('known_realised_result');
+   if(!Number.isFinite(msOf(t.closed_at)))missing.push('actual_close_time');
++  else if(msOf(t.closed_at)>nowMs)missing.push('actual_close_not_yet_observed');
+   const mistakes=typeof t.mistakes==='string'?t.mistakes.trim():'';
+   if(!(t.mistakes_none===1&&!mistakes) && !(t.mistakes_none===0&&mistakes&&mistakes.length<=2000))missing.push('mistakes_or_explicit_none');
+   const at=msOf(t.journal_reviewed_at),ack=Number.isFinite(at)&&at<=nowMs&&t.journal_review_hash===fingerprint(t);
+@@ -44,9 +45,10 @@ function days(trades,nowMs=Date.now()){
+   return [...grouped].map(([date,rows])=>({date,...summary(rows,nowMs)})).sort((a,b)=>b.date.localeCompare(a.date));
+ }
+ async function reviewTrade(userId,id,body){
++  if(!Number.isSafeInteger(id)||id<=0)throw invalid('Trade not found',404);
+   return db.tx(async tx=>{const store=db.transactionStore(tx),row=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);
+     if(!row)throw invalid('Trade not found',404);
+-    if(row.status!=='closed'||!knownNet(row)||!Number.isFinite(msOf(row.closed_at)))throw invalid('Record the actual close time and realised result before completing its journal.');
++    if(row.status!=='closed'||!knownNet(row)||!Number.isFinite(msOf(row.closed_at))||msOf(row.closed_at)>Date.now())throw invalid('Record the actual close time and realised result before completing its journal.');
+     const fields=reviewFields(body),at=new Date().toISOString(),hash=fingerprint({...row,...fields});
+     await store.prepare(`UPDATE trades SET emotion_before=?,emotion_after=?,execution_notes=?,lesson=?,mistakes=?,mistakes_none=?,journal_reviewed_at=?,journal_review_hash=?,updated_at=datetime('now') WHERE id=? AND user_id=?`)
+       .run(fields.emotion_before,fields.emotion_after,fields.execution_notes,fields.lesson,fields.mistakes,fields.mistakes_none,at,hash,id,userId);
+@@ -64,7 +66,7 @@ function capture(row,nowMs=Date.now()){
+   if(snapshot?.status!=='closed'||!knownNet(snapshot)||Number(snapshot.net_pnl)>=0||snapshot.user_id!==row.user_id||snapshot.account_id!==row.account_id||snapshot.id!==row.loss_trade_id
+     || !Number.isFinite(observed)||observed>nowMs||!Number.isFinite(close)||close>observed||dayKey(close)!==row.rule_date||lossKey(snapshot)!==row.obligation_key
+     ||(at!==null&&(!Number.isFinite(at)||at<observed||at>nowMs||!['trade_journal','loss_reflection'].includes(row.completion_source))))throw invalid('The observed post-loss writing record is unavailable.',503);
+-  if(at!==null){try{reviewFields({...reflection,mistakes_none:reflection?.mistakes_none===1});}catch{throw invalid('The captured post-loss writing is unavailable.',503);}}
++  if(at!==null){if(!reflection||![0,1].includes(reflection.mistakes_none))throw invalid('The captured explicit-none value is unavailable.',503);try{reviewFields({...reflection,mistakes_none:reflection.mistakes_none===1});}catch{throw invalid('The captured post-loss writing is unavailable.',503);}}
+   return {...row,snapshot,reflection};
+ }
+ async function syncLosses(store,userId,account,rows,nowMs=Date.now()){
+@@ -92,6 +94,7 @@ async function reflectionsForDay(userId,{accountId=null,date=dayKey(Date.now()),
+   const rows=await store.prepare('SELECT * FROM guardrail_reflections WHERE user_id=? AND rule_date=?'+(accountId===null?'':' AND account_id=?')+' ORDER BY id').all(...(accountId===null?[userId,date]:[userId,date,Number(accountId)]));return rows.map(r=>capture(r));
+ }
+ async function reflectLoss(userId,id,body){
++  if(!Number.isSafeInteger(id)||id<=0)throw invalid('Observed loss not found',404);
+   return db.tx(async tx=>{const store=db.transactionStore(tx),row=await store.prepare('SELECT * FROM guardrail_reflections WHERE id=? AND user_id=?').get(id,userId);
+     if(!row)throw invalid('Observed loss not found',404);const previous=capture(row);if(row.completed_at!==null)return previous; // immutable acknowledgement/idempotent retry
+     const fields=reviewFields(body),at=new Date().toISOString();

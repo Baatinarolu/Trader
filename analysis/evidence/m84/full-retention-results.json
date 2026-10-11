@@ -1,0 +1,28 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 5,
+  "fail": 0,
+  "results": [
+    {
+      "label": "unknown current close result correctly yields unavailable writing permission",
+      "passed": true
+    },
+    {
+      "label": "independently known cap/count already observed remains durably retained despite writing unknown",
+      "passed": true
+    },
+    {
+      "label": "known cap observation is captured, not hidden by unavailable new prerequisite",
+      "passed": true
+    },
+    {
+      "label": "truthful deletion allowed without refunding cap after uncertain writing state",
+      "passed": true
+    },
+    {
+      "label": "actual post-delete entry still409 on the previously observed legacy cap",
+      "passed": true
+    }
+  ],
+  "scope": "Independent known-cap retention while new writing state unavailable, actual truthful delete/admission; no hosted/broker/production claim"
+}

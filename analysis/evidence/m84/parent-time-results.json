@@ -1,0 +1,212 @@
+{
+  "app": "/tmp/m84-parent/app",
+  "pass": 3,
+  "fail": 36,
+  "results": [
+    {
+      "label": "additive account schema exposes nullable optional time selection",
+      "passed": false
+    },
+    {
+      "label": "existing/new account defaults OFF, never a universal120-minute rule",
+      "passed": false
+    },
+    {
+      "label": "real owned inspection accurately reports OFF/advisory only",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "cannot silently start an unconfigured time ceiling",
+      "passed": false,
+      "detail": 404
+    },
+    {
+      "label": "invalid session-minute input is400/no selection write: 0",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid session-minute input is400/no selection write: -1",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid session-minute input is400/no selection write: 1441",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid session-minute input is400/no selection write: 1.5",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid session-minute input is400/no selection write: true",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid session-minute input is400/no selection write: []",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid session-minute input is400/no selection write: {}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid session-minute input is400/no selection write: \"0x78\"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid session-minute input is400/no selection write: \"bad\"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "valid scalar session selection roundtrips: 1",
+      "passed": false
+    },
+    {
+      "label": "valid scalar session selection roundtrips: \"120\"",
+      "passed": false
+    },
+    {
+      "label": "valid scalar session selection roundtrips: 1440",
+      "passed": false
+    },
+    {
+      "label": "valid scalar session selection roundtrips: null",
+      "passed": false
+    },
+    {
+      "label": "valid scalar session selection roundtrips: \"\"",
+      "passed": false
+    },
+    {
+      "label": "unrelated account edit retains chosen120 minutes",
+      "passed": false
+    },
+    {
+      "label": "selected but unstarted marker is not zero minutes of proven chart time",
+      "passed": false
+    },
+    {
+      "label": "manual start records SERVER clock and freezes chosen120 minutes",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "duplicate start is idempotent, not a way to replenish time",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "saved future duration240 cannot extend active frozen120",
+      "passed": false
+    },
+    {
+      "label": "exact120-minute inclusive boundary gives elapsed warning",
+      "passed": false
+    },
+    {
+      "label": "settings OFF cannot erase active time observation",
+      "passed": false
+    },
+    {
+      "label": "time warning never creates an execution veto or changes other cap/risk rules",
+      "passed": true
+    },
+    {
+      "label": "manual end uses server time and retains original elapsed warning",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "end retry cannot rewrite prior end timestamp",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "end/start on same UTC start-day does not reset frozen marker",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "another owner cannot inspect marker/config404",
+      "passed": true
+    },
+    {
+      "label": "another owner cannot write marker404",
+      "passed": true
+    },
+    {
+      "label": "marker endpoint requires actual authentication401",
+      "passed": false,
+      "detail": 404
+    },
+    {
+      "label": "next UTC start-day permits a genuinely new server marker",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "active marker crosses midnight without inventing a reset",
+      "passed": false
+    },
+    {
+      "label": "overnight marker still warns at selected two-hour boundary",
+      "passed": false
+    },
+    {
+      "label": "new UTC day cannot silently replace an ongoing overnight marker",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "after explicit overnight end, today can start its own selected marker",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "marker table is real durable SQL, not localStorage-only decoration",
+      "passed": false
+    },
+    {
+      "label": "completed markers retain their frozen start/duration/end bytes",
+      "passed": false,
+      "detail": "no table"
+    }
+  ],
+  "scope": "Real auth/HTTP/SQL with declared mutable UTC server clock, manual advisory only; not broker screen time, automatic market/provider/production/pixel proof"
+}

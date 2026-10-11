@@ -1,0 +1,144 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 34,
+  "fail": 0,
+  "results": [
+    {
+      "label": "actual prospective entry requires explicit named emotional input400",
+      "passed": true
+    },
+    {
+      "label": "invalid live-entry emotion type/length is400: true",
+      "passed": true
+    },
+    {
+      "label": "invalid live-entry emotion type/length is400: {}",
+      "passed": true
+    },
+    {
+      "label": "invalid live-entry emotion type/length is400: []",
+      "passed": true
+    },
+    {
+      "label": "invalid live-entry emotion type/length is400: \" \"",
+      "passed": true
+    },
+    {
+      "label": "invalid live-entry emotion type/length is400: \"xxxxxxxxxxxxxxxxxxx",
+      "passed": true
+    },
+    {
+      "label": "named emotion is capture input, not inferred calm-state permission",
+      "passed": true
+    },
+    {
+      "label": "truthful closed loss accepted before reflection is completed",
+      "passed": true
+    },
+    {
+      "label": "expired cooldown alone is insufficient: observed current-day loss has pending writing stop",
+      "passed": true
+    },
+    {
+      "label": "actual next entry409 cannot bypass missing post-loss writing",
+      "passed": true
+    },
+    {
+      "label": "existing known-stop single-action exception stays explicitly journaled",
+      "passed": true
+    },
+    {
+      "label": "one-action exception does not mark reflection complete or unlock further entries",
+      "passed": true
+    },
+    {
+      "label": "truthful deletion allowed but cannot erase observed pending reflection",
+      "passed": true
+    },
+    {
+      "label": "deleted-loss next entry still409, not an admission reset",
+      "passed": true
+    },
+    {
+      "label": "deleted-loss review still requires rule/mistake OR explicit none400",
+      "passed": true
+    },
+    {
+      "label": "actual retained-loss endpoint accepts three-line writing after row deletion",
+      "passed": true
+    },
+    {
+      "label": "reflection endpoint creates no invented trade or admission",
+      "passed": true
+    },
+    {
+      "label": "completed writing resolves its own pending stop without rewriting historical stop capture",
+      "passed": true
+    },
+    {
+      "label": "completion retry does not rewrite first saved writing/timestamp",
+      "passed": true
+    },
+    {
+      "label": "truthful loss→win correction does not erase observed writing obligation",
+      "passed": true
+    },
+    {
+      "label": "explicit core review can acknowledge same corrected record and resolve its observed obligation",
+      "passed": true
+    },
+    {
+      "label": "reflection never waives original30-minute/full-next-candle rules",
+      "passed": true
+    },
+    {
+      "label": "two completed reflections never clear a durable consecutive-loss day STOP",
+      "passed": true
+    },
+    {
+      "label": "past-day incomplete loss is visible backlog, not today reflection permission breach",
+      "passed": true
+    },
+    {
+      "label": "future close is not prematurely counted as actual current-day loss",
+      "passed": true
+    },
+    {
+      "label": "next UTC day has no prior-day pending breach, with old capture retained",
+      "passed": true
+    },
+    {
+      "label": "past-day pending record remains inspectable, never fabricated complete",
+      "passed": true
+    },
+    {
+      "label": "reflection stop is owned-account scoped, not a cross-account global lock",
+      "passed": true
+    },
+    {
+      "label": "foreign account cannot read pending/completed writing captures404",
+      "passed": true
+    },
+    {
+      "label": "retained writing captures require auth401",
+      "passed": true
+    },
+    {
+      "label": "six concurrent missing-reflection admissions all409/zero writes",
+      "passed": true
+    },
+    {
+      "label": "failure to persist reflection rolls back core review fields/acknowledgement",
+      "passed": true
+    },
+    {
+      "label": "unknown current-day realised result remains unavailable and unwaivable",
+      "passed": true
+    },
+    {
+      "label": "unavailable reflection/read state still allows honest already-executed record-only truth",
+      "passed": true
+    }
+  ],
+  "scope": "Real auth/HTTP/SQL with mutable UTC/scripted P&L, durable pending/explicit writing and transactional admission/rollback; no provider/OHLC/pixel/broker/production claim"
+}

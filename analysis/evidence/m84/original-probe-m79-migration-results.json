@@ -1,0 +1,62 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "parent": "/tmp/m81-prior-m79/extracted/tradejournal",
+  "pass": 8,
+  "fail": 1,
+  "results": [
+    {
+      "label": "real parent schema lacks newly introduced admission provenance",
+      "passed": true
+    },
+    {
+      "label": "additive migration preserves every original legacy trade field",
+      "passed": true
+    },
+    {
+      "label": "legacy snapshots/reasons/permissions stay NULL, never reconstructed",
+      "passed": true
+    },
+    {
+      "label": "existing account receives the explicit default cap of three",
+      "passed": true
+    },
+    {
+      "label": "fresh schema contains cap, immutable history and separate mechanical state/admissions",
+      "passed": false,
+      "detail": [
+        {
+          "name": "guardrail_day_caps"
+        },
+        {
+          "name": "guardrail_day_state"
+        },
+        {
+          "name": "guardrail_entry_admissions"
+        },
+        {
+          "name": "guardrail_events"
+        },
+        {
+          "name": "guardrail_reflections"
+        }
+      ]
+    },
+    {
+      "label": "migration fabricates no historical event or entry permission",
+      "passed": true
+    },
+    {
+      "label": "second boot is byte-equivalent/idempotent for legacy data",
+      "passed": true
+    },
+    {
+      "label": "current observation counts the one legacy entry without inventing admission",
+      "passed": true
+    },
+    {
+      "label": "day-start equity includes the actual older closed P&L, unchanged by migration",
+      "passed": true
+    }
+  ],
+  "scope": "Actual prior-schema local SQLite migration/idempotence; no legacy backfill and no hosted/production migration claim"
+}

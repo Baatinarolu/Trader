@@ -1,0 +1,45 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 9,
+  "fail": 0,
+  "results": [
+    {
+      "label": "actual new-account dialog displays course/M9 default0.5, not1",
+      "passed": true
+    },
+    {
+      "label": "risk form describes explicit manual unlock and absolute1% ceiling",
+      "passed": true
+    },
+    {
+      "label": "actual form POST starts with selected0.5 rather than relying on hidden backend clamp",
+      "passed": true
+    },
+    {
+      "label": "default form still persists locked0.5 and optional profit OFF",
+      "passed": true
+    },
+    {
+      "label": "actual API clamps legacy locked2 to0.5 without restoring winning-streak factor",
+      "passed": true
+    },
+    {
+      "label": "actual dashboard renders base0.5% separately from advisory adjustment",
+      "passed": true
+    },
+    {
+      "label": "actual dashboard explicitly says streak sizing is off and advice is not permission",
+      "passed": true
+    },
+    {
+      "label": "advisory read never silently rewrites legacy stored risk value",
+      "passed": true
+    },
+    {
+      "label": "actual UI/event composition has no runtime errors",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Actual DOM/account/API/SQL UI compatibility; declared provider/bootstrap/chart seams, no pixels/calibration/broker/production claim"
+}

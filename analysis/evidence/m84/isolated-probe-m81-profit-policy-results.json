@@ -1,0 +1,244 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 59,
+  "fail": 0,
+  "results": [
+    {
+      "label": "additive account schema has optional daily profit percentage",
+      "passed": true
+    },
+    {
+      "label": "daily policy can distinguish unselected legacy state from selected OFF",
+      "passed": true
+    },
+    {
+      "label": "existing/default accounts start OFF, not an invented universal ceiling",
+      "passed": true
+    },
+    {
+      "label": "POST without ceiling defaults explicitly OFF",
+      "passed": true
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage null",
+      "passed": true
+    },
+    {
+      "label": "PUT roundtrips optional percentage null",
+      "passed": true
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage \"\"",
+      "passed": true
+    },
+    {
+      "label": "PUT roundtrips optional percentage \"\"",
+      "passed": true
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage \"  \"",
+      "passed": true
+    },
+    {
+      "label": "PUT roundtrips optional percentage \"  \"",
+      "passed": true
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 0.25",
+      "passed": true
+    },
+    {
+      "label": "PUT roundtrips optional percentage 0.25",
+      "passed": true
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 1",
+      "passed": true
+    },
+    {
+      "label": "PUT roundtrips optional percentage 1",
+      "passed": true
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage \"2.50\"",
+      "passed": true
+    },
+    {
+      "label": "PUT roundtrips optional percentage \"2.50\"",
+      "passed": true
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 3",
+      "passed": true
+    },
+    {
+      "label": "PUT roundtrips optional percentage 3",
+      "passed": true
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 5",
+      "passed": true
+    },
+    {
+      "label": "PUT roundtrips optional percentage 5",
+      "passed": true
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 10",
+      "passed": true
+    },
+    {
+      "label": "PUT roundtrips optional percentage 10",
+      "passed": true
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 100",
+      "passed": true
+    },
+    {
+      "label": "PUT roundtrips optional percentage 100",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write 0",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting 0",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write -1",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting -1",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write 100.01",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting 100.01",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write true",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting true",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write false",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting false",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write []",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting []",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write {}",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting {}",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write \"bad\"",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting \"bad\"",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write \"NaN\"",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting \"NaN\"",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write \"Infinity\"",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting \"Infinity\"",
+      "passed": true
+    },
+    {
+      "label": "invalid POST rejected without account write \"0x10\"",
+      "passed": true
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting \"0x10\"",
+      "passed": true
+    },
+    {
+      "label": "unrelated account edit retains selected ceiling",
+      "passed": true
+    },
+    {
+      "label": "another user cannot edit the ceiling",
+      "passed": true
+    },
+    {
+      "label": "empty-sample operative rules use selected1%, not a guessed history number",
+      "passed": true
+    },
+    {
+      "label": "first scoped check persists the profit-selection clock",
+      "passed": true
+    },
+    {
+      "label": "midday increase cannot erase the frozen1% ceiling",
+      "passed": true
+    },
+    {
+      "label": "next UTC day adopts the explicitly selected5%",
+      "passed": true
+    },
+    {
+      "label": "profitable36-trade history cannot raise the preselected profit ceiling",
+      "passed": true
+    },
+    {
+      "label": "OFF is a frozen policy too; enabling afterward applies next day",
+      "passed": true
+    },
+    {
+      "label": "disabling midday does not erase today; future day can be OFF",
+      "passed": true
+    },
+    {
+      "label": "eight simultaneous first checks agree on one profit policy/clock",
+      "passed": true
+    },
+    {
+      "label": "daily ceiling does not overwrite lifetime/prop profit target",
+      "passed": true
+    },
+    {
+      "label": "M11 below-floor rules still disclose30 and no personal adaptation",
+      "passed": true
+    },
+    {
+      "label": "new setting still requires real authentication",
+      "passed": true
+    }
+  ],
+  "scope": "Actual local SQL/auth/account/UTC optional profit-policy selection, not trigger/market/broker/production proof"
+}

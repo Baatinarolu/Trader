@@ -1,0 +1,77 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "parent": "/tmp/m84-parent/app",
+  "pass": 17,
+  "fail": 0,
+  "results": [
+    {
+      "label": "migration control truly uses prior shipped schema without review/time fields",
+      "passed": true
+    },
+    {
+      "label": "additive upgrade preserves every original account field",
+      "passed": true
+    },
+    {
+      "label": "additive upgrade preserves every original trade/price/P&L/emotion field",
+      "passed": true
+    },
+    {
+      "label": "legacy account time ceiling defaults NULL/OFF, never120",
+      "passed": true
+    },
+    {
+      "label": "legacy populated review notes remain unacknowledged/NULL, no invented completion",
+      "passed": true
+    },
+    {
+      "label": "existing caps remain byte-equal on schema upgrade",
+      "passed": true
+    },
+    {
+      "label": "existing states remain byte-equal on schema upgrade",
+      "passed": true
+    },
+    {
+      "label": "existing events remain byte-equal on schema upgrade",
+      "passed": true
+    },
+    {
+      "label": "existing admissions remain byte-equal on schema upgrade",
+      "passed": true
+    },
+    {
+      "label": "upgrade alone fabricates no manual marker or historical writing violation",
+      "passed": true
+    },
+    {
+      "label": "second fresh process migration is byte-idempotent for all captured tables",
+      "passed": true
+    },
+    {
+      "label": "first new-feature read captures actual pending loss NOW, not past entry time",
+      "passed": true
+    },
+    {
+      "label": "observation does not fabricate journal acknowledgement or entry permission",
+      "passed": true
+    },
+    {
+      "label": "actual module selects manual marker120/server clock after upgrade",
+      "passed": true
+    },
+    {
+      "label": "separate restart retains marker/pending writing/original journal byte-for-byte",
+      "passed": true
+    },
+    {
+      "label": "real second-process restart after deletion still requires captured writing",
+      "passed": true
+    },
+    {
+      "label": "separate restart remembers explicit writing resolution, with no recreated trade",
+      "passed": true
+    }
+  ],
+  "scope": "Actual shipped-parent localSQL additive upgrade + separate-process restart; no historical completion/marker/violation backfill, hosted Turso/Vercel or multi-worker claim"
+}

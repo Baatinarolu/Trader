@@ -1,0 +1,22 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 0,
+  "fail": 3,
+  "results": [
+    {
+      "label": "three initial guarded entry admissions are real, not injected rows",
+      "passed": false,
+      "detail": [
+        400,
+        400,
+        400
+      ]
+    },
+    {
+      "label": "fourth current-journal entry is blocked",
+      "passed": false,
+      "detail": 400
+    }
+  ],
+  "scope": "Retained M79 acceptance negative. Needs a separate durable admission/day-stop state; journal CRUD must remain honest."
+}

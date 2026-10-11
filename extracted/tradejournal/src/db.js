@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS accounts (
                                          -- to 0.5 on every read and the row would disagree with the sizing.
   max_trades_day INTEGER NOT NULL DEFAULT 3, -- M83/M113 preselected, not derived from overtrading
   daily_loss_limit_pct REAL DEFAULT 3.0,
+  max_session_minutes INTEGER CHECK(max_session_minutes IS NULL OR (max_session_minutes BETWEEN 1 AND 1440 AND max_session_minutes=CAST(max_session_minutes AS INTEGER))), -- M84 optional manual/advisory time ceiling
   daily_profit_limit_pct REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100)), -- M81 optional, separate from lifetime profit target
   max_drawdown_pct REAL DEFAULT 10.0,
   profit_target_pct REAL DEFAULT 8.0,
@@ -144,6 +145,18 @@ CREATE TABLE IF NOT EXISTS accounts (
   archived INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+-- Manual markers are not broker screen-time or execution permission. The selected
+-- duration/start remain immutable, an explicit end does not delete history.
+CREATE TABLE IF NOT EXISTS session_time_markers (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  rule_date TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  limit_minutes INTEGER NOT NULL CHECK(limit_minutes BETWEEN 1 AND 1440 AND limit_minutes=CAST(limit_minutes AS INTEGER)),
+  ended_at TEXT,
+  PRIMARY KEY(user_id,account_id,rule_date)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_session_time_active ON session_time_markers(user_id,account_id) WHERE ended_at IS NULL;
 CREATE TABLE IF NOT EXISTS guardrail_day_caps (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -265,6 +278,23 @@ CREATE TABLE IF NOT EXISTS guardrail_events (
   dedupe_key TEXT UNIQUE
 );
 CREATE INDEX IF NOT EXISTS idx_guardrail_events_day ON guardrail_events(user_id,rule_date,account_id,id);
+-- M85 observed writing obligations are independent of editable/deletable trades.
+-- They are captured NOW, not retroactive broker-time violations. Completion is
+-- explicit input and immutable through the application, not a journal-row FK.
+CREATE TABLE IF NOT EXISTS guardrail_reflections (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  rule_date TEXT NOT NULL,
+  obligation_key TEXT NOT NULL UNIQUE,
+  loss_trade_id INTEGER NOT NULL,
+  observed_at TEXT NOT NULL,
+  snapshot TEXT NOT NULL,
+  completed_at TEXT,
+  reflection_json TEXT,
+  completion_source TEXT CHECK(completion_source IS NULL OR completion_source IN ('trade_journal','loss_reflection'))
+);
+CREATE INDEX IF NOT EXISTS idx_reflections_scope ON guardrail_reflections(user_id,account_id,rule_date,id);
 CREATE TABLE IF NOT EXISTS journal_entries (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -396,7 +426,10 @@ CREATE TABLE IF NOT EXISTS trades (
   emotion_after TEXT DEFAULT '',
   confidence INTEGER,                         -- 1-5
   adherence INTEGER,                          -- 1-5 rule-adherence self score
-  mistakes TEXT DEFAULT '',                   -- comma separated
+  mistakes TEXT DEFAULT '',
+  mistakes_none INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1)),
+  journal_reviewed_at TEXT, -- explicit core journal review, never inferred from grade/legacy fields
+  journal_review_hash TEXT,                   -- comma separated
   tags TEXT DEFAULT '',                       -- comma separated
   thesis TEXT DEFAULT '',
   lesson TEXT DEFAULT '',
@@ -513,6 +546,7 @@ async function migrate() {
   // M81 is optional: legacy settings stay NULL, never guessed from lifetime targets.
   const optionalProfit = 'REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100))';
   await add('accounts','daily_profit_limit_pct',optionalProfit);
+  await add('accounts','max_session_minutes','INTEGER CHECK(max_session_minutes IS NULL OR (max_session_minutes BETWEEN 1 AND 1440 AND max_session_minutes=CAST(max_session_minutes AS INTEGER)))');
   await add('guardrail_day_caps','daily_profit_limit_pct',optionalProfit);
   await add('guardrail_day_caps','profit_selected_at','TEXT');
   for (const table of ['trades','bot_signals']) {
@@ -523,6 +557,9 @@ async function migrate() {
   // M102: which version of its strategy a trade was taken under. NULL means the trade
   // predates versioning or has no strategy at all - it is never guessed at read time.
   await add('trades', 'strategy_version', 'INTEGER');
+  await add('trades','mistakes_none','INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1))');
+  await add('trades','journal_reviewed_at','TEXT');
+  await add('trades','journal_review_hash','TEXT');
   // M68: never backfill a named model from grade/zone guesses. Unknown != none.
   for (const table of ['trades', 'bot_signals']) {
     await add(table, 'entry_model', 'TEXT');

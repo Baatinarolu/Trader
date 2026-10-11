@@ -51,6 +51,7 @@ function normalise(raw, ctx = {}) {
     confidence: raw.confidence === '' || raw.confidence == null ? null : num(raw.confidence),
     adherence: raw.adherence === '' || raw.adherence == null ? null : num(raw.adherence),
     mistakes: arrayToCsv(raw.mistakes),
+    mistakes_none: raw.mistakes_none === true || raw.mistakes_none === 1 ? 1 : 0,
     tags: arrayToCsv(raw.tags),
     thesis: raw.thesis || '',
     lesson: raw.lesson || '',
@@ -170,7 +171,7 @@ function numOrNull(v) { return v === null || v === undefined || v === '' || isNa
 const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at',
   'entry', 'exit', 'stop', 'target', 'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'planned_r',
   'mae_r', 'mfe_r', 'stop_moved', 'exit_reason', 'strategy_id', 'strategy_name', 'setup_grade', 'session', 'timeframes',
-  'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags', 'thesis', 'lesson', 'execution_notes',
+  'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'mistakes_none', 'tags', 'thesis', 'lesson', 'execution_notes',
   'strategy_version', 'entry_model', 'entry_tf', 'entry_evidence', 'guardrail_snapshot', 'entry_permission', 'override_reason',
   'notes', 'screenshot_url', 'legs', 'entries'];
 

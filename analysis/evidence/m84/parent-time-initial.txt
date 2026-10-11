@@ -1,0 +1,37 @@
+FAIL additive account schema exposes nullable optional time selection undefined
+FAIL existing/new account defaults OFF, never a universal120-minute rule undefined
+FAIL real owned inspection accurately reports OFF/advisory only {"status":404,"data":{}}
+FAIL cannot silently start an unconfigured time ceiling 404
+FAIL invalid session-minute input is400/no selection write: 0 200
+FAIL invalid session-minute input is400/no selection write: -1 200
+FAIL invalid session-minute input is400/no selection write: 1441 200
+FAIL invalid session-minute input is400/no selection write: 1.5 200
+FAIL invalid session-minute input is400/no selection write: true 200
+FAIL invalid session-minute input is400/no selection write: [] 200
+FAIL invalid session-minute input is400/no selection write: {} 200
+FAIL invalid session-minute input is400/no selection write: "0x78" 200
+FAIL invalid session-minute input is400/no selection write: "bad" 200
+FAIL valid scalar session selection roundtrips: 1 undefined
+FAIL valid scalar session selection roundtrips: "120" undefined
+FAIL valid scalar session selection roundtrips: 1440 undefined
+FAIL valid scalar session selection roundtrips: null undefined
+FAIL valid scalar session selection roundtrips: "" undefined
+FAIL unrelated account edit retains chosen120 minutes undefined
+FAIL selected but unstarted marker is not zero minutes of proven chart time undefined
+FAIL manual start records SERVER clock and freezes chosen120 minutes {"status":404,"data":{}}
+FAIL duplicate start is idempotent, not a way to replenish time {"status":404,"data":{}}
+FAIL saved future duration240 cannot extend active frozen120 undefined
+FAIL exact120-minute inclusive boundary gives elapsed warning undefined
+FAIL settings OFF cannot erase active time observation undefined
+ok time warning never creates an execution veto or changes other cap/risk rules
+FAIL manual end uses server time and retains original elapsed warning {"status":404,"data":{}}
+FAIL end retry cannot rewrite prior end timestamp {"status":404,"data":{}}
+FAIL end/start on same UTC start-day does not reset frozen marker {"status":404,"data":{}}
+ok another owner cannot inspect marker/config404
+ok another owner cannot write marker404
+FAIL marker endpoint requires actual authentication401 404
+FAIL next UTC start-day permits a genuinely new server marker {"status":404,"data":{}}
+TypeError: Cannot read properties of undefined (reading 'elapsed_minutes')
+    at /home/user/Trader/analysis/probe-m84-session-time.js:35:149
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+M84 session time: 3 passed, 31 failed

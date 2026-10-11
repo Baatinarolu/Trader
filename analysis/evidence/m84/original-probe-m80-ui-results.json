@@ -1,0 +1,181 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 18,
+  "fail": 8,
+  "results": [
+    {
+      "label": "known stop greys BOTH actual save-entry actions",
+      "passed": true
+    },
+    {
+      "label": "trade form preflight uses selected account and actual entry TF",
+      "passed": true
+    },
+    {
+      "label": "grey entry click opens required reason, not a trade POST",
+      "passed": false,
+      "detail": {
+        "reason": false,
+        "posts": 0
+      }
+    },
+    {
+      "label": "blank reason cannot activate override confirmation",
+      "passed": false,
+      "detail": "no reason dialog"
+    },
+    {
+      "label": "whitespace reason remains disabled",
+      "passed": false,
+      "detail": "no reason dialog"
+    },
+    {
+      "label": "cancelling override writes nothing",
+      "passed": false,
+      "detail": "no reason dialog"
+    },
+    {
+      "label": "nonblank text enables explicit confirmation",
+      "passed": false,
+      "detail": "no dialog"
+    },
+    {
+      "label": "actual browser confirmation POSTs reason to server",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "browser-selected reason persists with fresh stopped snapshot",
+      "passed": false,
+      "detail": {
+        "id": 3,
+        "user_id": 1,
+        "account_id": 1,
+        "symbol": "TEST",
+        "asset_class": "stocks",
+        "direction": "long",
+        "status": "open",
+        "opened_at": "2026-10-11T12:00:00.000Z",
+        "closed_at": null,
+        "entry": 100,
+        "exit": null,
+        "stop": null,
+        "target": null,
+        "size": 0,
+        "fees": 0,
+        "gross_pnl": 0,
+        "net_pnl": 0,
+        "risk_amount": 0,
+        "r_multiple": 0,
+        "planned_r": null,
+        "mae_r": null,
+        "mfe_r": null,
+        "stop_moved": 0,
+        "exit_reason": "",
+        "notes": "",
+        "strategy_id": null,
+        "strategy_name": "",
+        "setup_grade": "",
+        "entry_model": null,
+        "entry_tf": null,
+        "entry_evidence": null,
+        "session": "",
+        "timeframes": "",
+        "emotion_before": "",
+        "emotion_after": "",
+        "confidence": null,
+        "adherence": null,
+        "mistakes": "",
+        "mistakes_none": 0,
+        "journal_reviewed_at": null,
+        "journal_review_hash": null,
+        "tags": "",
+        "thesis": "",
+        "lesson": "",
+        "execution_notes": "",
+        "screenshot_url": "",
+        "manual_mae": null,
+        "manual_mfe": null,
+        "created_at": "2026-10-11 17:12:11",
+        "updated_at": "2026-10-11 17:12:11",
+        "legs": null,
+        "entries": null,
+        "guardrail_snapshot": null,
+        "entry_permission": null,
+        "override_reason": null,
+        "strategy_version": null
+      }
+    },
+    {
+      "label": "actual review renders the captured reason AND violated rule",
+      "passed": false,
+      "detail": "Guardrail history — UTC rule day\n      Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Recording-time flags do not infer what happened at a historical entry.\n      Captured at (UTC)Account / actionViolated rule(s)Reason / decision\n        2026-10-11T12:00:00.000Z\n          #1 · state_observedbreach\n          max_trades_day: 3 entries today — your preselected cap is 3.\n          No override taken."
+    },
+    {
+      "label": "unavailable check disables both entry actions; no override affordance",
+      "passed": true
+    },
+    {
+      "label": "honest record-only mode remains enabled during unknown permission",
+      "passed": true
+    },
+    {
+      "label": "record-only mode records OPEN reality but never grants permission",
+      "passed": true
+    },
+    {
+      "label": "other owned clear account is not poisoned by first account stop",
+      "passed": true
+    },
+    {
+      "label": "switching form account rechecks and reinstates its stop",
+      "passed": true
+    },
+    {
+      "label": "late first-account preflight cannot overwrite second-account state",
+      "passed": true
+    },
+    {
+      "label": "manual prospective plan copy goes through fresh server admission",
+      "passed": true
+    },
+    {
+      "label": "authorised clipboard preserves integer entry100/target110, not trailing-zero truncation",
+      "passed": true
+    },
+    {
+      "label": "historical clipboard is explicitly labelled journal/research, not live permission",
+      "passed": true
+    },
+    {
+      "label": "bot UI disables ordinary Copy at personal stop",
+      "passed": true
+    },
+    {
+      "label": "technically eligible personal stop gets a grey reason-required copy path",
+      "passed": true
+    },
+    {
+      "label": "save-signal is grey and explicit about override",
+      "passed": true
+    },
+    {
+      "label": "bot copy asks reason before clipboard or plan POST",
+      "passed": true
+    },
+    {
+      "label": "bot copy follows a recorded single-action override, labelled not a broker order",
+      "passed": true
+    },
+    {
+      "label": "shared account switch refreshes bot data for selected account",
+      "passed": true
+    },
+    {
+      "label": "UI composition has no runtime errors",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Actual browser scripts/auth/SQL, declared graph/bootstrap/candle IO seams; no pixel, production feed, broker or outcome claim"
+}

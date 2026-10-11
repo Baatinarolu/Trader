@@ -1,0 +1,72 @@
+{
+  "app": "/tmp/m85-gate-stage/app",
+  "pass": 8,
+  "fail": 5,
+  "results": [
+    {
+      "label": "future-dated close cannot be acknowledged as completed current reflection400/no write",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "future-close journal state discloses not-yet-closed timestamp as missing",
+      "passed": false,
+      "detail": {
+        "state": "complete",
+        "complete": true,
+        "missing": [],
+        "reflection_required": true,
+        "reviewed_at": "2026-10-11T12:00:00.000Z",
+        "scope": "Explicit core review of the current journal record; not broker-time emotion provenance, screenshots, confluences or whole-course completeness"
+      }
+    },
+    {
+      "label": "prospective reopen cannot reuse unstated old emotional input",
+      "passed": true
+    },
+    {
+      "label": "named FOMO input is not falsely claimed to implement M106 four-question calm gate",
+      "passed": true
+    },
+    {
+      "label": "still-open position cannot be core-completed as an exited journal400",
+      "passed": true
+    },
+    {
+      "label": "malformed original loss snapshot is503/unknown, not waivable STOP",
+      "passed": true
+    },
+    {
+      "label": "malformed stored explicit-none value is unavailable rather than reinterpreted as false",
+      "passed": false,
+      "detail": "clear"
+    },
+    {
+      "label": "arbitrary reflection driver4xx is masked503/no raw-driver leak",
+      "passed": true
+    },
+    {
+      "label": "same permission-read outage still accepts honest record-only truth",
+      "passed": true
+    },
+    {
+      "label": "invalid calendar day is not silently rolled into another date400",
+      "passed": true
+    },
+    {
+      "label": "invalid public trade identifier stays local404 rather than driver503",
+      "passed": false,
+      "detail": 503
+    },
+    {
+      "label": "invalid public retained-loss identifier stays local404 rather than driver503",
+      "passed": false,
+      "detail": 503
+    },
+    {
+      "label": "optional malformed time setting remains unavailable warning, not a new mandatory entry veto",
+      "passed": true
+    }
+  ],
+  "scope": "Real local auth/HTTP/SQL metadata/input/driver contracts; no M89 timing/M106 emotional eligibility/market/provider/broker/pixel/production claim"
+}

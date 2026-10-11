@@ -422,6 +422,7 @@
           <label class="field"><span>Starting balance</span><input id="a-bal" type="number" step="any" value="${v.starting_balance}" /></label>
           <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /><div class="field-note">Default 0.5%; above it requires a deliberate manual unlock. The course maximum is 1%, never increased by a win/loss streak.</div></label>
           <label class="field"><span>Max trades per UTC day</span><input id="a-trades" type="number" min="1" max="100" step="1" value="${v.max_trades_day ?? 3}" /><div class="field-note">Course guidance: 3 intraday / 5 scalping. Frozen on the day's first guardrail check; changes then apply tomorrow. History never raises this cap.</div></label>
+          <div class="field span2"><label class="row gap-8"><input id="a-session-enabled" type="checkbox" ${v.max_session_minutes != null ? 'checked' : ''} /><span>Optional manual session-duration warning</span></label><label for="a-session">Ceiling in minutes</label><input id="a-session" type="number" min="1" max="1440" step="1" value="${U.esc(v.max_session_minutes ?? 120)}" ${v.max_session_minutes == null ? 'disabled' : ''} /><div class="field-note">Off by default. Two hours is an example, not a universal ceiling. Start the marker yourself before the session; it measures only elapsed server time since that click, not broker/chart screen time. The selected duration freezes at start; edits do not reset it or other guardrails.</div></div>
           <label class="field"><span>Daily loss limit (%)</span><input id="a-daily" type="number" step="0.1" value="${v.daily_loss_limit_pct}" /></label>
           <label class="field"><span>Max drawdown (%)</span><input id="a-dd" type="number" step="0.1" value="${v.max_drawdown_pct}" /></label>
           <label class="field span2"><span><input id="a-profit-enabled" type="checkbox" ${v.daily_profit_limit_pct != null ? 'checked' : ''} /> Enable optional daily realised profit stop</span><input id="a-profit" type="number" min="0" max="100" step="any" value="${U.esc(v.daily_profit_limit_pct ?? 1)}" ${v.daily_profit_limit_pct == null ? 'disabled' : ''} /><div class="field-note">Percentage of UTC day-start realised equity, not floating P&L or the lifetime target. Examples: 1%, 3%, 5%; choose your own. Off by default. Frozen on the first profit-policy check; later edits apply tomorrow. An observed stop lasts for the UTC day even after corrections.</div></label>
@@ -430,6 +431,8 @@
         <div class="field-note">Prop-firm rules live here: the app tracks how much of your daily loss limit and max drawdown you have actually used.</div>`;
         const profitEnabled = U.$('#a-profit-enabled', body), profitInput = U.$('#a-profit', body);
         profitEnabled.addEventListener('change', () => { profitInput.disabled = !profitEnabled.checked; });
+        const sessionEnabled = U.$('#a-session-enabled',body),sessionInput = U.$('#a-session',body);
+        sessionEnabled.addEventListener('change',()=>{sessionInput.disabled=!sessionEnabled.checked;});
         global.App.modal({
           title: isNew ? 'New account' : 'Edit account', body, small: true,
           actions: [{ label: 'Cancel', ghost: true }, {
@@ -440,10 +443,13 @@
                 risk_per_trade_pct: U.$('#a-risk', body).value, max_trades_day: U.$('#a-trades', body).value, daily_loss_limit_pct: U.$('#a-daily', body).value,
                 max_drawdown_pct: U.$('#a-dd', body).value, profit_target_pct: U.$('#a-target', body).value,
                 daily_profit_limit_pct: profitEnabled.checked ? profitInput.value : null,
+                max_session_minutes: sessionEnabled.checked ? sessionInput.value : null,
               };
               if (!payload.name) return global.App.toast('Account needs a name', 'err');
               if (profitEnabled.checked && !(Number(profitInput.value)>0 && Number(profitInput.value)<=100))
                 return global.App.toast('Daily profit stop needs a positive percentage up to 100, or turn it off.', 'err');
+              if (sessionEnabled.checked && (!Number.isInteger(Number(sessionInput.value)) || Number(sessionInput.value)<1 || Number(sessionInput.value)>1440))
+                return global.App.toast('Session ceiling needs whole minutes from 1 to 1440, or turn it off.','err');
               if (isNew) await API.post('/accounts', payload); else await API.put('/accounts/' + a.id, payload);
               await Store.reloadAll(); close(); global.App.toast('Account saved', 'ok'); global.App.refresh();
             },

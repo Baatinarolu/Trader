@@ -1,0 +1,61 @@
+DECLARED legacy guard-rule prerequisite isolation: writing fulfilled / explicit synthetic Neutral / new UI prompt fulfilled / additive table names. Original negatives kept; not M85 integrated-policy proof.
+ok additive account schema has optional daily profit percentage
+ok daily policy can distinguish unselected legacy state from selected OFF
+ok existing/default accounts start OFF, not an invented universal ceiling
+ok POST without ceiling defaults explicitly OFF
+ok POST roundtrips explicit optional percentage null
+ok PUT roundtrips optional percentage null
+ok POST roundtrips explicit optional percentage ""
+ok PUT roundtrips optional percentage ""
+ok POST roundtrips explicit optional percentage "  "
+ok PUT roundtrips optional percentage "  "
+ok POST roundtrips explicit optional percentage 0.25
+ok PUT roundtrips optional percentage 0.25
+ok POST roundtrips explicit optional percentage 1
+ok PUT roundtrips optional percentage 1
+ok POST roundtrips explicit optional percentage "2.50"
+ok PUT roundtrips optional percentage "2.50"
+ok POST roundtrips explicit optional percentage 3
+ok PUT roundtrips optional percentage 3
+ok POST roundtrips explicit optional percentage 5
+ok PUT roundtrips optional percentage 5
+ok POST roundtrips explicit optional percentage 10
+ok PUT roundtrips optional percentage 10
+ok POST roundtrips explicit optional percentage 100
+ok PUT roundtrips optional percentage 100
+ok invalid POST rejected without account write 0
+ok invalid PUT rejected without changing selected setting 0
+ok invalid POST rejected without account write -1
+ok invalid PUT rejected without changing selected setting -1
+ok invalid POST rejected without account write 100.01
+ok invalid PUT rejected without changing selected setting 100.01
+ok invalid POST rejected without account write true
+ok invalid PUT rejected without changing selected setting true
+ok invalid POST rejected without account write false
+ok invalid PUT rejected without changing selected setting false
+ok invalid POST rejected without account write []
+ok invalid PUT rejected without changing selected setting []
+ok invalid POST rejected without account write {}
+ok invalid PUT rejected without changing selected setting {}
+ok invalid POST rejected without account write "bad"
+ok invalid PUT rejected without changing selected setting "bad"
+ok invalid POST rejected without account write "NaN"
+ok invalid PUT rejected without changing selected setting "NaN"
+ok invalid POST rejected without account write "Infinity"
+ok invalid PUT rejected without changing selected setting "Infinity"
+ok invalid POST rejected without account write "0x10"
+ok invalid PUT rejected without changing selected setting "0x10"
+ok unrelated account edit retains selected ceiling
+ok another user cannot edit the ceiling
+ok empty-sample operative rules use selected1%, not a guessed history number
+ok first scoped check persists the profit-selection clock
+ok midday increase cannot erase the frozen1% ceiling
+ok next UTC day adopts the explicitly selected5%
+ok profitable36-trade history cannot raise the preselected profit ceiling
+ok OFF is a frozen policy too; enabling afterward applies next day
+ok disabling midday does not erase today; future day can be OFF
+ok eight simultaneous first checks agree on one profit policy/clock
+ok daily ceiling does not overwrite lifetime/prop profit target
+ok M11 below-floor rules still disclose30 and no personal adaptation
+ok new setting still requires real authentication
+M81 profit policy: 59 passed, 0 failed

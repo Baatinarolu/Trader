@@ -41,7 +41,7 @@ Ep05–20, not21/22/31/32. No new raw fetch or invented timestamp is asserted.
    does **not** add automatic A+×2 or reopen those user decisions.
 3. **M85 is post-loss reflection/completeness, not adaptive sizing.** It stays open.
    The misplaced Ep31 profit paragraph under **M94** belongs to M81; M94's
-   pre-market routine does not close by association. M84/M111/M112/M116 remain open.
+   pre-market routine does not close by association. M84/M111/M112 remain open. M116 was already APPLIED; the earlier open-label was erroneous.
 
 ## 2. M81 policy, gate and UI measured independently
 

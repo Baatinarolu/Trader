@@ -1,0 +1,184 @@
+diff --git a/src/db.js b/src/db.js
+index e5fa7f2..e6c91b4 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS accounts (
+                                          -- to 0.5 on every read and the row would disagree with the sizing.
+   max_trades_day INTEGER NOT NULL DEFAULT 3, -- M83/M113 preselected, not derived from overtrading
+   daily_loss_limit_pct REAL DEFAULT 3.0,
++  max_session_minutes INTEGER CHECK(max_session_minutes IS NULL OR (max_session_minutes BETWEEN 1 AND 1440 AND max_session_minutes=CAST(max_session_minutes AS INTEGER))), -- M84 optional manual/advisory time ceiling
+   daily_profit_limit_pct REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100)), -- M81 optional, separate from lifetime profit target
+   max_drawdown_pct REAL DEFAULT 10.0,
+   profit_target_pct REAL DEFAULT 8.0,
+@@ -144,6 +145,18 @@ CREATE TABLE IF NOT EXISTS accounts (
+   archived INTEGER DEFAULT 0,
+   created_at TEXT NOT NULL DEFAULT (datetime('now'))
+ );
++-- Manual markers are not broker screen-time or execution permission. The selected
++-- duration/start remain immutable, an explicit end does not delete history.
++CREATE TABLE IF NOT EXISTS session_time_markers (
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  rule_date TEXT NOT NULL,
++  started_at TEXT NOT NULL,
++  limit_minutes INTEGER NOT NULL CHECK(limit_minutes BETWEEN 1 AND 1440 AND limit_minutes=CAST(limit_minutes AS INTEGER)),
++  ended_at TEXT,
++  PRIMARY KEY(user_id,account_id,rule_date)
++);
++CREATE UNIQUE INDEX IF NOT EXISTS idx_session_time_active ON session_time_markers(user_id,account_id) WHERE ended_at IS NULL;
+ CREATE TABLE IF NOT EXISTS guardrail_day_caps (
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+   account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+@@ -513,6 +526,7 @@ async function migrate() {
+   // M81 is optional: legacy settings stay NULL, never guessed from lifetime targets.
+   const optionalProfit = 'REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100))';
+   await add('accounts','daily_profit_limit_pct',optionalProfit);
++  await add('accounts','max_session_minutes','INTEGER CHECK(max_session_minutes IS NULL OR (max_session_minutes BETWEEN 1 AND 1440 AND max_session_minutes=CAST(max_session_minutes AS INTEGER)))');
+   await add('guardrail_day_caps','daily_profit_limit_pct',optionalProfit);
+   await add('guardrail_day_caps','profit_selected_at','TEXT');
+   for (const table of ['trades','bot_signals']) {
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 8724c0d..49bccc8 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -9,6 +9,7 @@ const Coach = require('../coach');
+ const M = require('../market');
+ const T = require('../trades');
+ const Guards = require('../bots/guardrails');
++const SessionTime = require('../session-time');
+ const O = require('../options');
+ const Exp = require('../exposure');
+ const Prop = require('../prop');
+@@ -573,6 +574,16 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+   res.json(briefing);
+ }));
+ 
++/* M84 optional manual marker: server clock/owner-scoped, not trade permission. */
++router.get('/session-time', requireAuth, async (req,res)=>{
++  try { res.json({session:await SessionTime.inspect(req.user.id,{accountId:req.query.account_id})}); }
++  catch(e){if(e.code==='session_time_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Manual session time could not be verified.'});}
++});
++for(const action of ['start','end'])router.post('/session-time/'+action,requireAuth,async(req,res)=>{
++  try{res.json({ok:true,session:await SessionTime[action](req.user.id,req.body?.account_id)});}
++  catch(e){if(e.code==='session_time_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Manual session marker could not be recorded.'});}
++});
++
+ /* ----------------------------------------------------------------- journal */
+ router.get('/journal', requireAuth, async (req, res) => {
+   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
+@@ -759,13 +770,16 @@ router.post('/accounts', requireAuth, async (req, res) => {
+   let profitLimit;
+   try { profitLimit = Guards.parseProfitLimit(b.daily_profit_limit_pct); }
+   catch (e) { return res.status(400).json({ error: e.message }); }
++  let sessionLimit;
++  try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes); }
++  catch(e){return res.status(400).json({error:e.message});}
+   const unlocked = !!b.risk_unlocked;
+   const riskPct = I.clampRiskPct(b.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked });
+-  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     req.user.id, b.name, b.broker || '', b.account_type || 'live', b.currency || 'USD',
+     num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0, maxTrades,
+-    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit);
++    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit);
+   res.json({
+     ok: true,
+     account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(info.lastInsertRowid),
+@@ -783,6 +797,9 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+   let profitLimit;
+   try { profitLimit = b.daily_profit_limit_pct === undefined ? Guards.parseProfitLimit(cur.daily_profit_limit_pct) : Guards.parseProfitLimit(b.daily_profit_limit_pct); }
+   catch (e) { return res.status(400).json({ error: e.message }); }
++  let sessionLimit;
++  try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes === undefined ? cur.max_session_minutes : b.max_session_minutes); }
++  catch(e){return res.status(400).json({error:e.message});}
+   // M9: the same guardrail on the update path, which also stored the value via num() with no
+   // clamp. Only a value THIS request supplies is clamped — a row stored above the guardrail
+   // before the fix is left untouched here and clamped on READ (bots/index.js) instead, so an
+@@ -793,7 +810,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+     : num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct);
+   await db.prepare(`UPDATE accounts SET name=@name, broker=@broker, account_type=@account_type, currency=@currency,
+     starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, max_trades_day=@max_trades_day, daily_loss_limit_pct=@daily_loss_limit_pct,
+-    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, prop_preset=@prop_preset,
++    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, max_session_minutes=@max_session_minutes, prop_preset=@prop_preset,
+     prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
+     id, user_id: req.user.id,
+     name: b.name !== undefined ? b.name : cur.name,
+@@ -805,6 +822,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+     risk_unlocked: unlocked ? 1 : 0,
+     max_trades_day: maxTrades,
+     daily_profit_limit_pct: profitLimit,
++    max_session_minutes: sessionLimit,
+     daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
+     max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
+     prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
+diff --git a/src/session-time.js b/src/session-time.js
+new file mode 100644
+index 0000000..9f97515
+--- /dev/null
++++ b/src/session-time.js
+@@ -0,0 +1,63 @@
++'use strict';
++/** M84: optional, explicitly manual time tracking. It never grants/denies entry,
++ * infers broker activity or resets other guardrails. Durations are app choices;
++ * two hours is a course example, not a universal rule. */
++const {db}=require('./db');const {dayKey,msOf}=require('./bots/guardrails');
++function input(message,status=400){const e=new Error(message);e.status=status;e.code='session_time_invalid';return e;}
++function parseLimit(value){
++  if(value==null || (typeof value==='string' && !value.trim()))return null;
++  if((typeof value!=='number' && typeof value!=='string') || (typeof value==='string' && !/^\+?\d+(?:\.0+)?$/.test(value.trim())))throw input('max_session_minutes must be Off or an integer from 1 to 1440');
++  const n=Number(value);if(!Number.isInteger(n)||n<1||n>1440)throw input('max_session_minutes must be Off or an integer from 1 to 1440');return n;
++}
++async function owned(store,userId,accountId){
++  let row;
++  if(accountId==null||accountId==='')row=await store.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC,id LIMIT 1').get(userId);
++  else{
++    if(typeof accountId==='boolean'||!Number.isSafeInteger(Number(accountId))||Number(accountId)<=0)throw input('An owned active account is required',404);
++    row=await store.prepare('SELECT * FROM accounts WHERE id=? AND user_id=? AND archived=0').get(Number(accountId),userId);
++  }
++  if(!row)throw input('Account not found',404);return row;
++}
++function unavailable(message='Manual session time could not be verified. No broker screen time or permission is inferred.'){
++  return {state:'unavailable',advisory:true,elapsed_minutes:null,message,scope:'manual marker only; never execution permission'};
++}
++function describe(account,row,nowMs=Date.now()){
++  if(!Number.isFinite(nowMs))return unavailable();
++  let setting;try{setting=parseLimit(account.max_session_minutes);}catch{return unavailable();}
++  const base={account_id:account.id,advisory:true,evaluated_at:new Date(nowMs).toISOString(),timezone:'UTC',saved_limit_minutes:setting,scope:'Manual marker only, not measured broker/chart screen time or execution permission'};
++  if(!row)return {...base,state:setting===null?'off':'not_started',limit_minutes:setting,elapsed_minutes:null,started_at:null,ended_at:null,
++    message:setting===null?'Session-duration warning is Off (optional).':`Selected ${setting} minutes. Start the manual marker before the session; unstarted does not mean zero chart time.`};
++  let limit;try{limit=parseLimit(row.limit_minutes);}catch{return {...base,...unavailable()};}
++  const start=msOf(row.started_at),end=row.ended_at==null?null:msOf(row.ended_at);
++  if(limit===null||!Number.isFinite(start)||start>nowMs||dayKey(start)!==row.rule_date||(end!==null&&(!Number.isFinite(end)||end<start||end>nowMs)))return {...base,...unavailable()};
++  const elapsed=((end??nowMs)-start)/60000,reached=elapsed>=limit;
++  return {...base,state:reached?'limit_reached':end!==null?'ended':'running',rule_date:row.rule_date,started_at:row.started_at,ended_at:row.ended_at,
++    limit_minutes:limit,elapsed_minutes:elapsed,deadline_at:new Date(start+limit*60000).toISOString(),warning:reached,
++    message:reached?`Manual session has reached the selected ${limit}-minute ceiling. Stand down from this session; this warning cannot stop your broker or override any other app rule.`
++      :end!==null?`Manual session ended after ${Math.floor(elapsed)} minutes. Marker history and other rule stops remain.`
++        :`Manual marker: ${Math.floor(elapsed)} / ${limit} minutes. Only time since your server-recorded start is known.`};
++}
++async function marker(store,userId,account,nowMs){
++  return await store.prepare('SELECT * FROM session_time_markers WHERE user_id=? AND account_id=? AND ended_at IS NULL ORDER BY started_at DESC LIMIT 1').get(userId,account.id)
++    || await store.prepare('SELECT * FROM session_time_markers WHERE user_id=? AND account_id=? AND rule_date=?').get(userId,account.id,dayKey(nowMs));
++}
++async function inspect(userId,{accountId=null,account=null,store=db,nowMs=Date.now()}={}){
++  const acc=account||await owned(store,userId,accountId);return describe(acc,await marker(store,userId,acc,nowMs),nowMs);
++}
++async function start(userId,accountId){
++  return db.tx(async tx=>{const store=db.transactionStore(tx),now=Date.now(),acc=await owned(store,userId,accountId),existing=await marker(store,userId,acc,now);
++    if(existing)return describe(acc,existing,now); // duplicate/today-end/overnight never reset
++    const limit=parseLimit(acc.max_session_minutes);if(limit===null)throw input('Choose an optional session-duration ceiling before starting its marker.');
++    await store.prepare('INSERT INTO session_time_markers(user_id,account_id,rule_date,started_at,limit_minutes) VALUES (?,?,?,?,?)').run(userId,acc.id,dayKey(now),new Date(now).toISOString(),limit);
++    return inspect(userId,{account:acc,store,nowMs:now});
++  });
++}
++async function end(userId,accountId){
++  return db.tx(async tx=>{const store=db.transactionStore(tx),now=Date.now(),acc=await owned(store,userId,accountId),row=await marker(store,userId,acc,now);
++    if(!row)throw input('There is no manual session marker to end.');
++    const current=describe(acc,row,now);if(current.state==='unavailable')throw input('Repair the unavailable manual marker before ending it.');
++    await store.prepare('UPDATE session_time_markers SET ended_at=? WHERE user_id=? AND account_id=? AND rule_date=? AND ended_at IS NULL').run(new Date(now).toISOString(),userId,acc.id,row.rule_date);
++    return inspect(userId,{account:acc,store,nowMs:now});
++  });
++}
++module.exports={parseLimit,owned,describe,inspect,start,end,unavailable};

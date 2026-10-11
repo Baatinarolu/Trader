@@ -1,0 +1,25 @@
+ok legacy/default account UI starts optional ceiling unchecked
+ok OFF keeps percentage input disabled without forcing a limit
+ok account dialog distinguishes lifetime/prop target from daily stop
+ok dialog explains realised-only, UTC first-check freeze and tomorrow edits
+ok enabled zero ceiling fails UI validation without an account write
+ok actual account-edit handler persists chosen1% via authenticated PUT
+ok editing an enabled account roundtrips active checkbox/percentage
+ok new accounts also default OFF, not a mandated course example
+ok actual new-account handler writes OFF while retaining lifetime8%
+ok actual trade buttons become grey reason-required at PROFIT stop
+ok trade modal states realised profit ceiling rather than a fake technical veto
+FAIL profit stop requests typed reason before another trade POST undefined
+FAIL blank profit override confirmation is disabled "no reason dialog"
+FAIL actual browser-confirmed profit reason is stored with violated rule undefined
+FAIL actual review renderer shows profit rule and recorded reason "Guardrail history — UTC rule day\n      Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Recording-time flags do not infer what happened at a historical entry.\n      Captured at (UTC)Account / actionViolated rule(s)Reason / decision\n        2026-10-11T12:00:00.000Z\n          #1 · state_observedbreach\n          daily_profit_limit: Realised profit $100 has reached your optional 1% day-start equity ceiling ($100) — stop for this rule day.\n          No override taken."
+ok actual UI OFF edit stores future choice without erasing TODAY profit stop
+ok briefing API reports frozen profit1%, not newly configured OFF
+ok actual dashboard displays optional profit stop amount/percentage
+ok dashboard separates live personal stop from advisory risk amount
+ok second-account briefing accurately discloses chosen OFF
+ok actual dashboard renders OFF as optional, not a zero-dollar target
+ok actual correction guardrail card discloses frozen optional profit percentage
+ok actual correction card displays OFF for other account instead of imposing a ceiling
+ok actual DOM/event/UI composition has no runtime errors
+M81 profit UI: 20 passed, 4 failed

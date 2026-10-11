@@ -1,0 +1,30 @@
+[
+  {
+    "stage": "full",
+    "suite": "api",
+    "exit_code": 0,
+    "output": "api-full.txt",
+    "io": "Offline synthetic, original unchanged scripts/prices/assertions/floors; actual new policy, NO legacy prerequisite adapter; serial per DB"
+  },
+  {
+    "stage": "full",
+    "suite": "bots",
+    "exit_code": 1,
+    "output": "bots-full.txt",
+    "io": "Offline synthetic, original unchanged scripts/prices/assertions/floors; actual new policy, NO legacy prerequisite adapter; serial per DB"
+  },
+  {
+    "stage": "parent",
+    "suite": "api",
+    "exit_code": 0,
+    "output": "api-parent.txt",
+    "io": "Offline synthetic, original unchanged scripts/prices/assertions/floors; actual policy, NO legacy prerequisite adapter; serial per DB"
+  },
+  {
+    "stage": "parent",
+    "suite": "bots",
+    "exit_code": 1,
+    "output": "bots-parent.txt",
+    "io": "Offline synthetic, original unchanged scripts/prices/assertions/floors; actual policy, NO legacy prerequisite adapter; serial per DB"
+  }
+]

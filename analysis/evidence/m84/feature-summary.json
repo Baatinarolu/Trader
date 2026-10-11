@@ -1,0 +1,79 @@
+{
+  "pass": 244,
+  "fail": 0,
+  "probes": [
+    {
+      "script": "analysis/probe-m84-session-time.js",
+      "name": "time",
+      "pass": 39,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "full-time"
+    },
+    {
+      "script": "analysis/probe-m84-session-ui.js",
+      "name": "time-ui",
+      "pass": 14,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "full-time-ui"
+    },
+    {
+      "script": "analysis/probe-m85-journal-core.js",
+      "name": "journal-core",
+      "pass": 33,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "full-journal-core"
+    },
+    {
+      "script": "analysis/probe-m85-loss-reflection.js",
+      "name": "reflection",
+      "pass": 34,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "full-reflection"
+    },
+    {
+      "script": "analysis/probe-m85-reflection-consumers.js",
+      "name": "consumers",
+      "pass": 64,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "full-consumers"
+    },
+    {
+      "script": "analysis/probe-m85-data-contracts.js",
+      "name": "contracts",
+      "pass": 13,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "full-contracts"
+    },
+    {
+      "script": "analysis/probe-m84-m85-migration.js",
+      "name": "migration",
+      "pass": 17,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "full-migration"
+    },
+    {
+      "script": "analysis/probe-m85-journal-ui.js",
+      "name": "journal-ui",
+      "pass": 25,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "full-journal-ui"
+    },
+    {
+      "script": "analysis/probe-m85-coexisting-retention.js",
+      "name": "retention",
+      "pass": 5,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "full-retention"
+    }
+  ],
+  "scope": "Actual new contracts without legacy prerequisite adapters; assertion counts not distinct defects/outcomes"
+}

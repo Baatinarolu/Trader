@@ -3,6 +3,26 @@
   'use strict';
   const Views = global.Views = global.Views || {};
 
+  // Shared with Corrections: explicit server marker, not broker time/permission.
+  Views.sessionTimeCard = function(session = {}) {
+    const accountId=Number(session.account_id || Store.accountId),node=U.h('div',{class:'card',style:'margin-top:14px','data-session-time':''});
+    function draw(s){
+      const ongoing=!!s.started_at && !s.ended_at;
+      node.innerHTML=`<div class="card-head"><h3>Manual session time</h3><span class="chip ${s.warning?'warn':'muted'}">${U.esc(s.state || 'unavailable')}</span></div>
+        <div class="small ${s.warning?'warn':'muted'}">${U.esc(s.message || 'Manual time unavailable; no broker activity is inferred.')}</div>
+        <div class="tiny muted">Optional warning only, not measured broker/chart screen time or entry permission. Recheck for current server elapsed time. Other rule stops and admissions are unchanged.</div>
+        <div class="row" style="gap:8px;margin-top:8px">${s.state==='not_started'?'<button class="btn sm" data-session-action="start">Start manual marker</button>':''}${ongoing && s.state!=='unavailable'?'<button class="btn sm ghost" data-session-action="end">End manual marker</button>':''}<button class="btn xs ghost" data-session-action="refresh">Recheck session time</button></div>`;
+      node.querySelectorAll('[data-session-action]').forEach(b=>b.addEventListener('click',async()=>{
+        node.querySelectorAll('button').forEach(x=>{x.disabled=true;});
+        try{const result=b.dataset.sessionAction==='refresh'?await API.get('/session-time',{account_id:accountId}):await API.post('/session-time/'+b.dataset.sessionAction,{account_id:accountId});
+          if(Number(Store.accountId)!==accountId || Number(result.session?.account_id)!==accountId)return;draw(result.session);
+        }catch(e){global.App.toast(e.message||'Session marker unavailable','err');}
+        finally{node.querySelectorAll('button').forEach(x=>{x.disabled=false;});}
+      }));
+    }
+    draw(session);return node;
+  };
+
   Views.dashboard = {
     title: 'Dashboard',
     async render(root) {
@@ -49,6 +69,9 @@
         });
         go('first-bots', () => global.App.go('bots'));
       }
+
+      root.appendChild(Views.sessionTimeCard(briefing?.daily?.session_time || {}));
+      if(Views.lossWritingCard)root.appendChild(Views.lossWritingCard(briefing?.daily?.post_loss_journal || {}));
 
       /* ---------------------------------------------------- briefing strip */
       if (briefing) {

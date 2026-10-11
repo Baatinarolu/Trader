@@ -516,6 +516,24 @@ async function dailyState(userId, { accountId = null, store = db, nowMs = Date.n
   const rows = await store.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY opened_at ASC').all(userId,account.id);
   const retained = await Guards.retainedState(store,userId,account.id,nowMs);
   const daily = Guards.evaluate({account,guardrails:g,rows,nowMs,entryTf,forEntry,retained});
+  // M84 is an optional manual warning, never an additional permission veto.
+  try { daily.session_time = await require('../session-time').inspect(userId,{account,store,nowMs}); }
+  catch { daily.session_time = require('../session-time').unavailable(); }
+  // Preserve independently known legacy count/day-stop/loss-clock observations
+  // even if the additional mandatory writing state is unavailable. Unknown
+  // writing must not hide/refund an already observed cap during truthful CRUD.
+  await Guards.retainState(store,userId,daily);
+  // M85 writing obligations are resolvable, NOT added to permanent day latches.
+  // Read/clock/data uncertainty cannot be reason-waived, but honest records remain.
+  let writing;
+  try { writing=await require('../journaling').syncLosses(store,userId,account,rows,nowMs); }
+  catch { await Guards.observe(store,userId,daily);return Guards.unavailable({accountId:account.id,nowMs,message:'The post-loss writing queue or current-day close result could not be verified. Record the actual result/repair the writing record before new entry permission.'}); }
+  daily.post_loss_journal=writing;
+  if(daily.status!=='unknown' && writing.pending_count){
+    daily.breaches.push({rule:'post_loss_reflection',pending_ids:writing.pending.map(p=>p.id),detail:`${writing.pending_count} observed loss(es) need the three-line post-loss review: what happened, rule/mistake or explicit followed-plan none, what differently. A pause alone is not completed writing.`});
+    daily.status='stop';daily.permission={allowed:false,can_override:true,state:'stopped'};
+    daily.message='Stand down: '+daily.breaches.map(b=>b.detail).join(' ');
+  }
   await Guards.retainState(store,userId,daily);
   await Guards.observe(store,userId,daily);
   return daily;

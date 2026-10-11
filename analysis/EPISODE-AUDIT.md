@@ -1,6 +1,21 @@
 # Full-playlist episode audit — running ledger
 
-## Current M81/M82 follow-through — 2026-10-11
+## Current M84/M85 follow-through — 2026-10-11
+
+**132:84done/2partial/46todo/0no-action**, exact eight groups.
+[Report](M84-M85-SESSION-JOURNAL.md): optional server-stamped manual duration
+warning, required three-line post-loss/core journal, explicit none/ack/hash,
+truthful close→prompt, gray marker/day counter, independently retained writing
+obligations/resolution.244/0 new measured checks. Actual native/no adapter API121/0
+both, bots205/1 both,20synthetic fills/0mismatches, unchanged>20sample failure.
+Original old fixture465/73 and aborts retained;584/0 declared-prerequisite isolation
+is NOT full M85 policy proof. M116 was already APPLIED; prior open-label corrected
+without retuning/extra closure. Core completeness is not whole-course screenshots/
+confluences/provenance/routine/state-gate completion; M87/M88/M89/M94/M106 stay open.
+Next M94 paired with M64/M14 routine and M108 meditation. Saved transcript quotes
+below remain authoritative; no new raw later transcript/timestamp claim.
+
+## Historical M81/M82 follow-through — 2026-10-11
 
 **132 findings:82 done/2 partial/48todo/0no-action**, exact eight groups.
 [Mechanism report](M81-M82-PROFIT-RISK.md): optional/configurable realised daily
@@ -13,7 +28,7 @@ M82's blanket drawdown prohibition was overbroad. Separate drawdown/day-loss
 controls and existing M98 grade map stay unchanged. Ep31's optional1% profit
 paragraph previously placed under M94 belongs to M81, not routine tracking.
 M85 is required post-loss reflection/completeness, not adaptive sizing; it,
-M84/M94/M111/M112/M116 and all unresolved findings remain open. Next M84→M85.
+M84/M94/M111/M112 (M116 was already APPLIED; earlier open-label corrected) and all unresolved findings remain open. Next M84→M85.
 Later raw transcripts unavailable locally; saved complete-transcript quotations
 below remain source evidence, with no invented timestamps or new raw fetch claim.
 

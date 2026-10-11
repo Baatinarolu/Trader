@@ -1,0 +1,289 @@
+{
+  "app": "/tmp/m85-core-stage/app",
+  "pass": 7,
+  "fail": 27,
+  "results": [
+    {
+      "label": "actual prospective entry requires explicit named emotional input400",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "permission": {
+            "allowed": true,
+            "can_override": false,
+            "state": "admitted",
+            "override_reason": null,
+            "action": "trade_entry",
+            "account_id": 3,
+            "evaluated_at": "2026-10-11T12:00:00.000Z",
+            "scope": "personal rules for this recorded action only, not broker execution or future permission"
+          },
+          "trade": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 3,
+            "symbol": "TEST",
+            "asset_class": "stocks",
+            "direction": "long",
+            "status": "open",
+            "opened_at": "2026-10-11T12:00:00.000Z",
+            "closed_at": null,
+            "entry": 100,
+            "exit": null,
+            "stop": 99,
+            "target": null,
+            "size": 1,
+            "fees": 0,
+            "gross_pnl": 0,
+            "net_pnl": 0,
+            "risk_amount": 1,
+            "r_multiple": 0,
+            "planned_r": null,
+            "mae_r": null,
+            "mfe_r": null,
+            "stop_moved": 0,
+            "exit_reason": "",
+            "notes": "",
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "session": "overlap",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": null,
+            "adherence": null,
+            "mistakes": "",
+            "mistakes_none": 0,
+            "journal_reviewed_at": null,
+            "journal_review_hash": null,
+            "tags": "",
+            "thesis": "",
+            "lesson": "",
+            "execution_notes": "",
+            "screenshot_url": "",
+            "manual_mae": null,
+            "manual_mfe": null,
+            "created_at": "2026-10-11 16:55:06",
+            "updated_at": "2026-10-11 16:55:06",
+            "legs": null,
+            "entries": null,
+            "guardrail_snapshot": "{\"date\":\"2026-10-11\",\"timezone\":\"UTC\",\"evaluated_at\":\"2026-10-11T12:00:00.000Z\",\"account_id\":3,\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":20,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":20,\"selected_at\":\"2026-10-11T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-11T12:00:00.000Z\",\"rule_date\":\"2026-10-11\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\",\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":20,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":20,\"selected_at\":\"2026-10-11T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-11T12:00:00.000Z\",\"rule_date\":\"2026-10-11\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\"},\"stats\":null,\"user\":{\"trades\":0},\"sample_sufficient\":false,\"min_trades_for_personal_guardrails\":30},\"today\":{\"trades\":0,\"closed\":0,\"realised\":0,\"r_sum\":0,\"avg_r\":0,\"loss_streak\":0,\"balance\":10000,\"loss_limit\":300,\"balance_basis\":\"day-start realised journal equity\"},\"profit_stop\":{\"enabled\":false,\"limit_pct\":null,\"limit_amount\":null,\"realised_amount\":0,\"selected_at\":\"2026-10-11T12:00:00.000Z\",\"balance_basis\":\"day-start realised journal equity\",\"timezone\":\"UTC\"},\"persistence\":{\"entry_count_basis\":\"monotonic observed journal entries plus server admissions, not inferred historical permission\",\"journal_entries\":0,\"retained_stops\":[]},\"breaches\":[],\"status\":\"clear\",\"remaining_trades\":20,\"post_loss\":{\"last_loss_trade_id\":null,\"last_loss_at\":null,\"entry_tf\":\"5m\",\"entry_tf_required\":false,\"cooldown_until\":null,\"next_candle_until\":null},\"message\":\"No personal stop. 20 entries remain under the preselected 20-entry cap. This is not market/setup approval.\",\"permission\":{\"allowed\":true,\"can_override\":false,\"state\":\"clear\"},\"session_time\":{\"account_id\":3,\"advisory\":true,\"evaluated_at\":\"2026-10-11T12:00:00.000Z\",\"timezone\":\"UTC\",\"saved_limit_minutes\":null,\"scope\":\"Manual marker only, not measured broker/chart screen time or execution permission\",\"state\":\"off\",\"limit_minutes\":null,\"elapsed_minutes\":null,\"started_at\":null,\"ended_at\":null,\"message\":\"Session-duration warning is Off (optional).\"},\"admission\":{\"allowed\":true,\"can_override\":false,\"state\":\"admitted\",\"override_reason\":null,\"action\":\"trade_entry\"},\"capture_basis\":\"fresh server admission state, valid only for this recorded action\"}",
+            "entry_permission": "admitted",
+            "override_reason": null,
+            "strategy_version": null,
+            "session_label": "London/NY Overlap",
+            "hour": 13,
+            "weekday": "Sun",
+            "weekday_index": 6,
+            "day": "2026-10-11",
+            "close_day": null,
+            "dir_sign": 1,
+            "is_win": false,
+            "is_loss": false,
+            "is_be": true,
+            "tags_arr": [],
+            "mistakes_arr": [],
+            "hold_minutes": null,
+            "risk_used": 1,
+            "legs_n": 0,
+            "weighted_exit": null,
+            "journal": {
+              "state": "awaiting_close",
+              "complete": false,
+              "missing": [],
+              "reflection_required": false,
+              "reviewed_at": null,
+              "scope": "Core journal; awaiting actual close, not entry permission"
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "invalid live-entry emotion type/length is400: true",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid live-entry emotion type/length is400: {}",
+      "passed": false,
+      "detail": 503
+    },
+    {
+      "label": "invalid live-entry emotion type/length is400: []",
+      "passed": false,
+      "detail": 503
+    },
+    {
+      "label": "invalid live-entry emotion type/length is400: \" \"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid live-entry emotion type/length is400: \"xxxxxxxxxxxxxxxxxxx",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "named emotion is capture input, not inferred calm-state permission",
+      "passed": true
+    },
+    {
+      "label": "truthful closed loss accepted before reflection is completed",
+      "passed": true
+    },
+    {
+      "label": "expired cooldown alone is insufficient: observed current-day loss has pending writing stop",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "actual next entry409 cannot bypass missing post-loss writing",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "existing known-stop single-action exception stays explicitly journaled",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "one-action exception does not mark reflection complete or unlock further entries",
+      "passed": false,
+      "detail": "clear"
+    },
+    {
+      "label": "truthful deletion allowed but cannot erase observed pending reflection",
+      "passed": false
+    },
+    {
+      "label": "deleted-loss next entry still409, not an admission reset",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "deleted-loss review still requires rule/mistake OR explicit none400",
+      "passed": false,
+      "detail": 404
+    },
+    {
+      "label": "actual retained-loss endpoint accepts three-line writing after row deletion",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "reflection endpoint creates no invented trade or admission",
+      "passed": true
+    },
+    {
+      "label": "completed writing resolves its own pending stop without rewriting historical stop capture",
+      "passed": false
+    },
+    {
+      "label": "completion retry does not rewrite first saved writing/timestamp",
+      "passed": false
+    },
+    {
+      "label": "truthful loss→win correction does not erase observed writing obligation",
+      "passed": false,
+      "detail": "clear"
+    },
+    {
+      "label": "explicit core review can acknowledge same corrected record and resolve its observed obligation",
+      "passed": false
+    },
+    {
+      "label": "reflection never waives original30-minute/full-next-candle rules",
+      "passed": false,
+      "detail": [
+        {
+          "rule": "post_loss_cooldown",
+          "detail": "After a loss, no new entry until 2026-10-11T12:29:00.000Z (30-minute cooldown).",
+          "until": "2026-10-11T12:29:00.000Z"
+        },
+        {
+          "rule": "no_next_candle",
+          "detail": "Do not enter the very next 5m candle after the loss; wait until 2026-10-11T12:05:00.000Z.",
+          "until": "2026-10-11T12:05:00.000Z"
+        }
+      ]
+    },
+    {
+      "label": "two completed reflections never clear a durable consecutive-loss day STOP",
+      "passed": false,
+      "detail": [
+        {
+          "rule": "consecutive_losses",
+          "detail": "2 consecutive closed losses today — stop for this rule day."
+        }
+      ]
+    },
+    {
+      "label": "past-day incomplete loss is visible backlog, not today reflection permission breach",
+      "passed": false,
+      "detail": "clear"
+    },
+    {
+      "label": "future close is not prematurely counted as actual current-day loss",
+      "passed": false,
+      "detail": "clear"
+    },
+    {
+      "label": "next UTC day has no prior-day pending breach, with old capture retained",
+      "passed": false,
+      "detail": "clear"
+    },
+    {
+      "label": "past-day pending record remains inspectable, never fabricated complete",
+      "passed": false
+    },
+    {
+      "label": "reflection stop is owned-account scoped, not a cross-account global lock",
+      "passed": true
+    },
+    {
+      "label": "foreign account cannot read pending/completed writing captures404",
+      "passed": true
+    },
+    {
+      "label": "retained writing captures require auth401",
+      "passed": true
+    },
+    {
+      "label": "six concurrent missing-reflection admissions all409/zero writes",
+      "passed": false,
+      "detail": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ]
+    },
+    {
+      "label": "failure to persist reflection rolls back core review fields/acknowledgement",
+      "passed": false,
+      "detail": "table absent"
+    },
+    {
+      "label": "unknown current-day realised result remains unavailable and unwaivable",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "unavailable reflection/read state still allows honest already-executed record-only truth",
+      "passed": true
+    }
+  ],
+  "scope": "Real auth/HTTP/SQL with mutable UTC/scripted P&L, durable pending/explicit writing and transactional admission/rollback; no provider/OHLC/pixel/broker/production claim"
+}

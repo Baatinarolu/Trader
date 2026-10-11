@@ -8,6 +8,40 @@
   const TAGS = ['A+ setup', 'B setup', 'News play', 'Pullback', 'Range', 'Breakout', 'Reversal', 'Trend day', 'Scaled in', 'Partial taken', 'Held overnight', 'Paper trade'];
   const EXIT_REASONS = ['Target', 'Stop loss', 'Trailing stop', 'Time stop', 'Discretionary win', 'Discretionary loss', 'Breakeven / scratch', 'Manual close', 'News exit'];
 
+  // Explicit core review; missing fields never silently become "no mistakes".
+  // Not broker-time capture provenance or screenshots/confluence completeness.
+  Views.openJournalReview = async function(id,{capture=null,onComplete=null}={}) {
+    let trade;
+    try{trade=capture?capture.snapshot:(await API.get('/trades/'+id)).trade;}
+    catch(e){return global.App.toast(e.message||'Trade not found','err');}
+    if(!capture && trade.status!=='closed')return global.App.toast('Record the actual close before completing its journal.','err');
+    const body=U.h('div');
+    body.innerHTML=`<p class="small muted">${capture?`Writing for the <b>observed</b> loss #${U.esc(capture.loss_trade_id)} · ${U.esc(trade.symbol)} · ${U.moneySign(trade.net_pnl)}. Corrected/deleted journal truth is not recreated.`:'Core review of the current closed journal record.'} Name what happened, the rule/mistake (or explicitly none), and what you would do differently. If entry emotion was not recorded, say so; do not reconstruct it as live capture.</p>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr"><label class="field"><span>Entry emotional state (or honestly not recorded)</span><input id="jr-before" maxlength="100" value="${U.esc(trade.emotion_before||'')}" /></label>
+      <label class="field"><span>Exit emotional state</span><input id="jr-after" maxlength="100" value="${U.esc(trade.emotion_after||'')}" /></label></div>
+      <label class="field"><span>1. What happened?</span><textarea id="jr-what" maxlength="2000">${U.esc(trade.execution_notes||'')}</textarea></label>
+      <label class="field"><span>2. What rule/mistake?</span><input id="jr-mistakes" maxlength="2000" value="${U.esc(trade.mistakes||'')}" /></label>
+      <label class="row gap-8"><input id="jr-none" type="checkbox" ${trade.mistakes_none===1?'checked':''} /><span>Explicitly followed plan; no mistakes to report (not inferred from a win)</span></label>
+      <label class="field"><span>3. What would you do differently / repeat?</span><textarea id="jr-different" maxlength="2000">${U.esc(trade.lesson||'')}</textarea></label>
+      <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
+    const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
+    return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
+      actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
+        const payload={emotion_before:f('jr-before').value,emotion_after:f('jr-after').value,execution_notes:f('jr-what').value,lesson:f('jr-different').value,mistakes:none.checked?'':f('jr-mistakes').value,mistakes_none:none.checked};
+        if([payload.emotion_before,payload.emotion_after,payload.execution_notes,payload.lesson].some(v=>!v.trim())||(!none.checked&&!payload.mistakes.trim()))return global.App.toast('Name both emotional states and complete all three reflection lines; choose mistakes or explicit none.','err');
+        try{await API.post(capture?'/journal/reflections/'+capture.id:'/trades/'+id+'/journal',payload);Store.invalidate();close();global.App.toast('Core journal acknowledged; other rule stops remain.','ok');if(onComplete)onComplete();else global.App.refresh();}
+        catch(e){global.App.toast(e.message||'Journal review could not be recorded.','err');}
+      }}]});
+  };
+  Views.lossWritingCard = function(writing={}) {
+    const node=U.h('div',{class:'card',style:'margin-top:14px'}),pending=writing.pending||[];
+    node.innerHTML=`<div class="card-head"><h3>Post-loss writing</h3><span class="chip ${pending.length?'warn':'muted'}">${writing.pending_count===undefined?'unavailable':pending.length+' pending'}</span></div>
+      <div class="tiny muted">Required after observed current-day losses: pause AND write. A reasoned action exception does not complete the reflection; other day stops/cooldowns remain. No pending loss does not mean every historical journal is complete.</div>
+      ${pending.map(p=>`<div class="row-between" style="padding:8px"><span class="small">Observed #${U.esc(p.loss_trade_id)} ${U.esc(p.snapshot?.symbol||'')} · ${U.moneySign(p.snapshot?.net_pnl)} · ${U.esc(p.observed_at)}</span><button class="btn sm" data-loss-reflect="${p.id}">Write reflection</button></div>`).join('')}`;
+    node.querySelectorAll('[data-loss-reflect]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(null,{capture:pending.find(p=>p.id===Number(b.dataset.lossReflect))})));
+    return node;
+  };
+
   Views.trades = {
     title: 'Trade log',
     async render(root) {
@@ -99,6 +133,7 @@
       r: trades.reduce((s, t) => s + (t.r_multiple || 0), 0),
       wins: trades.filter((t) => t.is_win).length,
     };
+    const closed=trades.filter(t=>t.status==='closed'),journaled=closed.filter(t=>t.journal?.complete).length;
     const draw = () => {
       const rows = [...trades].sort((a, b) => {
         const va = val(a, sortKey), vb = val(b, sortKey);
@@ -111,6 +146,7 @@
             <div><div class="l k-label">Showing</div><div class="mono">${trades.length}${total > trades.length ? ' / ' + total : ''}</div></div>
             <div><div class="k-label">Filtered net</div><div class="mono ${U.cls(sum.net)}">${U.moneySign(sum.net)}</div></div>
             <div><div class="k-label">Filtered R</div><div class="mono ${U.cls(sum.r)}">${U.signed(sum.r, 1)}R</div></div>
+            <div><div class="k-label">Core journal (loaded closed trades)</div><div class="mono">${journaled} / ${closed.length}</div></div>
             <div><div class="k-label">Win rate</div><div class="mono">${U.pct((sum.wins / trades.length) * 100, 1)}</div></div>
           </div>
           <div class="row" style="gap:8px">
@@ -123,7 +159,7 @@
             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
               ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', '']].map(([k, l]) =>
+              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Journal'], ['', '']].map(([k, l]) =>
               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
           </tr></thead>
           <tbody>
@@ -144,6 +180,7 @@
             <td class="tiny nowrap">${U.esc(t.session_label || '—')}</td>
             <td class="tiny"><span class="rating ${t.adherence >= 4 ? 'strong' : t.adherence <= 2 ? 'weak' : ''}">${U.rating(t.adherence)}</span></td>
             <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
+            <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
           </tr>`).join('')}
           </tbody>
@@ -154,9 +191,10 @@
         if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = -1; }
         draw();
       }));
+      U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
-        if (e.target.type === 'checkbox' || e.target.closest('[data-edit]')) return;
+        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal]')) return;
         global.App.openTrade(Number(tr.dataset.id));
       }));
       const chkAll = U.$('#chk-all', body);
@@ -254,7 +292,7 @@
         <label class="field"><span>MFE (best excursion, R)</span><input id="tf-mfe" type="number" step="any" value="${t.mfe_r ?? ''}" placeholder="e.g. 2.4" /></label>
         <label class="field"><span>Timeframe(s)</span><input id="tf-timeframes" value="${U.esc(t.timeframes || '')}" placeholder="H1 / M15" /></label>
 
-        <label class="field"><span>Emotion before</span><select id="tf-emo-before"><option value="">—</option>${list(EMOTIONS, t.emotion_before)}</select></label>
+        <label class="field"><span>Emotion before (required for prospective entry)</span><select id="tf-emo-before"><option value="">—</option>${list(EMOTIONS, t.emotion_before)}</select></label>
         <label class="field"><span>Emotion after</span><select id="tf-emo-after"><option value="">—</option>${list(EMOTIONS, t.emotion_after)}</select></label>
         <label class="field"><span>Confidence (1–5)</span><input id="tf-confidence" type="number" min="1" max="5" value="${t.confidence ?? ''}" /></label>
         <label class="field"><span>Rule adherence (1–5)</span><input id="tf-adherence" type="number" min="1" max="5" value="${t.adherence ?? ''}" /></label>
@@ -404,6 +442,7 @@
         screenshot_url: shotData || g('shot').value,
         rule_checks: U.$$('[data-chk]', chkWrap).map((c, i) => ({ label: c.parentElement.textContent.trim(), passed: c.checked })),
       };
+      if(requiresAdmission() && !body.emotion_before.trim())throw new Error('Name your emotional state before a prospective entry. Already-executed/historical truth can remain incomplete.');
       if (body.status === 'closed' && !body.exit) throw new Error('A closed trade needs an exit price (or set the status to Open).');
       if (!body.symbol) throw new Error('Symbol is required.');
       if (!body.entry) throw new Error('Entry price is required.');
@@ -452,6 +491,7 @@
     async function refreshGuard() {
       const request = ++guardRequest;
       const note = U.$('#tf-guardrail-state',node);
+      g('emo-before').required=requiresAdmission();
       if (!requiresAdmission()) {
         guard = null; note.textContent = 'Journal record/correction only. It records what happened; it does not authorise a new entry.';
         if (opts.onPermissionChange) opts.onPermissionChange(null); return;

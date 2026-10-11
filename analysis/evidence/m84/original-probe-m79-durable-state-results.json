@@ -1,0 +1,16 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 0,
+  "fail": 3,
+  "results": [
+    {
+      "label": "three actual entry POSTs exhaust the preselected cap",
+      "passed": false
+    },
+    {
+      "label": "each entry has an independently durable admission",
+      "passed": false
+    }
+  ],
+  "scope": "Real local HTTP/auth/transaction/CRUD/restart; explicit server clock; durable observed day stops and admission counter, not broker execution, live feeds or inferred legacy permissions"
+}

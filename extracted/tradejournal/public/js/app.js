@@ -364,7 +364,8 @@
         const t = d.trade || {};
         this.toast(`${id ? 'Updated' : 'Logged'} ${t.symbol} · ${U.R(t.r_multiple)}${t.net_pnl ? ' · ' + U.moneySign(t.net_pnl) : ''}`, t.net_pnl >= 0 ? 'ok' : 'warn');
         this.refresh();
-        if (andNew) this.openTrade(null);
+        if(t.status==='closed' && t.journal?.state==='incomplete' && Views.openJournalReview)await Views.openJournalReview(t.id,{onComplete:()=>{this.refresh();if(andNew)this.openTrade(null);}});
+        else if (andNew) this.openTrade(null);
       } catch (e) { this.toast(e.message, 'err'); }
     },
 
