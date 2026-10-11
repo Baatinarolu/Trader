@@ -6,11 +6,11 @@ to write** unless the groups below are an exact partition of `MISMATCHES.md` —
 missing, none duplicated, none invented. That assertion is what makes "nothing left out"
 a property of the file rather than a promise.
 
-**68 done · 2 partial · 62 todo · 0 deliberate no-action · 132 total**
+**69 done · 2 partial · 61 todo · 0 deliberate no-action · 132 total**
 
 ## A — scoring, vetoes & the tradeability gate  (setup.js)
 
-_14 of 16 done_
+_15 of 16 done_
 
 | item | ep | sev | status |
 |---|---|---|---|
@@ -19,7 +19,7 @@ _14 of 16 done_
 | M8 | Ep 25 | S2 | done |
 | M35 | Ep 11 | S3 | done |
 | M63 | Ep 17 | S2 | done |
-| M68 | Ep 18 | S2 | todo |
+| M68 | Ep 18 | S2 | done |
 | M69 | Ep 18 | S2 | done |
 | M70 | Ep 18 | S2 | done |
 | M95 | Ep 25 | S1 | done |

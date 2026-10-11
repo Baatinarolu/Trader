@@ -470,8 +470,23 @@ index 8e16034..ed4e333 100644
  
      // the plot box is often laid out after the first paint; observe it
      if (global.ResizeObserver) {
+diff --git a/tradejournal/public/js/tv.js b/tradejournal/public/js/tv.js
+index 4ca4e5e..2f7ce9d 100644
+--- a/tradejournal/public/js/tv.js
++++ b/tradejournal/public/js/tv.js
+@@ -125,7 +125,9 @@
+       if (!plan) return '';
+       const lv = plan.levels || plan;
+       const targets = (lv.targets || []).map((t) => `${t.label || t.role || 'T'} ${Number(t.price).toFixed(4)}`).join(' → ');
+-      return `${plan.action} ${symbol} ${tf} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
++      const model = plan.entry_model || lv.entry_model;
++      const execution = plan.entry_tf || lv.entry_tf;
++      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
+     },
+ 
+     /**
 diff --git a/tradejournal/public/js/views/analytics.js b/tradejournal/public/js/views/analytics.js
-index a3eb318..f9d364b 100644
+index a3eb318..a5dc09b 100644
 --- a/tradejournal/public/js/views/analytics.js
 +++ b/tradejournal/public/js/views/analytics.js
 @@ -23,6 +23,7 @@
@@ -482,8 +497,25 @@ index a3eb318..f9d364b 100644
              ['Trade outcomes', [['Total trades', k.trades, ''], ['Winners', `${k.wins} (${U.pct(k.win_rate, 1)})`, 'pos'], ['Losers', `${k.losses} (${U.pct(k.loss_rate, 1)})`, 'neg'], ['Break-even', k.breakevens, ''], ['Avg win', U.money(k.avg_win), 'pos'], ['Avg loss', U.money(-k.avg_loss), 'neg'], ['Largest win', U.money(k.best_trade), 'pos'], ['Largest loss', U.money(k.worst_trade), 'neg'], ['Best / worst R', `${U.signed(k.best_r, 1)}R / ${U.signed(k.worst_r, 1)}R`, '']]],
              ['Risk-adjusted', [['Sharpe (ann.)', U.num(k.sharpe, 2), k.sharpe > 1 ? 'pos' : ''], ['Sortino (ann.)', U.num(k.sortino, 2), k.sortino > 1 ? 'pos' : ''], ['SQN', U.num(k.sqn, 2), ''], ['Calmar', U.num(k.calmar, 2), ''], ['Recovery factor', U.num(k.recovery_factor, 2), ''], ['Std dev of R', U.num(k.std_r, 2), ''], ['Median R', U.signed(k.median_r, 2) + 'R', ''], ['Total R', U.signed(k.total_r, 1) + 'R', U.cls(k.total_r)], ['Profit concentration', U.pct(k.profit_concentration, 0), '']]],
              ['Discipline', [['Avg adherence', k.avg_adherence ? U.num(k.avg_adherence, 2) + ' / 5' : '—', ''], ['Risk consistency', '±' + U.pct(k.risk_consistency, 0), k.risk_consistency < 35 ? 'pos' : 'warn'], ['Avg risk / trade', U.money(k.avg_risk), ''], ['Avg risk % of balance', U.pct(k.avg_risk_pct_of_balance, 2), ''], ['Trades without stop', k.stops_overshot ? `${an.by_symbol.length ? '' : ''}${k.stops_overshot} over -1R` : '0', ''], ['Current streak', k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + ' wins' : Math.abs(k.streaks.current) + ' losses'), k.streaks.current_type === 'loss' ? 'neg' : 'pos'], ['Longest win streak', k.streaks.longest_win, ''], ['Longest loss streak', k.streaks.longest_loss, 'neg'], ['Trading days', `${k.trading_days} (${U.num(k.avg_trades_per_day, 1)}/day)`, '']]],
+@@ -207,14 +208,14 @@
+           const w = U.h('div', { class: 'grid' });
+           const defs = [
+             ['Playbook / setup', an.by_strategy], ['Instrument', an.by_symbol], ['Session', an.by_session],
+-            ['Direction', an.by_direction], ['Setup grade', an.by_grade], ['Asset class', an.by_asset],
++            ['Direction', an.by_direction], ['Setup grade', an.by_grade], ['Entry model', an.by_entry_model], ['Asset class', an.by_asset],
+             ['Emotion before entry', an.by_emotion], ['Tags', an.by_tag], ['Confidence', an.by_confidence], ['Adherence', an.by_adherence],
+           ];
+           defs.forEach(([title, rows]) => {
+             if (!rows || !rows.length) return;
+             const maxAbs = Math.max(1, ...rows.map((r) => Math.abs(r.net_pnl)));
+             const c = U.h('div', { class: 'card' });
+-            c.innerHTML = `<div class="card-head"><h3>${title}</h3><span class="spacer"></span><span class="tiny muted">${rows.length} groups</span></div>
++            c.innerHTML = `${title === 'Entry model' ? '<div class="muted bot-detail">Recorded closed trades only. Unknown is separate from none. Below 30 trades per model: descriptive only, no performance conclusion.</div>' : ''}<div class="card-head"><h3>${title}</h3><span class="spacer"></span><span class="tiny muted">${rows.length} groups</span></div>
+               <div class="table-wrap" style="max-height:300px"><table><thead><tr><th>Group</th><th class="num">n</th><th class="num">Win %</th><th class="num">Exp.</th><th class="num">PF</th><th class="num">Total R</th><th class="num">Net</th><th style="width:100px"></th></tr></thead>
+               <tbody>${rows.sort((a, b) => b.net_pnl - a.net_pnl).map((r) => `<tr><td>${U.esc(r.key)}</td><td class="num">${r.trades}</td><td class="num">${U.pct(r.win_rate, 0)}</td>
+                 <td class="num ${U.cls(r.expectancy_r)}">${U.signed(r.expectancy_r, 2)}R</td><td class="num">${r.profit_factor === null ? '∞' : U.num(r.profit_factor, 2)}</td>
 diff --git a/tradejournal/public/js/views/bots.js b/tradejournal/public/js/views/bots.js
-index 2222ac3..ba9a373 100644
+index 2222ac3..c655462 100644
 --- a/tradejournal/public/js/views/bots.js
 +++ b/tradejournal/public/js/views/bots.js
 @@ -13,6 +13,11 @@
@@ -614,7 +646,7 @@ index 2222ac3..ba9a373 100644
      /* the CRT plan, when there is one */
      if (td.crt_plan) {
        const p = td.crt_plan;
-@@ -363,7 +417,8 @@
+@@ -363,9 +417,11 @@
      // a size is only claimed when the method has actually graded the setup:
      // "conviction none · half size" would be a promise the engine is not making
      const tier = n.conviction && String(n.conviction).toUpperCase();
@@ -623,8 +655,59 @@ index 2222ac3..ba9a373 100644
 +    else if (tier === 'A' || tier === 'B') head.appendChild(h('span', { class: 'chip muted', text: `conviction ${tier} · nothing armed` }));
      else head.appendChild(h('span', { class: 'chip muted', text: 'no conviction yet — nothing to size' }));
      head.appendChild(h('span', { class: 'chip', text: `steps ${n.steps_done}/${n.steps_total}` }));
++    if (n.entry_model && n.entry_model !== 'none') head.appendChild(h('span', { class: 'chip info', text: `${n.entry_model} · ${n.entry_tf}` }));
      card.appendChild(head);
-@@ -1161,8 +1216,10 @@
+ 
+     // the four facts a decision needs, side by side
+@@ -566,6 +622,7 @@
+       card.appendChild(h('div', { class: 'card-head', html: `<strong class="${c.dir > 0 ? 'pos' : 'neg'}">${heading} · ${esc(c.grade)}</strong> <span class="muted">${esc(c.grade_label || '')} — score ${c.score}/100 (${c.passed}/${c.total_checks} checks)${isCall ? '' : ' · the entry model only'}</span>` }));
+       if (dirAllowed && c.dir !== dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: 'This side is not the one the higher timeframe permits — it is shown for context only, and no order belongs here.' }));
+       else if (!dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: `The method has not permitted a side yet${(d.topdown && d.topdown.blocked) ? ' (it is blocking this market)' : ''}, so this is the entry model's best read rather than a trade. Nothing here is armed.` }));
++      if (c.entry_model) card.appendChild(h('div', { class: 'muted bot-detail', text: `Entry model: ${c.entry_model} · ${c.entry_tf || 'no lower model'} · ${c.entry_model_state || ''}` }));
+       if (c.levels) {
+         const L = c.levels;
+         const rows = (L.targets || []).map((t) => `<tr><td>${esc(t.role)}</td><td>${esc(t.label)}</td><td class="mono">${fmt(t.price, 5)}</td><td class="mono">${t.rr}R</td></tr>`).join('');
+@@ -607,8 +664,8 @@
+           direction: c.dir > 0 ? 'long' : 'short',
+           entry: L.entry, stop: L.stop, target: L.targets[0] ? L.targets[0].price : null,
+           size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
+-          planned_r: L.rr_final, setup_grade: c.grade, session: (d.smc.sessions || {}).killzone || '',
+-          timeframes: d.timeframe.toUpperCase(), strategy_name: 'Market Mechanics',
++          planned_r: L.rr_final, setup_grade: c.grade, entry_model: c.entry_model, entry_tf: c.entry_tf, entry_evidence: c.entry_evidence, session: (d.smc.sessions || {}).killzone || '',
++          timeframes: c.entry_tf ? `${d.timeframe} POI / ${c.entry_tf} entry` : d.timeframe.toUpperCase(), strategy_name: 'Market Mechanics',
+           thesis: `${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
+           tags: 'bot,smc', adherence: 5,
+         });
+@@ -821,6 +878,11 @@
+     const grid = h('div', { class: 'bot-grid' });
+     const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
+ 
++    if (B.data && B.data.topdown && B.data.topdown.entry_setup && B.data.topdown.entry_setup.applies) {
++      pane.appendChild(h('div', { class: 'card bot-warn', text: 'Historical research above uses legacy entry geometry. Live probabilities and refined legacy plans are withheld for the current named LTF execution until separately calibrated.' }));
++      return;
++    }
++
+     /* live probabilities */
+     const live = h('div', { class: 'card' });
+     live.appendChild(h('div', { class: 'card-head', html: `<strong>Live setups</strong> <span class="muted">probability to reach the first target before the stop</span>` }));
+@@ -1094,13 +1156,15 @@
+       <td>#${g.id}</td><td><b>${esc(g.symbol)}</b> <span class="muted">${esc(g.timeframe)}</span></td>
+       <td class="${g.dir > 0 ? 'pos' : 'neg'}">${esc(g.side.toUpperCase())}</td>
+       <td>${esc(g.grade)} <span class="muted">${g.score}</span></td>
++      <td>${esc(g.entry_model == null ? 'unknown' : g.entry_model)}${g.entry_tf ? ' · ' + esc(g.entry_tf) : ''}</td>
+       <td class="mono">${g.p_win == null ? '—' : g.p_win + '%'}</td>
+       <td class="mono">${fmt(g.entry, 5)}</td><td class="mono">${fmt(g.stop, 5)}</td>
+       <td class="mono">${g.rr_final ? g.rr_final + 'R' : '—'}</td>
+       <td>${g.status === 'pending' ? '<span class="chip info">pending</span>' : g.status === 'win' ? '<span class="chip pos">win</span>' : g.status === 'loss' ? '<span class="chip neg">loss</span>' : `<span class="chip muted">${esc(g.status)}</span>`}</td>
+       <td class="mono">${g.outcome_r == null ? '—' : g.outcome_r + 'R'}</td>
+       <td class="muted-2">${esc(String(g.created_at || '').slice(0, 16))}</td></tr>`).join('');
+-    pane.appendChild(h('div', { class: 'card', html: `<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Market</th><th>Side</th><th>Grade</th><th>P(win)</th><th>Entry</th><th>Stop</th><th>Final R:R</th><th>Status</th><th>R</th><th>Saved</th></tr></thead><tbody>${rows}</tbody></table></div>` }));
++    pane.appendChild(h('div', { class: 'card', html: `<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Market</th><th>Side</th><th>Grade</th><th>Entry model</th><th>P(win)</th><th>Entry</th><th>Stop</th><th>Final R:R</th><th>Status</th><th>R</th><th>Saved</th></tr></thead><tbody>${rows}</tbody></table></div>` }));
++    if ((st.by_entry_model || []).length) pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Resolved signals by entry model</strong></div><div class="muted bot-detail">Unknown is not inferred. Under 30 resolved signals per model: descriptive only.</div><div class="table-wrap"><table class="table"><thead><tr><th>Model</th><th>Resolved</th><th>Win %</th><th>Expectancy</th><th>Sample</th></tr></thead><tbody>${st.by_entry_model.map((x) => `<tr><td>${esc(x.entry_model)}</td><td>${x.resolved}</td><td>${x.win_rate}%</td><td>${x.expectancy_r}R</td><td>${x.sample_ready ? '30+ recorded' : 'thin sample'}</td></tr>`).join('')}</tbody></table></div>` }));
+     if ((st.by_grade || []).length) {
+       pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Signal quality by grade</strong></div><div class="table-wrap"><table class="table"><thead><tr><th>Grade</th><th>Resolved</th><th>Win rate</th><th>Expectancy</th></tr></thead><tbody>${st.by_grade.map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.resolved}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('')}</tbody></table></div>` }));
+     }
+@@ -1161,8 +1225,10 @@
          const sym = B.symbol, tf = B.tf;
          const trim = B.trim || 0;
          Promise.all([
@@ -678,6 +761,49 @@ index b72afdb..6d78f3c 100644
                default_checklist: (Store.user.settings.default_checklist || []),
              });
              await Store.reloadAll(); global.App.toast('Preferences saved', 'ok');
+diff --git a/tradejournal/public/js/views/trades.js b/tradejournal/public/js/views/trades.js
+index ffdec3d..fb2c891 100644
+--- a/tradejournal/public/js/views/trades.js
++++ b/tradejournal/public/js/views/trades.js
+@@ -122,7 +122,7 @@
+           <thead><tr>
+             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
+             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
+-              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['session_label', 'Session'],
++              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+               ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', '']].map(([k, l]) =>
+               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
+           </tr></thead>
+@@ -140,6 +140,7 @@
+             <td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+             <td class="tiny nowrap">${U.esc(t.strategy_name || '<span class="muted">untagged</span>').replace(/&lt;|&gt;/g, '')}</td>
+             <td class="tiny">${U.esc(t.setup_grade || '—')}</td>
++            <td class="tiny nowrap">${U.esc(t.entry_model == null ? 'Unknown' : t.entry_model)}${t.entry_tf ? ' · ' + U.esc(t.entry_tf) : ''}</td>
+             <td class="tiny nowrap">${U.esc(t.session_label || '—')}</td>
+             <td class="tiny"><span class="rating ${t.adherence >= 4 ? 'strong' : t.adherence <= 2 ? 'weak' : ''}">${U.rating(t.adherence)}</span></td>
+             <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
+@@ -232,6 +233,12 @@
+         <label class="field"><span>Setup grade</span>
+           <select id="tf-grade"><option value="">—</option>${list(['A+', 'A', 'B', 'C', 'D'], t.setup_grade)}</select>
+         </label>
++        <label class="field"><span>Entry model</span>
++          <select id="tf-entrymodel"><option value="" ${t.entry_model == null ? 'selected' : ''}>Unknown / not recorded</option>
++            ${[['market_shift', 'Market shift'], ['flip', 'Flip'], ['none', 'None (explicitly no named model)']].map(([v, name]) => `<option value="${v}" ${t.entry_model === v ? 'selected' : ''}>${name}</option>`).join('')}</select>
++          <div class="field-note">Record the actual model; old untagged trades are never guessed.</div>
++        </label>
++        <label class="field"><span>Entry timeframe</span><input id="tf-entrytf" value="${U.esc(t.entry_tf || '')}" placeholder="e.g. 5m" /></label>
+         <label class="field"><span>Exit reason</span>
+           <select id="tf-exitreason"><option value="">—</option>${list(EXIT_REASONS, t.exit_reason)}</select>
+         </label>
+@@ -377,6 +384,8 @@
+         strategy_id: g('strategy').value || null,
+         strategy_name: g('strategy').value ? (Store.strategyById(g('strategy').value) || {}).name : '',
+         setup_grade: g('grade').value,
++        entry_model: g('entrymodel').value || null, entry_tf: g('entrytf').value || null,
++        entry_evidence: g('entrymodel').value === t.entry_model && g('entrytf').value === (t.entry_tf || '') ? t.entry_evidence || null : null,
+         exit_reason: g('exitreason').value,
+         planned_r: g('plannedr').value,
+         mae_r: g('mae').value, mfe_r: g('mfe').value,
 diff --git a/tradejournal/scripts/bots-test.js b/tradejournal/scripts/bots-test.js
 index c463eda..7622dec 100644
 --- a/tradejournal/scripts/bots-test.js
@@ -714,10 +840,10 @@ index c463eda..7622dec 100644
    ok(resolve.json.stats && typeof resolve.json.stats.total === 'number', `stats: ${resolve.json.stats.total} tracked, ${resolve.json.stats.resolved} resolved`);
 diff --git a/tradejournal/scripts/fixtures/countertrend-fixture.js b/tradejournal/scripts/fixtures/countertrend-fixture.js
 new file mode 100644
-index 0000000..1373200
+index 0000000..5a5d74a
 --- /dev/null
 +++ b/tradejournal/scripts/fixtures/countertrend-fixture.js
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,108 @@
 +'use strict';
 +/** Controlled, time-consistent structural INPUTS for M33, NOT historical prices.
 + * Unlike the old slope-only walk, both structural directions and break events
@@ -760,15 +886,23 @@ index 0000000..1373200
 +  htf.premium_discount = { range_low: 90, range_high: 110, position_pct: 32.5, zone: 'discount' };
 +  const mtf = base('15m', { trend: trend(execDir), last_break: mtfBreak, breaks: [mtfBreak] });
 +  mtf.htf_structure = htf.structure;
-+  mtf.order_blocks = [zone(96.2, 96.8, execDir, mtfBreak.t - 900000)];
++  mtf.order_blocks = [zone(96.2, 96.8, execDir, mtfBreak.t - 900000, { displacement_t: mtfBreak.t, displacement_i: mtfBreak.i })];
 +  mtf.fvgs = [{ dir: execDir, bottom: execDir < 0 ? 96.4 : mirror(96.6),
 +    top: execDir < 0 ? 96.6 : mirror(96.4), i: mi - 8, t: END - 8 * 900000,
 +    size_atr: 0.2, filled: false }];
 +  mtf.sweeps = [sweep(12, 900000, 97.6)];
 +  mtf.displacement = [{ dir: execDir, i: mi - 6, t: mtfBreak.t, rangeAtr: 1.5, bodyRatio: 0.85 }];
 +  const ltf = base('5m', { trend: trend(execDir), last_break: ltfBreak, breaks: [ltfBreak] });
-+  ltf.sweeps = [sweep(3, 300000, 97)];
-+  ltf.displacement = []; // shift alone is valid; do not invent an expansion bar in this fixture
++  ltf.sweeps = [{ ...sweep(3, 300000, 97), close: mirror(96.65) }];
++  // M68: a DIFFERENT LTF OB actually creates this shift. Explicit structural
++  // inputs, not OHLC-only discovery; the candles below match its origin/leg/retest.
++  ltf.displacement = [{ dir: execDir, t: ltfBreak.t, i: ltfBreak.i, rangeAtr: 1.2, bodyRatio: .83 }];
++  ltf.order_blocks = [zone(96.3, 97, execDir, END - 3 * 300000, {
++    i: 116, mid: mirror(96.65), body_mid: mirror(96.55), mitigated: true,
++    displacement_i: 117, displacement_t: ltfBreak.t,
++    structure_causes: [{ displacement_i: 117, displacement_t: ltfBreak.t,
++      shift: { ...ltfBreak, close: mirror(95.6), confirmed: true } }],
++  })];
 +  const pack = (tf, step, smc) => {
 +    const candles = bars(tf, step);
 +    // Match the explicitly supplied sweep/shift facts to their candle geometry.
@@ -777,21 +911,82 @@ index 0000000..1373200
 +      if (b) { if (sp.dir < 0) b.h = Math.max(b.h, sp.extreme); else b.l = Math.min(b.l, sp.extreme); b.c = sp.close; }
 +    }
 +    const lb = smc.structure.last_break, b = candles.find((x) => x.t === lb.t);
-+    if (b && tf !== '4h') { b.c = mirror(tf === '15m' ? 95.3 : 96.3); b.h = Math.max(b.h, b.c); b.l = Math.min(b.l, b.c); }
++    if (b && tf !== '4h') { b.c = mirror(tf === '15m' ? 95.3 : 95.6); b.h = Math.max(b.h, b.c); b.l = Math.min(b.l, b.c); }
++    if (tf === '5m') {
++      const origin = candles[116], leg = candles[117];
++      origin.o = mirror(96.45); origin.c = mirror(96.65);
++      leg.o = mirror(96.6); leg.c = mirror(95.6);
++      leg.h = execDir < 0 ? 96.7 : mirror(95.5);
++      leg.l = execDir < 0 ? 95.5 : mirror(96.7);
++    }
 +    // Preserve the LTF excursion in the containing medium candle.
 +    if (tf === '15m') for (const sp of ltf.sweeps) {
-+      const b = candles.find((x) => x.t >= sp.t && x.t < sp.t + 900000);
++      const b = candles.find((x) => x.t <= sp.t && x.t + 900000 > sp.t);
 +      if (b) { if (sp.dir < 0) b.h = Math.max(b.h, sp.extreme); else b.l = Math.min(b.l, sp.extreme); }
 +    }
-+    return { tf, candles, smc, price: smc.price,
++    return { tf, candles, smc, price: smc.price, observed_at: END + 300000,
 +    atr: 1, bars: 120, ind: { ok: true, score: (smc.structure.trend === 'bullish' ? 1 : -1) * 50,
 +      ind: { atr_rank: 50, atr_pct: 1, rsi14: 50, macd: { hist: execDir }, adx14: 25 },
 +      groups: [], metrics: [], notes: [] },
 +    meta: { provider: 'controlled-fixture', last_bar: new Date(candles.at(-1).t).toISOString(), ticker: 'TEST', warnings: ['Not market data.'] } };
 +  };
-+  return { END, execDir, htfDir, target: mirror(92.5),
-+    input: { symbol: 'TEST', tf: '15m', series: pack('15m', 900000, mtf),
-+      biasSeries: pack('4h', 14400000, htf), triggerSeries: pack('5m', 300000, ltf) } };
++  const input = { symbol: 'TEST', tf: '15m', series: pack('15m', 900000, mtf),
++    biasSeries: pack('4h', 14400000, htf), triggerSeries: pack('5m', 300000, ltf) };
++  // Keep every overlapping complete bucket physically coherent. Structural
++  // inputs remain explicit, but even a fixture may not erase its child excursion.
++  for (const sp of mtf.sweeps) {
++    const b = input.triggerSeries.candles.find((x) => x.t === sp.t);
++    if (b) { if (execDir < 0) b.h = sp.extreme; else b.l = sp.extreme; }
++  }
++  const legEnd = input.triggerSeries.candles.find((x) => x.t === mtfBreak.t + 600000);
++  if (legEnd) { legEnd.c = mirror(95.3); if (execDir < 0) legEnd.l = Math.min(legEnd.l, legEnd.c); else legEnd.h = Math.max(legEnd.h, legEnd.c); }
++  const sync = (parent, children, step, count) => {
++    for (const p of parent) {
++      const members = children.filter((b) => b.t >= p.t && b.t < p.t + step);
++      if (members.length) Object.assign(p, { o: members[0].t === p.t ? members[0].o : p.o, c: members.at(-1).c,
++        h: Math.max(...members.map((b) => b.h)), l: Math.min(...members.map((b) => b.l)),
++        v: members.reduce((n, b) => n + b.v, 0) });
++    }
++  };
++  sync(input.series.candles, input.triggerSeries.candles, 900000, 3);
++  sync(input.biasSeries.candles, input.series.candles, 14400000, 16);
++  return { END, execDir, htfDir, target: mirror(92.5), input };
++};
+diff --git a/tradejournal/scripts/fixtures/entry-model-fixture.js b/tradejournal/scripts/fixtures/entry-model-fixture.js
+new file mode 100644
+index 0000000..f2bd3f3
+--- /dev/null
++++ b/tradejournal/scripts/fixtures/entry-model-fixture.js
+@@ -0,0 +1,30 @@
++'use strict';
++/** Explicit M68 structural-input composition cases, NOT OHLC-only discovery. */
++const counter = require('./countertrend-fixture');
++module.exports = function fixture(dir = -1, model = 'market_shift') {
++  const f = counter(dir), low = f.input.triggerSeries, mirror = (x) => dir < 0 ? x : 200 - x;
++  if (model === 'flip') {
++    low.smc.order_blocks = [];
++    low.smc.breakers = [{ kind: 'breaker', dir, side: dir > 0 ? 'demand' : 'supply',
++      bottom: dir < 0 ? 96.4 : mirror(96.8), top: dir < 0 ? 96.8 : mirror(96.4),
++      mid: mirror(96.6), i: 115, t: f.END - 4 * 300000,
++      origin: { t: f.END - 5 * 300000, side: dir > 0 ? 'supply' : 'demand' },
++      failed_reaction: true, broke_structure: true, confirmed: true,
++      reaction_point: mirror(96.9), retested: true, strength: 1.2, distance_atr: 0,
++      structure_break: { ...low.smc.structure.last_break, close: mirror(95.6), confirmed: true },
++      confirmed_at: low.smc.structure.last_break.t,
++      post_confirmation_mitigation_t: low.candles[118].t }];
++    low.candles[115] = { ...low.candles[115], o: mirror(96.5), c: mirror(96.1),
++      h: dir < 0 ? 96.6 : mirror(96), l: dir < 0 ? 96 : mirror(96.6) };
++  }
++  if (model === 'flip') for (const [parent, child, ms] of [
++    [f.input.series.candles, low.candles, 900000], [f.input.biasSeries.candles, f.input.series.candles, 14400000]]) {
++    for (const p of parent) {
++      const members = child.filter((b) => b.t >= p.t && b.t < p.t + ms);
++      if (members.length) Object.assign(p, { o: members[0].t === p.t ? members[0].o : p.o,
++        c: members.at(-1).c, h: Math.max(...members.map((b) => b.h)), l: Math.min(...members.map((b) => b.l)),
++        v: members.reduce((n, b) => n + b.v, 0) });
++    }
++  }
++  return f;
 +};
 diff --git a/tradejournal/scripts/now-test.js b/tradejournal/scripts/now-test.js
 index e5a185d..62681e2 100644
@@ -1446,14 +1641,14 @@ index 5aeb214..7b7911a 100644
      daily: state,
 diff --git a/tradejournal/src/bots/entry-models.js b/tradejournal/src/bots/entry-models.js
 new file mode 100644
-index 0000000..6dfe447
+index 0000000..52a81fc
 --- /dev/null
 +++ b/tradejournal/src/bots/entry-models.js
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,188 @@
 +'use strict';
 +/** Named entry composition (Ep 18). This module contains no IO/account state.
 + * M70's selection policy is shared by the legacy opt-in breaker selector and
-+ * the pending two-model LTF composer (M68). Geometry, not strength, defines extreme.
++ * the two-model LTF composer (M68). Geometry, not strength, defines extreme.
 + */
 +const number = (v) => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
 +function preferExtreme({ chosen, flipZones = [], orderBlocks = [], sweeps = [], dir, enabled = true }) {
@@ -1479,11 +1674,170 @@ index 0000000..6dfe447
 +    note: 'Ep 18: prefer the unmitigated extreme zone over an overlapping flip zone; take the liquidity beyond the failed reaction first.' };
 +}
 +module.exports = { preferExtreme };
++
++const MODELS = ['flip', 'market_shift', 'none'];
++function normaliseName(v) {
++  if (v == null || v === '') return null; // Unknown history is NOT an explicit "none".
++  if (typeof v !== 'string') throw new Error('entry_model must be a string or unspecified');
++  const name = v.trim().toLowerCase();
++  if (!MODELS.includes(name)) throw new Error('entry_model must be flip, market_shift, none, or unspecified');
++  return name;
++}
++function duration(tf) {
++  const m = /^(\d+)(m|h|d|w)$/.exec(String(tf || ''));
++  return m ? Number(m[1]) * ({ m: 60000, h: 3600000, d: 86400000, w: 604800000 })[m[2]] : null;
++}
++const sign = (d) => d === 'up' || d === 'bullish' ? 1 : d === 'down' || d === 'bearish' ? -1 : Math.sign(Number(d));
++function sameBreak(a, b) {
++  return !!(a && b && number(a.t) !== null && a.t === b.t && sign(a.dir) === sign(b.dir)
++    && number(a.level) !== null && a.level === b.level);
++}
++const overlaps = (a, b) => a && b && a.bottom <= b.top && a.top >= b.bottom;
++
++/** Ep18's physical sequence, not a pattern-name guess. `poi` is the SAME MTF
++ * selector used by Setup. Known unmet conditions refuse a named execution; missing
++ * layers remain unknown (M8). Caller retains HTF narrative/session/phase/RR gates.
++ * A cause must survive OB dedup and verify against the actual CLOSED LTF candle.
++ */
++function compose({ medium, lower, dir, poi, useBreakers = false, observedAt = Date.now(),
++  maxSweepAge = 25, maxShiftAge = 8 }) {
++  const result = { applies: false, entry_model: 'none', entry_tf: lower ? lower.tf : null,
++    state: 'unknown', ready: false, reasons: [], zone: null, sweep: null, shift: null,
++    displacement: null, atr: number(lower && lower.atr) > 0 ? number(lower.atr) : null, point_of_interest: null, mitigation_at: null, preference: null };
++  const wait = (state, reason) => { result.state = state; result.reasons.push(reason); return result; };
++  const mediumMs = duration(medium && medium.tf), lowMs = duration(lower && lower.tf);
++  if (!mediumMs || !lowMs || lowMs >= mediumMs || !lower.smc || lower.smc.ok === false
++      || !(lower.candles || []).length || !(medium.candles || []).length)
++    return wait('unknown', 'Distinct lower-timeframe model data is unavailable; no named model is inferred.');
++  result.applies = true;
++  const closed = lower.candles.filter((b) => number(b.t) !== null && b.t + lowMs <= observedAt);
++  const z = poi && poi.zone;
++  if (!z) return wait('waiting_poi', 'No eligible MTF order-block point of interest (a standalone FVG is not enough).');
++  const meta = z.meta || {};
++  const formed = number(meta.is_breaker ? meta.confirmed_at : meta.displacement_t);
++  if (formed === null) {
++    result.applies = false;
++    return wait('unknown', 'MTF POI formation time is unknown; no named sequence is invented.');
++  }
++  result.point_of_interest = { tf: medium.tf, kind: z.kind, bottom: z.bottom, top: z.top,
++    mid: z.mid, origin_t: meta.t, formed_at: formed + mediumMs, mitigation_at: null };
++  const touch = closed.find((b) => b.t >= formed + mediumMs && b.l <= z.mid && b.h >= z.mid);
++  if (!touch) return wait('waiting_poi', `Wait for midpoint mitigation of the ${medium.tf} POI before looking for a lower model.`);
++  result.point_of_interest.mitigation_at = touch.t;
++  const low = lower.smc, shift = low.structure && low.structure.last_break;
++  const sb = shift && closed.find((b) => b.t === shift.t);
++  const age = sb ? closed.length - 1 - closed.indexOf(sb) : null;
++  if (!sb || sign(shift.dir) !== dir || number(shift.level) === null || age < 0 || age > maxShiftAge
++      || !(dir > 0 ? sb.c > shift.level : sb.c < shift.level))
++    return wait('waiting_shift', 'Wait for a recent closed LTF structural break in the execution direction; a label or displacement alone is not a shift.');
++  result.shift = { ...shift, close: sb.c, bars_ago: age, confirmed: true };
++  const sweep = (low.sweeps || []).filter((s) => {
++    const b = closed.find((c) => c.t === s.t);
++    return b && b.l <= z.top && b.h >= z.bottom && sign(s.dir) === dir && s.t >= touch.t && s.t < shift.t
++      && closed.length - 1 - closed.indexOf(b) <= maxSweepAge && number(s.level) !== null
++      && number(s.extreme) !== null
++      && (dir > 0 ? b.l < s.level && b.c > s.level : b.h > s.level && b.c < s.level);
++  }).sort((a, b) => b.t - a.t)[0];
++  if (!sweep) return wait('waiting_sweep', 'Wait for a closed LTF liquidity sweep at/after POI mitigation, strictly before the shift; intrabar ordering is not guessed.');
++  const sweepBar = closed.find((b) => b.t === sweep.t);
++  result.sweep = { ...sweep, close: sweepBar.c, extreme: dir > 0 ? sweepBar.l : sweepBar.h };
++  const obs = (low.order_blocks || []).filter((ob) => sign(ob.dir) === dir && !ob.breached && overlaps(ob, z)
++    && number(ob.t) !== null && ob.t >= touch.t && ob.t <= shift.t
++    && number(ob.bottom) !== null && number(ob.top) !== null && ob.top > ob.bottom
++    && (ob.structure_causes || []).some((c) => {
++      const b = closed.find((x) => x.t === c.displacement_t);
++      return b && lower.candles[c.displacement_i] && lower.candles[c.displacement_i].t === c.displacement_t
++        && lower.candles[ob.i] && lower.candles[ob.i].t === ob.t && ob.i < c.displacement_i
++        && lower.candles[c.shift && c.shift.i] && lower.candles[c.shift.i].t === shift.t
++        && c.displacement_t >= sweep.t && c.displacement_t <= shift.t
++        && c.shift && c.shift.confirmed === true && sameBreak(c.shift, shift)
++        && c.shift.i >= c.displacement_i && c.shift.i <= c.displacement_i + 1;
++    }));
++  const flips = useBreakers ? (low.breakers || []).filter((b) => sign(b.dir) === dir && overlaps(b, z)
++    && b.confirmed === true && b.failed_reaction === true && b.structure_break
++    && b.structure_break.confirmed === true && sameBreak(b.structure_break, shift)
++    && number(b.reaction_point) !== null && (dir > 0 ? sb.c > b.reaction_point : sb.c < b.reaction_point)
++    && number(b.t) !== null && b.t >= touch.t && b.t < shift.t
++    && number(b.bottom) !== null && number(b.top) !== null && b.top > b.bottom)
++    .map((b) => ({ ...b, is_breaker: true, fresh: true, breached: false })) : [];
++  const scored = obs.concat(flips).map((ob) => ({ zone: ob,
++    score: (number(ob.strength) || 0) + Math.max(0, 1 - (number(ob.distance_atr) || 0) / 6) * .5 }))
++    .sort((a, b) => b.score - a.score);
++  let chosen = scored[0];
++  if (!chosen) return wait('waiting_zone', 'The shift has no causally linked LTF order block or opted-in confirmed flip. Do not substitute the MTF zone or an arbitrary FVG.');
++  // A market-shift OB is being CREATED by this shift: it is unmitigated at
++  // confirmation. Hold the extreme preference through its subsequent pullback,
++  // rather than losing it precisely when live `mitigated` becomes true.
++  const policyObs = obs.map((ob) => ({ ...ob, mitigated: false }));
++  const physicalSweeps = (low.sweeps || []).filter((s) => {
++    const b = closed.find((c) => c.t === s.t);
++    return b && number(s.extreme) !== null && number(s.level) !== null
++      && (sign(s.dir) > 0 ? b.l < s.level && b.c > s.level : b.h > s.level && b.c < s.level);
++  }).map((s) => {
++    const b = closed.find((c) => c.t === s.t);
++    return { ...s, close: b.c, extreme: sign(s.dir) > 0 ? b.l : b.h };
++  });
++  const pref = preferExtreme({ chosen, orderBlocks: policyObs, flipZones: flips,
++    sweeps: physicalSweeps, dir });
++  if (pref) { chosen = { zone: pref.zone }; result.preference = { rule: 'extreme_over_flip', fuel: pref.fuel, blocked: pref.blocked }; }
++  const entryZone = chosen.zone;
++  const entry = number(entryZone.is_breaker ? entryZone.mid : entryZone.body_mid) ?? number(entryZone.mid);
++  if (entry === null || number(entryZone.mid) === null || entry < entryZone.bottom || entry > entryZone.top)
++    return wait('waiting_zone', 'The causal lower entry zone has no valid entry/midpoint price.');
++  result.entry_model = entryZone.is_breaker ? 'flip' : 'market_shift';
++  const fuelSweep = pref && pref.fuel.sweep_t !== null ? physicalSweeps.find((s) => s.t === pref.fuel.sweep_t && sign(s.dir) === dir) : null;
++  result.stop_sweep = fuelSweep && (dir > 0 ? fuelSweep.extreme < result.sweep.extreme : fuelSweep.extreme > result.sweep.extreme)
++    ? fuelSweep : result.sweep;
++  result.zone = { kind: entryZone.is_breaker ? 'flip_zone' : 'order_block', dir,
++    bottom: entryZone.bottom, top: entryZone.top, mid: entryZone.mid, entry,
++    origin_t: entryZone.origin ? entryZone.origin.t : entryZone.t,
++    formation_t: shift.t, meta: entryZone,
++    overlap: (low.fvgs || []).find((g) => !g.filled && sign(g.dir) === dir && overlaps(g, entryZone)) || null };
++  result.displacement = (low.displacement || []).find((d) => d.t >= sweep.t && d.t <= shift.t && sign(d.dir) === dir) || null;
++  const after = closed.filter((b) => b.t > shift.t);
++  if (after.some((b) => dir > 0 ? b.c < entryZone.bottom : b.c > entryZone.top))
++    return wait('invalidated', 'The lower entry zone closed through after confirmation; remove the model.');
++  const mitigated = after.find((b) => b.l <= entryZone.mid && b.h >= entryZone.mid && b.l <= entry && b.h >= entry);
++  result.mitigation_at = mitigated ? mitigated.t : null;
++  if (pref && pref.blocked) return wait('waiting_fuel', `Extreme-over-flip: wait for ${pref.fuel.type} beyond the failed reaction (${pref.fuel.price}) to be swept.`);
++  const price = number(closed.at(-1) && closed.at(-1).c);
++  if (!mitigated || price === null || price < entryZone.bottom || price > entryZone.top)
++    return wait('waiting_pullback', `Wait for a post-shift midpoint pullback into the ${lower.tf} ${result.entry_model} zone; no pullback means no trade.`);
++  if (!(result.atr > 0)) return wait('waiting_atr', 'The LTF ATR is unknown; do not borrow the MTF buffer to invent a named-model stop.');
++  result.state = 'ready'; result.ready = true;
++  result.atr = number(lower.atr) > 0 ? number(lower.atr) : null;
++  return result;
++}
++module.exports = { preferExtreme, compose, MODELS, normaliseName, duration, sameBreak };
++
++/** Compact immutable decision snapshot for output/signals/journal, not all candles. */
++function evidence(model) {
++  if (!model || !model.applies) return null;
++  return { model: model.entry_model, tf: model.entry_tf, atr: model.atr, state: model.state,
++    poi: model.point_of_interest, sweep: model.sweep, stop_sweep: model.stop_sweep || model.sweep, shift: model.shift,
++    zone: model.zone ? { kind: model.zone.kind, bottom: model.zone.bottom, top: model.zone.top,
++      entry: model.zone.entry, origin_t: model.zone.origin_t, formation_t: model.zone.formation_t } : null,
++    mitigation_at: model.mitigation_at, preference: model.preference };
++}
++module.exports.evidence = evidence;
++
++/** Nullable, bounded JSON snapshot. Retagging a manual journal record cannot
++ * silently retain contradictory automatic evidence from a different model/TF. */
++function encodeEvidence(v, model, tf = null) {
++  if (v == null || v === '' || model == null || model === 'none') return null;
++  const data = typeof v === 'string' ? JSON.parse(v) : v;
++  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('entry_evidence must be a JSON object');
++  if (data.model !== model || (tf && data.tf !== tf)) return null;
++  const encoded = JSON.stringify(data);
++  if (encoded.length > 16000) throw new Error('entry_evidence exceeds 16000 characters');
++  return encoded;
++}
++module.exports.encodeEvidence = encodeEvidence;
 diff --git a/tradejournal/src/bots/index.js b/tradejournal/src/bots/index.js
-index 0007b01..68f58dc 100644
+index 0007b01..fd5fd97 100644
 --- a/tradejournal/src/bots/index.js
 +++ b/tradejournal/src/bots/index.js
-@@ -16,7 +16,7 @@
+@@ -16,17 +16,40 @@
   *      so the bot's own hit rate is on the record (no vibes, no cherry-picking).
   */
  
@@ -1492,7 +1846,11 @@ index 0007b01..68f58dc 100644
  const I = require('../instruments');
  const M = require('../market');
  const C = require('../candles');
-@@ -27,6 +27,28 @@ const Now = require('./now');
+ const Momentum = require('./momentum');
+ const SMC = require('./smc');
+ const Setup = require('./setup');
++const Entry = require('./entry-models');
+ const Now = require('./now');
  const Predict = require('./predict');
  const Cor = require('./correction');
  
@@ -1521,7 +1879,7 @@ index 0007b01..68f58dc 100644
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
  
-@@ -97,6 +119,130 @@ function specOf(symbol) {
+@@ -97,6 +120,130 @@ function specOf(symbol) {
  const floorRR = (v) => (Number(v) > 0 ? Number(v) : 1);   // the trader's minimum R:R
  const runRR = (v) => Math.max(2, floorRR(v));              // the setup model's 1:2 runway
  
@@ -1652,7 +2010,13 @@ index 0007b01..68f58dc 100644
  async function analyse(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const spec = specOf(sym);
-@@ -114,18 +260,27 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -109,23 +256,32 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   const replay = trim > 0 || cut.asOf ? cut : null;
+ 
+   const [momentum, news] = await Promise.all([
+-    Momentum.analyse(sym, tf, { limit: 600, ...cut, minRR: floorRR(opts.minRR) }),
++    Momentum.analyse(sym, tf, { limit: 600, ...cut, minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.nowMs }),
+     newsCheck(sym, opts.newsWindowMin || 45),
    ]);
  
    // the setup model needs the raw trading-timeframe handle (zones, sweeps, indicators)
@@ -1679,17 +2043,29 @@ index 0007b01..68f58dc 100644
 -    balance, riskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
 +    balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
      newsBlackout: news.blackout, minRR: floorRR(opts.minRR),
-     topdown: momentum.topdown,          // the method decides whether a side may be armed
+-    topdown: momentum.topdown,          // the method decides whether a side may be armed
++    topdown: momentum.topdown, useBreakers: !!opts.useBreakers,          // the method decides whether a side may be armed
 +    sessionPref: opts.sessionPref || null,   // M26 — the trader's one window
    });
  
    let prediction = null;
-@@ -139,11 +294,11 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -137,13 +293,22 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+     }
+   }
  
++  // Historical legacy research has DIFFERENT entry/stop/target geometry. Keep
++  // its historical table, but never turn it into live named-model probabilities.
++  if (prediction && momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) {
++    prediction = { ...prediction, setups: [], buy: null, sell: null, live_model_calibration: 'unvalidated',
++      withheld_for_entry_model: momentum.topdown.entry_setup.entry_model,
++      summary: ['Historical results use legacy research geometry, not this named LTF execution.',
++        'Live probabilities and refined legacy plans are withheld until separately calibrated.'] };
++  }
++
    // blend: the setup's own grade + the market's measured edge + this setup's probability
    const best = setups.candidates[0] || null;
 -  const predRow = prediction && prediction.setups && best ? prediction.setups.find((p) => p.dir === best.dir) : null;
-+  const predRow = !momentum.topdown.countertrend && prediction && prediction.setups && best ? prediction.setups.find((p) => p.dir === best.dir) : null;
++  const predRow = !(momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) && !momentum.topdown.countertrend && prediction && prediction.setups && best ? prediction.setups.find((p) => p.dir === best.dir) : null;
    let daily = null;
    if (opts.userId) { try { daily = await Cor.dailyState(opts.userId, { accountId: opts.accountId }); } catch (e) { daily = null; } }
  
@@ -1698,7 +2074,18 @@ index 0007b01..68f58dc 100644
  
  
    // The method's own verdict, kept separate from the setup model's. Anything
-@@ -189,7 +344,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -168,8 +333,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+     // build the *untrimmed* read as well, so a replay can say what happened after
+     const L2 = Momentum.topdown.layersFor(tf);
+     const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
+-    const ltfRaw = L2.trigger_tf === tf ? null : await Momentum.series(sym, L2.trigger_tf, 400);
+-    const tdNow = Momentum.topdown.build({ symbol: sym, tf, series: full[0], biasSeries: full[1], triggerSeries: ltfRaw || full[0], opts: { minRR: floorRR(opts.minRR) } });
++    const ltfRaw = L2.trigger_tf === tf ? null : await Momentum.series(sym, L2.trigger_tf, 400, { closedOnly: opts.entryModels !== false, observedAt: opts.nowMs });
++    const tdNow = Momentum.topdown.build({ symbol: sym, tf, series: full[0], biasSeries: full[1], triggerSeries: ltfRaw || full[0], opts: { minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.nowMs || undefined } });
+     replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
+   }
+   const now = Now.build({
+@@ -189,7 +354,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      method_verdict: methodVerdict,
      topdown: td,
      momentum: {
@@ -1714,18 +2101,26 @@ index 0007b01..68f58dc 100644
        alignment: momentum.alignment, mechanics: momentum.mechanics,
        narrative: momentum.narrative, conflicts: momentum.conflicts,
        htf: momentum.htf, quote: momentum.quote, series: momentum.series,
-@@ -227,8 +389,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -213,6 +385,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+       direction: prediction.direction, setups: prediction.setups, buy: prediction.buy, sell: prediction.sell,
+       model: prediction.model, backtest: prediction.backtest, summary: prediction.summary,
+       current: predRow || null, error: prediction.error || null,
++      live_model_calibration: prediction.live_model_calibration || null, withheld_for_entry_model: prediction.withheld_for_entry_model || null,
+     } : null,
+     news,
+     daily,
+@@ -227,8 +400,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
    parts.push(`${sym} ${tf}: ${v.action}${v.grade && v.grade !== 'no-trade' ? ` (${v.grade}, ${v.score}/100)` : ''} — ${v.headline}`);
    if (td.headline) parts.push(`${td.status === 'confirmed' ? 'Method: confirmed' : 'Method: waiting'} — ${td.headline}`);
    if (td.playbook && td.playbook.length) parts.push(`Next: ${td.playbook[0]}`);
 -  if (predRow && predRow.p_win != null) parts.push(`Modelled chance ${predRow.p_win}% to the first target (${predRow.similar_setups} similar setups, expected ${predRow.expected_r}R).`);
 -  if (prediction && prediction.backtest && prediction.backtest.expectancy_r != null) parts.push(`This market/timeframe shows ${prediction.backtest.expectancy_r > 0 ? '+' : ''}${prediction.backtest.expectancy_r}R expectancy over ${prediction.backtest.decided} resolved setups.`);
-+  if (!td.countertrend && predRow && predRow.p_win != null) parts.push(`Modelled chance ${predRow.p_win}% to the first target (${predRow.similar_setups} similar setups, expected ${predRow.expected_r}R).`);
-+  if (!td.countertrend && prediction && prediction.backtest && prediction.backtest.expectancy_r != null) parts.push(`This market/timeframe shows ${prediction.backtest.expectancy_r > 0 ? '+' : ''}${prediction.backtest.expectancy_r}R expectancy over ${prediction.backtest.decided} resolved setups.`);
++  if (!(td.entry_setup && td.entry_setup.applies) && !td.countertrend && predRow && predRow.p_win != null) parts.push(`Modelled chance ${predRow.p_win}% to the first target (${predRow.similar_setups} similar setups, expected ${predRow.expected_r}R).`);
++  if (!(td.entry_setup && td.entry_setup.applies) && !td.countertrend && prediction && prediction.backtest && prediction.backtest.expectancy_r != null) parts.push(`This market/timeframe shows ${prediction.backtest.expectancy_r > 0 ? '+' : ''}${prediction.backtest.expectancy_r}R expectancy over ${prediction.backtest.decided} resolved setups.`);
    if (news.blackout) parts.push(`NEWS BLACKOUT: ${news.blackout}`);
    if (daily && daily.status !== 'clear') parts.push(`Personal guardrail: ${daily.message}`);
    if (momentum.conflicts.length) parts.push(`Caution: ${momentum.conflicts.join(' ')}`);
-@@ -266,6 +428,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -266,6 +439,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
   * @param {string} tf
   * @param {{bars?:number, userId?:number, accountId?:number, minRR?:number, balance?:number, riskPct?:number}} opts
   */
@@ -1733,16 +2128,21 @@ index 0007b01..68f58dc 100644
  async function chart(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const bars = Math.min(Math.max(Number(opts.bars) || 400, 80), 1200);
-@@ -279,7 +442,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -279,30 +453,35 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // never disagree about the same market (they did once: the chart asked for 200
    // higher-timeframe candles and the method read a different range from them).
    const [entry, bias, triggerRaw] = await Promise.all([
 -    Momentum.series(sym, tf, bars, cut),
 +    Momentum.series(sym, tf, METHOD_ENTRY_BARS, cut),   // M124: the method's window, NOT `bars`
      Momentum.series(sym, L.bias_tf, 400, cut),
-     L.trigger_tf === tf ? Promise.resolve(null) : Momentum.series(sym, L.trigger_tf, 400, cut),
+-    L.trigger_tf === tf ? Promise.resolve(null) : Momentum.series(sym, L.trigger_tf, 400, cut),
++    L.trigger_tf === tf ? Promise.resolve(null) : Momentum.series(sym, L.trigger_tf, 400, { ...cut, closedOnly: opts.entryModels !== false, observedAt: opts.nowMs }),
    ]);
-@@ -290,19 +453,24 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   const trig = triggerRaw || entry;
+ 
+-  const td = Momentum.topdown.build({ symbol: sym, tf, series: entry, biasSeries: bias, triggerSeries: trig, opts: { minRR: floorRR(opts.minRR) } });
++  const td = Momentum.topdown.build({ symbol: sym, tf, series: entry, biasSeries: bias, triggerSeries: trig, opts: { minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: cut.asOf || opts.nowMs || undefined } });
+   entry.smc.crt = Momentum.crtView(td, tf);
  
    const biasTrend = bias.smc.structure ? bias.smc.structure.trend : 'ranging';
    const momentum = {
@@ -1764,23 +2164,24 @@ index 0007b01..68f58dc 100644
    const setups = Setup.buildSetups(entry.smc, {
 -    price: entry.price, atr: entry.atr, bias: momentum.bias, biasReason: td.headline,
 -    indicators: entry.ind, balance, riskPct, valuePerPoint: spec.value_per_point,
+-    assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td,
 +    price: entry.price, atr: entry.atr, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
 +    indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
-     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td,
++    assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
 +    sessionPref: opts.sessionPref || null,   // M26
    });
  
    // The plan drawn on the chart: the method's own CRT plan when it has one,
-@@ -311,7 +479,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -311,7 +490,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
    const crt = td.crt_plan;
    const best = setups.candidates.find((c) => c.levels && c.dir === td.direction) || setups.candidates[0] || null;
    let plan = null;
 -  if (crt && td.direction !== 0) {
-+  if (crt && td.direction !== 0 && !td.blocked && best && best.ok) {
++  if (crt && td.direction !== 0 && !td.blocked && best && best.ok && !['flip', 'market_shift'].includes(best.entry_model)) {
      plan = {
        source: 'crt', dir: crt.dir, side: crt.side, method: td.method.name,
        entry: crt.safer.entry, stop: crt.safer.stop,
-@@ -325,9 +493,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -325,9 +504,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
        },
        note: `${crt.side} after the ${crt.sweep.level} sweep failed to hold · ${crt.target_note}`,
      };
@@ -1788,11 +2189,11 @@ index 0007b01..68f58dc 100644
 +  } else if (best && best.ok && best.levels && !td.blocked) {
      plan = {
 -      source: 'setup', dir: best.dir, side: best.side, method: null,
-+      source: td.countertrend ? 'countertrend-pullback' : 'setup', dir: best.dir, side: best.side, method: td.countertrend ? td.method.name : null,
++      source: td.countertrend ? 'countertrend-pullback' : 'setup', entry_model: best.entry_model || null, entry_tf: best.entry_tf || null, dir: best.dir, side: best.side, method: td.countertrend ? td.method.name : null,
        ...best.levels,
        entry_status: best.levels.entry_status,
      };
-@@ -349,7 +517,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -349,7 +528,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const stack = {
      bias: {
@@ -1801,7 +2202,7 @@ index 0007b01..68f58dc 100644
        structure: bias.smc.structure ? bias.smc.structure.trend : null,
        state: td.layers.bias.state,
        level: td.layers.bias.range ? { low: td.layers.bias.range.low, high: td.layers.bias.range.high, label: 'CRT range' } : null,
-@@ -387,17 +555,28 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -387,17 +566,29 @@ async function chart(symbol, tf = '15m', opts = {}) {
        last_price: entry.meta.last_price, warnings: entry.meta.warnings,
        sources: { bias: `${L.bias_tf} via ${bias.meta.provider}`, trigger: `${trig.tf} via ${trig.meta.provider}` },
      },
@@ -1822,6 +2223,7 @@ index 0007b01..68f58dc 100644
 +      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok,
 +        // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
 +        // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
++        entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence,
 +        no_trade: c.no_trade || [], levels: c.levels, action: c.action })),
      },
      quote: { price: entry.price, atr: entry.atr, change_pct: entry.candles.length > 1 ? r2(((entry.price - entry.candles[0].c) / entry.candles[0].c) * 100) : null },
@@ -1829,12 +2231,16 @@ index 0007b01..68f58dc 100644
  }
  
 -async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3 } = {}) {
-+async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, sessionPref = null } = {}) {
++async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, sessionPref = null, useBreakers = false, entryModels } = {}) {
    const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
    const rows = [];
    let cursor = 0;
-@@ -409,9 +588,16 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
-           Momentum.analyse(sym, tf, { limit: 400 }),
+@@ -406,12 +597,19 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+       const sym = list[cursor++];
+       try {
+         const [momentum, series] = await Promise.all([
+-          Momentum.analyse(sym, tf, { limit: 400 }),
++          Momentum.analyse(sym, tf, { limit: 400, useBreakers, entryModels }),
            Momentum.series(sym, tf, 400),
          ]);
 +        // M50: a scan is a real observation of the market, so it reads and updates the same state
@@ -1843,15 +2249,16 @@ index 0007b01..68f58dc 100644
 +        const scanHyst = await applyBiasHysteresis(sym, tf, momentum, series);
          const specs = Setup.buildSetups(series.smc, {
 -          price: series.price, atr: series.atr, bias: momentum.bias, biasReason: momentum.alignment.reason,
+-          indicators: series.ind, minRR: 2, topdown: momentum.topdown,
 +          price: series.price, atr: series.atr, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
-           indicators: series.ind, minRR: 2, topdown: momentum.topdown,
++          indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
 +          sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
 +                         // No symbol on this path either, so the pair-conflict note stays
 +                         // null rather than false.
          });
          // one row per market: the side the method permits (a scan that lists both
          // a buy and a sell for the same symbol is not a scan, it is a coin toss)
-@@ -421,7 +607,11 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -421,10 +619,15 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
          rows.push({
            symbol: sym, timeframe: tf, ok: true,
            price: series.price, atr: series.atr,
@@ -1863,8 +2270,59 @@ index 0007b01..68f58dc 100644
 +          bias_held: scanHyst.held, bias_changed_because: scanHyst.changed_because,
            mechanics: momentum.mechanics.score, mechanics_grade: momentum.mechanics.grade,
            action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
-           setup_side: best ? best.side : null,
-@@ -530,10 +720,12 @@ async function savePlan(userId, p = {}) {
+-          setup_side: best ? best.side : null,
++          setup_side: best ? best.side : null, entry_model: best ? best.entry_model : null,
++          entry_tf: best ? best.entry_tf : null, entry_evidence: best ? best.entry_evidence : null,
+           entry_status: best && best.levels ? best.levels.entry_status : null,
+           entry: best && best.levels ? best.levels.entry : null,
+           stop: best && best.levels ? best.levels.stop : null,
+@@ -469,6 +672,7 @@ async function ensureSignalsTable() {
+     rr_primary REAL, rr_final REAL,
+     mechanics REAL,
+     sentiment TEXT,           -- the read-aloud headline at the time
++    entry_model TEXT, entry_tf TEXT, entry_evidence TEXT,
+     entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf
+     mtf_tf TEXT,
+     risk_atr REAL,
+@@ -486,7 +690,8 @@ async function ensureSignalsTable() {
+   const cols = await db.prepare('PRAGMA table_info(bot_signals)').all();
+   const have = new Set((cols || []).map((c) => c.name));
+   for (const [name, type] of [['entry_mode', 'TEXT'], ['mtf_tf', 'TEXT'], ['risk_atr', 'REAL'],
+-    ['method_state', 'TEXT'], ['method_dir', 'INTEGER'], ['method_blocked', 'INTEGER']]) {
++    ['method_state', 'TEXT'], ['method_dir', 'INTEGER'], ['method_blocked', 'INTEGER'],
++    ['entry_model', 'TEXT'], ['entry_tf', 'TEXT'], ['entry_evidence', 'TEXT']]) {
+     if (!have.has(name)) await db.exec(`ALTER TABLE bot_signals ADD COLUMN ${name} ${type}`);
+   }
+ }
+@@ -505,6 +710,8 @@ async function savePlan(userId, p = {}) {
+   if (!symbol || !Number.isFinite(entry) || !Number.isFinite(stop) || entry === stop) {
+     return { saved: 0, reason: 'symbol, entry and stop (entry ≠ stop) are required' };
+   }
++  const model = Entry.normaliseName(p.entry_model);
++  const evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
+   const dir = stop < entry ? 1 : -1;
+   const risk = Math.abs(entry - stop);
+   const prices = (Array.isArray(p.targets) ? p.targets : [])
+@@ -514,14 +721,15 @@ async function savePlan(userId, p = {}) {
+   const rr = (price) => (price == null ? null : Math.round((Math.abs(price - entry) / risk) * 100) / 100);
+   const info = await db.prepare(`INSERT INTO bot_signals
+     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final,
+-     mechanics, sentiment, entry_mode, mtf_tf, risk_atr)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++     mechanics, sentiment, entry_mode, mtf_tf, risk_atr, entry_model, entry_tf, entry_evidence)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     userId, symbol, timeframe, dir, dir > 0 ? 'long' : 'short',
+-    p.grade || null, p.score == null ? null : Number(p.score), p.p_win == null ? null : Number(p.p_win),
++    p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.p_win == null ? null : Number(p.p_win),
+     entry, stop, t1, t2, rr(t1), rr(t2),
+     p.mechanics == null ? null : Number(p.mechanics), p.note ? String(p.note).slice(0, 400) : null,
+     p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
+     Number.isFinite(Number(p.risk_atr)) ? Number(p.risk_atr) : null,
++    model, p.entry_tf || null, evidence,
+   );
+   return { saved: 1, ids: [info.lastInsertRowid] };
+ }
+@@ -530,22 +738,25 @@ async function savePlan(userId, p = {}) {
  async function saveSignals(userId, payload) {
    await ensureSignalsTable();
    const cands = (payload.setups && payload.setups.candidates ? payload.setups.candidates : [])
@@ -1879,20 +2337,81 @@ index 0007b01..68f58dc 100644
    // (method_state / method_blocked) so the ledger can later be split into
    // "the method approved this" and "the setup model liked it anyway".
    const td = payload.topdown || null;
-@@ -545,7 +737,7 @@ async function saveSignals(userId, payload) {
+   const ins = await db.prepare(`INSERT INTO bot_signals
+     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final, mechanics, sentiment,
+-     method_state, method_dir, method_blocked)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
++     method_state, method_dir, method_blocked, entry_model, entry_tf, entry_evidence)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+   let saved = 0;
    const out = [];
    for (const c of cands) {
      const L = c.levels;
 -    const predRow = payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
-+    const predRow = !(td && td.countertrend) && payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
++    const model = Entry.normaliseName(c.entry_model || L.entry_model);
++    const predRow = !['flip', 'market_shift'].includes(model) && !(td && td.countertrend) && payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
      const info = await ins.run(
        userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
        predRow ? predRow.p_win : null,
+@@ -555,6 +766,7 @@ async function saveSignals(userId, payload) {
+       payload.momentum ? payload.momentum.mechanics.score : null,
+       payload.headline ? payload.headline.text.slice(0, 400) : null,
+       td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
++      model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
+     );
+     out.push(info.lastInsertRowid);
+     saved++;
+@@ -633,9 +845,13 @@ async function signalStats(userId) {
+   const resolved = all.filter((s) => ['win', 'loss', 'expired'].includes(s.status));
+   const wins = resolved.filter((s) => s.status === 'win');
+   const byGrade = {};
++  const byModel = {};
+   for (const s of resolved) {
+     const b = byGrade[s.grade] || (byGrade[s.grade] = { grade: s.grade, n: 0, wins: 0, r: 0 });
+     b.n++; if (s.status === 'win') b.wins++; b.r += s.outcome_r || 0;
++    const name = s.entry_model == null ? 'unknown' : s.entry_model;
++    const model = byModel[name] || (byModel[name] = { entry_model: name, resolved: 0, wins: 0, r: 0 });
++    model.resolved++; if (s.status === 'win') model.wins++; model.r += s.outcome_r || 0;
+   }
+   return {
+     total: all.length,
+@@ -646,6 +862,8 @@ async function signalStats(userId) {
+     win_rate: resolved.length ? r2((wins.length / resolved.length) * 100) : null,
+     total_r: r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0)),
+     expectancy_r: resolved.length ? r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0) / resolved.length) : null,
++    by_entry_model: Object.values(byModel).map((m) => ({ entry_model: m.entry_model, resolved: m.resolved,
++      win_rate: r2(m.wins / m.resolved * 100), expectancy_r: r2(m.r / m.resolved), sample_ready: m.resolved >= 30 })),
+     by_grade: Object.values(byGrade).map((b) => ({ grade: b.grade, resolved: b.n, win_rate: r2((b.wins / b.n) * 100), expectancy_r: r2(b.r / b.n) })).sort((a, b) => String(a.grade).localeCompare(String(b.grade))),
+   };
+ }
 diff --git a/tradejournal/src/bots/momentum.js b/tradejournal/src/bots/momentum.js
-index 2e664e5..9b9fce6 100644
+index 2e664e5..49b12c5 100644
 --- a/tradejournal/src/bots/momentum.js
 +++ b/tradejournal/src/bots/momentum.js
-@@ -110,7 +110,7 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -66,6 +66,13 @@ async function series(symbol, tf, limit = 500, opts = {}) {
+     const kept = candles.filter((c) => Number(c.t) < cut);
+     if (kept.length >= 60) candles = kept;
+   }
++  // M68: named LTF evidence AND its ATR/zone ranking must see only candles
++  // available at the observation clock, before any indicator/SMC calculation.
++  if (opts.closedOnly) {
++    const step = require('./entry-models').duration(tf);
++    const clock = Number(opts.asOf || opts.observedAt || Date.now());
++    if (step) candles = candles.filter((b) => Number(b.t) + step <= clock);
++  }
+   if (candles.length !== trimmedFrom) {
+     // The meta must describe the candles the analysis actually used, or the chart
+     // caption and the "read from" line would quote the live bar during a replay.
+@@ -76,7 +83,7 @@ async function series(symbol, tf, limit = 500, opts = {}) {
+   const ind = Ind.snapshot(candles);
+   const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null });
+   const last = candles[candles.length - 1];
+-  return { tf, candles, meta, ind, smc, price: last.c, atr: smc.atr || ind.atr || 0, bars: candles.length };
++  return { tf, candles, meta, ind, smc, price: last ? last.c : null, atr: smc.atr || ind.atr || 0, bars: candles.length };
+ }
+ 
+ /* ══════════════════════════════════════════════════════ 1. the hierarchy ═══ */
+@@ -110,7 +117,7 @@ function alignment(htf, mtf, ltf, td = null) {
        tf: mtf.tf, weight: 2, role: 'location', job: 'premium/discount · zone · gap',
        bias: indScore(mtf), trend: mtfTrend,
        decisive: mtfTrend !== 'ranging',
@@ -1901,7 +2420,7 @@ index 2e664e5..9b9fce6 100644
      },
      {
        tf: ltf.tf, weight: 1, role: 'trigger', job: 'confirmation only',
-@@ -121,14 +121,18 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -121,14 +128,18 @@ function alignment(htf, mtf, ltf, td = null) {
    ];
  
    /* --- direction: higher timeframe first, then its CRT, then nothing ------ */
@@ -1922,7 +2441,7 @@ index 2e664e5..9b9fce6 100644
      bias = crtDir;
      source = `CRT confirmed on ${htf.tf}`;
    } else if (structDir) {
-@@ -150,7 +154,9 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -150,7 +161,9 @@ function alignment(htf, mtf, ltf, td = null) {
    const ltfAgainst = bias !== 0 && ltfTrend !== 'ranging' && (ltfTrend === 'bullish' ? 1 : -1) === -bias;
    const conflict = !!(td && td.conflicts && td.conflicts.some((c) => c.blocks_trade));
  
@@ -1933,7 +2452,7 @@ index 2e664e5..9b9fce6 100644
      ? `Higher timeframe first: ${htf.tf} structure reads ${htfTrend}${crtState ? ` and its CRT range is "${crtState}"` : ''} — with no decisive higher-timeframe read there is no direction to trade.${source.startsWith(`${htf.tf} ranging`) ? ' A lower-timeframe trend is not a substitute for the higher-timeframe bias.' : ''}`
      : `${htf.tf} decides direction (${bias > 0 ? 'long' : 'short'}) from ${source}. `
        + `${agree ? `All three layers line up: ${rows.map((r) => `${r.tf} ${r.trend}`).join(', ')}.` : ''}`
-@@ -160,9 +166,10 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -160,9 +173,10 @@ function alignment(htf, mtf, ltf, td = null) {
  
    return {
      rows, score, bias, agree, conflict, reason,
@@ -1946,7 +2465,7 @@ index 2e664e5..9b9fce6 100644
      trends: { bias: htfTrend, location: mtfTrend, trigger: ltfTrend },
    };
  }
-@@ -174,7 +181,104 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -174,7 +188,104 @@ function alignment(htf, mtf, ltf, td = null) {
   * The first factor is the method itself, not an indicator average.
   * @param {object} p { htf, mtf, ltf, align, td }
   */
@@ -2052,7 +2571,7 @@ index 2e664e5..9b9fce6 100644
    const smc = mtf.smc;
    const ind = mtf.ind;
    const sessions = smc.sessions || {};
-@@ -220,7 +324,14 @@ function mechanics({ htf, mtf, ltf, align, td = null }) {
+@@ -220,7 +331,14 @@ function mechanics({ htf, mtf, ltf, align, td = null }) {
      `${zone ? `Fresh ${zone.side} zone ${zone.bottom}–${zone.top} within ${zone.distance_atr} ATR. ` : 'No fresh zone near price. '}${pd ? `Price sits at ${pd.position_pct}% of the ${pd.range_low}–${pd.range_high} dealing range (${pd.zone}).` : ''}`);
  
    /* 6. session quality (6) */
@@ -2068,7 +2587,7 @@ index 2e664e5..9b9fce6 100644
  
    /* 7. volatility regime (4) */
    const rank = ind.ind ? ind.ind.atr_rank : null;
-@@ -302,9 +413,20 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
+@@ -302,9 +420,20 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
      });
    }
    if (pd) {
@@ -2091,7 +2610,7 @@ index 2e664e5..9b9fce6 100644
      });
    }
    if (td && td.steps) {
-@@ -319,7 +441,7 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
+@@ -319,7 +448,7 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
  
    /* ---- conflicts: sentences for the API, structured objects for the UI ---- */
    const detail = (td && td.conflicts ? td.conflicts.slice() : []);
@@ -2100,7 +2619,7 @@ index 2e664e5..9b9fce6 100644
      detail.push({
        kind: 'indicators-against-bias',
        sides: `${mtf.tf} indicators read ${ind.score} against a ${align.bias > 0 ? 'long' : 'short'} bias`,
-@@ -355,7 +477,7 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
+@@ -355,7 +484,7 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
  
  /** The live CRT read, in the shape the API/UI already consume as `smc.crt`. */
  function crtView(td, tf) {
@@ -2109,7 +2628,7 @@ index 2e664e5..9b9fce6 100644
    const L = td.layers.bias;
    const plan = L.plan;
    const price = td.price;
-@@ -396,16 +518,17 @@ function regimeOf(htf) {
+@@ -396,16 +525,17 @@ function regimeOf(htf) {
  async function analyse(symbol, tf = '15m', opts = {}) {
    const L = TD.layersFor(tf);
    const cut = { trim: opts.trim || 0, asOf: opts.asOf || null };
@@ -2120,28 +2639,30 @@ index 2e664e5..9b9fce6 100644
 -    L.trigger_tf === tf ? null : series(symbol, L.trigger_tf, opts.ltfLimit || 400, cut),
 +    loadSeries(symbol, L.bias_tf, opts.htfLimit || 400, cut),
 +    loadSeries(symbol, tf, opts.limit || 600, cut),
-+    L.trigger_tf === tf ? null : loadSeries(symbol, L.trigger_tf, opts.ltfLimit || 400, cut),
++    L.trigger_tf === tf ? null : loadSeries(symbol, L.trigger_tf, opts.ltfLimit || 400, { ...cut, closedOnly: opts.entryModels !== false, observedAt: opts.observedAt }),
    ]);
    const ltf = ltfRaw || mtf;
  
 -  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR } });
-+  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR, counterTrend: opts.counterTrend, useBreakers: opts.useBreakers } });
++  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR, counterTrend: opts.counterTrend, useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.asOf || opts.observedAt } });
    const align = alignment(htf, mtf, ltf, td);
 -  const mech = mechanics({ htf, mtf, ltf, align, td });
 +  const mech = mechanics({ htf, mtf, ltf, align, td, symbol });
    const read = narrative({ symbol, mtf, htf, ltf, align, mech, td });
    mtf.smc.crt = crtView(td, tf);
  
-@@ -419,6 +542,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -418,7 +548,9 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+       method: td.method, layers: td.layers, steps: td.steps, checks: td.checks,
        score: td.score, grade: td.grade, status: td.status, direction: td.direction,
        headline: td.headline, playbook: td.playbook, blocked: td.blocked,
-       conviction: td.conviction,
+-      conviction: td.conviction,
++      conviction: td.conviction, entry_setup: td.entry_setup,
 +      ...(td.countertrend ? { countertrend: td.countertrend } : {}),
 +      conflicts: td.conflicts, // both aliases survive; Now/method gate consume this one
        conflict_detail: td.conflicts, crt_plan: td.crt_plan, levels: td.levels,
        inputs: td.inputs,
      },
-@@ -451,4 +576,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -451,4 +583,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
  module.exports = {
    analyse, series, alignment, mechanics, narrative, crtView, regimeOf,
    MTF, htfOf, ltfOf, topdown: TD,
@@ -2150,7 +2671,7 @@ index 2e664e5..9b9fce6 100644
 +  biasHysteresis, nextBiasInvalidation,
  };
 diff --git a/tradejournal/src/bots/now.js b/tradejournal/src/bots/now.js
-index 66e0bbb..3ea5601 100644
+index 66e0bbb..bfb1762 100644
 --- a/tradejournal/src/bots/now.js
 +++ b/tradejournal/src/bots/now.js
 @@ -21,6 +21,8 @@
@@ -2234,7 +2755,7 @@ index 66e0bbb..3ea5601 100644
        watch = {
          level: side ? bias.range.low : null, kind: 'level',
          condition: 'wait for a fresh right candle at the range edge, then a sweep that closes back inside',
-@@ -152,21 +166,52 @@ function build(p = {}) {
+@@ -152,21 +166,70 @@ function build(p = {}) {
        };
      }
      invalidate = 'This is not a bearish or bullish opinion — it is the absence of a qualifying setup. It stops applying when a new right candle forms at a level that matters.';
@@ -2253,6 +2774,24 @@ index 66e0bbb..3ea5601 100644
 +        text: `Watch for the retrace to ${zone[0]} – ${zone[1]}; reaching it is a reason to re-check, not permission to enter.` };
 +    }
 +    invalidate = 'Nothing is armed. Re-run the analysis when the blocking condition changes.';
++  } else if (direction && allowed && allowed.ok && allowed.levels
++      && ['flip', 'market_shift'].includes(allowed.entry_model)) {
++    // M68: the causal LTF candidate, not a parallel CRT safer/aggressive scenario,
++    // is the ONLY entry/stop authority. Keep the pre-existing method target/risk.
++    const lv = allowed.levels, target = lv.targets[0];
++    side = direction; action = direction > 0 ? 'BUY' : 'SELL';
++    order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the confirmed lower zone',
++      entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
++      entry_model: allowed.entry_model, entry_tf: allowed.entry_tf, entry_evidence: allowed.entry_evidence,
++      mode: td.countertrend ? 'countertrend-pullback' : 'named-entry',
++      risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
++      size_note: td.countertrend ? 'Counter-HTF pullback: at most half ordinary same-grade risk.' : 'Use the actual candidate risk plan; model name is not a sizing override.',
++      rr_warning: null };
++    headline = `${symbol}: ${allowed.entry_tf} ${allowed.entry_model} entry at ${lv.entry}, after the causal zone pullback.`
++      + (td.countertrend ? ` Bounded internal pullback; the HTF narrative is still ${td.countertrend.htf_bias > 0 ? 'bullish' : 'bearish'}.` : ' The higher-timeframe method still decides direction and target.');
++    watch = { level: lv.entry, kind: 'entry', condition: 'causal lower zone and sweep extreme must still hold',
++      text: `Limit ${lv.entry}, stop ${lv.stop}, target ${target.price} (${target.rr}R).` };
++    invalidate = lv.invalidation;
 +  } else if (direction && td.countertrend && allowed && allowed.ok && allowed.levels) {
 +    // M33: one authority for prices — the actual eligible setup owns the stop and
 +    // its SINGLE HTF-zone target. Never re-price it from a parallel CRT scenario.
@@ -2292,7 +2831,7 @@ index 66e0bbb..3ea5601 100644
        // the trader asked for these to be shown rather than hidden — but never silently
        rr_warning: (Number(num(chosen.rr)) > 0 && Number(num(chosen.rr)) < minRR)
          ? `Below your ${minRR}R minimum — this pays ${num(chosen.rr)}R. The range is real; the reward does not pay for the risk. Treat it as a scenario, not an order.`
-@@ -230,7 +275,9 @@ function build(p = {}) {
+@@ -230,7 +293,9 @@ function build(p = {}) {
  
    /* ------------------------------------------------- the other side ------- */
    let otherSide = null;
@@ -2303,7 +2842,15 @@ index 66e0bbb..3ea5601 100644
      otherSide = {
        dir: -direction,
        side: otherDir.side,
-@@ -319,7 +366,7 @@ function build(p = {}) {
+@@ -306,6 +371,7 @@ function build(p = {}) {
+     },
+     live: quote ? { price: num(quote.price), at: quote.at ? new Date(quote.at).toISOString() : null, provider: quote.provider || null, drift_atr: drift === null ? null : Number(drift.toFixed(2)) } : null,
+     action, side, headline,
++    ...(td.entry_setup ? { entry_model: allowed ? allowed.entry_model || 'none' : 'none', entry_tf: allowed ? allowed.entry_tf : null } : {}),
+     armed: !!order,
+     order,
+     watch,
+@@ -319,7 +385,7 @@ function build(p = {}) {
      steps_done: doneSteps,
      steps_total: (td.steps || []).length,
      pending_step: pendingStep ? { n: pendingStep.n, title: pendingStep.title, text: pendingStep.text } : null,
@@ -2345,7 +2892,7 @@ index bacfca7..38ec2fa 100644
   * the same candle series and reports, honestly, what taking that second tap did:
   * whether it happened, and whether re-risking 1R on it made money.
 diff --git a/tradejournal/src/bots/setup.js b/tradejournal/src/bots/setup.js
-index 138beb4..3e3cd01 100644
+index 138beb4..d79431a 100644
 --- a/tradejournal/src/bots/setup.js
 +++ b/tradejournal/src/bots/setup.js
 @@ -15,13 +15,23 @@
@@ -2792,7 +3339,7 @@ index 138beb4..3e3cd01 100644
    const strike = sessions.quality != null ? sessions.quality : 0.5;
    const blackout = ctx.newsBlackout || null;
    const ind = ctx.indicators || null;
-@@ -83,47 +479,44 @@ function buildSetups(analysis, ctx = {}) {
+@@ -83,47 +479,57 @@ function buildSetups(analysis, ctx = {}) {
    const td = ctx.topdown || null;                   // the method gate
  
    const candidates = [];
@@ -2804,24 +3351,29 @@ index 138beb4..3e3cd01 100644
      const side = long ? 'buy' : 'sell';
 +    const counter = td && td.countertrend && td.countertrend.kind === 'internal-pullback'
 +      && td.countertrend.dir === dir ? td.countertrend : null;
-+    const ladderTargets = !!ctx.ladderTargets && !counter; // a bounded pullback has ONE HTF target
-+    const triggerRead = counter ? counter.confirmation : null;
++    const model = td && td.entry_setup && td.entry_setup.dir === dir ? td.entry_setup : null;
++    const useModel = !!(model && model.applies);
++    const boundedCRT = useModel && td.crt_plan ? td.crt_plan : null;
++    const entryAtr = useModel ? model.atr : atr;
++    const ladderTargets = !!ctx.ladderTargets && !counter && !boundedCRT; // a bounded pullback has ONE HTF target
++    const triggerRead = useModel ? model : counter ? counter.confirmation : null;
      const checks = [];
      const add = (key, label, pass, weight, detail) => checks.push({ key, label, pass: !!pass, weight, detail: detail || null });
  
      /* ---------------------------------------------------------------- 1. trigger: sweep */
 -    const sweeps = ((analysis && analysis.sweeps) || []).filter((s) => s.dir === dir);
 -    const recentSweep = sweeps.find((s) => s.bars_ago <= 25) || null;
-+    const sweeps = (counter ? (triggerRead && triggerRead.sweep ? [triggerRead.sweep] : [])
++    const sweeps = ((counter || useModel) ? (triggerRead && triggerRead.sweep ? [triggerRead.sweep] : [])
 +      : ((analysis && analysis.sweeps) || [])).filter((s) => s.dir === dir);
 +    const recentSweep = sweeps.find((s) => s.bars_ago <= SWEEP_LOOKBACK) || null;
++    const stopSweep = useModel ? model.stop_sweep || recentSweep : recentSweep;
      const sweepQuality = recentSweep ? clamp(recentSweep.wick_atr / 1.2, 0.3, 1.2) : 0;
      add('sweep', long ? 'Sell-side liquidity was swept (stops taken)' : 'Buy-side liquidity was swept (stops taken)',
        !!recentSweep, 18, recentSweep ? `${recentSweep.label} · ${recentSweep.wick_atr} ATR wick · ${recentSweep.bars_ago} bars ago` : 'No sweep of the opposing liquidity yet — the model has no trigger.');
  
      /* ------------------------------------------------------- 2. displacement after sweep */
 -    const disps = ((analysis && analysis.displacement) || []).filter((d) => d.dir === dir);
-+    const disps = (counter ? (triggerRead && triggerRead.displacement ? [triggerRead.displacement] : [])
++    const disps = ((counter || useModel) ? (triggerRead && triggerRead.displacement ? [triggerRead.displacement] : [])
 +      : ((analysis && analysis.displacement) || [])).filter((d) => d.dir === dir);
      const disp = disps.find((d) => !recentSweep || d.i > recentSweep.i) || disps[0] || null;
      add('displacement', 'Displacement leg in your direction',
@@ -2847,7 +3399,15 @@ index 138beb4..3e3cd01 100644
 -
 -    add('zone', long ? 'Demand zone (order block / FVG) to buy from' : 'Supply zone (order block / FVG) to sell from',
 -      !!zone, 16, zone ? `${zone.kind === 'order_block' ? 'Order block' : 'FVG'} ${r4(zone.bottom)} – ${r4(zone.top)}${zone.overlap ? ', nested FVG' : ''}${zone.meta.fresh ? ', fresh' : `, already tested ${zone.meta.tests}×`}` : 'No unmitigated zone in this direction.');
-+    const { bestOB, bestFvg, zone, preference } = selectZone(analysis, dir, ctx);
++    const legacyZone = selectZone(analysis, dir, ctx);
++    const zone = useModel ? model.zone : legacyZone.zone;
++    const bestOB = useModel ? (zone ? { zone: zone.meta, overlap: zone.overlap,
++      reach: entryAtr > 0 ? Math.abs(price - (long ? zone.top : zone.bottom)) / entryAtr : null } : null) : legacyZone.bestOB;
++    const bestFvg = useModel ? null : legacyZone.bestFvg;
++    const preference = useModel ? (model.preference ? { ...model.preference,
++      note: 'Ep18: causal extreme entry retained through the lower pullback; failed-reaction liquidity is the fuel.' } : null) : legacyZone.preference;
++    if (useModel) add('entry_model', 'Named LTF entry: POI → sweep → shift → causal-zone pullback',
++      model.ready, 0, `${model.entry_model} (${model.entry_tf}): ${model.state}. ${model.reasons.join(' ')}`);
 +    if (preference) add('extreme_preference', 'Extreme zone over overlapping flip; sweep failed-reaction liquidity first',
 +      !preference.blocked, 0, preference.note + (preference.fuel.known
 +        ? ` ${preference.fuel.type} at ${preference.fuel.price} is ${preference.fuel.swept ? 'swept' : 'not swept'}.`
@@ -2860,7 +3420,7 @@ index 138beb4..3e3cd01 100644
  
      if (zone && zone.overlap) add('nested', 'Zone + imbalance overlap (confluence)', true, 8, 'The order block contains an unfilled FVG — two reasons for price to react at the same price.');
  
-@@ -135,10 +528,57 @@ function buildSetups(analysis, ctx = {}) {
+@@ -135,10 +541,57 @@ function buildSetups(analysis, ctx = {}) {
  
      /* ------------------------------------------------------------- 5. trend alignment */
      const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
@@ -2869,7 +3429,7 @@ index 138beb4..3e3cd01 100644
 +    // key (bots/smc.js, candles.length < 30), reachable via the `trim` branch in momentum.js.
 +    // The `trend` line above already guards for that; hoist the same guard so the report
 +    // string below cannot dereference `analysis.structure` unconditionally.
-+    const lastBreak = analysis && analysis.structure ? analysis.structure.last_break : null;
++    const lastBreak = useModel ? model.shift : analysis && analysis.structure ? analysis.structure.last_break : null;
 +
 +    /* ---------------------------------------------------------------------------
 +     * M69 / M63 / M48 — THE MARKET SHIFT IS A BREAK EVENT, NOT A TREND LABEL.
@@ -2899,7 +3459,7 @@ index 138beb4..3e3cd01 100644
 +     * failure M8 was written to prevent. Unknown is therefore reported as unknown and is
 +     * not treated as "no shift".
 +     * ------------------------------------------------------------------------*/
-+    const structureKnown = !!(analysis && analysis.structure);
++    const structureKnown = useModel || !!(analysis && analysis.structure);
 +    const shiftDir = long ? 'up' : 'down';
 +    const labelAligned = (long && trend === 'bullish') || (!long && trend === 'bearish');
 +    const marketShift = structureKnown && !!lastBreak && lastBreak.dir === shiftDir;
@@ -2920,7 +3480,7 @@ index 138beb4..3e3cd01 100644
      if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
  
      /* ------------------------------------------------------------- 6. higher-timeframe bias */
-@@ -155,12 +595,16 @@ function buildSetups(analysis, ctx = {}) {
+@@ -155,12 +608,16 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      /* ------------------------------------------------------- 8. session / killzone */
@@ -2939,16 +3499,25 @@ index 138beb4..3e3cd01 100644
  
      /* ------------------------------------------------------------- 10. volatility */
      const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
-@@ -175,7 +619,7 @@ function buildSetups(analysis, ctx = {}) {
-       const buffer = atr * 0.18;
+@@ -169,13 +626,13 @@ function buildSetups(analysis, ctx = {}) {
+ 
+     /* --------------------------------------------------------- 11. liquidity runway */
+     let levels = null;
+-    if (zone) {
++    if (zone && (!useModel || entryAtr > 0)) {
+       const entry = zone.entry;
+-      const stopBase = long ? Math.min(zone.bottom, recentSweep ? recentSweep.extreme : zone.bottom) : Math.max(zone.top, recentSweep ? recentSweep.extreme : zone.top);
+-      const buffer = atr * 0.18;
++      const stopBase = long ? Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom) : Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top);
++      const buffer = entryAtr * 0.18;
        const stop = long ? stopBase - buffer : stopBase + buffer;
        const risk = Math.abs(entry - stop);
 -      const pools = targetPools(analysis, dir, entry);
-+      const pools = counter ? [] : targetPools(analysis, dir, entry);
++      const pools = counter || boundedCRT ? [] : targetPools(analysis, dir, entry);
        const targets = [];
        for (const p of pools) {
          const reward = Math.abs(p.price - entry);
-@@ -183,8 +627,16 @@ function buildSetups(analysis, ctx = {}) {
+@@ -183,8 +640,23 @@ function buildSetups(analysis, ctx = {}) {
          if (rr < 0.9) continue;                       // ignore pools the entry already sits on
          targets.push({ label: p.label, kind: p.kind, price: r4(p.price), rr: r2(rr), strength: p.strength, touches: p.touches || null });
        }
@@ -2960,13 +3529,20 @@ index 138beb4..3e3cd01 100644
 +          tf: target.tf, price: r4(target.price), rr: risk ? r2(dir * (target.price - entry) / risk) : 0,
 +          strength: 1, touches: null });
 +      }
++      if (boundedCRT) {
++        // Preserve the ORIGINAL CRT range-edge target. Only the causal lower
++        // entry/stop inputs change; never substitute a farther target to clear RR.
++        const price = boundedCRT.aggressive.target;
++        targets.push({ label: 'Original CRT range edge', kind: 'crt_range', tf: boundedCRT.tf,
++          price: r4(price), rr: risk ? r2(dir * (price - entry) / risk) : 0, strength: 1 });
++      }
        // dealing-range extreme as a structural target
 -      if (pd) {
-+      if (pd && !counter) {
++      if (pd && !counter && !boundedCRT) {
          const extreme = long ? pd.range_high : pd.range_low;
          const reward = Math.abs(extreme - entry);
          if (reward > 0) {
-@@ -195,6 +647,15 @@ function buildSetups(analysis, ctx = {}) {
+@@ -195,6 +667,15 @@ function buildSetups(analysis, ctx = {}) {
          }
        }
        targets.sort((a, b) => a.rr - b.rr);
@@ -2982,7 +3558,7 @@ index 138beb4..3e3cd01 100644
        // The FIRST pool is a wall, not a nuisance: price usually reacts there. The model
        // banks a partial on it, protects the trade, and runs the rest to the 2R+ pool.
        const first = targets[0] || null;
-@@ -203,16 +664,47 @@ function buildSetups(analysis, ctx = {}) {
+@@ -203,16 +684,47 @@ function buildSetups(analysis, ctx = {}) {
  
        add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
          runner && runner.rr >= minRR
@@ -3036,10 +3612,14 @@ index 138beb4..3e3cd01 100644
        if (!ladder.length) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
        const rrPrimary = ladder[0].rr;
        const rrFinal = ladder[ladder.length - 1].rr;
-@@ -230,6 +722,22 @@ function buildSetups(analysis, ctx = {}) {
+@@ -230,6 +742,26 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
++      if (useModel) {
++        entryStatus = model.ready ? 'at-entry' : model.state === 'invalidated' ? 'invalid' : 'waiting';
++        entryNote = model.ready ? `${model.entry_tf} ${model.entry_model} zone mitigated AFTER the closed shift.` : model.reasons.join(' ');
++      }
 +      // M43 - Ep 13: un-swept liquidity between entry and target is a STAND-DOWN, not a
 +      // partial. "They see price comes up to this supply zone and they immediately enter for a
 +      // sell the minute price mitigate the supply zone... WE ARE NOT GOING TO BE ENTERING FOR A
@@ -3059,7 +3639,7 @@ index 138beb4..3e3cd01 100644
        // Distance still to travel to the zone we would enter at. An FVG-only read has
        // no order-block `reach` — measure to its near edge instead of dereferencing null.
        const zoneReach = bestOB ? bestOB.reach
-@@ -237,24 +745,35 @@ function buildSetups(analysis, ctx = {}) {
+@@ -237,31 +769,45 @@ function buildSetups(analysis, ctx = {}) {
            : 6;
        add('entry', 'Entry not chased (price at/near the zone)', entryStatus !== 'waiting' || zoneReach <= 2.5, 8, entryNote);
        add('management', 'Risk plan protects the trade at the first pool', rrFinal >= minRR, 0,
@@ -3070,16 +3650,22 @@ index 138beb4..3e3cd01 100644
  
        levels = {
 +        ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counter.target.tf } : {}),
++        ...(useModel ? { entry_model: model.entry_model, entry_tf: model.entry_tf,
++          stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: Entry.evidence(model),
++          ...(boundedCRT ? { target_tf: boundedCRT.tf } : {}) } : {}),
 +        ...(preference ? { zone_preference: { rule: 'extreme_over_flip', fuel: preference.fuel } } : {}),
          dir, side, entry: r4(entry), entry_zone: [r4(zone.bottom), r4(zone.top)], entry_kind: zone.kind,
-         stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / atr),
-         stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
-           ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(atr * 0.18)} buffer`
+-        stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / atr),
+-        stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
+-          ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(atr * 0.18)} buffer`
 -          : `Beyond the ${zone.kind === 'order_block' ? 'order block' : 'FVG'} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(atr * 0.18)} buffer`,
++        stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / entryAtr),
++        stop_reason: stopSweep && Math.abs(stopBase - stopSweep.extreme) < 1e-9
++          ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(entryAtr * 0.18)} buffer`
 +          // M47: a third kind now exists, so the two-way ternary would have called a flip
 +          // zone an "FVG" - the recurring trap of a string that describes a decision no
 +          // longer being updated when the decision changes.
-+          : `Beyond the ${{ order_block: 'order block', flip_zone: 'flip zone', fvg: 'FVG' }[zone.kind] || zone.kind} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(atr * 0.18)} buffer`,
++          : `Beyond the ${{ order_block: 'order block', flip_zone: 'flip zone', fvg: 'FVG' }[zone.kind] || zone.kind} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(entryAtr * 0.18)} buffer`,
          targets: ladder, primary_target: ladder[0] ? { ...ladder[0] } : null,
          rr_primary: rrPrimary, rr_final: rrFinal,
          management: {
@@ -3100,7 +3686,17 @@ index 138beb4..3e3cd01 100644
          },
          wall: wallRisk ? { label: wallRisk.label, price: wallRisk.price, rr: wallRisk.rr } : null,
          entry_status: entryStatus, entry_note: entryNote,
-@@ -271,8 +790,14 @@ function buildSetups(analysis, ctx = {}) {
+-        risk_warning: risk < atr * 0.35 ? 'Stop is tighter than 0.35 ATR — normal noise can take you out. Consider using the sweep extreme instead.' : null,
++        risk_warning: risk < entryAtr * 0.35 ? 'Stop is tighter than 0.35 ATR — normal noise can take you out. Consider using the sweep extreme instead.' : null,
+         invalidation: long
+-          ? `A 15m close below ${r4(Math.min(zone.bottom, recentSweep ? recentSweep.extreme : zone.bottom))} invalidates the idea.`
+-          : `A 15m close above ${r4(Math.max(zone.top, recentSweep ? recentSweep.extreme : zone.top))} invalidates the idea.`,
++          ? `A ${useModel ? model.entry_tf : '15m'} close below ${r4(Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom))} invalidates the idea.`
++          : `A ${useModel ? model.entry_tf : '15m'} close above ${r4(Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top))} invalidates the idea.`,
+       };
+     } else {
+       add('runway', 'Open runway to opposing liquidity', false, 14, 'No zone, so no defined risk — the model needs a level to trade against.');
+@@ -271,8 +817,14 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -3117,7 +3713,7 @@ index 138beb4..3e3cd01 100644
      // a missing trigger or zone is disqualifying regardless of the rest
      const hasTrigger = checks.find((c) => c.key === 'sweep').pass;
      const hasZone = checks.find((c) => c.key === 'zone').pass;
-@@ -284,24 +809,160 @@ function buildSetups(analysis, ctx = {}) {
+@@ -284,24 +836,161 @@ function buildSetups(analysis, ctx = {}) {
      if (levels && levels.entry_status === 'waiting') score = Math.min(score, 66); // great idea, not yet valid
      score = round1(clamp(score, 0, 100));
  
@@ -3146,6 +3742,7 @@ index 138beb4..3e3cd01 100644
 +       how good the rest of the setup looks. The two are different axes and this keeps both.
 +    */
 +    const vetoes = [];
++    if (useModel && !model.ready) vetoes.push(model.reasons.join(' ') || 'No confirmed causal lower entry model/pullback.');
 +    if (!hasTrigger) vetoes.push('No liquidity sweep — the model has no trigger to enter on.');
 +    /* M69 — the sweep's twin. Ep 17's "two things" are liquidity sweep AND market shift, and
 +     * the sweep was already a veto while the shift was a 12-point weight, so losing the
@@ -3167,7 +3764,7 @@ index 138beb4..3e3cd01 100644
 +    // M7 / M96 — "no matter how many confluences I have, no matter how confident I am,
 +    // I'm going to be passing on the trade." This is arithmetic, not taste: at the measured
 +    // ~21% win rate, break-even needs (1 - 0.21) / 0.21 = 3.8R, so a sub-2R idea cannot win.
-+    if (levels && ((levels.rr_final > 0 && levels.rr_final < minRR) || (counter && !(levels.rr_final >= minRR)))) {
++    if (levels && ((levels.rr_final > 0 && levels.rr_final < minRR) || ((counter || boundedCRT) && !(levels.rr_final >= minRR)))) {
 +      vetoes.push(`Risk:reward ${levels.rr_final}R is below the ${minRR}R floor — passing on the trade.`);
 +    }
 +    if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
@@ -3281,7 +3878,7 @@ index 138beb4..3e3cd01 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +972,55 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +1000,59 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -3297,6 +3894,10 @@ index 138beb4..3e3cd01 100644
 +      },
        dir, side, score, grade: g.grade, grade_label: g.label,
 -      ok: g.grade !== 'no-trade' && (!levels || levels.entry_status !== 'invalid'),
++      ...(td && td.entry_setup ? { entry_model: useModel ? model.entry_model : 'none',
++        entry_tf: model ? model.entry_tf : null,
++        entry_model_state: model ? model.state : 'not_permitted_direction',
++        entry_evidence: useModel ? Entry.evidence(model) : null } : {}),
 +      // M25: the market phase, so the trader (and any review) can tell an impulse they are
 +      // late for from a pullback they are early for. Reported, not enforced — turning it
 +      // into a gate is M3's timing rule and needs its own measurement.
@@ -3343,7 +3944,7 @@ index 138beb4..3e3cd01 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -331,7 +1029,11 @@ function buildSetups(analysis, ctx = {}) {
+@@ -331,7 +1061,11 @@ function buildSetups(analysis, ctx = {}) {
    candidates.sort((a, b) => b.score - a.score);
  
    /* --------------------------------------------------------------- top verdict */
@@ -3356,7 +3957,7 @@ index 138beb4..3e3cd01 100644
    const buy = candidates.find((c) => c.dir === 1);
    const sell = candidates.find((c) => c.dir === -1);
  
-@@ -350,8 +1052,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -350,8 +1084,7 @@ function buildSetups(analysis, ctx = {}) {
      const aligned = candidates.find((c) => c.dir === td.direction);
      if (aligned) best = aligned;                    // the higher timeframe chooses the side
    }
@@ -3366,7 +3967,7 @@ index 138beb4..3e3cd01 100644
    const methodBlocked = !!(td && (td.blocked || (td.direction !== 0 && (!best || best.dir !== td.direction))));
  
    let verdict;
-@@ -367,13 +1068,13 @@ function buildSetups(analysis, ctx = {}) {
+@@ -367,13 +1100,13 @@ function buildSetups(analysis, ctx = {}) {
        detail: `${why}${pendingStep(td)}`,
        next_trigger: [td.playbook && td.playbook.length ? td.playbook[0] : null, nextTriggerHint(analysis)].filter(Boolean),
        source: 'topdown-gate', method, setup_action: setupAction,
@@ -3384,7 +3985,7 @@ index 138beb4..3e3cd01 100644
        next_trigger: nextTriggerHint(analysis),
        source: 'setup-model', method, setup_action: setupAction,
      };
-@@ -399,7 +1100,52 @@ function buildSetups(analysis, ctx = {}) {
+@@ -399,7 +1132,52 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -3437,7 +4038,7 @@ index 138beb4..3e3cd01 100644
        news_blackout: blackout || null,
        min_rr: minRR,
      },
-@@ -430,4 +1176,8 @@ function pendingStep(td) {
+@@ -430,4 +1208,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  
@@ -3448,7 +4049,7 @@ index 138beb4..3e3cd01 100644
 +module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK,
 +  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX, SWEEP_LOOKBACK, methodRiskMult, selectZone };
 diff --git a/tradejournal/src/bots/smc.js b/tradejournal/src/bots/smc.js
-index 2ccb576..ee666b3 100644
+index 2ccb576..15cb746 100644
 --- a/tradejournal/src/bots/smc.js
 +++ b/tradejournal/src/bots/smc.js
 @@ -17,6 +17,14 @@
@@ -3613,11 +4214,24 @@ index 2ccb576..ee666b3 100644
    };
  }
  
-@@ -177,9 +268,17 @@ function findDisplacement(candles, atr, { minAtr = 1.2, minBody = 0.55 } = {}) {
+@@ -177,9 +268,30 @@ function findDisplacement(candles, atr, { minAtr = 1.2, minBody = 0.55 } = {}) {
   * Order blocks: the last opposite candle before a displacement leg.
   * Bundles supply (bearish OB) and demand (bullish OB) with freshness + confluence tags.
   */
 -function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, maxBlocks = 14 } = {}) {
++/** M68: an auditable close-based event reference, never inferred from a trend
++ * label or a pattern name. The entry composer separately checks bar availability. */
++function breakReference(event, candles) {
++  if (!event || !Number.isInteger(event.i)) return null;
++  const b = candles[event.i];
++  const dir = event.dir === 'up' ? 1 : event.dir === 'down' ? -1 : Math.sign(Number(event.dir));
++  if (!b || !Number.isFinite(Number(event.level)) || event.level == null
++      || event.t !== b.t || ![1, -1].includes(dir)
++      || !(dir > 0 ? b.c > event.level : b.c < event.level)) return null;
++  return { i: event.i, t: event.t, dir: event.dir, type: event.type || null,
++    level: event.level, close: b.c, confirmed: true };
++}
++
 +function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, maxBlocks = 14, fvgs = null, requireFvg = false } = {}) {
    const out = [];
    const n = candles.length;
@@ -3632,7 +4246,7 @@ index 2ccb576..ee666b3 100644
    for (const d of displacement) {
      if (n - 1 - d.i > maxAge) continue;
      // walk back from the displacement bar to find the last opposite-colour candle
-@@ -197,27 +296,81 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
+@@ -197,27 +309,88 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
  
      // mitigation: how has price interacted with the zone SINCE the displacement leg?
      // (bars inside the leg itself are the move that created the zone, not a test)
@@ -3656,6 +4270,12 @@ index 2ccb576..ee666b3 100644
 +      else if (dir > 0 ? b.l <= top : b.h >= bottom) touched = true;  // probed the edge only
      }
      const brokeStructure = breaks.some((x) => x.i > idx && x.i <= d.i + 1 && ((dir > 0 && x.dir === 'up') || (dir < 0 && x.dir === 'down')));
++    // M68: a creating displacement must cause the break on itself or its next
++    // follow-through bar, not just coexist with any event after the origin.
++    const structureCauses = breaks.filter((x) => x.i > idx && x.i >= d.i && x.i <= d.i + 1
++      && ((dir > 0 && x.dir === 'up') || (dir < 0 && x.dir === 'down')))
++      .map((x) => ({ displacement_i: d.i, displacement_t: candles[d.i].t,
++        shift: breakReference(x, candles) })).filter((x) => x.shift);
 +    // M42 - Ep 13: "liquidity zone is simply A POINT OF INTEREST THAT SWEPT LIQUIDITY... an
 +    // area where price first takes an obvious high or low, triggers the resting orders right
 +    // there and then reacts from that point MAKING THE POINT OF INTEREST MUCH MORE STRONGER."
@@ -3710,16 +4330,46 @@ index 2ccb576..ee666b3 100644
        kind: 'OB', dir, side: dir > 0 ? 'demand' : 'supply',
        top: r4(top), bottom: r4(bottom), mid: r4((top + bottom) / 2),
        body_top: r4(bodyTop), body_bottom: r4(bodyBottom), body_mid: r4((bodyTop + bodyBottom) / 2),
-       i: idx, t: ob.t, displacement_i: d.i, displacement_atr: d.rangeAtr,
+-      i: idx, t: ob.t, displacement_i: d.i, displacement_atr: d.rangeAtr,
 -      tests, first_touch: firstTouch, mitigated, breached, fresh: tests === 0,
 -      broke_structure: brokeStructure, strength: r2(strength),
++      i: idx, t: ob.t, displacement_i: d.i, displacement_t: candles[d.i].t, displacement_atr: d.rangeAtr,
++      structure_causes: structureCauses,
 +      tests, first_touch: firstTouch, mitigated, breached, touched, fresh: tests === 0,
 +      broke_structure: brokeStructure, swept_liquidity: sweptLiquidity, strength: r2(strength), depth_in_range: r2(depth),
 +      has_fvg: !!gap, fvg_i: gap ? gap.i : null,
        bars_ago: n - 1 - idx,
        distance_pct: r2(((dir > 0 ? top : bottom) - candles[n - 1].c) / candles[n - 1].c * 100),
        distance_atr: r2(Math.abs(((dir > 0 ? top : bottom) - candles[n - 1].c)) / (atr || 1)),
-@@ -288,7 +441,7 @@ function findFvgs(candles, atr, { minAtr = 0.12, maxAge = 250, maxGaps = 14 } =
+@@ -225,14 +398,22 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
+   }
+   // best-first: strong, fresh, not breached, near price
+   out.sort((a, b) => (b.strength - (b.breached ? 1 : 0)) - (a.strength - (a.breached ? 1 : 0)));
+-  const seen = new Set();
++  const seen = new Map();
+   const dedup = [];
+   for (const z of out) {
+     const key = `${z.dir}:${z.t}:${z.bottom.toFixed(4)}`;
+-    if (seen.has(key)) continue;
+-    seen.add(key);
+-    dedup.push(z);
+-    if (dedup.length >= maxBlocks) break;
++    if (seen.has(key)) {
++      // Keep the EXACT old strongest representative/geometry/mitigation. Only
++      // merge provenance; a later duplicate must not erase an earlier cause.
++      const kept = seen.get(key);
++      for (const cause of z.structure_causes) {
++        if (!kept.structure_causes.some((c) => c.displacement_i === cause.displacement_i
++            && c.shift.i === cause.shift.i && c.shift.level === cause.shift.level)) kept.structure_causes.push(cause);
++      }
++      continue;
++    }
++    seen.set(key, z);
++    if (dedup.length < maxBlocks) dedup.push(z);
+   }
+   return dedup;
+ }
+@@ -288,7 +469,7 @@ function findFvgs(candles, atr, { minAtr = 0.12, maxAge = 250, maxGaps = 14 } =
   * Breaker blocks / flip zones: a zone that failed in its own direction and now acts
   * the other way. A demand OB that closes below becomes resistance (bearish breaker).
   */
@@ -3728,7 +4378,7 @@ index 2ccb576..ee666b3 100644
    const out = [];
    const n = candles.length;
    for (const z of orderBlocks) {
-@@ -300,6 +453,27 @@ function findBreakers(orderBlocks, candles, atr) {
+@@ -300,6 +481,30 @@ function findBreakers(orderBlocks, candles, atr) {
        if (through) { brokeAt = i; break; }
      }
      if (brokeAt === null) continue;
@@ -3753,14 +4403,19 @@ index 2ccb576..ee666b3 100644
 +    const structureBreak = (breaks || []).find((k) => k.i > brokeAt
 +      && ((z.dir > 0 && k.dir === 'down') || (z.dir < 0 && k.dir === 'up')));
 +    const brokeStructure = !!structureBreak;
++    const confirmedBreak = breakReference(structureBreak, candles);
++    const afterConfirmation = confirmedBreak ? candles.slice(confirmedBreak.i + 1)
++      .find((b) => b.l <= z.mid && b.h >= z.mid) : null;
      // retest since the break = confirmation the flip holds
      let retested = false;
      for (let i = brokeAt + 1; i < n; i++) {
-@@ -310,7 +484,18 @@ function findBreakers(orderBlocks, candles, atr) {
+@@ -310,7 +515,20 @@ function findBreakers(orderBlocks, candles, atr) {
        kind: 'breaker', dir: -z.dir, side: z.dir > 0 ? 'supply' : 'demand',
        top: z.top, bottom: z.bottom, mid: z.mid, i: brokeAt, t: candles[brokeAt].t,
        origin: { top: z.top, bottom: z.bottom, side: z.side, t: z.t }, retested,
 -      strength: r2(clamp(z.strength + (retested ? 0.2 : 0) - 0.2, 0, 1.4)),
++      structure_break: confirmedBreak, confirmed_at: confirmedBreak ? confirmedBreak.t : null,
++      post_confirmation_mitigation_t: afterConfirmation ? afterConfirmation.t : null,
 +      // M48: the two criteria that were missing, recorded so the emitted set can be audited
 +      failed_reaction: failedReaction, reaction_point: reactionPoint === null ? null : r4(reactionPoint),
 +      broke_structure: brokeStructure, confirmed: failedReaction && brokeStructure,
@@ -3776,7 +4431,7 @@ index 2ccb576..ee666b3 100644
        bars_ago: n - 1 - brokeAt, distance_atr: r2(Math.abs(((z.dir > 0 ? z.bottom : z.top) - candles[n - 1].c)) / (atr || 1)),
      });
    }
-@@ -349,7 +534,79 @@ function clusterLevels(swings, tol) {
+@@ -349,7 +567,79 @@ function clusterLevels(swings, tol) {
   *   BSL (buy-side liquidity, above price)  /  SSL (sell-side, below price)
   * Sources: equal highs/lows, prior day/week extremes, session extremes, old swing points.
   */
@@ -3857,7 +4512,7 @@ index 2ccb576..ee666b3 100644
    const n = candles.length;
    if (!n) return { pools: [], equal_highs: [], equal_lows: [] };
    const price = candles[n - 1].c;
-@@ -399,31 +656,76 @@ function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPo
+@@ -399,31 +689,76 @@ function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPo
      push({ kind: 'PWH', type: 'BSL', price: prevWeek.h, t: prevWeek.t, label: 'Previous week high', strength: 1.0 });
      push({ kind: 'PWL', type: 'SSL', price: prevWeek.l, t: prevWeek.t, label: 'Previous week low', strength: 1.0 });
    }
@@ -3942,7 +4597,7 @@ index 2ccb576..ee666b3 100644
      pdh: prevDay ? r4(prevDay.h) : null, pdl: prevDay ? r4(prevDay.l) : null,
      pwh: prevWeek ? r4(prevWeek.h) : null, pwl: prevWeek ? r4(prevWeek.l) : null,
      tolerance: r4(tol), price: r4(price),
-@@ -517,13 +819,23 @@ function premiumDiscount(candles, swings) {
+@@ -517,13 +852,23 @@ function premiumDiscount(candles, swings) {
    const span = rangeHigh - rangeLow;
    if (!span) return null;
    const pos = (last - rangeLow) / span; // 0 = range low, 1 = range high
@@ -3967,7 +4622,7 @@ index 2ccb576..ee666b3 100644
      ote: ote || oteShort ? (ote ? 'long' : 'short') : null,
      ote_band: [r4(rangeLow + span * 0.62), r4(rangeLow + span * 0.79)],
      levels: {
-@@ -607,6 +919,9 @@ function crt(htfCandles, ltfCandles, atr) {
+@@ -607,6 +952,9 @@ function crt(htfCandles, ltfCandles, atr) {
  
  /* ═══════════════════════════════════════════════════════════ 9. KILLZONES */
  
@@ -3977,7 +4632,7 @@ index 2ccb576..ee666b3 100644
  const SESSIONS = [
    { key: 'sydney', name: 'Sydney', start: 21, end: 6, quality: 0.3 },
    { key: 'tokyo', name: 'Tokyo / Asia', start: 0, end: 7, quality: 0.5 },
-@@ -614,62 +929,366 @@ const SESSIONS = [
+@@ -614,62 +962,366 @@ const SESSIONS = [
    { key: 'ny_am', name: 'New York AM', start: 12, end: 16, quality: 1.0 },
    { key: 'ny_pm', name: 'New York PM', start: 16, end: 21, quality: 0.6 },
  ];
@@ -4363,7 +5018,7 @@ index 2ccb576..ee666b3 100644
    const sweeps = findSweeps(candles, liq.pools, atr);
    const pd = premiumDiscount(candles, majorSwings.length ? majorSwings : minorSwings);
    const crtRes = htfCandles ? crt(htfCandles, candles, atr) : null;
-@@ -679,12 +1298,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -679,12 +1331,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
      const pool = liq.pools.find((p) => p.kind === s.pool && Math.abs(p.price - s.level) < 1e-9);
      if (pool) { pool.swept = true; pool.swept_t = s.t; }
    }
@@ -4393,7 +5048,7 @@ index 2ccb576..ee666b3 100644
    }
    // inducement: a minor pool sitting between price and a major pool, on the way to it
    const big = liq.pools.filter((p) => p.strength >= 0.8 && !p.swept);
-@@ -705,7 +1335,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -705,7 +1368,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
    out.ok = true;
    out.price = r4(price);
    out.atr = r4(atr);
@@ -4405,7 +5060,7 @@ index 2ccb576..ee666b3 100644
    out.structure = structure;
    out.htf_structure = htfStructure ? { trend: htfStructure.trend, last_break: htfStructure.last_break, recent_labels: htfStructure.recent_labels } : null;
    out.displacement = displacement.slice(-8).reverse();
-@@ -716,10 +1349,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -716,10 +1382,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
    out.sweeps = sweeps;
    out.premium_discount = pd;
    out.crt = crtRes;
@@ -4418,7 +5073,7 @@ index 2ccb576..ee666b3 100644
      order_blocks: orderBlocks.filter((z) => !z.breached).length, fvgs: fvgs.filter((g) => !g.filled).length,
      sweeps: sweeps.length, pools: liq.pools.length,
    };
-@@ -727,7 +1360,8 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -727,7 +1393,8 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
  }
  
  module.exports = {
@@ -4430,7 +5085,7 @@ index 2ccb576..ee666b3 100644
 +  WINDOW_BY_KEY, WINDOW_KEYS, windowLabel, normalizeWindowPref, pairCountsFor, legsOf,
  };
 diff --git a/tradejournal/src/bots/topdown.js b/tradejournal/src/bots/topdown.js
-index 7870e51..7d2fc2c 100644
+index 7870e51..dbec55b 100644
 --- a/tradejournal/src/bots/topdown.js
 +++ b/tradejournal/src/bots/topdown.js
 @@ -1,11 +1,13 @@
@@ -4450,15 +5105,16 @@ index 7870e51..7d2fc2c 100644
   *
   *    STEP 1  Pick the timeframe stack and give every timeframe ONE job.
   *              higher timeframe = bias + the range    ("where are we going")
-@@ -49,6 +51,7 @@
+@@ -49,6 +51,8 @@
   */
  
  const C = require('../candles');
 +const Setup = require('./setup');
++const Entry = require('./entry-models');
  
  const r4 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 10000) / 10000);
  const r2 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
-@@ -58,15 +61,15 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+@@ -58,15 +62,15 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
  
  /** tf → the two timeframes around it, with the job each one does. */
  const STACK = {
@@ -4483,7 +5139,7 @@ index 7870e51..7d2fc2c 100644
  };
  
  const TF_MS = {
-@@ -102,7 +105,9 @@ function layersFor(tf) {
+@@ -102,7 +106,9 @@ function layersFor(tf) {
    return {
      style: s.style,
      bias_tf: s.bias,
@@ -4494,7 +5150,7 @@ index 7870e51..7d2fc2c 100644
      entry_tf: tf,          // the chart the trader is actually trading
      trigger_tf: s.trigger, // the chart used for the confirmation
    };
-@@ -378,6 +383,13 @@ function readRange(right, htf, ltf, atr, { tolerance = 0.05 } = {}) {
+@@ -378,6 +384,13 @@ function readRange(right, htf, ltf, atr, { tolerance = 0.05 } = {}) {
              : null,
        target_note: `opposite side of the range (${dir === -1 ? 'range low' : 'range high'} ${r4(opposite)})`,
        invalidation: dir === -1 ? `a close back above ${r4(sweepPrice || R.h)} voids the short` : `a close back below ${r4(sweepPrice || R.l)} voids the long`,
@@ -4508,7 +5164,7 @@ index 7870e51..7d2fc2c 100644
      };
    }
  
-@@ -459,6 +471,138 @@ function confirmation(trigger, dir, atr) {
+@@ -459,6 +472,138 @@ function confirmation(trigger, dir, atr) {
  
  /* ---------------------------------------------------------- the three layers */
  
@@ -4647,16 +5303,59 @@ index 7870e51..7d2fc2c 100644
  /**
   * The full top-down object.
   *
-@@ -469,7 +613,7 @@ function confirmation(trigger, dir, atr) {
+@@ -469,7 +614,50 @@ function confirmation(trigger, dir, atr) {
   * @param {object} [args.biasSeries]  pre-fetched higher-timeframe series (recommended)
   * @param {object} [args.triggerSeries] pre-fetched lower-timeframe series
   */
 -function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, zoneSeries = null, opts = {} }) {
-+function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, opts = {} }) {
++/** M68 adds the SAME named lower execution to both sanctioned methods. A
++ * CRT scenario/narrative is retained; it never overrides a missing model/pullback. */
++function build(args) {
++  const report = buildBase(args), opts = args.opts || {};
++  if (opts.entryModels === false) return report; // isolated pre-M68 research arm
++  const lower = args.triggerSeries || args.series;
++  const model = report.direction ? Entry.compose({ medium: args.series, lower,
++    dir: report.direction, poi: Setup.selectZone(args.series.smc, report.direction, opts),
++    useBreakers: !!opts.useBreakers, observedAt: opts.observedAt || lower.observed_at || Date.now(),
++    maxSweepAge: Setup.SWEEP_LOOKBACK }) : { applies: false, entry_model: 'none',
++      entry_tf: lower.tf, ready: false, state: 'waiting_direction', reasons: ['The HTF method has not permitted an execution direction.'] };
++  report.entry_setup = { ...model, dir: report.direction };
++  if (!model.applies) return report;
++  const info = report.layers.trigger.confirmation;
++  if (info) {
++    info.entry_model = model.entry_model;
++    info.pullback_zone = model.zone ? { kind: model.zone.kind, bottom: model.zone.bottom,
++      top: model.zone.top, dir: model.zone.dir, tf: model.entry_tf } : null;
++    info.note = model.ready ? `${model.entry_tf} ${model.entry_model}: POI mitigated, liquidity swept, closed shift and causal-zone pullback confirmed.` : model.reasons.join(' ');
++  }
++  const finalStep = (report.steps || []).find((s) => s.n === 5);
++  if (finalStep) {
++    finalStep.done = !!finalStep.done && model.ready;
++    finalStep.text += ` ${model.ready ? 'Causal lower zone pullback confirmed.' : model.reasons.join(' ')}`;
++  }
++  report.checks.entry_model_ready = model.ready;
++  if (report.countertrend) report.countertrend.entry_model = model.entry_model;
++  if (!model.ready) {
++    const reason = model.reasons.join(' ');
++    report.blocked = true; report.status = 'waiting';
++    report.conflicts.push({ kind: 'entry-model-wait', blocks_trade: true, sides: 'MTF POI / LTF entry',
++      rule: 'Ep18: no causal lower model and post-shift pullback means no trade.', resolution: reason });
++    report.headline += ` ${reason}`;
++    report.conviction = { tier: 'watch', why: reason, size_hint: 'no position until the causal lower entry is mitigated' };
++    if (report.countertrend) {
++      report.countertrend.blocked = true;
++      report.countertrend.state = report.countertrend.completed ? 'completed' : 'waiting';
++      report.countertrend.reasons.push(reason);
++    }
++  }
++  return report;
++}
++
++function buildBase({ symbol, tf, series, biasSeries = null, triggerSeries = null, opts = {} }) {
    const L = layersFor(tf);
    const entrySeries = series;
    const entryTf = tf;
-@@ -505,6 +649,13 @@ function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, zo
+@@ -505,6 +693,13 @@ function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, zo
  
    // ---- Layer 3: the trigger ----------------------------------------------
    const trigger = triggerSeries || entrySeries;
@@ -5226,7 +5925,7 @@ index a5aa93c..50478ce 100644
  
    return {
 diff --git a/tradejournal/src/db.js b/tradejournal/src/db.js
-index 7e2fd68..35b5809 100644
+index 7e2fd68..f9fdbfc 100644
 --- a/tradejournal/src/db.js
 +++ b/tradejournal/src/db.js
 @@ -117,7 +117,10 @@ CREATE TABLE IF NOT EXISTS accounts (
@@ -5267,7 +5966,15 @@ index 7e2fd68..35b5809 100644
  CREATE TABLE IF NOT EXISTS bot_signals (
      id INTEGER PRIMARY KEY AUTOINCREMENT,
      user_id INTEGER NOT NULL,
-@@ -186,6 +208,13 @@ CREATE TABLE IF NOT EXISTS journal_entries (
+@@ -139,6 +161,7 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+     rr_primary REAL, rr_final REAL,
+     mechanics REAL,
+     sentiment TEXT,           -- the read-aloud headline at the time
++    entry_model TEXT, entry_tf TEXT, entry_evidence TEXT,
+     entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf  (how this plan was anchored)
+     mtf_tf TEXT,              -- the lower timeframe that confirmed an mtf plan
+     risk_atr REAL,            -- stop distance in ATR at plan time
+@@ -186,6 +209,13 @@ CREATE TABLE IF NOT EXISTS journal_entries (
    review TEXT DEFAULT '',
    lessons TEXT DEFAULT '',
    tomorrow TEXT DEFAULT '',
@@ -5281,7 +5988,7 @@ index 7e2fd68..35b5809 100644
    screen_time_minutes INTEGER,
    created_at TEXT NOT NULL DEFAULT (datetime('now')),
    UNIQUE(user_id, entry_date)
-@@ -232,6 +261,33 @@ CREATE TABLE IF NOT EXISTS strategies (
+@@ -232,6 +262,33 @@ CREATE TABLE IF NOT EXISTS strategies (
    active INTEGER DEFAULT 1,
    created_at TEXT NOT NULL DEFAULT (datetime('now'))
  );
@@ -5315,7 +6022,17 @@ index 7e2fd68..35b5809 100644
  CREATE TABLE IF NOT EXISTS trades (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -369,11 +425,164 @@ async function migrate() {
+@@ -261,6 +318,9 @@ CREATE TABLE IF NOT EXISTS trades (
+   strategy_id INTEGER REFERENCES strategies(id) ON DELETE SET NULL,
+   strategy_name TEXT DEFAULT '',
+   setup_grade TEXT DEFAULT '',                -- A+ / A / B / C
++  entry_model TEXT,                           -- flip | market_shift | none (NULL = historical unknown)
++  entry_tf TEXT,
++  entry_evidence TEXT,
+   session TEXT DEFAULT '',
+   timeframes TEXT DEFAULT '',
+   emotion_before TEXT DEFAULT '',
+@@ -369,11 +429,170 @@ async function migrate() {
      if (!(cols || []).some((c) => c.name === col)) await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
    };
    await add('trades', 'legs', 'TEXT');
@@ -5333,6 +6050,12 @@ index 7e2fd68..35b5809 100644
 +  // M102: which version of its strategy a trade was taken under. NULL means the trade
 +  // predates versioning or has no strategy at all - it is never guessed at read time.
 +  await add('trades', 'strategy_version', 'INTEGER');
++  // M68: never backfill a named model from grade/zone guesses. Unknown != none.
++  for (const table of ['trades', 'bot_signals']) {
++    await add(table, 'entry_model', 'TEXT');
++    await add(table, 'entry_tf', 'TEXT');
++    await add(table, 'entry_evidence', 'TEXT');
++  }
 +
 +  /* M102 backfill. Every strategy that has no version history gets an immutable v1
 +   * snapshot of the rule set it currently holds, and every trade already linked to it is
@@ -5480,7 +6203,7 @@ index 7e2fd68..35b5809 100644
  /* ------------------------------------------------------------------- meta */
  
  async function getMeta(k) {
-@@ -553,10 +762,25 @@ async function userFromWebhookToken(token) {
+@@ -553,10 +772,25 @@ async function userFromWebhookToken(token) {
  
  /** Wipe every table for a workspace (used by the "fresh workspace" flow). */
  async function clearWorkspace(userId) {
@@ -5510,7 +6233,7 @@ index 7e2fd68..35b5809 100644
  }
  
  module.exports = {
-@@ -564,7 +788,9 @@ module.exports = {
+@@ -564,7 +798,9 @@ module.exports = {
    client, db, prepare, exec, batch, tx, ready,
    DB_URL, DB_PATH, REMOTE, DATA_DIR, SCHEMA_VERSION,
    getMeta, setMeta, seedGlobalInstruments, createUser, hashPassword, verifyPassword,
@@ -5640,10 +6363,19 @@ index e58249b..2292b54 100644
 +  RISK_GUARDRAIL, clampRiskPct, riskGuardrailNote,
  };
 diff --git a/tradejournal/src/performance.js b/tradejournal/src/performance.js
-index 97110a5..ff8d382 100644
+index 97110a5..ad741f1 100644
 --- a/tradejournal/src/performance.js
 +++ b/tradejournal/src/performance.js
-@@ -537,7 +537,14 @@ function fullAnalytics(trades, opts = {}) {
+@@ -529,7 +529,7 @@ function fullAnalytics(trades, opts = {}) {
+       i: i + 1, id: t.id, symbol: t.symbol, r: r4(num(t.r_multiple)), risk: r2(num(t.risk_amount)),
+       mae: t.mae_r === null || t.mae_r === undefined ? null : r4(num(t.mae_r)),
+       mfe: t.mfe_r === null || t.mfe_r === undefined ? null : r4(num(t.mfe_r)),
+-      pnl: r2(num(t.net_pnl)), day: t.day, setup: t.strategy_name || '', grade: t.setup_grade || '',
++      pnl: r2(num(t.net_pnl)), day: t.day, entry_model: t.entry_model || null, setup: t.strategy_name || '', grade: t.setup_grade || '',
+       adherence: t.adherence || null, mistakes: t.mistakes || '', hold: num(t.hold_minutes),
+       hour: t.hour, session: t.session_label, dir: String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long',
+     })),
+@@ -537,11 +537,21 @@ function fullAnalytics(trades, opts = {}) {
      daily: dailySeries(trades.filter((t) => t.status !== 'open')),
      monthly: monthlySeries(trades.filter((t) => t.status !== 'open')),
      distribution: rDistribution(trades.filter((t) => t.status !== 'open')),
@@ -5659,8 +6391,15 @@ index 97110a5..ff8d382 100644
      by_symbol: segment(trades, (t) => t.symbol),
      by_session: segment(trades, (t) => t.session_label),
      by_direction: segment(trades, (t) => (String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long')),
+     by_grade: segment(trades, (t) => t.setup_grade || 'Ungraded'),
++    by_entry_model: segment(closed, (t) => t.entry_model == null ? 'Unknown (unrecorded)' : t.entry_model)
++      .map((r) => ({ ...r, sample_ready: r.trades >= 30, sample_floor: 30,
++        sample_note: r.trades < 30 ? 'Descriptive only; below the course 30-trade review floor.' : 'Recorded journal outcomes; not a causal market-edge claim.' })),
+     by_emotion: segment(trades, (t) => splitTags(t.emotion_before)),
+     by_mistake: segment(trades, (t) => splitTags(t.mistakes)),
+     by_tag: segment(trades, (t) => splitTags(t.tags)),
 diff --git a/tradejournal/src/routes/api.js b/tradejournal/src/routes/api.js
-index 0bb768c..14f9c6d 100644
+index 0bb768c..3e54492 100644
 --- a/tradejournal/src/routes/api.js
 +++ b/tradejournal/src/routes/api.js
 @@ -1,6 +1,7 @@
@@ -5672,7 +6411,21 @@ index 0bb768c..14f9c6d 100644
  const I = require('../instruments');
  const TV = require('../tradingview');
  const P = require('../performance');
-@@ -40,7 +41,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
+@@ -14,6 +15,13 @@ const N = require('../notify');
+ const createBotsRouter = require('./bots');
+ 
+ const router = asyncRouter();
++router.use((req, res, next) => {
++  if (req.query.entry_model && req.query.entry_model !== 'unknown') {
++    try { require('../bots/entry-models').normaliseName(req.query.entry_model); }
++    catch (e) { return res.status(400).json({ error: e.message }); }
++  }
++  next();
++});
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+ 
+@@ -40,7 +48,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
  async function requireAuth(req, res, next) {
    try {
      const user = await userFromToken(readToken(req));
@@ -5700,10 +6453,22 @@ index 0bb768c..14f9c6d 100644
      req.user = user;
      next();
    } catch (e) { next(e); }
-@@ -295,6 +315,16 @@ router.post('/trades', requireAuth, async (req, res) => {
+@@ -237,6 +264,7 @@ function tradeFilters(req) {
+     status: req.query.status && req.query.status !== 'all' ? req.query.status : null,
+     symbol: req.query.symbol || null,
+     strategy_id: req.query.strategy_id || null,
++    entry_model: req.query.entry_model || null,
+     from: req.query.from || null, to: req.query.to || null,
+     asset_class: req.query.asset_class || null,
+     tag: req.query.tag || null,
+@@ -294,7 +322,19 @@ router.post('/trades', requireAuth, async (req, res) => {
+   const accountId = num(body.account_id, 0) || (await db.prepare('SELECT id FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
    if (!body.symbol) return res.status(400).json({ error: 'Symbol is required' });
    if (!body.entry) return res.status(400).json({ error: 'Entry price is required' });
-   const trade = T.normalise(body, { instrument: spec, tz: (await settingsOf(req)).timezone });
+-  const trade = T.normalise(body, { instrument: spec, tz: (await settingsOf(req)).timezone });
++  let trade;
++  try { trade = T.normalise(body, { instrument: spec, tz: (await settingsOf(req)).timezone }); }
++  catch (e) { return res.status(400).json({ error: e.message }); }
 +  /* M102 — stamp the version the trade is taken under, AT THE MOMENT IT IS TAKEN. Without
 +   * this the version history exists but nothing is attributed to it and by_strategy would
 +   * still average across revisions, which is the exact defect being fixed. Stamped only when
@@ -5717,7 +6482,18 @@ index 0bb768c..14f9c6d 100644
    const id = await T.insert(db, req.user.id, { ...trade, account_id: accountId });
    if (Array.isArray(body.rule_checks)) {
      const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
-@@ -364,6 +394,51 @@ router.post('/trades/bulk-delete', requireAuth, async (req, res) => {
+@@ -311,7 +351,9 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   const instruments = await instrumentMap(req.user.id);
+   const merged = { ...existing, ...req.body };
+   const spec = instruments[String(merged.symbol || '').toUpperCase()] || null;
+-  const trade = T.normalise(merged, { instrument: spec, tz: (await settingsOf(req)).timezone });
++  let trade;
++  try { trade = T.normalise(merged, { instrument: spec, tz: (await settingsOf(req)).timezone }); }
++  catch (e) { return res.status(400).json({ error: e.message }); }
+   await T.update(db, req.user.id, id, { ...trade, account_id: num(merged.account_id, existing.account_id) });
+   if (Array.isArray(req.body.rule_checks)) {
+     await db.prepare('DELETE FROM rule_checks WHERE trade_id=?').run(id);
+@@ -364,6 +406,51 @@ router.post('/trades/bulk-delete', requireAuth, async (req, res) => {
  });
  
  /* --------------------------------------------------------------- analytics */
@@ -5769,7 +6545,7 @@ index 0bb768c..14f9c6d 100644
  router.get('/analytics', requireAuth, async (req, res) => {
    const tz = (await settingsOf(req)).timezone;
    const f = tradeFilters(req);
-@@ -380,6 +455,9 @@ router.get('/analytics', requireAuth, async (req, res) => {
+@@ -380,6 +467,9 @@ router.get('/analytics', requireAuth, async (req, res) => {
      || await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id)
      || { starting_balance: 10000, id: null };
    const analytics = P.fullAnalytics(closed, { startingBalance: acc.starting_balance });
@@ -5779,7 +6555,7 @@ index 0bb768c..14f9c6d 100644
    analytics.account = acc;
    analytics.open_positions = decorated.filter((t) => t.status === 'open');
    res.json(analytics);
-@@ -393,9 +471,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+@@ -393,9 +483,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const rs = rows.map((t) => num(t.r_multiple));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
@@ -5798,7 +6574,7 @@ index 0bb768c..14f9c6d 100644
    res.json({
      monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
      optimal_risk: P.optimalRisk(rs),
-@@ -446,16 +531,19 @@ router.post('/journal', requireAuth, async (req, res) => {
+@@ -446,16 +543,19 @@ router.post('/journal', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.entry_date) return res.status(400).json({ error: 'entry_date is required' });
    const acc = b.account_id ? Number(b.account_id) : (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
@@ -5821,7 +6597,7 @@ index 0bb768c..14f9c6d 100644
    });
    res.json({ ok: true, entry: await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, b.entry_date) });
  });
-@@ -470,11 +558,12 @@ router.get('/strategies', requireAuth, async (req, res) => {
+@@ -470,11 +570,12 @@ router.get('/strategies', requireAuth, async (req, res) => {
    const stats = {};
    const tz = (await settingsOf(req)).timezone;
    const rows = (await db.prepare("SELECT * FROM trades WHERE user_id=? AND status='closed'").all(req.user.id)).map((t) => P.decorate(t, tz));
@@ -5835,7 +6611,7 @@ index 0bb768c..14f9c6d 100644
    }
    res.json({ strategies, stats });
  });
-@@ -486,17 +575,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
+@@ -486,17 +587,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
      req.user.id, b.name, b.description || '', b.market_conditions || '', b.timeframes || '',
      JSON.stringify(b.entry_rules || []), JSON.stringify(b.exit_rules || []), JSON.stringify(b.checklist || []),
      b.risk_rules || '', num(b.target_r_multiple, 2), b.colour || '#4f8cff', b.active === false ? 0 : 1);
@@ -5871,7 +6647,7 @@ index 0bb768c..14f9c6d 100644
      name: b.name !== undefined ? b.name : cur.name,
      description: b.description !== undefined ? b.description : cur.description,
      market_conditions: b.market_conditions !== undefined ? b.market_conditions : cur.market_conditions,
-@@ -508,8 +610,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
+@@ -508,8 +622,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
      target_r_multiple: b.target_r_multiple !== undefined ? num(b.target_r_multiple, 2) : cur.target_r_multiple,
      colour: b.colour || cur.colour,
      active: b.active === undefined ? cur.active : (b.active ? 1 : 0),
@@ -5926,7 +6702,7 @@ index 0bb768c..14f9c6d 100644
  });
  router.delete('/strategies/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM strategies WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -541,20 +688,40 @@ router.get('/accounts', requireAuth, async (req, res) => {
+@@ -541,20 +700,40 @@ router.get('/accounts', requireAuth, async (req, res) => {
  router.post('/accounts', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.name) return res.status(400).json({ error: 'Account name is required' });
@@ -5972,7 +6748,7 @@ index 0bb768c..14f9c6d 100644
      max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, prop_preset=@prop_preset,
      prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
      id, user_id: req.user.id,
-@@ -563,7 +730,8 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -563,7 +742,8 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
      currency: b.currency !== undefined ? b.currency : cur.currency,
      starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
@@ -5982,7 +6758,7 @@ index 0bb768c..14f9c6d 100644
      daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
      max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
      prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
-@@ -571,7 +739,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -571,7 +751,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
      archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
    });
@@ -5995,7 +6771,7 @@ index 0bb768c..14f9c6d 100644
  });
  router.delete('/accounts/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -708,7 +880,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -708,7 +892,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
    const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
    const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
    const balance = num(b.balance, acc ? acc.current_balance : 10000);
@@ -6016,7 +6792,7 @@ index 0bb768c..14f9c6d 100644
    const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
    const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
    const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
-@@ -722,6 +906,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -722,6 +918,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
      pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
      pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
      percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,
@@ -6027,7 +6803,36 @@ index 0bb768c..14f9c6d 100644
    });
  });
  
-@@ -971,6 +1159,16 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -782,7 +982,7 @@ router.get('/export/csv', requireAuth, async (req, res) => {
+   const rows = (await db.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({ ...params, user_id: req.user.id })).map((t) => P.decorate(t, tz));
+   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
+     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
+-    'setup_grade', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
++    'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
+     'thesis', 'lesson', 'execution_notes', 'notes'];
+   const esc = (v) => {
+     const s = v === null || v === undefined ? '' : String(v);
+@@ -831,7 +1031,8 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+     opened: findCol(['opened_at', 'open_time', 'entry_time', 'date', 'datetime', 'open_date', 'time_open', 'opened']),
+     closed: findCol(['closed_at', 'close_time', 'exit_time', 'close_date', 'time_close', 'closed']),
+     fees: findCol(['fees', 'commission', 'fee', 'cost', 'swap']),
+-    strategy: findCol(['strategy', 'setup', 'system', 'playbook']),
++    strategy: findCol(['strategy_name', 'strategy', 'setup', 'system', 'playbook']),
++    entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
+     tags: findCol(['tags', 'tag', 'labels']),
+     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
+     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
+@@ -864,6 +1065,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+           closed_at: map.closed > -1 ? r[map.closed] : null,
+           fees: map.fees > -1 ? r[map.fees] : 0,
+           strategy_name: map.strategy > -1 ? r[map.strategy] : '',
++          entry_model: map.entry_model > -1 ? r[map.entry_model] : null,
++          entry_tf: map.entry_tf > -1 ? r[map.entry_tf] : null,
++          entry_evidence: map.entry_evidence > -1 ? r[map.entry_evidence] : null,
+           tags: map.tags > -1 ? r[map.tags] : '',
+           notes: map.notes > -1 ? r[map.notes] : '',
+           status: (map.exit > -1 && String(r[map.exit] || '').trim()) ? 'closed' : 'open',
+@@ -971,6 +1175,16 @@ router.put('/settings', requireAuth, async (req, res) => {
      risk_defaults: b.risk_defaults || cur.risk_defaults || { risk_pct: 1, daily_limit_pct: 3, max_trades: 5 },
      // the floor every plan is judged against: below it a plan may still be shown,
      // but it is labelled and never reads as a plain order
@@ -6045,7 +6850,7 @@ index 0bb768c..14f9c6d 100644
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
 diff --git a/tradejournal/src/routes/bots.js b/tradejournal/src/routes/bots.js
-index 2c6ff6c..ddb664b 100644
+index 2c6ff6c..5be5177 100644
 --- a/tradejournal/src/routes/bots.js
 +++ b/tradejournal/src/routes/bots.js
 @@ -28,6 +28,21 @@ function createBotsRouter({ requireAuth }) {
@@ -6103,11 +6908,53 @@ index 2c6ff6c..ddb664b 100644
      res.json(out);
    }));
  
+@@ -262,10 +280,15 @@ router.get('/markets', requireAuth, (req, res) => {
+    */
+   router.post('/signals/save-plan', requireAuth, wrap(async (req, res) => {
+     const b = req.body || {};
++    try {
++      const E = require('../bots/entry-models'), model = E.normaliseName(b.entry_model);
++      E.encodeEvidence(b.entry_evidence, model, b.entry_tf);
++    }
++    catch (e) { return res.status(400).json({ error: e.message }); }
+     const out = await Bots.savePlan(req.user.id, {
+       symbol: b.symbol, timeframe: b.timeframe, entry: b.entry, stop: b.stop,
+       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
+-      mechanics: b.mechanics, note: b.note, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr,
++      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr,
+     });
+     res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
+   }));
 diff --git a/tradejournal/src/trades.js b/tradejournal/src/trades.js
-index 171df43..8c1e888 100644
+index 171df43..efa0873 100644
 --- a/tradejournal/src/trades.js
 +++ b/tradejournal/src/trades.js
-@@ -56,6 +56,43 @@ function normalise(raw, ctx = {}) {
+@@ -5,6 +5,7 @@
+  */
+ const I = require('./instruments');
+ const P = require('./performance');
++const Entry = require('./bots/entry-models');
+ 
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+@@ -24,6 +25,8 @@ function normalise(raw, ctx = {}) {
+   const fees = num(raw.fees);
+   const vpp = num(spec.value_per_point, 1) || 1;
+ 
++  const model = Entry.normaliseName(raw.entry_model);
++  const entryTf = raw.entry_tf == null || raw.entry_tf === '' ? null : String(raw.entry_tf).trim().slice(0, 16);
+   const t = {
+     symbol: String(raw.symbol || spec.symbol || '').toUpperCase().trim(),
+     asset_class: spec.asset_class || raw.asset_class || 'stocks',
+@@ -40,6 +43,7 @@ function normalise(raw, ctx = {}) {
+     strategy_id: raw.strategy_id ? num(raw.strategy_id) : null,
+     strategy_name: raw.strategy_name || '',
+     setup_grade: raw.setup_grade || '',
++    entry_model: model, entry_tf: entryTf, entry_evidence: Entry.encodeEvidence(raw.entry_evidence, model, entryTf),
+     session: raw.session || '',
+     timeframes: raw.timeframes || '',
+     emotion_before: raw.emotion_before || '',
+@@ -56,6 +60,43 @@ function normalise(raw, ctx = {}) {
      planned_r: raw.planned_r ? num(raw.planned_r) : null,
    };
  
@@ -6151,16 +6998,27 @@ index 171df43..8c1e888 100644
    // --- legs (scale-outs): the weighted exit price is what the P&L uses ---
    let legs = [];
    if (Array.isArray(raw.legs)) legs = raw.legs;
-@@ -130,7 +167,8 @@ const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction',
+@@ -130,7 +171,8 @@ const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction',
    'entry', 'exit', 'stop', 'target', 'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'planned_r',
    'mae_r', 'mfe_r', 'stop_moved', 'exit_reason', 'strategy_id', 'strategy_name', 'setup_grade', 'session', 'timeframes',
    'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags', 'thesis', 'lesson', 'execution_notes',
 -  'notes', 'screenshot_url', 'legs'];
-+  'strategy_version',
++  'strategy_version', 'entry_model', 'entry_tf', 'entry_evidence',
 +  'notes', 'screenshot_url', 'legs', 'entries'];
  
  async function insert(db, userId, t) {
    const row = { ...t, user_id: userId };
+@@ -174,6 +216,10 @@ function listQuery(filters = {}) {
+   if (filters.account_id) { where.push('account_id = @account_id'); params.account_id = Number(filters.account_id); }
+   if (filters.status) { where.push('status = @status'); params.status = filters.status; }
+   if (filters.symbol) { where.push('UPPER(symbol) = @symbol'); params.symbol = String(filters.symbol).toUpperCase(); }
++  if (filters.entry_model) {
++    if (filters.entry_model === 'unknown') where.push('entry_model IS NULL');
++    else { where.push('entry_model = @entry_model'); params.entry_model = Entry.normaliseName(filters.entry_model); }
++  }
+   if (filters.strategy_id) { where.push('strategy_id = @strategy_id'); params.strategy_id = Number(filters.strategy_id); }
+   if (filters.from) { where.push("date(COALESCE(closed_at, opened_at)) >= date(@from)"); params.from = filters.from; }
+   if (filters.to) { where.push("date(COALESCE(closed_at, opened_at)) <= date(@to)"); params.to = filters.to; }
 diff --git a/tradejournal/vercel.json b/tradejournal/vercel.json
 index 3dba89a..8635890 100644
 --- a/tradejournal/vercel.json

@@ -2655,6 +2655,21 @@ record which model fired, so his per-model performance review cannot be extended
 **Fairness note:** the ingredients all exist (sweep, close-based break, zone); what is missing is
 the named composition and its distinct entry level.
 
+**Applied follow-through, 2026-10-11 — M68.** The causal lower OB/confirmed opt-in flip
+now supplies the actual entry and stop after strictly later midpoint mitigation. Matching
+break/displacement provenance survives dedup; no pullback, unrelated/wrong-location
+zones, pre-confirmation retouches or unobserved closes never qualify. Lower ATR/structure
+are calculated on observed completed inputs. Original CRT/M33 targets and all risk/session
+vetoes remain. Model/timeframe/evidence survives Now/chart/scan/Copy, both signal schemas,
+trade CRUD/close/import/export/modal and per-model review. Old tags stay unknown, distinct
+from none. Legacy live probabilities/refined geometry are not calibration for this model.
+**140 current checks, 0 failures**, with intentional parent controls; raw LOWER detector
+positives use explicit MTF context and a manufactured final pullback, not a market sample.
+Separate provenance/execution/persistence measurements: bare 60-seed n24 unchanged but
+blind to named entries; native 10-seed known1006/default or912/opt-in, **zero ready named
+outcomes**. One opt-in unnamed fallback also exists with M68 disabled. No edge or model
+ranking inferred. Full record: `analysis/M68-ENTRY-MODELS.md`.
+
 **M69 (S2) — market shift is a weighted check; he calls it the non-negotiable for both models.**
 `setup.js:141` scores it at weight **12**. **This settles an open question from Ep 14:** M48
 logged that the flip-zone break-of-structure criterion is untested but measured **97 %**

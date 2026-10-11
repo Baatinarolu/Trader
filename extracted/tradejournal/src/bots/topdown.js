@@ -52,6 +52,7 @@
 
 const C = require('../candles');
 const Setup = require('./setup');
+const Entry = require('./entry-models');
 
 const r4 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 10000) / 10000);
 const r2 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
@@ -613,7 +614,50 @@ function counterTrendReport({ counter: ct, L, series, biasSeries, trigger, level
  * @param {object} [args.biasSeries]  pre-fetched higher-timeframe series (recommended)
  * @param {object} [args.triggerSeries] pre-fetched lower-timeframe series
  */
-function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, opts = {} }) {
+/** M68 adds the SAME named lower execution to both sanctioned methods. A
+ * CRT scenario/narrative is retained; it never overrides a missing model/pullback. */
+function build(args) {
+  const report = buildBase(args), opts = args.opts || {};
+  if (opts.entryModels === false) return report; // isolated pre-M68 research arm
+  const lower = args.triggerSeries || args.series;
+  const model = report.direction ? Entry.compose({ medium: args.series, lower,
+    dir: report.direction, poi: Setup.selectZone(args.series.smc, report.direction, opts),
+    useBreakers: !!opts.useBreakers, observedAt: opts.observedAt || lower.observed_at || Date.now(),
+    maxSweepAge: Setup.SWEEP_LOOKBACK }) : { applies: false, entry_model: 'none',
+      entry_tf: lower.tf, ready: false, state: 'waiting_direction', reasons: ['The HTF method has not permitted an execution direction.'] };
+  report.entry_setup = { ...model, dir: report.direction };
+  if (!model.applies) return report;
+  const info = report.layers.trigger.confirmation;
+  if (info) {
+    info.entry_model = model.entry_model;
+    info.pullback_zone = model.zone ? { kind: model.zone.kind, bottom: model.zone.bottom,
+      top: model.zone.top, dir: model.zone.dir, tf: model.entry_tf } : null;
+    info.note = model.ready ? `${model.entry_tf} ${model.entry_model}: POI mitigated, liquidity swept, closed shift and causal-zone pullback confirmed.` : model.reasons.join(' ');
+  }
+  const finalStep = (report.steps || []).find((s) => s.n === 5);
+  if (finalStep) {
+    finalStep.done = !!finalStep.done && model.ready;
+    finalStep.text += ` ${model.ready ? 'Causal lower zone pullback confirmed.' : model.reasons.join(' ')}`;
+  }
+  report.checks.entry_model_ready = model.ready;
+  if (report.countertrend) report.countertrend.entry_model = model.entry_model;
+  if (!model.ready) {
+    const reason = model.reasons.join(' ');
+    report.blocked = true; report.status = 'waiting';
+    report.conflicts.push({ kind: 'entry-model-wait', blocks_trade: true, sides: 'MTF POI / LTF entry',
+      rule: 'Ep18: no causal lower model and post-shift pullback means no trade.', resolution: reason });
+    report.headline += ` ${reason}`;
+    report.conviction = { tier: 'watch', why: reason, size_hint: 'no position until the causal lower entry is mitigated' };
+    if (report.countertrend) {
+      report.countertrend.blocked = true;
+      report.countertrend.state = report.countertrend.completed ? 'completed' : 'waiting';
+      report.countertrend.reasons.push(reason);
+    }
+  }
+  return report;
+}
+
+function buildBase({ symbol, tf, series, biasSeries = null, triggerSeries = null, opts = {} }) {
   const L = layersFor(tf);
   const entrySeries = series;
   const entryTf = tf;

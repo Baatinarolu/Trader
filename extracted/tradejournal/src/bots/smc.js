@@ -268,6 +268,19 @@ function findDisplacement(candles, atr, { minAtr = 1.2, minBody = 0.55 } = {}) {
  * Order blocks: the last opposite candle before a displacement leg.
  * Bundles supply (bearish OB) and demand (bullish OB) with freshness + confluence tags.
  */
+/** M68: an auditable close-based event reference, never inferred from a trend
+ * label or a pattern name. The entry composer separately checks bar availability. */
+function breakReference(event, candles) {
+  if (!event || !Number.isInteger(event.i)) return null;
+  const b = candles[event.i];
+  const dir = event.dir === 'up' ? 1 : event.dir === 'down' ? -1 : Math.sign(Number(event.dir));
+  if (!b || !Number.isFinite(Number(event.level)) || event.level == null
+      || event.t !== b.t || ![1, -1].includes(dir)
+      || !(dir > 0 ? b.c > event.level : b.c < event.level)) return null;
+  return { i: event.i, t: event.t, dir: event.dir, type: event.type || null,
+    level: event.level, close: b.c, confirmed: true };
+}
+
 function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, maxBlocks = 14, fvgs = null, requireFvg = false } = {}) {
   const out = [];
   const n = candles.length;
@@ -314,6 +327,12 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
       else if (dir > 0 ? b.l <= top : b.h >= bottom) touched = true;  // probed the edge only
     }
     const brokeStructure = breaks.some((x) => x.i > idx && x.i <= d.i + 1 && ((dir > 0 && x.dir === 'up') || (dir < 0 && x.dir === 'down')));
+    // M68: a creating displacement must cause the break on itself or its next
+    // follow-through bar, not just coexist with any event after the origin.
+    const structureCauses = breaks.filter((x) => x.i > idx && x.i >= d.i && x.i <= d.i + 1
+      && ((dir > 0 && x.dir === 'up') || (dir < 0 && x.dir === 'down')))
+      .map((x) => ({ displacement_i: d.i, displacement_t: candles[d.i].t,
+        shift: breakReference(x, candles) })).filter((x) => x.shift);
     // M42 - Ep 13: "liquidity zone is simply A POINT OF INTEREST THAT SWEPT LIQUIDITY... an
     // area where price first takes an obvious high or low, triggers the resting orders right
     // there and then reacts from that point MAKING THE POINT OF INTEREST MUCH MORE STRONGER."
@@ -367,7 +386,8 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
       kind: 'OB', dir, side: dir > 0 ? 'demand' : 'supply',
       top: r4(top), bottom: r4(bottom), mid: r4((top + bottom) / 2),
       body_top: r4(bodyTop), body_bottom: r4(bodyBottom), body_mid: r4((bodyTop + bodyBottom) / 2),
-      i: idx, t: ob.t, displacement_i: d.i, displacement_atr: d.rangeAtr,
+      i: idx, t: ob.t, displacement_i: d.i, displacement_t: candles[d.i].t, displacement_atr: d.rangeAtr,
+      structure_causes: structureCauses,
       tests, first_touch: firstTouch, mitigated, breached, touched, fresh: tests === 0,
       broke_structure: brokeStructure, swept_liquidity: sweptLiquidity, strength: r2(strength), depth_in_range: r2(depth),
       has_fvg: !!gap, fvg_i: gap ? gap.i : null,
@@ -378,14 +398,22 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
   }
   // best-first: strong, fresh, not breached, near price
   out.sort((a, b) => (b.strength - (b.breached ? 1 : 0)) - (a.strength - (a.breached ? 1 : 0)));
-  const seen = new Set();
+  const seen = new Map();
   const dedup = [];
   for (const z of out) {
     const key = `${z.dir}:${z.t}:${z.bottom.toFixed(4)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    dedup.push(z);
-    if (dedup.length >= maxBlocks) break;
+    if (seen.has(key)) {
+      // Keep the EXACT old strongest representative/geometry/mitigation. Only
+      // merge provenance; a later duplicate must not erase an earlier cause.
+      const kept = seen.get(key);
+      for (const cause of z.structure_causes) {
+        if (!kept.structure_causes.some((c) => c.displacement_i === cause.displacement_i
+            && c.shift.i === cause.shift.i && c.shift.level === cause.shift.level)) kept.structure_causes.push(cause);
+      }
+      continue;
+    }
+    seen.set(key, z);
+    if (dedup.length < maxBlocks) dedup.push(z);
   }
   return dedup;
 }
@@ -474,6 +502,9 @@ function findBreakers(orderBlocks, candles, atr, breaks = []) {
     const structureBreak = (breaks || []).find((k) => k.i > brokeAt
       && ((z.dir > 0 && k.dir === 'down') || (z.dir < 0 && k.dir === 'up')));
     const brokeStructure = !!structureBreak;
+    const confirmedBreak = breakReference(structureBreak, candles);
+    const afterConfirmation = confirmedBreak ? candles.slice(confirmedBreak.i + 1)
+      .find((b) => b.l <= z.mid && b.h >= z.mid) : null;
     // retest since the break = confirmation the flip holds
     let retested = false;
     for (let i = brokeAt + 1; i < n; i++) {
@@ -484,6 +515,8 @@ function findBreakers(orderBlocks, candles, atr, breaks = []) {
       kind: 'breaker', dir: -z.dir, side: z.dir > 0 ? 'supply' : 'demand',
       top: z.top, bottom: z.bottom, mid: z.mid, i: brokeAt, t: candles[brokeAt].t,
       origin: { top: z.top, bottom: z.bottom, side: z.side, t: z.t }, retested,
+      structure_break: confirmedBreak, confirmed_at: confirmedBreak ? confirmedBreak.t : null,
+      post_confirmation_mitigation_t: afterConfirmation ? afterConfirmation.t : null,
       // M48: the two criteria that were missing, recorded so the emitted set can be audited
       failed_reaction: failedReaction, reaction_point: reactionPoint === null ? null : r4(reactionPoint),
       broke_structure: brokeStructure, confirmed: failedReaction && brokeStructure,

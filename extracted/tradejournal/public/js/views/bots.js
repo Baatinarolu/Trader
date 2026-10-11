@@ -421,6 +421,7 @@
     else if (tier === 'A' || tier === 'B') head.appendChild(h('span', { class: 'chip muted', text: `conviction ${tier} · nothing armed` }));
     else head.appendChild(h('span', { class: 'chip muted', text: 'no conviction yet — nothing to size' }));
     head.appendChild(h('span', { class: 'chip', text: `steps ${n.steps_done}/${n.steps_total}` }));
+    if (n.entry_model && n.entry_model !== 'none') head.appendChild(h('span', { class: 'chip info', text: `${n.entry_model} · ${n.entry_tf}` }));
     card.appendChild(head);
 
     // the four facts a decision needs, side by side
@@ -621,6 +622,7 @@
       card.appendChild(h('div', { class: 'card-head', html: `<strong class="${c.dir > 0 ? 'pos' : 'neg'}">${heading} · ${esc(c.grade)}</strong> <span class="muted">${esc(c.grade_label || '')} — score ${c.score}/100 (${c.passed}/${c.total_checks} checks)${isCall ? '' : ' · the entry model only'}</span>` }));
       if (dirAllowed && c.dir !== dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: 'This side is not the one the higher timeframe permits — it is shown for context only, and no order belongs here.' }));
       else if (!dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: `The method has not permitted a side yet${(d.topdown && d.topdown.blocked) ? ' (it is blocking this market)' : ''}, so this is the entry model's best read rather than a trade. Nothing here is armed.` }));
+      if (c.entry_model) card.appendChild(h('div', { class: 'muted bot-detail', text: `Entry model: ${c.entry_model} · ${c.entry_tf || 'no lower model'} · ${c.entry_model_state || ''}` }));
       if (c.levels) {
         const L = c.levels;
         const rows = (L.targets || []).map((t) => `<tr><td>${esc(t.role)}</td><td>${esc(t.label)}</td><td class="mono">${fmt(t.price, 5)}</td><td class="mono">${t.rr}R</td></tr>`).join('');
@@ -662,8 +664,8 @@
           direction: c.dir > 0 ? 'long' : 'short',
           entry: L.entry, stop: L.stop, target: L.targets[0] ? L.targets[0].price : null,
           size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
-          planned_r: L.rr_final, setup_grade: c.grade, session: (d.smc.sessions || {}).killzone || '',
-          timeframes: d.timeframe.toUpperCase(), strategy_name: 'Market Mechanics',
+          planned_r: L.rr_final, setup_grade: c.grade, entry_model: c.entry_model, entry_tf: c.entry_tf, entry_evidence: c.entry_evidence, session: (d.smc.sessions || {}).killzone || '',
+          timeframes: c.entry_tf ? `${d.timeframe} POI / ${c.entry_tf} entry` : d.timeframe.toUpperCase(), strategy_name: 'Market Mechanics',
           thesis: `${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
           tags: 'bot,smc', adherence: 5,
         });
@@ -875,6 +877,11 @@
 
     const grid = h('div', { class: 'bot-grid' });
     const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
+
+    if (B.data && B.data.topdown && B.data.topdown.entry_setup && B.data.topdown.entry_setup.applies) {
+      pane.appendChild(h('div', { class: 'card bot-warn', text: 'Historical research above uses legacy entry geometry. Live probabilities and refined legacy plans are withheld for the current named LTF execution until separately calibrated.' }));
+      return;
+    }
 
     /* live probabilities */
     const live = h('div', { class: 'card' });
@@ -1149,13 +1156,15 @@
       <td>#${g.id}</td><td><b>${esc(g.symbol)}</b> <span class="muted">${esc(g.timeframe)}</span></td>
       <td class="${g.dir > 0 ? 'pos' : 'neg'}">${esc(g.side.toUpperCase())}</td>
       <td>${esc(g.grade)} <span class="muted">${g.score}</span></td>
+      <td>${esc(g.entry_model == null ? 'unknown' : g.entry_model)}${g.entry_tf ? ' · ' + esc(g.entry_tf) : ''}</td>
       <td class="mono">${g.p_win == null ? '—' : g.p_win + '%'}</td>
       <td class="mono">${fmt(g.entry, 5)}</td><td class="mono">${fmt(g.stop, 5)}</td>
       <td class="mono">${g.rr_final ? g.rr_final + 'R' : '—'}</td>
       <td>${g.status === 'pending' ? '<span class="chip info">pending</span>' : g.status === 'win' ? '<span class="chip pos">win</span>' : g.status === 'loss' ? '<span class="chip neg">loss</span>' : `<span class="chip muted">${esc(g.status)}</span>`}</td>
       <td class="mono">${g.outcome_r == null ? '—' : g.outcome_r + 'R'}</td>
       <td class="muted-2">${esc(String(g.created_at || '').slice(0, 16))}</td></tr>`).join('');
-    pane.appendChild(h('div', { class: 'card', html: `<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Market</th><th>Side</th><th>Grade</th><th>P(win)</th><th>Entry</th><th>Stop</th><th>Final R:R</th><th>Status</th><th>R</th><th>Saved</th></tr></thead><tbody>${rows}</tbody></table></div>` }));
+    pane.appendChild(h('div', { class: 'card', html: `<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Market</th><th>Side</th><th>Grade</th><th>Entry model</th><th>P(win)</th><th>Entry</th><th>Stop</th><th>Final R:R</th><th>Status</th><th>R</th><th>Saved</th></tr></thead><tbody>${rows}</tbody></table></div>` }));
+    if ((st.by_entry_model || []).length) pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Resolved signals by entry model</strong></div><div class="muted bot-detail">Unknown is not inferred. Under 30 resolved signals per model: descriptive only.</div><div class="table-wrap"><table class="table"><thead><tr><th>Model</th><th>Resolved</th><th>Win %</th><th>Expectancy</th><th>Sample</th></tr></thead><tbody>${st.by_entry_model.map((x) => `<tr><td>${esc(x.entry_model)}</td><td>${x.resolved}</td><td>${x.win_rate}%</td><td>${x.expectancy_r}R</td><td>${x.sample_ready ? '30+ recorded' : 'thin sample'}</td></tr>`).join('')}</tbody></table></div>` }));
     if ((st.by_grade || []).length) {
       pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Signal quality by grade</strong></div><div class="table-wrap"><table class="table"><thead><tr><th>Grade</th><th>Resolved</th><th>Win rate</th><th>Expectancy</th></tr></thead><tbody>${st.by_grade.map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.resolved}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('')}</tbody></table></div>` }));
     }

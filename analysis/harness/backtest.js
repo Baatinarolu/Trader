@@ -29,7 +29,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const ROOT = path.join(__dirname, '..', '..', 'extracted', 'tradejournal');
+const ROOT = process.env.TJ_APP || path.join(__dirname, '..', '..', 'extracted', 'tradejournal');
 const SMC = require(path.join(ROOT, 'src/bots/smc.js'));
 const Setup = require(path.join(ROOT, 'src/bots/setup.js'));
 const TD = require(path.join(ROOT, 'src/bots/topdown.js'));
@@ -40,6 +40,8 @@ const argv = process.argv.slice(2);
 const arg = (k, d) => { const i = argv.indexOf('--' + k); return i >= 0 ? Number(argv[i + 1]) : d; };
 const TOPDOWN = argv.includes('--topdown');
 const COUNTER_TREND = !argv.includes('--no-countertrend');
+const ENTRY_MODELS = !argv.includes('--no-entry-models');
+const modelStats = { reads: 0, applies: 0, ready: 0, market_shift: 0, flip: 0, states: {} };
 const methodStats = { reads: 0, counter_reads: 0, ready: 0, completed: 0, permitted: 0, fills: 0,
   waiting_poi: 0, waiting_phase: 0, waiting_lower: 0 };
 const SEEDS = arg('seeds', 5);
@@ -323,9 +325,18 @@ for (let wi = 0; wi < NWALK; wi++) {
       const medium = pack('15m', win, analysis);
       const low = pack('5m', lowCandles, SMC.analyse(lowCandles, { tf: '5m', now: clockAt }));
       td = TD.build({ symbol: signalSymbol, tf: '15m', series: medium,
-        biasSeries: high, triggerSeries: low, opts: { counterTrend: COUNTER_TREND, chaseGuard: CHASE_GUARD } });
+        biasSeries: high, triggerSeries: low, opts: { counterTrend: COUNTER_TREND, chaseGuard: CHASE_GUARD, entryModels: ENTRY_MODELS, useBreakers: USE_BREAKERS, observedAt: clockAt } });
       freshMethodBias = MOM.alignment(high, medium, low, td).bias;
       methodStats.reads++;
+      const named = td.entry_setup;
+      modelStats.reads++;
+      if (named) {
+        if (named.applies) modelStats.applies++;
+        if (named.ready) modelStats.ready++;
+        if (named.entry_model === 'market_shift') modelStats.market_shift++;
+        if (named.entry_model === 'flip') modelStats.flip++;
+        modelStats.states[named.state] = (modelStats.states[named.state] || 0) + 1;
+      }
       if (td.countertrend) {
         methodStats.counter_reads++;
         if (!td.blocked) methodStats.ready++;
@@ -400,7 +411,7 @@ for (let wi = 0; wi < NWALK; wi++) {
       // Taken from what the engine EMITTED, not recomputed here — a harness that re-derived the
       // rule would be testing its own copy of it.
       rangeMult: (c.risk && c.risk.range_risk_multiplier != null) ? c.risk.range_risk_multiplier : 1,
-      ...(TOPDOWN ? { counter: !!td.countertrend,
+      ...(TOPDOWN ? { entry_model: c.entry_model || null, counter: !!td.countertrend,
         methodMult: c.risk && c.risk.method_risk_multiplier != null ? c.risk.method_risk_multiplier : 1,
         riskFraction: c.risk ? c.risk.risk_pct : 0 } : {}),
       ...sim });
@@ -421,6 +432,8 @@ if (TOPDOWN) {
   console.log(` M33 three-role arm: native 5m → complete 15m/4h buckets; held HTF narrative; counter path ${COUNTER_TREND ? 'ON' : 'OFF'}`);
   console.log(` method reads=${methodStats.reads} counter reads=${methodStats.counter_reads} ready=${methodStats.ready} completed=${methodStats.completed} permitted=${methodStats.permitted} fills=${methodStats.fills}`);
   console.log(` counter unmet prerequisites (overlap, not a partition): POI=${methodStats.waiting_poi} phase=${methodStats.waiting_phase} LTF=${methodStats.waiting_lower}`);
+  console.log(` M68 named-entry arm: ${ENTRY_MODELS ? 'ON' : 'OFF'} · reads=${modelStats.reads} known=${modelStats.applies} ready=${modelStats.ready} market_shift=${modelStats.market_shift} flip=${modelStats.flip}`);
+  console.log(` M68 states: ${JSON.stringify(modelStats.states)}`);
 }
 /* M3 / M26 — printed so a run is reproducible from its own output: both change which
  * signals survive, and neither is visible in the aggregate line. */

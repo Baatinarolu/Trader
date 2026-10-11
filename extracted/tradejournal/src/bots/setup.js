@@ -486,28 +486,41 @@ function buildSetups(analysis, ctx = {}) {
     const side = long ? 'buy' : 'sell';
     const counter = td && td.countertrend && td.countertrend.kind === 'internal-pullback'
       && td.countertrend.dir === dir ? td.countertrend : null;
-    const ladderTargets = !!ctx.ladderTargets && !counter; // a bounded pullback has ONE HTF target
-    const triggerRead = counter ? counter.confirmation : null;
+    const model = td && td.entry_setup && td.entry_setup.dir === dir ? td.entry_setup : null;
+    const useModel = !!(model && model.applies);
+    const boundedCRT = useModel && td.crt_plan ? td.crt_plan : null;
+    const entryAtr = useModel ? model.atr : atr;
+    const ladderTargets = !!ctx.ladderTargets && !counter && !boundedCRT; // a bounded pullback has ONE HTF target
+    const triggerRead = useModel ? model : counter ? counter.confirmation : null;
     const checks = [];
     const add = (key, label, pass, weight, detail) => checks.push({ key, label, pass: !!pass, weight, detail: detail || null });
 
     /* ---------------------------------------------------------------- 1. trigger: sweep */
-    const sweeps = (counter ? (triggerRead && triggerRead.sweep ? [triggerRead.sweep] : [])
+    const sweeps = ((counter || useModel) ? (triggerRead && triggerRead.sweep ? [triggerRead.sweep] : [])
       : ((analysis && analysis.sweeps) || [])).filter((s) => s.dir === dir);
     const recentSweep = sweeps.find((s) => s.bars_ago <= SWEEP_LOOKBACK) || null;
+    const stopSweep = useModel ? model.stop_sweep || recentSweep : recentSweep;
     const sweepQuality = recentSweep ? clamp(recentSweep.wick_atr / 1.2, 0.3, 1.2) : 0;
     add('sweep', long ? 'Sell-side liquidity was swept (stops taken)' : 'Buy-side liquidity was swept (stops taken)',
       !!recentSweep, 18, recentSweep ? `${recentSweep.label} · ${recentSweep.wick_atr} ATR wick · ${recentSweep.bars_ago} bars ago` : 'No sweep of the opposing liquidity yet — the model has no trigger.');
 
     /* ------------------------------------------------------- 2. displacement after sweep */
-    const disps = (counter ? (triggerRead && triggerRead.displacement ? [triggerRead.displacement] : [])
+    const disps = ((counter || useModel) ? (triggerRead && triggerRead.displacement ? [triggerRead.displacement] : [])
       : ((analysis && analysis.displacement) || [])).filter((d) => d.dir === dir);
     const disp = disps.find((d) => !recentSweep || d.i > recentSweep.i) || disps[0] || null;
     add('displacement', 'Displacement leg in your direction',
       !!disp, 15, disp ? `${disp.rangeAtr} ATR expansion bar, ${(disp.bodyRatio * 100).toFixed(0)}% body` : 'No expansion bar — price is drifting, not displacing.');
 
     /* ------------------------------------------------------------------- 3. the zone */
-    const { bestOB, bestFvg, zone, preference } = selectZone(analysis, dir, ctx);
+    const legacyZone = selectZone(analysis, dir, ctx);
+    const zone = useModel ? model.zone : legacyZone.zone;
+    const bestOB = useModel ? (zone ? { zone: zone.meta, overlap: zone.overlap,
+      reach: entryAtr > 0 ? Math.abs(price - (long ? zone.top : zone.bottom)) / entryAtr : null } : null) : legacyZone.bestOB;
+    const bestFvg = useModel ? null : legacyZone.bestFvg;
+    const preference = useModel ? (model.preference ? { ...model.preference,
+      note: 'Ep18: causal extreme entry retained through the lower pullback; failed-reaction liquidity is the fuel.' } : null) : legacyZone.preference;
+    if (useModel) add('entry_model', 'Named LTF entry: POI → sweep → shift → causal-zone pullback',
+      model.ready, 0, `${model.entry_model} (${model.entry_tf}): ${model.state}. ${model.reasons.join(' ')}`);
     if (preference) add('extreme_preference', 'Extreme zone over overlapping flip; sweep failed-reaction liquidity first',
       !preference.blocked, 0, preference.note + (preference.fuel.known
         ? ` ${preference.fuel.type} at ${preference.fuel.price} is ${preference.fuel.swept ? 'swept' : 'not swept'}.`
@@ -532,7 +545,7 @@ function buildSetups(analysis, ctx = {}) {
     // key (bots/smc.js, candles.length < 30), reachable via the `trim` branch in momentum.js.
     // The `trend` line above already guards for that; hoist the same guard so the report
     // string below cannot dereference `analysis.structure` unconditionally.
-    const lastBreak = analysis && analysis.structure ? analysis.structure.last_break : null;
+    const lastBreak = useModel ? model.shift : analysis && analysis.structure ? analysis.structure.last_break : null;
 
     /* ---------------------------------------------------------------------------
      * M69 / M63 / M48 — THE MARKET SHIFT IS A BREAK EVENT, NOT A TREND LABEL.
@@ -562,7 +575,7 @@ function buildSetups(analysis, ctx = {}) {
      * failure M8 was written to prevent. Unknown is therefore reported as unknown and is
      * not treated as "no shift".
      * ------------------------------------------------------------------------*/
-    const structureKnown = !!(analysis && analysis.structure);
+    const structureKnown = useModel || !!(analysis && analysis.structure);
     const shiftDir = long ? 'up' : 'down';
     const labelAligned = (long && trend === 'bullish') || (!long && trend === 'bearish');
     const marketShift = structureKnown && !!lastBreak && lastBreak.dir === shiftDir;
@@ -613,13 +626,13 @@ function buildSetups(analysis, ctx = {}) {
 
     /* --------------------------------------------------------- 11. liquidity runway */
     let levels = null;
-    if (zone) {
+    if (zone && (!useModel || entryAtr > 0)) {
       const entry = zone.entry;
-      const stopBase = long ? Math.min(zone.bottom, recentSweep ? recentSweep.extreme : zone.bottom) : Math.max(zone.top, recentSweep ? recentSweep.extreme : zone.top);
-      const buffer = atr * 0.18;
+      const stopBase = long ? Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom) : Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top);
+      const buffer = entryAtr * 0.18;
       const stop = long ? stopBase - buffer : stopBase + buffer;
       const risk = Math.abs(entry - stop);
-      const pools = counter ? [] : targetPools(analysis, dir, entry);
+      const pools = counter || boundedCRT ? [] : targetPools(analysis, dir, entry);
       const targets = [];
       for (const p of pools) {
         const reward = Math.abs(p.price - entry);
@@ -635,8 +648,15 @@ function buildSetups(analysis, ctx = {}) {
           tf: target.tf, price: r4(target.price), rr: risk ? r2(dir * (target.price - entry) / risk) : 0,
           strength: 1, touches: null });
       }
+      if (boundedCRT) {
+        // Preserve the ORIGINAL CRT range-edge target. Only the causal lower
+        // entry/stop inputs change; never substitute a farther target to clear RR.
+        const price = boundedCRT.aggressive.target;
+        targets.push({ label: 'Original CRT range edge', kind: 'crt_range', tf: boundedCRT.tf,
+          price: r4(price), rr: risk ? r2(dir * (price - entry) / risk) : 0, strength: 1 });
+      }
       // dealing-range extreme as a structural target
-      if (pd && !counter) {
+      if (pd && !counter && !boundedCRT) {
         const extreme = long ? pd.range_high : pd.range_low;
         const reward = Math.abs(extreme - entry);
         if (reward > 0) {
@@ -722,6 +742,10 @@ function buildSetups(analysis, ctx = {}) {
         else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
         else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
       }
+      if (useModel) {
+        entryStatus = model.ready ? 'at-entry' : model.state === 'invalidated' ? 'invalid' : 'waiting';
+        entryNote = model.ready ? `${model.entry_tf} ${model.entry_model} zone mitigated AFTER the closed shift.` : model.reasons.join(' ');
+      }
       // M43 - Ep 13: un-swept liquidity between entry and target is a STAND-DOWN, not a
       // partial. "They see price comes up to this supply zone and they immediately enter for a
       // sell the minute price mitigate the supply zone... WE ARE NOT GOING TO BE ENTERING FOR A
@@ -751,15 +775,18 @@ function buildSetups(analysis, ctx = {}) {
 
       levels = {
         ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counter.target.tf } : {}),
+        ...(useModel ? { entry_model: model.entry_model, entry_tf: model.entry_tf,
+          stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: Entry.evidence(model),
+          ...(boundedCRT ? { target_tf: boundedCRT.tf } : {}) } : {}),
         ...(preference ? { zone_preference: { rule: 'extreme_over_flip', fuel: preference.fuel } } : {}),
         dir, side, entry: r4(entry), entry_zone: [r4(zone.bottom), r4(zone.top)], entry_kind: zone.kind,
-        stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / atr),
-        stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
-          ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(atr * 0.18)} buffer`
+        stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / entryAtr),
+        stop_reason: stopSweep && Math.abs(stopBase - stopSweep.extreme) < 1e-9
+          ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(entryAtr * 0.18)} buffer`
           // M47: a third kind now exists, so the two-way ternary would have called a flip
           // zone an "FVG" - the recurring trap of a string that describes a decision no
           // longer being updated when the decision changes.
-          : `Beyond the ${{ order_block: 'order block', flip_zone: 'flip zone', fvg: 'FVG' }[zone.kind] || zone.kind} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(atr * 0.18)} buffer`,
+          : `Beyond the ${{ order_block: 'order block', flip_zone: 'flip zone', fvg: 'FVG' }[zone.kind] || zone.kind} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(entryAtr * 0.18)} buffer`,
         targets: ladder, primary_target: ladder[0] ? { ...ladder[0] } : null,
         rr_primary: rrPrimary, rr_final: rrFinal,
         management: {
@@ -777,10 +804,10 @@ function buildSetups(analysis, ctx = {}) {
         },
         wall: wallRisk ? { label: wallRisk.label, price: wallRisk.price, rr: wallRisk.rr } : null,
         entry_status: entryStatus, entry_note: entryNote,
-        risk_warning: risk < atr * 0.35 ? 'Stop is tighter than 0.35 ATR — normal noise can take you out. Consider using the sweep extreme instead.' : null,
+        risk_warning: risk < entryAtr * 0.35 ? 'Stop is tighter than 0.35 ATR — normal noise can take you out. Consider using the sweep extreme instead.' : null,
         invalidation: long
-          ? `A 15m close below ${r4(Math.min(zone.bottom, recentSweep ? recentSweep.extreme : zone.bottom))} invalidates the idea.`
-          : `A 15m close above ${r4(Math.max(zone.top, recentSweep ? recentSweep.extreme : zone.top))} invalidates the idea.`,
+          ? `A ${useModel ? model.entry_tf : '15m'} close below ${r4(Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom))} invalidates the idea.`
+          : `A ${useModel ? model.entry_tf : '15m'} close above ${r4(Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top))} invalidates the idea.`,
       };
     } else {
       add('runway', 'Open runway to opposing liquidity', false, 14, 'No zone, so no defined risk — the model needs a level to trade against.');
@@ -834,6 +861,7 @@ function buildSetups(analysis, ctx = {}) {
        how good the rest of the setup looks. The two are different axes and this keeps both.
     */
     const vetoes = [];
+    if (useModel && !model.ready) vetoes.push(model.reasons.join(' ') || 'No confirmed causal lower entry model/pullback.');
     if (!hasTrigger) vetoes.push('No liquidity sweep — the model has no trigger to enter on.');
     /* M69 — the sweep's twin. Ep 17's "two things" are liquidity sweep AND market shift, and
      * the sweep was already a veto while the shift was a 12-point weight, so losing the
@@ -855,7 +883,7 @@ function buildSetups(analysis, ctx = {}) {
     // M7 / M96 — "no matter how many confluences I have, no matter how confident I am,
     // I'm going to be passing on the trade." This is arithmetic, not taste: at the measured
     // ~21% win rate, break-even needs (1 - 0.21) / 0.21 = 3.8R, so a sub-2R idea cannot win.
-    if (levels && ((levels.rr_final > 0 && levels.rr_final < minRR) || (counter && !(levels.rr_final >= minRR)))) {
+    if (levels && ((levels.rr_final > 0 && levels.rr_final < minRR) || ((counter || boundedCRT) && !(levels.rr_final >= minRR)))) {
       vetoes.push(`Risk:reward ${levels.rr_final}R is below the ${minRR}R floor — passing on the trade.`);
     }
     if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
@@ -983,6 +1011,10 @@ function buildSetups(analysis, ctx = {}) {
         reason: stoodDown ? standDown.reason : null,
       },
       dir, side, score, grade: g.grade, grade_label: g.label,
+      ...(td && td.entry_setup ? { entry_model: useModel ? model.entry_model : 'none',
+        entry_tf: model ? model.entry_tf : null,
+        entry_model_state: model ? model.state : 'not_permitted_direction',
+        entry_evidence: useModel ? Entry.evidence(model) : null } : {}),
       // M25: the market phase, so the trader (and any review) can tell an impulse they are
       // late for from a pullback they are early for. Reported, not enforced — turning it
       // into a gate is M3's timing rule and needs its own measurement.

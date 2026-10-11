@@ -208,14 +208,14 @@
           const w = U.h('div', { class: 'grid' });
           const defs = [
             ['Playbook / setup', an.by_strategy], ['Instrument', an.by_symbol], ['Session', an.by_session],
-            ['Direction', an.by_direction], ['Setup grade', an.by_grade], ['Asset class', an.by_asset],
+            ['Direction', an.by_direction], ['Setup grade', an.by_grade], ['Entry model', an.by_entry_model], ['Asset class', an.by_asset],
             ['Emotion before entry', an.by_emotion], ['Tags', an.by_tag], ['Confidence', an.by_confidence], ['Adherence', an.by_adherence],
           ];
           defs.forEach(([title, rows]) => {
             if (!rows || !rows.length) return;
             const maxAbs = Math.max(1, ...rows.map((r) => Math.abs(r.net_pnl)));
             const c = U.h('div', { class: 'card' });
-            c.innerHTML = `<div class="card-head"><h3>${title}</h3><span class="spacer"></span><span class="tiny muted">${rows.length} groups</span></div>
+            c.innerHTML = `${title === 'Entry model' ? '<div class="muted bot-detail">Recorded closed trades only. Unknown is separate from none. Below 30 trades per model: descriptive only, no performance conclusion.</div>' : ''}<div class="card-head"><h3>${title}</h3><span class="spacer"></span><span class="tiny muted">${rows.length} groups</span></div>
               <div class="table-wrap" style="max-height:300px"><table><thead><tr><th>Group</th><th class="num">n</th><th class="num">Win %</th><th class="num">Exp.</th><th class="num">PF</th><th class="num">Total R</th><th class="num">Net</th><th style="width:100px"></th></tr></thead>
               <tbody>${rows.sort((a, b) => b.net_pnl - a.net_pnl).map((r) => `<tr><td>${U.esc(r.key)}</td><td class="num">${r.trades}</td><td class="num">${U.pct(r.win_rate, 0)}</td>
                 <td class="num ${U.cls(r.expectancy_r)}">${U.signed(r.expectancy_r, 2)}R</td><td class="num">${r.profit_factor === null ? '∞' : U.num(r.profit_factor, 2)}</td>

@@ -151,3 +151,21 @@ Synthetic data. `--seeds 20` gives 121 trades, which is enough to distinguish "c
 from "positive" but **not** enough to rank two changes that differ by less than ~0.1R. Raise
 `--seeds` before believing a small delta. Costs (spread, commission, slippage) are **not**
 modelled, so these figures are optimistic.
+
+## M68 causal named-entry arms
+
+`--topdown` uses native smaller candles and complete parent buckets. Named-model
+execution is enabled there by default; `--no-entry-models` isolates the prior research
+arm. `--breakers` opts into flip-zone selection/composition in BOTH TD and Setup.
+`TJ_APP=/absolute/path/to/app` selects a frozen implementation without rewriting the
+harness. The report separates model-known/readiness states from counter context and
+filled outcomes, and fills retain `entry_model` (NULL if unrecorded in older engines).
+
+The bare/default arm has no TD/model context and cannot measure named-model efficacy.
+M68's 10-seed default and opt-in native measurements had **zero ready named outcomes**.
+An opt-in unnamed fallback existed in both ON/OFF arms; it must not be presented as
+flip/market-shift performance. Independent provenance, execution and persistence
+stage measurements and controlled/raw-lower-detector positive tests are recorded in
+`analysis/M68-ENTRY-MODELS.md` and the chronological `BASELINE.txt` addition. Never
+interpolate lower candles, relax causal gates to obtain fills, or attach legacy
+geometry probabilities to named executions without separate calibration.

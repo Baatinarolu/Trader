@@ -529,7 +529,7 @@ function fullAnalytics(trades, opts = {}) {
       i: i + 1, id: t.id, symbol: t.symbol, r: r4(num(t.r_multiple)), risk: r2(num(t.risk_amount)),
       mae: t.mae_r === null || t.mae_r === undefined ? null : r4(num(t.mae_r)),
       mfe: t.mfe_r === null || t.mfe_r === undefined ? null : r4(num(t.mfe_r)),
-      pnl: r2(num(t.net_pnl)), day: t.day, setup: t.strategy_name || '', grade: t.setup_grade || '',
+      pnl: r2(num(t.net_pnl)), day: t.day, entry_model: t.entry_model || null, setup: t.strategy_name || '', grade: t.setup_grade || '',
       adherence: t.adherence || null, mistakes: t.mistakes || '', hold: num(t.hold_minutes),
       hour: t.hour, session: t.session_label, dir: String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long',
     })),
@@ -549,6 +549,9 @@ function fullAnalytics(trades, opts = {}) {
     by_session: segment(trades, (t) => t.session_label),
     by_direction: segment(trades, (t) => (String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long')),
     by_grade: segment(trades, (t) => t.setup_grade || 'Ungraded'),
+    by_entry_model: segment(closed, (t) => t.entry_model == null ? 'Unknown (unrecorded)' : t.entry_model)
+      .map((r) => ({ ...r, sample_ready: r.trades >= 30, sample_floor: 30,
+        sample_note: r.trades < 30 ? 'Descriptive only; below the course 30-trade review floor.' : 'Recorded journal outcomes; not a causal market-edge claim.' })),
     by_emotion: segment(trades, (t) => splitTags(t.emotion_before)),
     by_mistake: segment(trades, (t) => splitTags(t.mistakes)),
     by_tag: segment(trades, (t) => splitTags(t.tags)),

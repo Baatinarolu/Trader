@@ -66,6 +66,13 @@ async function series(symbol, tf, limit = 500, opts = {}) {
     const kept = candles.filter((c) => Number(c.t) < cut);
     if (kept.length >= 60) candles = kept;
   }
+  // M68: named LTF evidence AND its ATR/zone ranking must see only candles
+  // available at the observation clock, before any indicator/SMC calculation.
+  if (opts.closedOnly) {
+    const step = require('./entry-models').duration(tf);
+    const clock = Number(opts.asOf || opts.observedAt || Date.now());
+    if (step) candles = candles.filter((b) => Number(b.t) + step <= clock);
+  }
   if (candles.length !== trimmedFrom) {
     // The meta must describe the candles the analysis actually used, or the chart
     // caption and the "read from" line would quote the live bar during a replay.
@@ -76,7 +83,7 @@ async function series(symbol, tf, limit = 500, opts = {}) {
   const ind = Ind.snapshot(candles);
   const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null });
   const last = candles[candles.length - 1];
-  return { tf, candles, meta, ind, smc, price: last.c, atr: smc.atr || ind.atr || 0, bars: candles.length };
+  return { tf, candles, meta, ind, smc, price: last ? last.c : null, atr: smc.atr || ind.atr || 0, bars: candles.length };
 }
 
 /* ══════════════════════════════════════════════════════ 1. the hierarchy ═══ */
@@ -522,11 +529,11 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   const [htf, mtf, ltfRaw] = await Promise.all([
     loadSeries(symbol, L.bias_tf, opts.htfLimit || 400, cut),
     loadSeries(symbol, tf, opts.limit || 600, cut),
-    L.trigger_tf === tf ? null : loadSeries(symbol, L.trigger_tf, opts.ltfLimit || 400, cut),
+    L.trigger_tf === tf ? null : loadSeries(symbol, L.trigger_tf, opts.ltfLimit || 400, { ...cut, closedOnly: opts.entryModels !== false, observedAt: opts.observedAt }),
   ]);
   const ltf = ltfRaw || mtf;
 
-  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR, counterTrend: opts.counterTrend, useBreakers: opts.useBreakers } });
+  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR, counterTrend: opts.counterTrend, useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.asOf || opts.observedAt } });
   const align = alignment(htf, mtf, ltf, td);
   const mech = mechanics({ htf, mtf, ltf, align, td, symbol });
   const read = narrative({ symbol, mtf, htf, ltf, align, mech, td });
@@ -541,7 +548,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
       method: td.method, layers: td.layers, steps: td.steps, checks: td.checks,
       score: td.score, grade: td.grade, status: td.status, direction: td.direction,
       headline: td.headline, playbook: td.playbook, blocked: td.blocked,
-      conviction: td.conviction,
+      conviction: td.conviction, entry_setup: td.entry_setup,
       ...(td.countertrend ? { countertrend: td.countertrend } : {}),
       conflicts: td.conflicts, // both aliases survive; Now/method gate consume this one
       conflict_detail: td.conflicts, crt_plan: td.crt_plan, levels: td.levels,

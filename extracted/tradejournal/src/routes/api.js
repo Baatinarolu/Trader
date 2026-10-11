@@ -15,6 +15,13 @@ const N = require('../notify');
 const createBotsRouter = require('./bots');
 
 const router = asyncRouter();
+router.use((req, res, next) => {
+  if (req.query.entry_model && req.query.entry_model !== 'unknown') {
+    try { require('../bots/entry-models').normaliseName(req.query.entry_model); }
+    catch (e) { return res.status(400).json({ error: e.message }); }
+  }
+  next();
+});
 const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 
@@ -257,6 +264,7 @@ function tradeFilters(req) {
     status: req.query.status && req.query.status !== 'all' ? req.query.status : null,
     symbol: req.query.symbol || null,
     strategy_id: req.query.strategy_id || null,
+    entry_model: req.query.entry_model || null,
     from: req.query.from || null, to: req.query.to || null,
     asset_class: req.query.asset_class || null,
     tag: req.query.tag || null,
@@ -314,7 +322,9 @@ router.post('/trades', requireAuth, async (req, res) => {
   const accountId = num(body.account_id, 0) || (await db.prepare('SELECT id FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
   if (!body.symbol) return res.status(400).json({ error: 'Symbol is required' });
   if (!body.entry) return res.status(400).json({ error: 'Entry price is required' });
-  const trade = T.normalise(body, { instrument: spec, tz: (await settingsOf(req)).timezone });
+  let trade;
+  try { trade = T.normalise(body, { instrument: spec, tz: (await settingsOf(req)).timezone }); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
   /* M102 — stamp the version the trade is taken under, AT THE MOMENT IT IS TAKEN. Without
    * this the version history exists but nothing is attributed to it and by_strategy would
    * still average across revisions, which is the exact defect being fixed. Stamped only when
@@ -341,7 +351,9 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
   const instruments = await instrumentMap(req.user.id);
   const merged = { ...existing, ...req.body };
   const spec = instruments[String(merged.symbol || '').toUpperCase()] || null;
-  const trade = T.normalise(merged, { instrument: spec, tz: (await settingsOf(req)).timezone });
+  let trade;
+  try { trade = T.normalise(merged, { instrument: spec, tz: (await settingsOf(req)).timezone }); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
   await T.update(db, req.user.id, id, { ...trade, account_id: num(merged.account_id, existing.account_id) });
   if (Array.isArray(req.body.rule_checks)) {
     await db.prepare('DELETE FROM rule_checks WHERE trade_id=?').run(id);
@@ -970,7 +982,7 @@ router.get('/export/csv', requireAuth, async (req, res) => {
   const rows = (await db.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({ ...params, user_id: req.user.id })).map((t) => P.decorate(t, tz));
   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
-    'setup_grade', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
+    'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
     'thesis', 'lesson', 'execution_notes', 'notes'];
   const esc = (v) => {
     const s = v === null || v === undefined ? '' : String(v);
@@ -1019,7 +1031,8 @@ router.post('/import/csv', requireAuth, async (req, res) => {
     opened: findCol(['opened_at', 'open_time', 'entry_time', 'date', 'datetime', 'open_date', 'time_open', 'opened']),
     closed: findCol(['closed_at', 'close_time', 'exit_time', 'close_date', 'time_close', 'closed']),
     fees: findCol(['fees', 'commission', 'fee', 'cost', 'swap']),
-    strategy: findCol(['strategy', 'setup', 'system', 'playbook']),
+    strategy: findCol(['strategy_name', 'strategy', 'setup', 'system', 'playbook']),
+    entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
     tags: findCol(['tags', 'tag', 'labels']),
     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
@@ -1052,6 +1065,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
           closed_at: map.closed > -1 ? r[map.closed] : null,
           fees: map.fees > -1 ? r[map.fees] : 0,
           strategy_name: map.strategy > -1 ? r[map.strategy] : '',
+          entry_model: map.entry_model > -1 ? r[map.entry_model] : null,
+          entry_tf: map.entry_tf > -1 ? r[map.entry_tf] : null,
+          entry_evidence: map.entry_evidence > -1 ? r[map.entry_evidence] : null,
           tags: map.tags > -1 ? r[map.tags] : '',
           notes: map.notes > -1 ? r[map.notes] : '',
           status: (map.exit > -1 && String(r[map.exit] || '').trim()) ? 'closed' : 'open',

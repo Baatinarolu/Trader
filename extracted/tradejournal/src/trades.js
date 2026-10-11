@@ -5,6 +5,7 @@
  */
 const I = require('./instruments');
 const P = require('./performance');
+const Entry = require('./bots/entry-models');
 
 const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -24,6 +25,8 @@ function normalise(raw, ctx = {}) {
   const fees = num(raw.fees);
   const vpp = num(spec.value_per_point, 1) || 1;
 
+  const model = Entry.normaliseName(raw.entry_model);
+  const entryTf = raw.entry_tf == null || raw.entry_tf === '' ? null : String(raw.entry_tf).trim().slice(0, 16);
   const t = {
     symbol: String(raw.symbol || spec.symbol || '').toUpperCase().trim(),
     asset_class: spec.asset_class || raw.asset_class || 'stocks',
@@ -40,6 +43,7 @@ function normalise(raw, ctx = {}) {
     strategy_id: raw.strategy_id ? num(raw.strategy_id) : null,
     strategy_name: raw.strategy_name || '',
     setup_grade: raw.setup_grade || '',
+    entry_model: model, entry_tf: entryTf, entry_evidence: Entry.encodeEvidence(raw.entry_evidence, model, entryTf),
     session: raw.session || '',
     timeframes: raw.timeframes || '',
     emotion_before: raw.emotion_before || '',
@@ -167,7 +171,7 @@ const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction', 
   'entry', 'exit', 'stop', 'target', 'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'planned_r',
   'mae_r', 'mfe_r', 'stop_moved', 'exit_reason', 'strategy_id', 'strategy_name', 'setup_grade', 'session', 'timeframes',
   'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags', 'thesis', 'lesson', 'execution_notes',
-  'strategy_version',
+  'strategy_version', 'entry_model', 'entry_tf', 'entry_evidence',
   'notes', 'screenshot_url', 'legs', 'entries'];
 
 async function insert(db, userId, t) {
@@ -212,6 +216,10 @@ function listQuery(filters = {}) {
   if (filters.account_id) { where.push('account_id = @account_id'); params.account_id = Number(filters.account_id); }
   if (filters.status) { where.push('status = @status'); params.status = filters.status; }
   if (filters.symbol) { where.push('UPPER(symbol) = @symbol'); params.symbol = String(filters.symbol).toUpperCase(); }
+  if (filters.entry_model) {
+    if (filters.entry_model === 'unknown') where.push('entry_model IS NULL');
+    else { where.push('entry_model = @entry_model'); params.entry_model = Entry.normaliseName(filters.entry_model); }
+  }
   if (filters.strategy_id) { where.push('strategy_id = @strategy_id'); params.strategy_id = Number(filters.strategy_id); }
   if (filters.from) { where.push("date(COALESCE(closed_at, opened_at)) >= date(@from)"); params.from = filters.from; }
   if (filters.to) { where.push("date(COALESCE(closed_at, opened_at)) <= date(@to)"); params.to = filters.to; }

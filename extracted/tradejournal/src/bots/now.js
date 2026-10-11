@@ -181,6 +181,24 @@ function build(p = {}) {
         text: `Watch for the retrace to ${zone[0]} – ${zone[1]}; reaching it is a reason to re-check, not permission to enter.` };
     }
     invalidate = 'Nothing is armed. Re-run the analysis when the blocking condition changes.';
+  } else if (direction && allowed && allowed.ok && allowed.levels
+      && ['flip', 'market_shift'].includes(allowed.entry_model)) {
+    // M68: the causal LTF candidate, not a parallel CRT safer/aggressive scenario,
+    // is the ONLY entry/stop authority. Keep the pre-existing method target/risk.
+    const lv = allowed.levels, target = lv.targets[0];
+    side = direction; action = direction > 0 ? 'BUY' : 'SELL';
+    order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the confirmed lower zone',
+      entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
+      entry_model: allowed.entry_model, entry_tf: allowed.entry_tf, entry_evidence: allowed.entry_evidence,
+      mode: td.countertrend ? 'countertrend-pullback' : 'named-entry',
+      risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
+      size_note: td.countertrend ? 'Counter-HTF pullback: at most half ordinary same-grade risk.' : 'Use the actual candidate risk plan; model name is not a sizing override.',
+      rr_warning: null };
+    headline = `${symbol}: ${allowed.entry_tf} ${allowed.entry_model} entry at ${lv.entry}, after the causal zone pullback.`
+      + (td.countertrend ? ` Bounded internal pullback; the HTF narrative is still ${td.countertrend.htf_bias > 0 ? 'bullish' : 'bearish'}.` : ' The higher-timeframe method still decides direction and target.');
+    watch = { level: lv.entry, kind: 'entry', condition: 'causal lower zone and sweep extreme must still hold',
+      text: `Limit ${lv.entry}, stop ${lv.stop}, target ${target.price} (${target.rr}R).` };
+    invalidate = lv.invalidation;
   } else if (direction && td.countertrend && allowed && allowed.ok && allowed.levels) {
     // M33: one authority for prices — the actual eligible setup owns the stop and
     // its SINGLE HTF-zone target. Never re-price it from a parallel CRT scenario.
@@ -353,6 +371,7 @@ function build(p = {}) {
     },
     live: quote ? { price: num(quote.price), at: quote.at ? new Date(quote.at).toISOString() : null, provider: quote.provider || null, drift_atr: drift === null ? null : Number(drift.toFixed(2)) } : null,
     action, side, headline,
+    ...(td.entry_setup ? { entry_model: allowed ? allowed.entry_model || 'none' : 'none', entry_tf: allowed ? allowed.entry_tf : null } : {}),
     armed: !!order,
     order,
     watch,

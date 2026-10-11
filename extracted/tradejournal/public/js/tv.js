@@ -125,7 +125,9 @@
       if (!plan) return '';
       const lv = plan.levels || plan;
       const targets = (lv.targets || []).map((t) => `${t.label || t.role || 'T'} ${Number(t.price).toFixed(4)}`).join(' → ');
-      return `${plan.action} ${symbol} ${tf} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
+      const model = plan.entry_model || lv.entry_model;
+      const execution = plan.entry_tf || lv.entry_tf;
+      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
     },
 
     /**

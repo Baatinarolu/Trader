@@ -23,6 +23,7 @@ const C = require('../candles');
 const Momentum = require('./momentum');
 const SMC = require('./smc');
 const Setup = require('./setup');
+const Entry = require('./entry-models');
 const Now = require('./now');
 const Predict = require('./predict');
 const Cor = require('./correction');
@@ -255,7 +256,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   const replay = trim > 0 || cut.asOf ? cut : null;
 
   const [momentum, news] = await Promise.all([
-    Momentum.analyse(sym, tf, { limit: 600, ...cut, minRR: floorRR(opts.minRR) }),
+    Momentum.analyse(sym, tf, { limit: 600, ...cut, minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.nowMs }),
     newsCheck(sym, opts.newsWindowMin || 45),
   ]);
 
@@ -279,7 +280,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
     indicators: series.ind,
     balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
     newsBlackout: news.blackout, minRR: floorRR(opts.minRR),
-    topdown: momentum.topdown,          // the method decides whether a side may be armed
+    topdown: momentum.topdown, useBreakers: !!opts.useBreakers,          // the method decides whether a side may be armed
     sessionPref: opts.sessionPref || null,   // M26 — the trader's one window
   });
 
@@ -292,9 +293,18 @@ async function analyse(symbol, tf = '15m', opts = {}) {
     }
   }
 
+  // Historical legacy research has DIFFERENT entry/stop/target geometry. Keep
+  // its historical table, but never turn it into live named-model probabilities.
+  if (prediction && momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) {
+    prediction = { ...prediction, setups: [], buy: null, sell: null, live_model_calibration: 'unvalidated',
+      withheld_for_entry_model: momentum.topdown.entry_setup.entry_model,
+      summary: ['Historical results use legacy research geometry, not this named LTF execution.',
+        'Live probabilities and refined legacy plans are withheld until separately calibrated.'] };
+  }
+
   // blend: the setup's own grade + the market's measured edge + this setup's probability
   const best = setups.candidates[0] || null;
-  const predRow = !momentum.topdown.countertrend && prediction && prediction.setups && best ? prediction.setups.find((p) => p.dir === best.dir) : null;
+  const predRow = !(momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) && !momentum.topdown.countertrend && prediction && prediction.setups && best ? prediction.setups.find((p) => p.dir === best.dir) : null;
   let daily = null;
   if (opts.userId) { try { daily = await Cor.dailyState(opts.userId, { accountId: opts.accountId }); } catch (e) { daily = null; } }
 
@@ -323,8 +333,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
     // build the *untrimmed* read as well, so a replay can say what happened after
     const L2 = Momentum.topdown.layersFor(tf);
     const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
-    const ltfRaw = L2.trigger_tf === tf ? null : await Momentum.series(sym, L2.trigger_tf, 400);
-    const tdNow = Momentum.topdown.build({ symbol: sym, tf, series: full[0], biasSeries: full[1], triggerSeries: ltfRaw || full[0], opts: { minRR: floorRR(opts.minRR) } });
+    const ltfRaw = L2.trigger_tf === tf ? null : await Momentum.series(sym, L2.trigger_tf, 400, { closedOnly: opts.entryModels !== false, observedAt: opts.nowMs });
+    const tdNow = Momentum.topdown.build({ symbol: sym, tf, series: full[0], biasSeries: full[1], triggerSeries: ltfRaw || full[0], opts: { minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.nowMs || undefined } });
     replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
   }
   const now = Now.build({
@@ -375,6 +385,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
       direction: prediction.direction, setups: prediction.setups, buy: prediction.buy, sell: prediction.sell,
       model: prediction.model, backtest: prediction.backtest, summary: prediction.summary,
       current: predRow || null, error: prediction.error || null,
+      live_model_calibration: prediction.live_model_calibration || null, withheld_for_entry_model: prediction.withheld_for_entry_model || null,
     } : null,
     news,
     daily,
@@ -389,8 +400,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
   parts.push(`${sym} ${tf}: ${v.action}${v.grade && v.grade !== 'no-trade' ? ` (${v.grade}, ${v.score}/100)` : ''} — ${v.headline}`);
   if (td.headline) parts.push(`${td.status === 'confirmed' ? 'Method: confirmed' : 'Method: waiting'} — ${td.headline}`);
   if (td.playbook && td.playbook.length) parts.push(`Next: ${td.playbook[0]}`);
-  if (!td.countertrend && predRow && predRow.p_win != null) parts.push(`Modelled chance ${predRow.p_win}% to the first target (${predRow.similar_setups} similar setups, expected ${predRow.expected_r}R).`);
-  if (!td.countertrend && prediction && prediction.backtest && prediction.backtest.expectancy_r != null) parts.push(`This market/timeframe shows ${prediction.backtest.expectancy_r > 0 ? '+' : ''}${prediction.backtest.expectancy_r}R expectancy over ${prediction.backtest.decided} resolved setups.`);
+  if (!(td.entry_setup && td.entry_setup.applies) && !td.countertrend && predRow && predRow.p_win != null) parts.push(`Modelled chance ${predRow.p_win}% to the first target (${predRow.similar_setups} similar setups, expected ${predRow.expected_r}R).`);
+  if (!(td.entry_setup && td.entry_setup.applies) && !td.countertrend && prediction && prediction.backtest && prediction.backtest.expectancy_r != null) parts.push(`This market/timeframe shows ${prediction.backtest.expectancy_r > 0 ? '+' : ''}${prediction.backtest.expectancy_r}R expectancy over ${prediction.backtest.decided} resolved setups.`);
   if (news.blackout) parts.push(`NEWS BLACKOUT: ${news.blackout}`);
   if (daily && daily.status !== 'clear') parts.push(`Personal guardrail: ${daily.message}`);
   if (momentum.conflicts.length) parts.push(`Caution: ${momentum.conflicts.join(' ')}`);
@@ -444,11 +455,11 @@ async function chart(symbol, tf = '15m', opts = {}) {
   const [entry, bias, triggerRaw] = await Promise.all([
     Momentum.series(sym, tf, METHOD_ENTRY_BARS, cut),   // M124: the method's window, NOT `bars`
     Momentum.series(sym, L.bias_tf, 400, cut),
-    L.trigger_tf === tf ? Promise.resolve(null) : Momentum.series(sym, L.trigger_tf, 400, cut),
+    L.trigger_tf === tf ? Promise.resolve(null) : Momentum.series(sym, L.trigger_tf, 400, { ...cut, closedOnly: opts.entryModels !== false, observedAt: opts.nowMs }),
   ]);
   const trig = triggerRaw || entry;
 
-  const td = Momentum.topdown.build({ symbol: sym, tf, series: entry, biasSeries: bias, triggerSeries: trig, opts: { minRR: floorRR(opts.minRR) } });
+  const td = Momentum.topdown.build({ symbol: sym, tf, series: entry, biasSeries: bias, triggerSeries: trig, opts: { minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: cut.asOf || opts.nowMs || undefined } });
   entry.smc.crt = Momentum.crtView(td, tf);
 
   const biasTrend = bias.smc.structure ? bias.smc.structure.trend : 'ranging';
@@ -469,7 +480,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
   const setups = Setup.buildSetups(entry.smc, {
     price: entry.price, atr: entry.atr, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
     indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
-    assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td,
+    assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
     sessionPref: opts.sessionPref || null,   // M26
   });
 
@@ -479,7 +490,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
   const crt = td.crt_plan;
   const best = setups.candidates.find((c) => c.levels && c.dir === td.direction) || setups.candidates[0] || null;
   let plan = null;
-  if (crt && td.direction !== 0 && !td.blocked && best && best.ok) {
+  if (crt && td.direction !== 0 && !td.blocked && best && best.ok && !['flip', 'market_shift'].includes(best.entry_model)) {
     plan = {
       source: 'crt', dir: crt.dir, side: crt.side, method: td.method.name,
       entry: crt.safer.entry, stop: crt.safer.stop,
@@ -495,7 +506,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
     };
   } else if (best && best.ok && best.levels && !td.blocked) {
     plan = {
-      source: td.countertrend ? 'countertrend-pullback' : 'setup', dir: best.dir, side: best.side, method: td.countertrend ? td.method.name : null,
+      source: td.countertrend ? 'countertrend-pullback' : 'setup', entry_model: best.entry_model || null, entry_tf: best.entry_tf || null, dir: best.dir, side: best.side, method: td.countertrend ? td.method.name : null,
       ...best.levels,
       entry_status: best.levels.entry_status,
     };
@@ -570,13 +581,14 @@ async function chart(symbol, tf = '15m', opts = {}) {
       candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok,
         // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
         // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
+        entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence,
         no_trade: c.no_trade || [], levels: c.levels, action: c.action })),
     },
     quote: { price: entry.price, atr: entry.atr, change_pct: entry.candles.length > 1 ? r2(((entry.price - entry.candles[0].c) / entry.candles[0].c) * 100) : null },
   };
 }
 
-async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, sessionPref = null } = {}) {
+async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, sessionPref = null, useBreakers = false, entryModels } = {}) {
   const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
   const rows = [];
   let cursor = 0;
@@ -585,7 +597,7 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
       const sym = list[cursor++];
       try {
         const [momentum, series] = await Promise.all([
-          Momentum.analyse(sym, tf, { limit: 400 }),
+          Momentum.analyse(sym, tf, { limit: 400, useBreakers, entryModels }),
           Momentum.series(sym, tf, 400),
         ]);
         // M50: a scan is a real observation of the market, so it reads and updates the same state
@@ -594,7 +606,7 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
         const scanHyst = await applyBiasHysteresis(sym, tf, momentum, series);
         const specs = Setup.buildSetups(series.smc, {
           price: series.price, atr: series.atr, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
-          indicators: series.ind, minRR: 2, topdown: momentum.topdown,
+          indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
           sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
                          // No symbol on this path either, so the pair-conflict note stays
                          // null rather than false.
@@ -614,7 +626,8 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
           bias_held: scanHyst.held, bias_changed_because: scanHyst.changed_because,
           mechanics: momentum.mechanics.score, mechanics_grade: momentum.mechanics.grade,
           action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
-          setup_side: best ? best.side : null,
+          setup_side: best ? best.side : null, entry_model: best ? best.entry_model : null,
+          entry_tf: best ? best.entry_tf : null, entry_evidence: best ? best.entry_evidence : null,
           entry_status: best && best.levels ? best.levels.entry_status : null,
           entry: best && best.levels ? best.levels.entry : null,
           stop: best && best.levels ? best.levels.stop : null,
@@ -659,6 +672,7 @@ async function ensureSignalsTable() {
     rr_primary REAL, rr_final REAL,
     mechanics REAL,
     sentiment TEXT,           -- the read-aloud headline at the time
+    entry_model TEXT, entry_tf TEXT, entry_evidence TEXT,
     entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf
     mtf_tf TEXT,
     risk_atr REAL,
@@ -676,7 +690,8 @@ async function ensureSignalsTable() {
   const cols = await db.prepare('PRAGMA table_info(bot_signals)').all();
   const have = new Set((cols || []).map((c) => c.name));
   for (const [name, type] of [['entry_mode', 'TEXT'], ['mtf_tf', 'TEXT'], ['risk_atr', 'REAL'],
-    ['method_state', 'TEXT'], ['method_dir', 'INTEGER'], ['method_blocked', 'INTEGER']]) {
+    ['method_state', 'TEXT'], ['method_dir', 'INTEGER'], ['method_blocked', 'INTEGER'],
+    ['entry_model', 'TEXT'], ['entry_tf', 'TEXT'], ['entry_evidence', 'TEXT']]) {
     if (!have.has(name)) await db.exec(`ALTER TABLE bot_signals ADD COLUMN ${name} ${type}`);
   }
 }
@@ -695,6 +710,8 @@ async function savePlan(userId, p = {}) {
   if (!symbol || !Number.isFinite(entry) || !Number.isFinite(stop) || entry === stop) {
     return { saved: 0, reason: 'symbol, entry and stop (entry ≠ stop) are required' };
   }
+  const model = Entry.normaliseName(p.entry_model);
+  const evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
   const dir = stop < entry ? 1 : -1;
   const risk = Math.abs(entry - stop);
   const prices = (Array.isArray(p.targets) ? p.targets : [])
@@ -704,14 +721,15 @@ async function savePlan(userId, p = {}) {
   const rr = (price) => (price == null ? null : Math.round((Math.abs(price - entry) / risk) * 100) / 100);
   const info = await db.prepare(`INSERT INTO bot_signals
     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final,
-     mechanics, sentiment, entry_mode, mtf_tf, risk_atr)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     mechanics, sentiment, entry_mode, mtf_tf, risk_atr, entry_model, entry_tf, entry_evidence)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     userId, symbol, timeframe, dir, dir > 0 ? 'long' : 'short',
-    p.grade || null, p.score == null ? null : Number(p.score), p.p_win == null ? null : Number(p.p_win),
+    p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.p_win == null ? null : Number(p.p_win),
     entry, stop, t1, t2, rr(t1), rr(t2),
     p.mechanics == null ? null : Number(p.mechanics), p.note ? String(p.note).slice(0, 400) : null,
     p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
     Number.isFinite(Number(p.risk_atr)) ? Number(p.risk_atr) : null,
+    model, p.entry_tf || null, evidence,
   );
   return { saved: 1, ids: [info.lastInsertRowid] };
 }
@@ -731,13 +749,14 @@ async function saveSignals(userId, payload) {
   const td = payload.topdown || null;
   const ins = await db.prepare(`INSERT INTO bot_signals
     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final, mechanics, sentiment,
-     method_state, method_dir, method_blocked)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+     method_state, method_dir, method_blocked, entry_model, entry_tf, entry_evidence)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   let saved = 0;
   const out = [];
   for (const c of cands) {
     const L = c.levels;
-    const predRow = !(td && td.countertrend) && payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
+    const model = Entry.normaliseName(c.entry_model || L.entry_model);
+    const predRow = !['flip', 'market_shift'].includes(model) && !(td && td.countertrend) && payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
     const info = await ins.run(
       userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
       predRow ? predRow.p_win : null,
@@ -747,6 +766,7 @@ async function saveSignals(userId, payload) {
       payload.momentum ? payload.momentum.mechanics.score : null,
       payload.headline ? payload.headline.text.slice(0, 400) : null,
       td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
+      model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
     );
     out.push(info.lastInsertRowid);
     saved++;
@@ -825,9 +845,13 @@ async function signalStats(userId) {
   const resolved = all.filter((s) => ['win', 'loss', 'expired'].includes(s.status));
   const wins = resolved.filter((s) => s.status === 'win');
   const byGrade = {};
+  const byModel = {};
   for (const s of resolved) {
     const b = byGrade[s.grade] || (byGrade[s.grade] = { grade: s.grade, n: 0, wins: 0, r: 0 });
     b.n++; if (s.status === 'win') b.wins++; b.r += s.outcome_r || 0;
+    const name = s.entry_model == null ? 'unknown' : s.entry_model;
+    const model = byModel[name] || (byModel[name] = { entry_model: name, resolved: 0, wins: 0, r: 0 });
+    model.resolved++; if (s.status === 'win') model.wins++; model.r += s.outcome_r || 0;
   }
   return {
     total: all.length,
@@ -838,6 +862,8 @@ async function signalStats(userId) {
     win_rate: resolved.length ? r2((wins.length / resolved.length) * 100) : null,
     total_r: r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0)),
     expectancy_r: resolved.length ? r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0) / resolved.length) : null,
+    by_entry_model: Object.values(byModel).map((m) => ({ entry_model: m.entry_model, resolved: m.resolved,
+      win_rate: r2(m.wins / m.resolved * 100), expectancy_r: r2(m.r / m.resolved), sample_ready: m.resolved >= 30 })),
     by_grade: Object.values(byGrade).map((b) => ({ grade: b.grade, resolved: b.n, win_rate: r2((b.wins / b.n) * 100), expectancy_r: r2(b.r / b.n) })).sort((a, b) => String(a.grade).localeCompare(String(b.grade))),
   };
 }

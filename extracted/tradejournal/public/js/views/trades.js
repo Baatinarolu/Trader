@@ -122,7 +122,7 @@
           <thead><tr>
             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
-              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['session_label', 'Session'],
+              ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
               ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', '']].map(([k, l]) =>
               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
           </tr></thead>
@@ -140,6 +140,7 @@
             <td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
             <td class="tiny nowrap">${U.esc(t.strategy_name || '<span class="muted">untagged</span>').replace(/&lt;|&gt;/g, '')}</td>
             <td class="tiny">${U.esc(t.setup_grade || '—')}</td>
+            <td class="tiny nowrap">${U.esc(t.entry_model == null ? 'Unknown' : t.entry_model)}${t.entry_tf ? ' · ' + U.esc(t.entry_tf) : ''}</td>
             <td class="tiny nowrap">${U.esc(t.session_label || '—')}</td>
             <td class="tiny"><span class="rating ${t.adherence >= 4 ? 'strong' : t.adherence <= 2 ? 'weak' : ''}">${U.rating(t.adherence)}</span></td>
             <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
@@ -232,6 +233,12 @@
         <label class="field"><span>Setup grade</span>
           <select id="tf-grade"><option value="">—</option>${list(['A+', 'A', 'B', 'C', 'D'], t.setup_grade)}</select>
         </label>
+        <label class="field"><span>Entry model</span>
+          <select id="tf-entrymodel"><option value="" ${t.entry_model == null ? 'selected' : ''}>Unknown / not recorded</option>
+            ${[['market_shift', 'Market shift'], ['flip', 'Flip'], ['none', 'None (explicitly no named model)']].map(([v, name]) => `<option value="${v}" ${t.entry_model === v ? 'selected' : ''}>${name}</option>`).join('')}</select>
+          <div class="field-note">Record the actual model; old untagged trades are never guessed.</div>
+        </label>
+        <label class="field"><span>Entry timeframe</span><input id="tf-entrytf" value="${U.esc(t.entry_tf || '')}" placeholder="e.g. 5m" /></label>
         <label class="field"><span>Exit reason</span>
           <select id="tf-exitreason"><option value="">—</option>${list(EXIT_REASONS, t.exit_reason)}</select>
         </label>
@@ -377,6 +384,8 @@
         strategy_id: g('strategy').value || null,
         strategy_name: g('strategy').value ? (Store.strategyById(g('strategy').value) || {}).name : '',
         setup_grade: g('grade').value,
+        entry_model: g('entrymodel').value || null, entry_tf: g('entrytf').value || null,
+        entry_evidence: g('entrymodel').value === t.entry_model && g('entrytf').value === (t.entry_tf || '') ? t.entry_evidence || null : null,
         exit_reason: g('exitreason').value,
         planned_r: g('plannedr').value,
         mae_r: g('mae').value, mfe_r: g('mfe').value,

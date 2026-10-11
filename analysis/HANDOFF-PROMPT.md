@@ -1,6 +1,61 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current continuation state — 2026-10-11 (supersedes historical handoff below)
+## Current M68 continuation state — 2026-10-11
+
+- Fixed branch `arena/762c0295-trader`, `/home/user/Trader`. M68 complete; read git for
+  commit/push state. Parent/control **663659a**. Ledger **132:69 done/2 partial/61 todo/0 no-action**.
+  Only gen-progress.py writes PROGRESS; all 132 IDs still partition into eight groups.
+- **M68 is actual causal LTF entry geometry, not just naming.** Same formed/touched MTF
+  POI → physical closed LTF sweep → later closed exact shift → causal lower OB or opted-in
+  confirmed failed-reaction flip → strictly later midpoint AND entry-price pullback.
+  Zone must overlap MTF POI; sweep cannot borrow an old distant touch. Later close-through
+  invalidates. Missing ATR cannot borrow a MTF stop. Known failures veto; missing distinct
+  layers/unknown formation stay unknown. entryModels:false is research isolation.
+- Actual lower loader filters forming/future data BEFORE ATR/SMC. analyse/chart share
+  explicit clocks. Named candidate owns entry/stop/target in Now/chart/Copy. Step5 remains
+  incomplete until actual model pullback. HTF narrative, defining key, single original
+  CRT/M33 target, half counter-risk and M3/M8/M26/news/RR/grade/range guards remain.
+- M70 causal extreme preference survives live mitigation; actual later fuel excursion
+  widens the stop if farther. Flip stays opt-in. BOS/CHoCH/MSS names are report-only.
+- Nullable entry_model/entry_tf/entry_evidence in BOTH signal schema owners/migrations,
+  trades normaliser/whitelist/CRUD/close, CSV/JSON round trips, actual bot prefill/modal,
+  closed journal/resolved signal model review. Historical NULL/unknown is NOT none.
+  No guessed tags/backfill; retagging clears contradictory evidence; below30 descriptive.
+  Enum/evidence validation includes actual HTTP cases and two-owner isolation.
+- Named live probabilities, legacy refined plans and stored p_win are WITHHELD; no named
+  calibration exists. Historical research is labelled as other geometry, not model odds.
+- New probes against663659a: provenance **15/0 vs5/10**, composition **62/0 vs12/50**,
+  detector entries **16/0 vs0/16**, consumers/storage **47/0 vs5/42**. **140 current checks**.
+  SMC discovery census96 reads/277 causal associations/129 flip refs/0 invalid/0 legacy diffs.
+  Composition fixtures are explicit structural inputs with coherent complete overlapping
+  buckets. Raw lower detector positives inject NO structure/zones/sweeps: MTF context is
+  explicit and one final pullback is manufactured. NOT full-method historical discovery.
+- Frozen provenance, execution (old persistence tail), complete storage snapshots measured
+  separately. Bare60-seed stdout identical except runtime at every stage: n24/29.2%/
+  +0.7908R/PF2.33, **blind to named entry context**. Native10-seed default13750 reads/
+  known1006/ready0/fills0. Opt-in13718/known912/ready0/same ONE unnamed fallback with M68
+  ON/OFF, +22.1135R expiry on synthetic seed10. **Named outcome sample ZERO; no edge/ranking**.
+  Persistence-stage default/native/opt-in stdout matches execution except runtime.
+  Final-step presentation corrected separately60/2→62/0; candidate differences0/8.
+- Latest regressions: TD77/0, Now46/0, chart36/0, API121/0, M33 67/0, M70 30/0,
+  M26 49/0, M34 12/0/full110 neutral (explicitly M33 AND M68 OFF), M12719/0 consumer-only,
+  M10230/0, reverify67/0. Smoke21/21,0 console/style failures; timed-out command subsequently
+  completed, final log read, NOT rerun. Bots204/2: both existing sample floors with14 fills/
+  checks,0 parity mismatches. Parent663659a also14/14/0 at same 1h bar clock. No lower floor.
+- Authoritative record `analysis/M68-ENTRY-MODELS.md`, BASELINE addition and cumulative
+  pristine patch: **34 app files /467534 bytes, clean apply,0 round-trip differences**. Rebuild/check artifact excludes .git, node_modules, data and actual env
+  secrets. Never touch the real repo .git or commit credentials/databases/generated data.
+- Current live preview is **labelled offline synthetic/local SQLite**, not production data.
+  HTTP tests do not validate Vercel/Turso/Yahoo/OKX/auth/cron or the production401.
+- Next mechanism: **M54/M77** ordinary target composition/TF alignment, preserving M33's
+  sanctioned opposing-HTF-zone exception. Also partial M30/M125; remaining61 todo not omitted.
+  Keep every row; measure each fix separately; record negatives. Do not pursue 70% by shrinking
+  targets. User skipped questions repeatedly: proceed on documented judgment.
+
+Everything below is historical provenance. In particular old M68-open counts and old
+branch/switch/push instructions must NOT override the current state above.
+
+## Prior M70 continuation state — historical (superseded by M68 above)
 
 - Repository `/home/user/Trader`; fixed session branch **arena/762c0295-trader**. Never
   execute old branch/switch/push instructions below. Latest milestone closes **M70** (M68 prerequisite), following **M33** and

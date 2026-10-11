@@ -161,6 +161,7 @@ CREATE TABLE IF NOT EXISTS bot_signals (
     rr_primary REAL, rr_final REAL,
     mechanics REAL,
     sentiment TEXT,           -- the read-aloud headline at the time
+    entry_model TEXT, entry_tf TEXT, entry_evidence TEXT,
     entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf  (how this plan was anchored)
     mtf_tf TEXT,              -- the lower timeframe that confirmed an mtf plan
     risk_atr REAL,            -- stop distance in ATR at plan time
@@ -317,6 +318,9 @@ CREATE TABLE IF NOT EXISTS trades (
   strategy_id INTEGER REFERENCES strategies(id) ON DELETE SET NULL,
   strategy_name TEXT DEFAULT '',
   setup_grade TEXT DEFAULT '',                -- A+ / A / B / C
+  entry_model TEXT,                           -- flip | market_shift | none (NULL = historical unknown)
+  entry_tf TEXT,
+  entry_evidence TEXT,
   session TEXT DEFAULT '',
   timeframes TEXT DEFAULT '',
   emotion_before TEXT DEFAULT '',
@@ -439,6 +443,12 @@ async function migrate() {
   // M102: which version of its strategy a trade was taken under. NULL means the trade
   // predates versioning or has no strategy at all - it is never guessed at read time.
   await add('trades', 'strategy_version', 'INTEGER');
+  // M68: never backfill a named model from grade/zone guesses. Unknown != none.
+  for (const table of ['trades', 'bot_signals']) {
+    await add(table, 'entry_model', 'TEXT');
+    await add(table, 'entry_tf', 'TEXT');
+    await add(table, 'entry_evidence', 'TEXT');
+  }
 
   /* M102 backfill. Every strategy that has no version history gets an immutable v1
    * snapshot of the rule set it currently holds, and every trade already linked to it is
