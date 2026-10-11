@@ -30,6 +30,7 @@
  */
 
 const I = require('../instruments');
+const Entry = require('./entry-models');
 const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
 
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -343,6 +344,70 @@ function methodRiskMult(td, dir) {
   return counter || conflicts.some((c) => c.kind === 'counter-trend-crt') ? 0.5 : 1;
 }
 
+/** M70: shared MTF POI selector. Flips remain opt-in (M47); unmitigated
+ * extreme-over-overlapping-flip takes precedence over the generic strength ranking. */
+function selectZone(analysis, dir, ctx = {}) {
+  const obs = ((analysis && analysis.order_blocks) || []).filter((z) => z.dir === dir && !z.breached);
+  const fvgs = ((analysis && analysis.fvgs) || []).filter((g) => g.dir === dir && !g.filled);
+  // prefer a fresh, strong OB with an unfilled FVG overlapping or nested
+  // M47 - Ep 14: flip zones are computed and correctly named but consumed by NOTHING.
+  // "A supply flip zone is formed when a demand zone fails." findBreakers() emits them and
+  // the API returns them, yet grep finds only four hits in src/ - the docstring, the
+  // computation, the output and the API payload. He trades them as points of interest in
+  // their own right, so they belong in the same candidate pool as un-breached order blocks.
+  // Opt-in (ctx.useBreakers) until it is measured; the `retested` flag is required, which is
+  // his own confirmation step - "retest since the break = confirmation the flip holds".
+  const breakers = ctx.useBreakers
+    ? ((analysis && analysis.breakers) || []).filter((b) => b.dir === dir && b.retested)
+    : [];
+  const obCandidates = obs.map((z) => {
+    const overlap = fvgs.find((g) => g.bottom <= z.top && g.top >= z.bottom);
+    const reach = z.distance_atr;                          // how far price is from the zone
+    const proximity = clamp(1 - reach / 6, 0, 1);          // within 6 ATR is "reachable"
+    const score = z.strength + (z.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
+    return { zone: z, overlap, score, reach };
+  });
+  const breakerCandidates = breakers.map((b) => {
+    const overlap = fvgs.find((g) => g.bottom <= b.top && g.top >= b.bottom);
+    // a flip zone has no `fresh`/`breached` of its own; shape it so downstream can use it
+    // `fresh` on an order block means "recently formed". For a flip zone the equivalent
+    // confirmation is the RETEST, which the filter above already requires - his own three
+    // criteria are failed reaction, break of structure and a close beyond the reaction
+    // point, none of which is about recency. Keying it to bars_ago gave 0% of breakers the
+    // bonus against 90% of order blocks, which is most of the ranking gap by itself.
+    const zone = { ...b, fresh: true, breached: false, is_breaker: true };
+    const reach = b.distance_atr;
+    const proximity = clamp(1 - reach / 6, 0, 1);
+    const score = b.strength + (zone.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
+    return { zone, overlap, score, reach };
+  });
+  const scored = obCandidates.concat(breakerCandidates).sort((a, b) => b.score - a.score);
+  let bestOB = scored[0] || null;
+  const preference = Entry.preferExtreme({ chosen: bestOB, orderBlocks: obs,
+    flipZones: scored.filter((c) => c.zone.is_breaker).map((c) => c.zone),
+    sweeps: (analysis && analysis.sweeps) || [], dir, enabled: ctx.preferExtreme !== false });
+  if (preference) bestOB = obCandidates.find((c) => c.zone === preference.zone);
+  const bestFvg = fvgs.filter((g) => !bestOB || !(bestOB.overlap && bestOB.overlap.i === g.i)).sort((a, b) => b.size_atr - a.size_atr)[0] || null;
+
+  // M16 (decided): a standalone FVG no longer qualifies as the point of interest.
+  // The sniper-entry material is explicit — "ideally, I want the fair value gap to be
+  // WITHIN the order block itself… try not to enter at like a random fair value gap that
+  // is in the middle of nowhere." The asymmetry is deliberate and sanctioned: entering on
+  // ORDER BLOCK mitigation with no FVG present is allowed, but a lone FVG is not a POI.
+  // `bestFvg` is still computed because the reach calculation at the zoneReach block below
+  // uses it; it just can no longer form the zone.
+  // M47: this line rebuilds the zone as a NEW object, so anything a candidate carries has to
+  // be forwarded explicitly - the same trap as `no_trade` being stripped at index.js:394.
+  // Two things it got wrong for flip zones: `kind` was hardcoded 'order_block', which would
+  // have advertised a flip zone as an order block, and `entry` came from `body_mid`, which
+  // findBreakers does not copy - so a flip-zone point of interest would have had an
+  // UNDEFINED entry price.
+  const zMeta = bestOB ? bestOB.zone : null;
+  const zone = bestOB ? { kind: zMeta.is_breaker ? 'flip_zone' : 'order_block', top: zMeta.top, bottom: zMeta.bottom, mid: zMeta.mid, entry: zMeta.body_mid != null ? zMeta.body_mid : zMeta.mid, meta: zMeta, overlap: bestOB.overlap }
+    : null;
+  return { bestOB, bestFvg, zone, preference };
+}
+
 function buildSetups(analysis, ctx = {}) {
   const price = Number(ctx.price || (analysis && analysis.price));
   const atr = Number(ctx.atr || (analysis && analysis.atr)) || price * 0.001;
@@ -442,60 +507,11 @@ function buildSetups(analysis, ctx = {}) {
       !!disp, 15, disp ? `${disp.rangeAtr} ATR expansion bar, ${(disp.bodyRatio * 100).toFixed(0)}% body` : 'No expansion bar — price is drifting, not displacing.');
 
     /* ------------------------------------------------------------------- 3. the zone */
-    const obs = ((analysis && analysis.order_blocks) || []).filter((z) => z.dir === dir && !z.breached);
-    const fvgs = ((analysis && analysis.fvgs) || []).filter((g) => g.dir === dir && !g.filled);
-    // prefer a fresh, strong OB with an unfilled FVG overlapping or nested
-    // M47 - Ep 14: flip zones are computed and correctly named but consumed by NOTHING.
-    // "A supply flip zone is formed when a demand zone fails." findBreakers() emits them and
-    // the API returns them, yet grep finds only four hits in src/ - the docstring, the
-    // computation, the output and the API payload. He trades them as points of interest in
-    // their own right, so they belong in the same candidate pool as un-breached order blocks.
-    // Opt-in (ctx.useBreakers) until it is measured; the `retested` flag is required, which is
-    // his own confirmation step - "retest since the break = confirmation the flip holds".
-    const breakers = ctx.useBreakers
-      ? ((analysis && analysis.breakers) || []).filter((b) => b.dir === dir && b.retested)
-      : [];
-    const obCandidates = obs.map((z) => {
-      const overlap = fvgs.find((g) => g.bottom <= z.top && g.top >= z.bottom);
-      const reach = z.distance_atr;                          // how far price is from the zone
-      const proximity = clamp(1 - reach / 6, 0, 1);          // within 6 ATR is "reachable"
-      const score = z.strength + (z.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
-      return { zone: z, overlap, score, reach };
-    });
-    const breakerCandidates = breakers.map((b) => {
-      const overlap = fvgs.find((g) => g.bottom <= b.top && g.top >= b.bottom);
-      // a flip zone has no `fresh`/`breached` of its own; shape it so downstream can use it
-      // `fresh` on an order block means "recently formed". For a flip zone the equivalent
-      // confirmation is the RETEST, which the filter above already requires - his own three
-      // criteria are failed reaction, break of structure and a close beyond the reaction
-      // point, none of which is about recency. Keying it to bars_ago gave 0% of breakers the
-      // bonus against 90% of order blocks, which is most of the ranking gap by itself.
-      const zone = { ...b, fresh: true, breached: false, is_breaker: true };
-      const reach = b.distance_atr;
-      const proximity = clamp(1 - reach / 6, 0, 1);
-      const score = b.strength + (zone.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
-      return { zone, overlap, score, reach };
-    });
-    const scored = obCandidates.concat(breakerCandidates).sort((a, b) => b.score - a.score);
-    const bestOB = scored[0] || null;
-    const bestFvg = fvgs.filter((g) => !bestOB || !(bestOB.overlap && bestOB.overlap.i === g.i)).sort((a, b) => b.size_atr - a.size_atr)[0] || null;
-
-    // M16 (decided): a standalone FVG no longer qualifies as the point of interest.
-    // The sniper-entry material is explicit — "ideally, I want the fair value gap to be
-    // WITHIN the order block itself… try not to enter at like a random fair value gap that
-    // is in the middle of nowhere." The asymmetry is deliberate and sanctioned: entering on
-    // ORDER BLOCK mitigation with no FVG present is allowed, but a lone FVG is not a POI.
-    // `bestFvg` is still computed because the reach calculation at the zoneReach block below
-    // uses it; it just can no longer form the zone.
-    // M47: this line rebuilds the zone as a NEW object, so anything a candidate carries has to
-    // be forwarded explicitly - the same trap as `no_trade` being stripped at index.js:394.
-    // Two things it got wrong for flip zones: `kind` was hardcoded 'order_block', which would
-    // have advertised a flip zone as an order block, and `entry` came from `body_mid`, which
-    // findBreakers does not copy - so a flip-zone point of interest would have had an
-    // UNDEFINED entry price.
-    const zMeta = bestOB ? bestOB.zone : null;
-    const zone = bestOB ? { kind: zMeta.is_breaker ? 'flip_zone' : 'order_block', top: zMeta.top, bottom: zMeta.bottom, mid: zMeta.mid, entry: zMeta.body_mid != null ? zMeta.body_mid : zMeta.mid, meta: zMeta, overlap: bestOB.overlap }
-      : null;
+    const { bestOB, bestFvg, zone, preference } = selectZone(analysis, dir, ctx);
+    if (preference) add('extreme_preference', 'Extreme zone over overlapping flip; sweep failed-reaction liquidity first',
+      !preference.blocked, 0, preference.note + (preference.fuel.known
+        ? ` ${preference.fuel.type} at ${preference.fuel.price} is ${preference.fuel.swept ? 'swept' : 'not swept'}.`
+        : ' Failed-reaction price is unknown; no liquidity pool is invented.'));
 
     add('zone', long ? 'Demand zone (order block) to buy from' : 'Supply zone (order block) to sell from',
       !!zone, 16, zone ? `Order block ${r4(zone.bottom)} – ${r4(zone.top)}${zone.overlap ? ', nested FVG' : ', no nested FVG (entry on mitigation of the block itself)'}${zone.meta.fresh ? ', fresh' : `, already tested ${zone.meta.tests}×`}`
@@ -735,6 +751,7 @@ function buildSetups(analysis, ctx = {}) {
 
       levels = {
         ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counter.target.tf } : {}),
+        ...(preference ? { zone_preference: { rule: 'extreme_over_flip', fuel: preference.fuel } } : {}),
         dir, side, entry: r4(entry), entry_zone: [r4(zone.bottom), r4(zone.top)], entry_kind: zone.kind,
         stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / atr),
         stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
@@ -833,6 +850,7 @@ function buildSetups(analysis, ctx = {}) {
                   : '"You don\'t want to enter for a sell when the internal structure is still bullish."')
         : `No market shift — no structural break ${shiftDir} in this window, so the shift ${long ? 'long' : 'short'} requires has not happened.`);
     }
+    if (preference && preference.blocked) vetoes.push(`Extreme-over-flip: wait for ${preference.fuel.type} beyond the failed reaction (${preference.fuel.price}) to be swept before entering.`);
     if (!hasZone) vetoes.push('No order block to trade against — no level, so no defined risk.');
     // M7 / M96 — "no matter how many confluences I have, no matter how confident I am,
     // I'm going to be passing on the trade." This is arithmetic, not taste: at the measured
@@ -1162,4 +1180,4 @@ function pendingStep(td) {
 // multiplier curve can be unit-tested on its own instead of only being observable through a full
 // engine run that has to happen to produce a mid-range candidate.
 module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK,
-  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX, SWEEP_LOOKBACK, methodRiskMult };
+  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX, SWEEP_LOOKBACK, methodRiskMult, selectZone };

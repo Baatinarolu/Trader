@@ -257,7 +257,11 @@ section('integration: candle aggregation and the momentum payload');
   ok(real.alignment && real.alignment.hierarchy && /higher timeframe decides/.test(real.alignment.hierarchy), 'and states the hierarchy explicitly');
   ok(real.alignment.rows.length === 3 && real.alignment.rows[0].role === 'bias' && real.alignment.rows[2].role === 'trigger',
     'the three layers are reported with their roles');
-  ok(/display only|never from this average/.test(real.alignment.display_note || ''), 'the weighted score is labelled as display-only, not the decision');
+  // M33 has a distinct, equally explicit non-averaging note when an internal
+  // counter execution is detected. Assert the applicable contract, not one branch's prose.
+  const noAverage = real.topdown.countertrend
+    ? /neither comes from averaging these indicators/ : /display only|never from this average/;
+  ok(noAverage.test(real.alignment.display_note || ''), 'the weighted score is labelled as display-only, not the decision');
   ok(Array.isArray(real.conflict_detail) && real.conflict_detail.every((c) => c.rule && c.resolution && 'blocks_trade' in c),
     'every conflict carries a rule and a resolution', `${(real.conflict_detail || []).length} conflict(s)`);
   ok(real.topdown.conviction && ['A', 'B', 'watch', 'none'].includes(real.topdown.conviction.tier),

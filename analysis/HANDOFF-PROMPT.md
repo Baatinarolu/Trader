@@ -1,11 +1,11 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current continuation state — 2026-10-10 (supersedes historical handoff below)
+## Current continuation state — 2026-10-11 (supersedes historical handoff below)
 
 - Repository `/home/user/Trader`; fixed session branch **arena/762c0295-trader**. Never
-  execute old branch/switch/push instructions below. New milestone closes **M33** and
-  dependency findings **M130/M131/M132**. Tree/commit state must be read from git.
-- Ledger: **132 rows;67 done/2 partial/63 todo/0 no-action**. PROGRESS.md is generated
+  execute old branch/switch/push instructions below. Latest milestone closes **M70** (M68 prerequisite), following **M33** and
+  dependency findings **M130/M131/M132**. Parent control is **5b942cf**. Tree/commit state must be read from git.
+- Ledger: **132 rows;68 done/2 partial/62 todo/0 no-action**. PROGRESS.md is generated
   only by `gen-progress.py`, whose groups remain an exact anti-omission partition.
 - M33: a confirmed MTF internal break may originate a bounded counter-HTF execution,
   but HTF narrative/held daily bias do not flip. Actual MTF OB touch now, LTF sweep THEN
@@ -46,14 +46,30 @@
   analysis/helpers just re-exports it. Rebuilt Ep11 diagnostic uses explicit confirmed
   structural inputs; old slope-only walk was ranging/ranging and its old grade-based
   sole-blocker examples were invalid.
-- Verified suites: **API121/0,chart36/0,Now46/0,topdown77/0,bots205/1**. Sole bots
-  failure is strict filled sample >20 at20, with0 mismatches. Parent cefa4db in-process
-  predict backtest ALSO fills20 at same clock. Never reduce that floor. Corrected suite
-  no longer demands a stored recommendation from a refused analysis; saved=0+reason
-  is asserted, with new M33 positive approved-storage coverage.
-- Smoke21/21,0 UI-style failures,0 errors. **Run DB-writing suites serially:** parallel
-  smoke/API initialization hit SQLITE_BUSY; narrowed serial bots completes205/1.
-- Full fleet green, reverify67/0. M41 cost gate CPU-sensitive:233ms idle (<250 unchanged).
+- M70: shared Setup.selectZone selects the unmitigated geometric extreme over an
+  overlapping opt-in flip, even when a stronger third non-extreme OB ranks first.
+  Known failed-reaction fuel must be swept after flip formation with a close-back;
+  unknown remains unknown (M8). Rule/fuel price/type/sweep time survive in levels.
+  M47 stays opt-in. M48's historical annotation-only/rejected gating decision is
+  unchanged by THIS selector: M68 must qualify causal named flip entries honestly.
+  Probe30/0 vs parent16/14.60-seed bare default entire output identical except runtime.
+  Separate --breakers arms: parent n55/+0.0303R/PF1.06 -> preference-only
+  n55/+0.0219R/PF1.04 -> complete preference+fuel n53/-0.0278R/PF0.95.
+  **Both changes worsen synthetic expectancy; fidelity, not market edge.** Early
+  incomplete draft54/+0.0493R must NOT be quoted as complete fix (missed third-OB case).
+  Tracked measurement-only preloader: analysis/helpers/m70-preference-only.js.
+- Verified latest suites: API121/0,chart36/0,Now46/0,topdown77/0,bots204/2;
+  smoke21/21,0 style/console errors. BOTH bots failures are filled sample11 against
+  unchanged >=20 / >20 floors;0 parity mismatches. Parent5b942cf also fills/checks11
+  at same clock,0 mismatches. Do not lower sample floor or call this an M70 regression.
+  Prior milestone’s20-filled result is clock-dependent history, not current numbers.
+- Old topdown test76/1 on SAME parent/current: ordinary-only text regex rejects M33's
+  equally explicit non-averaging counter note when synthetic bars activate that branch.
+  Branch-specific exact-contract assertion restores77/0 on current AND parent.
+  Production notes/direction unchanged; no assertion just removed or loosened.
+- Run DB-writing suites API/bots/smoke serially; latest source server restarted, labelled
+  synthetic candles, local SQLite. This does not validate production401 or live feeds.
+- Latest narrowed fleet green, reverify67/0; prior milestone’s full fleet is historical. M41 cost gate CPU-sensitive:233ms idle (<250 unchanged).
   M34 turns ONLY M33 off to isolate dead-layer neutrality (110 results unchanged).
   M127 uses its original29fa456 negative control; normalizes ONLY M69’s known neutral
   prose rewrite in full candidate comparison (0/920 remaining changes). M69 tests its
@@ -62,14 +78,26 @@
   plus separately measured M130/M131. Temp controls/node_modules may vanish on reset.
   Run candles-yahoo WITHOUT TJ_OFFLINE_CANDLES (fetch is stubbed); API-backed probes
   need the flag and a restarted server. Preview uses labelled synthetic candles only.
-- Next: remaining **63 todo**, in mechanism order. High-related work **M68** (named
+- M68 researched only, no causal composition/persistence edits shipped. Ep18:
+  MTF POI mitigation -> LTF sweep -> confirmed shift -> wait for the causally linked
+  LTF OB mitigation (market_shift) or confirmed flip-zone mitigation (flip).
+  No pullback = no trade. Explicit OB->break identity absent; strongest-first OB
+  dedup may discard displacement associations. Flip detector doesn't expose its
+  matching break identity and generic retested may precede confirmation. Add causal
+  provenance/tests, then actual distinct levels/consumer forwarding and journal
+  entry_model column, CRUD/import/export/modal/model-review. Missing historical tags
+  stay unknown, not retrospectively guessed. Existing M33 fixture has empty LTF OBs;
+  extend it coherently, never treat old MTF entries as proven LTF model executions.
+- Next: remaining **62 todo**, in mechanism order. High-related work **M68** (named
   entry models and actual LTF entry zones), **M54/M77** (ordinary target composition/
   explicit TF constraint, preserving M33’s sanctioned counter-HTF exception); also the
   two partial rows M30 and M125. Keep every row, measure separately, record negatives.
-- Cumulative source patch: **30 files**, clean apply, **0 round-trip differences**.
+- Cumulative source patch: **31 files**, clean apply, **0 round-trip differences**.
 - Rebuild cumulative source patch from pristine zip + app overlay, excluding .env,
   data,node_modules,.git; explicit scratch git identity; second-pristine clean apply
-  and ZERO round-trip differences. Preserve credentials/database/fixtures untracked.
+  and ZERO round-trip differences. The pristine zip contains an old .git: exclude it
+  from SCRATCH unzips before git init (otherwise an embedded gitlink yields an empty
+  diff). Never touch the real repository .git. Preserve credentials/database/fixtures untracked.
 
 The original handoff is retained below as provenance, not as the current branch/state.
 

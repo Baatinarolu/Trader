@@ -1,8 +1,8 @@
-diff --git a/.vercelignore b/.vercelignore
+diff --git a/tradejournal/.vercelignore b/tradejournal/.vercelignore
 new file mode 100644
 index 0000000..7b4fa49
 --- /dev/null
-+++ b/.vercelignore
++++ b/tradejournal/.vercelignore
 @@ -0,0 +1,12 @@
 +# Not needed at runtime, and uploading it costs build time and deploy size.
 +#
@@ -16,11 +16,11 @@ index 0000000..7b4fa49
 +data/
 +.vercel/
 +*.log
-diff --git a/DEPLOY.md b/DEPLOY.md
+diff --git a/tradejournal/DEPLOY.md b/tradejournal/DEPLOY.md
 new file mode 100644
 index 0000000..bd0e991
 --- /dev/null
-+++ b/DEPLOY.md
++++ b/tradejournal/DEPLOY.md
 @@ -0,0 +1,292 @@
 +# Deploying TradeJournal Pro to Vercel
 +
@@ -314,10 +314,10 @@ index 0000000..bd0e991
 +Whichever way it deploys, `npm run test:vercel` must still report the shell guarantees —
 +no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
 +Those four are what distinguish a working deploy from one that merely builds.
-diff --git a/public/css/app.css b/public/css/app.css
+diff --git a/tradejournal/public/css/app.css b/tradejournal/public/css/app.css
 index 34cc0ff..39a6d52 100644
---- a/public/css/app.css
-+++ b/public/css/app.css
+--- a/tradejournal/public/css/app.css
++++ b/tradejournal/public/css/app.css
 @@ -431,7 +431,11 @@ fieldset,legend{border-color:var(--border)}
    font:inherit;font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:2px;cursor:pointer}
  .chart-tog:hover,.chart-btn:hover{color:var(--text);border-color:var(--border-strong)}
@@ -331,10 +331,10 @@ index 34cc0ff..39a6d52 100644
  .chart-plot{position:relative;width:100%}
  .chart-plot canvas{display:block;width:100%;cursor:crosshair}
  .chart-empty{padding:18px;color:var(--steel);font-family:var(--mono);font-size:.72rem}
-diff --git a/public/js/chart.js b/public/js/chart.js
+diff --git a/tradejournal/public/js/chart.js b/tradejournal/public/js/chart.js
 index 8e16034..ed4e333 100644
---- a/public/js/chart.js
-+++ b/public/js/chart.js
+--- a/tradejournal/public/js/chart.js
++++ b/tradejournal/public/js/chart.js
 @@ -21,11 +21,17 @@
    'use strict';
  
@@ -470,10 +470,10 @@ index 8e16034..ed4e333 100644
  
      // the plot box is often laid out after the first paint; observe it
      if (global.ResizeObserver) {
-diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+diff --git a/tradejournal/public/js/views/analytics.js b/tradejournal/public/js/views/analytics.js
 index a3eb318..f9d364b 100644
---- a/public/js/views/analytics.js
-+++ b/public/js/views/analytics.js
+--- a/tradejournal/public/js/views/analytics.js
++++ b/tradejournal/public/js/views/analytics.js
 @@ -23,6 +23,7 @@
            const w = U.h('div', { class: 'grid' });
            const cards = [
@@ -482,10 +482,10 @@ index a3eb318..f9d364b 100644
              ['Trade outcomes', [['Total trades', k.trades, ''], ['Winners', `${k.wins} (${U.pct(k.win_rate, 1)})`, 'pos'], ['Losers', `${k.losses} (${U.pct(k.loss_rate, 1)})`, 'neg'], ['Break-even', k.breakevens, ''], ['Avg win', U.money(k.avg_win), 'pos'], ['Avg loss', U.money(-k.avg_loss), 'neg'], ['Largest win', U.money(k.best_trade), 'pos'], ['Largest loss', U.money(k.worst_trade), 'neg'], ['Best / worst R', `${U.signed(k.best_r, 1)}R / ${U.signed(k.worst_r, 1)}R`, '']]],
              ['Risk-adjusted', [['Sharpe (ann.)', U.num(k.sharpe, 2), k.sharpe > 1 ? 'pos' : ''], ['Sortino (ann.)', U.num(k.sortino, 2), k.sortino > 1 ? 'pos' : ''], ['SQN', U.num(k.sqn, 2), ''], ['Calmar', U.num(k.calmar, 2), ''], ['Recovery factor', U.num(k.recovery_factor, 2), ''], ['Std dev of R', U.num(k.std_r, 2), ''], ['Median R', U.signed(k.median_r, 2) + 'R', ''], ['Total R', U.signed(k.total_r, 1) + 'R', U.cls(k.total_r)], ['Profit concentration', U.pct(k.profit_concentration, 0), '']]],
              ['Discipline', [['Avg adherence', k.avg_adherence ? U.num(k.avg_adherence, 2) + ' / 5' : '—', ''], ['Risk consistency', '±' + U.pct(k.risk_consistency, 0), k.risk_consistency < 35 ? 'pos' : 'warn'], ['Avg risk / trade', U.money(k.avg_risk), ''], ['Avg risk % of balance', U.pct(k.avg_risk_pct_of_balance, 2), ''], ['Trades without stop', k.stops_overshot ? `${an.by_symbol.length ? '' : ''}${k.stops_overshot} over -1R` : '0', ''], ['Current streak', k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + ' wins' : Math.abs(k.streaks.current) + ' losses'), k.streaks.current_type === 'loss' ? 'neg' : 'pos'], ['Longest win streak', k.streaks.longest_win, ''], ['Longest loss streak', k.streaks.longest_loss, 'neg'], ['Trading days', `${k.trading_days} (${U.num(k.avg_trades_per_day, 1)}/day)`, '']]],
-diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+diff --git a/tradejournal/public/js/views/bots.js b/tradejournal/public/js/views/bots.js
 index 2222ac3..ba9a373 100644
---- a/public/js/views/bots.js
-+++ b/public/js/views/bots.js
+--- a/tradejournal/public/js/views/bots.js
++++ b/tradejournal/public/js/views/bots.js
 @@ -13,6 +13,11 @@
      prediction: true,
      minRR: Number(((global.Store.user || {}).settings || {}).min_rr) > 0 ? Number(global.Store.user.settings.min_rr) : 1,
@@ -637,10 +637,10 @@ index 2222ac3..ba9a373 100644
            API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
          ]).then(([d, ch, dr]) => {
            B.data = d; B.predict = d.prediction; B.chart = ch; B.candles = (ch && ch.candles) || [];
-diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+diff --git a/tradejournal/public/js/views/settings.js b/tradejournal/public/js/views/settings.js
 index b72afdb..6d78f3c 100644
---- a/public/js/views/settings.js
-+++ b/public/js/views/settings.js
+--- a/tradejournal/public/js/views/settings.js
++++ b/tradejournal/public/js/views/settings.js
 @@ -312,11 +312,36 @@
                <div class="field-note">This checklist appears on every new trade and in the briefing. Keep it short enough that you will actually use it.</div>
                <button class="btn primary sm" id="s-save-rules" style="margin-top:12px">Save checklist</button>
@@ -678,10 +678,10 @@ index b72afdb..6d78f3c 100644
                default_checklist: (Store.user.settings.default_checklist || []),
              });
              await Store.reloadAll(); global.App.toast('Preferences saved', 'ok');
-diff --git a/scripts/bots-test.js b/scripts/bots-test.js
+diff --git a/tradejournal/scripts/bots-test.js b/tradejournal/scripts/bots-test.js
 index c463eda..7622dec 100644
---- a/scripts/bots-test.js
-+++ b/scripts/bots-test.js
+--- a/tradejournal/scripts/bots-test.js
++++ b/tradejournal/scripts/bots-test.js
 @@ -57,7 +57,13 @@ async function call(path, opts = {}) {
  
    const sessions = await call('/api/bots/sessions');
@@ -712,11 +712,11 @@ index c463eda..7622dec 100644
    const resolve = await call('/api/bots/signals/resolve', { method: 'POST', body: JSON.stringify({ limit: 10 }) });
    ok(resolve.status === 200 && resolve.json.ok, `/signals/resolve checked ${resolve.json.checked} signals`);
    ok(resolve.json.stats && typeof resolve.json.stats.total === 'number', `stats: ${resolve.json.stats.total} tracked, ${resolve.json.stats.resolved} resolved`);
-diff --git a/scripts/fixtures/countertrend-fixture.js b/scripts/fixtures/countertrend-fixture.js
+diff --git a/tradejournal/scripts/fixtures/countertrend-fixture.js b/tradejournal/scripts/fixtures/countertrend-fixture.js
 new file mode 100644
 index 0000000..1373200
 --- /dev/null
-+++ b/scripts/fixtures/countertrend-fixture.js
++++ b/tradejournal/scripts/fixtures/countertrend-fixture.js
 @@ -0,0 +1,75 @@
 +'use strict';
 +/** Controlled, time-consistent structural INPUTS for M33, NOT historical prices.
@@ -793,10 +793,10 @@ index 0000000..1373200
 +    input: { symbol: 'TEST', tf: '15m', series: pack('15m', 900000, mtf),
 +      biasSeries: pack('4h', 14400000, htf), triggerSeries: pack('5m', 300000, ltf) } };
 +};
-diff --git a/scripts/now-test.js b/scripts/now-test.js
+diff --git a/tradejournal/scripts/now-test.js b/tradejournal/scripts/now-test.js
 index e5a185d..62681e2 100644
---- a/scripts/now-test.js
-+++ b/scripts/now-test.js
+--- a/tradejournal/scripts/now-test.js
++++ b/tradejournal/scripts/now-test.js
 @@ -64,7 +64,7 @@ const armedTd = (over = {}) => baseTd({
  
  const setups = (dirs = [{ dir: -1, side: 'short', grade: 'B', score: 78 }, { dir: 1, side: 'long', grade: 'C', score: 52 }]) => ({
@@ -846,10 +846,10 @@ index e5a185d..62681e2 100644
    ok(Now.nextBarClose(Date.UTC(2026, 9, 6, 14, 7), '1h') === Date.UTC(2026, 9, 6, 15, 0), 'nextBarClose rounds up to the hourly boundary');
    ok((Now.killzoneAt(Date.UTC(2026, 9, 6, 13, 0)) || {}).key === 'ny_am', 'killzoneAt knows the New York AM window');
    ok(Now.killzoneAt(Date.UTC(2026, 9, 6, 20, 0)) === null, 'outside every killzone is reported as outside');
-diff --git a/scripts/topdown-test.js b/scripts/topdown-test.js
-index 57628cc..ab08394 100644
---- a/scripts/topdown-test.js
-+++ b/scripts/topdown-test.js
+diff --git a/tradejournal/scripts/topdown-test.js b/tradejournal/scripts/topdown-test.js
+index 57628cc..6b0f2f7 100644
+--- a/tradejournal/scripts/topdown-test.js
++++ b/tradejournal/scripts/topdown-test.js
 @@ -145,6 +145,11 @@ ok(chasedRange.plan && chasedRange.plan.chase === true, 'price that has run most
  
  section('the hierarchy: higher timeframe decides, lower timeframes time');
@@ -892,10 +892,23 @@ index 57628cc..ab08394 100644
  section('the method gate on the setup engine');
  
  const blockedTd = { ...tdWait, blocked: true, step: undefined };
-diff --git a/scripts/vercel-check.js b/scripts/vercel-check.js
+@@ -229,7 +257,11 @@ section('integration: candle aggregation and the momentum payload');
+   ok(real.alignment && real.alignment.hierarchy && /higher timeframe decides/.test(real.alignment.hierarchy), 'and states the hierarchy explicitly');
+   ok(real.alignment.rows.length === 3 && real.alignment.rows[0].role === 'bias' && real.alignment.rows[2].role === 'trigger',
+     'the three layers are reported with their roles');
+-  ok(/display only|never from this average/.test(real.alignment.display_note || ''), 'the weighted score is labelled as display-only, not the decision');
++  // M33 has a distinct, equally explicit non-averaging note when an internal
++  // counter execution is detected. Assert the applicable contract, not one branch's prose.
++  const noAverage = real.topdown.countertrend
++    ? /neither comes from averaging these indicators/ : /display only|never from this average/;
++  ok(noAverage.test(real.alignment.display_note || ''), 'the weighted score is labelled as display-only, not the decision');
+   ok(Array.isArray(real.conflict_detail) && real.conflict_detail.every((c) => c.rule && c.resolution && 'blocks_trade' in c),
+     'every conflict carries a rule and a resolution', `${(real.conflict_detail || []).length} conflict(s)`);
+   ok(real.topdown.conviction && ['A', 'B', 'watch', 'none'].includes(real.topdown.conviction.tier),
+diff --git a/tradejournal/scripts/vercel-check.js b/tradejournal/scripts/vercel-check.js
 index 818bf26..08bbea4 100644
---- a/scripts/vercel-check.js
-+++ b/scripts/vercel-check.js
+--- a/tradejournal/scripts/vercel-check.js
++++ b/tradejournal/scripts/vercel-check.js
 @@ -89,16 +89,148 @@ async function call(pathname, opts = {}) {
    ok('the platform cron endpoint refuses unauthenticated calls', cron.status === 401 || cron.status === 403, `HTTP ${cron.status}`);
  
@@ -1050,10 +1063,10 @@ index 818bf26..08bbea4 100644
    console.log(`\n${pass} passed, ${fail} failed · cold start ${Date.now() - t0} ms`);
    server.close();
    fs.rmSync(TMP, { recursive: true, force: true });
-diff --git a/server.js b/server.js
+diff --git a/tradejournal/server.js b/tradejournal/server.js
 index 9b28a41..307549d 100644
---- a/server.js
-+++ b/server.js
+--- a/tradejournal/server.js
++++ b/tradejournal/server.js
 @@ -4,6 +4,34 @@
   *   Express + libSQL (a local SQLite file by default, Turso when TURSO_DATABASE_URL is set).
   *   No build step, no bundler, zero client-side dependencies.
@@ -1236,10 +1249,10 @@ index 9b28a41..307549d 100644
  }
  
  module.exports = { app, handler, bootPromise, start, startScheduler };
-diff --git a/src/bots/correction.js b/src/bots/correction.js
+diff --git a/tradejournal/src/bots/correction.js b/tradejournal/src/bots/correction.js
 index 5aeb214..7b7911a 100644
---- a/src/bots/correction.js
-+++ b/src/bots/correction.js
+--- a/tradejournal/src/bots/correction.js
++++ b/tradejournal/src/bots/correction.js
 @@ -68,7 +68,7 @@ async function accountOf(userId, accountId = null) {
    const acc = accountId
      ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(accountId, userId)
@@ -1431,10 +1444,45 @@ index 5aeb214..7b7911a 100644
      mistakes,
      guardrails: g,
      daily: state,
-diff --git a/src/bots/index.js b/src/bots/index.js
+diff --git a/tradejournal/src/bots/entry-models.js b/tradejournal/src/bots/entry-models.js
+new file mode 100644
+index 0000000..6dfe447
+--- /dev/null
++++ b/tradejournal/src/bots/entry-models.js
+@@ -0,0 +1,29 @@
++'use strict';
++/** Named entry composition (Ep 18). This module contains no IO/account state.
++ * M70's selection policy is shared by the legacy opt-in breaker selector and
++ * the pending two-model LTF composer (M68). Geometry, not strength, defines extreme.
++ */
++const number = (v) => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
++function preferExtreme({ chosen, flipZones = [], orderBlocks = [], sweeps = [], dir, enabled = true }) {
++  if (!enabled || !chosen || !chosen.zone) return null;
++  const eligible = orderBlocks.filter((z) => !z.breached && z.mitigated === false && z.dir === dir);
++  if (!eligible.length) return null;
++  const extreme = eligible.reduce((a, b) => dir > 0
++    ? (b.bottom < a.bottom ? b : a) : (b.top > a.top ? b : a));
++  // A third, stronger non-extreme OB does not cancel this mechanical preference.
++  // Caller supplies only opted-in, eligible flips in existing ranking order.
++  const flips = flipZones.length ? flipZones : chosen.zone.is_breaker ? [chosen.zone] : [];
++  const flip = flips.find((z) => z.dir === dir && extreme.bottom <= z.top && extreme.top >= z.bottom);
++  if (!flip) return null;
++  const point = number(flip.reaction_point);
++  const taken = point === null ? null : sweeps.find((s) => s.dir === dir
++    && number(s.t) !== null && number(flip.t) !== null && s.t >= flip.t
++    && number(s.extreme) !== null && number(s.close) !== null
++    && (dir > 0 ? s.extreme < point && s.close > point : s.extreme > point && s.close < point)) || null;
++  return { zone: extreme, flip,
++    fuel: { type: dir > 0 ? 'SSL' : 'BSL', price: point, known: point !== null,
++      swept: point === null ? null : !!taken, sweep_t: taken ? taken.t : null },
++    blocked: point !== null && !taken,
++    note: 'Ep 18: prefer the unmitigated extreme zone over an overlapping flip zone; take the liquidity beyond the failed reaction first.' };
++}
++module.exports = { preferExtreme };
+diff --git a/tradejournal/src/bots/index.js b/tradejournal/src/bots/index.js
 index 0007b01..68f58dc 100644
---- a/src/bots/index.js
-+++ b/src/bots/index.js
+--- a/tradejournal/src/bots/index.js
++++ b/tradejournal/src/bots/index.js
 @@ -16,7 +16,7 @@
   *      so the bot's own hit rate is on the record (no vibes, no cherry-picking).
   */
@@ -1840,10 +1888,10 @@ index 0007b01..68f58dc 100644
      const info = await ins.run(
        userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
        predRow ? predRow.p_win : null,
-diff --git a/src/bots/momentum.js b/src/bots/momentum.js
+diff --git a/tradejournal/src/bots/momentum.js b/tradejournal/src/bots/momentum.js
 index 2e664e5..9b9fce6 100644
---- a/src/bots/momentum.js
-+++ b/src/bots/momentum.js
+--- a/tradejournal/src/bots/momentum.js
++++ b/tradejournal/src/bots/momentum.js
 @@ -110,7 +110,7 @@ function alignment(htf, mtf, ltf, td = null) {
        tf: mtf.tf, weight: 2, role: 'location', job: 'premium/discount · zone · gap',
        bias: indScore(mtf), trend: mtfTrend,
@@ -2101,10 +2149,10 @@ index 2e664e5..9b9fce6 100644
 +  // walk that found the defect, without any caller having to own a state store first.
 +  biasHysteresis, nextBiasInvalidation,
  };
-diff --git a/src/bots/now.js b/src/bots/now.js
+diff --git a/tradejournal/src/bots/now.js b/tradejournal/src/bots/now.js
 index 66e0bbb..3ea5601 100644
---- a/src/bots/now.js
-+++ b/src/bots/now.js
+--- a/tradejournal/src/bots/now.js
++++ b/tradejournal/src/bots/now.js
 @@ -21,6 +21,8 @@
   * Inputs are the objects the API already builds; this file adds no new data feeds.
   */
@@ -2264,10 +2312,10 @@ index 66e0bbb..3ea5601 100644
      range: bias.range ? { low: num(bias.range.low), high: num(bias.range.high), mid: num(bias.range.mid) } : null,
      since,
    };
-diff --git a/src/bots/predict.js b/src/bots/predict.js
+diff --git a/tradejournal/src/bots/predict.js b/tradejournal/src/bots/predict.js
 index bacfca7..38ec2fa 100644
---- a/src/bots/predict.js
-+++ b/src/bots/predict.js
+--- a/tradejournal/src/bots/predict.js
++++ b/tradejournal/src/bots/predict.js
 @@ -443,9 +443,13 @@ function mtfTrigger(cand, ltf, fromT, { sweepLookback = 20, sweepFresh = 10 } =
  }
  
@@ -2296,11 +2344,11 @@ index bacfca7..38ec2fa 100644
   * price often comes back to the same level — a "second chance" entry. This walks
   * the same candle series and reports, honestly, what taking that second tap did:
   * whether it happened, and whether re-risking 1R on it made money.
-diff --git a/src/bots/setup.js b/src/bots/setup.js
-index 138beb4..7fb0792 100644
---- a/src/bots/setup.js
-+++ b/src/bots/setup.js
-@@ -15,13 +15,22 @@
+diff --git a/tradejournal/src/bots/setup.js b/tradejournal/src/bots/setup.js
+index 138beb4..3e3cd01 100644
+--- a/tradejournal/src/bots/setup.js
++++ b/tradejournal/src/bots/setup.js
+@@ -15,13 +15,23 @@
   *    - exact entry / stop / targets with R:R per target
   *    - a position-size risk plan in the journal's own instrument maths
   *    - invalidation + management rules
@@ -2320,11 +2368,12 @@ index 138beb4..7fb0792 100644
   */
  
  const I = require('../instruments');
++const Entry = require('./entry-models');
 +const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
  
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
-@@ -35,12 +44,252 @@ const GRADES = [
+@@ -35,12 +45,252 @@ const GRADES = [
    { min: -Infinity, grade: 'no-trade', label: 'Not an A+ setup — the edge is not there' },
  ];
  
@@ -2577,7 +2626,7 @@ index 138beb4..7fb0792 100644
  function targetPools(analysis, dir, entry) {
    const pools = (analysis.liquidity && analysis.liquidity.pools) || [];
    const outward = pools
-@@ -49,6 +298,17 @@ function targetPools(analysis, dir, entry) {
+@@ -49,6 +299,17 @@ function targetPools(analysis, dir, entry) {
      .sort((a, b) => (dir > 0 ? a.price - b.price : b.price - a.price));
    const seen = new Set();
    const out = [];
@@ -2595,7 +2644,7 @@ index 138beb4..7fb0792 100644
    for (const p of outward) {
      const key = p.price.toFixed(5);
      if (seen.has(key)) continue;
-@@ -70,12 +330,83 @@ function targetPools(analysis, dir, entry) {
+@@ -70,12 +331,147 @@ function targetPools(analysis, dir, entry) {
   *                                    only that side can be armed.
   * @returns {{candidates:Array, verdict:object}}
   */
@@ -2610,6 +2659,70 @@ index 138beb4..7fb0792 100644
 +  const counter = td.countertrend && td.countertrend.kind === 'internal-pullback';
 +  const conflicts = td.conflicts || td.conflict_detail || [];
 +  return counter || conflicts.some((c) => c.kind === 'counter-trend-crt') ? 0.5 : 1;
++}
++
++/** M70: shared MTF POI selector. Flips remain opt-in (M47); unmitigated
++ * extreme-over-overlapping-flip takes precedence over the generic strength ranking. */
++function selectZone(analysis, dir, ctx = {}) {
++  const obs = ((analysis && analysis.order_blocks) || []).filter((z) => z.dir === dir && !z.breached);
++  const fvgs = ((analysis && analysis.fvgs) || []).filter((g) => g.dir === dir && !g.filled);
++  // prefer a fresh, strong OB with an unfilled FVG overlapping or nested
++  // M47 - Ep 14: flip zones are computed and correctly named but consumed by NOTHING.
++  // "A supply flip zone is formed when a demand zone fails." findBreakers() emits them and
++  // the API returns them, yet grep finds only four hits in src/ - the docstring, the
++  // computation, the output and the API payload. He trades them as points of interest in
++  // their own right, so they belong in the same candidate pool as un-breached order blocks.
++  // Opt-in (ctx.useBreakers) until it is measured; the `retested` flag is required, which is
++  // his own confirmation step - "retest since the break = confirmation the flip holds".
++  const breakers = ctx.useBreakers
++    ? ((analysis && analysis.breakers) || []).filter((b) => b.dir === dir && b.retested)
++    : [];
++  const obCandidates = obs.map((z) => {
++    const overlap = fvgs.find((g) => g.bottom <= z.top && g.top >= z.bottom);
++    const reach = z.distance_atr;                          // how far price is from the zone
++    const proximity = clamp(1 - reach / 6, 0, 1);          // within 6 ATR is "reachable"
++    const score = z.strength + (z.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
++    return { zone: z, overlap, score, reach };
++  });
++  const breakerCandidates = breakers.map((b) => {
++    const overlap = fvgs.find((g) => g.bottom <= b.top && g.top >= b.bottom);
++    // a flip zone has no `fresh`/`breached` of its own; shape it so downstream can use it
++    // `fresh` on an order block means "recently formed". For a flip zone the equivalent
++    // confirmation is the RETEST, which the filter above already requires - his own three
++    // criteria are failed reaction, break of structure and a close beyond the reaction
++    // point, none of which is about recency. Keying it to bars_ago gave 0% of breakers the
++    // bonus against 90% of order blocks, which is most of the ranking gap by itself.
++    const zone = { ...b, fresh: true, breached: false, is_breaker: true };
++    const reach = b.distance_atr;
++    const proximity = clamp(1 - reach / 6, 0, 1);
++    const score = b.strength + (zone.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
++    return { zone, overlap, score, reach };
++  });
++  const scored = obCandidates.concat(breakerCandidates).sort((a, b) => b.score - a.score);
++  let bestOB = scored[0] || null;
++  const preference = Entry.preferExtreme({ chosen: bestOB, orderBlocks: obs,
++    flipZones: scored.filter((c) => c.zone.is_breaker).map((c) => c.zone),
++    sweeps: (analysis && analysis.sweeps) || [], dir, enabled: ctx.preferExtreme !== false });
++  if (preference) bestOB = obCandidates.find((c) => c.zone === preference.zone);
++  const bestFvg = fvgs.filter((g) => !bestOB || !(bestOB.overlap && bestOB.overlap.i === g.i)).sort((a, b) => b.size_atr - a.size_atr)[0] || null;
++
++  // M16 (decided): a standalone FVG no longer qualifies as the point of interest.
++  // The sniper-entry material is explicit — "ideally, I want the fair value gap to be
++  // WITHIN the order block itself… try not to enter at like a random fair value gap that
++  // is in the middle of nowhere." The asymmetry is deliberate and sanctioned: entering on
++  // ORDER BLOCK mitigation with no FVG present is allowed, but a lone FVG is not a POI.
++  // `bestFvg` is still computed because the reach calculation at the zoneReach block below
++  // uses it; it just can no longer form the zone.
++  // M47: this line rebuilds the zone as a NEW object, so anything a candidate carries has to
++  // be forwarded explicitly - the same trap as `no_trade` being stripped at index.js:394.
++  // Two things it got wrong for flip zones: `kind` was hardcoded 'order_block', which would
++  // have advertised a flip zone as an order block, and `entry` came from `body_mid`, which
++  // findBreakers does not copy - so a flip-zone point of interest would have had an
++  // UNDEFINED entry price.
++  const zMeta = bestOB ? bestOB.zone : null;
++  const zone = bestOB ? { kind: zMeta.is_breaker ? 'flip_zone' : 'order_block', top: zMeta.top, bottom: zMeta.bottom, mid: zMeta.mid, entry: zMeta.body_mid != null ? zMeta.body_mid : zMeta.mid, meta: zMeta, overlap: bestOB.overlap }
++    : null;
++  return { bestOB, bestFvg, zone, preference };
 +}
 +
  function buildSetups(analysis, ctx = {}) {
@@ -2679,7 +2792,7 @@ index 138beb4..7fb0792 100644
    const strike = sessions.quality != null ? sessions.quality : 0.5;
    const blackout = ctx.newsBlackout || null;
    const ind = ctx.indicators || null;
-@@ -83,23 +414,29 @@ function buildSetups(analysis, ctx = {}) {
+@@ -83,47 +479,44 @@ function buildSetups(analysis, ctx = {}) {
    const td = ctx.topdown || null;                   // the method gate
  
    const candidates = [];
@@ -2713,69 +2826,33 @@ index 138beb4..7fb0792 100644
      const disp = disps.find((d) => !recentSweep || d.i > recentSweep.i) || disps[0] || null;
      add('displacement', 'Displacement leg in your direction',
        !!disp, 15, disp ? `${disp.rangeAtr} ATR expansion bar, ${(disp.bodyRatio * 100).toFixed(0)}% body` : 'No expansion bar — price is drifting, not displacing.');
-@@ -108,22 +445,62 @@ function buildSetups(analysis, ctx = {}) {
-     const obs = ((analysis && analysis.order_blocks) || []).filter((z) => z.dir === dir && !z.breached);
-     const fvgs = ((analysis && analysis.fvgs) || []).filter((g) => g.dir === dir && !g.filled);
-     // prefer a fresh, strong OB with an unfilled FVG overlapping or nested
--    const scored = obs.map((z) => {
-+    // M47 - Ep 14: flip zones are computed and correctly named but consumed by NOTHING.
-+    // "A supply flip zone is formed when a demand zone fails." findBreakers() emits them and
-+    // the API returns them, yet grep finds only four hits in src/ - the docstring, the
-+    // computation, the output and the API payload. He trades them as points of interest in
-+    // their own right, so they belong in the same candidate pool as un-breached order blocks.
-+    // Opt-in (ctx.useBreakers) until it is measured; the `retested` flag is required, which is
-+    // his own confirmation step - "retest since the break = confirmation the flip holds".
-+    const breakers = ctx.useBreakers
-+      ? ((analysis && analysis.breakers) || []).filter((b) => b.dir === dir && b.retested)
-+      : [];
-+    const obCandidates = obs.map((z) => {
-       const overlap = fvgs.find((g) => g.bottom <= z.top && g.top >= z.bottom);
-       const reach = z.distance_atr;                          // how far price is from the zone
-       const proximity = clamp(1 - reach / 6, 0, 1);          // within 6 ATR is "reachable"
-       const score = z.strength + (z.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
-       return { zone: z, overlap, score, reach };
--    }).sort((a, b) => b.score - a.score);
-+    });
-+    const breakerCandidates = breakers.map((b) => {
-+      const overlap = fvgs.find((g) => g.bottom <= b.top && g.top >= b.bottom);
-+      // a flip zone has no `fresh`/`breached` of its own; shape it so downstream can use it
-+      // `fresh` on an order block means "recently formed". For a flip zone the equivalent
-+      // confirmation is the RETEST, which the filter above already requires - his own three
-+      // criteria are failed reaction, break of structure and a close beyond the reaction
-+      // point, none of which is about recency. Keying it to bars_ago gave 0% of breakers the
-+      // bonus against 90% of order blocks, which is most of the ranking gap by itself.
-+      const zone = { ...b, fresh: true, breached: false, is_breaker: true };
-+      const reach = b.distance_atr;
-+      const proximity = clamp(1 - reach / 6, 0, 1);
-+      const score = b.strength + (zone.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
-+      return { zone, overlap, score, reach };
-+    });
-+    const scored = obCandidates.concat(breakerCandidates).sort((a, b) => b.score - a.score);
-     const bestOB = scored[0] || null;
-     const bestFvg = fvgs.filter((g) => !bestOB || !(bestOB.overlap && bestOB.overlap.i === g.i)).sort((a, b) => b.size_atr - a.size_atr)[0] || null;
  
+     /* ------------------------------------------------------------------- 3. the zone */
+-    const obs = ((analysis && analysis.order_blocks) || []).filter((z) => z.dir === dir && !z.breached);
+-    const fvgs = ((analysis && analysis.fvgs) || []).filter((g) => g.dir === dir && !g.filled);
+-    // prefer a fresh, strong OB with an unfilled FVG overlapping or nested
+-    const scored = obs.map((z) => {
+-      const overlap = fvgs.find((g) => g.bottom <= z.top && g.top >= z.bottom);
+-      const reach = z.distance_atr;                          // how far price is from the zone
+-      const proximity = clamp(1 - reach / 6, 0, 1);          // within 6 ATR is "reachable"
+-      const score = z.strength + (z.fresh ? 0.35 : 0) + (overlap ? 0.3 : 0) + proximity * 0.5;
+-      return { zone: z, overlap, score, reach };
+-    }).sort((a, b) => b.score - a.score);
+-    const bestOB = scored[0] || null;
+-    const bestFvg = fvgs.filter((g) => !bestOB || !(bestOB.overlap && bestOB.overlap.i === g.i)).sort((a, b) => b.size_atr - a.size_atr)[0] || null;
+-
 -    const zone = bestOB ? { kind: 'order_block', top: bestOB.zone.top, bottom: bestOB.zone.bottom, mid: bestOB.zone.mid, entry: bestOB.zone.body_mid, meta: bestOB.zone, overlap: bestOB.overlap }
 -      : bestFvg ? { kind: 'fvg', top: bestFvg.top, bottom: bestFvg.bottom, mid: bestFvg.mid, entry: bestFvg.mid, meta: bestFvg, overlap: null }
 -        : null;
-+    // M16 (decided): a standalone FVG no longer qualifies as the point of interest.
-+    // The sniper-entry material is explicit — "ideally, I want the fair value gap to be
-+    // WITHIN the order block itself… try not to enter at like a random fair value gap that
-+    // is in the middle of nowhere." The asymmetry is deliberate and sanctioned: entering on
-+    // ORDER BLOCK mitigation with no FVG present is allowed, but a lone FVG is not a POI.
-+    // `bestFvg` is still computed because the reach calculation at the zoneReach block below
-+    // uses it; it just can no longer form the zone.
-+    // M47: this line rebuilds the zone as a NEW object, so anything a candidate carries has to
-+    // be forwarded explicitly - the same trap as `no_trade` being stripped at index.js:394.
-+    // Two things it got wrong for flip zones: `kind` was hardcoded 'order_block', which would
-+    // have advertised a flip zone as an order block, and `entry` came from `body_mid`, which
-+    // findBreakers does not copy - so a flip-zone point of interest would have had an
-+    // UNDEFINED entry price.
-+    const zMeta = bestOB ? bestOB.zone : null;
-+    const zone = bestOB ? { kind: zMeta.is_breaker ? 'flip_zone' : 'order_block', top: zMeta.top, bottom: zMeta.bottom, mid: zMeta.mid, entry: zMeta.body_mid != null ? zMeta.body_mid : zMeta.mid, meta: zMeta, overlap: bestOB.overlap }
-+      : null;
- 
+-
 -    add('zone', long ? 'Demand zone (order block / FVG) to buy from' : 'Supply zone (order block / FVG) to sell from',
 -      !!zone, 16, zone ? `${zone.kind === 'order_block' ? 'Order block' : 'FVG'} ${r4(zone.bottom)} – ${r4(zone.top)}${zone.overlap ? ', nested FVG' : ''}${zone.meta.fresh ? ', fresh' : `, already tested ${zone.meta.tests}×`}` : 'No unmitigated zone in this direction.');
++    const { bestOB, bestFvg, zone, preference } = selectZone(analysis, dir, ctx);
++    if (preference) add('extreme_preference', 'Extreme zone over overlapping flip; sweep failed-reaction liquidity first',
++      !preference.blocked, 0, preference.note + (preference.fuel.known
++        ? ` ${preference.fuel.type} at ${preference.fuel.price} is ${preference.fuel.swept ? 'swept' : 'not swept'}.`
++        : ' Failed-reaction price is unknown; no liquidity pool is invented.'));
++
 +    add('zone', long ? 'Demand zone (order block) to buy from' : 'Supply zone (order block) to sell from',
 +      !!zone, 16, zone ? `Order block ${r4(zone.bottom)} – ${r4(zone.top)}${zone.overlap ? ', nested FVG' : ', no nested FVG (entry on mitigation of the block itself)'}${zone.meta.fresh ? ', fresh' : `, already tested ${zone.meta.tests}×`}`
 +        : bestFvg ? `No unmitigated order block in this direction — only a standalone FVG at ${r4(bestFvg.bottom)} – ${r4(bestFvg.top)}, which is not a point of interest on its own.`
@@ -2783,7 +2860,7 @@ index 138beb4..7fb0792 100644
  
      if (zone && zone.overlap) add('nested', 'Zone + imbalance overlap (confluence)', true, 8, 'The order block contains an unfilled FVG — two reasons for price to react at the same price.');
  
-@@ -135,10 +512,57 @@ function buildSetups(analysis, ctx = {}) {
+@@ -135,10 +528,57 @@ function buildSetups(analysis, ctx = {}) {
  
      /* ------------------------------------------------------------- 5. trend alignment */
      const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
@@ -2843,7 +2920,7 @@ index 138beb4..7fb0792 100644
      if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
  
      /* ------------------------------------------------------------- 6. higher-timeframe bias */
-@@ -155,12 +579,16 @@ function buildSetups(analysis, ctx = {}) {
+@@ -155,12 +595,16 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      /* ------------------------------------------------------- 8. session / killzone */
@@ -2862,7 +2939,7 @@ index 138beb4..7fb0792 100644
  
      /* ------------------------------------------------------------- 10. volatility */
      const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
-@@ -175,7 +603,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -175,7 +619,7 @@ function buildSetups(analysis, ctx = {}) {
        const buffer = atr * 0.18;
        const stop = long ? stopBase - buffer : stopBase + buffer;
        const risk = Math.abs(entry - stop);
@@ -2871,7 +2948,7 @@ index 138beb4..7fb0792 100644
        const targets = [];
        for (const p of pools) {
          const reward = Math.abs(p.price - entry);
-@@ -183,8 +611,16 @@ function buildSetups(analysis, ctx = {}) {
+@@ -183,8 +627,16 @@ function buildSetups(analysis, ctx = {}) {
          if (rr < 0.9) continue;                       // ignore pools the entry already sits on
          targets.push({ label: p.label, kind: p.kind, price: r4(p.price), rr: r2(rr), strength: p.strength, touches: p.touches || null });
        }
@@ -2889,7 +2966,7 @@ index 138beb4..7fb0792 100644
          const extreme = long ? pd.range_high : pd.range_low;
          const reward = Math.abs(extreme - entry);
          if (reward > 0) {
-@@ -195,6 +631,15 @@ function buildSetups(analysis, ctx = {}) {
+@@ -195,6 +647,15 @@ function buildSetups(analysis, ctx = {}) {
          }
        }
        targets.sort((a, b) => a.rr - b.rr);
@@ -2905,7 +2982,7 @@ index 138beb4..7fb0792 100644
        // The FIRST pool is a wall, not a nuisance: price usually reacts there. The model
        // banks a partial on it, protects the trade, and runs the rest to the 2R+ pool.
        const first = targets[0] || null;
-@@ -203,16 +648,47 @@ function buildSetups(analysis, ctx = {}) {
+@@ -203,16 +664,47 @@ function buildSetups(analysis, ctx = {}) {
  
        add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
          runner && runner.rr >= minRR
@@ -2959,7 +3036,7 @@ index 138beb4..7fb0792 100644
        if (!ladder.length) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
        const rrPrimary = ladder[0].rr;
        const rrFinal = ladder[ladder.length - 1].rr;
-@@ -230,6 +706,22 @@ function buildSetups(analysis, ctx = {}) {
+@@ -230,6 +722,22 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
@@ -2982,7 +3059,7 @@ index 138beb4..7fb0792 100644
        // Distance still to travel to the zone we would enter at. An FVG-only read has
        // no order-block `reach` — measure to its near edge instead of dereferencing null.
        const zoneReach = bestOB ? bestOB.reach
-@@ -237,24 +729,34 @@ function buildSetups(analysis, ctx = {}) {
+@@ -237,24 +745,35 @@ function buildSetups(analysis, ctx = {}) {
            : 6;
        add('entry', 'Entry not chased (price at/near the zone)', entryStatus !== 'waiting' || zoneReach <= 2.5, 8, entryNote);
        add('management', 'Risk plan protects the trade at the first pool', rrFinal >= minRR, 0,
@@ -2993,6 +3070,7 @@ index 138beb4..7fb0792 100644
  
        levels = {
 +        ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counter.target.tf } : {}),
++        ...(preference ? { zone_preference: { rule: 'extreme_over_flip', fuel: preference.fuel } } : {}),
          dir, side, entry: r4(entry), entry_zone: [r4(zone.bottom), r4(zone.top)], entry_kind: zone.kind,
          stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / atr),
          stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
@@ -3022,7 +3100,7 @@ index 138beb4..7fb0792 100644
          },
          wall: wallRisk ? { label: wallRisk.label, price: wallRisk.price, rr: wallRisk.rr } : null,
          entry_status: entryStatus, entry_note: entryNote,
-@@ -271,8 +773,14 @@ function buildSetups(analysis, ctx = {}) {
+@@ -271,8 +790,14 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -3039,7 +3117,7 @@ index 138beb4..7fb0792 100644
      // a missing trigger or zone is disqualifying regardless of the rest
      const hasTrigger = checks.find((c) => c.key === 'sweep').pass;
      const hasZone = checks.find((c) => c.key === 'zone').pass;
-@@ -284,24 +792,159 @@ function buildSetups(analysis, ctx = {}) {
+@@ -284,24 +809,160 @@ function buildSetups(analysis, ctx = {}) {
      if (levels && levels.entry_status === 'waiting') score = Math.min(score, 66); // great idea, not yet valid
      score = round1(clamp(score, 0, 100));
  
@@ -3084,6 +3162,7 @@ index 138beb4..7fb0792 100644
 +                  : '"You don\'t want to enter for a sell when the internal structure is still bullish."')
 +        : `No market shift — no structural break ${shiftDir} in this window, so the shift ${long ? 'long' : 'short'} requires has not happened.`);
 +    }
++    if (preference && preference.blocked) vetoes.push(`Extreme-over-flip: wait for ${preference.fuel.type} beyond the failed reaction (${preference.fuel.price}) to be swept before entering.`);
 +    if (!hasZone) vetoes.push('No order block to trade against — no level, so no defined risk.');
 +    // M7 / M96 — "no matter how many confluences I have, no matter how confident I am,
 +    // I'm going to be passing on the trade." This is arithmetic, not taste: at the measured
@@ -3202,7 +3281,7 @@ index 138beb4..7fb0792 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +954,55 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +972,55 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -3264,7 +3343,7 @@ index 138beb4..7fb0792 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -331,7 +1011,11 @@ function buildSetups(analysis, ctx = {}) {
+@@ -331,7 +1029,11 @@ function buildSetups(analysis, ctx = {}) {
    candidates.sort((a, b) => b.score - a.score);
  
    /* --------------------------------------------------------------- top verdict */
@@ -3277,7 +3356,7 @@ index 138beb4..7fb0792 100644
    const buy = candidates.find((c) => c.dir === 1);
    const sell = candidates.find((c) => c.dir === -1);
  
-@@ -350,8 +1034,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -350,8 +1052,7 @@ function buildSetups(analysis, ctx = {}) {
      const aligned = candidates.find((c) => c.dir === td.direction);
      if (aligned) best = aligned;                    // the higher timeframe chooses the side
    }
@@ -3287,7 +3366,7 @@ index 138beb4..7fb0792 100644
    const methodBlocked = !!(td && (td.blocked || (td.direction !== 0 && (!best || best.dir !== td.direction))));
  
    let verdict;
-@@ -367,13 +1050,13 @@ function buildSetups(analysis, ctx = {}) {
+@@ -367,13 +1068,13 @@ function buildSetups(analysis, ctx = {}) {
        detail: `${why}${pendingStep(td)}`,
        next_trigger: [td.playbook && td.playbook.length ? td.playbook[0] : null, nextTriggerHint(analysis)].filter(Boolean),
        source: 'topdown-gate', method, setup_action: setupAction,
@@ -3305,7 +3384,7 @@ index 138beb4..7fb0792 100644
        next_trigger: nextTriggerHint(analysis),
        source: 'setup-model', method, setup_action: setupAction,
      };
-@@ -399,7 +1082,52 @@ function buildSetups(analysis, ctx = {}) {
+@@ -399,7 +1100,52 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -3358,7 +3437,7 @@ index 138beb4..7fb0792 100644
        news_blackout: blackout || null,
        min_rr: minRR,
      },
-@@ -430,4 +1158,8 @@ function pendingStep(td) {
+@@ -430,4 +1176,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  
@@ -3367,11 +3446,11 @@ index 138beb4..7fb0792 100644
 +// multiplier curve can be unit-tested on its own instead of only being observable through a full
 +// engine run that has to happen to produce a mid-range candidate.
 +module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK,
-+  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX, SWEEP_LOOKBACK, methodRiskMult };
-diff --git a/src/bots/smc.js b/src/bots/smc.js
++  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX, SWEEP_LOOKBACK, methodRiskMult, selectZone };
+diff --git a/tradejournal/src/bots/smc.js b/tradejournal/src/bots/smc.js
 index 2ccb576..ee666b3 100644
---- a/src/bots/smc.js
-+++ b/src/bots/smc.js
+--- a/tradejournal/src/bots/smc.js
++++ b/tradejournal/src/bots/smc.js
 @@ -17,6 +17,14 @@
   *                 target the opposing liquidity pool — minimum 1:2
   *    8. filters   killzones, premium/discount, news blackout, CRT range play
@@ -4350,10 +4429,10 @@ index 2ccb576..ee666b3 100644
 +  SESSIONS, SILVER_BULLETS, dayKey, weekKey, sessionAffinity, asiaRange,
 +  WINDOW_BY_KEY, WINDOW_KEYS, windowLabel, normalizeWindowPref, pairCountsFor, legsOf,
  };
-diff --git a/src/bots/topdown.js b/src/bots/topdown.js
+diff --git a/tradejournal/src/bots/topdown.js b/tradejournal/src/bots/topdown.js
 index 7870e51..7d2fc2c 100644
---- a/src/bots/topdown.js
-+++ b/src/bots/topdown.js
+--- a/tradejournal/src/bots/topdown.js
++++ b/tradejournal/src/bots/topdown.js
 @@ -1,11 +1,13 @@
  'use strict';
  /**
@@ -4591,10 +4670,10 @@ index 7870e51..7d2fc2c 100644
    const dirForConfirm = (biasRange && biasRange.dir) || (biasSmc && biasSmc.structure && biasSmc.structure.trend === 'bullish' ? 1 : biasSmc && biasSmc.structure && biasSmc.structure.trend === 'bearish' ? -1 : 0);
    const conf = dirForConfirm ? confirmation(trigger, dirForConfirm, entrySeries.atr) : { ok: false, note: 'No direction yet, so there is nothing to confirm.' };
  
-diff --git a/src/candles.js b/src/candles.js
+diff --git a/tradejournal/src/candles.js b/tradejournal/src/candles.js
 index c7de369..107d946 100644
---- a/src/candles.js
-+++ b/src/candles.js
+--- a/tradejournal/src/candles.js
++++ b/tradejournal/src/candles.js
 @@ -111,32 +111,238 @@ function clearCache() { cache.clear(); }
  
  /* ------------------------------------------------------------------ fetch */
@@ -5052,10 +5131,10 @@ index c7de369..107d946 100644
 +  // M123: exported so the offline source is testable without a second process per assertion.
 +  OFFLINE, OFFLINE_WARNING, OFFLINE_PROVIDER, offlineCandles, offlineSeed,
  };
-diff --git a/src/coach.js b/src/coach.js
+diff --git a/tradejournal/src/coach.js b/tradejournal/src/coach.js
 index a5aa93c..50478ce 100644
---- a/src/coach.js
-+++ b/src/coach.js
+--- a/tradejournal/src/coach.js
++++ b/tradejournal/src/coach.js
 @@ -9,6 +9,13 @@
   */
  const P = require('./performance');
@@ -5146,10 +5225,10 @@ index a5aa93c..50478ce 100644
    const suggestedRisk = r2(bank * (suggestedRiskPct / 100) * riskMultiplier);
  
    return {
-diff --git a/src/db.js b/src/db.js
+diff --git a/tradejournal/src/db.js b/tradejournal/src/db.js
 index 7e2fd68..35b5809 100644
---- a/src/db.js
-+++ b/src/db.js
+--- a/tradejournal/src/db.js
++++ b/tradejournal/src/db.js
 @@ -117,7 +117,10 @@ CREATE TABLE IF NOT EXISTS accounts (
    currency TEXT DEFAULT 'USD',
    starting_balance REAL DEFAULT 10000,
@@ -5444,10 +5523,10 @@ index 7e2fd68..35b5809 100644
 -};
 +  DEFAULT_CHECKLIST, DEFAULT_STRATEGIES, currentStrategyVersion, snapshotStrategyVersion, strategyRulesChanged, STRATEGY_RULE_FIELDS};
 \ No newline at end of file
-diff --git a/src/instruments.js b/src/instruments.js
+diff --git a/tradejournal/src/instruments.js b/tradejournal/src/instruments.js
 index e58249b..2292b54 100644
---- a/src/instruments.js
-+++ b/src/instruments.js
+--- a/tradejournal/src/instruments.js
++++ b/tradejournal/src/instruments.js
 @@ -39,10 +39,18 @@ const CLASS_LABELS = {
  // instruments whose spreads are not class-typical (oil, nat gas, silver).
  // ---------------------------------------------------------------------------
@@ -5560,10 +5639,10 @@ index e58249b..2292b54 100644
    positionSize, sizeFromMoneyRisk, pipsMoved, num, round2,
 +  RISK_GUARDRAIL, clampRiskPct, riskGuardrailNote,
  };
-diff --git a/src/performance.js b/src/performance.js
+diff --git a/tradejournal/src/performance.js b/tradejournal/src/performance.js
 index 97110a5..ff8d382 100644
---- a/src/performance.js
-+++ b/src/performance.js
+--- a/tradejournal/src/performance.js
++++ b/tradejournal/src/performance.js
 @@ -537,7 +537,14 @@ function fullAnalytics(trades, opts = {}) {
      daily: dailySeries(trades.filter((t) => t.status !== 'open')),
      monthly: monthlySeries(trades.filter((t) => t.status !== 'open')),
@@ -5580,10 +5659,10 @@ index 97110a5..ff8d382 100644
      by_symbol: segment(trades, (t) => t.symbol),
      by_session: segment(trades, (t) => t.session_label),
      by_direction: segment(trades, (t) => (String(t.direction).toLowerCase() === 'short' ? 'Short' : 'Long')),
-diff --git a/src/routes/api.js b/src/routes/api.js
+diff --git a/tradejournal/src/routes/api.js b/tradejournal/src/routes/api.js
 index 0bb768c..14f9c6d 100644
---- a/src/routes/api.js
-+++ b/src/routes/api.js
+--- a/tradejournal/src/routes/api.js
++++ b/tradejournal/src/routes/api.js
 @@ -1,6 +1,7 @@
  'use strict';
  const { asyncRouter } = require('./async-router');
@@ -5965,10 +6044,10 @@ index 0bb768c..14f9c6d 100644
      min_rr: Number.isFinite(Number(b.min_rr)) && Number(b.min_rr) > 0
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
-diff --git a/src/routes/bots.js b/src/routes/bots.js
+diff --git a/tradejournal/src/routes/bots.js b/tradejournal/src/routes/bots.js
 index 2c6ff6c..ddb664b 100644
---- a/src/routes/bots.js
-+++ b/src/routes/bots.js
+--- a/tradejournal/src/routes/bots.js
++++ b/tradejournal/src/routes/bots.js
 @@ -28,6 +28,21 @@ function createBotsRouter({ requireAuth }) {
   * scenario". `?min_rr=` overrides it for a single request so a probe or a test
   * can measure the same plan against a different floor.
@@ -6024,10 +6103,10 @@ index 2c6ff6c..ddb664b 100644
      res.json(out);
    }));
  
-diff --git a/src/trades.js b/src/trades.js
+diff --git a/tradejournal/src/trades.js b/tradejournal/src/trades.js
 index 171df43..8c1e888 100644
---- a/src/trades.js
-+++ b/src/trades.js
+--- a/tradejournal/src/trades.js
++++ b/tradejournal/src/trades.js
 @@ -56,6 +56,43 @@ function normalise(raw, ctx = {}) {
      planned_r: raw.planned_r ? num(raw.planned_r) : null,
    };
@@ -6082,10 +6161,10 @@ index 171df43..8c1e888 100644
  
  async function insert(db, userId, t) {
    const row = { ...t, user_id: userId };
-diff --git a/vercel.json b/vercel.json
+diff --git a/tradejournal/vercel.json b/tradejournal/vercel.json
 index 3dba89a..8635890 100644
---- a/vercel.json
-+++ b/vercel.json
+--- a/tradejournal/vercel.json
++++ b/tradejournal/vercel.json
 @@ -1,14 +1,18 @@
  {
    "$schema": "https://openapi.vercel.sh/vercel.json",

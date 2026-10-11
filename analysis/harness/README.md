@@ -1,6 +1,6 @@
 # Independent backtest harness
 
-## Current verification state (2026-10-10)
+## Current verification state (2026-10-11)
 
 The original baseline below is **historical**, not the current server or performance evidence.
 M131 found HTF lookahead: the harness precomputed complete higher bars and exposed them at
@@ -23,6 +23,15 @@ observed. Prior contaminated return/grade figures must not be quoted as validate
 - The default M58 dollar table isolates grade only. The M33 method-mode table separately
   consumes emitted risk_pct (grade x range x counter reduction) rather than disguising a
   half-risk policy as a change in expectancy R.
+
+- M70's geometric extreme-over-overlapping-flip policy is active only when flips
+  are opted in; the bare default complete60-seed result remains identical except
+  runtime. Separately measured --breakers parent n55/+0.0303R/PF1.06, preference-only
+  n55/+0.0219R/PF1.04, complete preference+fuel n53/-0.0278R/PF0.95. **Negative
+  synthetic result, not an edge or a model ranking.** Preference-only is a research
+  preloader, never a production relaxation:
+  `node --require ./analysis/helpers/m70-preference-only.js analysis/harness/backtest.js --breakers --seeds 60 --bars 1500 --window 300`.
+  M68 causal named LTF composition and journal persistence remain open.
 
 M33's controlled regression fixtures validate actual order/chart/copy/storage consumers
 and unchanged daily narrative; they are **explicit structural inputs**, not historical prices
