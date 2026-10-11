@@ -1,0 +1,17 @@
+ok SQL CHECK rejects enabled zero percentage
+ok SQL CHECK rejects above-app-range percentage
+ok SQL daily freeze also rejects negative percentage
+FAIL corrupt selected-profit clock is masked unavailable, never waived 200
+FAIL bad selection clock writes no trade or admission undefined
+FAIL corrupt stored percentage fails closed, without leaking driver detail {"status":200,"data":{"ok":true,"permission":{"allowed":false,"state":"record_only","can_override":false},"trade":{"id":2,"user_id":1,"account_id":3,"symbol":"TEST","asset_class":"stocks","direction":"long","status":"closed","opened_at":"2026-10-11T12:00:00.000Z","closed_at":null,"entry":100,"exit":null,"stop":99,"target":null,"size":1,"fees":0,"gross_pnl":0,"net_pnl":0,"risk_amount":1,"r_multiple":0,"planned_r":null,"mae_r":null,"mfe_r":null,"stop_moved":0,"exit_reason":"Breakeven / scratch","notes":"","strategy_id":null,"strategy_name":"","setup_grade":"","entry_model":null,"entry_tf":"5m","entry_evidence":null,"session":"overlap","timeframes":"","emotion_before":"","emotion_after":"","confidence":null,"adherence":null,"mistakes":"","tags":"","thesis":"","lesson":"","execution_notes":"","screenshot_url":"","manual_mae":null,"manual_mfe":null,"created_at":"2026-10-11 15:51:02","updated_at":"2026-10-11 15:51:02","legs":null,"entries":null,"guardrail_snapshot":"{\"date\":\"2026-10-11\",\"timezone\":\"UTC\",\"evaluated_at\":\"2026-10-11T12:00:00.000Z\",\"account_id\":3,\"status\":\"unknown\",\"breaches\":[],\"remaining_trades\":null,\"guardrails\":null,\"today\":null,\"message\":\"Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.\",\"permission\":{\"allowed\":false,\"can_override\":false,\"state\":\"unavailable\"},\"capture_basis\":\"recording-time state, not an inferred historic entry violation\"}","entry_permission":"record_only","override_reason":null,"strategy_version":null,"session_label":"London/NY Overlap","hour":13,"weekday":"Sun","weekday_index":6,"day":"2026-10-11","close_day":null,"dir_sign":1,"is_win":false,"is_loss":false,"is_be":true,"tags_arr":[],"mistakes_arr":[],"hold_minutes":null,"risk_used":1,"legs_n":0,"weighted_exit":null}}}
+ok unknown PRIOR realised net cannot be assumed day-start equity zero
+ok invalid current closed net cannot silently become0
+FAIL invalid net result blocks actual entry despite typed reason 200
+ok unknown profit date still permits honest record-only open reality
+ok unknown recording is labelled unknown, not an inferred historic profit violation
+ok OFF preserves legacy older-undated handling without a new forced policy
+ok amount underflow cannot silently turn enabled into zero/off
+ok pure profit boundary also ignores another user journal row
+ok pure evaluator rejects unknown optional policy rather than coercing OFF
+FAIL truthful repair can recover unknown profit state, not a permanent stop "unknown"
+M81 profit validation: 11 passed, 5 failed

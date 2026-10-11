@@ -1,0 +1,103 @@
+{
+  "app": "/tmp/m81-gate-stage/app",
+  "pass": 7,
+  "fail": 15,
+  "results": [
+    {
+      "label": "legacy/default account UI starts optional ceiling unchecked",
+      "passed": false
+    },
+    {
+      "label": "OFF keeps percentage input disabled without forcing a limit",
+      "passed": false
+    },
+    {
+      "label": "account dialog distinguishes lifetime/prop target from daily stop",
+      "passed": false
+    },
+    {
+      "label": "dialog explains realised-only, UTC first-check freeze and tomorrow edits",
+      "passed": false,
+      "detail": "Edit accountClose\n          Account name\n          Broker\n          Typelivedemoprop\n          Currency\n          Starting balance\n          Risk per trade (%)\n          Max trades per UTC dayCourse guidance: 3 intraday / 5 scalping. Frozen on the day's first guardrail check; changes then apply tomorrow. History never raises this cap.\n          Daily loss limit (%)\n          Max drawdown (%)\n          Profit target (%)\n        \n        Prop-firm rules live here: the app tracks how much of your daily loss limit and max drawdown you have actually used.CancelSave"
+    },
+    {
+      "label": "enabled zero ceiling fails UI validation without an account write",
+      "passed": false,
+      "detail": "missing optional setting"
+    },
+    {
+      "label": "actual account-edit handler persists chosen1% via authenticated PUT",
+      "passed": false
+    },
+    {
+      "label": "editing an enabled account roundtrips active checkbox/percentage",
+      "passed": false
+    },
+    {
+      "label": "new accounts also default OFF, not a mandated course example",
+      "passed": false
+    },
+    {
+      "label": "actual new-account handler writes OFF while retaining lifetime8%",
+      "passed": false
+    },
+    {
+      "label": "actual trade buttons become grey reason-required at PROFIT stop",
+      "passed": true
+    },
+    {
+      "label": "trade modal states realised profit ceiling rather than a fake technical veto",
+      "passed": true
+    },
+    {
+      "label": "profit stop requests typed reason before another trade POST",
+      "passed": true
+    },
+    {
+      "label": "blank profit override confirmation is disabled",
+      "passed": true
+    },
+    {
+      "label": "actual browser-confirmed profit reason is stored with violated rule",
+      "passed": true
+    },
+    {
+      "label": "actual review renderer shows profit rule and recorded reason",
+      "passed": true
+    },
+    {
+      "label": "actual UI OFF edit stores future choice without erasing TODAY profit stop",
+      "passed": false
+    },
+    {
+      "label": "briefing API reports frozen profit1%, not newly configured OFF",
+      "passed": false
+    },
+    {
+      "label": "actual dashboard displays optional profit stop amount/percentage",
+      "passed": false,
+      "detail": "\n          \n            \n              Pre-session briefingSun 2026-10-11\n              Calendar live\n              Good afternoon, UI — here is your plan.\n              \n                No flags from your history — trade the playbook, log everything, review at the close.\n              \n              \n                Suggested risk $50.50\n                Size multiplier 1.00×\n                Max trades today 3\n                Daily stop $303.00\n              \n              No drawdown or streak flags. Trade your standard risk unit.\n            \n            \n              Today\n              $0.00\n              0 closed · week +$100.00\n              \n              Open risk\n              $1.00\n              1 open position(s)\n              \n              Events ahead\n              No high-impact events scheduled.\n            \n          Net P&L+$100.001 closed trades · equity $10,100Expectancy+1.000R+$100.00 per tradeWin rate100.0%1W / 0L / 0BEProfit factor∞payoff — : 1Max drawdown0.0%now 0.0% · limit used 0%SQN0.00poor · Sharpe 0.00Equity curve\n        Account equityDrawdown\n        EquityCumulative R\n        \n        \n          Peak$10,100\n          Recovery factor—\n          Streak1W\n          Best / worst$100.00 / $100.00\n          Avg hold23h\n        What your data says\n          All insights →\n        \n          \n      \n      \n      0\n      process\n          \n          \n            0 critical\n            0 warnings\n            \n          \n        \n        \n            info\n            Not enough trades yet\n            impact $0.00R-multiple distributionexpectancy +1.000R · total +1.0REdge quality\n        \n          Avg winner$100.00 (+1.00R avg)\n          Avg loser$0.00\n          MAE / MFE—R / +1.00R\n          Capture efficiency100%\n          Kelly fraction0.0% (¼ ="
+    },
+    {
+      "label": "dashboard separates live personal stop from advisory risk amount",
+      "passed": false,
+      "detail": "\n          \n            \n              Pre-session briefingSun 2026-10-11\n              Calendar live\n              Good afternoon, UI — here is your plan.\n              \n                No flags from your history — trade the playbook, log everything, review at the close.\n              \n              \n                Suggested risk $50.50\n                Size multiplier 1.00×\n                Max trades today 3\n                Daily stop $303.00\n              \n              No drawdown or streak flags. Trade your standard risk unit.\n            \n            \n              Today\n              $0.00\n              0 closed · week +$100.00\n              \n              Open risk\n              $1.00\n              1 open position(s)\n              \n              Events ahead\n              No high-impact events scheduled.\n            \n          Net P&L+$100.001 closed trades · equity $10,100Expectancy+1.000R+$100.00 per tradeWin rate100.0%1W / 0L / 0BEProfit factor∞payoff — : 1Max drawdown0.0%now 0.0% · limit used 0%SQN0.00poor · Sharpe 0.00Equity curve\n        Account equityDrawdown\n        EquityCumulative R\n        \n        \n          Peak$10,100\n          Recovery factor—\n          Streak1W\n          Best / worst$100.00 / $100.00\n          Avg hold23h\n        What your data says\n          All insights →\n        \n          \n      \n      \n      0\n      process\n          \n          \n            0 critical\n            0 warnings\n            \n          \n        \n        \n            info\n            Not enough trades yet\n            impact $0.00R-multiple distributionexpectancy +1.000R · total +1.0REdge quality\n        \n          Avg winner$100.00 (+1.00R avg)\n          Avg loser$0.00\n          MAE / MFE—R / +1.00R\n          Capture efficiency100%\n          Kelly fraction0.0% (¼ ="
+    },
+    {
+      "label": "second-account briefing accurately discloses chosen OFF",
+      "passed": false,
+      "detail": "no new account"
+    },
+    {
+      "label": "actual dashboard renders OFF as optional, not a zero-dollar target",
+      "passed": false,
+      "detail": "no new account"
+    },
+    {
+      "label": "actual DOM/event/UI composition has no runtime errors",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Actual Settings/Dashboard/trade form/review HTTP/SQL; declared bootstrap/news/quote/chart seams; no pixels, provider/broker/outcome or production proof"
+}

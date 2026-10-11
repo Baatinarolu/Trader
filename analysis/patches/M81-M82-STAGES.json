@@ -1,0 +1,165 @@
+{
+  "base_commit": "7f1122dade0b9022b595aadc08bbb29badff51f6",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 82,
+    "partial": 2,
+    "todo": 48,
+    "no_action": 0,
+    "partition_groups": 8,
+    "new_closures": [
+      "M81",
+      "M82"
+    ],
+    "partials": [
+      "M30",
+      "M103"
+    ],
+    "next": [
+      "M84",
+      "M85"
+    ]
+  },
+  "feature_assertions": {
+    "pass": 282,
+    "fail": 0,
+    "probes": 10,
+    "inherited_pass": 302,
+    "inherited_fail": 0,
+    "inherited_probes": 12
+  },
+  "stages": [
+    {
+      "stage": "policy",
+      "source_manifest": "policy-source.json",
+      "source_files": 112,
+      "patch": "m81-optional-profit-policy.patch",
+      "files": 4,
+      "bytes": 11201,
+      "sha256": "319f7034ce54718d8933213126c641d25fe2e3e80ed60f300efa85b6eed049c9",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "gate",
+      "source_manifest": "gate-source.json",
+      "source_files": 112,
+      "patch": "m81-durable-profit-stop.patch",
+      "files": 1,
+      "bytes": 8274,
+      "sha256": "d014efd7fc86669b9c9e2c74e08dcdc634ea5c5eaecba1d8fb2f4bd49f3eaed7",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "ui",
+      "source_manifest": "ui-source.json",
+      "source_files": 112,
+      "patch": "m81-profit-ui.patch",
+      "files": 4,
+      "bytes": 9320,
+      "sha256": "2df7d5e52a45fd6ad6fe3c4e85bcdec88caddb4977bab0be3ab010e4b5cef3f3",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "risk",
+      "source_manifest": "risk-source.json",
+      "source_files": 112,
+      "patch": "m82-streak-multipliers.patch",
+      "files": 1,
+      "bytes": 2407,
+      "sha256": "6833d95c15e27878500ffcbdf6bb01e24f90157d65181cfb213c2668791436d1",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "advice",
+      "source_manifest": "advice-source.json",
+      "source_files": 112,
+      "patch": "m82-post-loss-advice.patch",
+      "files": 1,
+      "bytes": 781,
+      "sha256": "26a188f5f672ac9095fac070bd6a0e285fc74a94e1ce536ec68c442694683195",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "compat",
+      "source_manifest": "compat-source.json",
+      "source_files": 112,
+      "patch": "m82-m9-advisory-read.patch",
+      "files": 1,
+      "bytes": 2176,
+      "sha256": "af5fb0583d3bcc6fe46edec63798f2873310396c33b0c5f6b821c94b058054da",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "risk-ui",
+      "source_manifest": "risk-ui-source.json",
+      "source_files": 112,
+      "patch": "m82-risk-ui.patch",
+      "files": 2,
+      "bytes": 5024,
+      "sha256": "6021753d8ac66a2ce7c01be190e1e8e0fb8a78f667b8003f032bb621cdc5e3a4",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "full",
+      "source_manifest": "full-source.json",
+      "source_files": 112,
+      "patch": "m81-m82-documentation.patch",
+      "files": 2,
+      "bytes": 9029,
+      "sha256": "ec03053e0d616e959b708db05d3e57fc60c11a38ba00b99aeec744a59d731a58",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 10,
+    "bytes": 44081,
+    "sha256": "0751f2da3216d4abf7a4c4ea350261df5bfac42bfb624471b26ab8840b44c4ff",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 46,
+    "bytes": 663029,
+    "sha256": "c4d3708d72fe2879b0cc4334b1975b9a4615ca9fd70975e97a86b8a037f0b420",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 112,
+    "application_byte_differences": 0,
+    "credential_db_dependency_dataset_files": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/setup.js",
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "other_neutral_files": [
+    "package-lock.json",
+    "src/instruments.js",
+    "src/performance.js",
+    "scripts/api-test.js",
+    "scripts/bots-test.js"
+  ],
+  "package_lock_sha256": "33e859914328605792ab71c75957b752716748828b0b2bef164956525cffb74c",
+  "scope": "Optional realised profit stop and streak-independent advisory risk; existing grade/drawdown policies unchanged. Native both205/1,20 synthetic fills/0 mismatches, unchanged>20 failure. No broker/provider/pixel/production/edge claim."
+}

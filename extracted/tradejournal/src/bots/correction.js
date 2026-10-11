@@ -420,6 +420,7 @@ async function guardrails(userId, { accountId = null, store = db, nowMs = Date.n
   const st = statsOf(trades);
   const base = {
     max_risk_pct: 1, max_trades_day: chosenCap.max_trades_day, cooldown_min: 30, max_consecutive_losses: 2,
+    daily_profit_limit_pct: chosenCap.daily_profit_limit_pct,
     daily_loss_limit_pct: Number(account.daily_loss_limit_pct) > 0 ? Number(account.daily_loss_limit_pct) : 3,
     trade_cap_policy: chosenCap, size_cap_note: null, basis: 'Default risk rules and the preselected account trade cap (not enough personal data yet).',
   };
@@ -489,6 +490,7 @@ async function guardrails(userId, { accountId = null, store = db, nowMs = Date.n
   const g = {
     max_risk_pct: maxRiskPct,
     max_trades_day: chosenCap.max_trades_day,
+    daily_profit_limit_pct: chosenCap.daily_profit_limit_pct,
     trade_cap_policy: chosenCap,
     cooldown_min: 30,
     max_consecutive_losses: 2,

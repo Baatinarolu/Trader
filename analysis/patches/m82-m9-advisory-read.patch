@@ -1,0 +1,34 @@
+diff --git a/src/coach.js b/src/coach.js
+index 8cfb64a..e446945 100644
+--- a/src/coach.js
++++ b/src/coach.js
+@@ -9,6 +9,7 @@
+  */
+ const P = require('./performance');
+ const Guards = require('./bots/guardrails');
++const I = require('./instruments');
+ 
+ /* M11 — Ep 27's floor: "at least 30 to 50 minimum trades just to see anything
+  * meaningful", and below that "don't tweak the system at all". Duplicated from
+@@ -619,7 +620,11 @@ function briefing({ trades, events = [], quotes = {}, account, journalEntry, ris
+   const focus = analysis.insights.filter((i) => i.severity === 'critical' || i.severity === 'warning').slice(0, 3);
+   const realised = closed.reduce((s2, t) => s2 + num(t.net_pnl), 0);
+   const bank = account ? r2(num(account.starting_balance, 10000) + realised) : 10000;
+-  const suggestedRiskPct = account ? account.risk_per_trade_pct : 0.5;  // M9: fallback 1 -> 0.5
++  // M9 compatibility: a legacy/invalid DB value cannot bypass the same clamp
++  // already used by actual entry sizing. This is before any advisory adjustment.
++  const suggestedRiskPct = I.clampRiskPct(account?.risk_per_trade_pct,{unlocked:!!account?.risk_unlocked});
++  const riskNote = I.riskGuardrailNote(account?.risk_per_trade_pct,suggestedRiskPct,{unlocked:!!account?.risk_unlocked});
++  if (riskNote) reasons.push(riskNote);
+   const suggestedRisk = r2(bank * (suggestedRiskPct / 100) * riskMultiplier);
+ 
+   return {
+@@ -643,6 +648,8 @@ function briefing({ trades, events = [], quotes = {}, account, journalEntry, ris
+       weekday_record: dowStat ? { day: dow, net_pnl: dowStat.net_pnl, expectancy_r: dowStat.expectancy_r, trades: dowStat.trades, win_rate: dowStat.win_rate } : null,
+     },
+     risk_plan: {
++      base_risk_pct:suggestedRiskPct,streak_sizing:false,
++      adjustment_basis:'Existing drawdown/day-loss policy only; grade/checklist sizing remains in the entry engine, not this advisory multiplier.',
+       multiplier: r2(riskMultiplier), suggested_risk: suggestedRisk,
+       suggested_risk_pct: r2(suggestedRiskPct * riskMultiplier),
+       max_trades_today: Guards.configuredCap(account || {}), // M83 fixed account policy, never the historical average

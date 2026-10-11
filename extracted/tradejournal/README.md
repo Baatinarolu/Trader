@@ -17,7 +17,8 @@ New trade/reopen and prospective plan actions now recheck scoped personal rules
 server-side. A known stop needs a recorded reason; an unavailable state cannot be
 waived. Honest journal corrections/deletions remain possible but do not replenish
 the durable admission count. See [the guardrails guide](docs/GUARDRAILS.md) for UTC
-cap selection, record-only/research modes, limits and remaining scope. **No broker
+cap selection, optional realised profit ceilings, record-only/research modes,
+fixed streak-independent base risk, limits and remaining scope. **No broker
 is connected and an app admission is not a market-validated order.**
 
 ## What it does
@@ -27,7 +28,7 @@ is connected and an app admission is not a market-validated order.**
 | **Journal** | 40+ fields per trade — thesis, execution notes, emotions, confidence, rule-adherence score, mistake tags, screenshots, MAE/MFE, planned R, **scale-out legs** (closes at the pct-weighted price). Works for FX, futures, stocks, ETFs, crypto, index CFDs and options. |
 | **Analytics** | Expectancy ($ and R), win rate, profit factor, payoff, SQN, Sharpe, Sortino, Calmar, recovery factor, Kelly, max drawdown, streaks, R-distribution, MAE/MFE capture efficiency, time-of-day and weekday grids, hold-time buckets, 10+ segment tables. |
 | **Coach** | 20+ deterministic behavioural tests on your own rows — losing setups, bad hours, revenge entries, post-loss trading, overtrading days, size creep, early exits, tight stops, cost of each mistake tag — each with the numbers, the dollar impact and one concrete action. |
-| **Assistant** | Pre-session briefing with a risk multiplier derived from your drawdown/streak state, live economic calendar, headlines, quotes, watchlist, position-size calculator with true instrument specs, break-even win-rate maths, and a Monte Carlo drawdown / risk-of-ruin simulator. |
+| **Assistant** | Pre-session briefing with a clamped base risk unit and separate advisory drawdown/day-loss adjustment (never a streak multiplier), live economic calendar, headlines, quotes, watchlist, position-size calculator with true instrument specs, break-even win-rate maths, and a Monte Carlo drawdown / risk-of-ruin simulator. |
 | **Daily habit** | Calendar heatmap of P&L, day-review notebook (bias, mood, energy, plan, review, lessons), goals with live progress, pre-trade checklist builder. |
 | **Data** | CSV import with automatic column detection, CSV export, full JSON backup & restore, multi-account (including prop-firm drawdown rules), instrument library. |
 | **Options** | Black-Scholes calculator (price, delta/gamma/theta/vega, break-even, ITM/OTM), premium-based position sizing, and a plan that warns instead of printing a fake R:R when your target premium is below the entry. 7 option presets (100× multiplier). *IV is yours to type — there is no options feed.* |

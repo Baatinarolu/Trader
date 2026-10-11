@@ -1,0 +1,33 @@
+{
+  "app": "/tmp/m82-risk-stage/app",
+  "pass": 1,
+  "fail": 4,
+  "results": [
+    {
+      "label": "positive fixture still actually triggers after-two-losses insight",
+      "passed": false,
+      "detail": [
+        "session_split",
+        "win_rate_dial"
+      ]
+    },
+    {
+      "label": "sample/baseline/impact detection and evidence stay untouched",
+      "passed": false
+    },
+    {
+      "label": "after-loss advice no longer offers25%/quarter risk or cutting size",
+      "passed": false
+    },
+    {
+      "label": "after-loss advice keeps stop and explicitly retains selected risk unit",
+      "passed": false
+    },
+    {
+      "label": "40-trade fixture leaves existing score sample floor eligible",
+      "passed": true
+    }
+  ],
+  "feature_fingerprint": null,
+  "scope": "Actual deterministic Coach40-row advice, not executed size, market/provider/broker/outcome or production validation"
+}

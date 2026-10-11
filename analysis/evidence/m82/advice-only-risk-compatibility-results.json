@@ -1,0 +1,122 @@
+{
+  "app": "/tmp/m82-advice-stage/app",
+  "pass": 5,
+  "fail": 11,
+  "results": [
+    {
+      "label": "missing advisory read matches unchanged shared M9 clamp",
+      "passed": false,
+      "detail": {
+        "pct": 0,
+        "dollars": 0
+      }
+    },
+    {
+      "label": "NULL advisory read matches unchanged shared M9 clamp",
+      "passed": false,
+      "detail": {
+        "pct": 0,
+        "dollars": 0
+      }
+    },
+    {
+      "label": "invalid advisory read matches unchanged shared M9 clamp",
+      "passed": false,
+      "detail": {
+        "pct": 0,
+        "dollars": 0
+      }
+    },
+    {
+      "label": "zero advisory read matches unchanged shared M9 clamp",
+      "passed": false,
+      "detail": {
+        "pct": 0,
+        "dollars": 0
+      }
+    },
+    {
+      "label": "negative advisory read matches unchanged shared M9 clamp",
+      "passed": false,
+      "detail": {
+        "pct": -1,
+        "dollars": -100
+      }
+    },
+    {
+      "label": "below existing floor advisory read matches unchanged shared M9 clamp",
+      "passed": false,
+      "detail": {
+        "pct": 0.1,
+        "dollars": 10
+      }
+    },
+    {
+      "label": "quarter advisory read matches unchanged shared M9 clamp",
+      "passed": true
+    },
+    {
+      "label": "locked default advisory read matches unchanged shared M9 clamp",
+      "passed": true
+    },
+    {
+      "label": "locked over guardrail advisory read matches unchanged shared M9 clamp",
+      "passed": false,
+      "detail": {
+        "pct": 0.75,
+        "dollars": 75
+      }
+    },
+    {
+      "label": "locked1 advisory read matches unchanged shared M9 clamp",
+      "passed": false,
+      "detail": {
+        "pct": 1,
+        "dollars": 100
+      }
+    },
+    {
+      "label": "manual unlocked1 advisory read matches unchanged shared M9 clamp",
+      "passed": true
+    },
+    {
+      "label": "legacy locked2 advisory read matches unchanged shared M9 clamp",
+      "passed": false,
+      "detail": {
+        "pct": 2,
+        "dollars": 200
+      }
+    },
+    {
+      "label": "legacy unlocked2 advisory read matches unchanged shared M9 clamp",
+      "passed": false,
+      "detail": {
+        "pct": 2,
+        "dollars": 200
+      }
+    },
+    {
+      "label": "no-account pure briefing still defaults0.5%",
+      "passed": true
+    },
+    {
+      "label": "advisory metadata discloses base unit and that streak sizing is OFF",
+      "passed": false,
+      "detail": {
+        "multiplier": 1,
+        "suggested_risk": 50,
+        "suggested_risk_pct": 0.5,
+        "max_trades_today": 3,
+        "max_loss_today": 300,
+        "reasons": [
+          "No drawdown/day-loss adjustment. Use the selected risk unit; streaks never resize it. Personal entry rules still require a fresh check."
+        ]
+      }
+    },
+    {
+      "label": "existing M9 constants stay0.5default/locked,1manual maximum,.25floor",
+      "passed": true
+    }
+  ],
+  "scope": "Legacy advisory M9 read/metadata compatibility, no new sizing coefficients or performance/broker/production proof"
+}

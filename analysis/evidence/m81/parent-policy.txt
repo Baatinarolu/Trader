@@ -1,0 +1,60 @@
+FAIL additive account schema has optional daily profit percentage undefined
+FAIL daily policy can distinguish unselected legacy state from selected OFF undefined
+FAIL existing/default accounts start OFF, not an invented universal ceiling undefined
+FAIL POST without ceiling defaults explicitly OFF 200
+FAIL POST roundtrips explicit optional percentage null {"status":200}
+FAIL PUT roundtrips optional percentage null {"status":200}
+FAIL POST roundtrips explicit optional percentage "" {"status":200}
+FAIL PUT roundtrips optional percentage "" {"status":200}
+FAIL POST roundtrips explicit optional percentage "  " {"status":200}
+FAIL PUT roundtrips optional percentage "  " {"status":200}
+FAIL POST roundtrips explicit optional percentage 0.25 {"status":200}
+FAIL PUT roundtrips optional percentage 0.25 {"status":200}
+FAIL POST roundtrips explicit optional percentage 1 {"status":200}
+FAIL PUT roundtrips optional percentage 1 {"status":200}
+FAIL POST roundtrips explicit optional percentage "2.50" {"status":200}
+FAIL PUT roundtrips optional percentage "2.50" {"status":200}
+FAIL POST roundtrips explicit optional percentage 3 {"status":200}
+FAIL PUT roundtrips optional percentage 3 {"status":200}
+FAIL POST roundtrips explicit optional percentage 5 {"status":200}
+FAIL PUT roundtrips optional percentage 5 {"status":200}
+FAIL POST roundtrips explicit optional percentage 10 {"status":200}
+FAIL PUT roundtrips optional percentage 10 {"status":200}
+FAIL POST roundtrips explicit optional percentage 100 {"status":200}
+FAIL PUT roundtrips optional percentage 100 {"status":200}
+FAIL invalid POST rejected without account write 0 200
+FAIL invalid PUT rejected without changing selected setting 0 200
+FAIL invalid POST rejected without account write -1 200
+FAIL invalid PUT rejected without changing selected setting -1 200
+FAIL invalid POST rejected without account write 100.01 200
+FAIL invalid PUT rejected without changing selected setting 100.01 200
+FAIL invalid POST rejected without account write true 200
+FAIL invalid PUT rejected without changing selected setting true 200
+FAIL invalid POST rejected without account write false 200
+FAIL invalid PUT rejected without changing selected setting false 200
+FAIL invalid POST rejected without account write [] 200
+FAIL invalid PUT rejected without changing selected setting [] 200
+FAIL invalid POST rejected without account write {} 200
+FAIL invalid PUT rejected without changing selected setting {} 200
+FAIL invalid POST rejected without account write "bad" 200
+FAIL invalid PUT rejected without changing selected setting "bad" 200
+FAIL invalid POST rejected without account write "NaN" 200
+FAIL invalid PUT rejected without changing selected setting "NaN" 200
+FAIL invalid POST rejected without account write "Infinity" 200
+FAIL invalid PUT rejected without changing selected setting "Infinity" 200
+FAIL invalid POST rejected without account write "0x10" 200
+FAIL invalid PUT rejected without changing selected setting "0x10" 200
+FAIL unrelated account edit retains selected ceiling 200
+FAIL another user cannot edit the ceiling 404
+FAIL empty-sample operative rules use selected1%, not a guessed history number undefined
+FAIL first scoped check persists the profit-selection clock {"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"}
+FAIL midday increase cannot erase the frozen1% ceiling undefined
+FAIL next UTC day adopts the explicitly selected5% undefined
+FAIL profitable36-trade history cannot raise the preselected profit ceiling undefined
+FAIL OFF is a frozen policy too; enabling afterward applies next day undefined
+FAIL disabling midday does not erase today; future day can be OFF undefined
+FAIL eight simultaneous first checks agree on one profit policy/clock [{"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"},{"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"},{"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"},{"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"},{"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"},{"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"},{"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"},{"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"}]
+ok daily ceiling does not overwrite lifetime/prop profit target
+ok M11 below-floor rules still disclose30 and no personal adaptation
+ok new setting still requires real authentication
+M81 profit policy: 3 passed, 56 failed

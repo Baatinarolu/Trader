@@ -1,0 +1,44 @@
+diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
+index 4d80c5c..6a170b7 100644
+--- a/public/js/views/dashboard.js
++++ b/public/js/views/dashboard.js
+@@ -68,14 +68,15 @@
+                 ${(briefing.plan_of_the_day || []).map((l) => `<div class="small muted-2 bullet">${U.esc(l)}</div>`).join('')}
+               </div>
+               <div class="row wrap" style="gap:8px">
++                <span class="chip">Base risk ${U.esc(rp.base_risk_pct ?? 'unavailable')}%</span>
+                 <span class="chip">Suggested risk <b class="mono" style="margin-left:4px;color:var(--text)">${U.money(rp.suggested_risk)}</b></span>
+-                <span class="chip ${rp.multiplier < 1 ? 'warn' : 'pos'}">Size multiplier ${U.num(rp.multiplier, 2)}×</span>
++                <span class="chip ${rp.multiplier < 1 ? 'warn' : 'pos'}" title="${U.esc(rp.adjustment_basis || 'Advisory, not entry sizing')}">Advisory adjustment ${U.num(rp.multiplier, 2)}×</span>
+                 <span class="chip">Max trades today <b class="mono" style="margin-left:4px;color:var(--text)">${rp.max_trades_today}</b></span>
+                 <span class="chip">Advisory loss budget <b class="mono" style="margin-left:4px;color:var(--red)">${U.money(rp.max_loss_today)}</b></span>
+                 <span class="chip">Optional profit stop <b class="mono" style="margin-left:4px">${U.esc(profitLabel)}</b></span>
+                 <span class="chip ${daily.permission?.allowed ? 'pos' : 'warn'}">Personal rules: ${U.esc(daily.permission?.state || 'unavailable')}</span>
+               </div>
+-              <div class="tiny muted" style="margin-top:8px">UTC realised ${daily.today ? U.money(ps.realised_amount) : 'unavailable'} · Briefing amounts are advisory, not entry permission. Live actions recheck the server; a known stop needs a reason for that action only.</div>
++              <div class="tiny muted" style="margin-top:8px">Streak sizing: ${rp.streak_sizing === false ? 'off' : 'unavailable'} · UTC realised ${daily.today ? U.money(ps.realised_amount) : 'unavailable'} · Briefing amounts are advisory, not entry permission. Live actions recheck the server; a known stop needs a reason for that action only.</div>
+               <div class="tiny muted" style="margin-top:8px">${(rp.reasons || []).map((r) => U.esc(r)).join(' · ')}</div>
+             </div>
+             <div style="min-width:250px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:14px">
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index a83f6c3..27d6a24 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -412,7 +412,7 @@
+ 
+       function accountDialog(a) {
+         const isNew = !a;
+-        const v = a || { name: '', broker: '', account_type: 'live', currency: 'USD', starting_balance: 10000, risk_per_trade_pct: 1, daily_loss_limit_pct: 3, max_drawdown_pct: 10, profit_target_pct: 8 };
++        const v = a || { name: '', broker: '', account_type: 'live', currency: 'USD', starting_balance: 10000, risk_per_trade_pct: 0.5, daily_loss_limit_pct: 3, max_drawdown_pct: 10, profit_target_pct: 8 };
+         const body = U.h('div');
+         body.innerHTML = `<div class="form-grid" style="grid-template-columns:1fr 1fr">
+           <label class="field span2"><span>Account name</span><input id="a-name" value="${U.esc(v.name)}" placeholder="e.g. FTMO 100k Challenge" /></label>
+@@ -420,7 +420,7 @@
+           <label class="field"><span>Type</span><select id="a-type">${['live', 'demo', 'prop'].map((t) => `<option value="${t}" ${v.account_type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+           <label class="field"><span>Currency</span><input id="a-ccy" value="${U.esc(v.currency)}" /></label>
+           <label class="field"><span>Starting balance</span><input id="a-bal" type="number" step="any" value="${v.starting_balance}" /></label>
+-          <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /></label>
++          <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /><div class="field-note">Default 0.5%; above it requires a deliberate manual unlock. The course maximum is 1%, never increased by a win/loss streak.</div></label>
+           <label class="field"><span>Max trades per UTC day</span><input id="a-trades" type="number" min="1" max="100" step="1" value="${v.max_trades_day ?? 3}" /><div class="field-note">Course guidance: 3 intraday / 5 scalping. Frozen on the day's first guardrail check; changes then apply tomorrow. History never raises this cap.</div></label>
+           <label class="field"><span>Daily loss limit (%)</span><input id="a-daily" type="number" step="0.1" value="${v.daily_loss_limit_pct}" /></label>
+           <label class="field"><span>Max drawdown (%)</span><input id="a-dd" type="number" step="0.1" value="${v.max_drawdown_pct}" /></label>

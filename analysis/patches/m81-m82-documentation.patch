@@ -1,0 +1,119 @@
+diff --git a/README.md b/README.md
+index 02ff9a2..b1ce977 100644
+--- a/README.md
++++ b/README.md
+@@ -17,7 +17,8 @@ New trade/reopen and prospective plan actions now recheck scoped personal rules
+ server-side. A known stop needs a recorded reason; an unavailable state cannot be
+ waived. Honest journal corrections/deletions remain possible but do not replenish
+ the durable admission count. See [the guardrails guide](docs/GUARDRAILS.md) for UTC
+-cap selection, record-only/research modes, limits and remaining scope. **No broker
++cap selection, optional realised profit ceilings, record-only/research modes,
++fixed streak-independent base risk, limits and remaining scope. **No broker
+ is connected and an app admission is not a market-validated order.**
+ 
+ ## What it does
+@@ -27,7 +28,7 @@ is connected and an app admission is not a market-validated order.**
+ | **Journal** | 40+ fields per trade — thesis, execution notes, emotions, confidence, rule-adherence score, mistake tags, screenshots, MAE/MFE, planned R, **scale-out legs** (closes at the pct-weighted price). Works for FX, futures, stocks, ETFs, crypto, index CFDs and options. |
+ | **Analytics** | Expectancy ($ and R), win rate, profit factor, payoff, SQN, Sharpe, Sortino, Calmar, recovery factor, Kelly, max drawdown, streaks, R-distribution, MAE/MFE capture efficiency, time-of-day and weekday grids, hold-time buckets, 10+ segment tables. |
+ | **Coach** | 20+ deterministic behavioural tests on your own rows — losing setups, bad hours, revenge entries, post-loss trading, overtrading days, size creep, early exits, tight stops, cost of each mistake tag — each with the numbers, the dollar impact and one concrete action. |
+-| **Assistant** | Pre-session briefing with a risk multiplier derived from your drawdown/streak state, live economic calendar, headlines, quotes, watchlist, position-size calculator with true instrument specs, break-even win-rate maths, and a Monte Carlo drawdown / risk-of-ruin simulator. |
++| **Assistant** | Pre-session briefing with a clamped base risk unit and separate advisory drawdown/day-loss adjustment (never a streak multiplier), live economic calendar, headlines, quotes, watchlist, position-size calculator with true instrument specs, break-even win-rate maths, and a Monte Carlo drawdown / risk-of-ruin simulator. |
+ | **Daily habit** | Calendar heatmap of P&L, day-review notebook (bias, mood, energy, plan, review, lessons), goals with live progress, pre-trade checklist builder. |
+ | **Data** | CSV import with automatic column detection, CSV export, full JSON backup & restore, multi-account (including prop-firm drawdown rules), instrument library. |
+ | **Options** | Black-Scholes calculator (price, delta/gamma/theta/vega, break-even, ITM/OTM), premium-based position sizing, and a plan that warns instead of printing a fake R:R when your target premium is below the entry. 7 option presets (100× multiplier). *IV is yours to type — there is no options feed.* |
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index b9975ab..b713d99 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -15,9 +15,45 @@ day**. Editing the setting afterward selects the next day's cap, not more entrie
+ for the current day. Historical profitable-day counts are suggestions only and
+ cannot raise the operative cap automatically. This is **not user-timezone rollover**.
+ 
++## Optional realised daily profit stop (M81)
++
++In **Settings → Accounts**, explicitly enable the daily profit stop and choose a
++positive percentage (app range **greater than 0 through 100**). It is **Off / NULL
++by default**, including existing accounts. Ep31 calls it completely optional; the
++course gives several examples (1%, 2–3%, 5–10%), not one universal default.
++The separate `profit_target_pct` remains the **lifetime / prop-firm objective**.
++
++Like the trade cap, the profit choice freezes on its first scoped **UTC rule-day**
++check, including an explicit OFF choice. Later enable/disable/percentage edits
++apply on a future day's first check, not retroactively today. Dashboard/Corrections
++show the operative frozen choice; Settings shows the saved choice. In an upgraded
++legacy day, the old cap/clock are retained, but the NEW profit policy is selected
++once on its first post-upgrade check. No past profit selection is fabricated.
++
++The amount is **UTC day-start realised journal equity × chosen percentage / 100**.
++Equity is starting balance plus net P&L closed before UTC midnight; today's gains
++and floating/open P&L do not move that denominator. Only known closes at/before
++the server clock count on their **close day**, including overnight positions.
++Example: starting10,000 + prior closed500 =10,500; a1% ceiling is105.
++
++The inclusive stop compares the **unrounded stored net-P&L sum** against the amount,
++not the UI's rounded display:104.9999 displayed as105 does not reach105. These are
++the app's existing libSQL REAL / JavaScript number representations, not a new
++arbitrary-precision accounting engine. If enabled, missing close dates/net P&L,
++invalid selection metadata or an unverifiable/underflowed amount fail closed;
++a reason cannot repair unknown data. Truthful repairs/record-only history remain
++possible. OFF preserves legacy older-undated handling rather than imposing a
++new universal profit rule.
++
++An observed profit ceiling **latches until UTC rollover**, even after winners are
++corrected/deleted or the future setting is disabled. The existing one-action,
++reasoned exception and day-review history apply; they do not create a reusable
++permit or a broker order. The server rechecks each prospective action.
++
+ ## What stops a prospective action
+ 
+ - The preselected daily entry cap, including open positions and reopen attempts.
++- The optional daily realised profit ceiling, if explicitly selected.
+ - The existing consecutive-loss/day-realised-loss limits. Percentage loss uses
+   starting balance plus P&L closed before the day, not floating P&L.
+ - The existing **30-minute** post-loss cooldown (the course says at least 10).
+@@ -38,7 +74,7 @@ unavailable until repaired.
+ 
+ Successful new entries/reopens and their counter update share one database WRITE
+ transaction. Admission records have **no journal-trade foreign key**. The observed
+-entry count is a monotonic floor; observed day cap/loss/streak stops last until UTC
++entry count is a monotonic floor; observed day cap/loss/profit/streak stops last until UTC
+ rollover. Previously observed loss timestamps still drive cooldown/candle expiry,
+ including across midnight.
+ 
+@@ -81,10 +117,33 @@ Day review displays immutable observed rule details, blocked attempts and overri
+ reasons, scoped to user/account/UTC day. Deleting trades or changing settings does
+ not rewrite those captures. An empty history does not prove past compliance.
+ 
++## Streaks do not rescale the risk unit (M82)
++
++Coach briefing no longer multiplies risk by0.6 after three losses or0.9 after four
++wins. The after-two-losses insight no longer offers25% sizing as an alternative
++to the stop. Streaks remain visible, and the **consecutive-loss STOP/cooldown and
++fresh admission check remain enforced**. Recent results are not next-trade odds.
++
++The existing M9 base-unit clamp also governs advisory reads:0.5% default/locked,
++manual maximum1%, existing base floor0.25%. The new-account form displays0.5%,
++not a1% value silently clamped by the server. Reading a legacy risk value does not
++rewrite it. Existing engine/checklist grade sizing is unchanged (A+/A×1, B×0.5,
++C×0.25); **no automatic A+ doubling** is added by a streak fix.
++
++Ep21 explicitly permits drawdown reduction/pause, so the old claim that all
++"drawdown sizing is forbidden" was overbroad. Separate legacy Coach drawdown/day-loss
++adjustments stay unchanged (−3%→0.75, −6%→0.5, down>2% today→0.5; compounded).
++Those coefficients/thresholds are existing **app advice**, not exact course
++prescriptions and not the engine's grade sizing. Dashboard labels the base unit,
++advisory adjustment/loss budget and live personal state separately. Advice is
++**not entry permission** and cannot clear a stopped day.
++
+ ## Scope still open
+ 
+-This change does not implement the profit stop, behavioural resize, adaptive
+-sizing, news fail-closed policy or the remaining time-window finding. It does not
+-change entry models, target/stop geometry, RR floors, grade policies, the course's
++M84's optional session-duration marker, M85's **post-loss reflection/completeness**,
++M94's pre-market routine, M111's news fail-closed policy, M112's time restrictions
++and M116's composite-score honesty remain open, along with every unresolved ID
++in the audit ledger. M85 is not an adaptive-sizing finding. M81/M82 do not change
++entry models, target/stop geometry, RR floors, grade policies, the course's
+ 30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
+ edge, win-rate improvement, live-provider or production-deployment claim is made.

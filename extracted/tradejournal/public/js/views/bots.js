@@ -1150,7 +1150,8 @@
       <div><div class="l">Trades / day</div><div class="v">${g.max_trades_day}</div></div>
       <div><div class="l">Cooldown after a loss</div><div class="v">${g.cooldown_min}m</div></div>
       <div><div class="l">Stop after</div><div class="v">${g.max_consecutive_losses} losses</div></div>
-      <div><div class="l">Daily loss limit</div><div class="v">${g.daily_loss_limit_pct}%</div></div>` }));
+      <div><div class="l">Daily loss limit</div><div class="v">${g.daily_loss_limit_pct}%</div></div>
+      <div><div class="l">Optional daily realised profit stop</div><div class="v">${g.daily_profit_limit_pct == null ? 'Off' : esc(g.daily_profit_limit_pct) + '%'}</div></div>` }));
     if (g.size_cap_note) gr.appendChild(h('div', { class: 'bot-detail', text: '• ' + g.size_cap_note }));
     gr.appendChild(h('div', { class: 'muted bot-detail', text: g.basis || '' }));
     gr.appendChild(h('div', { class: 'bot-plan ' + (c.daily.status === 'stop' ? 'neg' : c.daily.status === 'caution' ? 'warn' : ''), text: c.daily.message || '' }));

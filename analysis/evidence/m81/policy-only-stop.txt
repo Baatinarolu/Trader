@@ -1,0 +1,52 @@
+FAIL active profit rule is inspectable before any closed history undefined
+ok profit rule is separate from lifetime8% prop objective
+ok active rule with zero realised P&L permits otherwise-clear entry
+ok honest overnight profitable close records reality, not an admission
+ok overnight win counts on CLOSE day, not opening day
+FAIL exact inclusive1% realised threshold stops the day "clear"
+FAIL profit stop can use existing explicit single-action reason path undefined
+FAIL observed profit stop is durably latched before an entry attempt undefined
+FAIL actual POST rechecks server day; forged clock/OFF cannot bypass profit 200
+FAIL blocked profit POST writes no trade or admission undefined
+FAIL whitespace reason does not waive profit rule 200
+FAIL reasoned profit exception admits exactly the scoped action 200
+FAIL profit exception stores reason and actual stopped snapshot undefined
+FAIL profit override has atomic audit linked to actual owned trade undefined
+FAIL one profit exception is not a reusable unlock 200
+FAIL day-review API retains realised profit breach and typed exception 200
+ok truthful P&L correction is allowed and visible
+FAIL P&L correction cannot erase the observed profit day stop "clear"
+FAIL honest deletion remains possible, with zero present journal P&L undefined
+FAIL deleted winners cannot reset the retained profit stop "clear"
+FAIL profit admission provenance/audited reason survive journal deletion undefined
+FAIL disabling setting midday cannot erase frozen profit selection/stop 1
+FAIL fresh server process retains profit latch after deletion/setting OFF "clear"
+FAIL UTC rollover clears old day latch and adopts chosen OFF "clear"
+ok another owned account is not poisoned by a prior profit stop
+ok profit override cannot cross account ownership
+ok profit admission requires actual authentication
+ok floating/open profit cannot trigger a realised profit stop
+FAIL prior-day win changes equity basis, not current realised profit {"trades":0,"closed":0,"realised":0,"r_sum":0,"avg_r":0,"loss_streak":0,"balance":10100,"loss_limit":303,"balance_basis":"day-start realised journal equity"}
+ok future close cannot trigger today before server observes its time
+FAIL prior realised equity anchors profit limit, excluding today gain from basis undefined
+FAIL display rounding to105 cannot prematurely trip104.9999 realised {"realised":105,"status":"clear"}
+FAIL exact105 threshold triggers inclusively with prior equity "clear"
+FAIL fractional chosen percentage uses same realised inclusive comparison undefined
+FAIL exact UTC midnight close belongs to the new profit rule day "clear"
+FAIL OFF stays neutral even when realised profit exceeds old examples "clear"
+ok unused reason on OFF clear state is not falsely recorded as override
+FAIL active ceiling cannot guess whether an undated overnight close is today "clear"
+FAIL reason cannot waive unknown profit close-day history 200
+FAIL unknown closed net P&L is fail-closed, not coerced to zero "clear"
+ok nonpositive equity remains unavailable, not a zero-dollar profit ceiling
+FAIL six concurrent actual entry requests all honor already-observed profit stop [200,200,200,200,200,200]
+FAIL concurrent blocked requests create zero admissions and no extra trades undefined
+FAIL profit exception audit failure rolls back actual trade and admission 200
+ok failed exception creates no false override audit
+FAIL reopen is prospective; observed profit stop still blocks it 200
+FAIL reasoned profit reopen is one new admission, not loss of latch 200
+ok already-executed OPEN reality records at profit stop without permission
+ok record-only write does not fabricate another entry admission
+FAIL profit and cap may coexist without one hiding another ["max_trades_day"]
+FAIL retained-state validator recognizes profit as a legitimate day-stop key undefined
+M81 realised profit stop: 15 passed, 36 failed

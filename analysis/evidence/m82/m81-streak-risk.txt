@@ -1,0 +1,30 @@
+FAIL three losses do not multiply the selected0.5% risk {"multiplier":0.6,"suggested_risk":29.99,"suggested_risk_pct":0.3,"max_trades_today":3,"max_loss_today":179.95,"reasons":["3 losses in a row → cut size until a clean win."]}
+FAIL three losses explanation explicitly denies a streak-based risk change ["3 losses in a row → cut size until a clean win."]
+FAIL eight losses do not multiply the selected0.5% risk {"multiplier":0.6,"suggested_risk":29.98,"suggested_risk_pct":0.3,"max_trades_today":3,"max_loss_today":179.86,"reasons":["8 losses in a row → cut size until a clean win."]}
+FAIL eight losses explanation explicitly denies a streak-based risk change ["8 losses in a row → cut size until a clean win."]
+FAIL four wins do not multiply the selected0.5% risk {"multiplier":0.9,"suggested_risk":45.02,"suggested_risk_pct":0.45,"max_trades_today":3,"max_loss_today":180.07,"reasons":["4 wins in a row → resist size creep, keep the same unit."]}
+FAIL four wins explanation explicitly denies a streak-based risk change ["4 wins in a row → resist size creep, keep the same unit."]
+FAIL eight wins do not multiply the selected0.5% risk {"multiplier":0.9,"suggested_risk":45.04,"suggested_risk_pct":0.45,"max_trades_today":3,"max_loss_today":180.14,"reasons":["8 wins in a row → resist size creep, keep the same unit."]}
+FAIL eight wins explanation explicitly denies a streak-based risk change ["8 wins in a row → resist size creep, keep the same unit."]
+ok one loss neutral base unit remains unchanged
+ok one win neutral base unit remains unchanged
+ok mixed neutral base unit remains unchanged
+ok breakeven neutral base unit remains unchanged
+ok loss sequence paired control truly holds bank/drawdown/current-day P&L fixed
+FAIL loss sequence cannot change advisory percent/dollars/loss budget merely by streak count {"a":{"multiplier":0.6,"suggested_risk":29.99,"suggested_risk_pct":0.3,"max_trades_today":3,"max_loss_today":179.95,"reasons":["3 losses in a row → cut size until a clean win."]},"b":{"multiplier":1,"suggested_risk":49.99,"suggested_risk_pct":0.5,"max_trades_today":3,"max_loss_today":299.91,"reasons":["No drawdown or streak flags. Trade your standard risk unit."]}}
+ok win sequence paired control truly holds bank/drawdown/current-day P&L fixed
+FAIL win sequence cannot change advisory percent/dollars/loss budget merely by streak count {"a":{"multiplier":0.9,"suggested_risk":45.02,"suggested_risk_pct":0.45,"max_trades_today":3,"max_loss_today":180.07,"reasons":["4 wins in a row → resist size creep, keep the same unit."]},"b":{"multiplier":1,"suggested_risk":50.02,"suggested_risk_pct":0.5,"max_trades_today":3,"max_loss_today":300.12,"reasons":["No drawdown or streak flags. Trade your standard risk unit."]}}
+ok drawdown with loss sequence paired control truly holds bank/drawdown/current-day P&L fixed
+FAIL drawdown with loss sequence cannot change advisory percent/dollars/loss budget merely by streak count {"a":{"multiplier":0.3,"suggested_risk":14.1,"suggested_risk_pct":0.15,"max_trades_today":3,"max_loss_today":169.2,"reasons":["Drawdown of -6% from peak equity → half size.","3 losses in a row → cut size until a clean win."]},"b":{"multiplier":0.5,"suggested_risk":23.5,"suggested_risk_pct":0.25,"max_trades_today":3,"max_loss_today":169.2,"reasons":["Drawdown of -6% from peak equity → half size."]}}
+ok Ep21-sanctioned separate3% drawdown adjustment stays0.75
+ok separate6% drawdown adjustment stays0.5
+ok separate drawdown plus2%-down-day adjustments still compound0.25
+FAIL loss streak cannot add a0.6 factor to existing day/drawdown policy {"multiplier":0.15,"suggested_risk":7.05,"suggested_risk_pct":0.08,"max_trades_today":3,"max_loss_today":169.2,"reasons":["Drawdown of -6% from peak equity → half size.","Down more than 2% today → half size or stop.","3 losses in a row → cut size until a clean win."]}
+FAIL winning streak cannot add a0.9 factor to existing drawdown policy {"multiplier":0.45,"suggested_risk":20.26,"suggested_risk_pct":0.23,"max_trades_today":3,"max_loss_today":162.07,"reasons":["Drawdown of -9.96% from peak equity → half size.","4 wins in a row → resist size creep, keep the same unit."]}
+ok other drawdown/day-loss constants/formulae remain disclosed, not re-attributed as exact course numbers
+ok M11 score floor29 withheld/30 eligible is still unchanged
+FAIL actual briefing API preserves selected0.5% through three closed losses {"multiplier":0.6,"suggested_risk":29.99,"suggested_risk_pct":0.3,"max_trades_today":20,"max_loss_today":179.95,"reasons":["3 losses in a row → cut size until a clean win."],"trade_cap_policy":{"max_trades_day":20,"selected_at":"2026-10-11T12:00:00.000Z","daily_profit_limit_pct":null,"profit_selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"},"profit_stop":{"enabled":false,"limit_pct":null,"limit_amount":null,"realised_amount":-3,"selected_at":"2026-10-11T12:00:00.000Z","balance_basis":"day-start realised journal equity","timezone":"UTC"}}
+ok removing streak resizing does NOT remove the sanctioned streak STOP
+ok actual next entry still receives mechanical409 after losing streak
+ok briefing/history never mutate the user-selected account risk unit
+M82 streak sizing: 15 passed, 14 failed

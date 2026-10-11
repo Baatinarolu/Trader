@@ -1,0 +1,293 @@
+{
+  "app": "/tmp/m81-ui-stage/app",
+  "pass": 15,
+  "fail": 14,
+  "results": [
+    {
+      "label": "three losses do not multiply the selected0.5% risk",
+      "passed": false,
+      "detail": {
+        "multiplier": 0.6,
+        "suggested_risk": 29.99,
+        "suggested_risk_pct": 0.3,
+        "max_trades_today": 3,
+        "max_loss_today": 179.95,
+        "reasons": [
+          "3 losses in a row → cut size until a clean win."
+        ]
+      }
+    },
+    {
+      "label": "three losses explanation explicitly denies a streak-based risk change",
+      "passed": false,
+      "detail": [
+        "3 losses in a row → cut size until a clean win."
+      ]
+    },
+    {
+      "label": "eight losses do not multiply the selected0.5% risk",
+      "passed": false,
+      "detail": {
+        "multiplier": 0.6,
+        "suggested_risk": 29.98,
+        "suggested_risk_pct": 0.3,
+        "max_trades_today": 3,
+        "max_loss_today": 179.86,
+        "reasons": [
+          "8 losses in a row → cut size until a clean win."
+        ]
+      }
+    },
+    {
+      "label": "eight losses explanation explicitly denies a streak-based risk change",
+      "passed": false,
+      "detail": [
+        "8 losses in a row → cut size until a clean win."
+      ]
+    },
+    {
+      "label": "four wins do not multiply the selected0.5% risk",
+      "passed": false,
+      "detail": {
+        "multiplier": 0.9,
+        "suggested_risk": 45.02,
+        "suggested_risk_pct": 0.45,
+        "max_trades_today": 3,
+        "max_loss_today": 180.07,
+        "reasons": [
+          "4 wins in a row → resist size creep, keep the same unit."
+        ]
+      }
+    },
+    {
+      "label": "four wins explanation explicitly denies a streak-based risk change",
+      "passed": false,
+      "detail": [
+        "4 wins in a row → resist size creep, keep the same unit."
+      ]
+    },
+    {
+      "label": "eight wins do not multiply the selected0.5% risk",
+      "passed": false,
+      "detail": {
+        "multiplier": 0.9,
+        "suggested_risk": 45.04,
+        "suggested_risk_pct": 0.45,
+        "max_trades_today": 3,
+        "max_loss_today": 180.14,
+        "reasons": [
+          "8 wins in a row → resist size creep, keep the same unit."
+        ]
+      }
+    },
+    {
+      "label": "eight wins explanation explicitly denies a streak-based risk change",
+      "passed": false,
+      "detail": [
+        "8 wins in a row → resist size creep, keep the same unit."
+      ]
+    },
+    {
+      "label": "one loss neutral base unit remains unchanged",
+      "passed": true
+    },
+    {
+      "label": "one win neutral base unit remains unchanged",
+      "passed": true
+    },
+    {
+      "label": "mixed neutral base unit remains unchanged",
+      "passed": true
+    },
+    {
+      "label": "breakeven neutral base unit remains unchanged",
+      "passed": true
+    },
+    {
+      "label": "loss sequence paired control truly holds bank/drawdown/current-day P&L fixed",
+      "passed": true
+    },
+    {
+      "label": "loss sequence cannot change advisory percent/dollars/loss budget merely by streak count",
+      "passed": false,
+      "detail": {
+        "a": {
+          "multiplier": 0.6,
+          "suggested_risk": 29.99,
+          "suggested_risk_pct": 0.3,
+          "max_trades_today": 3,
+          "max_loss_today": 179.95,
+          "reasons": [
+            "3 losses in a row → cut size until a clean win."
+          ]
+        },
+        "b": {
+          "multiplier": 1,
+          "suggested_risk": 49.99,
+          "suggested_risk_pct": 0.5,
+          "max_trades_today": 3,
+          "max_loss_today": 299.91,
+          "reasons": [
+            "No drawdown or streak flags. Trade your standard risk unit."
+          ]
+        }
+      }
+    },
+    {
+      "label": "win sequence paired control truly holds bank/drawdown/current-day P&L fixed",
+      "passed": true
+    },
+    {
+      "label": "win sequence cannot change advisory percent/dollars/loss budget merely by streak count",
+      "passed": false,
+      "detail": {
+        "a": {
+          "multiplier": 0.9,
+          "suggested_risk": 45.02,
+          "suggested_risk_pct": 0.45,
+          "max_trades_today": 3,
+          "max_loss_today": 180.07,
+          "reasons": [
+            "4 wins in a row → resist size creep, keep the same unit."
+          ]
+        },
+        "b": {
+          "multiplier": 1,
+          "suggested_risk": 50.02,
+          "suggested_risk_pct": 0.5,
+          "max_trades_today": 3,
+          "max_loss_today": 300.12,
+          "reasons": [
+            "No drawdown or streak flags. Trade your standard risk unit."
+          ]
+        }
+      }
+    },
+    {
+      "label": "drawdown with loss sequence paired control truly holds bank/drawdown/current-day P&L fixed",
+      "passed": true
+    },
+    {
+      "label": "drawdown with loss sequence cannot change advisory percent/dollars/loss budget merely by streak count",
+      "passed": false,
+      "detail": {
+        "a": {
+          "multiplier": 0.3,
+          "suggested_risk": 14.1,
+          "suggested_risk_pct": 0.15,
+          "max_trades_today": 3,
+          "max_loss_today": 169.2,
+          "reasons": [
+            "Drawdown of -6% from peak equity → half size.",
+            "3 losses in a row → cut size until a clean win."
+          ]
+        },
+        "b": {
+          "multiplier": 0.5,
+          "suggested_risk": 23.5,
+          "suggested_risk_pct": 0.25,
+          "max_trades_today": 3,
+          "max_loss_today": 169.2,
+          "reasons": [
+            "Drawdown of -6% from peak equity → half size."
+          ]
+        }
+      }
+    },
+    {
+      "label": "Ep21-sanctioned separate3% drawdown adjustment stays0.75",
+      "passed": true
+    },
+    {
+      "label": "separate6% drawdown adjustment stays0.5",
+      "passed": true
+    },
+    {
+      "label": "separate drawdown plus2%-down-day adjustments still compound0.25",
+      "passed": true
+    },
+    {
+      "label": "loss streak cannot add a0.6 factor to existing day/drawdown policy",
+      "passed": false,
+      "detail": {
+        "multiplier": 0.15,
+        "suggested_risk": 7.05,
+        "suggested_risk_pct": 0.08,
+        "max_trades_today": 3,
+        "max_loss_today": 169.2,
+        "reasons": [
+          "Drawdown of -6% from peak equity → half size.",
+          "Down more than 2% today → half size or stop.",
+          "3 losses in a row → cut size until a clean win."
+        ]
+      }
+    },
+    {
+      "label": "winning streak cannot add a0.9 factor to existing drawdown policy",
+      "passed": false,
+      "detail": {
+        "multiplier": 0.45,
+        "suggested_risk": 20.26,
+        "suggested_risk_pct": 0.23,
+        "max_trades_today": 3,
+        "max_loss_today": 162.07,
+        "reasons": [
+          "Drawdown of -9.96% from peak equity → half size.",
+          "4 wins in a row → resist size creep, keep the same unit."
+        ]
+      }
+    },
+    {
+      "label": "other drawdown/day-loss constants/formulae remain disclosed, not re-attributed as exact course numbers",
+      "passed": true
+    },
+    {
+      "label": "M11 score floor29 withheld/30 eligible is still unchanged",
+      "passed": true
+    },
+    {
+      "label": "actual briefing API preserves selected0.5% through three closed losses",
+      "passed": false,
+      "detail": {
+        "multiplier": 0.6,
+        "suggested_risk": 29.99,
+        "suggested_risk_pct": 0.3,
+        "max_trades_today": 20,
+        "max_loss_today": 179.95,
+        "reasons": [
+          "3 losses in a row → cut size until a clean win."
+        ],
+        "trade_cap_policy": {
+          "max_trades_day": 20,
+          "selected_at": "2026-10-11T12:00:00.000Z",
+          "daily_profit_limit_pct": null,
+          "profit_selected_at": "2026-10-11T12:00:00.000Z",
+          "rule_date": "2026-10-11",
+          "timezone": "UTC"
+        },
+        "profit_stop": {
+          "enabled": false,
+          "limit_pct": null,
+          "limit_amount": null,
+          "realised_amount": -3,
+          "selected_at": "2026-10-11T12:00:00.000Z",
+          "balance_basis": "day-start realised journal equity",
+          "timezone": "UTC"
+        }
+      }
+    },
+    {
+      "label": "removing streak resizing does NOT remove the sanctioned streak STOP",
+      "passed": true
+    },
+    {
+      "label": "actual next entry still receives mechanical409 after losing streak",
+      "passed": true
+    },
+    {
+      "label": "briefing/history never mutate the user-selected account risk unit",
+      "passed": true
+    }
+  ],
+  "scope": "Real deterministic Coach/Performance + local HTTP/SQL stop; scripted P&L/news IO, no win-rate/calibration/broker/production claim"
+}

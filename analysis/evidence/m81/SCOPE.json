@@ -1,0 +1,106 @@
+{
+  "parent_commit": "7f1122dade0b9022b595aadc08bbb29badff51f6",
+  "findings": [
+    "M81",
+    "M82"
+  ],
+  "sources": [
+    {
+      "url": "https://www.youtube.com/watch?v=1s8ea5SH7ZA",
+      "saved_transcript": "analysis/EPISODE-AUDIT.md, Ep21 complete 5/5",
+      "scope": "Daily profit example5\u201310%; fixed risk; drawdown5\u201310% before reducing size or pausing."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=JxiRzhjq2t8",
+      "saved_transcript": "analysis/EPISODE-AUDIT.md, Ep22 complete",
+      "scope": "Daily ceiling example2\u20133% or whatever you set; behavioral give-back, not calibrated expectancy."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=kRYQFKysfis",
+      "saved_transcript": "analysis/EPISODE-AUDIT.md, Ep31 complete 4/4",
+      "scope": "Daily profit is completely optional; example1%, also3/5%; boring default0.5% risk, deliberate manual A+ uplift."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=TIpUnwVftgU",
+      "saved_transcript": "analysis/EPISODE-AUDIT.md, Ep32 complete 3/3",
+      "scope": "Stay at the same risk during a losing streak; stop rules remain distinct from rescaling."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=ixmTrvUB1Ks",
+      "saved_transcript": "analysis/EPISODE-AUDIT.md, Guardrails definitive spec",
+      "scope": "Daily loss/profit use realised P&L, not floating; known rule overrides require journaled reason."
+    }
+  ],
+  "source_limitations": "The previously saved full-transcript quotes are the scope source. Recovery repository has raw Ep05\u201320 but not Ep21/22/31/32; no new transcript fetch or invented timestamp is claimed.",
+  "decisions": {
+    "profit_default": "Off (NULL); Ep31 explicitly optional. Enabled threshold user-selected, positive finite percentage up to100; range is app validation, not course precision.",
+    "profit_denominator": "UTC day-start realised journal equity, matching existing loss gate; account starting balance plus earlier closed net P&L, floating excluded.",
+    "profit_policy_freeze": "First profit-policy check freezes enabled/off and percentage for UTC rule day. Legacy cap rows select new profit policy once on first post-migration check; no retrospective selection is fabricated.",
+    "profit_retention": "Observed ceiling is a latched day stop. Truthful corrections/deletions remain possible; one-action M80 reason path retained; unknown cannot waive.",
+    "m82": "Remove only streak multipliers. Ep21 explicitly sanctions drawdown reduction/pause, so old blanket claim that drawdown is forbidden is withdrawn. Other drawdown/day-loss policies and existing M9/M98 checklist-grade sizing remain unchanged.",
+    "m85_correction": "M85 is post-loss reflection/completeness, not adaptive sizing. Remains open; M94 premarket routine also stays open. Misplaced Ep31 profit quote under M94 belongs to M81, not a M94 closure."
+  },
+  "invariants": [
+    "132 findings, exact eight-group partition; no implicit closure of M84/M85/M94/M111/M112/M116.",
+    "Keep course M11 adaptation floor30 and deliberate M103 n>=5.",
+    "No target/stop/entry/RR-floor/grade/risk-coefficient changes, no70% target.",
+    "Journal/import/research reality is not prospective permission. No broker or outside-trade prevention.",
+    "Separate source-stage measures and retained negatives; no new market-edge or production validation claim."
+  ],
+  "current_ledger": {
+    "total": 132,
+    "done": 82,
+    "partial": 2,
+    "todo": 48,
+    "no_action": 0,
+    "partition_groups": 8,
+    "new_closures": [
+      "M81",
+      "M82"
+    ],
+    "partials": [
+      "M30",
+      "M103"
+    ],
+    "next": [
+      "M84",
+      "M85"
+    ]
+  },
+  "feature_assertions": {
+    "new_pass": 282,
+    "new_fail": 0,
+    "probes": 10,
+    "inherited_pass": 302,
+    "inherited_fail": 0,
+    "inherited_probes": 12
+  },
+  "native_latest": {
+    "api_both": {
+      "pass": 121,
+      "fail": 0
+    },
+    "bots_both": {
+      "pass": 205,
+      "fail": 1,
+      "fills": 20,
+      "parity_mismatches": 0,
+      "exit_code": 1
+    },
+    "sample_floor": "Existing >20 assertion remains failed; no floor changed",
+    "historical_batch": "M79 19fills/204/2 retained; changed contemporary synthetic cohort not improvement evidence"
+  },
+  "retained_probe_errors": [
+    "Omitted status defaults CLOSED recording, not OPEN admission: initial11/5vs6/10",
+    "Initial wrong modal cleanup class UI crash",
+    "All-modal promise wait stalled at11checks: own process terminated, no duplicate unchanged command",
+    "Initial cyclical40-row afterTwo fixture did not activate insight:1/4",
+    "/health SPA HTML incorrectly parsed as JSON",
+    "Historical fdaa2bc object unavailable in shallow clone: recovered110-file parent by guarded reverse patch,0manifest differences"
+  ],
+  "next_scope_corrections": {
+    "M85": "Required post-loss reflection/emotions/mistake-or-explicit-none and journal completeness, not adaptive size",
+    "M94": "Pre-market routine, misplaced optional-profit paragraph attributed to M81 only",
+    "M82": "Remove streak factors and quarter-size alternative; retain separate drawdown/day-loss policy and existing grades"
+  }
+}

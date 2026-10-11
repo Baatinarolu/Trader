@@ -1,0 +1,97 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 22,
+  "fail": 0,
+  "results": [
+    {
+      "label": "legacy/default account UI starts optional ceiling unchecked",
+      "passed": true
+    },
+    {
+      "label": "OFF keeps percentage input disabled without forcing a limit",
+      "passed": true
+    },
+    {
+      "label": "account dialog distinguishes lifetime/prop target from daily stop",
+      "passed": true
+    },
+    {
+      "label": "dialog explains realised-only, UTC first-check freeze and tomorrow edits",
+      "passed": true
+    },
+    {
+      "label": "enabled zero ceiling fails UI validation without an account write",
+      "passed": true
+    },
+    {
+      "label": "actual account-edit handler persists chosen1% via authenticated PUT",
+      "passed": true
+    },
+    {
+      "label": "editing an enabled account roundtrips active checkbox/percentage",
+      "passed": true
+    },
+    {
+      "label": "new accounts also default OFF, not a mandated course example",
+      "passed": true
+    },
+    {
+      "label": "actual new-account handler writes OFF while retaining lifetime8%",
+      "passed": true
+    },
+    {
+      "label": "actual trade buttons become grey reason-required at PROFIT stop",
+      "passed": true
+    },
+    {
+      "label": "trade modal states realised profit ceiling rather than a fake technical veto",
+      "passed": true
+    },
+    {
+      "label": "profit stop requests typed reason before another trade POST",
+      "passed": true
+    },
+    {
+      "label": "blank profit override confirmation is disabled",
+      "passed": true
+    },
+    {
+      "label": "actual browser-confirmed profit reason is stored with violated rule",
+      "passed": true
+    },
+    {
+      "label": "actual review renderer shows profit rule and recorded reason",
+      "passed": true
+    },
+    {
+      "label": "actual UI OFF edit stores future choice without erasing TODAY profit stop",
+      "passed": true
+    },
+    {
+      "label": "briefing API reports frozen profit1%, not newly configured OFF",
+      "passed": true
+    },
+    {
+      "label": "actual dashboard displays optional profit stop amount/percentage",
+      "passed": true
+    },
+    {
+      "label": "dashboard separates live personal stop from advisory risk amount",
+      "passed": true
+    },
+    {
+      "label": "second-account briefing accurately discloses chosen OFF",
+      "passed": true
+    },
+    {
+      "label": "actual dashboard renders OFF as optional, not a zero-dollar target",
+      "passed": true
+    },
+    {
+      "label": "actual DOM/event/UI composition has no runtime errors",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Actual Settings/Dashboard/trade form/review HTTP/SQL; declared bootstrap/news/quote/chart seams; no pixels, provider/broker/outcome or production proof"
+}

@@ -54,6 +54,9 @@
       if (briefing) {
         const rp = briefing.risk_plan || {};
         const pf = briefing.performance || {};
+        const daily = briefing.daily || {}, ps = rp.profit_stop || {};
+        const profitLabel = daily.status === 'unknown' || ps.enabled === undefined ? 'Unavailable'
+          : ps.enabled ? `${ps.limit_pct}% · ${U.money(ps.limit_amount)}` : 'Off (optional)';
         const card = U.h('div', { class: 'card pad-lg', style: 'background:linear-gradient(135deg,rgba(79,140,255,.10),rgba(17,24,39,.9))' });
         card.innerHTML = `
           <div class="row-between" style="align-items:flex-start;flex-wrap:wrap">
@@ -65,11 +68,15 @@
                 ${(briefing.plan_of_the_day || []).map((l) => `<div class="small muted-2 bullet">${U.esc(l)}</div>`).join('')}
               </div>
               <div class="row wrap" style="gap:8px">
+                <span class="chip">Base risk ${U.esc(rp.base_risk_pct ?? 'unavailable')}%</span>
                 <span class="chip">Suggested risk <b class="mono" style="margin-left:4px;color:var(--text)">${U.money(rp.suggested_risk)}</b></span>
-                <span class="chip ${rp.multiplier < 1 ? 'warn' : 'pos'}">Size multiplier ${U.num(rp.multiplier, 2)}×</span>
+                <span class="chip ${rp.multiplier < 1 ? 'warn' : 'pos'}" title="${U.esc(rp.adjustment_basis || 'Advisory, not entry sizing')}">Advisory adjustment ${U.num(rp.multiplier, 2)}×</span>
                 <span class="chip">Max trades today <b class="mono" style="margin-left:4px;color:var(--text)">${rp.max_trades_today}</b></span>
-                <span class="chip">Daily stop <b class="mono" style="margin-left:4px;color:var(--red)">${U.money(rp.max_loss_today)}</b></span>
+                <span class="chip">Advisory loss budget <b class="mono" style="margin-left:4px;color:var(--red)">${U.money(rp.max_loss_today)}</b></span>
+                <span class="chip">Optional profit stop <b class="mono" style="margin-left:4px">${U.esc(profitLabel)}</b></span>
+                <span class="chip ${daily.permission?.allowed ? 'pos' : 'warn'}">Personal rules: ${U.esc(daily.permission?.state || 'unavailable')}</span>
               </div>
+              <div class="tiny muted" style="margin-top:8px">Streak sizing: ${rp.streak_sizing === false ? 'off' : 'unavailable'} · UTC realised ${daily.today ? U.money(ps.realised_amount) : 'unavailable'} · Briefing amounts are advisory, not entry permission. Live actions recheck the server; a known stop needs a reason for that action only.</div>
               <div class="tiny muted" style="margin-top:8px">${(rp.reasons || []).map((r) => U.esc(r)).join(' · ')}</div>
             </div>
             <div style="min-width:250px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:14px">

@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS accounts (
                                          -- to 0.5 on every read and the row would disagree with the sizing.
   max_trades_day INTEGER NOT NULL DEFAULT 3, -- M83/M113 preselected, not derived from overtrading
   daily_loss_limit_pct REAL DEFAULT 3.0,
+  daily_profit_limit_pct REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100)), -- M81 optional, separate from lifetime profit target
   max_drawdown_pct REAL DEFAULT 10.0,
   profit_target_pct REAL DEFAULT 8.0,
   is_default INTEGER DEFAULT 0,
@@ -148,6 +149,8 @@ CREATE TABLE IF NOT EXISTS guardrail_day_caps (
   account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   rule_date TEXT NOT NULL,
   max_trades_day INTEGER NOT NULL CHECK(max_trades_day BETWEEN 1 AND 100),
+  daily_profit_limit_pct REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100)),
+  profit_selected_at TEXT, -- NULL only for a legacy day with no profit-policy selection yet
   selected_at TEXT NOT NULL,
   PRIMARY KEY(user_id,account_id,rule_date)
 );
@@ -507,6 +510,11 @@ async function migrate() {
   // 1 % absolute maximum. Persisted so the write path and every later read agree.
   await add('accounts', 'risk_unlocked', 'INTEGER DEFAULT 0');
   await add('accounts', 'max_trades_day', 'INTEGER NOT NULL DEFAULT 3');
+  // M81 is optional: legacy settings stay NULL, never guessed from lifetime targets.
+  const optionalProfit = 'REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100))';
+  await add('accounts','daily_profit_limit_pct',optionalProfit);
+  await add('guardrail_day_caps','daily_profit_limit_pct',optionalProfit);
+  await add('guardrail_day_caps','profit_selected_at','TEXT');
   for (const table of ['trades','bot_signals']) {
     await add(table,'guardrail_snapshot','TEXT');
     await add(table,'entry_permission','TEXT');

@@ -1,0 +1,25 @@
+ok legacy/default account UI starts optional ceiling unchecked
+ok OFF keeps percentage input disabled without forcing a limit
+ok account dialog distinguishes lifetime/prop target from daily stop
+ok dialog explains realised-only, UTC first-check freeze and tomorrow edits
+ok enabled zero ceiling fails UI validation without an account write
+ok actual account-edit handler persists chosen1% via authenticated PUT
+ok editing an enabled account roundtrips active checkbox/percentage
+FAIL new accounts also default OFF, not a mandated course example undefined
+<anonymous_script>:438
+                name: U.$('#a-name', body).value, broker: U.$('#a-broker', body).value, account_type: U.$('#a-type', body).value,
+                                          ^
+
+TypeError: Cannot read properties of null (reading 'value')
+    at Object.onClick (eval at load (/home/user/Trader/analysis/probe-m81-profit-ui.js:13:471), <anonymous>:438:43)
+    at HTMLButtonElement.onclick (eval at load (/home/user/Trader/analysis/probe-m81-profit-ui.js:13:471), <anonymous>:265:205)
+    at HTMLButtonElement.callTheUserObjectsOperation (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)
+    at innerInvokeEventListeners (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLButtonElementImpl._dispatch (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at fireAnEvent (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/helpers/events.js:18:36)
+    at HTMLButtonElementImpl.click (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/nodes/HTMLElement-impl.js:85:5)
+    at HTMLButtonElement.click (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/generated/HTMLElement.js:108:34)
+    at /home/user/Trader/analysis/probe-m81-profit-ui.js:31:67
+
+Node.js v22.22.3

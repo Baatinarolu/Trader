@@ -1,0 +1,56 @@
+{
+  "app": "/tmp/m82-risk-stage/app",
+  "pass": 3,
+  "fail": 2,
+  "results": [
+    {
+      "label": "positive fixture still actually triggers after-two-losses insight",
+      "passed": true
+    },
+    {
+      "label": "sample/baseline/impact detection and evidence stay untouched",
+      "passed": true
+    },
+    {
+      "label": "after-loss advice no longer offers25%/quarter risk or cutting size",
+      "passed": false,
+      "detail": "Hard rule: stop for the session after 2 consecutive losses, or cut size to 25% for the rest of the day."
+    },
+    {
+      "label": "after-loss advice keeps stop and explicitly retains selected risk unit",
+      "passed": false,
+      "detail": "Hard rule: stop for the session after 2 consecutive losses, or cut size to 25% for the rest of the day."
+    },
+    {
+      "label": "40-trade fixture leaves existing score sample floor eligible",
+      "passed": true
+    }
+  ],
+  "feature_fingerprint": {
+    "id": "after_two_losses",
+    "category": "behaviour",
+    "severity": "warning",
+    "title": "You trade worse after two losses in a row",
+    "detail": "Trades taken while already down two consecutive losses: 8 trades at -1R versus 0.55R baseline.",
+    "impact": -123.6,
+    "evidence": [
+      {
+        "label": "Trades",
+        "value": "8"
+      },
+      {
+        "label": "Expectancy",
+        "value": "-1R"
+      },
+      {
+        "label": "Win rate",
+        "value": "0%"
+      },
+      {
+        "label": "Net",
+        "value": "-$80"
+      }
+    ]
+  },
+  "scope": "Actual deterministic Coach40-row advice, not executed size, market/provider/broker/outcome or production validation"
+}

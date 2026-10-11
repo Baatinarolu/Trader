@@ -31,6 +31,7 @@
               <div class="row-between"><div><h3 style="margin:0">${U.esc(a.name)} ${a.account_type === 'prop' ? '<span class="chip purple">prop</span>' : a.account_type === 'demo' ? '<span class="chip">demo</span>' : ''}</h3>
                 <div class="tiny muted">${U.esc(a.broker || 'No broker set')} · ${U.esc(a.currency)} · risk ${U.num(a.risk_per_trade_pct, 2)}%/trade</div></div>
                 <span class="mono ${U.cls(st.net_pnl)}" style="font-size:1.05rem">${U.moneySign(st.net_pnl)}</span></div>
+              <div class="tiny muted" style="margin-top:8px">Saved daily realised profit stop: ${a.daily_profit_limit_pct == null ? 'Off (optional)' : U.esc(a.daily_profit_limit_pct) + '%'} · UTC choice; edits after the first check apply tomorrow.</div>
               <div class="sep"></div>
               <div class="stats grid g4" style="gap:8px">
                 <div><div class="k-label">Equity</div><div class="mono">${U.money(st.equity)}</div></div>
@@ -411,7 +412,7 @@
 
       function accountDialog(a) {
         const isNew = !a;
-        const v = a || { name: '', broker: '', account_type: 'live', currency: 'USD', starting_balance: 10000, risk_per_trade_pct: 1, daily_loss_limit_pct: 3, max_drawdown_pct: 10, profit_target_pct: 8 };
+        const v = a || { name: '', broker: '', account_type: 'live', currency: 'USD', starting_balance: 10000, risk_per_trade_pct: 0.5, daily_loss_limit_pct: 3, max_drawdown_pct: 10, profit_target_pct: 8 };
         const body = U.h('div');
         body.innerHTML = `<div class="form-grid" style="grid-template-columns:1fr 1fr">
           <label class="field span2"><span>Account name</span><input id="a-name" value="${U.esc(v.name)}" placeholder="e.g. FTMO 100k Challenge" /></label>
@@ -419,13 +420,16 @@
           <label class="field"><span>Type</span><select id="a-type">${['live', 'demo', 'prop'].map((t) => `<option value="${t}" ${v.account_type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
           <label class="field"><span>Currency</span><input id="a-ccy" value="${U.esc(v.currency)}" /></label>
           <label class="field"><span>Starting balance</span><input id="a-bal" type="number" step="any" value="${v.starting_balance}" /></label>
-          <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /></label>
+          <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /><div class="field-note">Default 0.5%; above it requires a deliberate manual unlock. The course maximum is 1%, never increased by a win/loss streak.</div></label>
           <label class="field"><span>Max trades per UTC day</span><input id="a-trades" type="number" min="1" max="100" step="1" value="${v.max_trades_day ?? 3}" /><div class="field-note">Course guidance: 3 intraday / 5 scalping. Frozen on the day's first guardrail check; changes then apply tomorrow. History never raises this cap.</div></label>
           <label class="field"><span>Daily loss limit (%)</span><input id="a-daily" type="number" step="0.1" value="${v.daily_loss_limit_pct}" /></label>
           <label class="field"><span>Max drawdown (%)</span><input id="a-dd" type="number" step="0.1" value="${v.max_drawdown_pct}" /></label>
-          <label class="field"><span>Profit target (%)</span><input id="a-target" type="number" step="0.1" value="${v.profit_target_pct}" /></label>
+          <label class="field span2"><span><input id="a-profit-enabled" type="checkbox" ${v.daily_profit_limit_pct != null ? 'checked' : ''} /> Enable optional daily realised profit stop</span><input id="a-profit" type="number" min="0" max="100" step="any" value="${U.esc(v.daily_profit_limit_pct ?? 1)}" ${v.daily_profit_limit_pct == null ? 'disabled' : ''} /><div class="field-note">Percentage of UTC day-start realised equity, not floating P&L or the lifetime target. Examples: 1%, 3%, 5%; choose your own. Off by default. Frozen on the first profit-policy check; later edits apply tomorrow. An observed stop lasts for the UTC day even after corrections.</div></label>
+          <label class="field"><span>Lifetime / prop profit target (%)</span><input id="a-target" type="number" step="0.1" value="${v.profit_target_pct}" /></label>
         </div>
         <div class="field-note">Prop-firm rules live here: the app tracks how much of your daily loss limit and max drawdown you have actually used.</div>`;
+        const profitEnabled = U.$('#a-profit-enabled', body), profitInput = U.$('#a-profit', body);
+        profitEnabled.addEventListener('change', () => { profitInput.disabled = !profitEnabled.checked; });
         global.App.modal({
           title: isNew ? 'New account' : 'Edit account', body, small: true,
           actions: [{ label: 'Cancel', ghost: true }, {
@@ -435,8 +439,11 @@
                 currency: U.$('#a-ccy', body).value, starting_balance: U.$('#a-bal', body).value,
                 risk_per_trade_pct: U.$('#a-risk', body).value, max_trades_day: U.$('#a-trades', body).value, daily_loss_limit_pct: U.$('#a-daily', body).value,
                 max_drawdown_pct: U.$('#a-dd', body).value, profit_target_pct: U.$('#a-target', body).value,
+                daily_profit_limit_pct: profitEnabled.checked ? profitInput.value : null,
               };
               if (!payload.name) return global.App.toast('Account needs a name', 'err');
+              if (profitEnabled.checked && !(Number(profitInput.value)>0 && Number(profitInput.value)<=100))
+                return global.App.toast('Daily profit stop needs a positive percentage up to 100, or turn it off.', 'err');
               if (isNew) await API.post('/accounts', payload); else await API.put('/accounts/' + a.id, payload);
               await Store.reloadAll(); close(); global.App.toast('Account saved', 'ok'); global.App.refresh();
             },

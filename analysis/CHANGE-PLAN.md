@@ -1,5 +1,21 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
+## Current M81/M82 status — 2026-10-11
+
+**132:82 done/2 partial/48 todo/0 no-action**, exact eight-group partition.
+Optional realised UTC profit ceiling and streak-independent risk complete;
+282/0 new assertions +302/0 inherited guards. Independent policy→gate→UI→streak
+factors→after-loss advice→M9 advisory read→risk UI→documentation stages.
+[Report](M81-M82-PROFIT-RISK.md). Drawdown blanket-ban attribution corrected from
+Ep21; grade map/M9 constants/models/geometry/RR/floor30 and deliberateM103n>=5
+unchanged. M85 is post-loss reflection, not adaptive sizing; M94 remains routine.
+Native API121/0 both; bots205/1 both,20 synthetic fills/0 mismatches, unchanged>20
+sample failure. Prior19-fill204/2 evidence retained; cohort change is not edge.
+**Next M84 optional session-duration marker, then M85 post-loss reflection and
+journal completeness**, followed by remaining risk/review mechanisms. M30/M103
+partial and all48TODOs stay visible; no new70%/target shrink or broker/provider/
+production claim. Do not repeat completed M71 twelve-run study.
+
 ## Current plan status — M79/M80, 2026-10-11
 
 **132:80 done/2 partial/50 todo/0 no-action**, exact eight-group partition. M79,

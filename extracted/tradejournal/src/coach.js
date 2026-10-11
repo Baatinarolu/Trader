@@ -9,6 +9,7 @@
  */
 const P = require('./performance');
 const Guards = require('./bots/guardrails');
+const I = require('./instruments');
 
 /* M11 — Ep 27's floor: "at least 30 to 50 minimum trades just to see anything
  * meaningful", and below that "don't tweak the system at all". Duplicated from
@@ -156,7 +157,7 @@ function analyse(trades, ctx = {}) {
         title: 'You trade worse after two losses in a row',
         detail: `Trades taken while already down two consecutive losses: ${s.n} trades at ${s.exp_r}R versus ${r2(base)}R baseline.`,
         impact: s.net - s.n * k.expectancy, evidence: evidenceOf(s),
-        action: 'Hard rule: stop for the session after 2 consecutive losses, or cut size to 25% for the rest of the day.',
+        action: 'When the selected consecutive-loss stop triggers, stop for the UTC rule day. Keep the same selected risk unit when personal entry permission returns; streaks are not a sizing input.',
       });
     }
   }
@@ -599,15 +600,18 @@ function briefing({ trades, events = [], quotes = {}, account, journalEntry, ris
   const streak = k.streaks;
   const dd = k.current_drawdown_pct;
 
-  // Risk state: shrink size when in drawdown or after a bad day
+  // M82: streaks describe history; they do not price the next trade. Keep the
+  // selected unit/checklist sizing and the separate streak STOP. Ep21 explicitly
+  // permits drawdown reduction/pause; do not silently remove those other controls.
+  // Existing drawdown/day-loss constants below remain app policy, not course precision.
   let riskMultiplier = 1;
   const reasons = [];
   if (dd <= -6) { riskMultiplier *= 0.5; reasons.push(`Drawdown of ${dd}% from peak equity → half size.`); }
   else if (dd <= -3) { riskMultiplier *= 0.75; reasons.push(`Drawdown of ${dd}% from peak → 75% size.`); }
   if (todayPnl < 0 && account && todayPnl < -account.starting_balance * 0.02) { riskMultiplier *= 0.5; reasons.push('Down more than 2% today → half size or stop.'); }
-  if (streak.current_type === 'loss' && Math.abs(streak.current) >= 3) { riskMultiplier *= 0.6; reasons.push(`${Math.abs(streak.current)} losses in a row → cut size until a clean win.`); }
-  if (streak.current_type === 'win' && streak.current >= 4) { riskMultiplier *= 0.9; reasons.push(`${streak.current} wins in a row → resist size creep, keep the same unit.`); }
-  if (!reasons.length) reasons.push('No drawdown or streak flags. Trade your standard risk unit.');
+  if (streak.current_type === 'loss' && Math.abs(streak.current) >= 3) reasons.push(`${Math.abs(streak.current)} losses in a row — no streak-based risk change. Check the personal stop/cooldown rules and keep journaling.`);
+  if (streak.current_type === 'win' && streak.current >= 4) reasons.push(`${streak.current} wins in a row — no streak-based risk change. Resist size creep; follow the selected risk/checklist and separate drawdown controls.`);
+  if (!reasons.length) reasons.push('No drawdown/day-loss adjustment. Use the selected risk unit; streaks never resize it. Personal entry rules still require a fresh check.');
 
   const highEvents = events.filter((e) => String(e.impact).toLowerCase() === 'high');
   const dayEvents = highEvents.filter((e) => String(e.date).slice(0, 10) === today);
@@ -616,7 +620,11 @@ function briefing({ trades, events = [], quotes = {}, account, journalEntry, ris
   const focus = analysis.insights.filter((i) => i.severity === 'critical' || i.severity === 'warning').slice(0, 3);
   const realised = closed.reduce((s2, t) => s2 + num(t.net_pnl), 0);
   const bank = account ? r2(num(account.starting_balance, 10000) + realised) : 10000;
-  const suggestedRiskPct = account ? account.risk_per_trade_pct : 0.5;  // M9: fallback 1 -> 0.5
+  // M9 compatibility: a legacy/invalid DB value cannot bypass the same clamp
+  // already used by actual entry sizing. This is before any advisory adjustment.
+  const suggestedRiskPct = I.clampRiskPct(account?.risk_per_trade_pct,{unlocked:!!account?.risk_unlocked});
+  const riskNote = I.riskGuardrailNote(account?.risk_per_trade_pct,suggestedRiskPct,{unlocked:!!account?.risk_unlocked});
+  if (riskNote) reasons.push(riskNote);
   const suggestedRisk = r2(bank * (suggestedRiskPct / 100) * riskMultiplier);
 
   return {
@@ -640,6 +648,8 @@ function briefing({ trades, events = [], quotes = {}, account, journalEntry, ris
       weekday_record: dowStat ? { day: dow, net_pnl: dowStat.net_pnl, expectancy_r: dowStat.expectancy_r, trades: dowStat.trades, win_rate: dowStat.win_rate } : null,
     },
     risk_plan: {
+      base_risk_pct:suggestedRiskPct,streak_sizing:false,
+      adjustment_basis:'Existing drawdown/day-loss policy only; grade/checklist sizing remains in the entry engine, not this advisory multiplier.',
       multiplier: r2(riskMultiplier), suggested_risk: suggestedRisk,
       suggested_risk_pct: r2(suggestedRiskPct * riskMultiplier),
       max_trades_today: Guards.configuredCap(account || {}), // M83 fixed account policy, never the historical average

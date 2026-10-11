@@ -1,0 +1,13 @@
+diff --git a/src/coach.js b/src/coach.js
+index a9504a2..8cfb64a 100644
+--- a/src/coach.js
++++ b/src/coach.js
+@@ -156,7 +156,7 @@ function analyse(trades, ctx = {}) {
+         title: 'You trade worse after two losses in a row',
+         detail: `Trades taken while already down two consecutive losses: ${s.n} trades at ${s.exp_r}R versus ${r2(base)}R baseline.`,
+         impact: s.net - s.n * k.expectancy, evidence: evidenceOf(s),
+-        action: 'Hard rule: stop for the session after 2 consecutive losses, or cut size to 25% for the rest of the day.',
++        action: 'When the selected consecutive-loss stop triggers, stop for the UTC rule day. Keep the same selected risk unit when personal entry permission returns; streaks are not a sizing input.',
+       });
+     }
+   }

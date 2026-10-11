@@ -1,6 +1,71 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M79/M80 continuation state — 2026-10-11
+## Current M81/M82 continuation state — 2026-10-11
+
+- Fixed branch **arena/762c0295-trader**; measured parent **7f1122dade0b9022b595aadc08bbb29badff51f6**.
+  Read git for current commit/push. **132:82done/2partial/48todo/0no-action**;
+  exact eight groups; M30/M103 partial, M125 TODO. User CONTINUE, no more clarifiers;
+  keep floor30/deliberateM103n>=5, no70%/target shrinking or missing IDs.
+- [M81/M82 report](M81-M82-PROFIT-RISK.md), evidence/m81 +m82, guarded manifests
+  and eight incremental/combined/pristine patches in M81-M82-STAGES.json;
+  reproducible build-m81-m82-artifacts.py. **282/0 new across10 probes**, inherited
+  unchanged12-probe **302/0** rerun. Not distinct defects/market outcomes.
+- M81 optional account daily_profit_limit_pct:NULL/OFF legacy/default, positive
+  finite through100/app range, separate lifetime profit_target_pct. First scoped
+  UTC profit check freezes ON/OFF/percentage; later edits future day. Legacy cap
+  clock retained; NULL new selection marker filled once NOW, no backdated policy.
+- Close-day known realised net only, overnight included/future excluded, denominator
+  existing day-start equity (start+prior closed net), floating excluded. Unrounded
+  comparison inclusive (104.9999display105 stays below105); existing REAL/JS numbers,
+  not arbitrary precision. Enabled unknown close/net/policy/clock/amount underflow
+  cannot waive; OFF preserves legacy older-undated policy. Truthful repair allowed.
+- Profit rule joins durable day-stop whitelist. Observations survive P&L correction,
+  deletion/settings OFF/restart until UTC rollover; truthful CRUD/import/research
+  remain. Same owned/server-clock transaction/recheck/reason≤2000/plain-string
+  single-action/M90 day-review/technical-veto/no-op policies preserved.6concurrent
+  stopped entries all409/0writes; audit failure rollback, reopen needs new admission.
+- Separate source-stage measures: policy59/0vs3/56; gate51/0vs15/36; consumers60/0vs
+  24/36; validation16/0vs8/8; actual7f migration13/0; UI24/0vs7/17. Actual Settings/
+  Dashboard/Corrections/modal/review, auth/SQL. Model/candle/cash/bootstrap/chart IO
+  seams declared; not pixels, providers or broker execution.
+- M82 streak loss×0.6/win×0.9 removed, descriptive reasons retained; real streak
+  STOP/cooldown409 stays.29/0vs15/14. Separate after_two_losses25% sizing advice
+  removed, detection/evidence fingerprint unchanged;5/0vs3/2. M9 shared clamp now
+  covers advisory legacy reads:16/0vs5/11, no DB mutation/constant change. Actual
+  new-account0.5 default and base/advisory/off-streak labels9/0vs4/5.
+- **Scope correction:** Ep21 explicitly allows drawdown reduction/pause, so prior
+  M82 blanket ban withdrawn; separate old drawdown/day-loss advice unchanged. Grade
+  M98/M58 mapping A+/A×1,B×0.5,C×0.25 preserved; no automatic A+doubling. M9 .5default/
+  locked,1manualmax,.25basefloor preserved. **M85 post-loss reflection/completeness,
+  not adaptive size**. Misplaced M94 profit paragraph moved to M81; M94 routine open.
+- Initial failures retained: validation11/5vs6/10 used omitted-status CLOSED recording
+  not OPEN admission; UI stale-dialog class crash and11-check interactive-promise
+  wait/timeout; advice1/4 inactive cyclical fixture; /health SPA parsed as JSON.
+  Corrected probes, not production hacks. Shallow checkout lacks fdaa2bc object;
+  reverse guarded M79/M80 patch from7f recovers110-file prior migration source with
+  zero manifest differences (recorded), old migration9/0. No branch switch/fetch.
+- Native current and parent **API121/0 both /bots205/1 both /20fills /0mismatches**.
+  Existing>20sample failure kept, both nativeexit1. Earlier19fills/204/2 negatives
+  stay historical; changed contemporary synthetic cohort is not improvement.
+  Both scripts byte-identical; serial perDB/offline/scheduler0/blank credentials.
+  Now50/0,Topdown77/0,Chart36/0,M33 67/0,M78 169/0,M77 41/0,M71 48/0/settings15/0.
+  Smoke22/22,0style/console,8canvas limits. Fifteen guarded neutral files including
+  ten core engine/model/price-policy, P&L, shared risk constants, lock/native scripts.
+- Preview3000: current source,/tmp/m81-final-regressions.db,explicitly synthetic,
+  scheduler0/blank remote credentials. Fresh process token tradejournal-synthetic-test-prev-1ed5a4dd;
+  check liveness before citing. Old prior-preview token not found; not reused.
+  Parent3001 test control stopped after validation. No live/broker/auth/Turso/Vercel/
+  cron/pixel/edge claim. User no-key-rotation respected; no real credential commit/use.
+- Final source112 files; deterministicZIP/hash companion evidence/m81/archive-sha256.json
+  outsideZIP; eight incremental+combined+pristine forward/reverse0byte differences,
+  no DB/deps/datasets/secrets. Documentation stage runtime unchanged.
+- **NEXT M84 optional session-duration marker, then M85 required post-loss reflection
+  /journal completeness**, then remaining risk/review mechanisms. M94/M111/M112/M116
+  remain open, all48TODOs/2partials visible. Do not infer incomplete items caused losses
+  or repeat the completed M71 twelve-run measurements. Existing M79 admitted-count
+  and durable-loss-clock policies continue as documented below.
+
+## Historical M79/M80 continuation state — 2026-10-11
 
 - Fixed branch **arena/762c0295-trader**; parent **fdaa2bc5cd7922df094c53e3991627dc7c1c23ba**.
   Read git for exact current HEAD/push. **132:80 done/2 partial/50 todo/0 no-action**;
@@ -53,7 +118,7 @@
   self-hash. All stage/combined/pristine forward+reverse/byte checks0differences,
   package lock and older patches unchanged. Do not rerun old M71 twelve measurements.
 - **NEXT M81 profit stop, then M82 resize / remaining risk mechanism order.**
-  M85 adaptive size,M111 news fail-closed,M112 time-window remain open. All50todos
+  M85 post-loss reflection/completeness (old adaptive-size label was wrong),M111 news fail-closed,M112 time-window remain open. All50todos
   +2partials visible. Do not infer other closures or that unfinished items caused losses.
 
 

@@ -1,0 +1,360 @@
+{
+  "app": "/tmp/m81-policy-stage/app",
+  "pass": 24,
+  "fail": 36,
+  "results": [
+    {
+      "label": "-1/market_shift: positive control qualifies before profit stop",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: profit is the actual rule, with no cap/streak/loss breach",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "-1/market_shift: analyse/headline/method verdict refuse profit-day entry",
+      "passed": false,
+      "detail": {
+        "setup": "SELL",
+        "headline": "SELL",
+        "method": "SELL"
+      }
+    },
+    {
+      "label": "-1/market_shift: Now unarms order and records a blocking guard",
+      "passed": false,
+      "detail": "SELL"
+    },
+    {
+      "label": "-1/market_shift: chart removes actionable plan at realised profit stop",
+      "passed": false,
+      "detail": "SELL"
+    },
+    {
+      "label": "-1/market_shift: scan refuses same profit permission",
+      "passed": false,
+      "detail": "NO TRADE"
+    },
+    {
+      "label": "-1/market_shift: geometry/grade/score/risk remain byte-equal market context",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: technical eligibility is retained, personal profit veto is explicit",
+      "passed": false,
+      "detail": {
+        "ok": true
+      }
+    },
+    {
+      "label": "-1/market_shift: stale clear signal is freshly rejected",
+      "passed": false
+    },
+    {
+      "label": "-1/market_shift: technically eligible stopped signal can use recorded reason",
+      "passed": false,
+      "detail": {
+        "saved": 1,
+        "ids": [
+          2
+        ],
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "admitted",
+          "override_reason": null,
+          "action": "save_signal",
+          "account_id": 3,
+          "evaluated_at": "2026-10-11T12:00:00.000Z",
+          "scope": "personal rules for this recorded action only, not broker execution or future permission"
+        }
+      }
+    },
+    {
+      "label": "-1/market_shift: saved signal records profit rule and supplied reason",
+      "passed": false
+    },
+    {
+      "label": "-1/market_shift: personal profit exception never revives technical veto",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: technical no-op creates no false override audit",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: second user has independent qualifying permission",
+      "passed": true
+    },
+    {
+      "label": "-1/market_shift: unauthenticated research remains context, not claimed personal approval",
+      "passed": true
+    },
+    {
+      "label": "1/market_shift: positive control qualifies before profit stop",
+      "passed": true
+    },
+    {
+      "label": "1/market_shift: profit is the actual rule, with no cap/streak/loss breach",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "1/market_shift: analyse/headline/method verdict refuse profit-day entry",
+      "passed": false,
+      "detail": {
+        "setup": "BUY",
+        "headline": "BUY",
+        "method": "BUY"
+      }
+    },
+    {
+      "label": "1/market_shift: Now unarms order and records a blocking guard",
+      "passed": false,
+      "detail": "BUY"
+    },
+    {
+      "label": "1/market_shift: chart removes actionable plan at realised profit stop",
+      "passed": false,
+      "detail": "BUY"
+    },
+    {
+      "label": "1/market_shift: scan refuses same profit permission",
+      "passed": false,
+      "detail": "NO TRADE"
+    },
+    {
+      "label": "1/market_shift: geometry/grade/score/risk remain byte-equal market context",
+      "passed": true
+    },
+    {
+      "label": "1/market_shift: technical eligibility is retained, personal profit veto is explicit",
+      "passed": false,
+      "detail": {
+        "ok": true
+      }
+    },
+    {
+      "label": "1/market_shift: stale clear signal is freshly rejected",
+      "passed": false
+    },
+    {
+      "label": "1/market_shift: technically eligible stopped signal can use recorded reason",
+      "passed": false,
+      "detail": {
+        "saved": 1,
+        "ids": [
+          4
+        ],
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "admitted",
+          "override_reason": null,
+          "action": "save_signal",
+          "account_id": 4,
+          "evaluated_at": "2026-10-11T12:00:00.000Z",
+          "scope": "personal rules for this recorded action only, not broker execution or future permission"
+        }
+      }
+    },
+    {
+      "label": "1/market_shift: saved signal records profit rule and supplied reason",
+      "passed": false
+    },
+    {
+      "label": "1/market_shift: personal profit exception never revives technical veto",
+      "passed": true
+    },
+    {
+      "label": "1/market_shift: technical no-op creates no false override audit",
+      "passed": true
+    },
+    {
+      "label": "1/market_shift: second user has independent qualifying permission",
+      "passed": true
+    },
+    {
+      "label": "1/market_shift: unauthenticated research remains context, not claimed personal approval",
+      "passed": true
+    },
+    {
+      "label": "-1/flip: positive control qualifies before profit stop",
+      "passed": true
+    },
+    {
+      "label": "-1/flip: profit is the actual rule, with no cap/streak/loss breach",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "-1/flip: analyse/headline/method verdict refuse profit-day entry",
+      "passed": false,
+      "detail": {
+        "setup": "SELL",
+        "headline": "SELL",
+        "method": "SELL"
+      }
+    },
+    {
+      "label": "-1/flip: Now unarms order and records a blocking guard",
+      "passed": false,
+      "detail": "SELL"
+    },
+    {
+      "label": "-1/flip: chart removes actionable plan at realised profit stop",
+      "passed": false,
+      "detail": "SELL"
+    },
+    {
+      "label": "-1/flip: scan refuses same profit permission",
+      "passed": false,
+      "detail": "NO TRADE"
+    },
+    {
+      "label": "-1/flip: geometry/grade/score/risk remain byte-equal market context",
+      "passed": true
+    },
+    {
+      "label": "-1/flip: technical eligibility is retained, personal profit veto is explicit",
+      "passed": false,
+      "detail": {
+        "ok": true
+      }
+    },
+    {
+      "label": "-1/flip: stale clear signal is freshly rejected",
+      "passed": false
+    },
+    {
+      "label": "-1/flip: technically eligible stopped signal can use recorded reason",
+      "passed": false,
+      "detail": {
+        "saved": 1,
+        "ids": [
+          6
+        ],
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "admitted",
+          "override_reason": null,
+          "action": "save_signal",
+          "account_id": 5,
+          "evaluated_at": "2026-10-11T12:00:00.000Z",
+          "scope": "personal rules for this recorded action only, not broker execution or future permission"
+        }
+      }
+    },
+    {
+      "label": "-1/flip: saved signal records profit rule and supplied reason",
+      "passed": false
+    },
+    {
+      "label": "-1/flip: personal profit exception never revives technical veto",
+      "passed": true
+    },
+    {
+      "label": "-1/flip: technical no-op creates no false override audit",
+      "passed": true
+    },
+    {
+      "label": "-1/flip: second user has independent qualifying permission",
+      "passed": true
+    },
+    {
+      "label": "-1/flip: unauthenticated research remains context, not claimed personal approval",
+      "passed": true
+    },
+    {
+      "label": "1/flip: positive control qualifies before profit stop",
+      "passed": true
+    },
+    {
+      "label": "1/flip: profit is the actual rule, with no cap/streak/loss breach",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "1/flip: analyse/headline/method verdict refuse profit-day entry",
+      "passed": false,
+      "detail": {
+        "setup": "BUY",
+        "headline": "BUY",
+        "method": "BUY"
+      }
+    },
+    {
+      "label": "1/flip: Now unarms order and records a blocking guard",
+      "passed": false,
+      "detail": "BUY"
+    },
+    {
+      "label": "1/flip: chart removes actionable plan at realised profit stop",
+      "passed": false,
+      "detail": "BUY"
+    },
+    {
+      "label": "1/flip: scan refuses same profit permission",
+      "passed": false,
+      "detail": "NO TRADE"
+    },
+    {
+      "label": "1/flip: geometry/grade/score/risk remain byte-equal market context",
+      "passed": true
+    },
+    {
+      "label": "1/flip: technical eligibility is retained, personal profit veto is explicit",
+      "passed": false,
+      "detail": {
+        "ok": true
+      }
+    },
+    {
+      "label": "1/flip: stale clear signal is freshly rejected",
+      "passed": false
+    },
+    {
+      "label": "1/flip: technically eligible stopped signal can use recorded reason",
+      "passed": false,
+      "detail": {
+        "saved": 1,
+        "ids": [
+          8
+        ],
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "admitted",
+          "override_reason": null,
+          "action": "save_signal",
+          "account_id": 6,
+          "evaluated_at": "2026-10-11T12:00:00.000Z",
+          "scope": "personal rules for this recorded action only, not broker execution or future permission"
+        }
+      }
+    },
+    {
+      "label": "1/flip: saved signal records profit rule and supplied reason",
+      "passed": false
+    },
+    {
+      "label": "1/flip: personal profit exception never revives technical veto",
+      "passed": true
+    },
+    {
+      "label": "1/flip: technical no-op creates no false override audit",
+      "passed": true
+    },
+    {
+      "label": "1/flip: second user has independent qualifying permission",
+      "passed": true
+    },
+    {
+      "label": "1/flip: unauthenticated research remains context, not claimed personal approval",
+      "passed": true
+    }
+  ],
+  "scope": "Actual consumer/SQL persistence composition, declared candle/CRT/exact-net seams and fixed cash; no pixel/live-provider/broker/outcome proof"
+}

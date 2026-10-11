@@ -1,0 +1,385 @@
+{
+  "app": "/tmp/m81-parent/app",
+  "pass": 3,
+  "fail": 56,
+  "results": [
+    {
+      "label": "additive account schema has optional daily profit percentage",
+      "passed": false
+    },
+    {
+      "label": "daily policy can distinguish unselected legacy state from selected OFF",
+      "passed": false
+    },
+    {
+      "label": "existing/default accounts start OFF, not an invented universal ceiling",
+      "passed": false
+    },
+    {
+      "label": "POST without ceiling defaults explicitly OFF",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage null",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "PUT roundtrips optional percentage null",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage \"\"",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "PUT roundtrips optional percentage \"\"",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage \"  \"",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "PUT roundtrips optional percentage \"  \"",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 0.25",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "PUT roundtrips optional percentage 0.25",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 1",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "PUT roundtrips optional percentage 1",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage \"2.50\"",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "PUT roundtrips optional percentage \"2.50\"",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 3",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "PUT roundtrips optional percentage 3",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 5",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "PUT roundtrips optional percentage 5",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 10",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "PUT roundtrips optional percentage 10",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "POST roundtrips explicit optional percentage 100",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "PUT roundtrips optional percentage 100",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "invalid POST rejected without account write 0",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting 0",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid POST rejected without account write -1",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting -1",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid POST rejected without account write 100.01",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting 100.01",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid POST rejected without account write true",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting true",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid POST rejected without account write false",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting false",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid POST rejected without account write []",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting []",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid POST rejected without account write {}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting {}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid POST rejected without account write \"bad\"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting \"bad\"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid POST rejected without account write \"NaN\"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting \"NaN\"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid POST rejected without account write \"Infinity\"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting \"Infinity\"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid POST rejected without account write \"0x10\"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "invalid PUT rejected without changing selected setting \"0x10\"",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "unrelated account edit retains selected ceiling",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "another user cannot edit the ceiling",
+      "passed": false,
+      "detail": 404
+    },
+    {
+      "label": "empty-sample operative rules use selected1%, not a guessed history number",
+      "passed": false
+    },
+    {
+      "label": "first scoped check persists the profit-selection clock",
+      "passed": false,
+      "detail": {
+        "max_trades_day": 3,
+        "selected_at": "2026-10-11T12:00:00.000Z",
+        "rule_date": "2026-10-11",
+        "timezone": "UTC"
+      }
+    },
+    {
+      "label": "midday increase cannot erase the frozen1% ceiling",
+      "passed": false
+    },
+    {
+      "label": "next UTC day adopts the explicitly selected5%",
+      "passed": false
+    },
+    {
+      "label": "profitable36-trade history cannot raise the preselected profit ceiling",
+      "passed": false
+    },
+    {
+      "label": "OFF is a frozen policy too; enabling afterward applies next day",
+      "passed": false
+    },
+    {
+      "label": "disabling midday does not erase today; future day can be OFF",
+      "passed": false
+    },
+    {
+      "label": "eight simultaneous first checks agree on one profit policy/clock",
+      "passed": false,
+      "detail": [
+        {
+          "max_trades_day": 3,
+          "selected_at": "2026-10-11T12:00:00.000Z",
+          "rule_date": "2026-10-11",
+          "timezone": "UTC"
+        },
+        {
+          "max_trades_day": 3,
+          "selected_at": "2026-10-11T12:00:00.000Z",
+          "rule_date": "2026-10-11",
+          "timezone": "UTC"
+        },
+        {
+          "max_trades_day": 3,
+          "selected_at": "2026-10-11T12:00:00.000Z",
+          "rule_date": "2026-10-11",
+          "timezone": "UTC"
+        },
+        {
+          "max_trades_day": 3,
+          "selected_at": "2026-10-11T12:00:00.000Z",
+          "rule_date": "2026-10-11",
+          "timezone": "UTC"
+        },
+        {
+          "max_trades_day": 3,
+          "selected_at": "2026-10-11T12:00:00.000Z",
+          "rule_date": "2026-10-11",
+          "timezone": "UTC"
+        },
+        {
+          "max_trades_day": 3,
+          "selected_at": "2026-10-11T12:00:00.000Z",
+          "rule_date": "2026-10-11",
+          "timezone": "UTC"
+        },
+        {
+          "max_trades_day": 3,
+          "selected_at": "2026-10-11T12:00:00.000Z",
+          "rule_date": "2026-10-11",
+          "timezone": "UTC"
+        },
+        {
+          "max_trades_day": 3,
+          "selected_at": "2026-10-11T12:00:00.000Z",
+          "rule_date": "2026-10-11",
+          "timezone": "UTC"
+        }
+      ]
+    },
+    {
+      "label": "daily ceiling does not overwrite lifetime/prop profit target",
+      "passed": true
+    },
+    {
+      "label": "M11 below-floor rules still disclose30 and no personal adaptation",
+      "passed": true
+    },
+    {
+      "label": "new setting still requires real authentication",
+      "passed": true
+    }
+  ],
+  "scope": "Actual local SQL/auth/account/UTC optional profit-policy selection, not trigger/market/broker/production proof"
+}

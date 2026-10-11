@@ -1,0 +1,27 @@
+diff --git a/src/coach.js b/src/coach.js
+index 7e2e542..a9504a2 100644
+--- a/src/coach.js
++++ b/src/coach.js
+@@ -599,15 +599,18 @@ function briefing({ trades, events = [], quotes = {}, account, journalEntry, ris
+   const streak = k.streaks;
+   const dd = k.current_drawdown_pct;
+ 
+-  // Risk state: shrink size when in drawdown or after a bad day
++  // M82: streaks describe history; they do not price the next trade. Keep the
++  // selected unit/checklist sizing and the separate streak STOP. Ep21 explicitly
++  // permits drawdown reduction/pause; do not silently remove those other controls.
++  // Existing drawdown/day-loss constants below remain app policy, not course precision.
+   let riskMultiplier = 1;
+   const reasons = [];
+   if (dd <= -6) { riskMultiplier *= 0.5; reasons.push(`Drawdown of ${dd}% from peak equity → half size.`); }
+   else if (dd <= -3) { riskMultiplier *= 0.75; reasons.push(`Drawdown of ${dd}% from peak → 75% size.`); }
+   if (todayPnl < 0 && account && todayPnl < -account.starting_balance * 0.02) { riskMultiplier *= 0.5; reasons.push('Down more than 2% today → half size or stop.'); }
+-  if (streak.current_type === 'loss' && Math.abs(streak.current) >= 3) { riskMultiplier *= 0.6; reasons.push(`${Math.abs(streak.current)} losses in a row → cut size until a clean win.`); }
+-  if (streak.current_type === 'win' && streak.current >= 4) { riskMultiplier *= 0.9; reasons.push(`${streak.current} wins in a row → resist size creep, keep the same unit.`); }
+-  if (!reasons.length) reasons.push('No drawdown or streak flags. Trade your standard risk unit.');
++  if (streak.current_type === 'loss' && Math.abs(streak.current) >= 3) reasons.push(`${Math.abs(streak.current)} losses in a row — no streak-based risk change. Check the personal stop/cooldown rules and keep journaling.`);
++  if (streak.current_type === 'win' && streak.current >= 4) reasons.push(`${streak.current} wins in a row — no streak-based risk change. Resist size creep; follow the selected risk/checklist and separate drawdown controls.`);
++  if (!reasons.length) reasons.push('No drawdown/day-loss adjustment. Use the selected risk unit; streaks never resize it. Personal entry rules still require a fresh check.');
+ 
+   const highEvents = events.filter((e) => String(e.impact).toLowerCase() === 'high');
+   const dayEvents = highEvents.filter((e) => String(e.date).slice(0, 10) === today);

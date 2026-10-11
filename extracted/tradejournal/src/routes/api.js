@@ -559,6 +559,15 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
   const capPolicy = await Guards.dailyCap(db, req.user.id, acc);
   const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
   briefing.risk_plan.trade_cap_policy = capPolicy;
+  // Briefing amounts are advice, NOT permission. Use the same close-day UTC
+  // state as entry admission for the optional profit display/retained latch.
+  let daily;
+  try { daily = await require('../bots/correction').dailyState(req.user.id,{accountId:acc.id}); }
+  catch { daily = Guards.unavailable({accountId:acc.id}); }
+  briefing.daily = daily;
+  briefing.risk_plan.profit_stop = daily.profit_stop || {
+    enabled:capPolicy.daily_profit_limit_pct!==null,limit_pct:capPolicy.daily_profit_limit_pct,
+    limit_amount:null,realised_amount:null,selected_at:capPolicy.profit_selected_at,timezone:'UTC'};
   briefing.calendar_ok = cal.ok;
   briefing.quotes_ok = quotes.ok;
   res.json(briefing);
@@ -747,13 +756,16 @@ router.post('/accounts', requireAuth, async (req, res) => {
   let maxTrades;
   try { maxTrades = b.max_trades_day === undefined ? Guards.DEFAULT_CAP : Guards.parseCap(b.max_trades_day); }
   catch (e) { return res.status(400).json({ error: e.message }); }
+  let profitLimit;
+  try { profitLimit = Guards.parseProfitLimit(b.daily_profit_limit_pct); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
   const unlocked = !!b.risk_unlocked;
   const riskPct = I.clampRiskPct(b.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked });
-  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     req.user.id, b.name, b.broker || '', b.account_type || 'live', b.currency || 'USD',
     num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0, maxTrades,
-    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8));
+    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit);
   res.json({
     ok: true,
     account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(info.lastInsertRowid),
@@ -768,6 +780,9 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
   let maxTrades;
   try { maxTrades = b.max_trades_day === undefined ? Guards.configuredCap(cur) : Guards.parseCap(b.max_trades_day); }
   catch (e) { return res.status(400).json({ error: e.message }); }
+  let profitLimit;
+  try { profitLimit = b.daily_profit_limit_pct === undefined ? Guards.parseProfitLimit(cur.daily_profit_limit_pct) : Guards.parseProfitLimit(b.daily_profit_limit_pct); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
   // M9: the same guardrail on the update path, which also stored the value via num() with no
   // clamp. Only a value THIS request supplies is clamped — a row stored above the guardrail
   // before the fix is left untouched here and clamped on READ (bots/index.js) instead, so an
@@ -778,7 +793,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
     : num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct);
   await db.prepare(`UPDATE accounts SET name=@name, broker=@broker, account_type=@account_type, currency=@currency,
     starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, max_trades_day=@max_trades_day, daily_loss_limit_pct=@daily_loss_limit_pct,
-    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, prop_preset=@prop_preset,
+    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, prop_preset=@prop_preset,
     prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
     id, user_id: req.user.id,
     name: b.name !== undefined ? b.name : cur.name,
@@ -789,6 +804,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
     risk_per_trade_pct: riskPct,
     risk_unlocked: unlocked ? 1 : 0,
     max_trades_day: maxTrades,
+    daily_profit_limit_pct: profitLimit,
     daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
     max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
     prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,

@@ -1,5 +1,22 @@
 # Full-playlist episode audit — running ledger
 
+## Current M81/M82 follow-through — 2026-10-11
+
+**132 findings:82 done/2 partial/48todo/0no-action**, exact eight groups.
+[Mechanism report](M81-M82-PROFIT-RISK.md): optional/configurable realised daily
+profit stop, durable stop/history/reasoned admission and actual UI; briefing
+streak factors and25% post-loss resizing advice removed independently. New282/0
+assertions; inherited302/0. Native API121/0 both; bots205/1 both (20synthetic fills,
+0mismatches; unchanged>20floor). Changed cohort not evidence of better outcomes.
+**Attribution corrections:** Ep21 explicitly sanctions drawdown reduction/pause;
+M82's blanket drawdown prohibition was overbroad. Separate drawdown/day-loss
+controls and existing M98 grade map stay unchanged. Ep31's optional1% profit
+paragraph previously placed under M94 belongs to M81, not routine tracking.
+M85 is required post-loss reflection/completeness, not adaptive sizing; it,
+M84/M94/M111/M112/M116 and all unresolved findings remain open. Next M84→M85.
+Later raw transcripts unavailable locally; saved complete-transcript quotations
+below remain source evidence, with no invented timestamps or new raw fetch claim.
+
 **Method correction.** Earlier sections of `ANALYSIS.md` (§14–§23) were written from **1–2 of the 4–5 chunks**
 each transcript returns — roughly the first quarter of each video. This ledger tracks a complete pass:
 every episode, every chunk, in playlist order (Ep 0 → 33, then bonuses, then the EdgeFlo tool episodes).
