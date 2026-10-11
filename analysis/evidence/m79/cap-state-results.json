@@ -1,0 +1,1351 @@
+{
+  "app": "/tmp/m79-cap-stage/app",
+  "pass": 9,
+  "fail": 39,
+  "results": [
+    {
+      "label": "resolved rule numbers, never a Promise/empty object",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "empty positive account is clear,3 remain",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 0,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "Clear to trade. Cap: undefined trades / undefined% risk per trade today.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "two OPEN attempts count; last remaining entry is caution, not a stop",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 2,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "Clear to trade. Cap: undefined trades / undefined% risk per trade today.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "three OPEN attempts exhaust the cap",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 3,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "Clear to trade. Cap: undefined trades / undefined% risk per trade today.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "three CLOSED attempts also exhaust the cap",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 3,
+          "closed": 3,
+          "realised": 30,
+          "r_sum": 0.3,
+          "avg_r": 0.1,
+          "loss_streak": 0,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "Clear to trade. Cap: undefined trades / undefined% risk per trade today.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "foreign account and foreign user do not consume count/P&L/streak",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 7,
+          "closed": 7,
+          "realised": -700,
+          "r_sum": -7,
+          "avg_r": -1,
+          "loss_streak": 7,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "7 losses in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "omitted account resolves ONE owned default, not combined accounts",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 7,
+          "closed": 7,
+          "realised": -700,
+          "r_sum": -7,
+          "avg_r": -1,
+          "loss_streak": 7,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "7 losses in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "foreign account cannot receive clear permission",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 7,
+          "closed": 7,
+          "realised": -700,
+          "r_sum": -7,
+          "avg_r": -1,
+          "loss_streak": 7,
+          "balance": 0
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "7 losses in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "archived account cannot receive clear permission",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 7,
+          "closed": 7,
+          "realised": -700,
+          "r_sum": -7,
+          "avg_r": -1,
+          "loss_streak": 7,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "7 losses in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "daily realised loss stops at EXACT3% boundary",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -300,
+          "r_sum": -3,
+          "avg_r": -3,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "one cent short of daily loss limit does not trigger that rule",
+      "passed": true
+    },
+    {
+      "label": "floating/open P&L never triggers realised loss stop",
+      "passed": true
+    },
+    {
+      "label": "overnight trade CLOSED today enters today realised loss",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 0,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "a close yesterday is not today realised P&L",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -200,
+          "r_sum": -2,
+          "avg_r": -2,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "percentage loss anchor is day-start realised11000, boundary330",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -330,
+          "r_sum": -3.3,
+          "avg_r": -3.3,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "two consecutive losses today stop",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 2,
+          "closed": 2,
+          "realised": -20,
+          "r_sum": -0.2,
+          "avg_r": -0.1,
+          "loss_streak": 2,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "2 losses in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "later non-loss interrupts the active streak",
+      "passed": true
+    },
+    {
+      "label": "yesterday loss streak does not lock the new day",
+      "passed": true
+    },
+    {
+      "label": "post-loss cooldown is a STOP one millisecond before30min",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -10,
+          "r_sum": -0.1,
+          "avg_r": -0.1,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "cooldown expires at exact30min boundary",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -10,
+          "r_sum": -0.1,
+          "avg_r": -0.1,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "very next1h candle still blocks after30min cooldown",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -10,
+          "r_sum": -0.1,
+          "avg_r": -0.1,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "next-candle barrier expires on its exact close",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -10,
+          "r_sum": -0.1,
+          "avg_r": -0.1,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "loss inside a bar excludes the next FULL candle",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -10,
+          "r_sum": -0.1,
+          "avg_r": -0.1,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "unknown prospective entry TF is not guessed: null",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -10,
+          "r_sum": -0.1,
+          "avg_r": -0.1,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "unknown prospective entry TF is not guessed: bad",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -10,
+          "r_sum": -0.1,
+          "avg_r": -0.1,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "today closed record with unknown close time fails closed, not a fabricated cooldown",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -10,
+          "r_sum": -0.1,
+          "avg_r": -0.1,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "future journal timestamps do not count as already occurred",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": -400,
+          "r_sum": -4,
+          "avg_r": -4,
+          "loss_streak": 1,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "1 loss in a row — take the undefined-minute cooldown before the next entry.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "zero day-start equity is unavailable, not silently clear",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "guardrails": {},
+        "today": {
+          "trades": 0,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000
+        },
+        "breaches": [],
+        "status": "clear",
+        "message": "Clear to trade. Cap: undefined trades / undefined% risk per trade today.",
+        "remaining_trades": null
+      }
+    },
+    {
+      "label": "Now cannot arm a technically qualifying order during stop",
+      "passed": false,
+      "detail": {
+        "symbol": "TEST",
+        "timeframe": "5m",
+        "as_of": "2026-10-11T12:00:00.000Z",
+        "evaluated_on": {
+          "last_closed_bar": "2026-10-11T11:55:00.000Z",
+          "last_close": 100,
+          "bar_age_min": 5,
+          "candles": 1,
+          "replay": false,
+          "trim": 0
+        },
+        "live": null,
+        "action": "BUY",
+        "side": 1,
+        "headline": "TEST 5m: long is armed — full size (conviction A). Wait for the entry to be reached; do not buy the market here.",
+        "entry_preference": {
+          "version": "m78",
+          "rule": "entry_tf_internal_structure",
+          "state": "unknown",
+          "variant": "conservative",
+          "dir": 1,
+          "entry_tf": "5m",
+          "source_tf": null,
+          "trend": null,
+          "aligned": null,
+          "observed_at": 1791720000000,
+          "source_close_at": null,
+          "execution": "crt_scenario",
+          "advanced_shortcut": false,
+          "reason": "Internal structure is unknown: conservative preference; no guessed agreement and no bypass of causal entry requirements."
+        },
+        "armed": true,
+        "order": {
+          "side": "long",
+          "type": "limit on the swept-edge retest",
+          "entry": 100,
+          "stop": 99,
+          "target": 110,
+          "rr": 10,
+          "alt_entry": 100,
+          "alt_target": 110,
+          "alt_rr": 10,
+          "size_note": "Full risk: the method is confirmed and the lower timeframe has confirmed it too.",
+          "mode": "safer",
+          "rr_warning": null,
+          "entry_variant": "conservative",
+          "entry_preference": {
+            "version": "m78",
+            "rule": "entry_tf_internal_structure",
+            "state": "unknown",
+            "variant": "conservative",
+            "dir": 1,
+            "entry_tf": "5m",
+            "source_tf": null,
+            "trend": null,
+            "aligned": null,
+            "observed_at": 1791720000000,
+            "source_close_at": null,
+            "execution": "crt_scenario",
+            "advanced_shortcut": false,
+            "reason": "Internal structure is unknown: conservative preference; no guessed agreement and no bypass of causal entry requirements."
+          }
+        },
+        "watch": {
+          "level": 100,
+          "kind": "entry",
+          "condition": "price must trade into 100 with the range 99 – 110 still holding",
+          "text": "Order sits at 100 (the retest of the swept edge). Stop 99, target 110 (10R)."
+        },
+        "checkpoint": {
+          "at": "2026-10-11T12:00:00.000Z",
+          "label": "order live until 2026-10-11 12:00 UTC · 5m close",
+          "text": "The order stays valid while the range holds. Re-check at the 5m close (2026-10-11 12:00 UTC); if it has not filled by then, re-read the range."
+        },
+        "invalidate": "If price closes back through 99 the read is wrong — take the loss, do not average.",
+        "freshness": {
+          "state": "fresh",
+          "bar_age_min": 5,
+          "note": "Read is from the 5m bar closed 2026-10-11 11:55 UTC (5 min ago). price has moved 0.00 ATR since that close."
+        },
+        "guards": [
+          {
+            "level": "warn",
+            "text": "Personal stop fixture"
+          }
+        ],
+        "other_side": null,
+        "conviction": "A",
+        "full_risk": true,
+        "steps_done": 0,
+        "steps_total": 0,
+        "pending_step": null,
+        "killzone": "NY AM killzone",
+        "range": {
+          "low": 99,
+          "high": 110,
+          "mid": null
+        },
+        "since": null
+      }
+    },
+    {
+      "label": "Now cannot arm a technically qualifying order during unknown",
+      "passed": false,
+      "detail": {
+        "symbol": "TEST",
+        "timeframe": "5m",
+        "as_of": "2026-10-11T12:00:00.000Z",
+        "evaluated_on": {
+          "last_closed_bar": "2026-10-11T11:55:00.000Z",
+          "last_close": 100,
+          "bar_age_min": 5,
+          "candles": 1,
+          "replay": false,
+          "trim": 0
+        },
+        "live": null,
+        "action": "BUY",
+        "side": 1,
+        "headline": "TEST 5m: long is armed — full size (conviction A). Wait for the entry to be reached; do not buy the market here.",
+        "entry_preference": {
+          "version": "m78",
+          "rule": "entry_tf_internal_structure",
+          "state": "unknown",
+          "variant": "conservative",
+          "dir": 1,
+          "entry_tf": "5m",
+          "source_tf": null,
+          "trend": null,
+          "aligned": null,
+          "observed_at": 1791720000000,
+          "source_close_at": null,
+          "execution": "crt_scenario",
+          "advanced_shortcut": false,
+          "reason": "Internal structure is unknown: conservative preference; no guessed agreement and no bypass of causal entry requirements."
+        },
+        "armed": true,
+        "order": {
+          "side": "long",
+          "type": "limit on the swept-edge retest",
+          "entry": 100,
+          "stop": 99,
+          "target": 110,
+          "rr": 10,
+          "alt_entry": 100,
+          "alt_target": 110,
+          "alt_rr": 10,
+          "size_note": "Full risk: the method is confirmed and the lower timeframe has confirmed it too.",
+          "mode": "safer",
+          "rr_warning": null,
+          "entry_variant": "conservative",
+          "entry_preference": {
+            "version": "m78",
+            "rule": "entry_tf_internal_structure",
+            "state": "unknown",
+            "variant": "conservative",
+            "dir": 1,
+            "entry_tf": "5m",
+            "source_tf": null,
+            "trend": null,
+            "aligned": null,
+            "observed_at": 1791720000000,
+            "source_close_at": null,
+            "execution": "crt_scenario",
+            "advanced_shortcut": false,
+            "reason": "Internal structure is unknown: conservative preference; no guessed agreement and no bypass of causal entry requirements."
+          }
+        },
+        "watch": {
+          "level": 100,
+          "kind": "entry",
+          "condition": "price must trade into 100 with the range 99 – 110 still holding",
+          "text": "Order sits at 100 (the retest of the swept edge). Stop 99, target 110 (10R)."
+        },
+        "checkpoint": {
+          "at": "2026-10-11T12:00:00.000Z",
+          "label": "order live until 2026-10-11 12:00 UTC · 5m close",
+          "text": "The order stays valid while the range holds. Re-check at the 5m close (2026-10-11 12:00 UTC); if it has not filled by then, re-read the range."
+        },
+        "invalidate": "If price closes back through 99 the read is wrong — take the loss, do not average.",
+        "freshness": {
+          "state": "fresh",
+          "bar_age_min": 5,
+          "note": "Read is from the 5m bar closed 2026-10-11 11:55 UTC (5 min ago). price has moved 0.00 ATR since that close."
+        },
+        "guards": [
+          {
+            "level": "warn",
+            "text": "Personal stop fixture"
+          }
+        ],
+        "other_side": null,
+        "conviction": "A",
+        "full_risk": true,
+        "steps_done": 0,
+        "steps_total": 0,
+        "pending_step": null,
+        "killzone": "NY AM killzone",
+        "range": {
+          "low": 99,
+          "high": 110,
+          "mid": null
+        },
+        "since": null
+      }
+    },
+    {
+      "label": "clear live entry is admitted",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "trade": {
+            "id": 40,
+            "user_id": 1,
+            "account_id": 1,
+            "symbol": "TEST",
+            "asset_class": "stocks",
+            "direction": "long",
+            "status": "open",
+            "opened_at": "2026-10-10T12:00:00.000Z",
+            "closed_at": null,
+            "entry": 100,
+            "exit": null,
+            "stop": 99,
+            "target": null,
+            "size": 1,
+            "fees": 0,
+            "gross_pnl": 0,
+            "net_pnl": 0,
+            "risk_amount": 1,
+            "r_multiple": 0,
+            "planned_r": null,
+            "mae_r": null,
+            "mfe_r": null,
+            "stop_moved": 0,
+            "exit_reason": "",
+            "notes": "",
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "session": "overlap",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": null,
+            "adherence": null,
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "lesson": "",
+            "execution_notes": "",
+            "screenshot_url": "",
+            "manual_mae": null,
+            "manual_mfe": null,
+            "created_at": "2026-10-11 14:17:20",
+            "updated_at": "2026-10-11 14:17:20",
+            "legs": null,
+            "entries": null,
+            "strategy_version": null,
+            "session_label": "London/NY Overlap",
+            "hour": 13,
+            "weekday": "Sat",
+            "weekday_index": 5,
+            "day": "2026-10-10",
+            "close_day": null,
+            "dir_sign": 1,
+            "is_win": false,
+            "is_loss": false,
+            "is_be": true,
+            "tags_arr": [],
+            "mistakes_arr": [],
+            "hold_minutes": null,
+            "risk_used": 1,
+            "legs_n": 0,
+            "weighted_exit": null
+          }
+        }
+      }
+    },
+    {
+      "label": "live entry timestamp is server-stamped, cannot dodge count by backdating",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "trade": {
+            "id": 40,
+            "user_id": 1,
+            "account_id": 1,
+            "symbol": "TEST",
+            "asset_class": "stocks",
+            "direction": "long",
+            "status": "open",
+            "opened_at": "2026-10-10T12:00:00.000Z",
+            "closed_at": null,
+            "entry": 100,
+            "exit": null,
+            "stop": 99,
+            "target": null,
+            "size": 1,
+            "fees": 0,
+            "gross_pnl": 0,
+            "net_pnl": 0,
+            "risk_amount": 1,
+            "r_multiple": 0,
+            "planned_r": null,
+            "mae_r": null,
+            "mfe_r": null,
+            "stop_moved": 0,
+            "exit_reason": "",
+            "notes": "",
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "session": "overlap",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": null,
+            "adherence": null,
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "lesson": "",
+            "execution_notes": "",
+            "screenshot_url": "",
+            "manual_mae": null,
+            "manual_mfe": null,
+            "created_at": "2026-10-11 14:17:20",
+            "updated_at": "2026-10-11 14:17:20",
+            "legs": null,
+            "entries": null,
+            "strategy_version": null,
+            "session_label": "London/NY Overlap",
+            "hour": 13,
+            "weekday": "Sat",
+            "weekday_index": 5,
+            "day": "2026-10-10",
+            "close_day": null,
+            "dir_sign": 1,
+            "is_win": false,
+            "is_loss": false,
+            "is_be": true,
+            "tags_arr": [],
+            "mistakes_arr": [],
+            "hold_minutes": null,
+            "risk_used": 1,
+            "legs_n": 0,
+            "weighted_exit": null
+          }
+        }
+      }
+    },
+    {
+      "label": "authenticated POST mechanically blocks open entry at cap",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "trade": {
+            "id": 44,
+            "user_id": 1,
+            "account_id": 1,
+            "symbol": "TEST",
+            "asset_class": "stocks",
+            "direction": "long",
+            "status": "open",
+            "opened_at": "2026-10-11T12:00:00.000Z",
+            "closed_at": null,
+            "entry": 100,
+            "exit": null,
+            "stop": 99,
+            "target": null,
+            "size": 1,
+            "fees": 0,
+            "gross_pnl": 0,
+            "net_pnl": 0,
+            "risk_amount": 1,
+            "r_multiple": 0,
+            "planned_r": null,
+            "mae_r": null,
+            "mfe_r": null,
+            "stop_moved": 0,
+            "exit_reason": "",
+            "notes": "",
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "session": "overlap",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": null,
+            "adherence": null,
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "lesson": "",
+            "execution_notes": "",
+            "screenshot_url": "",
+            "manual_mae": null,
+            "manual_mfe": null,
+            "created_at": "2026-10-11 14:17:20",
+            "updated_at": "2026-10-11 14:17:20",
+            "legs": null,
+            "entries": null,
+            "strategy_version": null,
+            "session_label": "London/NY Overlap",
+            "hour": 13,
+            "weekday": "Sun",
+            "weekday_index": 6,
+            "day": "2026-10-11",
+            "close_day": null,
+            "dir_sign": 1,
+            "is_win": false,
+            "is_loss": false,
+            "is_be": true,
+            "tags_arr": [],
+            "mistakes_arr": [],
+            "hold_minutes": null,
+            "risk_used": 1,
+            "legs_n": 0,
+            "weighted_exit": null
+          }
+        }
+      }
+    },
+    {
+      "label": "blocked POST creates no extra trade",
+      "passed": false
+    },
+    {
+      "label": "honest already-executed OPEN record remains recordable, no permission",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "trade": {
+            "id": 45,
+            "user_id": 1,
+            "account_id": 1,
+            "symbol": "TEST",
+            "asset_class": "stocks",
+            "direction": "long",
+            "status": "open",
+            "opened_at": "2026-10-11T12:00:00.000Z",
+            "closed_at": null,
+            "entry": 100,
+            "exit": null,
+            "stop": 99,
+            "target": null,
+            "size": 1,
+            "fees": 0,
+            "gross_pnl": 0,
+            "net_pnl": 0,
+            "risk_amount": 1,
+            "r_multiple": 0,
+            "planned_r": null,
+            "mae_r": null,
+            "mfe_r": null,
+            "stop_moved": 0,
+            "exit_reason": "",
+            "notes": "",
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "session": "overlap",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": null,
+            "adherence": null,
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "lesson": "",
+            "execution_notes": "",
+            "screenshot_url": "",
+            "manual_mae": null,
+            "manual_mfe": null,
+            "created_at": "2026-10-11 14:17:20",
+            "updated_at": "2026-10-11 14:17:20",
+            "legs": null,
+            "entries": null,
+            "strategy_version": null,
+            "session_label": "London/NY Overlap",
+            "hour": 13,
+            "weekday": "Sun",
+            "weekday_index": 6,
+            "day": "2026-10-11",
+            "close_day": null,
+            "dir_sign": 1,
+            "is_win": false,
+            "is_loss": false,
+            "is_be": true,
+            "tags_arr": [],
+            "mistakes_arr": [],
+            "hold_minutes": null,
+            "risk_used": 1,
+            "legs_n": 0,
+            "weighted_exit": null
+          }
+        }
+      }
+    },
+    {
+      "label": "historical CLOSED record remains recordable at stop, no permission",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "trade": {
+            "id": 46,
+            "user_id": 1,
+            "account_id": 1,
+            "symbol": "TEST",
+            "asset_class": "stocks",
+            "direction": "long",
+            "status": "closed",
+            "opened_at": "2026-10-10T12:00:00.000Z",
+            "closed_at": "2026-10-10T12:01:40.000Z",
+            "entry": 100,
+            "exit": 99,
+            "stop": 99,
+            "target": null,
+            "size": 1,
+            "fees": 0,
+            "gross_pnl": -1,
+            "net_pnl": -1,
+            "risk_amount": 1,
+            "r_multiple": -1,
+            "planned_r": null,
+            "mae_r": -1,
+            "mfe_r": null,
+            "stop_moved": 0,
+            "exit_reason": "Stop loss",
+            "notes": "",
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "session": "overlap",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": null,
+            "adherence": null,
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "lesson": "",
+            "execution_notes": "",
+            "screenshot_url": "",
+            "manual_mae": null,
+            "manual_mfe": null,
+            "created_at": "2026-10-11 14:17:20",
+            "updated_at": "2026-10-11 14:17:20",
+            "legs": null,
+            "entries": null,
+            "strategy_version": null,
+            "session_label": "London/NY Overlap",
+            "hour": 13,
+            "weekday": "Sat",
+            "weekday_index": 5,
+            "day": "2026-10-10",
+            "close_day": "2026-10-10",
+            "dir_sign": 1,
+            "is_win": false,
+            "is_loss": true,
+            "is_be": false,
+            "tags_arr": [],
+            "mistakes_arr": [],
+            "hold_minutes": 2,
+            "risk_used": 1,
+            "legs_n": 0,
+            "weighted_exit": null
+          }
+        }
+      }
+    },
+    {
+      "label": "closed-to-open update cannot evade the new-entry gate",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "trade": {
+            "id": 46,
+            "user_id": 1,
+            "account_id": 1,
+            "symbol": "TEST",
+            "asset_class": "stocks",
+            "direction": "long",
+            "status": "open",
+            "opened_at": "2026-10-10T12:00:00.000Z",
+            "closed_at": null,
+            "entry": 100,
+            "exit": 99,
+            "stop": 99,
+            "target": null,
+            "size": 1,
+            "fees": 0,
+            "gross_pnl": 0,
+            "net_pnl": 0,
+            "risk_amount": 1,
+            "r_multiple": 0,
+            "planned_r": null,
+            "mae_r": -1,
+            "mfe_r": null,
+            "stop_moved": 0,
+            "exit_reason": "Stop loss",
+            "notes": "",
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "session": "overlap",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": null,
+            "adherence": null,
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "lesson": "",
+            "execution_notes": "",
+            "screenshot_url": "",
+            "manual_mae": null,
+            "manual_mfe": null,
+            "created_at": "2026-10-11 14:17:20",
+            "updated_at": "2026-10-11 14:17:20",
+            "legs": null,
+            "entries": null,
+            "strategy_version": null,
+            "session_label": "London/NY Overlap",
+            "hour": 13,
+            "weekday": "Sat",
+            "weekday_index": 5,
+            "day": "2026-10-10",
+            "close_day": null,
+            "dir_sign": 1,
+            "is_win": false,
+            "is_loss": false,
+            "is_be": true,
+            "tags_arr": [],
+            "mistakes_arr": [],
+            "hold_minutes": null,
+            "risk_used": 1,
+            "legs_n": 0,
+            "weighted_exit": null
+          }
+        }
+      }
+    },
+    {
+      "label": "historical correction is not blocked by current permission",
+      "passed": true
+    },
+    {
+      "label": "recording an actual close is never blocked by entry stop",
+      "passed": true
+    },
+    {
+      "label": "save-plan route rechecks cap, not just client snapshot",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "saved": 1,
+          "ids": [
+            1
+          ],
+          "reason": null
+        }
+      }
+    },
+    {
+      "label": "explicit research plan is recordable, never permission",
+      "passed": true
+    },
+    {
+      "label": "saveSignals cannot replay a formerly clear client/analysis payload through current stop",
+      "passed": false
+    },
+    {
+      "label": "atomic concurrent admission never exceeds the3-entry cap",
+      "passed": false,
+      "detail": {
+        "count": 8,
+        "statuses": [
+          200,
+          200,
+          200,
+          200,
+          200,
+          200
+        ]
+      }
+    },
+    {
+      "label": "remaining concurrent requests are guardrail stops, not duplicate admissions/errors",
+      "passed": true
+    },
+    {
+      "label": "entry gate still requires real authentication",
+      "passed": true
+    },
+    {
+      "label": "daily-state read error fails closed, no entry record",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "trade": {
+            "id": 55,
+            "user_id": 1,
+            "account_id": 1,
+            "symbol": "TEST",
+            "asset_class": "stocks",
+            "direction": "long",
+            "status": "open",
+            "opened_at": "2026-10-11T12:00:00.000Z",
+            "closed_at": null,
+            "entry": 100,
+            "exit": null,
+            "stop": 99,
+            "target": null,
+            "size": 1,
+            "fees": 0,
+            "gross_pnl": 0,
+            "net_pnl": 0,
+            "risk_amount": 1,
+            "r_multiple": 0,
+            "planned_r": null,
+            "mae_r": null,
+            "mfe_r": null,
+            "stop_moved": 0,
+            "exit_reason": "",
+            "notes": "",
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "session": "overlap",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": null,
+            "adherence": null,
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "lesson": "",
+            "execution_notes": "",
+            "screenshot_url": "",
+            "manual_mae": null,
+            "manual_mfe": null,
+            "created_at": "2026-10-11 14:17:20",
+            "updated_at": "2026-10-11 14:17:20",
+            "legs": null,
+            "entries": null,
+            "strategy_version": null,
+            "session_label": "London/NY Overlap",
+            "hour": 13,
+            "weekday": "Sun",
+            "weekday_index": 6,
+            "day": "2026-10-11",
+            "close_day": null,
+            "dir_sign": 1,
+            "is_win": false,
+            "is_loss": false,
+            "is_be": true,
+            "tags_arr": [],
+            "mistakes_arr": [],
+            "hold_minutes": null,
+            "risk_used": 1,
+            "legs_n": 0,
+            "weighted_exit": null
+          }
+        }
+      }
+    },
+    {
+      "label": "plan daily-state read error fails closed",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "saved": 1,
+          "ids": [
+            4
+          ],
+          "reason": null
+        }
+      }
+    },
+    {
+      "label": "daily state leaves no unhandled guardrail Promise rejection",
+      "passed": false,
+      "detail": [
+        "An owned active account is required"
+      ]
+    }
+  ],
+  "unhandled_rejections": [
+    "An owned active account is required"
+  ],
+  "scope": "Personal rule state/admission, declared history, fixed internal server clock; not market outcomes or external broker enforcement"
+}

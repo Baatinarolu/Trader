@@ -6,7 +6,7 @@ to write** unless the groups below are an exact partition of `MISMATCHES.md` —
 missing, none duplicated, none invented. That assertion is what makes "nothing left out"
 a property of the file rather than a promise.
 
-**75 done · 2 partial · 55 todo · 0 deliberate no-action · 132 total**
+**80 done · 2 partial · 50 todo · 0 deliberate no-action · 132 total**
 
 ## A — scoring, vetoes & the tradeability gate  (setup.js)
 
@@ -97,27 +97,27 @@ _12 of 14 done_
 
 ## D — risk & guardrails
 
-_3 of 13 done, 1 partial_
+_7 of 13 done, 1 partial_
 
 | item | ep | sev | status |
 |---|---|---|---|
 | M9 | Ep 21/31 | S1 | done |
 | M11 | Ep 27+26 | S1 | done |
-| M79 | Ep 21 | S2 | todo |
-| M80 | Ep 21 | S3 | todo |
+| M79 | Ep 21 | S2 | done |
+| M80 | Ep 21 | S3 | done |
 | M81 | Ep 21 | S3 | todo |
 | M82 | Ep 21 | S3 | todo |
-| M83 | Ep 22 | S2 | todo |
+| M83 | Ep 22 | S2 | done |
 | M84 | Ep 22 | S3 | todo |
 | M85 | Ep 22 | S3 | todo |
 | M94 | Ep 24 | S3 | todo |
 | M103 | Ep 27 | S2 | partial |
-| M113 | Ep 31 | S3 | todo |
+| M113 | Ep 31 | S3 | done |
 | M116 | tool: EdgeScore | S2 | done |
 
 ## E — journal, review & behaviour
 
-_3 of 29 done_
+_4 of 29 done_
 
 | item | ep | sev | status |
 |---|---|---|---|
@@ -138,7 +138,7 @@ _3 of 29 done_
 | M87 | Ep 23 | S3 | todo |
 | M88 | Ep 23 | S2 | todo |
 | M89 | Ep 23 | S3 | todo |
-| M90 | Ep 24 | S2 | todo |
+| M90 | Ep 24 | S2 | done |
 | M91 | Ep 24 | S2 | todo |
 | M92 | Ep 24 | S3 | todo |
 | M93 | Ep 24 | S3 | todo |

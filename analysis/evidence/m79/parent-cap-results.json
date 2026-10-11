@@ -1,0 +1,860 @@
+{
+  "app": "/tmp/m79-parent/extracted/tradejournal",
+  "pass": 2,
+  "fail": 36,
+  "results": [
+    {
+      "label": "additive schema has persisted cap",
+      "passed": false
+    },
+    {
+      "label": "existing/default account gets course intraday3",
+      "passed": false
+    },
+    {
+      "label": "POST stores explicit scalper5",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 3,
+            "user_id": 1,
+            "name": "Scalp",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 0,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "POST without cap defaults3",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 4,
+            "user_id": 1,
+            "name": "Default",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 0,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "PUT stores explicit5",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Main Account",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "unrelated rename retains5",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid PUT cap rejected: 0",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid POST cap rejected: 0",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 5,
+            "user_id": 1,
+            "name": "Invalid",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 0,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:43",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid PUT cap rejected: -1",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid POST cap rejected: -1",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 6,
+            "user_id": 1,
+            "name": "Invalid",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 0,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:43",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid PUT cap rejected: 101",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid POST cap rejected: 101",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 7,
+            "user_id": 1,
+            "name": "Invalid",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 0,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:43",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid PUT cap rejected: 2.5",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid POST cap rejected: 2.5",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 8,
+            "user_id": 1,
+            "name": "Invalid",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 0,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:43",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid PUT cap rejected: \"bad\"",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid POST cap rejected: \"bad\"",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 9,
+            "user_id": 1,
+            "name": "Invalid",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 0,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:43",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid PUT cap rejected: \"\"",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid POST cap rejected: \"\"",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 10,
+            "user_id": 1,
+            "name": "Invalid",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 0,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:43",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid PUT cap rejected: null",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid POST cap rejected: null",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 11,
+            "user_id": 1,
+            "name": "Invalid",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 0,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:43",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid PUT cap rejected: true",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "invalid POST cap rejected: true",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 12,
+            "user_id": 1,
+            "name": "Invalid",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 0,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:43",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "explicit bounded integer 1 roundtrips",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "explicit bounded integer 2 roundtrips",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "explicit bounded integer 3 roundtrips",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "explicit bounded integer 5 roundtrips",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "explicit bounded integer 100 roundtrips",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "account": {
+            "id": 1,
+            "user_id": 1,
+            "name": "Renamed",
+            "broker": "",
+            "account_type": "live",
+            "currency": "USD",
+            "starting_balance": 10000,
+            "current_balance": 10000,
+            "risk_per_trade_pct": 0.5,
+            "risk_unlocked": 0,
+            "daily_loss_limit_pct": 3,
+            "max_drawdown_pct": 10,
+            "profit_target_pct": 8,
+            "is_default": 1,
+            "archived": 0,
+            "created_at": "2026-10-11 14:08:42",
+            "prop_preset": null,
+            "prop_rules": null
+          },
+          "risk_note": null
+        }
+      }
+    },
+    {
+      "label": "another user cannot edit policy",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {
+          "error": "Account not found"
+        }
+      }
+    },
+    {
+      "label": "empty sample uses chosen3",
+      "passed": true
+    },
+    {
+      "label": "midday config edit cannot undo frozen3",
+      "passed": true
+    },
+    {
+      "label": "36 closed trades do not ratify12/day or rewrite preselected3",
+      "passed": false,
+      "detail": 6
+    },
+    {
+      "label": "historical cap exists only as labelled suggestion",
+      "passed": false,
+      "detail": {
+        "risk_p90_of_winners": 10,
+        "median_risk": 10,
+        "trade_cap_basis": "your profitable days average 12 trades",
+        "trades_past_cap": {
+          "count": 18,
+          "win_rate": 100
+        }
+      }
+    },
+    {
+      "label": "coach never ratifies history average12/day",
+      "passed": false,
+      "detail": 12
+    },
+    {
+      "label": "second account independently freezes scalper5",
+      "passed": false,
+      "detail": 3
+    },
+    {
+      "label": "next UTC day adopts explicitly chosen5, not old3/history6",
+      "passed": false,
+      "detail": "no stored daily policy"
+    },
+    {
+      "label": "simultaneous first checks agree on one daily cap",
+      "passed": false,
+      "detail": "no stored daily policy"
+    },
+    {
+      "label": "M11 floor30 stays30 with5 closed trades",
+      "passed": false,
+      "detail": {
+        "floor": 30,
+        "sufficient": false,
+        "cap": 3
+      }
+    },
+    {
+      "label": "settings expose cap with predecision guidance",
+      "passed": false
+    }
+  ],
+  "scope": "M83/M113 configuration/UTC day policy, no market-outcome claim"
+}

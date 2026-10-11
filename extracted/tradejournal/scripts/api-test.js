@@ -154,7 +154,9 @@ const check = (label, cond, detail) => { results.push({ ok: !!cond, label, detai
 
   console.log(results.map((r) => ` ${r.ok ? '✓' : '✗'} ${r.label}${r.detail ? '\n     ↳ ' + r.detail : ''}`).join('\n'));
     // ---------- scale-out legs ----------
-  const legTrade = await call('POST', '/trades', { symbol: 'NAS100', direction: 'long', status: 'open', entry: 20000, stop: 19900, target: 20300, size: 3, fees: 0 });
+  // This maths fixture records already-executed reality, not a new permit
+  // after the preceding account/day stop. Journal deletion does not reset it.
+  const legTrade = await call('POST', '/trades', { record_only: true, symbol: 'NAS100', direction: 'long', status: 'open', entry: 20000, stop: 19900, target: 20300, size: 3, fees: 0 });
   const legClosed = await call('POST', `/trades/${legTrade.trade.id}/close`, {
     legs: [{ pct: 50, price: 20100, reason: 'T1' }, { pct: 25, price: 20200, reason: 'T2' }, { pct: 25, price: 20250, reason: 'runner' }],
     exit_reason: 'Target',
@@ -199,9 +201,11 @@ const check = (label, cond, detail) => { results.push({ ok: !!cond, label, detai
   check('a test notification reports failure honestly instead of throwing', notifyTest.ok === false && notifyTest.result, JSON.stringify(notifyTest.result).slice(0, 90));
   check('a channel can be deleted', (await call('DELETE', `/notify/channels/${chan.id}`)).ok === true);
 
-  // ---------- refined (MTF) plan execution: save → read back ----------
+  // ---------- refined (MTF) research-plan recording: save → read back ----------
+  // This preserves levels/serialization without pretending the earlier day stop
+  // vanished. Dedicated guardrail probes test prospective permissions separately.
   const planSave = await call('POST', '/bots/signals/save-plan', {
-    symbol: 'XAUUSD', timeframe: '15m', entry: 4000, stop: 3990,
+    research_only: true, symbol: 'XAUUSD', timeframe: '15m', entry: 4000, stop: 3990,
     targets: [{ price: 4020 }, { price: 4050 }],
     entry_mode: 'mtf', mtf_tf: '5m', risk_atr: 1.2, note: 'api-test refined plan',
   });
@@ -210,7 +214,7 @@ const check = (label, cond, detail) => { results.push({ ok: !!cond, label, detai
   const stored = (planList.signals || []).find((x) => x.id === (planSave.ids || [])[0]);
   check('refined plan keeps its entry mode and LTF tag', !!stored && stored.entry_mode === 'mtf' && stored.mtf_tf === '5m', JSON.stringify(stored || {}).slice(0, 120));
   check('refined plan sizes R:R off the refined entry (2R / 5R)', !!stored && Math.abs(stored.rr_primary - 2) < 0.01 && Math.abs(stored.rr_final - 5) < 0.01, stored && `${stored.rr_primary} / ${stored.rr_final}`);
-  const badPlan = await call('POST', '/bots/signals/save-plan', { symbol: 'XAUUSD', entry: 4000, stop: 4000 });
+  const badPlan = await call('POST', '/bots/signals/save-plan', { research_only: true, symbol: 'XAUUSD', entry: 4000, stop: 4000 });
   check('a degenerate plan (entry = stop) is refused, not stored', badPlan.saved === 0, JSON.stringify(badPlan));
 
   // ---- leave the database as we found it: delete this run's workspace ----

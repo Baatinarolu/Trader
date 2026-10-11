@@ -1,0 +1,116 @@
+diff --git a/README.md b/README.md
+index df9ae3c..02ff9a2 100644
+--- a/README.md
++++ b/README.md
+@@ -11,6 +11,15 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+ 
+ ---
+ 
++## Personal-rule admission
++
++New trade/reopen and prospective plan actions now recheck scoped personal rules
++server-side. A known stop needs a recorded reason; an unavailable state cannot be
++waived. Honest journal corrections/deletions remain possible but do not replenish
++the durable admission count. See [the guardrails guide](docs/GUARDRAILS.md) for UTC
++cap selection, record-only/research modes, limits and remaining scope. **No broker
++is connected and an app admission is not a market-validated order.**
++
+ ## What it does
+ 
+ | Area | What you get |
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+new file mode 100644
+index 0000000..b9975ab
+--- /dev/null
++++ b/docs/GUARDRAILS.md
+@@ -0,0 +1,90 @@
++# Personal guardrails, recording and reasoned exceptions
++
++These rules govern **this app's prospective trade/plan actions**. There is no broker
++connection: an app admission is not a broker order, reusable permission or proof
++that manually entered levels currently match the market.
++
++## Select a cap before the rule day
++
++In **Settings → Accounts**, choose `max_trades_day`. The default is **3**. The
++course advises roughly **3 intraday / 5 scalping** (also a 2-entry example); those
++are guidance, not a universal maximum. The app accepts integers **1–100**.
++
++The first guardrail check/admission freezes that account's cap for the **UTC rule
++day**. Editing the setting afterward selects the next day's cap, not more entries
++for the current day. Historical profitable-day counts are suggestions only and
++cannot raise the operative cap automatically. This is **not user-timezone rollover**.
++
++## What stops a prospective action
++
++- The preselected daily entry cap, including open positions and reopen attempts.
++- The existing consecutive-loss/day-realised-loss limits. Percentage loss uses
++  starting balance plus P&L closed before the day, not floating P&L.
++- The existing **30-minute** post-loss cooldown (the course says at least 10).
++- The next **full entry-timeframe candle** after a loss. Its exclusion ends at
++  `ceil(loss_time / bar_duration) * bar_duration + bar_duration`. A loss exactly
++  on a boundary belongs to the candle that just closed. This is a server-clock
++  boundary, **not confirmation from a live market feed**.
++- An unavailable account/history/rule state: it grants no permission and cannot
++  be reason-waived. A supported entry TF is required after a recent loss.
++
++Supported TFs: `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `1d`, `1wk`. The two-week
++missing-TF lookback and treatment of older undated closures are implementation
++policies, not durations quoted from the course. A closed-today record with an
++invalid close timestamp, or non-positive day-start equity, makes permission
++unavailable until repaired.
++
++## Honest corrections do not replenish admissions
++
++Successful new entries/reopens and their counter update share one database WRITE
++transaction. Admission records have **no journal-trade foreign key**. The observed
++entry count is a monotonic floor; observed day cap/loss/streak stops last until UTC
++rollover. Previously observed loss timestamps still drive cooldown/candle expiry,
++including across midnight.
++
++You can correct dates/P&L, close, or delete journal rows. The corrected journal
++truth remains visible, but it does not erase a stop that the app already observed
++or refund a server admission. A stopped entry can proceed only as the separately
++recorded, fresh reasoned exception below. Time stops still expire at their actual
++boundaries; they are not permanent day locks.
++
++Saved/copied plans are not executed positions and do **not** consume a trade-entry
++slot. Their current personal-rule check is action-scoped and cannot be reused as a
++later trade permit. Every prospective trade/reopen is checked again server-side.
++
++## Reasoned exceptions
++
++A **known** stop gives an explicitly gray, reason-required action. Its dialog shows
++the violated rules; blank/whitespace reasons cannot confirm, and Cancel writes
++nothing. An **unknown** state disables prospective actions instead.
++
++The server accepts plain text up to **2,000 submitted characters**, trims it, and
++records the reason with the fresh stopped snapshot and linked action in one
++transaction. Failure to persist the audit rolls back the action. The exception
++applies to that one action only, cannot waive a technical candidate veto, and
++cannot unlock the rest of the day. An unnecessary reason submitted while clear
++is not falsely labelled an override; an invalid/no-op plan grants no permission.
++
++## Recordkeeping is not permission
++
++Use **Record only** for an already-executed open position. Historical closed
++entries, closes, corrections and imports remain recordable, including during a
++permission-read outage. A record-only write has no prospective permission. JSON/
++CSV imports carry no invented historical admission or violation snapshot.
++
++Use **research-only** for a retrospective plan. Legacy rows keep NULL admission
++provenance: migration does not guess whether old trades broke rules. Where a
++historical write captures a rule snapshot, it is explicitly **recording-time state**,
++not an inferred entry-time violation.
++
++Day review displays immutable observed rule details, blocked attempts and override
++reasons, scoped to user/account/UTC day. Deleting trades or changing settings does
++not rewrite those captures. An empty history does not prove past compliance.
++
++## Scope still open
++
++This change does not implement the profit stop, behavioural resize, adaptive
++sizing, news fail-closed policy or the remaining time-window finding. It does not
++change entry models, target/stop geometry, RR floors, grade policies, the course's
++30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
++edge, win-rate improvement, live-provider or production-deployment claim is made.

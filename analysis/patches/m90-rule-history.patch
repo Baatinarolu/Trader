@@ -1,0 +1,384 @@
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 1d22619..efe9ff7 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -42,6 +42,11 @@
+           </div>`).join('');
+       }
+       listCol.appendChild(list);
++      const captured = U.h('div', {class:'card',style:'margin-top:14px'});
++      captured.innerHTML = `<div class="card-head"><h3>Captured guardrail days (UTC)</h3></div>
++        ${(entries.guardrail_days || []).map(d=>`<div class="row-between" style="padding:8px"><span class="mono">${U.esc(d.rule_date)} · ${d.events} events · ${d.overrides || 0} overrides</span><button class="btn xs ghost" data-open="${U.esc(d.rule_date)}">Review rules & reasons</button></div>`).join('') || '<div class="empty">No stops captured yet. Older violations are not inferred or backfilled.</div>'}`;
++      captured.addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(b)openEditor(b.dataset.open,root);});
++      listCol.appendChild(captured);
+       layout.appendChild(listCol);
+ 
+       /* goals column */
+@@ -111,6 +116,19 @@
+     });
+   }
+ 
++  /** Historical snapshots, not a rerun against today's changed settings. */
++  Views.guardrailHistory = function(events = []) {
++    const node = U.h('div',{class:'card',style:'margin-top:14px'});
++    node.innerHTML = `<div class="card-head"><h3>Guardrail history — UTC rule day</h3></div>
++      <div class="tiny muted">Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Recording-time flags do not infer what happened at a historical entry.</div>
++      ${events.length ? `<div class="table-wrap"><table><thead><tr><th>Captured at (UTC)</th><th>Account / action</th><th>Violated rule(s)</th><th>Reason / decision</th></tr></thead><tbody>
++        ${events.map(ev=>`<tr><td class="mono tiny">${U.esc(ev.observed_at)}</td>
++          <td>${U.esc(ev.account_id == null ? 'account removed' : '#'+ev.account_id)} · ${U.esc(ev.action)}<br><span class="tiny muted">${U.esc(ev.kind)}${ev.entity_type && ev.entity_id ? ' · '+U.esc(ev.entity_type)+' #'+U.esc(ev.entity_id) : ''}</span></td>
++          <td class="tiny">${(ev.snapshot?.breaches || []).map(b=>`<b>${U.esc(b.rule)}</b>: ${U.esc(b.detail)}`).join('<br>') || U.esc(ev.snapshot?.message || 'No known stop in the captured snapshot.')}</td>
++          <td class="tiny">${ev.reason ? `<b>Override reason:</b> ${U.esc(ev.reason)}` : ev.kind==='journal_record' ? 'Recording-time observation only; no execution permission.' : 'No override taken.'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No captured guardrail events for this day. This does not prove that older trades followed the rules.</div>'}`;
++    return node;
++  };
++
+   async function openEditor(dateISO, root) {
+     const day = await API.get('/journal/' + dateISO);
+     const e = day.entry || {};
+@@ -139,6 +157,7 @@
+         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    body.appendChild(Views.guardrailHistory(day.guardrail_events || []));
+     global.App.modal({
+       title: 'Day review — ' + dateISO, body, wide: true,
+       actions: [{ label: 'Cancel', ghost: true }, {
+diff --git a/src/bots/correction.js b/src/bots/correction.js
+index 5fd713e..c638dfe 100644
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
+@@ -512,7 +512,9 @@ async function dailyState(userId, { accountId = null, store = db, nowMs = Date.n
+   // M79: this was a Promise used as though it were resolved rule numbers.
+   const g = await guardrails(userId, { accountId: account.id, store, nowMs });
+   const rows = await store.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY opened_at ASC').all(userId,account.id);
+-  return Guards.evaluate({account,guardrails:g,rows,nowMs,entryTf,forEntry});
++  const daily = Guards.evaluate({account,guardrails:g,rows,nowMs,entryTf,forEntry});
++  await Guards.observe(store,userId,daily);
++  return daily;
+ }
+ 
+ /* ═════════════════════════════════════════════════ 4. PER-TRADE FEEDBACK */
+diff --git a/src/bots/guardrails.js b/src/bots/guardrails.js
+index 47e46de..594604e 100644
+--- a/src/bots/guardrails.js
++++ b/src/bots/guardrails.js
+@@ -102,6 +102,48 @@ function applyToSetups(setups, daily) {
+   return {...setups,candidates,execution_permission:permission,verdict:{...setups.verdict,
+     market_action:setups.verdict.market_action || setups.verdict.action,action:'NO TRADE',dir:0,personal_blocked:true,headline:daily.message}};
+ }
++/** Persist only actually observed stops, deduplicated without the observation
++ * clock so polling doesn't manufacture a new violation every second. */
++async function observe(store,userId,daily) {
++  if (daily.status !== 'stop') return;
++  const crypto = require('crypto');
++  const key = crypto.createHash('sha256').update(JSON.stringify([userId,daily.account_id,daily.date,daily.breaches,daily.today])).digest('hex');
++  await logEvent(store,userId,daily,{kind:'breach',action:'state_observed',dedupeKey:key});
++}
++function snapshotFields(daily,state = 'admitted') {
++  return {entry_permission:state,guardrail_snapshot:JSON.stringify({...daily,
++    capture_basis:state==='record_only' ? 'recording-time state, not an inferred historic entry violation' : 'fresh server admission state, valid only for this recorded action'})};
++}
++async function logEvent(store,userId,daily,{kind,action,entityType=null,entityId=null,reason=null,dedupeKey=null}) {
++  await store.prepare(`INSERT OR IGNORE INTO guardrail_events
++    (user_id,account_id,rule_date,observed_at,kind,action,entity_type,entity_id,reason,snapshot,dedupe_key) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
++    .run(userId,daily.account_id || null,daily.date,daily.evaluated_at,kind,action,entityType,entityId,reason,JSON.stringify(daily),dedupeKey);
++}
++async function eventsForDay(store,userId,date,accountId = null) {
++  const rows = accountId == null
++    ? await store.prepare('SELECT * FROM guardrail_events WHERE user_id=? AND rule_date=? ORDER BY id').all(userId,date)
++    : await store.prepare('SELECT * FROM guardrail_events WHERE user_id=? AND rule_date=? AND account_id=? ORDER BY id').all(userId,date,accountId);
++  return rows.map(r=>{let snapshot;try{snapshot=JSON.parse(r.snapshot);}catch{snapshot={status:'invalid_record',breaches:[],message:'Stored snapshot could not be decoded; not inferred.'};}return {...r,snapshot};});
++}
++/** Journal/import writes are not entry permission. A recording-time snapshot
++ * may be unknown and is explicitly labelled rather than banning honest history. */
++async function record(userId,options,operation) {
++  const {db} = require('../db');
++  return db.tx(async transaction => {
++    const store = db.transactionStore(transaction);
++    let daily;
++    try { daily = await require('./correction').dailyState(userId,{...options,store,forEntry:false}); }
++    catch { daily = unavailable({accountId:options.accountId}); }
++    const out = await operation(store,daily);
++    if (daily.status==='stop' || daily.status==='unknown') await logEvent(store,userId,daily,{kind:'journal_record',action:options.action || 'record_only',entityType:options.entityType || null,entityId:options.entityId || out?.id || null});
++    // A failed permission READ must not prevent honest journal recording. If a
++    // post-record read fails, preserve an explicitly unknown observation instead.
++    try { await require('./correction').dailyState(userId,{...options,store,forEntry:false}); }
++    catch { await logEvent(store,userId,unavailable({accountId:options.accountId}),{kind:'journal_record',action:'post_record_state_unavailable',entityType:options.entityType || null,entityId:options.entityId || out?.id || null}); }
++    return out;
++  });
++}
++
+ function admissionError(daily) {
+   const e = new Error(daily.message); e.status = daily.status === 'unknown' ? 503 : 409;
+   e.code = daily.status === 'unknown' ? 'guardrail_unavailable' : 'guardrail_stop'; e.daily = daily; return e;
+@@ -111,14 +153,26 @@ function admissionError(daily) {
+  */
+ async function admit(userId, options, operation) {
+   const {db} = require('../db');
+-  return db.tx(async transaction => {
+-    const store = db.transactionStore(transaction);
+-    let daily;
+-    try { daily = await require('./correction').dailyState(userId,{...options,store,forEntry:true}); }
+-    catch { daily = unavailable({accountId:options.accountId}); }
+-    if (isBlocked(daily)) throw admissionError(daily);
+-    return operation(store,daily);
+-  });
++  let out;
++  try {
++    out = await db.tx(async transaction => {
++      const store = db.transactionStore(transaction);
++      let daily;
++      try { daily = await require('./correction').dailyState(userId,{...options,store,forEntry:true}); }
++      catch { daily = unavailable({accountId:options.accountId}); }
++      if (isBlocked(daily)) {
++        if (daily.status==='stop') await logEvent(store,userId,daily,{kind:'blocked_attempt',action:options.action || 'entry',entityType:options.entityType || null,entityId:options.entityId || null});
++        return {rejected:daily}; // commit the audit WITHOUT a trade/signal write
++      }
++      const result = await operation(store,daily);
++      await require('./correction').dailyState(userId,{...options,store,forEntry:false});
++      return {result};
++    });
++  } catch {
++    throw admissionError(unavailable({accountId:options.accountId}));
++  }
++  if (out.rejected) throw admissionError(out.rejected);
++  return out.result;
+ }
+ module.exports = { DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
+-  evaluate, unavailable, isBlocked, applyToSetups, admissionError, admit };
++  evaluate, unavailable, isBlocked, applyToSetups, admissionError, admit, observe, snapshotFields, logEvent, eventsForDay, record };
+diff --git a/src/bots/index.js b/src/bots/index.js
+index bdede4c..0fd8b07 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -737,7 +737,7 @@ async function ensureSignalsTable() {
+  * re-derive anything from a fresh analysis — it stores exactly what the
+  * trader was shown, so the bot can be graded on it later.
+  */
+-async function insertPlan(userId, p = {}, store = db) {
++async function insertPlan(userId, p = {}, store = db, stamp = {}) {
+   const symbol = String(p.symbol || '').toUpperCase();
+   const timeframe = String(p.timeframe || '15m');
+   const entry = Number(p.entry), stop = Number(p.stop);
+@@ -760,8 +760,8 @@ async function insertPlan(userId, p = {}, store = db) {
+   const rr = (price) => (price == null ? null : Math.round((Math.abs(price - entry) / risk) * 100) / 100);
+   const info = await store.prepare(`INSERT INTO bot_signals
+     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final,
+-     mechanics, sentiment, entry_mode, mtf_tf, risk_atr, entry_model, entry_tf, entry_evidence)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++     mechanics, sentiment, entry_mode, mtf_tf, risk_atr, entry_model, entry_tf, entry_evidence, guardrail_snapshot, entry_permission)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     userId, symbol, timeframe, dir, dir > 0 ? 'long' : 'short',
+     p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.target_policy || p.p_win == null ? null : Number(p.p_win),
+     entry, stop, t1, t2, rr(t1), rr(t2),
+@@ -771,13 +771,13 @@ async function insertPlan(userId, p = {}, store = db) {
+         + (p.entry_preference ? EntryPreference.note(p.entry_preference) : '') + (p.note || '')).slice(0, 400) : null,
+     p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
+     Number.isFinite(Number(p.risk_atr)) ? Number(p.risk_atr) : null,
+-    model, p.entry_tf || null, evidence,
++    model, p.entry_tf || null, evidence, stamp.guardrail_snapshot || null, stamp.entry_permission || null,
+   );
+   return { saved: 1, ids: [info.lastInsertRowid] };
+ }
+ 
+ /** Store the actionable plan(s) from an analysis so the bot can be graded later. */
+-async function insertSignals(userId, payload, store = db) {
++async function insertSignals(userId, payload, store = db, stamp = {}) {
+   const cands = (payload.setups && payload.setups.candidates ? payload.setups.candidates : [])
+     .filter((c) => c.ok === true && c.levels && c.levels.entry_status !== 'invalid')
+     .slice(0, 2);
+@@ -790,8 +790,8 @@ async function insertSignals(userId, payload, store = db) {
+   const td = payload.topdown || null;
+   const ins = await store.prepare(`INSERT INTO bot_signals
+     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final, mechanics, sentiment,
+-     method_state, method_dir, method_blocked, entry_model, entry_tf, entry_evidence)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
++     method_state, method_dir, method_blocked, entry_model, entry_tf, entry_evidence, guardrail_snapshot, entry_permission)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+   let saved = 0;
+   const out = [];
+   for (const c of cands) {
+@@ -808,7 +808,7 @@ async function insertSignals(userId, payload, store = db) {
+       L.target_policy ? ((L.stop_policy ? Stops.note(L.stop_policy) : '')
+         + (c.entry_preference ? EntryPreference.note(c.entry_preference) : '') + `Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
+       td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
+-      model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
++      model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf), stamp.guardrail_snapshot || null, stamp.entry_permission || null,
+     );
+     out.push(info.lastInsertRowid);
+     saved++;
+@@ -818,18 +818,18 @@ async function insertSignals(userId, payload, store = db) {
+ 
+ async function savePlan(userId,p = {}) {
+   await ensureSignalsTable();
+-  if (p.research_only === true) return {...await insertPlan(userId,p),permission:{allowed:false,state:'research_only',can_override:false}};
+-  return Guards.admit(userId,{accountId:p.account_id || null,entryTf:p.entry_tf || p.timeframe},
+-    async (store,daily) => ({...await insertPlan(userId,p,store),permission:daily.permission}));
++  if (p.research_only === true) return {...await insertPlan(userId,p,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
++  return Guards.admit(userId,{accountId:p.account_id || null,entryTf:p.entry_tf || p.timeframe,action:'save_plan',entityType:'signal'},
++    async (store,daily) => ({...await insertPlan(userId,p,store,Guards.snapshotFields(daily)),permission:daily.permission}));
+ }
+ async function saveSignals(userId,payload,options = {}) {
+   await ensureSignalsTable();
+   const marketCandidates = (payload.setups?.candidates || []).map(c=>c.market_ok === undefined ? c : {...c,ok:c.market_ok});
+   const market = {...payload,setups:{...payload.setups,candidates:marketCandidates}};
+   if (!marketCandidates.some(c=>c.ok && c.levels && c.levels.entry_status!=='invalid')) return {saved:0,reason:'no actionable setup in this analysis'};
+-  if (options.research_only === true) return {...await insertSignals(userId,market),permission:{allowed:false,state:'research_only',can_override:false}};
+-  return Guards.admit(userId,{accountId:options.accountId || payload.daily?.account_id || null,entryTf:candidateTf(market.setups,payload.topdown || {},payload.timeframe)},
+-    async (store,daily) => ({...await insertSignals(userId,market,store),permission:daily.permission}));
++  if (options.research_only === true) return {...await insertSignals(userId,market,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
++  return Guards.admit(userId,{accountId:options.accountId || payload.daily?.account_id || null,entryTf:candidateTf(market.setups,payload.topdown || {},payload.timeframe),action:'save_signal',entityType:'signal'},
++    async (store,daily) => ({...await insertSignals(userId,market,store,Guards.snapshotFields(daily)),permission:daily.permission}));
+ }
+ 
+ async function listSignals(userId, { status = null, limit = 50 } = {}) {
+diff --git a/src/db.js b/src/db.js
+index c63f5d0..ed012d7 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -219,6 +219,23 @@ CREATE TABLE IF NOT EXISTS instruments (
+   unit TEXT DEFAULT 'units',
+   UNIQUE(user_id, symbol)
+ );
++-- M90 append-only application audit. Deleted trades cannot erase the observed
++-- rule day or the original decision snapshot. No history is fabricated/backfilled.
++CREATE TABLE IF NOT EXISTS guardrail_events (
++  id INTEGER PRIMARY KEY AUTOINCREMENT,
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
++  rule_date TEXT NOT NULL,
++  observed_at TEXT NOT NULL,
++  kind TEXT NOT NULL,
++  action TEXT NOT NULL,
++  entity_type TEXT,
++  entity_id INTEGER,
++  reason TEXT,
++  snapshot TEXT NOT NULL,
++  dedupe_key TEXT UNIQUE
++);
++CREATE INDEX IF NOT EXISTS idx_guardrail_events_day ON guardrail_events(user_id,rule_date,account_id,id);
+ CREATE TABLE IF NOT EXISTS journal_entries (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -464,6 +481,10 @@ async function migrate() {
+   // 1 % absolute maximum. Persisted so the write path and every later read agree.
+   await add('accounts', 'risk_unlocked', 'INTEGER DEFAULT 0');
+   await add('accounts', 'max_trades_day', 'INTEGER NOT NULL DEFAULT 3');
++  for (const table of ['trades','bot_signals']) {
++    await add(table,'guardrail_snapshot','TEXT');
++    await add(table,'entry_permission','TEXT');
++  }
+   // M102: which version of its strategy a trade was taken under. NULL means the trade
+   // predates versioning or has no strategy at all - it is never guessed at read time.
+   await add('trades', 'strategy_version', 'INTEGER');
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 4009784..9f0637a 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -341,14 +341,14 @@ router.post('/trades', requireAuth, async (req, res) => {
+   let id, permission;
+   try {
+     if (trade.status === 'open' && body.record_only !== true) {
+-      const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf},async (store,daily) => {
+-        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at};
++      const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade'},async (store,daily) => {
++        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
+         return {id:await T.insert(store,req.user.id,entry),permission:daily.permission};
+       });
+       id = out.id; permission = out.permission;
+     } else {
+-      id = await T.insert(db,req.user.id,{...trade,account_id:accountId});
+-      permission = {allowed:false,state:'record_only',can_override:false};
++      const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>({id:await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')})}));
++      id = out.id; permission = {allowed:false,state:'record_only',can_override:false};
+     }
+   } catch(e) {
+     if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
+@@ -376,7 +376,7 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   if (!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id)) return res.status(404).json({error:'Account not found'});
+   try {
+     if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
+-      await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf},(store,daily)=>T.update(store,req.user.id,id,{...trade,account_id:accountId,opened_at:daily.evaluated_at}));
++      await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id},(store,daily)=>T.update(store,req.user.id,id,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
+     } else await T.update(db,req.user.id,id,{...trade,account_id:accountId});
+   } catch(e) {
+     if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
+@@ -410,7 +410,7 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+   };
+   const instruments = await instrumentMap(req.user.id);
+   const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
+-  await T.update(db, req.user.id, id, trade);
++  await Guards.record(req.user.id,{accountId:existing.account_id,entryTf:trade.entry_tf,action:'journal_close',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,trade));
+   const fresh = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
+   if (req.body && req.body.notify !== false) {
+     notifyEvent(req.user.id, 'trade_closed', `${trade.symbol} ${trade.direction} closed ${fresh.net_pnl >= 0 ? '+' : ''}${fresh.net_pnl} (${fresh.r_multiple}R)${trade.legs_n ? ` · ${trade.legs_n} scale-outs` : ''}`, { trade_id: id, symbol: trade.symbol, net_pnl: fresh.net_pnl, r_multiple: fresh.r_multiple }).catch(() => {});
+@@ -560,13 +560,15 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+ /* ----------------------------------------------------------------- journal */
+ router.get('/journal', requireAuth, async (req, res) => {
+   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
+-  res.json({ entries: rows });
++  const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
++  res.json({ entries: rows, guardrail_days:guardrailDays });
+ });
+ router.get('/journal/:date', requireAuth, async (req, res) => {
+   const row = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, req.params.date);
+   const tz = (await settingsOf(req)).timezone;
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)`).all(req.user.id, req.params.date)).map((t) => P.decorate(t, tz));
+-  res.json({ entry: row || null, trades });
++  const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
++  res.json({ entry: row || null, trades, guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+@@ -1109,6 +1111,8 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+           status: (map.exit > -1 && String(r[map.exit] || '').trim()) ? 'closed' : 'open',
+         }, { instrument: spec, tz });
+         trade.account_id = accountId;
++        trade.entry_permission = 'record_only';
++        trade.guardrail_snapshot = null;
+         if (map.net > -1 && String(r[map.net] || '').trim() && !isNaN(Number(String(r[map.net]).replace(/[^0-9.\-]/g, '')))) {
+           const net = Number(String(r[map.net]).replace(/[^0-9.\-]/g, ''));
+           if (net !== 0) {
+@@ -1171,6 +1175,8 @@ router.post('/import/json', requireAuth, async (req, res) => {
+       const spec = instruments[String(t.symbol).toUpperCase()] || null;
+       const trade = T.normalise(t, { instrument: spec, tz });
+       trade.account_id = accountMap[t.account_id] || (def ? def.id : null);
++      trade.entry_permission = 'record_only';
++      trade.guardrail_snapshot = null;
+       if (!trade.account_id) continue;
+       collected.push(trade);
+       inserted++;
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 69aaef0..4f0ce39 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -273,7 +273,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       includePrediction: req.body && req.body.prediction !== false,
+     });
+     const saved = await Bots.saveSignals(req.user.id, payload, {accountId:req.body?.account_id || null,research_only:req.body?.research_only === true});
+-    res.json({ ok: true, saved, headline: payload.headline, setups: payload.setups.verdict });
++    res.json({ ok: true, saved, permission:saved.permission || null, headline: payload.headline, setups: payload.setups.verdict });
+   }));
+ 
+   /**
+@@ -304,7 +304,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
+       account_id:b.account_id || null, research_only:b.research_only === true, mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
+     });
+-    res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
++    res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null,permission:out.permission || null });
+   }));
+ 
+   router.post('/signals/resolve', requireAuth, wrap(async (req, res) => {
+diff --git a/src/trades.js b/src/trades.js
+index efa0873..3f27a9e 100644
+--- a/src/trades.js
++++ b/src/trades.js
+@@ -171,7 +171,7 @@ const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction',
+   'entry', 'exit', 'stop', 'target', 'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'planned_r',
+   'mae_r', 'mfe_r', 'stop_moved', 'exit_reason', 'strategy_id', 'strategy_name', 'setup_grade', 'session', 'timeframes',
+   'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags', 'thesis', 'lesson', 'execution_notes',
+-  'strategy_version', 'entry_model', 'entry_tf', 'entry_evidence',
++  'strategy_version', 'entry_model', 'entry_tf', 'entry_evidence', 'guardrail_snapshot', 'entry_permission',
+   'notes', 'screenshot_url', 'legs', 'entries'];
+ 
+ async function insert(db, userId, t) {

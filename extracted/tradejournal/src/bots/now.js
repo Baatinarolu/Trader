@@ -23,7 +23,8 @@
 
 const SMC = require('./smc');
 const EntryPreference = require('./entry-preference');
-const Setup = require('./setup');   // M39: one clock, one list of windows
+const Setup = require('./setup');
+const Guards = require('./guardrails');   // M39: one clock, one list of windows
 const MS = { m: 60000, h: 3600000, d: 86400000, w: 604800000 };
 const TF_MS = { '1m': MS.m, '5m': 5 * MS.m, '15m': 15 * MS.m, '30m': 30 * MS.m, '1h': MS.h, '4h': 4 * MS.h, '1d': MS.d, '1w': MS.w };
 
@@ -126,6 +127,7 @@ function build(p = {}) {
 
   /* ------------------------------------------------------- the one call --- */
   const direction = num(td.direction) || 0;
+  const personalBlocked = Guards.isBlocked(daily);
   const blocked = !!td.blocked;
   const plan = td.crt_plan || null;
   const bias = (td.layers && td.layers.bias) || {};
@@ -156,7 +158,11 @@ function build(p = {}) {
   let order = null;
   let invalidate = '';
 
-  if (blocked) {
+  if (personalBlocked) {
+    action = 'NO TRADE';
+    headline = `${symbol} ${tf}: ${daily.message}`;
+    invalidate = 'A personal stop is not a directional market opinion. Recheck at entry; a known stop requires a recorded override reason.';
+  } else if (blocked) {
     const block = (td.conflicts || []).find((c) => c.blocks_trade) || null;
     action = /chase/i.test(block ? block.kind : '') ? 'WAIT' : 'NO TRADE';
     headline = `${symbol} ${tf}: do not trade this right now. ${td.headline || ''}`.trim();
@@ -381,7 +387,7 @@ function build(p = {}) {
   // the sub-floor warning is rendered as its own red block under the order — it is
   // not repeated in the guard list (measured in the browser: both printed)
   if (news && news.blackout) guards.push({ level: 'block', text: news.blackout });
-  if (daily && daily.status && daily.status !== 'clear') guards.push({ level: 'warn', text: daily.message || String(daily.status) });
+  if (daily && daily.status && daily.status !== 'clear') guards.push({ level: personalBlocked ? 'block' : 'warn', text: daily.message || String(daily.status) });
   if (freshness.state === 'stale' || freshness.state === 'aging') guards.push({ level: 'warn', text: freshness.note });
   if (!kzNow && !blocked && direction) guards.push({ level: 'info', text: 'Outside every killzone: the playlist only trades the London and New York windows.' });
 
@@ -422,7 +428,8 @@ function build(p = {}) {
     guards,
     other_side: otherSide,
     conviction: convictionTier,
-    full_risk: fullRisk,
+    full_risk: fullRisk && !personalBlocked,
+    ...(daily ? { execution_permission: { ...daily.permission, account_id:daily.account_id, evaluated_at:daily.evaluated_at, breaches:daily.breaches } } : {}),
     steps_done: doneSteps,
     steps_total: (td.steps || []).length,
     pending_step: pendingStep ? { n: pendingStep.n, title: pendingStep.title, text: pendingStep.text } : null,

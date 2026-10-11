@@ -554,3 +554,7 @@ fieldset,legend{border-color:var(--border)}
 
 /* a plan below the trader's own R:R floor: shown, never silently armed */
 .now-note.rr-warn{border-left:2px solid var(--red);background:rgba(217,84,103,.07);padding:6px 9px;margin-top:8px;color:var(--text)}
+
+/* M79/M80: a grey KNOWN stop opens the reason dialog. Unavailable checks are
+ * actually disabled and cannot be overridden. Server admission remains binding. */
+.btn.guardrail-stop { background: var(--bg-3); color: var(--muted-2); border-color: var(--border); border-style: dashed; }

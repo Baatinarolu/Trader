@@ -1,0 +1,89 @@
+
+Testing http://127.0.0.1:3000
+────────────────────────────────────────────────────────────────────────
+ ✓ POST /auth/register → 200
+ ✓ registration returns a session token
+ ✓ GET /bootstrap → 200
+ ✓ new user gets a default account
+ ✓ new user gets the starter playbook
+ ✓ instrument library loaded
+ ✓ POST /trades → 200
+ ✓ trade created with computed risk
+ ✓ MFE derived from mfe_price
+ ✓ MAE derived from mae_price (negative)
+ ✓ planned R computed from target/stop
+ ✓ session auto-assigned
+ ✓ POST /trades/17/close → 200
+ ✓ close computes gross P&L (200 pts × 2 contracts)
+ ✓ close computes net P&L after fees
+ ✓ close computes R-multiple
+ ✓ status flipped to closed
+ ✓ PUT /trades/17 → 200
+ ✓ update persists adherence + tags
+ ✓ POST /trades → 200
+ ✓ ES: risk = 8 pts × 3 contracts × $50 = $1,200
+ ✓ ES: short profit = 16 pts × 3 × $50 = $2,400 net of fees
+ ✓ POST /trades → 200
+ ✓ BTC: risk = 2500 × 0.5 = $1,250
+ ✓ BTC: (5,000 × 0.5 − $30 fees) ÷ $1,250 = 1.976R
+ ✓ POST /trades → 200
+ ✓ EURUSD: 30 pips risk on 0.5 lots = $150
+ ✓ GET /analytics → 200
+ ✓ analytics returns kpis
+ ✓ analytics returns per-trade points for charts
+ ✓ equity curve starts from starting balance
+ ✓ GET /coach → 200
+ ✓ coach runs on a tiny sample
+ ✓ GET /briefing → 200
+ ✓ briefing produces a risk plan
+ ✓ POST /tools/size → 200
+ ✓ size tool flags risk too small for 1 ES contract ($612.50 needed vs $375 allowed)
+ ✓ POST /tools/size → 200
+ ✓ size tool: $750 risk ÷ 12.25 pts ÷ $50 = 1 ES contract
+ ✓ size tool returns R:R and break-even win rate
+ ✓ POST /tools/expectancy → 200
+ ✓ expectancy tool: 45% at 2:1 = +0.35R
+ ✓ POST /import/csv → 200
+ ✓ CSV import inserted 3 trades
+ ✓ CSV import detected a symbol column
+ ✓ GET /trades?limit=500 → 200
+ ✓ imported XAUUSD short 2652.30 → 2644.10 is a +$328 win with correct direction
+ ✓ CSV export returns a header + rows
+ ✓ JSON backup contains trades + strategies
+ ✓ POST /journal → 200
+ ✓ GET /journal/2026-10-06 → 200
+ ✓ journal upsert + read back
+ ✓ POST /goals → 200
+ ✓ GET /goals → 200
+ ✓ goal created with live progress
+ ✓ POST /watchlist → 200
+ ✓ GET /watchlist → 200
+ ✓ watchlist upsert is case-insensitive on symbol
+ ✓ PUT /settings → 200
+ ✓ settings persist
+ ✓ POST /accounts → 200
+ ✓ GET /accounts → 200
+ ✓ second account created with stats
+ ✓ POST /instruments → 200
+ ✓ GET /instruments → 200
+ ✓ custom instrument added
+ ✓ GET /trades → 401
+ ✓ trades require auth (401)
+ ✓ GET /analytics → 401
+ ✓ forged token rejected
+ ✓ POST /trades → 400
+ ✓ trade without entry price rejected (400)
+ ✓ GET /market/news?limit=10 → 200
+ ✓ news endpoint responds
+ ✓ GET /market/quotes?symbols=EURUSD,BTCUSDT → 200
+ ✓ quotes endpoint responds
+ ✓ POST /trades/bulk-delete → 200
+ ✓ bulk delete works
+────────────────────────────────────────────────────────────────────────
+ ✗ POST /bots/signals/save-plan → 409 (expected 200) — {"error":"Stand down: 4 entries today — your preselected cap is 3.","code":"guardrail_stop","daily":{"date":"2026-10-11","timezone":"UTC","evaluated_at":"2026-10-11T15:12:58.985Z","account_id":9,"guar
+ ✗ refined plan saved to signals — {"error":"Stand down: 4 entries today — your preselected cap is 3.","code":"guardrail_stop","daily":{"date":"2026-10-11","timezone":"UTC","evaluated_at":"2026-10-11T15:12:58.985Z","account_id":9,"guardrails":{"max_risk_pct":1,"max_trades_day":3,"cooldown_min":30,"max_consecutive_losses":2,"daily_loss_limit_pct":3,"trade_cap_policy":{"max_trades_day":3,"selected_at":"2026-10-11T15:12:58.314Z","rule_date":"2026-10-11","timezone":"UTC"},"size_cap_note":null,"basis":"Defaults from the risk engine. 1 closed trades is below the 30-trade minimum the method requires before personal guardrails are derived — Ep 27: \"at least 30 to 50 minimum trades just to see anything meaningful\", and below that \"don't tweak the system at all\". These are NOT your personal numbers yet.","guardrails":{"max_risk_pct":1,"max_trades_day":3,"cooldown_min":30,"max_consecutive_losses":2,"daily_loss_limit_pct":3,"trade_cap_policy":{"max_trades_day":3,"selected_at":"2026-10-11T15:12:58.314Z","rule_date":"2026-10-11","timezone":"UTC"},"size_cap_note":null,"basis":"Default risk rules and the preselected account trade cap (not enough personal data yet)."},"stats":{"trades":1,"wins":1,"losses":0,"win_rate":100,"net":487.5,"expectancy_r":1.63,"total_r":1.63,"profit_factor":99,"avg_win_r":1.63,"avg_loss_r":0,"median_risk":300},"user":{"trades":1},"sample_sufficient":false,"min_trades_for_personal_guardrails":30},"today":{"trades":4,"closed":1,"realised":487.5,"r_sum":1.63,"avg_r":1.63,"loss_streak":0,"balance":10000,"loss_limit":300,"balance_basis":"day-start realised journal equity"},"persistence":{"entry_count_basis":"monotonic observed journal entries plus server admissions, not inferred historical permission","journal_entries":1,"retained_stops":["max_trades_day"]},"breaches":[{"rule":"max_trades_day","detail":"4 entries today — your preselected cap is 3."}],"status":"stop","remaining_trades":0,"post_loss":{"last_loss_trade_id":null,"last_loss_at":null,"entry_tf":"15m","entry_tf_required":false,"cooldown_until":null,"next_candle_until":null},"message":"Stand down: 4 entries today — your preselected cap is 3.","permission":{"allowed":false,"can_override":true,"state":"stopped"}}}
+ ✗ refined plan keeps its entry mode and LTF tag — {}
+ ✗ refined plan sizes R:R off the refined entry (2R / 5R)
+ ✗ POST /bots/signals/save-plan → 409 (expected 200) — {"error":"Stand down: 4 entries today — your preselected cap is 3.","code":"guardrail_stop","daily":{"date":"2026-10-11","timezone":"UTC","evaluated_at":"2026-10-11T15:12:59.006Z","account_id":9,"guar
+ ✗ a degenerate plan (entry = stop) is refused, not stored — {"error":"Stand down: 4 entries today — your preselected cap is 3.","code":"guardrail_stop","daily":{"date":"2026-10-11","timezone":"UTC","evaluated_at":"2026-10-11T15:12:59.006Z","account_id":9,"guardrails":{"max_risk_pct":1,"max_trades_day":3,"cooldown_min":30,"max_consecutive_losses":2,"daily_loss_limit_pct":3,"trade_cap_policy":{"max_trades_day":3,"selected_at":"2026-10-11T15:12:58.314Z","rule_date":"2026-10-11","timezone":"UTC"},"size_cap_note":null,"basis":"Defaults from the risk engine. 1 closed trades is below the 30-trade minimum the method requires before personal guardrails are derived — Ep 27: \"at least 30 to 50 minimum trades just to see anything meaningful\", and below that \"don't tweak the system at all\". These are NOT your personal numbers yet.","guardrails":{"max_risk_pct":1,"max_trades_day":3,"cooldown_min":30,"max_consecutive_losses":2,"daily_loss_limit_pct":3,"trade_cap_policy":{"max_trades_day":3,"selected_at":"2026-10-11T15:12:58.314Z","rule_date":"2026-10-11","timezone":"UTC"},"size_cap_note":null,"basis":"Default risk rules and the preselected account trade cap (not enough personal data yet)."},"stats":{"trades":1,"wins":1,"losses":0,"win_rate":100,"net":487.5,"expectancy_r":1.63,"total_r":1.63,"profit_factor":99,"avg_win_r":1.63,"avg_loss_r":0,"median_risk":300},"user":{"trades":1},"sample_sufficient":false,"min_trades_for_personal_guardrails":30},"today":{"trades":4,"closed":1,"realised":487.5,"r_sum":1.63,"avg_r":1.63,"loss_streak":0,"balance":10000,"loss_limit":300,"balance_basis":"day-start realised journal equity"},"persistence":{"entry_count_basis":"monotonic observed journal entries plus server admissions, not inferred historical permission","journal_entries":1,"retained_stops":["max_trades_day"]},"breaches":[{"rule":"max_trades_day","detail":"4 entries today — your preselected cap is 3."}],"status":"stop","remaining_trades":0,"post_loss":{"last_loss_trade_id":null,"last_loss_at":null,"entry_tf":null,"entry_tf_required":false,"cooldown_until":null,"next_candle_until":null},"message":"Stand down: 4 entries today — your preselected cap is 3.","permission":{"allowed":false,"can_override":true,"state":"stopped"}}}
+115 passed, 6 failed

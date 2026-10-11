@@ -434,13 +434,17 @@ async function call(path, opts = {}) {
         : kind === 3 ? (dir === 'long' ? entry + risk * 0.4 : entry - risk * 0.4) : (dir === 'long' ? entry + risk * 3 : entry - risk * 3);
       const mae = kind === 1 ? (dir === 'long' ? entry - risk * 1.25 : entry + risk * 1.25)   // held past 1R
         : (dir === 'long' ? entry - risk * 0.35 : entry + risk * 0.35);
-      const day = String(1 + (j % 12)).padStart(2, '0');
+      // Synthetic historical JOURNAL samples, not 120 fresh entry admissions.
+      // Keep every value/floor/assertion, but record matching historical OPEN/
+      // CLOSE timestamps within the 180d window and no prospective permission.
+      const day = new Date(Date.now()-(20+(j%12))*86400000).toISOString().slice(0,10);
+      const openedAt = day+'T08:00:00.000Z', closedAt = day+'T09:00:00.000Z';
       batch.push((async () => {
         const c = await call('/api/trades', {
           method: 'POST',
           body: JSON.stringify({
             symbol: ['NAS100', 'XAUUSD', 'EURUSD', 'US30'][j % 4],
-            direction: dir, status: 'open', entry, stop, target, size: kind === 1 ? 3 : 1, fees: 2,
+            direction: dir, status: 'open', record_only: true, opened_at: openedAt, entry, stop, target, size: kind === 1 ? 3 : 1, fees: 2,
             strategy_name: ['Trend Pullback (continuation)', 'Liquidity Sweep Reversal', 'Breakout Retest'][j % 3],
             thesis: kind === 3 ? null : `seed trade ${j} — liquidity sweep at a mapped level`,
             emotion_before: kind === 1 ? 'Anxious' : kind === 3 ? 'FOMO' : 'Calm',
@@ -451,7 +455,7 @@ async function call(path, opts = {}) {
         if (!id) return null;
         await call(`/api/trades/${id}/close`, {
           method: 'POST',
-          body: JSON.stringify({ exit, exit_reason: kind === 2 ? 'Target' : 'Discretionary', lesson: kind === 1 ? 'sized up after a loss' : 'seeded' }),
+          body: JSON.stringify({ exit, closed_at: closedAt, notify: false, exit_reason: kind === 2 ? 'Target' : 'Discretionary', lesson: kind === 1 ? 'sized up after a loss' : 'seeded' }),
         });
         await call(`/api/trades/${id}`, {
           method: 'PUT',

@@ -1,0 +1,25 @@
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 4efbed8..d860c77 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -1315,7 +1315,7 @@
+           .then((r) => { B.scan = r; B.busy = ''; global.App.refresh(); })
+           .catch((e) => { B.error = 'Scan failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'correct') {
+-        API.get('/bots/correction', {})
++        API.get('/bots/correction', {account_id:Store.accountId || null})
+           .then((c) => { B.correction = c; B.busy = ''; global.App.refresh(); })
+           .catch((e) => { B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'backtest') {
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index e44cde8..4d65de9 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -146,6 +146,7 @@ router.get('/markets', requireAuth, (req, res) => {
+     const tf = String(req.query.tf || '15m');
+     const out = await Bots.chart(symbol, tf, {
+       bars: Math.min(Math.max(num(req.query.bars, 300), 80), 900), userId: req.user.id,
++      accountId:req.query.account_id ? Number(req.query.account_id) : null,
+       sessionPref: await prefOf(req),                                  // M26
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
+     });

@@ -1,0 +1,185 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 21,
+  "fail": 1,
+  "results": [
+    {
+      "label": "additive durable guardrail event table exists",
+      "passed": true
+    },
+    {
+      "label": "preexisting journal rows have NULL provenance, never invented admission",
+      "passed": true
+    },
+    {
+      "label": "observed cap stop is durably captured",
+      "passed": true
+    },
+    {
+      "label": "re-reading identical stop is deduplicated, not a new violation every poll",
+      "passed": true
+    },
+    {
+      "label": "blocked entry attempt is committed to audit even though no trade is written",
+      "passed": true
+    },
+    {
+      "label": "day review returns captured rule/details with server date/UTC context",
+      "passed": true
+    },
+    {
+      "label": "captured rule days are discoverable even without written review",
+      "passed": true
+    },
+    {
+      "label": "another user never receives captured first-user events",
+      "passed": true
+    },
+    {
+      "label": "account-filtered review does not mix another account into the day",
+      "passed": true
+    },
+    {
+      "label": "trade deletion/settings change cannot erase or recompute the captured stop",
+      "passed": true
+    },
+    {
+      "label": "tomorrow clear state does not overwrite yesterday history",
+      "passed": true
+    },
+    {
+      "label": "admitted record carries actual server snapshot and permission provenance",
+      "passed": false,
+      "detail": {
+        "status": 409,
+        "data": {
+          "error": "Stand down: 3 entries today — your preselected cap is 3.",
+          "code": "guardrail_stop",
+          "daily": {
+            "date": "2026-10-11",
+            "timezone": "UTC",
+            "evaluated_at": "2026-10-11T12:00:00.000Z",
+            "account_id": 1,
+            "guardrails": {
+              "max_risk_pct": 1,
+              "max_trades_day": 3,
+              "cooldown_min": 30,
+              "max_consecutive_losses": 2,
+              "daily_loss_limit_pct": 2,
+              "trade_cap_policy": {
+                "max_trades_day": 3,
+                "selected_at": "2026-10-11T12:00:00.000Z",
+                "rule_date": "2026-10-11",
+                "timezone": "UTC"
+              },
+              "size_cap_note": null,
+              "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet).",
+              "guardrails": {
+                "max_risk_pct": 1,
+                "max_trades_day": 3,
+                "cooldown_min": 30,
+                "max_consecutive_losses": 2,
+                "daily_loss_limit_pct": 2,
+                "trade_cap_policy": {
+                  "max_trades_day": 3,
+                  "selected_at": "2026-10-11T12:00:00.000Z",
+                  "rule_date": "2026-10-11",
+                  "timezone": "UTC"
+                },
+                "size_cap_note": null,
+                "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet)."
+              },
+              "stats": null,
+              "user": {
+                "trades": 0
+              },
+              "sample_sufficient": false,
+              "min_trades_for_personal_guardrails": 30
+            },
+            "today": {
+              "trades": 3,
+              "closed": 0,
+              "realised": 0,
+              "r_sum": 0,
+              "avg_r": 0,
+              "loss_streak": 0,
+              "balance": 10000,
+              "loss_limit": 200,
+              "balance_basis": "day-start realised journal equity"
+            },
+            "persistence": {
+              "entry_count_basis": "monotonic observed journal entries plus server admissions, not inferred historical permission",
+              "journal_entries": 0,
+              "retained_stops": [
+                "max_trades_day"
+              ]
+            },
+            "breaches": [
+              {
+                "rule": "max_trades_day",
+                "detail": "3 entries today — your preselected cap is 3."
+              }
+            ],
+            "status": "stop",
+            "remaining_trades": 0,
+            "post_loss": {
+              "last_loss_trade_id": null,
+              "last_loss_at": null,
+              "entry_tf": "5m",
+              "entry_tf_required": false,
+              "cooldown_until": null,
+              "next_candle_until": null
+            },
+            "message": "Stand down: 3 entries today — your preselected cap is 3.",
+            "permission": {
+              "allowed": false,
+              "can_override": true,
+              "state": "stopped"
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "historical record cannot forge server admission snapshot",
+      "passed": true
+    },
+    {
+      "label": "editing history cannot rewrite immutable server provenance",
+      "passed": true
+    },
+    {
+      "label": "permission read outage still allows honest closed record, explicitly unknown/no permit",
+      "passed": true
+    },
+    {
+      "label": "JSON imported open position stays record-only, not permission",
+      "passed": true
+    },
+    {
+      "label": "CSV imported position stays record-only, never guessed a historical breach",
+      "passed": true
+    },
+    {
+      "label": "research signal explicitly carries no live permission or inferred breach",
+      "passed": true
+    },
+    {
+      "label": "actual day-review renderer shows captured rule and UTC label",
+      "passed": true
+    },
+    {
+      "label": "empty history never claims older trades followed rules",
+      "passed": true
+    },
+    {
+      "label": "rendered rule/reason text is escaped, not executable HTML",
+      "passed": true
+    },
+    {
+      "label": "day history still requires real authentication",
+      "passed": true
+    }
+  ],
+  "scope": "Actual local libSQL/auth/review/browser-script history, no backfill, production or broker claim"
+}

@@ -1,0 +1,30 @@
+ok missing/blank reason cannot override: undefined
+ok missing/blank reason cannot override: null
+ok missing/blank reason cannot override: ""
+ok missing/blank reason cannot override: "  \n  "
+ok invalid plain-text reason rejected without a write: boolean
+ok invalid plain-text reason rejected without a write: number
+ok invalid plain-text reason rejected without a write: object
+ok invalid plain-text reason rejected without a write: object
+ok invalid plain-text reason rejected without a write: string
+ok known stop plus nonblank reason admits exactly this action
+ok server trims and persists reason on trade
+ok server persists stopped rule snapshot, never client-supplied clear
+ok override snapshot uses actual account/server date/time
+ok reason/rule/id committed together in durable day audit
+ok ordinary edit cannot rewrite the captured reason/violated rule
+ok one override does not unlock the rest of the day
+ok save-plan requires and records the same reasoned server override
+ok plan override cannot move entry/stop/target to fake permission
+ok eligible signal storage uses fresh override, not stale read permission
+ok personal override cannot waive a TECHNICAL candidate veto
+ok public save-signal uses server analysis veto, not supplied client approval
+ok even a reason cannot override an unavailable guardrail check
+ok override is not an account-ownership bypass
+ok reopened prospective entry records reason and fresh stop
+ok audit failure rolls back BOTH entry and override, never an unlogged exception
+ok day review actually returns override reason AND violated rule
+ok trade deletion cannot erase override reasons in day audit
+ok a reason submitted while CLEAR is not falsely called an override
+ok no-next-candle unknown TF cannot be waived by reason
+M80 overrides: 29 passed, 0 failed

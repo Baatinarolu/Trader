@@ -29,6 +29,7 @@ const EntryPreference = require('./entry-preference');
 const Now = require('./now');
 const Predict = require('./predict');
 const Cor = require('./correction');
+const Guards = require('./guardrails');
 
 /* -------------------------------------------------------------------------
  * M124 — THE ENTRY-SERIES DEPTH THE METHOD READS.
@@ -246,6 +247,16 @@ function hysteresisView(h) {
   };
 }
 
+async function personalState(userId, accountId, entryTf) {
+  if (!userId) return null; // unsized research has no claimed personal permission
+  try { return await Cor.dailyState(userId,{accountId,entryTf,forEntry:true}); }
+  catch { return Guards.unavailable({accountId}); }
+}
+function candidateTf(setups, td, fallback) {
+  const c = (setups.candidates || []).find(c=>c.dir===td.direction) || (setups.candidates || [])[0];
+  return c && (c.entry_tf || c.levels && c.levels.entry_tf) || td.entry_setup?.entry_tf || fallback;
+}
+
 async function analyse(symbol, tf = '15m', opts = {}) {
   const sym = String(symbol || '').toUpperCase();
   const spec = specOf(sym);
@@ -276,7 +287,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
 
-  const setups = Setup.buildSetups(series.smc, {
+  let setups = Setup.buildSetups(series.smc, {
     price: series.price, atr: series.atr, entrySeries: series, observedAt: cut.asOf || opts.nowMs,
     bias: momentumEff.bias, biasReason: momentum.alignment.reason,
     indicators: series.ind,
@@ -312,8 +323,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   // blend: the setup's own grade + the market's measured edge + this setup's probability
   const best = setups.candidates[0] || null;
   const predRow = !(momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) && !momentum.topdown.countertrend && prediction && prediction.setups && best ? prediction.setups.find((p) => p.dir === best.dir) : null;
-  let daily = null;
-  if (opts.userId) { try { daily = await Cor.dailyState(opts.userId, { accountId: opts.accountId }); } catch (e) { daily = null; } }
+  const daily = await personalState(opts.userId,opts.accountId,candidateTf(setups,momentum.topdown || {},tf));
+  setups = Guards.applyToSetups(setups,daily);
 
   const headline = buildHeadline({ sym, tf, momentum: momentumEff, setups, prediction, predRow, news, daily });
 
@@ -322,10 +333,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   // downstream (webhooks, alerts, the UI banner) uses this one for direction.
   const td = momentum.topdown || {};
   const methodVerdict = {
-    action: td.blocked ? 'NO TRADE' : (setups.verdict.dir > 0 ? 'BUY' : setups.verdict.dir < 0 ? 'SELL' : 'NO TRADE'),
+    action: td.blocked || Guards.isBlocked(daily) ? 'NO TRADE' : (setups.verdict.dir > 0 ? 'BUY' : setups.verdict.dir < 0 ? 'SELL' : 'NO TRADE'),
     direction: td.direction || 0,
     status: td.status || 'unknown',
-    blocked: !!td.blocked,
+    blocked: !!td.blocked || Guards.isBlocked(daily),
+    market_blocked: !!td.blocked,
+    personal_blocked: Guards.isBlocked(daily),
     headline: td.headline || null,
     conviction: td.conviction || null,
     pending_step: (td.steps || []).find((s) => !s.done) || null,
@@ -484,12 +497,15 @@ async function chart(symbol, tf = '15m', opts = {}) {
   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
 
-  const setups = Setup.buildSetups(entry.smc, {
+  let setups = Setup.buildSetups(entry.smc, {
     price: entry.price, atr: entry.atr, entrySeries: entry, observedAt: cut.asOf || opts.nowMs, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
     indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
     sessionPref: opts.sessionPref || null,   // M26
   });
+
+  const daily = await personalState(opts.userId,opts.accountId,candidateTf(setups,td,tf));
+  setups = Guards.applyToSetups(setups,daily);
 
   // M77: the actual eligible candidate is the chart's order authority. An HTF
   // CRT projection is context only, never a second LTF exit/entry. Keep the old
@@ -560,7 +576,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
   // the same single answer the analysis strip shows, so the chart and the words
   // on screen can never disagree about what to do
   const now = Now.build({
-    td, setups, series: entry, quote: null, symbol: sym, tf,
+    td, setups, daily, series: entry, quote: null, symbol: sym, tf,
     replay: cut.trim || cut.asOf ? { trim: cut.trim || null, since: null } : null,
     nowMs: opts.nowMs,
     minRR: opts.minRR,
@@ -570,7 +586,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
     ok: true, symbol: sym, timeframe: tf, instrument: spec,
     generated_at: new Date().toISOString(),
     replay: cut.trim || cut.asOf ? { trim: cut.trim || null, as_of: cut.asOf ? new Date(cut.asOf).toISOString() : null } : null,
-    now,
+    now, daily,
     meta: {
       provider: entry.meta.provider, ticker: entry.meta.ticker, bars: entry.candles.length,
       first_bar: entry.meta.first_bar, last_bar: entry.meta.last_bar,
@@ -588,8 +604,8 @@ async function chart(symbol, tf = '15m', opts = {}) {
     ).slice(-bars).map((b) => ({ t: b.t, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v })),
     smc, plan, topdown: td, stack,
     setups: {
-      verdict: setups.verdict, method: setups.method,
-      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok,
+      verdict: setups.verdict, method: setups.method, execution_permission:setups.execution_permission,
+      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok, market_ok:c.market_ok, personal_blocked:c.personal_blocked,
         // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
         // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
         entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence, entry_preference: c.entry_preference,
@@ -615,13 +631,15 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
         // as analyse(). Without this a scan and an analyse of the same symbol could report
         // different biases, which is worse than either rule applied consistently.
         const scanHyst = await applyBiasHysteresis(sym, tf, momentum, series);
-        const specs = Setup.buildSetups(series.smc, {
+        let specs = Setup.buildSetups(series.smc, {
           price: series.price, atr: series.atr, entrySeries: series, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
           indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
           sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
                          // No symbol on this path either, so the pair-conflict note stays
                          // null rather than false.
         });
+        const daily = await personalState(userId,accountId,candidateTf(specs,momentum.topdown || {},tf));
+        specs = Guards.applyToSetups(specs,daily);
         // one row per market: the side the method permits (a scan that lists both
         // a buy and a sell for the same symbol is not a scan, it is a coin toss)
         const best = (momentum.topdown && momentum.topdown.direction
@@ -636,7 +654,7 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
             execution_kind: momentum.topdown.countertrend.kind } : {}),
           bias_held: scanHyst.held, bias_changed_because: scanHyst.changed_because,
           mechanics: momentum.mechanics.score, mechanics_grade: momentum.mechanics.grade,
-          action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
+          action: specs.verdict.action, execution_permission:specs.execution_permission, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
           setup_side: best ? best.side : null, entry_model: best ? best.entry_model : null,
           stop_tf: best && best.levels ? best.levels.stop_tf : null,
           stop_kind: best && best.levels && best.levels.stop_policy ? best.levels.stop_policy.kind : null,
@@ -719,32 +737,34 @@ async function ensureSignalsTable() {
  * re-derive anything from a fresh analysis — it stores exactly what the
  * trader was shown, so the bot can be graded on it later.
  */
-async function savePlan(userId, p = {}) {
-  await ensureSignalsTable();
+async function insertPlan(userId, p = {}, store = db, stamp = {}) {
   const symbol = String(p.symbol || '').toUpperCase();
   const timeframe = String(p.timeframe || '15m');
   const entry = Number(p.entry), stop = Number(p.stop);
   if (!symbol || !Number.isFinite(entry) || !Number.isFinite(stop) || entry === stop) {
     return { saved: 0, reason: 'symbol, entry and stop (entry ≠ stop) are required' };
   }
-  const model = Entry.normaliseName(p.entry_model);
-  if (p.stop_policy) Stops.check(p.stop_policy, stop, p.entry_tf);
-  const evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
+  let model, evidence;
   const dir = stop < entry ? 1 : -1;
-  if (p.entry_preference) EntryPreference.check(p.entry_preference, p.entry_tf, dir);
-  if (p.entry_preference && p.entry_evidence && JSON.parse(evidence || '{}').entry_preference
-      && !EntryPreference.same(p.entry_preference, JSON.parse(evidence).entry_preference))
-    throw new Error('entry_preference contradicts the named entry_evidence snapshot');
+  try {
+    model = Entry.normaliseName(p.entry_model);
+    if (p.stop_policy) Stops.check(p.stop_policy, stop, p.entry_tf);
+    evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
+    if (p.entry_preference) EntryPreference.check(p.entry_preference, p.entry_tf, dir);
+    if (p.entry_preference && p.entry_evidence && JSON.parse(evidence || '{}').entry_preference
+        && !EntryPreference.same(p.entry_preference, JSON.parse(evidence).entry_preference))
+      throw new Error('entry_preference contradicts the named entry_evidence snapshot');
+  } catch (e) { throw Guards.inputError(e.message); }
   const risk = Math.abs(entry - stop);
   const prices = (Array.isArray(p.targets) ? p.targets : [])
     .map((t) => Number(t && (t.price !== undefined ? t.price : t))).filter((x) => Number.isFinite(x));
   const t1 = prices.length ? prices[0] : (Number.isFinite(Number(p.t1)) ? Number(p.t1) : null);
   const t2 = prices.length > 1 ? prices[prices.length - 1] : (Number.isFinite(Number(p.t2)) ? Number(p.t2) : null);
   const rr = (price) => (price == null ? null : Math.round((Math.abs(price - entry) / risk) * 100) / 100);
-  const info = await db.prepare(`INSERT INTO bot_signals
+  const info = await store.prepare(`INSERT INTO bot_signals
     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final,
-     mechanics, sentiment, entry_mode, mtf_tf, risk_atr, entry_model, entry_tf, entry_evidence)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     mechanics, sentiment, entry_mode, mtf_tf, risk_atr, entry_model, entry_tf, entry_evidence, guardrail_snapshot, entry_permission, override_reason)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     userId, symbol, timeframe, dir, dir > 0 ? 'long' : 'short',
     p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.target_policy || p.p_win == null ? null : Number(p.p_win),
     entry, stop, t1, t2, rr(t1), rr(t2),
@@ -754,14 +774,13 @@ async function savePlan(userId, p = {}) {
         + (p.entry_preference ? EntryPreference.note(p.entry_preference) : '') + (p.note || '')).slice(0, 400) : null,
     p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
     Number.isFinite(Number(p.risk_atr)) ? Number(p.risk_atr) : null,
-    model, p.entry_tf || null, evidence,
+    model, p.entry_tf || null, evidence, stamp.guardrail_snapshot || null, stamp.entry_permission || null, stamp.override_reason || null,
   );
   return { saved: 1, ids: [info.lastInsertRowid] };
 }
 
 /** Store the actionable plan(s) from an analysis so the bot can be graded later. */
-async function saveSignals(userId, payload) {
-  await ensureSignalsTable();
+async function insertSignals(userId, payload, store = db, stamp = {}) {
   const cands = (payload.setups && payload.setups.candidates ? payload.setups.candidates : [])
     .filter((c) => c.ok === true && c.levels && c.levels.entry_status !== 'invalid')
     .slice(0, 2);
@@ -772,10 +791,10 @@ async function saveSignals(userId, payload) {
   // (method_state / method_blocked) so the ledger can later be split into
   // "the method approved this" and "the setup model liked it anyway".
   const td = payload.topdown || null;
-  const ins = await db.prepare(`INSERT INTO bot_signals
+  const ins = await store.prepare(`INSERT INTO bot_signals
     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final, mechanics, sentiment,
-     method_state, method_dir, method_blocked, entry_model, entry_tf, entry_evidence)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+     method_state, method_dir, method_blocked, entry_model, entry_tf, entry_evidence, guardrail_snapshot, entry_permission, override_reason)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   let saved = 0;
   const out = [];
   for (const c of cands) {
@@ -792,12 +811,34 @@ async function saveSignals(userId, payload) {
       L.target_policy ? ((L.stop_policy ? Stops.note(L.stop_policy) : '')
         + (c.entry_preference ? EntryPreference.note(c.entry_preference) : '') + `Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
       td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
-      model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
+      model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf), stamp.guardrail_snapshot || null, stamp.entry_permission || null, stamp.override_reason || null,
     );
     out.push(info.lastInsertRowid);
     saved++;
   }
   return { saved, ids: out };
+}
+
+async function savePlan(userId,p = {}) {
+  await ensureSignalsTable();
+  if (p.research_only === true) return {...await insertPlan(userId,p,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
+  return Guards.admit(userId,{accountId:p.account_id || null,entryTf:p.entry_tf || p.timeframe,action:'save_plan',entityType:'signal',overrideReason:p.override_reason},
+    async (store,daily) => {
+      const result = await insertPlan(userId,p,store,Guards.snapshotFields(daily));
+      return {...result,permission:result.saved>0 ? Guards.actionPermission(daily) : {allowed:false,can_override:false,state:'not_admitted'}};
+    });
+}
+async function saveSignals(userId,payload,options = {}) {
+  await ensureSignalsTable();
+  const marketCandidates = (payload.setups?.candidates || []).map(c=>c.market_ok === undefined ? c : {...c,ok:c.market_ok});
+  const market = {...payload,setups:{...payload.setups,candidates:marketCandidates}};
+  if (!marketCandidates.some(c=>c.ok && c.levels && c.levels.entry_status!=='invalid')) return {saved:0,reason:'no actionable setup in this analysis'};
+  if (options.research_only === true) return {...await insertSignals(userId,market,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
+  return Guards.admit(userId,{accountId:options.accountId || payload.daily?.account_id || null,entryTf:candidateTf(market.setups,payload.topdown || {},payload.timeframe),action:'save_signal',entityType:'signal',overrideReason:options.override_reason},
+    async (store,daily) => {
+      const result = await insertSignals(userId,market,store,Guards.snapshotFields(daily));
+      return {...result,permission:result.saved>0 ? Guards.actionPermission(daily) : {allowed:false,can_override:false,state:'not_admitted'}};
+    });
 }
 
 async function listSignals(userId, { status = null, limit = 50 } = {}) {

@@ -1,0 +1,64 @@
+{
+  "app": "/tmp/m80-clipboard-stage/app",
+  "pass": 3,
+  "fail": 3,
+  "results": [
+    {
+      "label": "topdown forwards requested owned second account to chart",
+      "passed": false,
+      "detail": {
+        "bars": 300,
+        "userId": 1,
+        "sessionPref": null,
+        "trim": 0,
+        "as_of": null
+      }
+    },
+    {
+      "label": "clear second account is not blocked by default account cap",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "symbol": "TEST",
+          "timeframe": "15m",
+          "blocked": true,
+          "market_blocked": false,
+          "execution_permission": {
+            "allowed": false,
+            "can_override": true,
+            "state": "stopped",
+            "account_id": 1
+          },
+          "verdict": {
+            "action": "NO TRADE"
+          }
+        }
+      }
+    },
+    {
+      "label": "explicit first account still reports its actual stop",
+      "passed": true
+    },
+    {
+      "label": "omitted account deliberately resolves owned default",
+      "passed": true
+    },
+    {
+      "label": "topdown scope repair retains real auth",
+      "passed": true
+    },
+    {
+      "label": "actual Corrections tab forwards the selected UI account, not {} default",
+      "passed": false,
+      "detail": [
+        {
+          "url": "/bots/correction",
+          "params": {}
+        }
+      ]
+    }
+  ],
+  "scope": "Actual scoped/authenticated route + real Cor state and actual UI tab request; declared market IO boundary"
+}

@@ -1,0 +1,37 @@
+[
+  {
+    "script": "probe-m79-daily-entry.js",
+    "exit_code": 0,
+    "output": "retention-state.txt"
+  },
+  {
+    "script": "probe-m79-consumers.js",
+    "exit_code": 0,
+    "output": "retention-consumers.txt"
+  },
+  {
+    "script": "probe-m79-history.js",
+    "exit_code": 1,
+    "output": "retention-history.txt"
+  },
+  {
+    "script": "probe-m80-overrides.js",
+    "exit_code": 0,
+    "output": "retention-override.txt"
+  },
+  {
+    "script": "probe-m79-cap-policy.js",
+    "exit_code": 0,
+    "output": "retention-cap.txt"
+  },
+  {
+    "script": "probe-m79-account-forwarding.js",
+    "exit_code": 0,
+    "output": "retention-account.txt"
+  },
+  {
+    "script": "probe-m80-copy-prices.js",
+    "exit_code": 0,
+    "output": "retention-copy.txt"
+  }
+]

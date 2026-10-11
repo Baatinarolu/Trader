@@ -46,6 +46,17 @@
         c.levels && c.levels.target_policy && c.levels.target_policy.rule === 'entry_or_one_above'))));
   }
 
+  const guardedCall = (operation,daily) => global.App.runGuarded ? global.App.runGuarded(operation,daily) : operation(null);
+  const personallyStopped = d => d?.daily?.status==='stop' && d.daily.permission?.can_override===true;
+  const personallyUnknown = d => d?.daily?.status==='unknown';
+  function planPayload(d,c) {
+    const lv=c.levels;
+    return {symbol:d.symbol,timeframe:d.timeframe,account_id:d.daily?.account_id || Store.accountId || null,
+      entry:lv.entry,stop:lv.stop,targets:lv.targets,entry_model:c.entry_model,entry_tf:c.entry_tf || lv.entry_tf,
+      entry_evidence:c.entry_evidence,entry_preference:c.entry_preference,grade:c.grade,score:c.score,
+      target_policy:lv.target_policy,stop_policy:lv.stop_policy,risk_atr:lv.risk_atr,note:'Exact entry-aligned candidate; personal permission is rechecked for this saved action.'};
+  }
+
   const fmt = (v, dp = 4) => (v === null || v === undefined || isNaN(v)) ? '—' : Number(v).toLocaleString(undefined, { maximumFractionDigits: dp });
   const chip = (text, cls) => h('span', { class: 'chip ' + (cls || ''), text });
 
@@ -189,9 +200,29 @@
     // M127 — copy only the candidate the final verdict actually permits, never the
     // highest-scoring refused idea. Keep this selection shared by the button and handler.
     const setupData = B.data && B.data.setups;
+    const canSaveMarket = !!(setupData?.candidates || []).some(c=>(c.market_ok ?? c.ok)===true && c.levels);
+    saveBtn.disabled = personallyUnknown(B.data) || !!B.data && !canSaveMarket;
+    saveBtn.classList.toggle('guardrail-stop',personallyStopped(B.data));
+    if (personallyStopped(B.data)) saveBtn.textContent = 'Override & save signal';
     const copyCandidate = setupData && setupData.verdict && setupData.verdict.dir
       ? (setupData.candidates || []).find((c) => c.ok && c.dir === setupData.verdict.dir && c.levels)
       : null;
+    const marketCopy = personallyStopped(B.data) && !B.data.topdown?.blocked
+      ? (setupData?.candidates || []).find(c=>c.market_ok===true && c.dir===B.data.topdown?.direction && c.levels) : null;
+    async function copyPlan(candidate) {
+      if (!candidate) return global.App.toast('No eligible market plan to copy','warn');
+      try {
+        let recorded = null;
+        if (B.data?.daily) {
+          recorded = await guardedCall(reason=>global.API.post('/bots/signals/save-plan',{...planPayload(B.data,candidate),...(reason?{override_reason:reason}:{})}),B.data.daily);
+          if (!recorded) return;
+          if (!recorded.saved) return global.App.toast(recorded.reason || 'Plan was not admitted','warn');
+        }
+        const prefix = recorded?.permission?.state==='overridden' ? 'PERSONAL OVERRIDE RECORDED (not a broker order) · ' : '';
+        const text = global.TV.planText(B.symbol,B.tf,candidate);
+        global.TV.copy(prefix ? prefix+text : text,'Trade plan');
+      } catch(e) { global.App.toast(e.message,'err'); }
+    }
 
     symInput.addEventListener('change', () => { B.symbol = symInput.value.trim().toUpperCase(); onChange(); });
     tfSel.addEventListener('change', () => { B.tf = tfSel.value; onChange(); });
@@ -213,7 +244,8 @@
     });
     saveBtn.addEventListener('click', async () => {
       try {
-        const r = await global.API.post('/bots/signals/save', { symbol: B.symbol, timeframe: B.tf, prediction: B.prediction });
+        const r = await guardedCall(reason=>global.API.post('/bots/signals/save', { symbol: B.symbol, timeframe: B.tf, prediction: B.prediction,account_id:Store.accountId || null,...(reason?{override_reason:reason}:{}) }),B.data?.daily);
+        if (!r) return;
         global.App.toast(r.saved && r.saved.saved ? `Saved ${r.saved.saved} signal(s)` : 'No actionable setup to save', r.saved && r.saved.saved ? 'ok' : 'warn');
         if (r.saved && r.saved.saved) { B.signals = null; }
       } catch (e) { global.App.toast(e.message, 'err'); }
@@ -230,9 +262,10 @@
 
     levelsBtn.addEventListener('click', () => {
       if (!copyCandidate) return global.App.toast(B.data ? 'No actionable plan — the bot says stand down' : 'Analyse a market first', 'warn');
-      global.TV.copy(global.TV.planText(B.symbol, B.tf, copyCandidate), 'Trade plan');
+      copyPlan(copyCandidate);
     });
     [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
+    if (marketCopy && global.TV) row.appendChild(h('button',{class:'btn sm guardrail-stop',text:'Override & copy plan',onclick:()=>copyPlan(marketCopy)}));
     row.appendChild(winNote);
     /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
      * button will be blocked ... grayed out ... You physically can't press the trade
@@ -366,20 +399,22 @@
         box.appendChild(h('div', { class: 'bot-warn', text: `Below your minimum: this pays ${p.safer.rr}R against a ${p.min_rr}R floor. The method is not hiding it — but it is a scenario, not an order.` }));
       }
       box.appendChild(h('div', { class: 'muted-2 td-layer-note', text: `Stop goes beyond the candle that made the sweep (${fmt(p.sweep.level, 5)} swept to ${fmt(p.sweep.extreme, 5)}, ${p.sweep.wick_atr} ATR). ${p.invalidation}` }));
-      const active = (d.setups && d.setups.candidates || []).find((c) => c.dir === td.direction && c.ok);
-      const executable = d.now && d.now.armed && d.now.order && active && active.levels;
+      const active = (d.setups && d.setups.candidates || []).find((c) => c.dir === td.direction && (c.market_ok ?? c.ok)===true);
+      const executable = !td.blocked && !personallyUnknown(d) && active && active.levels && (personallyStopped(d) || d.now && d.now.armed && d.now.order);
       box.appendChild(h('div', { class: 'muted-2', text: 'This table is the HTF narrative projection only. Entry-aligned exit and risk come from the eligible candidate / Now order below; this is not a second executable plan.' }));
-      const save = h('button', { class: 'btn sm', text: executable ? 'Save eligible entry-aligned plan' : 'Nothing eligible to save', disabled: !executable });
+      const save = h('button', { class: 'btn sm'+(personallyStopped(d)?' guardrail-stop':''), text: executable ? personallyStopped(d) ? 'Override & save entry-aligned plan' : 'Save eligible entry-aligned plan' : 'Nothing eligible to save', disabled: !executable });
       save.addEventListener('click', async () => {
         if (!executable) return;
         try {
-          const lv = active.levels, o = d.now.order;
-          const r = await global.API.post('/bots/signals/save-plan', {
+          const lv = active.levels, o = d.now.order || lv;
+          const r = await guardedCall(reason=>global.API.post('/bots/signals/save-plan', {
+            account_id:d.daily?.account_id || Store.accountId || null,...(reason?{override_reason:reason}:{}),
             symbol: d.symbol, timeframe: d.timeframe, entry: o.entry, stop: o.stop,
             targets: lv.targets.map((t) => ({ ...t })), note: `Entry-aligned CRT ${p.side}: ${lv.entry_tf} entry; ${lv.target_tf} ${lv.targets[0].kind} target. HTF ${td.layers.bias.tf} range is narrative only.`,
             entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence, entry_preference: active.entry_preference,
             grade: active.grade, score: active.score, target_policy: lv.target_policy, stop_policy: lv.stop_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
-          });
+          }),d.daily);
+          if (!r) return;
           global.App.toast(r.saved ? 'Eligible plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
         } catch (e) { global.App.toast(e.message, 'err'); }
       });
@@ -681,11 +716,12 @@
       }
       card.appendChild(h('div', { class: 'bot-action', text: c.action }));
       const btnRow = h('div', { class: 'row gap-8' });
-      const logBtn = h('button', { class: 'btn sm primary', text: 'Log this plan', onclick: () => {
+      const marketEligible = (c.market_ok ?? c.ok)===true && !d.topdown?.blocked;
+      const logBtn = h('button', { class: 'btn sm primary'+(personallyStopped(d)?' guardrail-stop':''), disabled:!marketEligible || personallyUnknown(d), text: personallyStopped(d) ? 'Override entry — reason required' : 'Log this plan', onclick: () => {
         if (!c.levels) return global.App.toast('No levels to log', 'warn');
         const L = c.levels;
         global.App.openTrade(null, {
-          symbol: d.symbol, asset_class: (d.instrument || {}).asset_class || 'stocks',
+          symbol: d.symbol, status:'open', account_id:d.daily?.account_id || Store.accountId || null, asset_class: (d.instrument || {}).asset_class || 'stocks',
           direction: c.dir > 0 ? 'long' : 'short',
           entry: L.entry, stop: L.stop, target: L.targets[0] ? L.targets[0].price : null,
           size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
@@ -948,16 +984,18 @@
             const plan = m.plan;
             const tgt = (plan.targets || []).filter((t) => t.rr >= 0.9);
             row.appendChild(h('div', { class: 'bot-detail', html: `<strong>Refined plan (${esc(m.tf)} confirmation)</strong> — entry <b>${fmt(plan.entry, 5)}</b> · stop ${fmt(plan.stop, 5)} · risk ${fmt(plan.risk, 5)} (${plan.risk_atr} ATR) · ${tgt.length ? tgt.slice(0, 3).map((t) => `${t.label ? esc(t.label) + ' ' : ''}${fmt(t.price, 5)} (${t.rr}R)`).join(' → ') : 'no target ≥ 0.9R from here'}` }));
-            const btn = h('button', { class: 'btn small', text: 'Save refined plan to signals' });
+            const btn = h('button', { class: 'btn small'+(personallyStopped(B.data)?' guardrail-stop':''), disabled:personallyUnknown(B.data) || personallyStopped(B.data) && !(B.data.setups?.candidates || []).some(c=>(c.market_ok ?? c.ok)===true), text: personallyStopped(B.data) ? 'Override & save refined plan' : 'Save refined plan to signals' });
             btn.addEventListener('click', async () => {
               try {
-                const r = await global.API.post('/bots/signals/save-plan', {
+                const r = await guardedCall(reason=>global.API.post('/bots/signals/save-plan', {
+                  account_id:B.data?.daily?.account_id || Store.accountId || null,entry_tf:m.tf || B.tf,...(reason?{override_reason:reason}:{}),
                   symbol: (B.data && B.data.symbol) || B.symbol, timeframe: B.tf,
                   entry: plan.entry, stop: plan.stop, targets: plan.targets,
                   grade: s.grade, score: s.score, p_win: s.p_win, rr_primary: plan.rr_primary,
                   entry_mode: 'mtf', mtf_tf: m.tf, risk_atr: plan.risk_atr,
                   note: `MTF entry: ${B.tf} setup confirmed by the ${m.tf} (sweep + displacement inside the zone)`,
-                });
+                }),B.data?.daily);
+                if (!r) return;
                 global.App.toast(r.saved ? 'Refined plan saved — resolve it later to grade the bot' : (r.reason || 'Not saved'), r.saved ? 'ok' : 'warn');
                 if (r.saved) B.signals = null;
               } catch (e) { global.App.toast(e.message, 'err'); }
@@ -1106,7 +1144,7 @@
 
     const g = c.guardrails.guardrails || {};
     const gr = h('div', { class: 'card' });
-    gr.appendChild(h('div', { class: 'card-head', html: `<strong>Your guardrails</strong> <span class="muted">derived from your own winning behaviour</span>` }));
+    gr.appendChild(h('div', { class: 'card-head', html: `<strong>Your guardrails</strong> <span class="muted">preselected daily cap · sample-gated risk suggestions</span>` }));
     gr.appendChild(h('div', { class: 'stat-strip', html: `
       <div><div class="l">Risk / trade</div><div class="v">${g.max_risk_pct}%</div></div>
       <div><div class="l">Trades / day</div><div class="v">${g.max_trades_day}</div></div>
@@ -1210,6 +1248,9 @@
   Views.bots = {
     title: 'Bots',
     render(root) {
+      const accountKey=Store.accountId || null;
+      if (B.accountKey!==undefined && B.accountKey!==accountKey) {B.data=null;B.chart=null;B.scan=null;B.correction=null;B.error='';B.busy='';}
+      B.accountKey=accountKey;
       root.innerHTML = '';                       // replace the shell's skeleton placeholder
       if (global.__botRequest) {                 // handed over from the Market chart panel
         B.symbol = String(global.__botRequest.symbol || B.symbol).toUpperCase();
@@ -1259,9 +1300,9 @@
         const sym = B.symbol, tf = B.tf;
         const trim = B.trim || 0;
         Promise.all([
-          API.get('/bots/analyse', { symbol: sym, tf, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
+          API.get('/bots/analyse', { symbol: sym, tf, account_id:Store.accountId || null, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }),                     // M26
-          API.get('/bots/chart', { symbol: sym, tf, bars: 600, min_rr: B.minRR, trim,
+          API.get('/bots/chart', { symbol: sym, tf, account_id:Store.accountId || null, bars: 600, min_rr: B.minRR, trim,
             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }).catch(() => null),    // M26
           API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
         ]).then(([d, ch, dr]) => {
@@ -1271,11 +1312,11 @@
           global.App.refresh();
         }).catch((e) => { B.error = 'Analysis failed: ' + e.message; B.busy = ''; global.App.refresh(); });
       } else if (B.busy === 'scan') {
-        API.get('/bots/scan', { symbols: B.scanList.join(','), tf: B.tf })
+        API.get('/bots/scan', { symbols: B.scanList.join(','), tf: B.tf, account_id:Store.accountId || null })
           .then((r) => { B.scan = r; B.busy = ''; global.App.refresh(); })
           .catch((e) => { B.error = 'Scan failed: ' + e.message; B.busy = ''; global.App.refresh(); });
       } else if (B.busy === 'correct') {
-        API.get('/bots/correction', {})
+        API.get('/bots/correction', {account_id:Store.accountId || null})
           .then((c) => { B.correction = c; B.busy = ''; global.App.refresh(); })
           .catch((e) => { B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
       } else if (B.busy === 'backtest') {

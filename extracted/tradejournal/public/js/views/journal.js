@@ -42,6 +42,11 @@
           </div>`).join('');
       }
       listCol.appendChild(list);
+      const captured = U.h('div', {class:'card',style:'margin-top:14px'});
+      captured.innerHTML = `<div class="card-head"><h3>Captured guardrail days (UTC)</h3></div>
+        ${(entries.guardrail_days || []).map(d=>`<div class="row-between" style="padding:8px"><span class="mono">${U.esc(d.rule_date)} · ${d.events} events · ${d.overrides || 0} overrides</span><button class="btn xs ghost" data-open="${U.esc(d.rule_date)}">Review rules & reasons</button></div>`).join('') || '<div class="empty">No stops captured yet. Older violations are not inferred or backfilled.</div>'}`;
+      captured.addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(b)openEditor(b.dataset.open,root);});
+      listCol.appendChild(captured);
       layout.appendChild(listCol);
 
       /* goals column */
@@ -111,6 +116,19 @@
     });
   }
 
+  /** Historical snapshots, not a rerun against today's changed settings. */
+  Views.guardrailHistory = function(events = []) {
+    const node = U.h('div',{class:'card',style:'margin-top:14px'});
+    node.innerHTML = `<div class="card-head"><h3>Guardrail history — UTC rule day</h3></div>
+      <div class="tiny muted">Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Recording-time flags do not infer what happened at a historical entry.</div>
+      ${events.length ? `<div class="table-wrap"><table><thead><tr><th>Captured at (UTC)</th><th>Account / action</th><th>Violated rule(s)</th><th>Reason / decision</th></tr></thead><tbody>
+        ${events.map(ev=>`<tr><td class="mono tiny">${U.esc(ev.observed_at)}</td>
+          <td>${U.esc(ev.account_id == null ? 'account removed' : '#'+ev.account_id)} · ${U.esc(ev.action)}<br><span class="tiny muted">${U.esc(ev.kind)}${ev.entity_type && ev.entity_id ? ' · '+U.esc(ev.entity_type)+' #'+U.esc(ev.entity_id) : ''}</span></td>
+          <td class="tiny">${(ev.snapshot?.breaches || []).map(b=>`<b>${U.esc(b.rule)}</b>: ${U.esc(b.detail)}`).join('<br>') || U.esc(ev.snapshot?.message || 'No known stop in the captured snapshot.')}</td>
+          <td class="tiny">${ev.reason ? `<b>Override reason:</b> ${U.esc(ev.reason)}` : ev.kind==='journal_record' ? 'Recording-time observation only; no execution permission.' : 'No override taken.'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No captured guardrail events for this day. This does not prove that older trades followed the rules.</div>'}`;
+    return node;
+  };
+
   async function openEditor(dateISO, root) {
     const day = await API.get('/journal/' + dateISO);
     const e = day.entry || {};
@@ -139,6 +157,7 @@
         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+    body.appendChild(Views.guardrailHistory(day.guardrail_events || []));
     global.App.modal({
       title: 'Day review — ' + dateISO, body, wide: true,
       actions: [{ label: 'Cancel', ghost: true }, {

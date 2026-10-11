@@ -1,0 +1,454 @@
+{
+  "app": "/tmp/m80-override-stage/app",
+  "pass": 3,
+  "fail": 23,
+  "results": [
+    {
+      "label": "known stop greys BOTH actual save-entry actions",
+      "passed": false,
+      "detail": [
+        {
+          "text": "Cancel",
+          "disabled": false,
+          "class": "btn ghost"
+        },
+        {
+          "text": "Save & close",
+          "disabled": false,
+          "class": "btn ghost"
+        },
+        {
+          "text": "Save trade",
+          "disabled": false,
+          "class": "btn primary"
+        }
+      ]
+    },
+    {
+      "label": "trade form preflight uses selected account and actual entry TF",
+      "passed": false,
+      "detail": [
+        {
+          "url": "/api/trades",
+          "method": "POST",
+          "body": {
+            "symbol": "TEST",
+            "direction": "long",
+            "status": "open",
+            "account_id": 1,
+            "entry": "100",
+            "stop": "99",
+            "target": "110",
+            "exit": null,
+            "size": "1",
+            "fees": "0",
+            "opened_at": "2026-10-11T12:00:00.000Z",
+            "closed_at": null,
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "exit_reason": "",
+            "planned_r": "",
+            "mae_r": "",
+            "mfe_r": "",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": "",
+            "adherence": "",
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "execution_notes": "",
+            "lesson": "",
+            "screenshot_url": "",
+            "rule_checks": []
+          }
+        },
+        {
+          "url": "/api/trades",
+          "method": "POST",
+          "body": {
+            "symbol": "TEST",
+            "direction": "long",
+            "status": "open",
+            "account_id": 1,
+            "entry": "100",
+            "stop": "99",
+            "target": "110",
+            "exit": null,
+            "size": "1",
+            "fees": "0",
+            "opened_at": "2026-10-11T12:00:00.000Z",
+            "closed_at": null,
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "exit_reason": "",
+            "planned_r": "",
+            "mae_r": "",
+            "mfe_r": "",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": "",
+            "adherence": "",
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "execution_notes": "",
+            "lesson": "",
+            "screenshot_url": "",
+            "rule_checks": []
+          }
+        },
+        {
+          "url": "/api/journal/2026-10-11",
+          "method": "GET",
+          "body": null
+        }
+      ]
+    },
+    {
+      "label": "grey entry click opens required reason, not a trade POST",
+      "passed": false,
+      "detail": {
+        "reason": false,
+        "posts": 1
+      }
+    },
+    {
+      "label": "blank reason cannot activate override confirmation",
+      "passed": false,
+      "detail": "no reason dialog"
+    },
+    {
+      "label": "whitespace reason remains disabled",
+      "passed": false,
+      "detail": "no reason dialog"
+    },
+    {
+      "label": "cancelling override writes nothing",
+      "passed": false,
+      "detail": "no reason dialog"
+    },
+    {
+      "label": "nonblank text enables explicit confirmation",
+      "passed": false,
+      "detail": "no dialog"
+    },
+    {
+      "label": "actual browser confirmation POSTs reason to server",
+      "passed": false,
+      "detail": [
+        {
+          "url": "/api/trades",
+          "method": "POST",
+          "body": {
+            "symbol": "TEST",
+            "direction": "long",
+            "status": "open",
+            "account_id": 1,
+            "entry": "100",
+            "stop": "99",
+            "target": "110",
+            "exit": null,
+            "size": "1",
+            "fees": "0",
+            "opened_at": "2026-10-11T12:00:00.000Z",
+            "closed_at": null,
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "exit_reason": "",
+            "planned_r": "",
+            "mae_r": "",
+            "mfe_r": "",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": "",
+            "adherence": "",
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "execution_notes": "",
+            "lesson": "",
+            "screenshot_url": "",
+            "rule_checks": []
+          }
+        },
+        {
+          "url": "/api/trades",
+          "method": "POST",
+          "body": {
+            "symbol": "TEST",
+            "direction": "long",
+            "status": "open",
+            "account_id": 1,
+            "entry": "100",
+            "stop": "99",
+            "target": "110",
+            "exit": null,
+            "size": "1",
+            "fees": "0",
+            "opened_at": "2026-10-11T12:00:00.000Z",
+            "closed_at": null,
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "",
+            "entry_model": null,
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "exit_reason": "",
+            "planned_r": "",
+            "mae_r": "",
+            "mfe_r": "",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": "",
+            "adherence": "",
+            "mistakes": "",
+            "tags": "",
+            "thesis": "",
+            "execution_notes": "",
+            "lesson": "",
+            "screenshot_url": "",
+            "rule_checks": []
+          }
+        }
+      ]
+    },
+    {
+      "label": "browser-selected reason persists with fresh stopped snapshot",
+      "passed": false,
+      "detail": {
+        "id": 3,
+        "user_id": 1,
+        "account_id": 1,
+        "symbol": "TEST",
+        "asset_class": "stocks",
+        "direction": "long",
+        "status": "open",
+        "opened_at": "2026-10-11T12:00:00.000Z",
+        "closed_at": null,
+        "entry": 100,
+        "exit": null,
+        "stop": null,
+        "target": null,
+        "size": 0,
+        "fees": 0,
+        "gross_pnl": 0,
+        "net_pnl": 0,
+        "risk_amount": 0,
+        "r_multiple": 0,
+        "planned_r": null,
+        "mae_r": null,
+        "mfe_r": null,
+        "stop_moved": 0,
+        "exit_reason": "",
+        "notes": "",
+        "strategy_id": null,
+        "strategy_name": "",
+        "setup_grade": "",
+        "entry_model": null,
+        "entry_tf": null,
+        "entry_evidence": null,
+        "session": "",
+        "timeframes": "",
+        "emotion_before": "",
+        "emotion_after": "",
+        "confidence": null,
+        "adherence": null,
+        "mistakes": "",
+        "tags": "",
+        "thesis": "",
+        "lesson": "",
+        "execution_notes": "",
+        "screenshot_url": "",
+        "manual_mae": null,
+        "manual_mfe": null,
+        "created_at": "2026-10-11 14:41:14",
+        "updated_at": "2026-10-11 14:41:14",
+        "legs": null,
+        "entries": null,
+        "guardrail_snapshot": null,
+        "entry_permission": null,
+        "override_reason": null,
+        "strategy_version": null
+      }
+    },
+    {
+      "label": "actual review renders the captured reason AND violated rule",
+      "passed": false,
+      "detail": "Guardrail history — UTC rule day\n      Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Recording-time flags do not infer what happened at a historical entry.\n      Captured at (UTC)Account / actionViolated rule(s)Reason / decision\n        2026-10-11T12:00:00.000Z\n          #1 · state_observedbreach\n          max_trades_day: 3 entries today — your preselected cap is 3.\n          No override taken.2026-10-11T12:00:00.000Z\n          #1 · trade_entryblocked_attempt\n          max_trades_day: 3 entries today — your preselected cap is 3.\n          No override taken.2026-10-11T12:00:00.000Z\n          #1 · trade_entryblocked_attempt\n          max_trades_day: 3 entries today — your preselected cap is 3.\n          No override taken."
+    },
+    {
+      "label": "unavailable check disables both entry actions; no override affordance",
+      "passed": false,
+      "detail": [
+        {
+          "text": "Cancel",
+          "disabled": false
+        },
+        {
+          "text": "Save & close",
+          "disabled": false
+        },
+        {
+          "text": "Save trade",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "label": "honest record-only mode remains enabled during unknown permission",
+      "passed": false,
+      "detail": "no record-only mode"
+    },
+    {
+      "label": "record-only mode records OPEN reality but never grants permission",
+      "passed": false,
+      "detail": {
+        "id": 3,
+        "user_id": 1,
+        "account_id": 1,
+        "symbol": "TEST",
+        "asset_class": "stocks",
+        "direction": "long",
+        "status": "open",
+        "opened_at": "2026-10-11T12:00:00.000Z",
+        "closed_at": null,
+        "entry": 100,
+        "exit": null,
+        "stop": null,
+        "target": null,
+        "size": 0,
+        "fees": 0,
+        "gross_pnl": 0,
+        "net_pnl": 0,
+        "risk_amount": 0,
+        "r_multiple": 0,
+        "planned_r": null,
+        "mae_r": null,
+        "mfe_r": null,
+        "stop_moved": 0,
+        "exit_reason": "",
+        "notes": "",
+        "strategy_id": null,
+        "strategy_name": "",
+        "setup_grade": "",
+        "entry_model": null,
+        "entry_tf": null,
+        "entry_evidence": null,
+        "session": "",
+        "timeframes": "",
+        "emotion_before": "",
+        "emotion_after": "",
+        "confidence": null,
+        "adherence": null,
+        "mistakes": "",
+        "tags": "",
+        "thesis": "",
+        "lesson": "",
+        "execution_notes": "",
+        "screenshot_url": "",
+        "manual_mae": null,
+        "manual_mfe": null,
+        "created_at": "2026-10-11 14:41:14",
+        "updated_at": "2026-10-11 14:41:14",
+        "legs": null,
+        "entries": null,
+        "guardrail_snapshot": null,
+        "entry_permission": null,
+        "override_reason": null,
+        "strategy_version": null
+      }
+    },
+    {
+      "label": "other owned clear account is not poisoned by first account stop",
+      "passed": true
+    },
+    {
+      "label": "switching form account rechecks and reinstates its stop",
+      "passed": false,
+      "detail": "Save trade"
+    },
+    {
+      "label": "late first-account preflight cannot overwrite second-account state",
+      "passed": false,
+      "detail": "Save trade"
+    },
+    {
+      "label": "manual prospective plan copy goes through fresh server admission",
+      "passed": false
+    },
+    {
+      "label": "authorised clipboard preserves integer entry100/target110, not trailing-zero truncation",
+      "passed": false,
+      "detail": "BUY TEST · entry 1 · stop 99 · target 11"
+    },
+    {
+      "label": "historical clipboard is explicitly labelled journal/research, not live permission",
+      "passed": false,
+      "detail": "BUY TEST · entry 1 · stop 99 · target 11"
+    },
+    {
+      "label": "bot UI disables ordinary Copy at personal stop",
+      "passed": true
+    },
+    {
+      "label": "technically eligible personal stop gets a grey reason-required copy path",
+      "passed": false,
+      "detail": "Market mechanicsPredictionScanCorrectionsSignals1m3m5m15m30m1h4h1d1wAny windowAsiaLondonNY AMLondon closepredictionAnalyseSave as signalResolve signalsTradingView chartTV in appCopy planNO TRADEA+ · 93.2/100method confirmed · shortmechanics 84.32London killzone96.5 · controlled-fixtureTEST 15m: NO TRADE (A+, 93.2/100) — Stand down: 3 entries today — your preselected cap is 3. Method: confirmed — 4"
+    },
+    {
+      "label": "save-signal is grey and explicit about override",
+      "passed": false
+    },
+    {
+      "label": "bot copy asks reason before clipboard or plan POST",
+      "passed": false,
+      "detail": {
+        "dialog": false,
+        "copied": null
+      }
+    },
+    {
+      "label": "bot copy follows a recorded single-action override, labelled not a broker order",
+      "passed": false,
+      "detail": null
+    },
+    {
+      "label": "shared account switch refreshes bot data for selected account",
+      "passed": false,
+      "detail": {
+        "url": "/bots/analyse",
+        "params": {
+          "symbol": "TEST",
+          "tf": "15m",
+          "prediction": 1,
+          "bars": 1200,
+          "min_rr": 1,
+          "trim": 0
+        }
+      }
+    },
+    {
+      "label": "UI composition has no runtime errors",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Actual browser scripts/auth/SQL, declared graph/bootstrap/candle IO seams; no pixel, production feed, broker or outcome claim"
+}

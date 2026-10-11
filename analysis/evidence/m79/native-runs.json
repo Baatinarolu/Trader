@@ -1,0 +1,30 @@
+[
+  {
+    "stage": "full",
+    "suite": "api",
+    "exit_code": 0,
+    "output": "api-full.txt",
+    "io": "explicit offline-synthetic; serial per DB; identical truthful recording fixtures and unchanged assertions/floors"
+  },
+  {
+    "stage": "full",
+    "suite": "bots",
+    "exit_code": 1,
+    "output": "bots-full.txt",
+    "io": "explicit offline-synthetic; serial per DB; identical truthful recording fixtures and unchanged assertions/floors"
+  },
+  {
+    "stage": "parent",
+    "suite": "api",
+    "exit_code": 0,
+    "output": "api-parent-identical-fixtures.txt",
+    "io": "explicit offline-synthetic; serial per DB; identical truthful recording fixtures and unchanged assertions/floors"
+  },
+  {
+    "stage": "parent",
+    "suite": "bots",
+    "exit_code": 1,
+    "output": "bots-parent-identical-fixtures.txt",
+    "io": "explicit offline-synthetic; serial per DB; identical truthful recording fixtures and unchanged assertions/floors"
+  }
+]

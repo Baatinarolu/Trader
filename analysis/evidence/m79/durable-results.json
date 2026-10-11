@@ -1,0 +1,200 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 48,
+  "fail": 0,
+  "results": [
+    {
+      "label": "three actual entry POSTs exhaust the preselected cap",
+      "passed": true
+    },
+    {
+      "label": "each entry has an independently durable admission",
+      "passed": true
+    },
+    {
+      "label": "reaching cap latches before any fourth blocked attempt",
+      "passed": true
+    },
+    {
+      "label": "truthful date/notes correction succeeds without rewriting admission provenance",
+      "passed": true
+    },
+    {
+      "label": "backdating an admitted row cannot refund an entry slot",
+      "passed": true
+    },
+    {
+      "label": "honest journal deletion is still allowed",
+      "passed": true
+    },
+    {
+      "label": "journal truth and durable attempt count are distinct",
+      "passed": true
+    },
+    {
+      "label": "deletion leaves the personal permission stopped",
+      "passed": true
+    },
+    {
+      "label": "honest bulk deletion remains allowed",
+      "passed": true
+    },
+    {
+      "label": "deleting all rows cannot erase the daily entry cap",
+      "passed": true
+    },
+    {
+      "label": "all three admission records survive all journal deletions",
+      "passed": true
+    },
+    {
+      "label": "already-executed open reality remains recordable, never permission",
+      "passed": true
+    },
+    {
+      "label": "historical close remains recordable at the durable stop",
+      "passed": true
+    },
+    {
+      "label": "record-only/history writes do not fabricate admission records",
+      "passed": true
+    },
+    {
+      "label": "known durable stop permits only an explicitly reasoned action",
+      "passed": true
+    },
+    {
+      "label": "override consumes one further durable entry, not an unlock",
+      "passed": true
+    },
+    {
+      "label": "next entry without its own reason remains blocked",
+      "passed": true
+    },
+    {
+      "label": "durable admission links actual trade, stopped snapshot and reason",
+      "passed": true
+    },
+    {
+      "label": "reopening after deletion still needs a fresh reason",
+      "passed": true
+    },
+    {
+      "label": "reasoned reopen creates a new durable admission",
+      "passed": true
+    },
+    {
+      "label": "reopening the SAME journal id counts again, not once per id",
+      "passed": true
+    },
+    {
+      "label": "account settings edit does not erase the frozen current-day cap",
+      "passed": true
+    },
+    {
+      "label": "another owned account is clear, not poisoned by prior admissions",
+      "passed": true
+    },
+    {
+      "label": "reason/state remain account-ownership scoped",
+      "passed": true
+    },
+    {
+      "label": "durable admission still requires real authentication",
+      "passed": true
+    },
+    {
+      "label": "six concurrent requests with one slot produce one admission/five stops",
+      "passed": true
+    },
+    {
+      "label": "concurrent journal AND durable counts agree at three",
+      "passed": true
+    },
+    {
+      "label": "durable-admission write failure rolls back the journal insert",
+      "passed": true
+    },
+    {
+      "label": "failed atomic write cannot consume an entry slot",
+      "passed": true
+    },
+    {
+      "label": "two honestly recorded losses latch the day stop",
+      "passed": true
+    },
+    {
+      "label": "honest correction changes P&L/current streak, not observed day stop",
+      "passed": true
+    },
+    {
+      "label": "deleting both loss records cannot reset an observed streak stop",
+      "passed": true
+    },
+    {
+      "label": "retained streak stop is enforced by actual POST",
+      "passed": true
+    },
+    {
+      "label": "exact 3% realised-loss boundary is observed as a day stop",
+      "passed": true
+    },
+    {
+      "label": "corrected positive P&L remains visible while observed loss stop persists",
+      "passed": true
+    },
+    {
+      "label": "deletion cannot undo the observed daily-loss stop",
+      "passed": true
+    },
+    {
+      "label": "loss deletion cannot erase its cooldown clock",
+      "passed": true
+    },
+    {
+      "label": "loss deletion cannot erase the actual prospective TF candle boundary",
+      "passed": true
+    },
+    {
+      "label": "missing TF after retained loss remains unavailable, not reason-waivable",
+      "passed": true
+    },
+    {
+      "label": "retained cooldown expires at its exact time; next full 1h candle still blocks",
+      "passed": true
+    },
+    {
+      "label": "retained time stops expire, not a fabricated permanent day latch",
+      "passed": true
+    },
+    {
+      "label": "streak day stop resets only on next UTC rule day",
+      "passed": true
+    },
+    {
+      "label": "next-day cap uses the newly selected 20 and a fresh count",
+      "passed": true
+    },
+    {
+      "label": "midnight resets count but does NOT prematurely reset the loss cooldown",
+      "passed": true
+    },
+    {
+      "label": "next full candle exclusion survives the UTC date boundary",
+      "passed": true
+    },
+    {
+      "label": "fresh Node process recovers durable count/day stop after CRUD",
+      "passed": true
+    },
+    {
+      "label": "corrupt mechanical state fails closed even with a reason",
+      "passed": true
+    },
+    {
+      "label": "unavailable-state response does not leak SQL/driver details",
+      "passed": true
+    }
+  ],
+  "scope": "Real local HTTP/auth/transaction/CRUD/restart; explicit server clock; durable observed day stops and admission counter, not broker execution, live feeds or inferred legacy permissions"
+}

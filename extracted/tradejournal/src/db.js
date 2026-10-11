@@ -97,12 +97,26 @@ async function tx(fn) {
   }
 }
 
+/** Same statement shape inside an interactive transaction, never the shared
+ * client. Guard checks and the admitted write must see the same locked state. */
+function transactionStore(transaction) {
+  const prep = sql => ({
+    async get(...a) { return (await transaction.execute({sql,args:argsOf(a)})).rows[0]; },
+    async all(...a) { return (await transaction.execute({sql,args:argsOf(a)})).rows; },
+    async run(...a) {
+      const r = await transaction.execute({sql,args:argsOf(a)});
+      return {changes:Number(r.rowsAffected || 0),lastInsertRowid:r.lastInsertRowid == null ? undefined : Number(r.lastInsertRowid)};
+    },
+  });
+  return {prepare:prep};
+}
+
 const db = {
   prepare,
   get: (sql, ...a) => prepare(sql).get(...a),
   all: (sql, ...a) => prepare(sql).all(...a),
   run: (sql, ...a) => prepare(sql).run(...a),
-  exec, batch, tx,
+  exec, batch, tx, transactionStore,
 };
 
 /* ------------------------------------------------------------------ schema */
@@ -121,6 +135,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   risk_unlocked INTEGER DEFAULT 0,       -- M9: 1 pct is behind a MANUAL unlock, so the unlock has to be
                                          -- persisted. Without this column a stored 1 pct would be re-clamped
                                          -- to 0.5 on every read and the row would disagree with the sizing.
+  max_trades_day INTEGER NOT NULL DEFAULT 3, -- M83/M113 preselected, not derived from overtrading
   daily_loss_limit_pct REAL DEFAULT 3.0,
   max_drawdown_pct REAL DEFAULT 10.0,
   profit_target_pct REAL DEFAULT 8.0,
@@ -128,6 +143,40 @@ CREATE TABLE IF NOT EXISTS accounts (
   archived INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS guardrail_day_caps (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  rule_date TEXT NOT NULL,
+  max_trades_day INTEGER NOT NULL CHECK(max_trades_day BETWEEN 1 AND 100),
+  selected_at TEXT NOT NULL,
+  PRIMARY KEY(user_id,account_id,rule_date)
+);
+-- Mechanical rule state is independent of editable journal rows. No trade FK:
+-- truthful deletion/correction must not replenish entry permissions.
+CREATE TABLE IF NOT EXISTS guardrail_day_state (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  rule_date TEXT NOT NULL,
+  entries_count INTEGER NOT NULL DEFAULT 0 CHECK(entries_count >= 0),
+  stops_json TEXT NOT NULL DEFAULT '{}',
+  last_loss_at TEXT,
+  last_loss_trade_id INTEGER,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY(user_id,account_id,rule_date)
+);
+CREATE TABLE IF NOT EXISTS guardrail_entry_admissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  rule_date TEXT NOT NULL,
+  admitted_at TEXT NOT NULL,
+  action TEXT NOT NULL,
+  trade_id INTEGER NOT NULL,
+  admission_state TEXT NOT NULL,
+  snapshot TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_guardrail_admissions_scope
+  ON guardrail_entry_admissions(user_id,account_id,rule_date);
 -- M50 bias hysteresis. Ep 15 mistake 4 says the bias only changes when its invalidation is hit,
 -- which needs the prior bias and its level to survive between calls. alignment() is deliberately
 -- pure so this state lives here rather than inside it, and nothing that measures the engine has to
@@ -196,6 +245,23 @@ CREATE TABLE IF NOT EXISTS instruments (
   unit TEXT DEFAULT 'units',
   UNIQUE(user_id, symbol)
 );
+-- M90 append-only application audit. Deleted trades cannot erase the observed
+-- rule day or the original decision snapshot. No history is fabricated/backfilled.
+CREATE TABLE IF NOT EXISTS guardrail_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+  rule_date TEXT NOT NULL,
+  observed_at TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  action TEXT NOT NULL,
+  entity_type TEXT,
+  entity_id INTEGER,
+  reason TEXT,
+  snapshot TEXT NOT NULL,
+  dedupe_key TEXT UNIQUE
+);
+CREATE INDEX IF NOT EXISTS idx_guardrail_events_day ON guardrail_events(user_id,rule_date,account_id,id);
 CREATE TABLE IF NOT EXISTS journal_entries (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -440,6 +506,12 @@ async function migrate() {
   // M9: the manual unlock that lets an account sit above the 0.5 % guardrail, up to the
   // 1 % absolute maximum. Persisted so the write path and every later read agree.
   await add('accounts', 'risk_unlocked', 'INTEGER DEFAULT 0');
+  await add('accounts', 'max_trades_day', 'INTEGER NOT NULL DEFAULT 3');
+  for (const table of ['trades','bot_signals']) {
+    await add(table,'guardrail_snapshot','TEXT');
+    await add(table,'entry_permission','TEXT');
+    await add(table,'override_reason','TEXT');
+  }
   // M102: which version of its strategy a trade was taken under. NULL means the trade
   // predates versioning or has no strategy at all - it is never guessed at read time.
   await add('trades', 'strategy_version', 'INTEGER');

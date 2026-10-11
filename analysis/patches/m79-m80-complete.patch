@@ -1,0 +1,1794 @@
+diff --git a/README.md b/README.md
+index df9ae3c..02ff9a2 100644
+--- a/README.md
++++ b/README.md
+@@ -11,6 +11,15 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+ 
+ ---
+ 
++## Personal-rule admission
++
++New trade/reopen and prospective plan actions now recheck scoped personal rules
++server-side. A known stop needs a recorded reason; an unavailable state cannot be
++waived. Honest journal corrections/deletions remain possible but do not replenish
++the durable admission count. See [the guardrails guide](docs/GUARDRAILS.md) for UTC
++cap selection, record-only/research modes, limits and remaining scope. **No broker
++is connected and an app admission is not a market-validated order.**
++
+ ## What it does
+ 
+ | Area | What you get |
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+new file mode 100644
+index 0000000..b9975ab
+--- /dev/null
++++ b/docs/GUARDRAILS.md
+@@ -0,0 +1,90 @@
++# Personal guardrails, recording and reasoned exceptions
++
++These rules govern **this app's prospective trade/plan actions**. There is no broker
++connection: an app admission is not a broker order, reusable permission or proof
++that manually entered levels currently match the market.
++
++## Select a cap before the rule day
++
++In **Settings → Accounts**, choose `max_trades_day`. The default is **3**. The
++course advises roughly **3 intraday / 5 scalping** (also a 2-entry example); those
++are guidance, not a universal maximum. The app accepts integers **1–100**.
++
++The first guardrail check/admission freezes that account's cap for the **UTC rule
++day**. Editing the setting afterward selects the next day's cap, not more entries
++for the current day. Historical profitable-day counts are suggestions only and
++cannot raise the operative cap automatically. This is **not user-timezone rollover**.
++
++## What stops a prospective action
++
++- The preselected daily entry cap, including open positions and reopen attempts.
++- The existing consecutive-loss/day-realised-loss limits. Percentage loss uses
++  starting balance plus P&L closed before the day, not floating P&L.
++- The existing **30-minute** post-loss cooldown (the course says at least 10).
++- The next **full entry-timeframe candle** after a loss. Its exclusion ends at
++  `ceil(loss_time / bar_duration) * bar_duration + bar_duration`. A loss exactly
++  on a boundary belongs to the candle that just closed. This is a server-clock
++  boundary, **not confirmation from a live market feed**.
++- An unavailable account/history/rule state: it grants no permission and cannot
++  be reason-waived. A supported entry TF is required after a recent loss.
++
++Supported TFs: `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `1d`, `1wk`. The two-week
++missing-TF lookback and treatment of older undated closures are implementation
++policies, not durations quoted from the course. A closed-today record with an
++invalid close timestamp, or non-positive day-start equity, makes permission
++unavailable until repaired.
++
++## Honest corrections do not replenish admissions
++
++Successful new entries/reopens and their counter update share one database WRITE
++transaction. Admission records have **no journal-trade foreign key**. The observed
++entry count is a monotonic floor; observed day cap/loss/streak stops last until UTC
++rollover. Previously observed loss timestamps still drive cooldown/candle expiry,
++including across midnight.
++
++You can correct dates/P&L, close, or delete journal rows. The corrected journal
++truth remains visible, but it does not erase a stop that the app already observed
++or refund a server admission. A stopped entry can proceed only as the separately
++recorded, fresh reasoned exception below. Time stops still expire at their actual
++boundaries; they are not permanent day locks.
++
++Saved/copied plans are not executed positions and do **not** consume a trade-entry
++slot. Their current personal-rule check is action-scoped and cannot be reused as a
++later trade permit. Every prospective trade/reopen is checked again server-side.
++
++## Reasoned exceptions
++
++A **known** stop gives an explicitly gray, reason-required action. Its dialog shows
++the violated rules; blank/whitespace reasons cannot confirm, and Cancel writes
++nothing. An **unknown** state disables prospective actions instead.
++
++The server accepts plain text up to **2,000 submitted characters**, trims it, and
++records the reason with the fresh stopped snapshot and linked action in one
++transaction. Failure to persist the audit rolls back the action. The exception
++applies to that one action only, cannot waive a technical candidate veto, and
++cannot unlock the rest of the day. An unnecessary reason submitted while clear
++is not falsely labelled an override; an invalid/no-op plan grants no permission.
++
++## Recordkeeping is not permission
++
++Use **Record only** for an already-executed open position. Historical closed
++entries, closes, corrections and imports remain recordable, including during a
++permission-read outage. A record-only write has no prospective permission. JSON/
++CSV imports carry no invented historical admission or violation snapshot.
++
++Use **research-only** for a retrospective plan. Legacy rows keep NULL admission
++provenance: migration does not guess whether old trades broke rules. Where a
++historical write captures a rule snapshot, it is explicitly **recording-time state**,
++not an inferred entry-time violation.
++
++Day review displays immutable observed rule details, blocked attempts and override
++reasons, scoped to user/account/UTC day. Deleting trades or changing settings does
++not rewrite those captures. An empty history does not prove past compliance.
++
++## Scope still open
++
++This change does not implement the profit stop, behavioural resize, adaptive
++sizing, news fail-closed policy or the remaining time-window finding. It does not
++change entry models, target/stop geometry, RR floors, grade policies, the course's
++30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
++edge, win-rate improvement, live-provider or production-deployment claim is made.
+diff --git a/public/css/app.css b/public/css/app.css
+index 39a6d52..591846e 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -554,3 +554,7 @@ fieldset,legend{border-color:var(--border)}
+ 
+ /* a plan below the trader's own R:R floor: shown, never silently armed */
+ .now-note.rr-warn{border-left:2px solid var(--red);background:rgba(217,84,103,.07);padding:6px 9px;margin-top:8px;color:var(--text)}
++
++/* M79/M80: a grey KNOWN stop opens the reason dialog. Unavailable checks are
++ * actually disabled and cannot be overridden. Server admission remains binding. */
++.btn.guardrail-stop { background: var(--bg-3); color: var(--muted-2); border-color: var(--border); border-style: dashed; }
+diff --git a/public/js/app.js b/public/js/app.js
+index e133509..02799d3 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -250,10 +250,11 @@
+     },
+ 
+     /* -------------------------------------------------------------- modals */
+-    modal({ title, body, actions = [], wide, large, small }) {
++    modal({ title, body, actions = [], wide, large, small, onClose }) {
+       const back = U.h('div', { class: 'modal-back' });
+       const m = U.h('div', { class: 'modal' + (wide ? ' lg' : small ? ' sm' : large ? ' lg' : '') });
+-      const close = () => { back.remove(); this.modalStack = this.modalStack.filter((x) => x !== close); if (!this.modalStack.length) document.body.style.overflow = ''; };
++      let closed = false;
++      const close = () => { if (closed) return; closed = true; back.remove(); this.modalStack = this.modalStack.filter((x) => x !== close); if (!this.modalStack.length) document.body.style.overflow = ''; if (onClose) onClose(); };
+       const head = U.h('div', { class: 'modal-head' }, U.h('h3', { text: title }), U.h('span', { class: 'spacer', style: 'flex:1' }), U.h('button', { class: 'btn xs ghost', text: 'Close', onclick: close }));
+       m.appendChild(head);
+       const b = U.h('div', { class: 'modal-body' });
+@@ -261,7 +262,7 @@
+       m.appendChild(b);
+       if (actions.length) {
+         const foot = U.h('div', { class: 'modal-foot' });
+-        actions.forEach((a) => foot.appendChild(U.h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger ghost' : 'ghost'), text: a.label, onclick: () => a.onClick ? a.onClick(close) : close() })));
++        actions.forEach((a) => { a.node = U.h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger ghost' : 'ghost'), text: a.label, disabled:!!a.disabled, onclick: () => a.onClick ? a.onClick(close) : close() }); foot.appendChild(a.node); });
+         m.appendChild(foot);
+       }
+       back.appendChild(m);
+@@ -274,6 +275,39 @@
+       return { close, node: m };
+     },
+ 
++    /** A known stop opens a reason dialog, never an immediate retry. The server
++     * still rechecks and records the reason/rules atomically for this ONE action. */
++    async runGuarded(operation, daily = null) {
++      if (daily && (daily.status==='unknown' || daily.permission?.can_override===false && daily.permission?.allowed===false)) throw new Error(daily.message || 'Personal guardrails unavailable; no override is permitted.');
++      if (daily?.status==='stop') return this.overrideDialog(daily,operation);
++      try { return await operation(null); }
++      catch(e) {
++        if (e.data?.code==='guardrail_stop' && e.data.daily?.permission?.can_override) return this.overrideDialog(e.data.daily,operation);
++        throw e;
++      }
++    },
++    overrideDialog(daily, operation) {
++      if (daily?.status!=='stop' || daily.permission?.can_override!==true) return Promise.reject(new Error('Only a verified personal stop can be overridden.'));
++      return new Promise(resolve => {
++        let finished = false, busy = false;
++        const body = U.h('div');
++        body.innerHTML = `<div class="bot-warn"><b>Personal stop — reason required</b><p>${U.esc(daily.message)}</p></div>
++          <div class="small muted">Account #${U.esc(daily.account_id)} · ${U.esc(daily.date)} (UTC). This does not waive a technical setup veto or unlock future entries. The reason and the server's fresh violated-rule snapshot will be saved in your day review.</div>
++          <label class="field"><span>Why are you overriding this stop?</span><textarea id="guardrail-override-reason" required maxlength="2000" placeholder="Write your deliberate reason, not a checkbox acknowledgement."></textarea></label>
++          <div class="field-note" id="guardrail-override-error"></div>`;
++        const actions = [{label:'Cancel',ghost:true},{label:'Record override & continue',primary:true,disabled:true,onClick:async close=>{
++          const reason = U.$('#guardrail-override-reason',body).value.trim();
++          if (!reason || busy) return;
++          busy = true; actions[1].node.disabled = true;
++          try { const result = await operation(reason); finished = true; resolve(result); close(); }
++          catch(e) { U.$('#guardrail-override-error',body).textContent = e.message; this.toast(e.message,'err'); }
++          finally { busy = false; actions[1].node.disabled = !U.$('#guardrail-override-reason',body).value.trim(); }
++        }}];
++        this.modal({title:'Override personal guardrail',body,actions,onClose:()=>{if(!finished)resolve(null);}});
++        U.$('#guardrail-override-reason',body).addEventListener('input',e=>{actions[1].node.disabled=busy || !e.target.value.trim();});
++      });
++    },
++
+     /* ------------------------------------------------------------ trade I/O */
+     async openTrade(id, prefill) {
+       let trade = null;
+@@ -284,7 +318,22 @@
+         if (trade.opened_at && /^\d{4}-\d{2}-\d{2}$/.test(trade.opened_at)) trade.opened_at = trade.opened_at + 'T09:00:00';
+       }
+       if (trade && trade.server) delete trade.server;
+-      const form = Views.tradeForm(trade);
++      let form, guard = null;
++      const syncButtons = daily => {
++        guard = daily;
++        if (!form || !actions[1].node) return;
++        const prospective = form.requiresAdmission();
++        const waiting = prospective && (!daily || daily.status==='loading');
++        const unavailable = prospective && daily?.status==='unknown';
++        const stopped = prospective && daily?.status==='stop';
++        for (const a of actions.slice(1)) {
++          a.node.disabled = !!waiting || !!unavailable;
++          a.node.classList.toggle('guardrail-stop',!!stopped);
++          a.node.textContent = waiting ? 'Checking guardrails…' : unavailable ? 'Entry unavailable — recheck' : stopped ? 'Override entry — reason required' : a.label;
++          a.node.setAttribute('aria-label',a.node.textContent);
++          if (stopped) a.node.setAttribute('aria-haspopup','dialog'); else a.node.removeAttribute('aria-haspopup');
++        }
++      };
+       const actions = [
+         { label: id ? 'Delete' : 'Cancel', danger: !!id, onClick: async (close) => {
+             if (!id) return close();
+@@ -294,14 +343,22 @@
+         { label: 'Save & close', ghost: true, onClick: (close) => this.saveTrade(form, id, close, true) },
+         { label: id ? 'Update trade' : 'Save trade', primary: true, onClick: (close) => this.saveTrade(form, id, close, false) },
+       ];
+-      this.modal({ title: id ? `Edit trade — ${U.esc(trade.symbol)}` : 'Log a trade', body: form.node, actions, wide: true });
++      form = Views.tradeForm(trade,{onPermissionChange:daily=>syncButtons(daily)});
++      const view = this.modal({ title: id ? `Edit trade — ${U.esc(trade.symbol)}` : 'Log a trade', body: form.node, actions, wide: true });
++      syncButtons(guard);
++      return view;
+     },
+ 
+     async saveTrade(form, id, close, andNew) {
+       let payload;
+       try { payload = form.collect(); } catch (e) { return this.toast(e.message, 'err'); }
+       try {
+-        const d = id ? await API.put('/trades/' + id, payload) : await API.post('/trades', payload);
++        const operation = reason => {
++          const body = {...payload,...(reason ? {override_reason:reason} : {})};
++          return id ? API.put('/trades/'+id,body) : API.post('/trades',body);
++        };
++        const d = form.requiresAdmission() ? await this.runGuarded(operation,form.guardrailState()) : await operation(null);
++        if (!d) return; // cancelled required-reason dialog, no request/admission
+         Store.invalidate();
+         close();
+         const t = d.trade || {};
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 8320980..4f2cf89 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -46,6 +46,17 @@
+         c.levels && c.levels.target_policy && c.levels.target_policy.rule === 'entry_or_one_above'))));
+   }
+ 
++  const guardedCall = (operation,daily) => global.App.runGuarded ? global.App.runGuarded(operation,daily) : operation(null);
++  const personallyStopped = d => d?.daily?.status==='stop' && d.daily.permission?.can_override===true;
++  const personallyUnknown = d => d?.daily?.status==='unknown';
++  function planPayload(d,c) {
++    const lv=c.levels;
++    return {symbol:d.symbol,timeframe:d.timeframe,account_id:d.daily?.account_id || Store.accountId || null,
++      entry:lv.entry,stop:lv.stop,targets:lv.targets,entry_model:c.entry_model,entry_tf:c.entry_tf || lv.entry_tf,
++      entry_evidence:c.entry_evidence,entry_preference:c.entry_preference,grade:c.grade,score:c.score,
++      target_policy:lv.target_policy,stop_policy:lv.stop_policy,risk_atr:lv.risk_atr,note:'Exact entry-aligned candidate; personal permission is rechecked for this saved action.'};
++  }
++
+   const fmt = (v, dp = 4) => (v === null || v === undefined || isNaN(v)) ? '—' : Number(v).toLocaleString(undefined, { maximumFractionDigits: dp });
+   const chip = (text, cls) => h('span', { class: 'chip ' + (cls || ''), text });
+ 
+@@ -189,9 +200,29 @@
+     // M127 — copy only the candidate the final verdict actually permits, never the
+     // highest-scoring refused idea. Keep this selection shared by the button and handler.
+     const setupData = B.data && B.data.setups;
++    const canSaveMarket = !!(setupData?.candidates || []).some(c=>(c.market_ok ?? c.ok)===true && c.levels);
++    saveBtn.disabled = personallyUnknown(B.data) || !!B.data && !canSaveMarket;
++    saveBtn.classList.toggle('guardrail-stop',personallyStopped(B.data));
++    if (personallyStopped(B.data)) saveBtn.textContent = 'Override & save signal';
+     const copyCandidate = setupData && setupData.verdict && setupData.verdict.dir
+       ? (setupData.candidates || []).find((c) => c.ok && c.dir === setupData.verdict.dir && c.levels)
+       : null;
++    const marketCopy = personallyStopped(B.data) && !B.data.topdown?.blocked
++      ? (setupData?.candidates || []).find(c=>c.market_ok===true && c.dir===B.data.topdown?.direction && c.levels) : null;
++    async function copyPlan(candidate) {
++      if (!candidate) return global.App.toast('No eligible market plan to copy','warn');
++      try {
++        let recorded = null;
++        if (B.data?.daily) {
++          recorded = await guardedCall(reason=>global.API.post('/bots/signals/save-plan',{...planPayload(B.data,candidate),...(reason?{override_reason:reason}:{})}),B.data.daily);
++          if (!recorded) return;
++          if (!recorded.saved) return global.App.toast(recorded.reason || 'Plan was not admitted','warn');
++        }
++        const prefix = recorded?.permission?.state==='overridden' ? 'PERSONAL OVERRIDE RECORDED (not a broker order) · ' : '';
++        const text = global.TV.planText(B.symbol,B.tf,candidate);
++        global.TV.copy(prefix ? prefix+text : text,'Trade plan');
++      } catch(e) { global.App.toast(e.message,'err'); }
++    }
+ 
+     symInput.addEventListener('change', () => { B.symbol = symInput.value.trim().toUpperCase(); onChange(); });
+     tfSel.addEventListener('change', () => { B.tf = tfSel.value; onChange(); });
+@@ -213,7 +244,8 @@
+     });
+     saveBtn.addEventListener('click', async () => {
+       try {
+-        const r = await global.API.post('/bots/signals/save', { symbol: B.symbol, timeframe: B.tf, prediction: B.prediction });
++        const r = await guardedCall(reason=>global.API.post('/bots/signals/save', { symbol: B.symbol, timeframe: B.tf, prediction: B.prediction,account_id:Store.accountId || null,...(reason?{override_reason:reason}:{}) }),B.data?.daily);
++        if (!r) return;
+         global.App.toast(r.saved && r.saved.saved ? `Saved ${r.saved.saved} signal(s)` : 'No actionable setup to save', r.saved && r.saved.saved ? 'ok' : 'warn');
+         if (r.saved && r.saved.saved) { B.signals = null; }
+       } catch (e) { global.App.toast(e.message, 'err'); }
+@@ -230,9 +262,10 @@
+ 
+     levelsBtn.addEventListener('click', () => {
+       if (!copyCandidate) return global.App.toast(B.data ? 'No actionable plan — the bot says stand down' : 'Analyse a market first', 'warn');
+-      global.TV.copy(global.TV.planText(B.symbol, B.tf, copyCandidate), 'Trade plan');
++      copyPlan(copyCandidate);
+     });
+     [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
++    if (marketCopy && global.TV) row.appendChild(h('button',{class:'btn sm guardrail-stop',text:'Override & copy plan',onclick:()=>copyPlan(marketCopy)}));
+     row.appendChild(winNote);
+     /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
+      * button will be blocked ... grayed out ... You physically can't press the trade
+@@ -366,20 +399,22 @@
+         box.appendChild(h('div', { class: 'bot-warn', text: `Below your minimum: this pays ${p.safer.rr}R against a ${p.min_rr}R floor. The method is not hiding it — but it is a scenario, not an order.` }));
+       }
+       box.appendChild(h('div', { class: 'muted-2 td-layer-note', text: `Stop goes beyond the candle that made the sweep (${fmt(p.sweep.level, 5)} swept to ${fmt(p.sweep.extreme, 5)}, ${p.sweep.wick_atr} ATR). ${p.invalidation}` }));
+-      const active = (d.setups && d.setups.candidates || []).find((c) => c.dir === td.direction && c.ok);
+-      const executable = d.now && d.now.armed && d.now.order && active && active.levels;
++      const active = (d.setups && d.setups.candidates || []).find((c) => c.dir === td.direction && (c.market_ok ?? c.ok)===true);
++      const executable = !td.blocked && !personallyUnknown(d) && active && active.levels && (personallyStopped(d) || d.now && d.now.armed && d.now.order);
+       box.appendChild(h('div', { class: 'muted-2', text: 'This table is the HTF narrative projection only. Entry-aligned exit and risk come from the eligible candidate / Now order below; this is not a second executable plan.' }));
+-      const save = h('button', { class: 'btn sm', text: executable ? 'Save eligible entry-aligned plan' : 'Nothing eligible to save', disabled: !executable });
++      const save = h('button', { class: 'btn sm'+(personallyStopped(d)?' guardrail-stop':''), text: executable ? personallyStopped(d) ? 'Override & save entry-aligned plan' : 'Save eligible entry-aligned plan' : 'Nothing eligible to save', disabled: !executable });
+       save.addEventListener('click', async () => {
+         if (!executable) return;
+         try {
+-          const lv = active.levels, o = d.now.order;
+-          const r = await global.API.post('/bots/signals/save-plan', {
++          const lv = active.levels, o = d.now.order || lv;
++          const r = await guardedCall(reason=>global.API.post('/bots/signals/save-plan', {
++            account_id:d.daily?.account_id || Store.accountId || null,...(reason?{override_reason:reason}:{}),
+             symbol: d.symbol, timeframe: d.timeframe, entry: o.entry, stop: o.stop,
+             targets: lv.targets.map((t) => ({ ...t })), note: `Entry-aligned CRT ${p.side}: ${lv.entry_tf} entry; ${lv.target_tf} ${lv.targets[0].kind} target. HTF ${td.layers.bias.tf} range is narrative only.`,
+             entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence, entry_preference: active.entry_preference,
+             grade: active.grade, score: active.score, target_policy: lv.target_policy, stop_policy: lv.stop_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
+-          });
++          }),d.daily);
++          if (!r) return;
+           global.App.toast(r.saved ? 'Eligible plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
+         } catch (e) { global.App.toast(e.message, 'err'); }
+       });
+@@ -681,11 +716,12 @@
+       }
+       card.appendChild(h('div', { class: 'bot-action', text: c.action }));
+       const btnRow = h('div', { class: 'row gap-8' });
+-      const logBtn = h('button', { class: 'btn sm primary', text: 'Log this plan', onclick: () => {
++      const marketEligible = (c.market_ok ?? c.ok)===true && !d.topdown?.blocked;
++      const logBtn = h('button', { class: 'btn sm primary'+(personallyStopped(d)?' guardrail-stop':''), disabled:!marketEligible || personallyUnknown(d), text: personallyStopped(d) ? 'Override entry — reason required' : 'Log this plan', onclick: () => {
+         if (!c.levels) return global.App.toast('No levels to log', 'warn');
+         const L = c.levels;
+         global.App.openTrade(null, {
+-          symbol: d.symbol, asset_class: (d.instrument || {}).asset_class || 'stocks',
++          symbol: d.symbol, status:'open', account_id:d.daily?.account_id || Store.accountId || null, asset_class: (d.instrument || {}).asset_class || 'stocks',
+           direction: c.dir > 0 ? 'long' : 'short',
+           entry: L.entry, stop: L.stop, target: L.targets[0] ? L.targets[0].price : null,
+           size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
+@@ -948,16 +984,18 @@
+             const plan = m.plan;
+             const tgt = (plan.targets || []).filter((t) => t.rr >= 0.9);
+             row.appendChild(h('div', { class: 'bot-detail', html: `<strong>Refined plan (${esc(m.tf)} confirmation)</strong> — entry <b>${fmt(plan.entry, 5)}</b> · stop ${fmt(plan.stop, 5)} · risk ${fmt(plan.risk, 5)} (${plan.risk_atr} ATR) · ${tgt.length ? tgt.slice(0, 3).map((t) => `${t.label ? esc(t.label) + ' ' : ''}${fmt(t.price, 5)} (${t.rr}R)`).join(' → ') : 'no target ≥ 0.9R from here'}` }));
+-            const btn = h('button', { class: 'btn small', text: 'Save refined plan to signals' });
++            const btn = h('button', { class: 'btn small'+(personallyStopped(B.data)?' guardrail-stop':''), disabled:personallyUnknown(B.data) || personallyStopped(B.data) && !(B.data.setups?.candidates || []).some(c=>(c.market_ok ?? c.ok)===true), text: personallyStopped(B.data) ? 'Override & save refined plan' : 'Save refined plan to signals' });
+             btn.addEventListener('click', async () => {
+               try {
+-                const r = await global.API.post('/bots/signals/save-plan', {
++                const r = await guardedCall(reason=>global.API.post('/bots/signals/save-plan', {
++                  account_id:B.data?.daily?.account_id || Store.accountId || null,entry_tf:m.tf || B.tf,...(reason?{override_reason:reason}:{}),
+                   symbol: (B.data && B.data.symbol) || B.symbol, timeframe: B.tf,
+                   entry: plan.entry, stop: plan.stop, targets: plan.targets,
+                   grade: s.grade, score: s.score, p_win: s.p_win, rr_primary: plan.rr_primary,
+                   entry_mode: 'mtf', mtf_tf: m.tf, risk_atr: plan.risk_atr,
+                   note: `MTF entry: ${B.tf} setup confirmed by the ${m.tf} (sweep + displacement inside the zone)`,
+-                });
++                }),B.data?.daily);
++                if (!r) return;
+                 global.App.toast(r.saved ? 'Refined plan saved — resolve it later to grade the bot' : (r.reason || 'Not saved'), r.saved ? 'ok' : 'warn');
+                 if (r.saved) B.signals = null;
+               } catch (e) { global.App.toast(e.message, 'err'); }
+@@ -1106,7 +1144,7 @@
+ 
+     const g = c.guardrails.guardrails || {};
+     const gr = h('div', { class: 'card' });
+-    gr.appendChild(h('div', { class: 'card-head', html: `<strong>Your guardrails</strong> <span class="muted">derived from your own winning behaviour</span>` }));
++    gr.appendChild(h('div', { class: 'card-head', html: `<strong>Your guardrails</strong> <span class="muted">preselected daily cap · sample-gated risk suggestions</span>` }));
+     gr.appendChild(h('div', { class: 'stat-strip', html: `
+       <div><div class="l">Risk / trade</div><div class="v">${g.max_risk_pct}%</div></div>
+       <div><div class="l">Trades / day</div><div class="v">${g.max_trades_day}</div></div>
+@@ -1210,6 +1248,9 @@
+   Views.bots = {
+     title: 'Bots',
+     render(root) {
++      const accountKey=Store.accountId || null;
++      if (B.accountKey!==undefined && B.accountKey!==accountKey) {B.data=null;B.chart=null;B.scan=null;B.correction=null;B.error='';B.busy='';}
++      B.accountKey=accountKey;
+       root.innerHTML = '';                       // replace the shell's skeleton placeholder
+       if (global.__botRequest) {                 // handed over from the Market chart panel
+         B.symbol = String(global.__botRequest.symbol || B.symbol).toUpperCase();
+@@ -1259,9 +1300,9 @@
+         const sym = B.symbol, tf = B.tf;
+         const trim = B.trim || 0;
+         Promise.all([
+-          API.get('/bots/analyse', { symbol: sym, tf, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
++          API.get('/bots/analyse', { symbol: sym, tf, account_id:Store.accountId || null, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
+             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }),                     // M26
+-          API.get('/bots/chart', { symbol: sym, tf, bars: 600, min_rr: B.minRR, trim,
++          API.get('/bots/chart', { symbol: sym, tf, account_id:Store.accountId || null, bars: 600, min_rr: B.minRR, trim,
+             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }).catch(() => null),    // M26
+           API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
+         ]).then(([d, ch, dr]) => {
+@@ -1271,11 +1312,11 @@
+           global.App.refresh();
+         }).catch((e) => { B.error = 'Analysis failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'scan') {
+-        API.get('/bots/scan', { symbols: B.scanList.join(','), tf: B.tf })
++        API.get('/bots/scan', { symbols: B.scanList.join(','), tf: B.tf, account_id:Store.accountId || null })
+           .then((r) => { B.scan = r; B.busy = ''; global.App.refresh(); })
+           .catch((e) => { B.error = 'Scan failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'correct') {
+-        API.get('/bots/correction', {})
++        API.get('/bots/correction', {account_id:Store.accountId || null})
+           .then((c) => { B.correction = c; B.busy = ''; global.App.refresh(); })
+           .catch((e) => { B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'backtest') {
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 1d22619..efe9ff7 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -42,6 +42,11 @@
+           </div>`).join('');
+       }
+       listCol.appendChild(list);
++      const captured = U.h('div', {class:'card',style:'margin-top:14px'});
++      captured.innerHTML = `<div class="card-head"><h3>Captured guardrail days (UTC)</h3></div>
++        ${(entries.guardrail_days || []).map(d=>`<div class="row-between" style="padding:8px"><span class="mono">${U.esc(d.rule_date)} · ${d.events} events · ${d.overrides || 0} overrides</span><button class="btn xs ghost" data-open="${U.esc(d.rule_date)}">Review rules & reasons</button></div>`).join('') || '<div class="empty">No stops captured yet. Older violations are not inferred or backfilled.</div>'}`;
++      captured.addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(b)openEditor(b.dataset.open,root);});
++      listCol.appendChild(captured);
+       layout.appendChild(listCol);
+ 
+       /* goals column */
+@@ -111,6 +116,19 @@
+     });
+   }
+ 
++  /** Historical snapshots, not a rerun against today's changed settings. */
++  Views.guardrailHistory = function(events = []) {
++    const node = U.h('div',{class:'card',style:'margin-top:14px'});
++    node.innerHTML = `<div class="card-head"><h3>Guardrail history — UTC rule day</h3></div>
++      <div class="tiny muted">Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Recording-time flags do not infer what happened at a historical entry.</div>
++      ${events.length ? `<div class="table-wrap"><table><thead><tr><th>Captured at (UTC)</th><th>Account / action</th><th>Violated rule(s)</th><th>Reason / decision</th></tr></thead><tbody>
++        ${events.map(ev=>`<tr><td class="mono tiny">${U.esc(ev.observed_at)}</td>
++          <td>${U.esc(ev.account_id == null ? 'account removed' : '#'+ev.account_id)} · ${U.esc(ev.action)}<br><span class="tiny muted">${U.esc(ev.kind)}${ev.entity_type && ev.entity_id ? ' · '+U.esc(ev.entity_type)+' #'+U.esc(ev.entity_id) : ''}</span></td>
++          <td class="tiny">${(ev.snapshot?.breaches || []).map(b=>`<b>${U.esc(b.rule)}</b>: ${U.esc(b.detail)}`).join('<br>') || U.esc(ev.snapshot?.message || 'No known stop in the captured snapshot.')}</td>
++          <td class="tiny">${ev.reason ? `<b>Override reason:</b> ${U.esc(ev.reason)}` : ev.kind==='journal_record' ? 'Recording-time observation only; no execution permission.' : 'No override taken.'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No captured guardrail events for this day. This does not prove that older trades followed the rules.</div>'}`;
++    return node;
++  };
++
+   async function openEditor(dateISO, root) {
+     const day = await API.get('/journal/' + dateISO);
+     const e = day.entry || {};
+@@ -139,6 +157,7 @@
+         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    body.appendChild(Views.guardrailHistory(day.guardrail_events || []));
+     global.App.modal({
+       title: 'Day review — ' + dateISO, body, wide: true,
+       actions: [{ label: 'Cancel', ghost: true }, {
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index 6d78f3c..26f1b69 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -420,6 +420,7 @@
+           <label class="field"><span>Currency</span><input id="a-ccy" value="${U.esc(v.currency)}" /></label>
+           <label class="field"><span>Starting balance</span><input id="a-bal" type="number" step="any" value="${v.starting_balance}" /></label>
+           <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /></label>
++          <label class="field"><span>Max trades per UTC day</span><input id="a-trades" type="number" min="1" max="100" step="1" value="${v.max_trades_day ?? 3}" /><div class="field-note">Course guidance: 3 intraday / 5 scalping. Frozen on the day's first guardrail check; changes then apply tomorrow. History never raises this cap.</div></label>
+           <label class="field"><span>Daily loss limit (%)</span><input id="a-daily" type="number" step="0.1" value="${v.daily_loss_limit_pct}" /></label>
+           <label class="field"><span>Max drawdown (%)</span><input id="a-dd" type="number" step="0.1" value="${v.max_drawdown_pct}" /></label>
+           <label class="field"><span>Profit target (%)</span><input id="a-target" type="number" step="0.1" value="${v.profit_target_pct}" /></label>
+@@ -432,7 +433,7 @@
+               const payload = {
+                 name: U.$('#a-name', body).value, broker: U.$('#a-broker', body).value, account_type: U.$('#a-type', body).value,
+                 currency: U.$('#a-ccy', body).value, starting_balance: U.$('#a-bal', body).value,
+-                risk_per_trade_pct: U.$('#a-risk', body).value, daily_loss_limit_pct: U.$('#a-daily', body).value,
++                risk_per_trade_pct: U.$('#a-risk', body).value, max_trades_day: U.$('#a-trades', body).value, daily_loss_limit_pct: U.$('#a-daily', body).value,
+                 max_drawdown_pct: U.$('#a-dd', body).value, profit_target_pct: U.$('#a-target', body).value,
+               };
+               if (!payload.name) return global.App.toast('Account needs a name', 'err');
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index fb2c891..1b9a4d1 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -201,6 +201,12 @@
+     const symOptions = Store.instruments.map((i) => `<option value="${i.symbol}" ${t.symbol === i.symbol ? 'selected' : ''}>${i.symbol} — ${U.esc(i.name || '')}</option>`).join('');
+ 
+     node.innerHTML = `
++      <div class="card" style="margin-bottom:12px">
++        <label class="row gap-8"><input id="tf-record-only" type="checkbox" ${!isNew || t.record_only ? 'checked' : ''} /><span>Already executed outside the app / historical record only — not entry permission</span></label>
++        <div class="field-note" id="tf-guardrail-state">Checking the selected account's personal guardrails…</div>
++        <button class="btn xs ghost" id="tf-guardrail-refresh" type="button">Recheck guardrails</button>
++        ${t.override_reason ? `<div class="bot-warn"><b>Recorded override reason (not editable):</b> ${U.esc(t.override_reason)}</div>` : ''}
++      </div>
+       <div class="form-grid">
+         <label class="field"><span>Symbol</span>
+           <input id="tf-symbol" list="tf-symbols" value="${U.esc(t.symbol || '')}" placeholder="EURUSD, ES, AAPL, BTCUSDT…" />
+@@ -372,6 +378,7 @@
+ 
+     function collect() {
+       const body = {
++        record_only:U.$('#tf-record-only',node).checked,
+         symbol: g('symbol').value.toUpperCase().trim(),
+         direction: g('direction').value,
+         status: g('status').value,
+@@ -424,17 +431,50 @@
+       syncTv();
+       const symInput = U.$('#tf-symbol', node);
+       if (symInput) symInput.addEventListener('change', syncTv);
+-      tvCopy.addEventListener('click', () => {
++      tvCopy.addEventListener('click', async () => {
+         const dir = (U.$('#tf-direction', node).value === 'short' ? 'SELL' : 'BUY');
+         const entry = numOf('tf-entry'), stop = numOf('tf-stop'), target = numOf('tf-target');
+-        const fmt = (v) => (v == null ? '—' : String(Number(v.toFixed ? v.toFixed(6) : v)).replace(/\.?0+$/, ''));
++        const fmt = (v) => (v == null ? '—' : String(Number(v.toFixed ? v.toFixed(6) : v)));
+         const parts = [`${dir} ${symOf()}`, entry != null ? `entry ${fmt(entry)}` : null, stop != null ? `stop ${fmt(stop)}` : null, target != null ? `target ${fmt(target)}` : null].filter(Boolean);
+-        global.TV.copy(parts.join(' · '), 'Plan');
++        if (!requiresAdmission()) return global.TV.copy('JOURNAL / RESEARCH ONLY · '+parts.join(' · '),'Recorded plan');
++        try {
++          const out = await global.App.runGuarded(reason=>API.post('/bots/signals/save-plan',{
++            symbol:symOf(),timeframe:g('entrytf').value || '15m',entry_tf:g('entrytf').value || null,account_id:Number(g('account').value),
++            entry,stop,t1:target,...(reason?{override_reason:reason}:{})}),guard);
++          if (out?.saved) global.TV.copy((out.permission?.state==='overridden'?'PERSONAL OVERRIDE RECORDED · ':'')+parts.join(' · '),'Plan');
++        } catch(e) { toast(e.message,'err'); }
+       });
+       tvBot.addEventListener('click', () => { global.__botRequest = { symbol: symOf(), tf: '15m' }; App.go('bots'); });
+     }
+ 
+-    return { node, collect, isNew };
++    let guard = null, guardRequest = 0;
++    const requiresAdmission = () => g('status').value==='open' && !U.$('#tf-record-only',node).checked && (isNew || t.status!=='open');
++    async function refreshGuard() {
++      const request = ++guardRequest;
++      const note = U.$('#tf-guardrail-state',node);
++      if (!requiresAdmission()) {
++        guard = null; note.textContent = 'Journal record/correction only. It records what happened; it does not authorise a new entry.';
++        if (opts.onPermissionChange) opts.onPermissionChange(null); return;
++      }
++      guard = {status:'loading'}; note.textContent = 'Checking personal guardrails — the server rechecks again on entry.';
++      if (opts.onPermissionChange) opts.onPermissionChange(guard);
++      try {
++        const out = await API.get('/bots/guardrails',{account_id:g('account').value,entry_tf:g('entrytf').value || ''});
++        if (request!==guardRequest) return;
++        guard = out.daily;
++        if (!guard?.permission) guard = {status:'unknown',message:'Guardrail response did not include verified permission.',permission:{allowed:false,can_override:false}};
++      } catch(e) {
++        if (request!==guardRequest) return;
++        guard = e.data?.daily || {status:'unknown',message:e.message || 'Guardrails unavailable.',permission:{allowed:false,can_override:false}};
++      }
++      note.textContent = `${guard.message || guard.status} UTC rule day. ${guard.status==='stop' ? 'The grey entry button opens a required-reason override, not an immediate entry.' : ''}`;
++      if (opts.onPermissionChange) opts.onPermissionChange(guard);
++    }
++    for (const field of [g('status'),g('account'),U.$('#tf-record-only',node)]) field.addEventListener('change',refreshGuard);
++    g('entrytf').addEventListener('change',refreshGuard);
++    U.$('#tf-guardrail-refresh',node).addEventListener('click',refreshGuard);
++    refreshGuard();
++    return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
+   };
+ 
+   function localNow() { const d = new Date(); return d.toISOString(); }
+diff --git a/scripts/api-test.js b/scripts/api-test.js
+index 57397e5..f49e05c 100644
+--- a/scripts/api-test.js
++++ b/scripts/api-test.js
+@@ -154,7 +154,9 @@ const check = (label, cond, detail) => { results.push({ ok: !!cond, label, detai
+ 
+   console.log(results.map((r) => ` ${r.ok ? '✓' : '✗'} ${r.label}${r.detail ? '\n     ↳ ' + r.detail : ''}`).join('\n'));
+     // ---------- scale-out legs ----------
+-  const legTrade = await call('POST', '/trades', { symbol: 'NAS100', direction: 'long', status: 'open', entry: 20000, stop: 19900, target: 20300, size: 3, fees: 0 });
++  // This maths fixture records already-executed reality, not a new permit
++  // after the preceding account/day stop. Journal deletion does not reset it.
++  const legTrade = await call('POST', '/trades', { record_only: true, symbol: 'NAS100', direction: 'long', status: 'open', entry: 20000, stop: 19900, target: 20300, size: 3, fees: 0 });
+   const legClosed = await call('POST', `/trades/${legTrade.trade.id}/close`, {
+     legs: [{ pct: 50, price: 20100, reason: 'T1' }, { pct: 25, price: 20200, reason: 'T2' }, { pct: 25, price: 20250, reason: 'runner' }],
+     exit_reason: 'Target',
+@@ -199,9 +201,11 @@ const check = (label, cond, detail) => { results.push({ ok: !!cond, label, detai
+   check('a test notification reports failure honestly instead of throwing', notifyTest.ok === false && notifyTest.result, JSON.stringify(notifyTest.result).slice(0, 90));
+   check('a channel can be deleted', (await call('DELETE', `/notify/channels/${chan.id}`)).ok === true);
+ 
+-  // ---------- refined (MTF) plan execution: save → read back ----------
++  // ---------- refined (MTF) research-plan recording: save → read back ----------
++  // This preserves levels/serialization without pretending the earlier day stop
++  // vanished. Dedicated guardrail probes test prospective permissions separately.
+   const planSave = await call('POST', '/bots/signals/save-plan', {
+-    symbol: 'XAUUSD', timeframe: '15m', entry: 4000, stop: 3990,
++    research_only: true, symbol: 'XAUUSD', timeframe: '15m', entry: 4000, stop: 3990,
+     targets: [{ price: 4020 }, { price: 4050 }],
+     entry_mode: 'mtf', mtf_tf: '5m', risk_atr: 1.2, note: 'api-test refined plan',
+   });
+@@ -210,7 +214,7 @@ const check = (label, cond, detail) => { results.push({ ok: !!cond, label, detai
+   const stored = (planList.signals || []).find((x) => x.id === (planSave.ids || [])[0]);
+   check('refined plan keeps its entry mode and LTF tag', !!stored && stored.entry_mode === 'mtf' && stored.mtf_tf === '5m', JSON.stringify(stored || {}).slice(0, 120));
+   check('refined plan sizes R:R off the refined entry (2R / 5R)', !!stored && Math.abs(stored.rr_primary - 2) < 0.01 && Math.abs(stored.rr_final - 5) < 0.01, stored && `${stored.rr_primary} / ${stored.rr_final}`);
+-  const badPlan = await call('POST', '/bots/signals/save-plan', { symbol: 'XAUUSD', entry: 4000, stop: 4000 });
++  const badPlan = await call('POST', '/bots/signals/save-plan', { research_only: true, symbol: 'XAUUSD', entry: 4000, stop: 4000 });
+   check('a degenerate plan (entry = stop) is refused, not stored', badPlan.saved === 0, JSON.stringify(badPlan));
+ 
+   // ---- leave the database as we found it: delete this run's workspace ----
+diff --git a/scripts/bots-test.js b/scripts/bots-test.js
+index 7622dec..6dc27d3 100644
+--- a/scripts/bots-test.js
++++ b/scripts/bots-test.js
+@@ -434,13 +434,17 @@ async function call(path, opts = {}) {
+         : kind === 3 ? (dir === 'long' ? entry + risk * 0.4 : entry - risk * 0.4) : (dir === 'long' ? entry + risk * 3 : entry - risk * 3);
+       const mae = kind === 1 ? (dir === 'long' ? entry - risk * 1.25 : entry + risk * 1.25)   // held past 1R
+         : (dir === 'long' ? entry - risk * 0.35 : entry + risk * 0.35);
+-      const day = String(1 + (j % 12)).padStart(2, '0');
++      // Synthetic historical JOURNAL samples, not 120 fresh entry admissions.
++      // Keep every value/floor/assertion, but record matching historical OPEN/
++      // CLOSE timestamps within the 180d window and no prospective permission.
++      const day = new Date(Date.now()-(20+(j%12))*86400000).toISOString().slice(0,10);
++      const openedAt = day+'T08:00:00.000Z', closedAt = day+'T09:00:00.000Z';
+       batch.push((async () => {
+         const c = await call('/api/trades', {
+           method: 'POST',
+           body: JSON.stringify({
+             symbol: ['NAS100', 'XAUUSD', 'EURUSD', 'US30'][j % 4],
+-            direction: dir, status: 'open', entry, stop, target, size: kind === 1 ? 3 : 1, fees: 2,
++            direction: dir, status: 'open', record_only: true, opened_at: openedAt, entry, stop, target, size: kind === 1 ? 3 : 1, fees: 2,
+             strategy_name: ['Trend Pullback (continuation)', 'Liquidity Sweep Reversal', 'Breakout Retest'][j % 3],
+             thesis: kind === 3 ? null : `seed trade ${j} — liquidity sweep at a mapped level`,
+             emotion_before: kind === 1 ? 'Anxious' : kind === 3 ? 'FOMO' : 'Calm',
+@@ -451,7 +455,7 @@ async function call(path, opts = {}) {
+         if (!id) return null;
+         await call(`/api/trades/${id}/close`, {
+           method: 'POST',
+-          body: JSON.stringify({ exit, exit_reason: kind === 2 ? 'Target' : 'Discretionary', lesson: kind === 1 ? 'sized up after a loss' : 'seeded' }),
++          body: JSON.stringify({ exit, closed_at: closedAt, notify: false, exit_reason: kind === 2 ? 'Target' : 'Discretionary', lesson: kind === 1 ? 'sized up after a loss' : 'seeded' }),
+         });
+         await call(`/api/trades/${id}`, {
+           method: 'PUT',
+diff --git a/src/bots/correction.js b/src/bots/correction.js
+index 7b7911a..1fef61c 100644
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
+@@ -18,6 +18,7 @@
+ 
+ const { db } = require('../db');
+ const SMC = require('./smc');
++const Guards = require('./guardrails');
+ 
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+ const dayKey = (iso) => String(iso || '').slice(0, 10);
+@@ -34,11 +35,11 @@ const sessionQuality = (s) => {
+ 
+ /* ═══════════════════════════════════════════════════════════ data loading */
+ 
+-async function loadTrades(userId, { days = 365, accountId = null } = {}) {
+-  const since = new Date(Date.now() - days * 864e5).toISOString().slice(0, 19).replace('T', ' ');
++async function loadTrades(userId, { days = 365, accountId = null, store = db, nowMs = Date.now() } = {}) {
++  const since = new Date(nowMs - days * 864e5).toISOString().slice(0, 19).replace('T', ' ');
+   const rows = accountId
+-    ? await db.prepare(`SELECT * FROM trades WHERE user_id=? AND account_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, accountId, since)
+-    : await db.prepare(`SELECT * FROM trades WHERE user_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, since);
++    ? await store.prepare(`SELECT * FROM trades WHERE user_id=? AND account_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, accountId, since)
++    : await store.prepare(`SELECT * FROM trades WHERE user_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, since);
+   return rows.filter((t) => t.status === 'closed' && t.exit != null);
+ }
+ 
+@@ -64,10 +65,10 @@ function statsOf(trades) {
+ }
+ 
+ /** The account the bots should size and guard against. */
+-async function accountOf(userId, accountId = null) {
++async function accountOf(userId, accountId = null, store = db) {
+   const acc = accountId
+-    ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(accountId, userId)
+-    : await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
++    ? await store.prepare('SELECT * FROM accounts WHERE id=? AND user_id=? AND archived=0').get(accountId, userId)
++    : await store.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
+   return acc || { id: null, current_balance: 0, starting_balance: 0, risk_per_trade_pct: 0.5, daily_loss_limit_pct: 3, currency: 'USD' };
+ }
+ 
+@@ -412,12 +413,15 @@ async function backfillGrades(userId) {
+  * Derive personal risk guardrails from the trader's own distribution — not from
+  * generic advice. These are the numbers the app will hold them to.
+  */
+-async function guardrails(userId, { accountId = null } = {}) {
+-  const trades = await loadTrades(userId, { days: 180, accountId });
++async function guardrails(userId, { accountId = null, store = db, nowMs = Date.now() } = {}) {
++  const account = await accountOf(userId, accountId, store);
++  const chosenCap = await Guards.dailyCap(store, userId, account, nowMs);
++  const trades = await loadTrades(userId, { days: 180, accountId: account.id, store, nowMs });
+   const st = statsOf(trades);
+   const base = {
+-    max_risk_pct: 1, max_trades_day: 3, cooldown_min: 30, max_consecutive_losses: 2,
+-    daily_loss_limit_pct: 3, size_cap_note: null, basis: 'Defaults from the risk engine (not enough personal data yet).',
++    max_risk_pct: 1, max_trades_day: chosenCap.max_trades_day, cooldown_min: 30, max_consecutive_losses: 2,
++    daily_loss_limit_pct: Number(account.daily_loss_limit_pct) > 0 ? Number(account.daily_loss_limit_pct) : 3,
++    trade_cap_policy: chosenCap, size_cap_note: null, basis: 'Default risk rules and the preselected account trade cap (not enough personal data yet).',
+   };
+   /* M11 — this was `trades.length < 10`. At 10 trades the app began deriving the
+    * trader's max risk %, max trades/day, cooldown, consecutive-loss stop and daily
+@@ -443,7 +447,6 @@ async function guardrails(userId, { accountId = null } = {}) {
+   const winners = trades.filter((t) => t.net_pnl > 0).map((t) => t.risk_amount || 0).filter((x) => x > 0);
+   // their own best practice: the risk level on winning trades (90th percentile is still winning)
+   const riskCap = percentile(winners.length >= 8 ? winners : risks, 90);
+-  const account = await accountOf(userId, accountId);
+   const accountBalance = Number(account.current_balance || account.starting_balance || 0);
+   // cap = min(their configured risk %, the risk their own winning trades actually survived)
+   const ownCapPct = accountBalance > 0 ? (riskCap / accountBalance) * 100 : 0;
+@@ -485,7 +488,8 @@ async function guardrails(userId, { accountId = null } = {}) {
+ 
+   const g = {
+     max_risk_pct: maxRiskPct,
+-    max_trades_day: cap,
++    max_trades_day: chosenCap.max_trades_day,
++    trade_cap_policy: chosenCap,
+     cooldown_min: 30,
+     max_consecutive_losses: 2,
+     daily_loss_limit_pct: dailyLossLimit,
+@@ -493,7 +497,8 @@ async function guardrails(userId, { accountId = null } = {}) {
+     basis: `Derived from your last ${trades.length} closed trades (${byDay.size} trading days, ${consecutive} losers in the sample).`,
+     evidence: {
+       risk_p90_of_winners: r2(riskCap), median_risk: r2(median(risks)),
+-      trade_cap_basis: `your profitable days average ${r2(percentile(profitDayTrades.length ? profitDayTrades : [3], 70))} trades`,
++      trade_cap_suggestion: cap,
++      trade_cap_basis: `Historical suggestion only, never an automatic cap: your profitable days average ${r2(percentile(profitDayTrades.length ? profitDayTrades : [3], 70))} trades`,
+       trades_past_cap: lateCount ? { count: lateCount, win_rate: lateRate } : null,
+     },
+   };
+@@ -501,37 +506,17 @@ async function guardrails(userId, { accountId = null } = {}) {
+ }
+ 
+ /** Today's live risk state — what the guardrails say RIGHT NOW. */
+-async function dailyState(userId, { accountId = null } = {}) {
+-  const today = new Date().toISOString().slice(0, 10);
+-  const g = guardrails(userId, { accountId });
+-  const rows = (await db.prepare(`SELECT * FROM trades WHERE user_id=? ORDER BY opened_at ASC`).all(userId)).filter((t) => dayKey(t.opened_at) === today);
+-  const closed = rows.filter((t) => t.status === 'closed');
+-  const realised = r2(closed.reduce((s, t) => s + (t.net_pnl || 0), 0));
+-  const rSum = r2(closed.reduce((s, t) => s + (t.r_multiple || 0), 0));
+-  // consecutive losses counting back from the most recent closed trade of today
+-  const recent = await db.prepare(`SELECT r_multiple, net_pnl, opened_at FROM trades WHERE user_id=? AND status='closed' ORDER BY closed_at DESC LIMIT 10`).all(userId);
+-  let streak = 0;
+-  for (const t of recent) { if ((t.net_pnl || 0) < 0) streak++; else break; }
+-  const account = await accountOf(userId, accountId);
+-  const balance = Number(account.current_balance || account.starting_balance || 0);
+-
+-  const breaches = [];
+-  if (closed.length >= g.max_trades_day) breaches.push({ rule: 'max_trades_day', detail: `${closed.length} trades today — your cap is ${g.max_trades_day}.` });
+-  if (streak >= g.max_consecutive_losses) breaches.push({ rule: 'consecutive_losses', detail: `${streak} losses in a row — the cooldown/stop rule is triggered.` });
+-  if (balance > 0 && realised < -Math.abs(balance * g.daily_loss_limit_pct / 100)) breaches.push({ rule: 'daily_loss_limit', detail: `Down $${r2(Math.abs(realised))} today (limit ${g.daily_loss_limit_pct}% = $${r2(balance * g.daily_loss_limit_pct / 100)}).` });
+-
+-  return {
+-    date: today,
+-    guardrails: g,
+-    today: { trades: rows.length, closed: closed.length, realised, r_sum: rSum, avg_r: closed.length ? r2(rSum / closed.length) : 0, loss_streak: streak, balance: r2(balance) },
+-    breaches,
+-    status: breaches.length ? 'stop' : closed.length >= g.max_trades_day - 1 ? 'caution' : 'clear',
+-    message: breaches.length
+-      ? `Stand down: ${breaches.map((b) => b.detail).join(' ')}`
+-      : streak >= 1 ? `${streak} loss${streak > 1 ? 'es' : ''} in a row — take the ${g.cooldown_min}-minute cooldown before the next entry.`
+-        : `Clear to trade. Cap: ${g.max_trades_day} trades / ${g.max_risk_pct}% risk per trade today.`,
+-    remaining_trades: Math.max(0, g.max_trades_day - closed.length),
+-  };
++async function dailyState(userId, { accountId = null, store = db, nowMs = Date.now(), entryTf = null, forEntry = false } = {}) {
++  const account = await accountOf(userId, accountId, store);
++  if (!account.id) return Guards.unavailable({accountId,nowMs});
++  // M79: this was a Promise used as though it were resolved rule numbers.
++  const g = await guardrails(userId, { accountId: account.id, store, nowMs });
++  const rows = await store.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY opened_at ASC').all(userId,account.id);
++  const retained = await Guards.retainedState(store,userId,account.id,nowMs);
++  const daily = Guards.evaluate({account,guardrails:g,rows,nowMs,entryTf,forEntry,retained});
++  await Guards.retainState(store,userId,daily);
++  await Guards.observe(store,userId,daily);
++  return daily;
+ }
+ 
+ /* ═════════════════════════════════════════════════ 4. PER-TRADE FEEDBACK */
+diff --git a/src/bots/guardrails.js b/src/bots/guardrails.js
+new file mode 100644
+index 0000000..a19b88f
+--- /dev/null
++++ b/src/bots/guardrails.js
+@@ -0,0 +1,280 @@
++'use strict';
++/** Personal admission rules, not a market/entry model. Rule days are UTC,
++ * matching the existing daily journal API. Server time, never a client clock.
++ */
++const DEFAULT_CAP = 3;
++const TF_MS = { '1m': 60000, '5m': 300000, '15m': 900000, '30m': 1800000,
++  '1h': 3600000, '4h': 14400000, '1d': 86400000, '1wk': 604800000 };
++function parseCap(value) {
++  if (value == null || value === '' || typeof value === 'boolean') throw new Error('max_trades_day must be an integer from 1 to 100');
++  const n = Number(value);
++  if (!Number.isInteger(n) || n < 1 || n > 100) throw new Error('max_trades_day must be an integer from 1 to 100');
++  return n;
++}
++function configuredCap(account = {}) {
++  try { return parseCap(account.max_trades_day); } catch { return DEFAULT_CAP; }
++}
++const dayKey = ms => new Date(ms).toISOString().slice(0, 10);
++const msOf = value => value == null || value === '' ? NaN : Date.parse(/^[\d-]+ [\d:.]+$/.test(String(value)) ? String(value).replace(' ', 'T')+'Z' : value);
++const number = v => Number.isFinite(Number(v)) ? Number(v) : 0;
++const r2 = v => Math.round(v * 100) / 100;
++/** Freeze the preselected cap on the first check of a rule day. An account edit
++ * selects tomorrow's cap; it cannot erase today's stop in the middle of a streak.
++ */
++async function dailyCap(store, userId, account, nowMs = Date.now()) {
++  const date = dayKey(nowMs);
++  if (!account.id) throw new Error('An owned active account is required');
++  await store.prepare(`INSERT OR IGNORE INTO guardrail_day_caps
++    (user_id,account_id,rule_date,max_trades_day,selected_at) VALUES (?,?,?,?,?)`)
++    .run(userId, account.id, date, configuredCap(account), new Date(nowMs).toISOString());
++  const row = await store.prepare('SELECT * FROM guardrail_day_caps WHERE user_id=? AND account_id=? AND rule_date=?').get(userId, account.id, date);
++  return { max_trades_day: parseCap(row.max_trades_day), selected_at: row.selected_at, rule_date: date, timezone: 'UTC' };
++}
++const DAY_STOP_RULES = new Set(['max_trades_day','consecutive_losses','daily_loss_limit']);
++/** Durable observations, NOT reconstructed historical admissions. The count is
++ * a monotonic floor: observed journal entries plus subsequent server admissions.
++ * Day stops latch until UTC rollover. Time stops retain the observed loss clock,
++ * but still expire at their exact cooldown/candle boundaries. */
++async function retainedState(store,userId,accountId,nowMs) {
++  const date = dayKey(nowMs);
++  const row = await store.prepare('SELECT * FROM guardrail_day_state WHERE user_id=? AND account_id=? AND rule_date=?').get(userId,accountId,date);
++  const loss = await store.prepare(`SELECT last_loss_at,last_loss_trade_id FROM guardrail_day_state
++    WHERE user_id=? AND account_id=? AND last_loss_at<=? AND last_loss_at IS NOT NULL
++    ORDER BY last_loss_at DESC LIMIT 1`).get(userId,accountId,new Date(nowMs).toISOString());
++  const stops = row ? JSON.parse(row.stops_json) : {};
++  if (!stops || typeof stops!=='object' || Array.isArray(stops)
++      || Object.entries(stops).some(([key,b])=>!DAY_STOP_RULES.has(key) || b?.rule!==key)
++      || (row && (!Number.isInteger(row.entries_count) || row.entries_count<0)))
++    throw new Error('Stored mechanical rule state is invalid');
++  return {entries_count:row?.entries_count || 0,stops,...loss};
++}
++async function retainState(store,userId,daily) {
++  if (!daily.today || daily.status==='unknown') return;
++  const scope = [userId,daily.account_id,daily.date];
++  await store.prepare(`INSERT INTO guardrail_day_state
++    (user_id,account_id,rule_date,entries_count,updated_at) VALUES (?,?,?,?,?)
++    ON CONFLICT(user_id,account_id,rule_date) DO UPDATE SET
++      entries_count=MAX(guardrail_day_state.entries_count,excluded.entries_count),updated_at=excluded.updated_at`)
++    .run(...scope,daily.today.trades,daily.evaluated_at);
++  for (const b of daily.breaches.filter(b=>DAY_STOP_RULES.has(b.rule))) {
++    // Add individual keys atomically: overlapping polling cannot erase an
++    // earlier stop or rewrite its original observation with later corrected P&L.
++    const key = '$.'+b.rule;
++    await store.prepare(`UPDATE guardrail_day_state SET stops_json=json_set(stops_json,?,json(?))
++      WHERE user_id=? AND account_id=? AND rule_date=? AND json_type(stops_json,?) IS NULL`)
++      .run(key,JSON.stringify({...b,latched_at:daily.evaluated_at}),...scope,key);
++  }
++  const at = msOf(daily.post_loss?.last_loss_at);
++  if (Number.isFinite(at)) {
++    const iso = new Date(at).toISOString();
++    await store.prepare(`UPDATE guardrail_day_state SET last_loss_at=?,last_loss_trade_id=?
++      WHERE user_id=? AND account_id=? AND rule_date=? AND (last_loss_at IS NULL OR last_loss_at<?)`)
++      .run(iso,daily.post_loss.last_loss_trade_id,...scope,iso);
++  }
++}
++async function retainAdmission(store,userId,daily,options,result) {
++  // A saved/copied research plan is not an executed position. All entry paths,
++  // including reopen, consume exactly one durable admission in this transaction.
++  if (options.entityType!=='trade') return;
++  const id = options.entityId || result?.id;
++  if (!Number.isInteger(Number(id)) || Number(id)<=0) throw new Error('Missing admitted trade identity');
++  const trade = await store.prepare('SELECT status,opened_at FROM trades WHERE id=? AND user_id=? AND account_id=?').get(id,userId,daily.account_id);
++  if (trade?.status!=='open' || trade.opened_at!==daily.evaluated_at) throw new Error('Entry write did not create the admitted action');
++  await store.prepare(`INSERT INTO guardrail_entry_admissions
++    (user_id,account_id,rule_date,admitted_at,action,trade_id,admission_state,snapshot)
++    VALUES (?,?,?,?,?,?,?,?)`).run(userId,daily.account_id,daily.date,daily.evaluated_at,
++      options.action || 'entry',id,daily.admission.state,JSON.stringify(daily));
++  const changed = await store.prepare(`UPDATE guardrail_day_state SET entries_count=entries_count+1,updated_at=?
++    WHERE user_id=? AND account_id=? AND rule_date=?`).run(daily.evaluated_at,userId,daily.account_id,daily.date);
++  if (changed.changes!==1) throw new Error('Missing durable rule day');
++}
++function unavailable({ accountId = null, nowMs = Date.now(), message } = {}) {
++  return { date: dayKey(nowMs), timezone: 'UTC', evaluated_at: new Date(nowMs).toISOString(), account_id: accountId,
++    status: 'unknown', breaches: [], remaining_trades: null, guardrails: null, today: null,
++    message: message || 'Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.',
++    permission: { allowed: false, can_override: false, state: 'unavailable' } };
++}
++const isBlocked = daily => !!daily && (daily.status === 'stop' || daily.status === 'unknown' || daily.permission?.allowed === false);
++/** Pure, inspectable state. Percentage loss limit is anchored to day-start
++ * realised journal equity, not floating P&L or a shrinking intraday balance.
++ * Opening a position counts as an attempt. P&L/streak use the CLOSE day, so
++ * overnight positions do not disappear from the loss stop.
++ */
++function evaluate({ account, guardrails, rows = [], nowMs = Date.now(), entryTf = null, forEntry = false, retained = {} }) {
++  const date = dayKey(nowMs), start = Date.parse(date+'T00:00:00Z'), g = guardrails;
++  if (!account?.id || account.archived || !g || !Number.isFinite(Number(g.max_trades_day))
++      || !(Number(g.daily_loss_limit_pct) > 0) || !(Number(g.max_consecutive_losses) > 0)
++      || !(Number(g.cooldown_min) >= 10)) return unavailable({accountId: account?.id, nowMs});
++  // The loader scopes SQL too; keep the pure boundary scoped for other callers.
++  const scoped = rows.filter(t => Number(t.account_id) === Number(account.id) && Number(t.user_id) === Number(account.user_id));
++  const openedToday = scoped.filter(t => msOf(t.opened_at) >= start && msOf(t.opened_at) <= nowMs);
++  const entries = Math.max(openedToday.length,number(retained.entries_count));
++  const closed = scoped.filter(t => t.status === 'closed');
++  const timed = closed.filter(t => Number.isFinite(msOf(t.closed_at)) && msOf(t.closed_at) <= nowMs);
++  const todayClosed = timed.filter(t => msOf(t.closed_at) >= start).sort((a,b) => msOf(b.closed_at)-msOf(a.closed_at) || number(b.id)-number(a.id));
++  const ambiguous = closed.filter(t => !Number.isFinite(msOf(t.closed_at)) && msOf(t.opened_at) >= start && msOf(t.opened_at) <= nowMs);
++  if (ambiguous.length) return unavailable({accountId: account.id, nowMs,
++    message: 'A closed trade from today has no valid close timestamp. Record its actual close time before requesting new entry permission.'});
++  const realised = r2(todayClosed.reduce((s,t)=>s+number(t.net_pnl),0));
++  const rSum = r2(todayClosed.reduce((s,t)=>s+number(t.r_multiple),0));
++  const priorPnl = timed.filter(t=>msOf(t.closed_at)<start).reduce((s,t)=>s+number(t.net_pnl),0);
++  const balance = r2(number(account.starting_balance)+priorPnl);
++  if (!(balance > 0)) return unavailable({accountId: account.id, nowMs, message:'Day-start realised equity must be positive before new entry permission can be verified.'});
++  let streak = 0;
++  for (const t of todayClosed) { if (number(t.net_pnl) < 0) streak++; else break; }
++  let lastLoss = timed.filter(t=>number(t.net_pnl)<0).sort((a,b)=>msOf(b.closed_at)-msOf(a.closed_at) || number(b.id)-number(a.id))[0] || null;
++  const heldLossMs = msOf(retained.last_loss_at);
++  if (Number.isFinite(heldLossMs) && heldLossMs<=nowMs && (!lastLoss || heldLossMs>msOf(lastLoss.closed_at)))
++    lastLoss = {id:retained.last_loss_trade_id,closed_at:retained.last_loss_at};
++  const lossMs = lastLoss ? msOf(lastLoss.closed_at) : null;
++  const cooldownUntil = lastLoss ? lossMs + Number(g.cooldown_min)*60000 : null;
++  const barMs = TF_MS[entryTf];
++  // A loss at an exact bar boundary belongs to the bar that just closed.
++  // Otherwise the next FULL bar is the forbidden next candle. This is a
++  // deterministic time-boundary rule, not guessed OHLC or feed confirmation.
++  const nextEnd = lastLoss && barMs ? Math.ceil(lossMs/barMs)*barMs+barMs : null;
++  const tfRequired = !!lastLoss && !barMs && nowMs < lossMs+2*Math.max(...Object.values(TF_MS));
++  if (forEntry && tfRequired) return unavailable({accountId: account.id, nowMs,
++    message:'Record a supported entry timeframe (1m, 5m, 15m, 30m, 1h, 4h, 1d or 1wk) to verify the no-next-candle rule after a loss.'});
++  const breaches = [];
++  if (entries >= Number(g.max_trades_day)) breaches.push({rule:'max_trades_day',detail:`${entries} entries today — your preselected cap is ${g.max_trades_day}.`});
++  if (streak >= Number(g.max_consecutive_losses)) breaches.push({rule:'consecutive_losses',detail:`${streak} consecutive closed losses today — stop for this rule day.`});
++  const lossLimit = balance*Number(g.daily_loss_limit_pct)/100;
++  if (realised <= -lossLimit) breaches.push({rule:'daily_loss_limit',detail:`Realised loss $${r2(-realised)} has reached the ${g.daily_loss_limit_pct}% day-start equity limit ($${r2(lossLimit)}).`});
++  if (cooldownUntil !== null && nowMs < cooldownUntil) breaches.push({rule:'post_loss_cooldown',detail:`After a loss, no new entry until ${new Date(cooldownUntil).toISOString()} (${g.cooldown_min}-minute cooldown).`,until:new Date(cooldownUntil).toISOString()});
++  if (nextEnd !== null && nowMs < nextEnd) breaches.push({rule:'no_next_candle',detail:`Do not enter the very next ${entryTf} candle after the loss; wait until ${new Date(nextEnd).toISOString()}.`,until:new Date(nextEnd).toISOString()});
++  for (const b of Object.values(retained.stops || {})) if (!breaches.some(current=>current.rule===b.rule))
++    breaches.push({...b,retained:true,detail:`Previously hit today: ${b.detail} The rule-day stop remains after journal correction; only a fresh reasoned action override can proceed.`});
++  const status = breaches.length ? 'stop' : entries >= Number(g.max_trades_day)-1 ? 'caution' : 'clear';
++  return {date,timezone:'UTC',evaluated_at:new Date(nowMs).toISOString(),account_id:account.id,guardrails:g,
++    today:{trades:entries,closed:todayClosed.length,realised,r_sum:rSum,avg_r:todayClosed.length?r2(rSum/todayClosed.length):0,loss_streak:streak,balance,loss_limit:r2(lossLimit),balance_basis:'day-start realised journal equity'},
++    persistence:{entry_count_basis:'monotonic observed journal entries plus server admissions, not inferred historical permission',journal_entries:openedToday.length,retained_stops:Object.keys(retained.stops || {})},
++    breaches,status,remaining_trades:Math.max(0,Number(g.max_trades_day)-entries),
++    post_loss:{last_loss_trade_id:lastLoss?.id || null,last_loss_at:lastLoss?.closed_at || null,entry_tf:entryTf,entry_tf_required:tfRequired,
++      cooldown_until:cooldownUntil===null?null:new Date(cooldownUntil).toISOString(),next_candle_until:nextEnd===null?null:new Date(nextEnd).toISOString()},
++    message:breaches.length ? 'Stand down: '+breaches.map(b=>b.detail).join(' ') : `No personal stop. ${Math.max(0,Number(g.max_trades_day)-entries)} entries remain under the preselected ${g.max_trades_day}-entry cap. This is not market/setup approval.`,
++    permission:{allowed:!breaches.length,can_override:!!breaches.length,state:breaches.length?'stopped':'clear'}};
++}
++/** Preserve all market geometry and grades. The original market eligibility is
++ * visible; the outer permission is what actionable consumers must obey.
++ */
++function applyToSetups(setups, daily) {
++  if (!daily) return setups;
++  const permission = { ...daily.permission, account_id:daily.account_id, evaluated_at:daily.evaluated_at, message:daily.message, breaches:daily.breaches };
++  if (!isBlocked(daily)) return {...setups, execution_permission:permission};
++  const candidates = (setups.candidates || []).map(c=>({...c,market_ok:c.market_ok === undefined ? c.ok : c.market_ok,ok:false,
++    personal_blocked:true,market_action:c.market_action || c.action,action:'NO TRADE — '+daily.message,no_trade:[...(c.no_trade || []), 'Personal guardrail: '+daily.message]}));
++  return {...setups,candidates,execution_permission:permission,verdict:{...setups.verdict,
++    market_action:setups.verdict.market_action || setups.verdict.action,action:'NO TRADE',dir:0,personal_blocked:true,headline:daily.message}};
++}
++/** Persist only actually observed stops, deduplicated without the observation
++ * clock so polling doesn't manufacture a new violation every second. */
++async function observe(store,userId,daily) {
++  if (daily.status !== 'stop') return;
++  const crypto = require('crypto');
++  const key = crypto.createHash('sha256').update(JSON.stringify([userId,daily.account_id,daily.date,daily.breaches,daily.today])).digest('hex');
++  await logEvent(store,userId,daily,{kind:'breach',action:'state_observed',dedupeKey:key});
++}
++function snapshotFields(daily,state = 'admitted') {
++  return {entry_permission:daily.admission?.state || state,override_reason:daily.admission?.override_reason || null,guardrail_snapshot:JSON.stringify({...daily,
++    capture_basis:state==='record_only' ? 'recording-time state, not an inferred historic entry violation' : 'fresh server admission state, valid only for this recorded action'})};
++}
++async function logEvent(store,userId,daily,{kind,action,entityType=null,entityId=null,reason=null,dedupeKey=null}) {
++  await store.prepare(`INSERT OR IGNORE INTO guardrail_events
++    (user_id,account_id,rule_date,observed_at,kind,action,entity_type,entity_id,reason,snapshot,dedupe_key) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
++    .run(userId,daily.account_id || null,daily.date,daily.evaluated_at,kind,action,entityType,entityId,reason,JSON.stringify(daily),dedupeKey);
++}
++async function eventsForDay(store,userId,date,accountId = null) {
++  const rows = accountId == null
++    ? await store.prepare('SELECT * FROM guardrail_events WHERE user_id=? AND rule_date=? ORDER BY id').all(userId,date)
++    : await store.prepare('SELECT * FROM guardrail_events WHERE user_id=? AND rule_date=? AND account_id=? ORDER BY id').all(userId,date,accountId);
++  return rows.map(r=>{let snapshot;try{snapshot=JSON.parse(r.snapshot);}catch{snapshot={status:'invalid_record',breaches:[],message:'Stored snapshot could not be decoded; not inferred.'};}return {...r,snapshot};});
++}
++/** Journal/import writes are not entry permission. A recording-time snapshot
++ * may be unknown and is explicitly labelled rather than banning honest history. */
++async function record(userId,options,operation) {
++  const {db} = require('../db');
++  return db.tx(async transaction => {
++    const store = db.transactionStore(transaction);
++    const scopes = options.accountIds?.length ? [...new Set(options.accountIds)] : [options.accountId];
++    const snapshots = [];
++    for (const accountId of scopes) {
++      try { snapshots.push(await require('./correction').dailyState(userId,{...options,accountId,store,forEntry:false})); }
++      catch { snapshots.push(unavailable({accountId})); }
++    }
++    const out = await operation(store,snapshots[0]);
++    for (const daily of snapshots) if (daily.status==='stop' || daily.status==='unknown')
++      await logEvent(store,userId,daily,{kind:'journal_record',action:options.action || 'record_only',entityType:options.entityType || null,entityId:options.entityId || out?.id || null});
++    // Permission read failures do not ban honest recording. Write/audit failures
++    // still roll back atomically: no silently unlogged record or false permit.
++    for (const accountId of scopes) {
++      try { await require('./correction').dailyState(userId,{...options,accountId,store,forEntry:false}); }
++      catch { await logEvent(store,userId,unavailable({accountId}),{kind:'journal_record',action:'post_record_state_unavailable',entityType:options.entityType || null,entityId:options.entityId || out?.id || null}); }
++    }
++    return out;
++  });
++}
++
++/** Only explicit, local input validation may escape the fail-closed boundary.
++ * An arbitrary driver/provider Error carrying a 4xx status is NOT trusted. */
++class AdmissionInputError extends Error {
++  constructor(message) { super(message); this.status=400; this.code='guardrail_input_invalid'; }
++}
++function inputError(message) { return new AdmissionInputError(message); }
++function overrideReason(value) {
++  if (value === undefined || value === null) return null;
++  if (typeof value !== 'string' || value.length > 2000) {
++    const e = new Error('Override reason must be plain text, at most 2000 characters.');
++    e.status=400;e.code='guardrail_reason_invalid';throw e;
++  }
++  return value.trim() || null;
++}
++function actionPermission(daily) {
++  return {...(daily.admission || daily.permission),account_id:daily.account_id,evaluated_at:daily.evaluated_at,
++    scope:'personal rules for this recorded action only, not broker execution or future permission'};
++}
++
++function admissionError(daily) {
++  const e = new Error(daily.message); e.status = daily.status === 'unknown' ? 503 : 409;
++  e.code = daily.status === 'unknown' ? 'guardrail_unavailable' : 'guardrail_stop'; e.daily = daily; return e;
++}
++/** Server recheck + insert share one libSQL WRITE transaction. A rendered read
++ * or saved plan is never a reusable permit. No client breach/status is trusted.
++ */
++async function admit(userId, options, operation) {
++  const {db} = require('../db');
++  const reason = overrideReason(options.overrideReason);
++  let out;
++  try {
++    out = await db.tx(async transaction => {
++      const store = db.transactionStore(transaction);
++      let daily;
++      try { daily = await require('./correction').dailyState(userId,{...options,store,forEntry:true}); }
++      catch { daily = unavailable({accountId:options.accountId}); }
++      const overridden = daily.status==='stop' && daily.permission?.can_override===true && !!reason;
++      if (isBlocked(daily) && !overridden) {
++        if (daily.status==='stop') await logEvent(store,userId,daily,{kind:'blocked_attempt',action:options.action || 'entry',entityType:options.entityType || null,entityId:options.entityId || null});
++        return {rejected:daily}; // commit the audit WITHOUT a trade/signal write
++      }
++      daily.admission = {allowed:true,can_override:false,state:overridden?'overridden':'admitted',
++        override_reason:overridden?reason:null,action:options.action || 'entry'};
++      const result = await operation(store,daily);
++      if (result?.saved===0) return {result}; // no action: no false override/admission event
++      await retainAdmission(store,userId,daily,options,result);
++      if (overridden) {
++        const ids = options.entityId ? [options.entityId] : result?.ids || (result?.id ? [result.id] : []);
++        await logEvent(store,userId,{...daily,admission:{...daily.admission,entity_ids:ids}},
++          {kind:'override',action:options.action || 'entry',entityType:options.entityType || null,entityId:ids[0] || null,reason});
++      }
++      await require('./correction').dailyState(userId,{...options,store,forEntry:false});
++      return {result};
++    });
++  } catch (e) {
++    if (e instanceof AdmissionInputError) throw e;
++    throw admissionError(unavailable({accountId:options.accountId}));
++  }
++  if (out.rejected) throw admissionError(out.rejected);
++  return out.result;
++}
++module.exports = { inputError, retainedState, retainState, DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
++  evaluate, unavailable, isBlocked, applyToSetups, admissionError, admit, observe, snapshotFields, logEvent, eventsForDay, record, overrideReason, actionPermission };
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 51d4d46..9f80aae 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -29,6 +29,7 @@ const EntryPreference = require('./entry-preference');
+ const Now = require('./now');
+ const Predict = require('./predict');
+ const Cor = require('./correction');
++const Guards = require('./guardrails');
+ 
+ /* -------------------------------------------------------------------------
+  * M124 — THE ENTRY-SERIES DEPTH THE METHOD READS.
+@@ -246,6 +247,16 @@ function hysteresisView(h) {
+   };
+ }
+ 
++async function personalState(userId, accountId, entryTf) {
++  if (!userId) return null; // unsized research has no claimed personal permission
++  try { return await Cor.dailyState(userId,{accountId,entryTf,forEntry:true}); }
++  catch { return Guards.unavailable({accountId}); }
++}
++function candidateTf(setups, td, fallback) {
++  const c = (setups.candidates || []).find(c=>c.dir===td.direction) || (setups.candidates || [])[0];
++  return c && (c.entry_tf || c.levels && c.levels.entry_tf) || td.entry_setup?.entry_tf || fallback;
++}
++
+ async function analyse(symbol, tf = '15m', opts = {}) {
+   const sym = String(symbol || '').toUpperCase();
+   const spec = specOf(sym);
+@@ -276,7 +287,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
+   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
+ 
+-  const setups = Setup.buildSetups(series.smc, {
++  let setups = Setup.buildSetups(series.smc, {
+     price: series.price, atr: series.atr, entrySeries: series, observedAt: cut.asOf || opts.nowMs,
+     bias: momentumEff.bias, biasReason: momentum.alignment.reason,
+     indicators: series.ind,
+@@ -312,8 +323,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   // blend: the setup's own grade + the market's measured edge + this setup's probability
+   const best = setups.candidates[0] || null;
+   const predRow = !(momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) && !momentum.topdown.countertrend && prediction && prediction.setups && best ? prediction.setups.find((p) => p.dir === best.dir) : null;
+-  let daily = null;
+-  if (opts.userId) { try { daily = await Cor.dailyState(opts.userId, { accountId: opts.accountId }); } catch (e) { daily = null; } }
++  const daily = await personalState(opts.userId,opts.accountId,candidateTf(setups,momentum.topdown || {},tf));
++  setups = Guards.applyToSetups(setups,daily);
+ 
+   const headline = buildHeadline({ sym, tf, momentum: momentumEff, setups, prediction, predRow, news, daily });
+ 
+@@ -322,10 +333,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   // downstream (webhooks, alerts, the UI banner) uses this one for direction.
+   const td = momentum.topdown || {};
+   const methodVerdict = {
+-    action: td.blocked ? 'NO TRADE' : (setups.verdict.dir > 0 ? 'BUY' : setups.verdict.dir < 0 ? 'SELL' : 'NO TRADE'),
++    action: td.blocked || Guards.isBlocked(daily) ? 'NO TRADE' : (setups.verdict.dir > 0 ? 'BUY' : setups.verdict.dir < 0 ? 'SELL' : 'NO TRADE'),
+     direction: td.direction || 0,
+     status: td.status || 'unknown',
+-    blocked: !!td.blocked,
++    blocked: !!td.blocked || Guards.isBlocked(daily),
++    market_blocked: !!td.blocked,
++    personal_blocked: Guards.isBlocked(daily),
+     headline: td.headline || null,
+     conviction: td.conviction || null,
+     pending_step: (td.steps || []).find((s) => !s.done) || null,
+@@ -484,13 +497,16 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
+   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
+ 
+-  const setups = Setup.buildSetups(entry.smc, {
++  let setups = Setup.buildSetups(entry.smc, {
+     price: entry.price, atr: entry.atr, entrySeries: entry, observedAt: cut.asOf || opts.nowMs, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
+     indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
+     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
+     sessionPref: opts.sessionPref || null,   // M26
+   });
+ 
++  const daily = await personalState(opts.userId,opts.accountId,candidateTf(setups,td,tf));
++  setups = Guards.applyToSetups(setups,daily);
++
+   // M77: the actual eligible candidate is the chart's order authority. An HTF
+   // CRT projection is context only, never a second LTF exit/entry. Keep the old
+   // unscoped display branch solely for legacy research payloads.
+@@ -560,7 +576,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   // the same single answer the analysis strip shows, so the chart and the words
+   // on screen can never disagree about what to do
+   const now = Now.build({
+-    td, setups, series: entry, quote: null, symbol: sym, tf,
++    td, setups, daily, series: entry, quote: null, symbol: sym, tf,
+     replay: cut.trim || cut.asOf ? { trim: cut.trim || null, since: null } : null,
+     nowMs: opts.nowMs,
+     minRR: opts.minRR,
+@@ -570,7 +586,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+     ok: true, symbol: sym, timeframe: tf, instrument: spec,
+     generated_at: new Date().toISOString(),
+     replay: cut.trim || cut.asOf ? { trim: cut.trim || null, as_of: cut.asOf ? new Date(cut.asOf).toISOString() : null } : null,
+-    now,
++    now, daily,
+     meta: {
+       provider: entry.meta.provider, ticker: entry.meta.ticker, bars: entry.candles.length,
+       first_bar: entry.meta.first_bar, last_bar: entry.meta.last_bar,
+@@ -588,8 +604,8 @@ async function chart(symbol, tf = '15m', opts = {}) {
+     ).slice(-bars).map((b) => ({ t: b.t, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v })),
+     smc, plan, topdown: td, stack,
+     setups: {
+-      verdict: setups.verdict, method: setups.method,
+-      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok,
++      verdict: setups.verdict, method: setups.method, execution_permission:setups.execution_permission,
++      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok, market_ok:c.market_ok, personal_blocked:c.personal_blocked,
+         // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
+         // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
+         entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence, entry_preference: c.entry_preference,
+@@ -615,13 +631,15 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+         // as analyse(). Without this a scan and an analyse of the same symbol could report
+         // different biases, which is worse than either rule applied consistently.
+         const scanHyst = await applyBiasHysteresis(sym, tf, momentum, series);
+-        const specs = Setup.buildSetups(series.smc, {
++        let specs = Setup.buildSetups(series.smc, {
+           price: series.price, atr: series.atr, entrySeries: series, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
+           indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
+           sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
+                          // No symbol on this path either, so the pair-conflict note stays
+                          // null rather than false.
+         });
++        const daily = await personalState(userId,accountId,candidateTf(specs,momentum.topdown || {},tf));
++        specs = Guards.applyToSetups(specs,daily);
+         // one row per market: the side the method permits (a scan that lists both
+         // a buy and a sell for the same symbol is not a scan, it is a coin toss)
+         const best = (momentum.topdown && momentum.topdown.direction
+@@ -636,7 +654,7 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+             execution_kind: momentum.topdown.countertrend.kind } : {}),
+           bias_held: scanHyst.held, bias_changed_because: scanHyst.changed_because,
+           mechanics: momentum.mechanics.score, mechanics_grade: momentum.mechanics.grade,
+-          action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
++          action: specs.verdict.action, execution_permission:specs.execution_permission, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
+           setup_side: best ? best.side : null, entry_model: best ? best.entry_model : null,
+           stop_tf: best && best.levels ? best.levels.stop_tf : null,
+           stop_kind: best && best.levels && best.levels.stop_policy ? best.levels.stop_policy.kind : null,
+@@ -719,32 +737,34 @@ async function ensureSignalsTable() {
+  * re-derive anything from a fresh analysis — it stores exactly what the
+  * trader was shown, so the bot can be graded on it later.
+  */
+-async function savePlan(userId, p = {}) {
+-  await ensureSignalsTable();
++async function insertPlan(userId, p = {}, store = db, stamp = {}) {
+   const symbol = String(p.symbol || '').toUpperCase();
+   const timeframe = String(p.timeframe || '15m');
+   const entry = Number(p.entry), stop = Number(p.stop);
+   if (!symbol || !Number.isFinite(entry) || !Number.isFinite(stop) || entry === stop) {
+     return { saved: 0, reason: 'symbol, entry and stop (entry ≠ stop) are required' };
+   }
+-  const model = Entry.normaliseName(p.entry_model);
+-  if (p.stop_policy) Stops.check(p.stop_policy, stop, p.entry_tf);
+-  const evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
++  let model, evidence;
+   const dir = stop < entry ? 1 : -1;
+-  if (p.entry_preference) EntryPreference.check(p.entry_preference, p.entry_tf, dir);
+-  if (p.entry_preference && p.entry_evidence && JSON.parse(evidence || '{}').entry_preference
+-      && !EntryPreference.same(p.entry_preference, JSON.parse(evidence).entry_preference))
+-    throw new Error('entry_preference contradicts the named entry_evidence snapshot');
++  try {
++    model = Entry.normaliseName(p.entry_model);
++    if (p.stop_policy) Stops.check(p.stop_policy, stop, p.entry_tf);
++    evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
++    if (p.entry_preference) EntryPreference.check(p.entry_preference, p.entry_tf, dir);
++    if (p.entry_preference && p.entry_evidence && JSON.parse(evidence || '{}').entry_preference
++        && !EntryPreference.same(p.entry_preference, JSON.parse(evidence).entry_preference))
++      throw new Error('entry_preference contradicts the named entry_evidence snapshot');
++  } catch (e) { throw Guards.inputError(e.message); }
+   const risk = Math.abs(entry - stop);
+   const prices = (Array.isArray(p.targets) ? p.targets : [])
+     .map((t) => Number(t && (t.price !== undefined ? t.price : t))).filter((x) => Number.isFinite(x));
+   const t1 = prices.length ? prices[0] : (Number.isFinite(Number(p.t1)) ? Number(p.t1) : null);
+   const t2 = prices.length > 1 ? prices[prices.length - 1] : (Number.isFinite(Number(p.t2)) ? Number(p.t2) : null);
+   const rr = (price) => (price == null ? null : Math.round((Math.abs(price - entry) / risk) * 100) / 100);
+-  const info = await db.prepare(`INSERT INTO bot_signals
++  const info = await store.prepare(`INSERT INTO bot_signals
+     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final,
+-     mechanics, sentiment, entry_mode, mtf_tf, risk_atr, entry_model, entry_tf, entry_evidence)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++     mechanics, sentiment, entry_mode, mtf_tf, risk_atr, entry_model, entry_tf, entry_evidence, guardrail_snapshot, entry_permission, override_reason)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     userId, symbol, timeframe, dir, dir > 0 ? 'long' : 'short',
+     p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.target_policy || p.p_win == null ? null : Number(p.p_win),
+     entry, stop, t1, t2, rr(t1), rr(t2),
+@@ -754,14 +774,13 @@ async function savePlan(userId, p = {}) {
+         + (p.entry_preference ? EntryPreference.note(p.entry_preference) : '') + (p.note || '')).slice(0, 400) : null,
+     p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
+     Number.isFinite(Number(p.risk_atr)) ? Number(p.risk_atr) : null,
+-    model, p.entry_tf || null, evidence,
++    model, p.entry_tf || null, evidence, stamp.guardrail_snapshot || null, stamp.entry_permission || null, stamp.override_reason || null,
+   );
+   return { saved: 1, ids: [info.lastInsertRowid] };
+ }
+ 
+ /** Store the actionable plan(s) from an analysis so the bot can be graded later. */
+-async function saveSignals(userId, payload) {
+-  await ensureSignalsTable();
++async function insertSignals(userId, payload, store = db, stamp = {}) {
+   const cands = (payload.setups && payload.setups.candidates ? payload.setups.candidates : [])
+     .filter((c) => c.ok === true && c.levels && c.levels.entry_status !== 'invalid')
+     .slice(0, 2);
+@@ -772,10 +791,10 @@ async function saveSignals(userId, payload) {
+   // (method_state / method_blocked) so the ledger can later be split into
+   // "the method approved this" and "the setup model liked it anyway".
+   const td = payload.topdown || null;
+-  const ins = await db.prepare(`INSERT INTO bot_signals
++  const ins = await store.prepare(`INSERT INTO bot_signals
+     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final, mechanics, sentiment,
+-     method_state, method_dir, method_blocked, entry_model, entry_tf, entry_evidence)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
++     method_state, method_dir, method_blocked, entry_model, entry_tf, entry_evidence, guardrail_snapshot, entry_permission, override_reason)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+   let saved = 0;
+   const out = [];
+   for (const c of cands) {
+@@ -792,7 +811,7 @@ async function saveSignals(userId, payload) {
+       L.target_policy ? ((L.stop_policy ? Stops.note(L.stop_policy) : '')
+         + (c.entry_preference ? EntryPreference.note(c.entry_preference) : '') + `Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
+       td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
+-      model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
++      model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf), stamp.guardrail_snapshot || null, stamp.entry_permission || null, stamp.override_reason || null,
+     );
+     out.push(info.lastInsertRowid);
+     saved++;
+@@ -800,6 +819,28 @@ async function saveSignals(userId, payload) {
+   return { saved, ids: out };
+ }
+ 
++async function savePlan(userId,p = {}) {
++  await ensureSignalsTable();
++  if (p.research_only === true) return {...await insertPlan(userId,p,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
++  return Guards.admit(userId,{accountId:p.account_id || null,entryTf:p.entry_tf || p.timeframe,action:'save_plan',entityType:'signal',overrideReason:p.override_reason},
++    async (store,daily) => {
++      const result = await insertPlan(userId,p,store,Guards.snapshotFields(daily));
++      return {...result,permission:result.saved>0 ? Guards.actionPermission(daily) : {allowed:false,can_override:false,state:'not_admitted'}};
++    });
++}
++async function saveSignals(userId,payload,options = {}) {
++  await ensureSignalsTable();
++  const marketCandidates = (payload.setups?.candidates || []).map(c=>c.market_ok === undefined ? c : {...c,ok:c.market_ok});
++  const market = {...payload,setups:{...payload.setups,candidates:marketCandidates}};
++  if (!marketCandidates.some(c=>c.ok && c.levels && c.levels.entry_status!=='invalid')) return {saved:0,reason:'no actionable setup in this analysis'};
++  if (options.research_only === true) return {...await insertSignals(userId,market,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
++  return Guards.admit(userId,{accountId:options.accountId || payload.daily?.account_id || null,entryTf:candidateTf(market.setups,payload.topdown || {},payload.timeframe),action:'save_signal',entityType:'signal',overrideReason:options.override_reason},
++    async (store,daily) => {
++      const result = await insertSignals(userId,market,store,Guards.snapshotFields(daily));
++      return {...result,permission:result.saved>0 ? Guards.actionPermission(daily) : {allowed:false,can_override:false,state:'not_admitted'}};
++    });
++}
++
+ async function listSignals(userId, { status = null, limit = 50 } = {}) {
+   await ensureSignalsTable();
+   const rows = status
+diff --git a/src/bots/now.js b/src/bots/now.js
+index 821fec5..1b2b0e0 100644
+--- a/src/bots/now.js
++++ b/src/bots/now.js
+@@ -23,7 +23,8 @@
+ 
+ const SMC = require('./smc');
+ const EntryPreference = require('./entry-preference');
+-const Setup = require('./setup');   // M39: one clock, one list of windows
++const Setup = require('./setup');
++const Guards = require('./guardrails');   // M39: one clock, one list of windows
+ const MS = { m: 60000, h: 3600000, d: 86400000, w: 604800000 };
+ const TF_MS = { '1m': MS.m, '5m': 5 * MS.m, '15m': 15 * MS.m, '30m': 30 * MS.m, '1h': MS.h, '4h': 4 * MS.h, '1d': MS.d, '1w': MS.w };
+ 
+@@ -126,6 +127,7 @@ function build(p = {}) {
+ 
+   /* ------------------------------------------------------- the one call --- */
+   const direction = num(td.direction) || 0;
++  const personalBlocked = Guards.isBlocked(daily);
+   const blocked = !!td.blocked;
+   const plan = td.crt_plan || null;
+   const bias = (td.layers && td.layers.bias) || {};
+@@ -156,7 +158,11 @@ function build(p = {}) {
+   let order = null;
+   let invalidate = '';
+ 
+-  if (blocked) {
++  if (personalBlocked) {
++    action = 'NO TRADE';
++    headline = `${symbol} ${tf}: ${daily.message}`;
++    invalidate = 'A personal stop is not a directional market opinion. Recheck at entry; a known stop requires a recorded override reason.';
++  } else if (blocked) {
+     const block = (td.conflicts || []).find((c) => c.blocks_trade) || null;
+     action = /chase/i.test(block ? block.kind : '') ? 'WAIT' : 'NO TRADE';
+     headline = `${symbol} ${tf}: do not trade this right now. ${td.headline || ''}`.trim();
+@@ -381,7 +387,7 @@ function build(p = {}) {
+   // the sub-floor warning is rendered as its own red block under the order — it is
+   // not repeated in the guard list (measured in the browser: both printed)
+   if (news && news.blackout) guards.push({ level: 'block', text: news.blackout });
+-  if (daily && daily.status && daily.status !== 'clear') guards.push({ level: 'warn', text: daily.message || String(daily.status) });
++  if (daily && daily.status && daily.status !== 'clear') guards.push({ level: personalBlocked ? 'block' : 'warn', text: daily.message || String(daily.status) });
+   if (freshness.state === 'stale' || freshness.state === 'aging') guards.push({ level: 'warn', text: freshness.note });
+   if (!kzNow && !blocked && direction) guards.push({ level: 'info', text: 'Outside every killzone: the playlist only trades the London and New York windows.' });
+ 
+@@ -422,7 +428,8 @@ function build(p = {}) {
+     guards,
+     other_side: otherSide,
+     conviction: convictionTier,
+-    full_risk: fullRisk,
++    full_risk: fullRisk && !personalBlocked,
++    ...(daily ? { execution_permission: { ...daily.permission, account_id:daily.account_id, evaluated_at:daily.evaluated_at, breaches:daily.breaches } } : {}),
+     steps_done: doneSteps,
+     steps_total: (td.steps || []).length,
+     pending_step: pendingStep ? { n: pendingStep.n, title: pendingStep.title, text: pendingStep.text } : null,
+diff --git a/src/coach.js b/src/coach.js
+index 50478ce..7e2e542 100644
+--- a/src/coach.js
++++ b/src/coach.js
+@@ -8,6 +8,7 @@
+  * every claim points at a slice of your own trade rows.
+  */
+ const P = require('./performance');
++const Guards = require('./bots/guardrails');
+ 
+ /* M11 — Ep 27's floor: "at least 30 to 50 minimum trades just to see anything
+  * meaningful", and below that "don't tweak the system at all". Duplicated from
+@@ -641,7 +642,7 @@ function briefing({ trades, events = [], quotes = {}, account, journalEntry, ris
+     risk_plan: {
+       multiplier: r2(riskMultiplier), suggested_risk: suggestedRisk,
+       suggested_risk_pct: r2(suggestedRiskPct * riskMultiplier),
+-      max_trades_today: Math.max(2, Math.round(k.avg_trades_per_day || 3)),
++      max_trades_today: Guards.configuredCap(account || {}), // M83 fixed account policy, never the historical average
+       max_loss_today: r2(bank * (num(account && account.daily_loss_limit_pct, 3) / 100) * (riskMultiplier < 1 ? 0.6 : 1)),
+       reasons,
+     },
+diff --git a/src/db.js b/src/db.js
+index f9fdbfc..c6ccb32 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -97,12 +97,26 @@ async function tx(fn) {
+   }
+ }
+ 
++/** Same statement shape inside an interactive transaction, never the shared
++ * client. Guard checks and the admitted write must see the same locked state. */
++function transactionStore(transaction) {
++  const prep = sql => ({
++    async get(...a) { return (await transaction.execute({sql,args:argsOf(a)})).rows[0]; },
++    async all(...a) { return (await transaction.execute({sql,args:argsOf(a)})).rows; },
++    async run(...a) {
++      const r = await transaction.execute({sql,args:argsOf(a)});
++      return {changes:Number(r.rowsAffected || 0),lastInsertRowid:r.lastInsertRowid == null ? undefined : Number(r.lastInsertRowid)};
++    },
++  });
++  return {prepare:prep};
++}
++
+ const db = {
+   prepare,
+   get: (sql, ...a) => prepare(sql).get(...a),
+   all: (sql, ...a) => prepare(sql).all(...a),
+   run: (sql, ...a) => prepare(sql).run(...a),
+-  exec, batch, tx,
++  exec, batch, tx, transactionStore,
+ };
+ 
+ /* ------------------------------------------------------------------ schema */
+@@ -121,6 +135,7 @@ CREATE TABLE IF NOT EXISTS accounts (
+   risk_unlocked INTEGER DEFAULT 0,       -- M9: 1 pct is behind a MANUAL unlock, so the unlock has to be
+                                          -- persisted. Without this column a stored 1 pct would be re-clamped
+                                          -- to 0.5 on every read and the row would disagree with the sizing.
++  max_trades_day INTEGER NOT NULL DEFAULT 3, -- M83/M113 preselected, not derived from overtrading
+   daily_loss_limit_pct REAL DEFAULT 3.0,
+   max_drawdown_pct REAL DEFAULT 10.0,
+   profit_target_pct REAL DEFAULT 8.0,
+@@ -128,6 +143,40 @@ CREATE TABLE IF NOT EXISTS accounts (
+   archived INTEGER DEFAULT 0,
+   created_at TEXT NOT NULL DEFAULT (datetime('now'))
+ );
++CREATE TABLE IF NOT EXISTS guardrail_day_caps (
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  rule_date TEXT NOT NULL,
++  max_trades_day INTEGER NOT NULL CHECK(max_trades_day BETWEEN 1 AND 100),
++  selected_at TEXT NOT NULL,
++  PRIMARY KEY(user_id,account_id,rule_date)
++);
++-- Mechanical rule state is independent of editable journal rows. No trade FK:
++-- truthful deletion/correction must not replenish entry permissions.
++CREATE TABLE IF NOT EXISTS guardrail_day_state (
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  rule_date TEXT NOT NULL,
++  entries_count INTEGER NOT NULL DEFAULT 0 CHECK(entries_count >= 0),
++  stops_json TEXT NOT NULL DEFAULT '{}',
++  last_loss_at TEXT,
++  last_loss_trade_id INTEGER,
++  updated_at TEXT NOT NULL,
++  PRIMARY KEY(user_id,account_id,rule_date)
++);
++CREATE TABLE IF NOT EXISTS guardrail_entry_admissions (
++  id INTEGER PRIMARY KEY AUTOINCREMENT,
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  rule_date TEXT NOT NULL,
++  admitted_at TEXT NOT NULL,
++  action TEXT NOT NULL,
++  trade_id INTEGER NOT NULL,
++  admission_state TEXT NOT NULL,
++  snapshot TEXT NOT NULL
++);
++CREATE INDEX IF NOT EXISTS idx_guardrail_admissions_scope
++  ON guardrail_entry_admissions(user_id,account_id,rule_date);
+ -- M50 bias hysteresis. Ep 15 mistake 4 says the bias only changes when its invalidation is hit,
+ -- which needs the prior bias and its level to survive between calls. alignment() is deliberately
+ -- pure so this state lives here rather than inside it, and nothing that measures the engine has to
+@@ -196,6 +245,23 @@ CREATE TABLE IF NOT EXISTS instruments (
+   unit TEXT DEFAULT 'units',
+   UNIQUE(user_id, symbol)
+ );
++-- M90 append-only application audit. Deleted trades cannot erase the observed
++-- rule day or the original decision snapshot. No history is fabricated/backfilled.
++CREATE TABLE IF NOT EXISTS guardrail_events (
++  id INTEGER PRIMARY KEY AUTOINCREMENT,
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
++  rule_date TEXT NOT NULL,
++  observed_at TEXT NOT NULL,
++  kind TEXT NOT NULL,
++  action TEXT NOT NULL,
++  entity_type TEXT,
++  entity_id INTEGER,
++  reason TEXT,
++  snapshot TEXT NOT NULL,
++  dedupe_key TEXT UNIQUE
++);
++CREATE INDEX IF NOT EXISTS idx_guardrail_events_day ON guardrail_events(user_id,rule_date,account_id,id);
+ CREATE TABLE IF NOT EXISTS journal_entries (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -440,6 +506,12 @@ async function migrate() {
+   // M9: the manual unlock that lets an account sit above the 0.5 % guardrail, up to the
+   // 1 % absolute maximum. Persisted so the write path and every later read agree.
+   await add('accounts', 'risk_unlocked', 'INTEGER DEFAULT 0');
++  await add('accounts', 'max_trades_day', 'INTEGER NOT NULL DEFAULT 3');
++  for (const table of ['trades','bot_signals']) {
++    await add(table,'guardrail_snapshot','TEXT');
++    await add(table,'entry_permission','TEXT');
++    await add(table,'override_reason','TEXT');
++  }
+   // M102: which version of its strategy a trade was taken under. NULL means the trade
+   // predates versioning or has no strategy at all - it is never guessed at read time.
+   await add('trades', 'strategy_version', 'INTEGER');
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 3e54492..d163e09 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -8,6 +8,7 @@ const P = require('../performance');
+ const Coach = require('../coach');
+ const M = require('../market');
+ const T = require('../trades');
++const Guards = require('../bots/guardrails');
+ const O = require('../options');
+ const Exp = require('../exposure');
+ const Prop = require('../prop');
+@@ -335,13 +336,30 @@ router.post('/trades', requireAuth, async (req, res) => {
+     const v = await currentStrategyVersion(Number(trade.strategy_id));
+     if (v) trade.strategy_version = v;
+   }
+-  const id = await T.insert(db, req.user.id, { ...trade, account_id: accountId });
++  const owned = await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id);
++  if (!owned) return res.status(404).json({error:'Account not found'});
++  let id, permission;
++  try {
++    if (trade.status === 'open' && body.record_only !== true) {
++      const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade',overrideReason:body.override_reason},async (store,daily) => {
++        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
++        return {id:await T.insert(store,req.user.id,entry),permission:Guards.actionPermission(daily)};
++      });
++      id = out.id; permission = out.permission;
++    } else {
++      const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>({id:await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')})}));
++      id = out.id; permission = {allowed:false,state:'record_only',can_override:false};
++    }
++  } catch(e) {
++    if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
++    throw e;
++  }
+   if (Array.isArray(body.rule_checks)) {
+     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
+-    for (const rc of body.rule_checks) ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
++    for (const rc of body.rule_checks) await ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
+   }
+   const saved = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
+-  res.json({ ok: true, trade: P.decorate(saved, (await settingsOf(req)).timezone) });
++  res.json({ ok: true, permission, trade: P.decorate(saved, (await settingsOf(req)).timezone) });
+ });
+ 
+ router.put('/trades/:id', requireAuth, async (req, res) => {
+@@ -354,7 +372,16 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   let trade;
+   try { trade = T.normalise(merged, { instrument: spec, tz: (await settingsOf(req)).timezone }); }
+   catch (e) { return res.status(400).json({ error: e.message }); }
+-  await T.update(db, req.user.id, id, { ...trade, account_id: num(merged.account_id, existing.account_id) });
++  const accountId = num(merged.account_id,existing.account_id);
++  if (!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id)) return res.status(404).json({error:'Account not found'});
++  try {
++    if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
++      await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>T.update(store,req.user.id,id,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
++    } else await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,{...trade,account_id:accountId}));
++  } catch(e) {
++    if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
++    throw e;
++  }
+   if (Array.isArray(req.body.rule_checks)) {
+     await db.prepare('DELETE FROM rule_checks WHERE trade_id=?').run(id);
+     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
+@@ -383,7 +410,7 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+   };
+   const instruments = await instrumentMap(req.user.id);
+   const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
+-  await T.update(db, req.user.id, id, trade);
++  await Guards.record(req.user.id,{accountId:existing.account_id,entryTf:trade.entry_tf,action:'journal_close',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,trade));
+   const fresh = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
+   if (req.body && req.body.notify !== false) {
+     notifyEvent(req.user.id, 'trade_closed', `${trade.symbol} ${trade.direction} closed ${fresh.net_pnl >= 0 ? '+' : ''}${fresh.net_pnl} (${fresh.r_multiple}R)${trade.legs_n ? ` · ${trade.legs_n} scale-outs` : ''}`, { trade_id: id, symbol: trade.symbol, net_pnl: fresh.net_pnl, r_multiple: fresh.r_multiple }).catch(() => {});
+@@ -392,15 +419,22 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+ });
+ 
+ router.delete('/trades/:id', requireAuth, async (req, res) => {
+-  const info = await db.prepare('DELETE FROM trades WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
++  const id = Number(req.params.id);
++  const existing = await db.prepare('SELECT account_id FROM trades WHERE id=? AND user_id=?').get(id,req.user.id);
++  if (!existing) return res.json({ok:false});
++  const info = await Guards.record(req.user.id,{accountId:existing.account_id,action:'journal_delete',entityType:'trade',entityId:id},
++    store=>store.prepare('DELETE FROM trades WHERE id=? AND user_id=?').run(id,req.user.id));
+   res.json({ ok: !!info.changes });
+ });
+ 
+ router.post('/trades/bulk-delete', requireAuth, async (req, res) => {
+   const ids = (req.body && req.body.ids) || [];
+   if (ids.length) {
+-    // one atomic batch (libSQL batches share a single statement shape)
+-    await db.batch(ids.map((id) => ({ sql: 'DELETE FROM trades WHERE id=? AND user_id=?', args: [Number(id), req.user.id] })));
++    const accounts = await db.prepare(`SELECT DISTINCT account_id FROM trades WHERE user_id=? AND id IN (${ids.map(()=>'?').join(',')})`).all(req.user.id,...ids.map(Number));
++    if (accounts.length) await Guards.record(req.user.id,{accountIds:accounts.map(a=>a.account_id),action:'journal_bulk_delete',entityType:'trade'},async store=>{
++      const del = store.prepare('DELETE FROM trades WHERE id=? AND user_id=?');
++      for (const id of ids) await del.run(Number(id),req.user.id);
++    });
+   }
+   res.json({ ok: true, deleted: ids.length });
+ });
+@@ -522,7 +556,9 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+   const symbols = [...new Set([...(settings.focus_symbols || []), ...rows.slice(-25).map((t) => t.symbol)])].slice(0, 12);
+   const [cal, quotes] = await Promise.all([M.getCalendar({ timezone: tz }), M.getQuotes(symbols)]);
+   const events = (cal.events || []).filter((e) => ['high', 'medium'].includes(e.impact) && new Date(e.date) > new Date(Date.now() - 6 * 3600e3)).slice(0, 40);
+-  const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: acc, journalEntry, riskRules: settings });
++  const capPolicy = await Guards.dailyCap(db, req.user.id, acc);
++  const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
++  briefing.risk_plan.trade_cap_policy = capPolicy;
+   briefing.calendar_ok = cal.ok;
+   briefing.quotes_ok = quotes.ok;
+   res.json(briefing);
+@@ -531,13 +567,15 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+ /* ----------------------------------------------------------------- journal */
+ router.get('/journal', requireAuth, async (req, res) => {
+   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
+-  res.json({ entries: rows });
++  const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
++  res.json({ entries: rows, guardrail_days:guardrailDays });
+ });
+ router.get('/journal/:date', requireAuth, async (req, res) => {
+   const row = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, req.params.date);
+   const tz = (await settingsOf(req)).timezone;
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)`).all(req.user.id, req.params.date)).map((t) => P.decorate(t, tz));
+-  res.json({ entry: row || null, trades });
++  const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
++  res.json({ entry: row || null, trades, guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+@@ -706,12 +744,15 @@ router.post('/accounts', requireAuth, async (req, res) => {
+   // instruction that silently drives every future trade, so going above the 0.5 % guardrail
+   // (Ep 31) requires the unlock to be asked for explicitly and is persisted beside it; 1 %
+   // (Ep 21) is the ceiling either way.
++  let maxTrades;
++  try { maxTrades = b.max_trades_day === undefined ? Guards.DEFAULT_CAP : Guards.parseCap(b.max_trades_day); }
++  catch (e) { return res.status(400).json({ error: e.message }); }
+   const unlocked = !!b.risk_unlocked;
+   const riskPct = I.clampRiskPct(b.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked });
+-  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     req.user.id, b.name, b.broker || '', b.account_type || 'live', b.currency || 'USD',
+-    num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0,
++    num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0, maxTrades,
+     num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8));
+   res.json({
+     ok: true,
+@@ -724,6 +765,9 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+   const cur = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(id, req.user.id);
+   if (!cur) return res.status(404).json({ error: 'Account not found' });
+   const b = req.body || {};
++  let maxTrades;
++  try { maxTrades = b.max_trades_day === undefined ? Guards.configuredCap(cur) : Guards.parseCap(b.max_trades_day); }
++  catch (e) { return res.status(400).json({ error: e.message }); }
+   // M9: the same guardrail on the update path, which also stored the value via num() with no
+   // clamp. Only a value THIS request supplies is clamped — a row stored above the guardrail
+   // before the fix is left untouched here and clamped on READ (bots/index.js) instead, so an
+@@ -733,7 +777,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+     ? I.clampRiskPct(b.risk_per_trade_pct, { fallback: num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct), unlocked })
+     : num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct);
+   await db.prepare(`UPDATE accounts SET name=@name, broker=@broker, account_type=@account_type, currency=@currency,
+-    starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, daily_loss_limit_pct=@daily_loss_limit_pct,
++    starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, max_trades_day=@max_trades_day, daily_loss_limit_pct=@daily_loss_limit_pct,
+     max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, prop_preset=@prop_preset,
+     prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
+     id, user_id: req.user.id,
+@@ -744,6 +788,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+     starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
+     risk_per_trade_pct: riskPct,
+     risk_unlocked: unlocked ? 1 : 0,
++    max_trades_day: maxTrades,
+     daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
+     max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
+     prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
+@@ -1073,6 +1118,8 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+           status: (map.exit > -1 && String(r[map.exit] || '').trim()) ? 'closed' : 'open',
+         }, { instrument: spec, tz });
+         trade.account_id = accountId;
++        trade.entry_permission = 'record_only';
++        trade.guardrail_snapshot = null;
+         if (map.net > -1 && String(r[map.net] || '').trim() && !isNaN(Number(String(r[map.net]).replace(/[^0-9.\-]/g, '')))) {
+           const net = Number(String(r[map.net]).replace(/[^0-9.\-]/g, ''));
+           if (net !== 0) {
+@@ -1135,6 +1182,8 @@ router.post('/import/json', requireAuth, async (req, res) => {
+       const spec = instruments[String(t.symbol).toUpperCase()] || null;
+       const trade = T.normalise(t, { instrument: spec, tz });
+       trade.account_id = accountMap[t.account_id] || (def ? def.id : null);
++      trade.entry_permission = 'record_only';
++      trade.guardrail_snapshot = null;
+       if (!trade.account_id) continue;
+       collected.push(trade);
+       inserted++;
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index e47942a..4d65de9 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -16,6 +16,7 @@ function createBotsRouter({ requireAuth }) {
+   const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch((err) => {
+     console.error(`BOT API error on ${req.method} ${req.originalUrl}:`, err.message);
+     if (res.headersSent) return;
++    if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
+     res.status(500).json({ error: err.message || 'Bot error' });
+   });
+   const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));
+@@ -145,6 +146,7 @@ router.get('/markets', requireAuth, (req, res) => {
+     const tf = String(req.query.tf || '15m');
+     const out = await Bots.chart(symbol, tf, {
+       bars: Math.min(Math.max(num(req.query.bars, 300), 80), 900), userId: req.user.id,
++      accountId:req.query.account_id ? Number(req.query.account_id) : null,
+       sessionPref: await prefOf(req),                                  // M26
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
+     });
+@@ -155,7 +157,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       checks: out.topdown.checks, score: out.topdown.score, grade: out.topdown.grade,
+       status: out.topdown.status, direction: out.topdown.direction,
+       headline: out.topdown.headline, playbook: out.topdown.playbook,
+-      blocked: out.topdown.blocked, conflicts: out.topdown.conflicts,
++      blocked: out.topdown.blocked || !!out.now?.execution_permission && !out.now.execution_permission.allowed, market_blocked:out.topdown.blocked, execution_permission:out.now?.execution_permission, conflicts: out.topdown.conflicts,
+       crt_plan: out.topdown.crt_plan, target_sources: out.topdown.target_sources, levels: out.topdown.levels, inputs: out.topdown.inputs,
+       verdict: out.setups.verdict, meta: out.meta,
+     });
+@@ -168,7 +170,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       .split(',').map((s) => s.trim()).filter(Boolean);
+     if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
+     const tf = String(req.query.tf || '15m');
+-    const out = await Bots.scan(symbols, tf, { userId: req.user.id, sessionPref: await prefOf(req) });  // M26
++    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req) });  // M26
+     res.json(out);
+   }));
+ 
+@@ -239,8 +241,9 @@ router.get('/markets', requireAuth, (req, res) => {
+ 
+   router.get('/guardrails', requireAuth, wrap(async (req, res) => {
+     const accountId = req.query.account_id ? Number(req.query.account_id) : null;
+-    const g = await Bots.correction.guardrails(req.user.id, { accountId });
+-    const daily = await Bots.correction.dailyState(req.user.id, { accountId });
++    const daily = await Bots.correction.dailyState(req.user.id, { accountId, entryTf:req.query.entry_tf || null, forEntry:true });
++    if (daily.status === 'unknown') return res.status(503).json({error:daily.message,code:'guardrail_unavailable',daily});
++    const g = daily.guardrails;
+     res.json({ ok: true, guardrails: g.guardrails, stats: g.stats, evidence: g.evidence, daily });
+   }));
+ 
+@@ -270,8 +273,8 @@ router.get('/markets', requireAuth, (req, res) => {
+       accountId: (req.body && req.body.account_id) || null,
+       includePrediction: req.body && req.body.prediction !== false,
+     });
+-    const saved = await Bots.saveSignals(req.user.id, payload);
+-    res.json({ ok: true, saved, headline: payload.headline, setups: payload.setups.verdict });
++    const saved = await Bots.saveSignals(req.user.id, payload, {accountId:req.body?.account_id || null,research_only:req.body?.research_only === true,override_reason:req.body?.override_reason});
++    res.json({ ok: true, saved, permission:saved.permission || null, headline: payload.headline, setups: payload.setups.verdict });
+   }));
+ 
+   /**
+@@ -300,9 +303,9 @@ router.get('/markets', requireAuth, (req, res) => {
+     const out = await Bots.savePlan(req.user.id, {
+       symbol: b.symbol, timeframe: b.timeframe, entry: b.entry, stop: b.stop,
+       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
+-      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
++      account_id:b.account_id || null, research_only:b.research_only === true, override_reason:b.override_reason, mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
+     });
+-    res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
++    res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null,permission:out.permission || null });
+   }));
+ 
+   router.post('/signals/resolve', requireAuth, wrap(async (req, res) => {
+diff --git a/src/trades.js b/src/trades.js
+index efa0873..08d7cc8 100644
+--- a/src/trades.js
++++ b/src/trades.js
+@@ -171,7 +171,7 @@ const COLUMNS = ['user_id', 'account_id', 'symbol', 'asset_class', 'direction',
+   'entry', 'exit', 'stop', 'target', 'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'planned_r',
+   'mae_r', 'mfe_r', 'stop_moved', 'exit_reason', 'strategy_id', 'strategy_name', 'setup_grade', 'session', 'timeframes',
+   'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags', 'thesis', 'lesson', 'execution_notes',
+-  'strategy_version', 'entry_model', 'entry_tf', 'entry_evidence',
++  'strategy_version', 'entry_model', 'entry_tf', 'entry_evidence', 'guardrail_snapshot', 'entry_permission', 'override_reason',
+   'notes', 'screenshot_url', 'legs', 'entries'];
+ 
+ async function insert(db, userId, t) {

@@ -1,0 +1,174 @@
+{
+  "app": "/tmp/m79-retention-stage/app",
+  "pass": 13,
+  "fail": 11,
+  "results": [
+    {
+      "label": "existing HTTP input validation remains 400 without writing: model name",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: model name",
+      "passed": false,
+      "detail": {
+        "status": 503,
+        "code": "guardrail_unavailable"
+      }
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: model type",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: model type",
+      "passed": false,
+      "detail": {
+        "status": 503,
+        "code": "guardrail_unavailable"
+      }
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: stop provenance",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: stop provenance",
+      "passed": false,
+      "detail": {
+        "status": 503,
+        "code": "guardrail_unavailable"
+      }
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: entry variant",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: entry variant",
+      "passed": false,
+      "detail": {
+        "status": 503,
+        "code": "guardrail_unavailable"
+      }
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: evidence array",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: evidence array",
+      "passed": false,
+      "detail": {
+        "status": 503,
+        "code": "guardrail_unavailable"
+      }
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: evidence malformed JSON",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: evidence malformed JSON",
+      "passed": false,
+      "detail": {
+        "status": 503,
+        "code": "guardrail_unavailable"
+      }
+    },
+    {
+      "label": "existing HTTP input validation remains 400 without writing: oversized evidence",
+      "passed": true
+    },
+    {
+      "label": "direct plan admission preserves trusted 400 instead of masking as outage: oversized evidence",
+      "passed": false,
+      "detail": {
+        "status": 503,
+        "code": "guardrail_unavailable"
+      }
+    },
+    {
+      "label": "zero saved actions do not claim personal permission",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": false,
+          "saved": 0,
+          "ids": [],
+          "reason": "symbol, entry and stop (entry ≠ stop) are required",
+          "permission": {
+            "allowed": true,
+            "can_override": false,
+            "state": "admitted",
+            "override_reason": null,
+            "action": "save_plan",
+            "account_id": 1,
+            "evaluated_at": "2026-10-11T15:06:50.727Z",
+            "scope": "personal rules for this recorded action only, not broker execution or future permission"
+          }
+        }
+      }
+    },
+    {
+      "label": "valid plan retains levels, grade-free semantics and real permission",
+      "passed": true
+    },
+    {
+      "label": "stopped-day validation stays 400 and cannot fabricate an override",
+      "passed": true
+    },
+    {
+      "label": "reason plus no action does not fabricate override permission or audit",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": false,
+          "saved": 0,
+          "ids": [],
+          "reason": "symbol, entry and stop (entry ≠ stop) are required",
+          "permission": {
+            "allowed": true,
+            "can_override": false,
+            "state": "overridden",
+            "override_reason": "One consciously reviewed exception, not a persistent unlock.",
+            "action": "save_plan",
+            "account_id": 1,
+            "evaluated_at": "2026-10-11T15:06:50.839Z",
+            "scope": "personal rules for this recorded action only, not broker execution or future permission"
+          }
+        }
+      }
+    },
+    {
+      "label": "unavailable state still cannot be reason-waived",
+      "passed": true
+    },
+    {
+      "label": "tagged validation survives transaction boundary with exact public contract",
+      "passed": false,
+      "detail": {
+        "status": 503,
+        "message": "Personal guardrails could not be verified. No new entry permission; retry or repair the account/history."
+      }
+    },
+    {
+      "label": "validation after a provisional insert rolls back that insert",
+      "passed": true
+    },
+    {
+      "label": "arbitrary driver 4xx is NOT treated as public validation",
+      "passed": true
+    },
+    {
+      "label": "a missing/no-op trade write cannot mint a durable entry admission",
+      "passed": false
+    },
+    {
+      "label": "database write failure remains generic 503 with no secret/detail leak or signal",
+      "passed": true
+    }
+  ],
+  "scope": "Real HTTP/auth/SQL, declared local validation and driver-failure seams; transaction contract, not broker/live-feed/outcome proof"
+}

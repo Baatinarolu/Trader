@@ -8,6 +8,7 @@ const P = require('../performance');
 const Coach = require('../coach');
 const M = require('../market');
 const T = require('../trades');
+const Guards = require('../bots/guardrails');
 const O = require('../options');
 const Exp = require('../exposure');
 const Prop = require('../prop');
@@ -335,13 +336,30 @@ router.post('/trades', requireAuth, async (req, res) => {
     const v = await currentStrategyVersion(Number(trade.strategy_id));
     if (v) trade.strategy_version = v;
   }
-  const id = await T.insert(db, req.user.id, { ...trade, account_id: accountId });
+  const owned = await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id);
+  if (!owned) return res.status(404).json({error:'Account not found'});
+  let id, permission;
+  try {
+    if (trade.status === 'open' && body.record_only !== true) {
+      const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade',overrideReason:body.override_reason},async (store,daily) => {
+        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
+        return {id:await T.insert(store,req.user.id,entry),permission:Guards.actionPermission(daily)};
+      });
+      id = out.id; permission = out.permission;
+    } else {
+      const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>({id:await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')})}));
+      id = out.id; permission = {allowed:false,state:'record_only',can_override:false};
+    }
+  } catch(e) {
+    if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
+    throw e;
+  }
   if (Array.isArray(body.rule_checks)) {
     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
-    for (const rc of body.rule_checks) ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
+    for (const rc of body.rule_checks) await ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
   }
   const saved = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
-  res.json({ ok: true, trade: P.decorate(saved, (await settingsOf(req)).timezone) });
+  res.json({ ok: true, permission, trade: P.decorate(saved, (await settingsOf(req)).timezone) });
 });
 
 router.put('/trades/:id', requireAuth, async (req, res) => {
@@ -354,7 +372,16 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
   let trade;
   try { trade = T.normalise(merged, { instrument: spec, tz: (await settingsOf(req)).timezone }); }
   catch (e) { return res.status(400).json({ error: e.message }); }
-  await T.update(db, req.user.id, id, { ...trade, account_id: num(merged.account_id, existing.account_id) });
+  const accountId = num(merged.account_id,existing.account_id);
+  if (!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id)) return res.status(404).json({error:'Account not found'});
+  try {
+    if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
+      await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>T.update(store,req.user.id,id,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
+    } else await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,{...trade,account_id:accountId}));
+  } catch(e) {
+    if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
+    throw e;
+  }
   if (Array.isArray(req.body.rule_checks)) {
     await db.prepare('DELETE FROM rule_checks WHERE trade_id=?').run(id);
     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
@@ -383,7 +410,7 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
   };
   const instruments = await instrumentMap(req.user.id);
   const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
-  await T.update(db, req.user.id, id, trade);
+  await Guards.record(req.user.id,{accountId:existing.account_id,entryTf:trade.entry_tf,action:'journal_close',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,trade));
   const fresh = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
   if (req.body && req.body.notify !== false) {
     notifyEvent(req.user.id, 'trade_closed', `${trade.symbol} ${trade.direction} closed ${fresh.net_pnl >= 0 ? '+' : ''}${fresh.net_pnl} (${fresh.r_multiple}R)${trade.legs_n ? ` · ${trade.legs_n} scale-outs` : ''}`, { trade_id: id, symbol: trade.symbol, net_pnl: fresh.net_pnl, r_multiple: fresh.r_multiple }).catch(() => {});
@@ -392,15 +419,22 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
 });
 
 router.delete('/trades/:id', requireAuth, async (req, res) => {
-  const info = await db.prepare('DELETE FROM trades WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
+  const id = Number(req.params.id);
+  const existing = await db.prepare('SELECT account_id FROM trades WHERE id=? AND user_id=?').get(id,req.user.id);
+  if (!existing) return res.json({ok:false});
+  const info = await Guards.record(req.user.id,{accountId:existing.account_id,action:'journal_delete',entityType:'trade',entityId:id},
+    store=>store.prepare('DELETE FROM trades WHERE id=? AND user_id=?').run(id,req.user.id));
   res.json({ ok: !!info.changes });
 });
 
 router.post('/trades/bulk-delete', requireAuth, async (req, res) => {
   const ids = (req.body && req.body.ids) || [];
   if (ids.length) {
-    // one atomic batch (libSQL batches share a single statement shape)
-    await db.batch(ids.map((id) => ({ sql: 'DELETE FROM trades WHERE id=? AND user_id=?', args: [Number(id), req.user.id] })));
+    const accounts = await db.prepare(`SELECT DISTINCT account_id FROM trades WHERE user_id=? AND id IN (${ids.map(()=>'?').join(',')})`).all(req.user.id,...ids.map(Number));
+    if (accounts.length) await Guards.record(req.user.id,{accountIds:accounts.map(a=>a.account_id),action:'journal_bulk_delete',entityType:'trade'},async store=>{
+      const del = store.prepare('DELETE FROM trades WHERE id=? AND user_id=?');
+      for (const id of ids) await del.run(Number(id),req.user.id);
+    });
   }
   res.json({ ok: true, deleted: ids.length });
 });
@@ -522,7 +556,9 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
   const symbols = [...new Set([...(settings.focus_symbols || []), ...rows.slice(-25).map((t) => t.symbol)])].slice(0, 12);
   const [cal, quotes] = await Promise.all([M.getCalendar({ timezone: tz }), M.getQuotes(symbols)]);
   const events = (cal.events || []).filter((e) => ['high', 'medium'].includes(e.impact) && new Date(e.date) > new Date(Date.now() - 6 * 3600e3)).slice(0, 40);
-  const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: acc, journalEntry, riskRules: settings });
+  const capPolicy = await Guards.dailyCap(db, req.user.id, acc);
+  const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
+  briefing.risk_plan.trade_cap_policy = capPolicy;
   briefing.calendar_ok = cal.ok;
   briefing.quotes_ok = quotes.ok;
   res.json(briefing);
@@ -531,13 +567,15 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
 /* ----------------------------------------------------------------- journal */
 router.get('/journal', requireAuth, async (req, res) => {
   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
-  res.json({ entries: rows });
+  const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
+  res.json({ entries: rows, guardrail_days:guardrailDays });
 });
 router.get('/journal/:date', requireAuth, async (req, res) => {
   const row = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, req.params.date);
   const tz = (await settingsOf(req)).timezone;
   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)`).all(req.user.id, req.params.date)).map((t) => P.decorate(t, tz));
-  res.json({ entry: row || null, trades });
+  const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
+  res.json({ entry: row || null, trades, guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
 });
 router.post('/journal', requireAuth, async (req, res) => {
   const b = req.body || {};
@@ -706,12 +744,15 @@ router.post('/accounts', requireAuth, async (req, res) => {
   // instruction that silently drives every future trade, so going above the 0.5 % guardrail
   // (Ep 31) requires the unlock to be asked for explicitly and is persisted beside it; 1 %
   // (Ep 21) is the ceiling either way.
+  let maxTrades;
+  try { maxTrades = b.max_trades_day === undefined ? Guards.DEFAULT_CAP : Guards.parseCap(b.max_trades_day); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
   const unlocked = !!b.risk_unlocked;
   const riskPct = I.clampRiskPct(b.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked });
-  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     req.user.id, b.name, b.broker || '', b.account_type || 'live', b.currency || 'USD',
-    num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0,
+    num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0, maxTrades,
     num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8));
   res.json({
     ok: true,
@@ -724,6 +765,9 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
   const cur = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(id, req.user.id);
   if (!cur) return res.status(404).json({ error: 'Account not found' });
   const b = req.body || {};
+  let maxTrades;
+  try { maxTrades = b.max_trades_day === undefined ? Guards.configuredCap(cur) : Guards.parseCap(b.max_trades_day); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
   // M9: the same guardrail on the update path, which also stored the value via num() with no
   // clamp. Only a value THIS request supplies is clamped — a row stored above the guardrail
   // before the fix is left untouched here and clamped on READ (bots/index.js) instead, so an
@@ -733,7 +777,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
     ? I.clampRiskPct(b.risk_per_trade_pct, { fallback: num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct), unlocked })
     : num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct);
   await db.prepare(`UPDATE accounts SET name=@name, broker=@broker, account_type=@account_type, currency=@currency,
-    starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, daily_loss_limit_pct=@daily_loss_limit_pct,
+    starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, max_trades_day=@max_trades_day, daily_loss_limit_pct=@daily_loss_limit_pct,
     max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, prop_preset=@prop_preset,
     prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
     id, user_id: req.user.id,
@@ -744,6 +788,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
     starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
     risk_per_trade_pct: riskPct,
     risk_unlocked: unlocked ? 1 : 0,
+    max_trades_day: maxTrades,
     daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
     max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
     prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
@@ -1073,6 +1118,8 @@ router.post('/import/csv', requireAuth, async (req, res) => {
           status: (map.exit > -1 && String(r[map.exit] || '').trim()) ? 'closed' : 'open',
         }, { instrument: spec, tz });
         trade.account_id = accountId;
+        trade.entry_permission = 'record_only';
+        trade.guardrail_snapshot = null;
         if (map.net > -1 && String(r[map.net] || '').trim() && !isNaN(Number(String(r[map.net]).replace(/[^0-9.\-]/g, '')))) {
           const net = Number(String(r[map.net]).replace(/[^0-9.\-]/g, ''));
           if (net !== 0) {
@@ -1135,6 +1182,8 @@ router.post('/import/json', requireAuth, async (req, res) => {
       const spec = instruments[String(t.symbol).toUpperCase()] || null;
       const trade = T.normalise(t, { instrument: spec, tz });
       trade.account_id = accountMap[t.account_id] || (def ? def.id : null);
+      trade.entry_permission = 'record_only';
+      trade.guardrail_snapshot = null;
       if (!trade.account_id) continue;
       collected.push(trade);
       inserted++;

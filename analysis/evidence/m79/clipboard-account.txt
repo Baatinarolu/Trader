@@ -1,0 +1,7 @@
+FAIL topdown forwards requested owned second account to chart {"bars":300,"userId":1,"sessionPref":null,"trim":0,"as_of":null}
+FAIL clear second account is not blocked by default account cap {"status":200,"data":{"ok":true,"symbol":"TEST","timeframe":"15m","blocked":true,"market_blocked":false,"execution_permission":{"allowed":false,"can_override":true,"state":"stopped","account_id":1},"verdict":{"action":"NO TRADE"}}}
+ok explicit first account still reports its actual stop
+ok omitted account deliberately resolves owned default
+ok topdown scope repair retains real auth
+FAIL actual Corrections tab forwards the selected UI account, not {} default [{"url":"/bots/correction","params":{}}]
+M79 account forwarding: 3 passed, 3 failed

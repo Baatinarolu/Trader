@@ -1,0 +1,28 @@
+Bot API test → http://127.0.0.1:3000
+
+── auth + discovery ──────────────────────────────────────────
+/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678
+        return new api_1.LibsqlError(e.message, code, extendedCode, e.rawCode, e);
+               ^
+
+LibsqlError: SQLITE_BUSY: database is locked
+    at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)
+    at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)
+    at Sqlite3Client.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:268:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'SQLITE_BUSY',
+  extendedCode: 'SQLITE_BUSY',
+  rawCode: 5,
+  [cause]: SqliteError: database is locked
+      at convertError (/home/user/Trader/extracted/tradejournal/node_modules/libsql/index.js:59:12)
+      at Object.next (/home/user/Trader/extracted/tradejournal/node_modules/libsql/index.js:385:17)
+      at Statement.all (/home/user/Trader/extracted/tradejournal/node_modules/libsql/index.js:403:18)
+      at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:565:34)
+      at Sqlite3Client.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:268:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    code: 'SQLITE_BUSY',
+    rawCode: 5
+  }
+}
+
+Node.js v22.22.3

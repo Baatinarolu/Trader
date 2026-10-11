@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+'use strict';
+/** Independent leftover account forwarding: actual auth route + personal state,
+ * and actual Corrections tab's HTTP options. Market geometry measured elsewhere. */
+const path=require('path'),fs=require('fs'),os=require('os');const APP=process.env.TJ_APP || path.join(__dirname,'../extracted/tradejournal');
+for(const k of ['TURSO_DATABASE_URL','LIBSQL_URL','TURSO_AUTH_TOKEN'])process.env[k]='';const file=path.join(os.tmpdir(),`m79-account-${process.pid}.db`);process.env.TRADEJOURNAL_DB=file;
+const D=require(path.join(APP,'src/db')),B=require(path.join(APP,'src/bots'));let pass=0,fail=0,server,dom;const results=[],ok=(label,v,detail)=>{results.push({label,passed:!!v,...(!v?{detail}:{})});console.log(`${v?'ok':'FAIL'} ${label}${!v?' '+JSON.stringify(detail):''}`);v?pass++:fail++;};
+(async()=>{try{
+ await D.ready;const u=await D.createUser({email:`m79-account-${process.pid}@test.local`,name:'Account',password:'test-only'}),a2=(await D.db.prepare("INSERT INTO accounts(user_id,name,starting_balance,current_balance) VALUES (?,'Second',10000,10000)").run(u.userId)).lastInsertRowid;
+ for(let i=0;i<3;i++)await D.db.prepare("INSERT INTO trades(user_id,account_id,symbol,status,opened_at,entry) VALUES (?,?,?,'open',?,100)").run(u.userId,u.accountId,'TEST',new Date().toISOString());
+ const token=await D.createSession(u.userId),received=[];
+ // Chart IO seam returns the actual scoped risk state; route parsing/auth are real.
+ B.chart=async(symbol,tf,opts)=>{received.push(opts);const daily=await B.correction.dailyState(opts.userId,{accountId:opts.accountId,entryTf:'5m',forEntry:true});return {symbol,timeframe:tf,topdown:{blocked:false},now:{execution_permission:{...daily.permission,account_id:daily.account_id}},setups:{verdict:{action:daily.permission.allowed?'BUY':'NO TRADE'}}};};
+ const express=require(path.join(APP,'node_modules/express')),app=express();app.use(express.json());app.use('/api',require(path.join(APP,'src/routes/api')));server=await new Promise(resolve=>{const s=app.listen(0,'0.0.0.0',()=>resolve(s));});const base=`http://127.0.0.1:${server.address().port}/api/bots/topdown?symbol=TEST&tf=15m`;
+ const get=async(q='',auth=token)=>{const r=await fetch(base+q,{headers:{'x-session':auth}});return {status:r.status,data:await r.json()};};
+ let r=await get('&account_id='+a2);ok('topdown forwards requested owned second account to chart',received.at(-1)?.accountId===a2,received.at(-1));ok('clear second account is not blocked by default account cap',r.data.execution_permission?.account_id===a2 && r.data.execution_permission.allowed && r.data.blocked===false,r);
+ r=await get('&account_id='+u.accountId);ok('explicit first account still reports its actual stop',r.data.blocked===true && r.data.verdict?.action==='NO TRADE',r);r=await get();ok('omitted account deliberately resolves owned default',r.data.execution_permission?.account_id===u.accountId && r.data.blocked===true,r);r=await get('','');ok('topdown scope repair retains real auth',r.status===401,r);
+ const {JSDOM}=require(path.join(APP,'node_modules/jsdom'));dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'https://fixture.example',runScripts:'outside-only'});const w=dom.window,reads=[],pending=[];
+ w.API={get:(url,params)=>{reads.push({url,params});const out=url==='/bots/analyse'?{ok:false,prediction:null}:url==='/bots/markets'?{markets:[]}:{};const p=url==='/bots/correction'?B.correction.analyse(u.userId,{accountId:params?.account_id || null}):Promise.resolve(out);pending.push(p);return p;},post:async()=>({}),put:async()=>({})};
+ for(const p of ['util.js','store.js'])w.eval(fs.readFileSync(path.join(APP,'public/js',p),'utf8'));w.Store.user={settings:{timezone:'UTC'}};w.Store.accounts=[];w.Store.strategies=[];w.Store.instruments=[];w.Store.accountId=a2;
+ w.App={refresh(){},toast(){}};w.TV={ok:false,link:()=> '#',fallback:()=>w.document.createElement('div')};w.requestAnimationFrame=()=>0;
+ w.eval(fs.readFileSync(path.join(APP,'public/js/views/bots.js'),'utf8'));const root=w.document.getElementById('root');w.Views.bots.render(root);await Promise.all(pending);await new Promise(r=>setImmediate(r));
+ w.App.refresh=()=>w.Views.bots.render(root);const tab=[...root.querySelectorAll('button')].find(b=>b.textContent==='Corrections');tab.click();await Promise.all(pending);await new Promise(r=>setImmediate(r));
+ ok('actual Corrections tab forwards the selected UI account, not {} default',reads.findLast(r=>r.url==='/bots/correction')?.params?.account_id===a2,reads.filter(r=>r.url==='/bots/correction'));
+}catch(e){fail++;console.error(e.stack);}finally{dom?.window.close();if(server)await new Promise(r=>server.close(r));if(process.env.M79_RESULT)fs.writeFileSync(process.env.M79_RESULT,JSON.stringify({app:APP,pass,fail,results,scope:'Actual scoped/authenticated route + real Cor state and actual UI tab request; declared market IO boundary'},null,2)+'\n');console.log(`M79 account forwarding: ${pass} passed, ${fail} failed`);for(const x of ['','-wal','-shm'])try{fs.unlinkSync(file+x);}catch{}process.exitCode=fail?1:0;}})();

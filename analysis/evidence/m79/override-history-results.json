@@ -1,0 +1,96 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 22,
+  "fail": 0,
+  "results": [
+    {
+      "label": "additive durable guardrail event table exists",
+      "passed": true
+    },
+    {
+      "label": "preexisting journal rows have NULL provenance, never invented admission",
+      "passed": true
+    },
+    {
+      "label": "observed cap stop is durably captured",
+      "passed": true
+    },
+    {
+      "label": "re-reading identical stop is deduplicated, not a new violation every poll",
+      "passed": true
+    },
+    {
+      "label": "blocked entry attempt is committed to audit even though no trade is written",
+      "passed": true
+    },
+    {
+      "label": "day review returns captured rule/details with server date/UTC context",
+      "passed": true
+    },
+    {
+      "label": "captured rule days are discoverable even without written review",
+      "passed": true
+    },
+    {
+      "label": "another user never receives captured first-user events",
+      "passed": true
+    },
+    {
+      "label": "account-filtered review does not mix another account into the day",
+      "passed": true
+    },
+    {
+      "label": "trade deletion/settings change cannot erase or recompute the captured stop",
+      "passed": true
+    },
+    {
+      "label": "tomorrow clear state does not overwrite yesterday history",
+      "passed": true
+    },
+    {
+      "label": "admitted record carries actual server snapshot and permission provenance",
+      "passed": true
+    },
+    {
+      "label": "historical record cannot forge server admission snapshot",
+      "passed": true
+    },
+    {
+      "label": "editing history cannot rewrite immutable server provenance",
+      "passed": true
+    },
+    {
+      "label": "permission read outage still allows honest closed record, explicitly unknown/no permit",
+      "passed": true
+    },
+    {
+      "label": "JSON imported open position stays record-only, not permission",
+      "passed": true
+    },
+    {
+      "label": "CSV imported position stays record-only, never guessed a historical breach",
+      "passed": true
+    },
+    {
+      "label": "research signal explicitly carries no live permission or inferred breach",
+      "passed": true
+    },
+    {
+      "label": "actual day-review renderer shows captured rule and UTC label",
+      "passed": true
+    },
+    {
+      "label": "empty history never claims older trades followed rules",
+      "passed": true
+    },
+    {
+      "label": "rendered rule/reason text is escaped, not executable HTML",
+      "passed": true
+    },
+    {
+      "label": "day history still requires real authentication",
+      "passed": true
+    }
+  ],
+  "scope": "Actual local libSQL/auth/review/browser-script history, no backfill, production or broker claim"
+}

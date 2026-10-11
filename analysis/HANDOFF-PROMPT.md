@@ -1,6 +1,63 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M71 continuation state — 2026-10-11
+## Current M79/M80 continuation state — 2026-10-11
+
+- Fixed branch **arena/762c0295-trader**; parent **fdaa2bc5cd7922df094c53e3991627dc7c1c23ba**.
+  Read git for exact current HEAD/push. **132:80 done/2 partial/50 todo/0 no-action**;
+  exact eight-group partition; M30/M103 partial, M125 TODO. User CONTINUE; stop
+  asking clarifiers, preserve course30 and deliberateM103n>=5, no70%/target shrinking.
+- [Authoritative report](M79-M80-GUARDRAILS.md), evidence/m79, incremental guarded
+  patches in M79-M80-STAGES.json and reproducible build-m79-m80-artifacts.py.
+  M79/M80 plus independently measured M83/M113/M90 complete. Final302/0 feature
+  assertions across12 probes (not distinct defects, market outcome or edge tests).
+- Cap38/0vs2/36; admission48/0vs10/38; consumers44/0vs16/28; history22/0vs1/21;
+  reason29/0vs10/19; actualUI26/0vs backend3/23; prices4/0vs2/2; account6/0vs3/3.
+  Parent “detection correct” withdrawn: unawaited rules/account/count/closure-day
+  defects. Original deletion acceptance3/1 retained; history was durable but
+  permission not. Exact acceptance now4/0; extended durable48/0vs20/28.
+- Separate guardrail_day_state and guardrail_entry_admissions; no journal trade
+  FK, monotonic observed floor + transactionally counted successful live entries/
+  reopens. Journal corrections/backdates/deletes remain legal and cannot reset
+  observed day cap/loss/streak stop. Time gates retain observed loss timestamp
+  but expire precisely; UTC rollover resets day stops, not a crossing loss clock.
+  Existing legacy rows may seed observed current count, not fabricated admissions.
+- Selected capdefault3/integer1–100/guidance3intraday5scalping; first UTC check/
+  admission freezes it, later edits next day; history only suggestion. Same-account
+  reopens count again. Signal/research plans are not executed trade-entry slots
+  nor reusable permits. Prospective trade/reopen always rechecked server-side.
+- Known stop + reason permits one action with fresh scoped snapshot/linked audit,
+  atomic rollback on audit/admission failure. Unknown cannot waive; technical
+  veto untouched. Empty/no-op plan grants no permission/event. Validation24/0vs
+  retention13/11: only tagged local validation propagates400; arbitrary driver4xx
+  remains generic503. Existing public-route{error}400 unchanged. Migration9/0
+  actual prior-schema/localDB/idempotence/no backfill, not hosted deployment.
+- Actual browser modal/preflight/race/account handling tested, not pixels. Honest
+  record-only open/historical/import/research states never permission; captures
+  recording-time/unknown, legacyNULL. Real day review escaped/immutable/scoped.
+  Independent integer price fix100→1/110→11 and empty-prefix callback composition
+  fixed; prior M33 66/1 and M77/M78 crashes retained, repaired67/0/41/0/169/0.
+- Native final IO explicitly synthetic/localDB/scheduler0. Identical truthful
+  historical/record-only/research fixtures, unchanged existing values/assertions/
+  floors; API121/0both, bots204/2both (19fills/0mismatches below20/>20 floors).
+  Original live-seed/bulkdelete-reset assumptions failed correctly; failures kept.
+  Standalone sharedDB migrationSQLITE_BUSY kept; final suites serial perDB.
+  Now50/0,Topdown77/0,Chart36/0,Smoke22views/0UIstyle+consoleerrors; prior consumer
+  M33 67/0,M78 169/0,M77 41/0,M71 48/0/settings15/0. All ten engine/model/price-policy
+  files byte-identical to parent; no new outcome runs or claim of improvement.
+- Preview3000 current code, /tmp/m79-regressions.db, synthetic, scheduler0,
+  blank remotecredentials. Host/origin200; control3001 stopped after measurements.
+  No broker/liveYahoo/productionauth/Turso/Vercel/cron/pixel proof. User's
+  no-key-rotation instruction remains; credentials remain uncommitted/ignored.
+- **112 final application files** including guardrails guide; deterministic ZIP,
+  archive hash companion evidence/m79/archive-sha256.json outside ZIP avoids
+  self-hash. All stage/combined/pristine forward+reverse/byte checks0differences,
+  package lock and older patches unchanged. Do not rerun old M71 twelve measurements.
+- **NEXT M81 profit stop, then M82 resize / remaining risk mechanism order.**
+  M85 adaptive size,M111 news fail-closed,M112 time-window remain open. All50todos
+  +2partials visible. Do not infer other closures or that unfinished items caused losses.
+
+
+## Historical M71 continuation state — 2026-10-11
 
 - Fixed branch **arena/762c0295-trader**. M71 complete; actual parent **184695d**.
   Read git for exact HEAD/push. **132:75 done/2 partial/55 todo/0 no-action**,

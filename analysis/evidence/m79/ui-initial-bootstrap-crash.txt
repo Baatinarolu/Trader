@@ -1,0 +1,11 @@
+<anonymous_script>:85
+  const clear = (node) => { while (node.firstChild) node.removeChild(node.firstChild); return node; };
+                                        ^
+
+TypeError: Cannot read properties of null (reading 'firstChild')
+    at Object.clear (eval at load (/home/user/Trader/analysis/probe-m80-ui.js:19:18), <anonymous>:85:41)
+    at Object.offlineScreen (eval at load (/home/user/Trader/analysis/probe-m80-ui.js:19:18), <anonymous>:90:9)
+    at Object.boot (eval at load (/home/user/Trader/analysis/probe-m80-ui.js:19:18), <anonymous>:57:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+Node.js v22.22.3

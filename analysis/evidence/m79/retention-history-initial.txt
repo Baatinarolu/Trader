@@ -1,0 +1,23 @@
+ok additive durable guardrail event table exists
+ok preexisting journal rows have NULL provenance, never invented admission
+ok observed cap stop is durably captured
+ok re-reading identical stop is deduplicated, not a new violation every poll
+ok blocked entry attempt is committed to audit even though no trade is written
+ok day review returns captured rule/details with server date/UTC context
+ok captured rule days are discoverable even without written review
+ok another user never receives captured first-user events
+ok account-filtered review does not mix another account into the day
+ok trade deletion/settings change cannot erase or recompute the captured stop
+ok tomorrow clear state does not overwrite yesterday history
+FAIL admitted record carries actual server snapshot and permission provenance {"status":409,"data":{"error":"Stand down: 3 entries today — your preselected cap is 3.","code":"guardrail_stop","daily":{"date":"2026-10-11","timezone":"UTC","evaluated_at":"2026-10-11T12:00:00.000Z","account_id":1,"guardrails":{"max_risk_pct":1,"max_trades_day":3,"cooldown_min":30,"max_consecutive_losses":2,"daily_loss_limit_pct":2,"trade_cap_policy":{"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"},"size_cap_note":null,"basis":"Default risk rules and the preselected account trade cap (not enough personal data yet).","guardrails":{"max_risk_pct":1,"max_trades_day":3,"cooldown_min":30,"max_consecutive_losses":2,"daily_loss_limit_pct":2,"trade_cap_policy":{"max_trades_day":3,"selected_at":"2026-10-11T12:00:00.000Z","rule_date":"2026-10-11","timezone":"UTC"},"size_cap_note":null,"basis":"Default risk rules and the preselected account trade cap (not enough personal data yet)."},"stats":null,"user":{"trades":0},"sample_sufficient":false,"min_trades_for_personal_guardrails":30},"today":{"trades":3,"closed":0,"realised":0,"r_sum":0,"avg_r":0,"loss_streak":0,"balance":10000,"loss_limit":200,"balance_basis":"day-start realised journal equity"},"persistence":{"entry_count_basis":"monotonic observed journal entries plus server admissions, not inferred historical permission","journal_entries":0,"retained_stops":["max_trades_day"]},"breaches":[{"rule":"max_trades_day","detail":"3 entries today — your preselected cap is 3."}],"status":"stop","remaining_trades":0,"post_loss":{"last_loss_trade_id":null,"last_loss_at":null,"entry_tf":"5m","entry_tf_required":false,"cooldown_until":null,"next_candle_until":null},"message":"Stand down: 3 entries today — your preselected cap is 3.","permission":{"allowed":false,"can_override":true,"state":"stopped"}}}}
+ok historical record cannot forge server admission snapshot
+ok editing history cannot rewrite immutable server provenance
+ok permission read outage still allows honest closed record, explicitly unknown/no permit
+ok JSON imported open position stays record-only, not permission
+ok CSV imported position stays record-only, never guessed a historical breach
+ok research signal explicitly carries no live permission or inferred breach
+ok actual day-review renderer shows captured rule and UTC label
+ok empty history never claims older trades followed rules
+ok rendered rule/reason text is escaped, not executable HTML
+ok day history still requires real authentication
+M90 history: 21 passed, 1 failed

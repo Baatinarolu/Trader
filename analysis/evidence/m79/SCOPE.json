@@ -1,0 +1,73 @@
+{
+  "parent_commit": "fdaa2bc5cd7922df094c53e3991627dc7c1c23ba",
+  "findings": [
+    "M79",
+    "M80"
+  ],
+  "independently_measured_dependencies": [
+    "M83",
+    "M113",
+    "M90"
+  ],
+  "invariants": [
+    "Recordkeeping is not execution permission. Closed/imported/replay records remain recordable.",
+    "No broker is connected. App admission cannot prevent outside trading.",
+    "Only a recorded nonblank reason overrides a known personal stop; errors cannot be overridden.",
+    "No model, price geometry, RR floor, grade policy, risk coefficient or research/backtest changes.",
+    "M11 minimum 30 closed trades and deliberate M103 n>=5 remain.",
+    "Daily profit stop, news fail-closed, session guard, derived risk cap, behavioural resize and analytics remain separate TODOs."
+  ],
+  "newly_verified_parent_defects": [
+    "dailyState calls async guardrails without await",
+    "today and loss streak queries cross account scope",
+    "trade cap only counts closed entries",
+    "daily loss check uses opened day and strict <",
+    "cooldown is narrated rather than gated",
+    "daily lookup exceptions fall open to null"
+  ],
+  "final_feature_assertions": {
+    "pass": 302,
+    "fail": 0
+  },
+  "retained_deletion_negative": {
+    "pass": 3,
+    "fail": 1,
+    "file": "day-retention-results.json"
+  },
+  "durable_repair": {
+    "original_acceptance": [
+      4,
+      0
+    ],
+    "extended": [
+      48,
+      0
+    ],
+    "negative_control": [
+      20,
+      28
+    ]
+  },
+  "validation_contracts": {
+    "current": [
+      24,
+      0
+    ],
+    "retention_control": [
+      13,
+      11
+    ]
+  },
+  "migration": [
+    9,
+    0
+  ],
+  "ledger": {
+    "total": 132,
+    "done": 80,
+    "partial": 2,
+    "todo": 50,
+    "no_action": 0
+  },
+  "newly_verified_retention_gap": "Mutable journal deletions refunded cap entries despite durable M90 breach history (new acceptance at pre-retention stage, not shipped-parent provenance)."
+}

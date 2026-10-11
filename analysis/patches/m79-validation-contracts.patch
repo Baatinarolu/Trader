@@ -1,0 +1,102 @@
+diff --git a/src/bots/guardrails.js b/src/bots/guardrails.js
+index 8508f8a..a19b88f 100644
+--- a/src/bots/guardrails.js
++++ b/src/bots/guardrails.js
+@@ -78,6 +78,8 @@ async function retainAdmission(store,userId,daily,options,result) {
+   if (options.entityType!=='trade') return;
+   const id = options.entityId || result?.id;
+   if (!Number.isInteger(Number(id)) || Number(id)<=0) throw new Error('Missing admitted trade identity');
++  const trade = await store.prepare('SELECT status,opened_at FROM trades WHERE id=? AND user_id=? AND account_id=?').get(id,userId,daily.account_id);
++  if (trade?.status!=='open' || trade.opened_at!==daily.evaluated_at) throw new Error('Entry write did not create the admitted action');
+   await store.prepare(`INSERT INTO guardrail_entry_admissions
+     (user_id,account_id,rule_date,admitted_at,action,trade_id,admission_state,snapshot)
+     VALUES (?,?,?,?,?,?,?,?)`).run(userId,daily.account_id,daily.date,daily.evaluated_at,
+@@ -213,6 +215,12 @@ async function record(userId,options,operation) {
+   });
+ }
+ 
++/** Only explicit, local input validation may escape the fail-closed boundary.
++ * An arbitrary driver/provider Error carrying a 4xx status is NOT trusted. */
++class AdmissionInputError extends Error {
++  constructor(message) { super(message); this.status=400; this.code='guardrail_input_invalid'; }
++}
++function inputError(message) { return new AdmissionInputError(message); }
+ function overrideReason(value) {
+   if (value === undefined || value === null) return null;
+   if (typeof value !== 'string' || value.length > 2000) {
+@@ -251,6 +259,7 @@ async function admit(userId, options, operation) {
+       daily.admission = {allowed:true,can_override:false,state:overridden?'overridden':'admitted',
+         override_reason:overridden?reason:null,action:options.action || 'entry'};
+       const result = await operation(store,daily);
++      if (result?.saved===0) return {result}; // no action: no false override/admission event
+       await retainAdmission(store,userId,daily,options,result);
+       if (overridden) {
+         const ids = options.entityId ? [options.entityId] : result?.ids || (result?.id ? [result.id] : []);
+@@ -260,11 +269,12 @@ async function admit(userId, options, operation) {
+       await require('./correction').dailyState(userId,{...options,store,forEntry:false});
+       return {result};
+     });
+-  } catch {
++  } catch (e) {
++    if (e instanceof AdmissionInputError) throw e;
+     throw admissionError(unavailable({accountId:options.accountId}));
+   }
+   if (out.rejected) throw admissionError(out.rejected);
+   return out.result;
+ }
+-module.exports = { retainedState, retainState, DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
++module.exports = { inputError, retainedState, retainState, DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
+   evaluate, unavailable, isBlocked, applyToSetups, admissionError, admit, observe, snapshotFields, logEvent, eventsForDay, record, overrideReason, actionPermission };
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 01d0b90..9f80aae 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -744,14 +744,17 @@ async function insertPlan(userId, p = {}, store = db, stamp = {}) {
+   if (!symbol || !Number.isFinite(entry) || !Number.isFinite(stop) || entry === stop) {
+     return { saved: 0, reason: 'symbol, entry and stop (entry ≠ stop) are required' };
+   }
+-  const model = Entry.normaliseName(p.entry_model);
+-  if (p.stop_policy) Stops.check(p.stop_policy, stop, p.entry_tf);
+-  const evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
++  let model, evidence;
+   const dir = stop < entry ? 1 : -1;
+-  if (p.entry_preference) EntryPreference.check(p.entry_preference, p.entry_tf, dir);
+-  if (p.entry_preference && p.entry_evidence && JSON.parse(evidence || '{}').entry_preference
+-      && !EntryPreference.same(p.entry_preference, JSON.parse(evidence).entry_preference))
+-    throw new Error('entry_preference contradicts the named entry_evidence snapshot');
++  try {
++    model = Entry.normaliseName(p.entry_model);
++    if (p.stop_policy) Stops.check(p.stop_policy, stop, p.entry_tf);
++    evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
++    if (p.entry_preference) EntryPreference.check(p.entry_preference, p.entry_tf, dir);
++    if (p.entry_preference && p.entry_evidence && JSON.parse(evidence || '{}').entry_preference
++        && !EntryPreference.same(p.entry_preference, JSON.parse(evidence).entry_preference))
++      throw new Error('entry_preference contradicts the named entry_evidence snapshot');
++  } catch (e) { throw Guards.inputError(e.message); }
+   const risk = Math.abs(entry - stop);
+   const prices = (Array.isArray(p.targets) ? p.targets : [])
+     .map((t) => Number(t && (t.price !== undefined ? t.price : t))).filter((x) => Number.isFinite(x));
+@@ -820,7 +823,10 @@ async function savePlan(userId,p = {}) {
+   await ensureSignalsTable();
+   if (p.research_only === true) return {...await insertPlan(userId,p,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
+   return Guards.admit(userId,{accountId:p.account_id || null,entryTf:p.entry_tf || p.timeframe,action:'save_plan',entityType:'signal',overrideReason:p.override_reason},
+-    async (store,daily) => ({...await insertPlan(userId,p,store,Guards.snapshotFields(daily)),permission:Guards.actionPermission(daily)}));
++    async (store,daily) => {
++      const result = await insertPlan(userId,p,store,Guards.snapshotFields(daily));
++      return {...result,permission:result.saved>0 ? Guards.actionPermission(daily) : {allowed:false,can_override:false,state:'not_admitted'}};
++    });
+ }
+ async function saveSignals(userId,payload,options = {}) {
+   await ensureSignalsTable();
+@@ -829,7 +835,10 @@ async function saveSignals(userId,payload,options = {}) {
+   if (!marketCandidates.some(c=>c.ok && c.levels && c.levels.entry_status!=='invalid')) return {saved:0,reason:'no actionable setup in this analysis'};
+   if (options.research_only === true) return {...await insertSignals(userId,market,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
+   return Guards.admit(userId,{accountId:options.accountId || payload.daily?.account_id || null,entryTf:candidateTf(market.setups,payload.topdown || {},payload.timeframe),action:'save_signal',entityType:'signal',overrideReason:options.override_reason},
+-    async (store,daily) => ({...await insertSignals(userId,market,store,Guards.snapshotFields(daily)),permission:Guards.actionPermission(daily)}));
++    async (store,daily) => {
++      const result = await insertSignals(userId,market,store,Guards.snapshotFields(daily));
++      return {...result,permission:result.saved>0 ? Guards.actionPermission(daily) : {allowed:false,can_override:false,state:'not_admitted'}};
++    });
+ }
+ 
+ async function listSignals(userId, { status = null, limit = 50 } = {}) {

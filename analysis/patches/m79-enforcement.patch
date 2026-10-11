@@ -1,0 +1,620 @@
+diff --git a/src/bots/correction.js b/src/bots/correction.js
+index 26234d1..5fd713e 100644
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
+@@ -35,11 +35,11 @@ const sessionQuality = (s) => {
+ 
+ /* ═══════════════════════════════════════════════════════════ data loading */
+ 
+-async function loadTrades(userId, { days = 365, accountId = null } = {}) {
+-  const since = new Date(Date.now() - days * 864e5).toISOString().slice(0, 19).replace('T', ' ');
++async function loadTrades(userId, { days = 365, accountId = null, store = db, nowMs = Date.now() } = {}) {
++  const since = new Date(nowMs - days * 864e5).toISOString().slice(0, 19).replace('T', ' ');
+   const rows = accountId
+-    ? await db.prepare(`SELECT * FROM trades WHERE user_id=? AND account_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, accountId, since)
+-    : await db.prepare(`SELECT * FROM trades WHERE user_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, since);
++    ? await store.prepare(`SELECT * FROM trades WHERE user_id=? AND account_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, accountId, since)
++    : await store.prepare(`SELECT * FROM trades WHERE user_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, since);
+   return rows.filter((t) => t.status === 'closed' && t.exit != null);
+ }
+ 
+@@ -65,10 +65,10 @@ function statsOf(trades) {
+ }
+ 
+ /** The account the bots should size and guard against. */
+-async function accountOf(userId, accountId = null) {
++async function accountOf(userId, accountId = null, store = db) {
+   const acc = accountId
+-    ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(accountId, userId)
+-    : await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
++    ? await store.prepare('SELECT * FROM accounts WHERE id=? AND user_id=? AND archived=0').get(accountId, userId)
++    : await store.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
+   return acc || { id: null, current_balance: 0, starting_balance: 0, risk_per_trade_pct: 0.5, daily_loss_limit_pct: 3, currency: 'USD' };
+ }
+ 
+@@ -413,10 +413,10 @@ async function backfillGrades(userId) {
+  * Derive personal risk guardrails from the trader's own distribution — not from
+  * generic advice. These are the numbers the app will hold them to.
+  */
+-async function guardrails(userId, { accountId = null } = {}) {
+-  const account = await accountOf(userId, accountId);
+-  const chosenCap = await Guards.dailyCap(db, userId, account);
+-  const trades = await loadTrades(userId, { days: 180, accountId });
++async function guardrails(userId, { accountId = null, store = db, nowMs = Date.now() } = {}) {
++  const account = await accountOf(userId, accountId, store);
++  const chosenCap = await Guards.dailyCap(store, userId, account, nowMs);
++  const trades = await loadTrades(userId, { days: 180, accountId: account.id, store, nowMs });
+   const st = statsOf(trades);
+   const base = {
+     max_risk_pct: 1, max_trades_day: chosenCap.max_trades_day, cooldown_min: 30, max_consecutive_losses: 2,
+@@ -506,37 +506,13 @@ async function guardrails(userId, { accountId = null } = {}) {
+ }
+ 
+ /** Today's live risk state — what the guardrails say RIGHT NOW. */
+-async function dailyState(userId, { accountId = null } = {}) {
+-  const today = new Date().toISOString().slice(0, 10);
+-  const g = guardrails(userId, { accountId });
+-  const rows = (await db.prepare(`SELECT * FROM trades WHERE user_id=? ORDER BY opened_at ASC`).all(userId)).filter((t) => dayKey(t.opened_at) === today);
+-  const closed = rows.filter((t) => t.status === 'closed');
+-  const realised = r2(closed.reduce((s, t) => s + (t.net_pnl || 0), 0));
+-  const rSum = r2(closed.reduce((s, t) => s + (t.r_multiple || 0), 0));
+-  // consecutive losses counting back from the most recent closed trade of today
+-  const recent = await db.prepare(`SELECT r_multiple, net_pnl, opened_at FROM trades WHERE user_id=? AND status='closed' ORDER BY closed_at DESC LIMIT 10`).all(userId);
+-  let streak = 0;
+-  for (const t of recent) { if ((t.net_pnl || 0) < 0) streak++; else break; }
+-  const account = await accountOf(userId, accountId);
+-  const balance = Number(account.current_balance || account.starting_balance || 0);
+-
+-  const breaches = [];
+-  if (closed.length >= g.max_trades_day) breaches.push({ rule: 'max_trades_day', detail: `${closed.length} trades today — your cap is ${g.max_trades_day}.` });
+-  if (streak >= g.max_consecutive_losses) breaches.push({ rule: 'consecutive_losses', detail: `${streak} losses in a row — the cooldown/stop rule is triggered.` });
+-  if (balance > 0 && realised < -Math.abs(balance * g.daily_loss_limit_pct / 100)) breaches.push({ rule: 'daily_loss_limit', detail: `Down $${r2(Math.abs(realised))} today (limit ${g.daily_loss_limit_pct}% = $${r2(balance * g.daily_loss_limit_pct / 100)}).` });
+-
+-  return {
+-    date: today,
+-    guardrails: g,
+-    today: { trades: rows.length, closed: closed.length, realised, r_sum: rSum, avg_r: closed.length ? r2(rSum / closed.length) : 0, loss_streak: streak, balance: r2(balance) },
+-    breaches,
+-    status: breaches.length ? 'stop' : closed.length >= g.max_trades_day - 1 ? 'caution' : 'clear',
+-    message: breaches.length
+-      ? `Stand down: ${breaches.map((b) => b.detail).join(' ')}`
+-      : streak >= 1 ? `${streak} loss${streak > 1 ? 'es' : ''} in a row — take the ${g.cooldown_min}-minute cooldown before the next entry.`
+-        : `Clear to trade. Cap: ${g.max_trades_day} trades / ${g.max_risk_pct}% risk per trade today.`,
+-    remaining_trades: Math.max(0, g.max_trades_day - closed.length),
+-  };
++async function dailyState(userId, { accountId = null, store = db, nowMs = Date.now(), entryTf = null, forEntry = false } = {}) {
++  const account = await accountOf(userId, accountId, store);
++  if (!account.id) return Guards.unavailable({accountId,nowMs});
++  // M79: this was a Promise used as though it were resolved rule numbers.
++  const g = await guardrails(userId, { accountId: account.id, store, nowMs });
++  const rows = await store.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY opened_at ASC').all(userId,account.id);
++  return Guards.evaluate({account,guardrails:g,rows,nowMs,entryTf,forEntry});
+ }
+ 
+ /* ═════════════════════════════════════════════════ 4. PER-TRADE FEEDBACK */
+diff --git a/src/bots/guardrails.js b/src/bots/guardrails.js
+index 6d2d989..47e46de 100644
+--- a/src/bots/guardrails.js
++++ b/src/bots/guardrails.js
+@@ -1,8 +1,10 @@
+ 'use strict';
+-/** Personal admission rules, not a market/entry model. All rule days are UTC,
++/** Personal admission rules, not a market/entry model. Rule days are UTC,
+  * matching the existing daily journal API. Server time, never a client clock.
+  */
+ const DEFAULT_CAP = 3;
++const TF_MS = { '1m': 60000, '5m': 300000, '15m': 900000, '30m': 1800000,
++  '1h': 3600000, '4h': 14400000, '1d': 86400000, '1wk': 604800000 };
+ function parseCap(value) {
+   if (value == null || value === '' || typeof value === 'boolean') throw new Error('max_trades_day must be an integer from 1 to 100');
+   const n = Number(value);
+@@ -13,9 +15,11 @@ function configuredCap(account = {}) {
+   try { return parseCap(account.max_trades_day); } catch { return DEFAULT_CAP; }
+ }
+ const dayKey = ms => new Date(ms).toISOString().slice(0, 10);
++const msOf = value => value == null || value === '' ? NaN : Date.parse(/^[\d-]+ [\d:.]+$/.test(String(value)) ? String(value).replace(' ', 'T')+'Z' : value);
++const number = v => Number.isFinite(Number(v)) ? Number(v) : 0;
++const r2 = v => Math.round(v * 100) / 100;
+ /** Freeze the preselected cap on the first check of a rule day. An account edit
+  * selects tomorrow's cap; it cannot erase today's stop in the middle of a streak.
+- * A unique key + INSERT OR IGNORE makes simultaneous first checks agree.
+  */
+ async function dailyCap(store, userId, account, nowMs = Date.now()) {
+   const date = dayKey(nowMs);
+@@ -26,4 +30,95 @@ async function dailyCap(store, userId, account, nowMs = Date.now()) {
+   const row = await store.prepare('SELECT * FROM guardrail_day_caps WHERE user_id=? AND account_id=? AND rule_date=?').get(userId, account.id, date);
+   return { max_trades_day: parseCap(row.max_trades_day), selected_at: row.selected_at, rule_date: date, timezone: 'UTC' };
+ }
+-module.exports = { DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey };
++function unavailable({ accountId = null, nowMs = Date.now(), message } = {}) {
++  return { date: dayKey(nowMs), timezone: 'UTC', evaluated_at: new Date(nowMs).toISOString(), account_id: accountId,
++    status: 'unknown', breaches: [], remaining_trades: null, guardrails: null, today: null,
++    message: message || 'Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.',
++    permission: { allowed: false, can_override: false, state: 'unavailable' } };
++}
++const isBlocked = daily => !!daily && (daily.status === 'stop' || daily.status === 'unknown' || daily.permission?.allowed === false);
++/** Pure, inspectable state. Percentage loss limit is anchored to day-start
++ * realised journal equity, not floating P&L or a shrinking intraday balance.
++ * Opening a position counts as an attempt. P&L/streak use the CLOSE day, so
++ * overnight positions do not disappear from the loss stop.
++ */
++function evaluate({ account, guardrails, rows = [], nowMs = Date.now(), entryTf = null, forEntry = false }) {
++  const date = dayKey(nowMs), start = Date.parse(date+'T00:00:00Z'), g = guardrails;
++  if (!account?.id || account.archived || !g || !Number.isFinite(Number(g.max_trades_day))
++      || !(Number(g.daily_loss_limit_pct) > 0) || !(Number(g.max_consecutive_losses) > 0)
++      || !(Number(g.cooldown_min) >= 10)) return unavailable({accountId: account?.id, nowMs});
++  // The loader scopes SQL too; keep the pure boundary scoped for other callers.
++  const scoped = rows.filter(t => Number(t.account_id) === Number(account.id) && Number(t.user_id) === Number(account.user_id));
++  const openedToday = scoped.filter(t => msOf(t.opened_at) >= start && msOf(t.opened_at) <= nowMs);
++  const closed = scoped.filter(t => t.status === 'closed');
++  const timed = closed.filter(t => Number.isFinite(msOf(t.closed_at)) && msOf(t.closed_at) <= nowMs);
++  const todayClosed = timed.filter(t => msOf(t.closed_at) >= start).sort((a,b) => msOf(b.closed_at)-msOf(a.closed_at) || number(b.id)-number(a.id));
++  const ambiguous = closed.filter(t => !Number.isFinite(msOf(t.closed_at)) && msOf(t.opened_at) >= start && msOf(t.opened_at) <= nowMs);
++  if (ambiguous.length) return unavailable({accountId: account.id, nowMs,
++    message: 'A closed trade from today has no valid close timestamp. Record its actual close time before requesting new entry permission.'});
++  const realised = r2(todayClosed.reduce((s,t)=>s+number(t.net_pnl),0));
++  const rSum = r2(todayClosed.reduce((s,t)=>s+number(t.r_multiple),0));
++  const priorPnl = timed.filter(t=>msOf(t.closed_at)<start).reduce((s,t)=>s+number(t.net_pnl),0);
++  const balance = r2(number(account.starting_balance)+priorPnl);
++  if (!(balance > 0)) return unavailable({accountId: account.id, nowMs, message:'Day-start realised equity must be positive before new entry permission can be verified.'});
++  let streak = 0;
++  for (const t of todayClosed) { if (number(t.net_pnl) < 0) streak++; else break; }
++  const lastLoss = timed.filter(t=>number(t.net_pnl)<0).sort((a,b)=>msOf(b.closed_at)-msOf(a.closed_at) || number(b.id)-number(a.id))[0] || null;
++  const lossMs = lastLoss ? msOf(lastLoss.closed_at) : null;
++  const cooldownUntil = lastLoss ? lossMs + Number(g.cooldown_min)*60000 : null;
++  const barMs = TF_MS[entryTf];
++  // A loss at an exact bar boundary belongs to the bar that just closed.
++  // Otherwise the next FULL bar is the forbidden next candle. This is a
++  // deterministic time-boundary rule, not guessed OHLC or feed confirmation.
++  const nextEnd = lastLoss && barMs ? Math.ceil(lossMs/barMs)*barMs+barMs : null;
++  const tfRequired = !!lastLoss && !barMs && nowMs < lossMs+2*Math.max(...Object.values(TF_MS));
++  if (forEntry && tfRequired) return unavailable({accountId: account.id, nowMs,
++    message:'Record a supported entry timeframe (1m, 5m, 15m, 30m, 1h, 4h, 1d or 1wk) to verify the no-next-candle rule after a loss.'});
++  const breaches = [];
++  if (openedToday.length >= Number(g.max_trades_day)) breaches.push({rule:'max_trades_day',detail:`${openedToday.length} entries today — your preselected cap is ${g.max_trades_day}.`});
++  if (streak >= Number(g.max_consecutive_losses)) breaches.push({rule:'consecutive_losses',detail:`${streak} consecutive closed losses today — stop for this rule day.`});
++  const lossLimit = balance*Number(g.daily_loss_limit_pct)/100;
++  if (realised <= -lossLimit) breaches.push({rule:'daily_loss_limit',detail:`Realised loss $${r2(-realised)} has reached the ${g.daily_loss_limit_pct}% day-start equity limit ($${r2(lossLimit)}).`});
++  if (cooldownUntil !== null && nowMs < cooldownUntil) breaches.push({rule:'post_loss_cooldown',detail:`After a loss, no new entry until ${new Date(cooldownUntil).toISOString()} (${g.cooldown_min}-minute cooldown).`,until:new Date(cooldownUntil).toISOString()});
++  if (nextEnd !== null && nowMs < nextEnd) breaches.push({rule:'no_next_candle',detail:`Do not enter the very next ${entryTf} candle after the loss; wait until ${new Date(nextEnd).toISOString()}.`,until:new Date(nextEnd).toISOString()});
++  const status = breaches.length ? 'stop' : openedToday.length >= Number(g.max_trades_day)-1 ? 'caution' : 'clear';
++  return {date,timezone:'UTC',evaluated_at:new Date(nowMs).toISOString(),account_id:account.id,guardrails:g,
++    today:{trades:openedToday.length,closed:todayClosed.length,realised,r_sum:rSum,avg_r:todayClosed.length?r2(rSum/todayClosed.length):0,loss_streak:streak,balance,loss_limit:r2(lossLimit),balance_basis:'day-start realised journal equity'},
++    breaches,status,remaining_trades:Math.max(0,Number(g.max_trades_day)-openedToday.length),
++    post_loss:{last_loss_trade_id:lastLoss?.id || null,last_loss_at:lastLoss?.closed_at || null,entry_tf:entryTf,entry_tf_required:tfRequired,
++      cooldown_until:cooldownUntil===null?null:new Date(cooldownUntil).toISOString(),next_candle_until:nextEnd===null?null:new Date(nextEnd).toISOString()},
++    message:breaches.length ? 'Stand down: '+breaches.map(b=>b.detail).join(' ') : `No personal stop. ${Math.max(0,Number(g.max_trades_day)-openedToday.length)} entries remain under the preselected ${g.max_trades_day}-entry cap. This is not market/setup approval.`,
++    permission:{allowed:!breaches.length,can_override:!!breaches.length,state:breaches.length?'stopped':'clear'}};
++}
++/** Preserve all market geometry and grades. The original market eligibility is
++ * visible; the outer permission is what actionable consumers must obey.
++ */
++function applyToSetups(setups, daily) {
++  if (!daily) return setups;
++  const permission = { ...daily.permission, account_id:daily.account_id, evaluated_at:daily.evaluated_at, message:daily.message, breaches:daily.breaches };
++  if (!isBlocked(daily)) return {...setups, execution_permission:permission};
++  const candidates = (setups.candidates || []).map(c=>({...c,market_ok:c.market_ok === undefined ? c.ok : c.market_ok,ok:false,
++    personal_blocked:true,market_action:c.market_action || c.action,action:'NO TRADE — '+daily.message,no_trade:[...(c.no_trade || []), 'Personal guardrail: '+daily.message]}));
++  return {...setups,candidates,execution_permission:permission,verdict:{...setups.verdict,
++    market_action:setups.verdict.market_action || setups.verdict.action,action:'NO TRADE',dir:0,personal_blocked:true,headline:daily.message}};
++}
++function admissionError(daily) {
++  const e = new Error(daily.message); e.status = daily.status === 'unknown' ? 503 : 409;
++  e.code = daily.status === 'unknown' ? 'guardrail_unavailable' : 'guardrail_stop'; e.daily = daily; return e;
++}
++/** Server recheck + insert share one libSQL WRITE transaction. A rendered read
++ * or saved plan is never a reusable permit. No client breach/status is trusted.
++ */
++async function admit(userId, options, operation) {
++  const {db} = require('../db');
++  return db.tx(async transaction => {
++    const store = db.transactionStore(transaction);
++    let daily;
++    try { daily = await require('./correction').dailyState(userId,{...options,store,forEntry:true}); }
++    catch { daily = unavailable({accountId:options.accountId}); }
++    if (isBlocked(daily)) throw admissionError(daily);
++    return operation(store,daily);
++  });
++}
++module.exports = { DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
++  evaluate, unavailable, isBlocked, applyToSetups, admissionError, admit };
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 51d4d46..bdede4c 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -29,6 +29,7 @@ const EntryPreference = require('./entry-preference');
+ const Now = require('./now');
+ const Predict = require('./predict');
+ const Cor = require('./correction');
++const Guards = require('./guardrails');
+ 
+ /* -------------------------------------------------------------------------
+  * M124 — THE ENTRY-SERIES DEPTH THE METHOD READS.
+@@ -246,6 +247,16 @@ function hysteresisView(h) {
+   };
+ }
+ 
++async function personalState(userId, accountId, entryTf) {
++  if (!userId) return null; // unsized research has no claimed personal permission
++  try { return await Cor.dailyState(userId,{accountId,entryTf,forEntry:true}); }
++  catch { return Guards.unavailable({accountId}); }
++}
++function candidateTf(setups, td, fallback) {
++  const c = (setups.candidates || []).find(c=>c.dir===td.direction) || (setups.candidates || [])[0];
++  return c && (c.entry_tf || c.levels && c.levels.entry_tf) || td.entry_setup?.entry_tf || fallback;
++}
++
+ async function analyse(symbol, tf = '15m', opts = {}) {
+   const sym = String(symbol || '').toUpperCase();
+   const spec = specOf(sym);
+@@ -276,7 +287,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
+   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
+ 
+-  const setups = Setup.buildSetups(series.smc, {
++  let setups = Setup.buildSetups(series.smc, {
+     price: series.price, atr: series.atr, entrySeries: series, observedAt: cut.asOf || opts.nowMs,
+     bias: momentumEff.bias, biasReason: momentum.alignment.reason,
+     indicators: series.ind,
+@@ -312,8 +323,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   // blend: the setup's own grade + the market's measured edge + this setup's probability
+   const best = setups.candidates[0] || null;
+   const predRow = !(momentum.topdown.entry_setup && momentum.topdown.entry_setup.applies) && !momentum.topdown.countertrend && prediction && prediction.setups && best ? prediction.setups.find((p) => p.dir === best.dir) : null;
+-  let daily = null;
+-  if (opts.userId) { try { daily = await Cor.dailyState(opts.userId, { accountId: opts.accountId }); } catch (e) { daily = null; } }
++  const daily = await personalState(opts.userId,opts.accountId,candidateTf(setups,momentum.topdown || {},tf));
++  setups = Guards.applyToSetups(setups,daily);
+ 
+   const headline = buildHeadline({ sym, tf, momentum: momentumEff, setups, prediction, predRow, news, daily });
+ 
+@@ -322,10 +333,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   // downstream (webhooks, alerts, the UI banner) uses this one for direction.
+   const td = momentum.topdown || {};
+   const methodVerdict = {
+-    action: td.blocked ? 'NO TRADE' : (setups.verdict.dir > 0 ? 'BUY' : setups.verdict.dir < 0 ? 'SELL' : 'NO TRADE'),
++    action: td.blocked || Guards.isBlocked(daily) ? 'NO TRADE' : (setups.verdict.dir > 0 ? 'BUY' : setups.verdict.dir < 0 ? 'SELL' : 'NO TRADE'),
+     direction: td.direction || 0,
+     status: td.status || 'unknown',
+-    blocked: !!td.blocked,
++    blocked: !!td.blocked || Guards.isBlocked(daily),
++    market_blocked: !!td.blocked,
++    personal_blocked: Guards.isBlocked(daily),
+     headline: td.headline || null,
+     conviction: td.conviction || null,
+     pending_step: (td.steps || []).find((s) => !s.done) || null,
+@@ -484,13 +497,16 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
+   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
+ 
+-  const setups = Setup.buildSetups(entry.smc, {
++  let setups = Setup.buildSetups(entry.smc, {
+     price: entry.price, atr: entry.atr, entrySeries: entry, observedAt: cut.asOf || opts.nowMs, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
+     indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
+     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
+     sessionPref: opts.sessionPref || null,   // M26
+   });
+ 
++  const daily = await personalState(opts.userId,opts.accountId,candidateTf(setups,td,tf));
++  setups = Guards.applyToSetups(setups,daily);
++
+   // M77: the actual eligible candidate is the chart's order authority. An HTF
+   // CRT projection is context only, never a second LTF exit/entry. Keep the old
+   // unscoped display branch solely for legacy research payloads.
+@@ -560,7 +576,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   // the same single answer the analysis strip shows, so the chart and the words
+   // on screen can never disagree about what to do
+   const now = Now.build({
+-    td, setups, series: entry, quote: null, symbol: sym, tf,
++    td, setups, daily, series: entry, quote: null, symbol: sym, tf,
+     replay: cut.trim || cut.asOf ? { trim: cut.trim || null, since: null } : null,
+     nowMs: opts.nowMs,
+     minRR: opts.minRR,
+@@ -570,7 +586,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+     ok: true, symbol: sym, timeframe: tf, instrument: spec,
+     generated_at: new Date().toISOString(),
+     replay: cut.trim || cut.asOf ? { trim: cut.trim || null, as_of: cut.asOf ? new Date(cut.asOf).toISOString() : null } : null,
+-    now,
++    now, daily,
+     meta: {
+       provider: entry.meta.provider, ticker: entry.meta.ticker, bars: entry.candles.length,
+       first_bar: entry.meta.first_bar, last_bar: entry.meta.last_bar,
+@@ -588,8 +604,8 @@ async function chart(symbol, tf = '15m', opts = {}) {
+     ).slice(-bars).map((b) => ({ t: b.t, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v })),
+     smc, plan, topdown: td, stack,
+     setups: {
+-      verdict: setups.verdict, method: setups.method,
+-      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok,
++      verdict: setups.verdict, method: setups.method, execution_permission:setups.execution_permission,
++      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok, market_ok:c.market_ok, personal_blocked:c.personal_blocked,
+         // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
+         // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
+         entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence, entry_preference: c.entry_preference,
+@@ -615,13 +631,15 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+         // as analyse(). Without this a scan and an analyse of the same symbol could report
+         // different biases, which is worse than either rule applied consistently.
+         const scanHyst = await applyBiasHysteresis(sym, tf, momentum, series);
+-        const specs = Setup.buildSetups(series.smc, {
++        let specs = Setup.buildSetups(series.smc, {
+           price: series.price, atr: series.atr, entrySeries: series, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
+           indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
+           sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
+                          // No symbol on this path either, so the pair-conflict note stays
+                          // null rather than false.
+         });
++        const daily = await personalState(userId,accountId,candidateTf(specs,momentum.topdown || {},tf));
++        specs = Guards.applyToSetups(specs,daily);
+         // one row per market: the side the method permits (a scan that lists both
+         // a buy and a sell for the same symbol is not a scan, it is a coin toss)
+         const best = (momentum.topdown && momentum.topdown.direction
+@@ -636,7 +654,7 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+             execution_kind: momentum.topdown.countertrend.kind } : {}),
+           bias_held: scanHyst.held, bias_changed_because: scanHyst.changed_because,
+           mechanics: momentum.mechanics.score, mechanics_grade: momentum.mechanics.grade,
+-          action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
++          action: specs.verdict.action, execution_permission:specs.execution_permission, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
+           setup_side: best ? best.side : null, entry_model: best ? best.entry_model : null,
+           stop_tf: best && best.levels ? best.levels.stop_tf : null,
+           stop_kind: best && best.levels && best.levels.stop_policy ? best.levels.stop_policy.kind : null,
+@@ -719,8 +737,7 @@ async function ensureSignalsTable() {
+  * re-derive anything from a fresh analysis — it stores exactly what the
+  * trader was shown, so the bot can be graded on it later.
+  */
+-async function savePlan(userId, p = {}) {
+-  await ensureSignalsTable();
++async function insertPlan(userId, p = {}, store = db) {
+   const symbol = String(p.symbol || '').toUpperCase();
+   const timeframe = String(p.timeframe || '15m');
+   const entry = Number(p.entry), stop = Number(p.stop);
+@@ -741,7 +758,7 @@ async function savePlan(userId, p = {}) {
+   const t1 = prices.length ? prices[0] : (Number.isFinite(Number(p.t1)) ? Number(p.t1) : null);
+   const t2 = prices.length > 1 ? prices[prices.length - 1] : (Number.isFinite(Number(p.t2)) ? Number(p.t2) : null);
+   const rr = (price) => (price == null ? null : Math.round((Math.abs(price - entry) / risk) * 100) / 100);
+-  const info = await db.prepare(`INSERT INTO bot_signals
++  const info = await store.prepare(`INSERT INTO bot_signals
+     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final,
+      mechanics, sentiment, entry_mode, mtf_tf, risk_atr, entry_model, entry_tf, entry_evidence)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+@@ -760,8 +777,7 @@ async function savePlan(userId, p = {}) {
+ }
+ 
+ /** Store the actionable plan(s) from an analysis so the bot can be graded later. */
+-async function saveSignals(userId, payload) {
+-  await ensureSignalsTable();
++async function insertSignals(userId, payload, store = db) {
+   const cands = (payload.setups && payload.setups.candidates ? payload.setups.candidates : [])
+     .filter((c) => c.ok === true && c.levels && c.levels.entry_status !== 'invalid')
+     .slice(0, 2);
+@@ -772,7 +788,7 @@ async function saveSignals(userId, payload) {
+   // (method_state / method_blocked) so the ledger can later be split into
+   // "the method approved this" and "the setup model liked it anyway".
+   const td = payload.topdown || null;
+-  const ins = await db.prepare(`INSERT INTO bot_signals
++  const ins = await store.prepare(`INSERT INTO bot_signals
+     (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final, mechanics, sentiment,
+      method_state, method_dir, method_blocked, entry_model, entry_tf, entry_evidence)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+@@ -800,6 +816,22 @@ async function saveSignals(userId, payload) {
+   return { saved, ids: out };
+ }
+ 
++async function savePlan(userId,p = {}) {
++  await ensureSignalsTable();
++  if (p.research_only === true) return {...await insertPlan(userId,p),permission:{allowed:false,state:'research_only',can_override:false}};
++  return Guards.admit(userId,{accountId:p.account_id || null,entryTf:p.entry_tf || p.timeframe},
++    async (store,daily) => ({...await insertPlan(userId,p,store),permission:daily.permission}));
++}
++async function saveSignals(userId,payload,options = {}) {
++  await ensureSignalsTable();
++  const marketCandidates = (payload.setups?.candidates || []).map(c=>c.market_ok === undefined ? c : {...c,ok:c.market_ok});
++  const market = {...payload,setups:{...payload.setups,candidates:marketCandidates}};
++  if (!marketCandidates.some(c=>c.ok && c.levels && c.levels.entry_status!=='invalid')) return {saved:0,reason:'no actionable setup in this analysis'};
++  if (options.research_only === true) return {...await insertSignals(userId,market),permission:{allowed:false,state:'research_only',can_override:false}};
++  return Guards.admit(userId,{accountId:options.accountId || payload.daily?.account_id || null,entryTf:candidateTf(market.setups,payload.topdown || {},payload.timeframe)},
++    async (store,daily) => ({...await insertSignals(userId,market,store),permission:daily.permission}));
++}
++
+ async function listSignals(userId, { status = null, limit = 50 } = {}) {
+   await ensureSignalsTable();
+   const rows = status
+diff --git a/src/bots/now.js b/src/bots/now.js
+index 821fec5..1b2b0e0 100644
+--- a/src/bots/now.js
++++ b/src/bots/now.js
+@@ -23,7 +23,8 @@
+ 
+ const SMC = require('./smc');
+ const EntryPreference = require('./entry-preference');
+-const Setup = require('./setup');   // M39: one clock, one list of windows
++const Setup = require('./setup');
++const Guards = require('./guardrails');   // M39: one clock, one list of windows
+ const MS = { m: 60000, h: 3600000, d: 86400000, w: 604800000 };
+ const TF_MS = { '1m': MS.m, '5m': 5 * MS.m, '15m': 15 * MS.m, '30m': 30 * MS.m, '1h': MS.h, '4h': 4 * MS.h, '1d': MS.d, '1w': MS.w };
+ 
+@@ -126,6 +127,7 @@ function build(p = {}) {
+ 
+   /* ------------------------------------------------------- the one call --- */
+   const direction = num(td.direction) || 0;
++  const personalBlocked = Guards.isBlocked(daily);
+   const blocked = !!td.blocked;
+   const plan = td.crt_plan || null;
+   const bias = (td.layers && td.layers.bias) || {};
+@@ -156,7 +158,11 @@ function build(p = {}) {
+   let order = null;
+   let invalidate = '';
+ 
+-  if (blocked) {
++  if (personalBlocked) {
++    action = 'NO TRADE';
++    headline = `${symbol} ${tf}: ${daily.message}`;
++    invalidate = 'A personal stop is not a directional market opinion. Recheck at entry; a known stop requires a recorded override reason.';
++  } else if (blocked) {
+     const block = (td.conflicts || []).find((c) => c.blocks_trade) || null;
+     action = /chase/i.test(block ? block.kind : '') ? 'WAIT' : 'NO TRADE';
+     headline = `${symbol} ${tf}: do not trade this right now. ${td.headline || ''}`.trim();
+@@ -381,7 +387,7 @@ function build(p = {}) {
+   // the sub-floor warning is rendered as its own red block under the order — it is
+   // not repeated in the guard list (measured in the browser: both printed)
+   if (news && news.blackout) guards.push({ level: 'block', text: news.blackout });
+-  if (daily && daily.status && daily.status !== 'clear') guards.push({ level: 'warn', text: daily.message || String(daily.status) });
++  if (daily && daily.status && daily.status !== 'clear') guards.push({ level: personalBlocked ? 'block' : 'warn', text: daily.message || String(daily.status) });
+   if (freshness.state === 'stale' || freshness.state === 'aging') guards.push({ level: 'warn', text: freshness.note });
+   if (!kzNow && !blocked && direction) guards.push({ level: 'info', text: 'Outside every killzone: the playlist only trades the London and New York windows.' });
+ 
+@@ -422,7 +428,8 @@ function build(p = {}) {
+     guards,
+     other_side: otherSide,
+     conviction: convictionTier,
+-    full_risk: fullRisk,
++    full_risk: fullRisk && !personalBlocked,
++    ...(daily ? { execution_permission: { ...daily.permission, account_id:daily.account_id, evaluated_at:daily.evaluated_at, breaches:daily.breaches } } : {}),
+     steps_done: doneSteps,
+     steps_total: (td.steps || []).length,
+     pending_step: pendingStep ? { n: pendingStep.n, title: pendingStep.title, text: pendingStep.text } : null,
+diff --git a/src/db.js b/src/db.js
+index 1b65513..c63f5d0 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -97,12 +97,26 @@ async function tx(fn) {
+   }
+ }
+ 
++/** Same statement shape inside an interactive transaction, never the shared
++ * client. Guard checks and the admitted write must see the same locked state. */
++function transactionStore(transaction) {
++  const prep = sql => ({
++    async get(...a) { return (await transaction.execute({sql,args:argsOf(a)})).rows[0]; },
++    async all(...a) { return (await transaction.execute({sql,args:argsOf(a)})).rows; },
++    async run(...a) {
++      const r = await transaction.execute({sql,args:argsOf(a)});
++      return {changes:Number(r.rowsAffected || 0),lastInsertRowid:r.lastInsertRowid == null ? undefined : Number(r.lastInsertRowid)};
++    },
++  });
++  return {prepare:prep};
++}
++
+ const db = {
+   prepare,
+   get: (sql, ...a) => prepare(sql).get(...a),
+   all: (sql, ...a) => prepare(sql).all(...a),
+   run: (sql, ...a) => prepare(sql).run(...a),
+-  exec, batch, tx,
++  exec, batch, tx, transactionStore,
+ };
+ 
+ /* ------------------------------------------------------------------ schema */
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 0dff059..4009784 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -336,13 +336,30 @@ router.post('/trades', requireAuth, async (req, res) => {
+     const v = await currentStrategyVersion(Number(trade.strategy_id));
+     if (v) trade.strategy_version = v;
+   }
+-  const id = await T.insert(db, req.user.id, { ...trade, account_id: accountId });
++  const owned = await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id);
++  if (!owned) return res.status(404).json({error:'Account not found'});
++  let id, permission;
++  try {
++    if (trade.status === 'open' && body.record_only !== true) {
++      const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf},async (store,daily) => {
++        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at};
++        return {id:await T.insert(store,req.user.id,entry),permission:daily.permission};
++      });
++      id = out.id; permission = out.permission;
++    } else {
++      id = await T.insert(db,req.user.id,{...trade,account_id:accountId});
++      permission = {allowed:false,state:'record_only',can_override:false};
++    }
++  } catch(e) {
++    if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
++    throw e;
++  }
+   if (Array.isArray(body.rule_checks)) {
+     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
+-    for (const rc of body.rule_checks) ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
++    for (const rc of body.rule_checks) await ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
+   }
+   const saved = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
+-  res.json({ ok: true, trade: P.decorate(saved, (await settingsOf(req)).timezone) });
++  res.json({ ok: true, permission, trade: P.decorate(saved, (await settingsOf(req)).timezone) });
+ });
+ 
+ router.put('/trades/:id', requireAuth, async (req, res) => {
+@@ -355,7 +372,16 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   let trade;
+   try { trade = T.normalise(merged, { instrument: spec, tz: (await settingsOf(req)).timezone }); }
+   catch (e) { return res.status(400).json({ error: e.message }); }
+-  await T.update(db, req.user.id, id, { ...trade, account_id: num(merged.account_id, existing.account_id) });
++  const accountId = num(merged.account_id,existing.account_id);
++  if (!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id)) return res.status(404).json({error:'Account not found'});
++  try {
++    if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
++      await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf},(store,daily)=>T.update(store,req.user.id,id,{...trade,account_id:accountId,opened_at:daily.evaluated_at}));
++    } else await T.update(db,req.user.id,id,{...trade,account_id:accountId});
++  } catch(e) {
++    if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
++    throw e;
++  }
+   if (Array.isArray(req.body.rule_checks)) {
+     await db.prepare('DELETE FROM rule_checks WHERE trade_id=?').run(id);
+     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index e47942a..69aaef0 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -16,6 +16,7 @@ function createBotsRouter({ requireAuth }) {
+   const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch((err) => {
+     console.error(`BOT API error on ${req.method} ${req.originalUrl}:`, err.message);
+     if (res.headersSent) return;
++    if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
+     res.status(500).json({ error: err.message || 'Bot error' });
+   });
+   const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));
+@@ -155,7 +156,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       checks: out.topdown.checks, score: out.topdown.score, grade: out.topdown.grade,
+       status: out.topdown.status, direction: out.topdown.direction,
+       headline: out.topdown.headline, playbook: out.topdown.playbook,
+-      blocked: out.topdown.blocked, conflicts: out.topdown.conflicts,
++      blocked: out.topdown.blocked || !!out.now?.execution_permission && !out.now.execution_permission.allowed, market_blocked:out.topdown.blocked, execution_permission:out.now?.execution_permission, conflicts: out.topdown.conflicts,
+       crt_plan: out.topdown.crt_plan, target_sources: out.topdown.target_sources, levels: out.topdown.levels, inputs: out.topdown.inputs,
+       verdict: out.setups.verdict, meta: out.meta,
+     });
+@@ -168,7 +169,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       .split(',').map((s) => s.trim()).filter(Boolean);
+     if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
+     const tf = String(req.query.tf || '15m');
+-    const out = await Bots.scan(symbols, tf, { userId: req.user.id, sessionPref: await prefOf(req) });  // M26
++    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req) });  // M26
+     res.json(out);
+   }));
+ 
+@@ -239,8 +240,9 @@ router.get('/markets', requireAuth, (req, res) => {
+ 
+   router.get('/guardrails', requireAuth, wrap(async (req, res) => {
+     const accountId = req.query.account_id ? Number(req.query.account_id) : null;
+-    const g = await Bots.correction.guardrails(req.user.id, { accountId });
+-    const daily = await Bots.correction.dailyState(req.user.id, { accountId });
++    const daily = await Bots.correction.dailyState(req.user.id, { accountId, entryTf:req.query.entry_tf || null, forEntry:true });
++    if (daily.status === 'unknown') return res.status(503).json({error:daily.message,code:'guardrail_unavailable',daily});
++    const g = daily.guardrails;
+     res.json({ ok: true, guardrails: g.guardrails, stats: g.stats, evidence: g.evidence, daily });
+   }));
+ 
+@@ -270,7 +272,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       accountId: (req.body && req.body.account_id) || null,
+       includePrediction: req.body && req.body.prediction !== false,
+     });
+-    const saved = await Bots.saveSignals(req.user.id, payload);
++    const saved = await Bots.saveSignals(req.user.id, payload, {accountId:req.body?.account_id || null,research_only:req.body?.research_only === true});
+     res.json({ ok: true, saved, headline: payload.headline, setups: payload.setups.verdict });
+   }));
+ 
+@@ -300,7 +302,7 @@ router.get('/markets', requireAuth, (req, res) => {
+     const out = await Bots.savePlan(req.user.id, {
+       symbol: b.symbol, timeframe: b.timeframe, entry: b.entry, stop: b.stop,
+       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
+-      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
++      account_id:b.account_id || null, research_only:b.research_only === true, mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
+     });
+     res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
+   }));

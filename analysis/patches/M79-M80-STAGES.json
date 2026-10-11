@@ -1,0 +1,198 @@
+{
+  "base_commit": "fdaa2bc5cd7922df094c53e3991627dc7c1c23ba",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 80,
+    "partial": 2,
+    "todo": 50,
+    "no_action": 0,
+    "partition_groups": 8
+  },
+  "feature_assertions": {
+    "pass": 302,
+    "fail": 0,
+    "probes": 12
+  },
+  "stages": [
+    {
+      "stage": "cap",
+      "source_manifest": "cap-source.json",
+      "source_files": 111,
+      "patch": "m83-m113-cap-policy.patch",
+      "files": 6,
+      "bytes": 16113,
+      "sha256": "876feb571098734721b96ee58395480619c42b89a05d73059d8d256c9e83a958",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "enforcement",
+      "source_manifest": "enforcement-source.json",
+      "source_files": 111,
+      "patch": "m79-enforcement.patch",
+      "files": 7,
+      "bytes": 42230,
+      "sha256": "34ddfa845b676c67403226bc8a2939bd90bd42fd71fa5cef7b3b494fbdae71cf",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "history",
+      "source_manifest": "history-source.json",
+      "source_files": 111,
+      "patch": "m90-rule-history.patch",
+      "files": 8,
+      "bytes": 27316,
+      "sha256": "9026cf8e106ebe1886570af5dac656d969dc4f208625d07d73fb2f311ea2fb72",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "override",
+      "source_manifest": "override-source.json",
+      "source_files": 111,
+      "patch": "m80-reason-overrides.patch",
+      "files": 6,
+      "bytes": 15812,
+      "sha256": "9d9cb677624802b642ab56ed4fcb003fe3e7d6089b33ea9b4e3dcbce0532f87a",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "ui",
+      "source_manifest": "ui-source.json",
+      "source_files": 111,
+      "patch": "m80-reason-ui.patch",
+      "files": 4,
+      "bytes": 27979,
+      "sha256": "931e5597afcea73c474d66f99ee3d70a914aeb9827fcdd73d0163fc3bb4e2f89",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "clipboard",
+      "source_manifest": "clipboard-source.json",
+      "source_files": 111,
+      "patch": "m80-copy-price-compatibility.patch",
+      "files": 1,
+      "bytes": 970,
+      "sha256": "4150d077f7c479e171f4a75534ae6adfd0dae9de3db72bdba1f219828ad2f5d9",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "account",
+      "source_manifest": "account-source.json",
+      "source_files": 111,
+      "patch": "m79-account-forwarding.patch",
+      "files": 2,
+      "bytes": 1405,
+      "sha256": "53900ec636b784bc4f70bfd2e033c28e7f42d9cb4cb7be7610ad607010f2c127",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "compat",
+      "source_manifest": "compat-source.json",
+      "source_files": 111,
+      "patch": "m80-copy-value-compatibility.patch",
+      "files": 1,
+      "bytes": 711,
+      "sha256": "b33a2b3b7f948986095888322233b9c833fc886a23baca1c93bc7d5fa88e4e2d",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "retention",
+      "source_manifest": "retention-source.json",
+      "source_files": 111,
+      "patch": "m79-durable-day-state.patch",
+      "files": 4,
+      "bytes": 20419,
+      "sha256": "858aac325a980a19379de9575b753e5b395f247c8844784009409b24ee628a39",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "validation",
+      "source_manifest": "validation-source.json",
+      "source_files": 111,
+      "patch": "m79-validation-contracts.patch",
+      "files": 2,
+      "bytes": 7017,
+      "sha256": "9e9176a610daec17729f3c788de9df2d0d7a9d842ecc3529b11cf1b36d2472b7",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "fixtures-initial",
+      "source_manifest": "fixtures-initial-source.json",
+      "source_files": 111,
+      "patch": "m79-native-fixture-initial.patch",
+      "files": 2,
+      "bytes": 3509,
+      "sha256": "7455c74169b7e1e76f9e5daa040a0c533321356a801bfc71c4b7aa47a52eca24",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "fixtures",
+      "source_manifest": "fixtures-source.json",
+      "source_files": 111,
+      "patch": "m79-native-fixture-research.patch",
+      "files": 1,
+      "bytes": 2228,
+      "sha256": "9ad7bf1a89a2eec21adb9452da508a9d556c687fef2e49997ea86a33f67e00a7",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "full",
+      "source_manifest": "full-source.json",
+      "source_files": 112,
+      "patch": "m79-m80-documentation.patch",
+      "files": 2,
+      "bytes": 6098,
+      "sha256": "fd39bb8b32d442278279de9e0441d3353a9d0d767fc2143c504ceff262f5550f",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 19,
+    "bytes": 125103,
+    "sha256": "c232c1956259bbe0a691cb46e29085919751860fdedd4032b4b4018f80de63a6",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 45,
+    "bytes": 639017,
+    "sha256": "728000d91f23653303f74af8c9f8d5c5d5736af7a6f8b7b9e8f2b889b3ca0b68",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 112,
+    "application_byte_differences": 0,
+    "credential_db_dependency_dataset_files": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/setup.js",
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "package_lock_sha256": "33e859914328605792ab71c75957b752716748828b0b2bef164956525cffb74c",
+  "scope": "Personal rule admission/reason/history and dependent cap; honest recording preserved; no broker, live-feed, hosted/pixel or market-edge validation. Native both arms204/2 (19fills/0mismatches), floors unchanged."
+}

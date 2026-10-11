@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+'use strict';
+/** M90 persistence/review measured separately from admitting overrides. */
+const path=require('path'),fs=require('fs'),os=require('os');
+const APP=process.env.TJ_APP || path.join(__dirname,'../extracted/tradejournal');
+const RealDate=Date,NOW=Date.UTC(2026,9,11,12);global.Date=class extends RealDate{constructor(...a){super(...(a.length?a:[NOW]));}static now(){return NOW;}};
+for(const k of ['TURSO_DATABASE_URL','LIBSQL_URL','TURSO_AUTH_TOKEN'])process.env[k]='';
+const file=path.join(os.tmpdir(),`m79-history-${process.pid}.db`);process.env.TRADEJOURNAL_DB=file;
+const D=require(path.join(APP,'src/db')),Cor=require(path.join(APP,'src/bots/correction'));
+let pass=0,fail=0,server;const results=[],ok=(label,v,detail)=>{results.push({label,passed:!!v,...(!v?{detail}:{})});console.log(`${v?'ok':'FAIL'} ${label}${!v?' '+JSON.stringify(detail):''}`);v?pass++:fail++;};
+(async()=>{try{
+ await D.ready;const u=await D.createUser({email:`m79-history-${process.pid}@test.local`,name:'History',password:'test-only'}),other=await D.createUser({email:`m79-history-other-${process.pid}@test.local`,name:'Other',password:'test-only'});
+ const token=await D.createSession(u.userId),otherToken=await D.createSession(other.userId);
+ const schema=await D.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='guardrail_events'").get();
+ const events=async()=>schema?await D.db.prepare('SELECT * FROM guardrail_events WHERE user_id=? ORDER BY id').all(u.userId):[];
+ ok('additive durable guardrail event table exists',!!schema);
+ const now=new Date().toISOString();for(let i=0;i<3;i++)await D.db.prepare("INSERT INTO trades(user_id,account_id,symbol,status,opened_at,entry) VALUES (?,?,?,'open',?,100)").run(u.userId,u.accountId,'TEST',now);
+ const before=await D.db.prepare('SELECT * FROM trades ORDER BY id LIMIT 1').get();ok('preexisting journal rows have NULL provenance, never invented admission',before.guardrail_snapshot===null && before.entry_permission===null,{snapshot:before.guardrail_snapshot,permission:before.entry_permission});
+ await Cor.dailyState(u.userId,{accountId:u.accountId,entryTf:'5m',forEntry:true});let e=await events();
+ ok('observed cap stop is durably captured',e.length===1 && e[0].kind==='breach' && JSON.parse(e[0].snapshot).breaches.some(b=>b.rule==='max_trades_day'),e.map(e=>e.kind));
+ await Cor.dailyState(u.userId,{accountId:u.accountId,entryTf:'5m',forEntry:true});const repeated=await events();ok('re-reading identical stop is deduplicated, not a new violation every poll',repeated.length===1 && repeated[0].id===e[0]?.id,repeated.length);
+ const express=require(path.join(APP,'node_modules/express')),app=express();app.use(express.json());app.use('/api',require(path.join(APP,'src/routes/api')));server=await new Promise(resolve=>{const s=app.listen(0,'0.0.0.0',()=>resolve(s));});const base=`http://127.0.0.1:${server.address().port}/api`;
+ const req=async(url,body,method='GET',tok=token)=>{const r=await fetch(base+url,{method,headers:{'x-session':tok,'content-type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})});return {status:r.status,data:await r.json()};};
+ const entry={symbol:'TEST',entry:100,stop:99,size:1,status:'open',entry_tf:'5m',account_id:u.accountId};
+ let r=await req('/trades',entry,'POST');e=await events();ok('blocked entry attempt is committed to audit even though no trade is written',r.status===409 && e.some(e=>e.kind==='blocked_attempt') && (await D.db.prepare('SELECT COUNT(*) n FROM trades').get()).n===3,{status:r.status,kinds:e.map(e=>e.kind)});
+ const day=await req('/journal/2026-10-11');ok('day review returns captured rule/details with server date/UTC context',day.status===200 && day.data.guardrail_timezone==='UTC' && day.data.guardrail_events?.some(e=>e.snapshot.breaches.some(b=>b.rule==='max_trades_day')),day.data.guardrail_events);
+ const days=await req('/journal');ok('captured rule days are discoverable even without written review',days.data.guardrail_days?.some(d=>d.rule_date==='2026-10-11' && d.events>=2),days.data.guardrail_days);
+ const hidden=await req('/journal/2026-10-11',undefined,'GET',otherToken);ok('another user never receives captured first-user events',hidden.data.guardrail_events?.length===0,hidden.data.guardrail_events);
+ const filtered=await req('/journal/2026-10-11?account_id='+other.accountId);ok('account-filtered review does not mix another account into the day',filtered.data.guardrail_events?.length===0,filtered.data.guardrail_events);
+ const original=JSON.stringify(day.data.guardrail_events?.[0]?.snapshot);
+ const columns=await D.db.prepare('PRAGMA table_info(accounts)').all();if(columns.some(c=>c.name==='max_trades_day'))await D.db.prepare('UPDATE accounts SET max_trades_day=5,daily_loss_limit_pct=2 WHERE id=?').run(u.accountId);else await D.db.prepare('UPDATE accounts SET daily_loss_limit_pct=2 WHERE id=?').run(u.accountId);
+ await D.db.prepare('DELETE FROM trades WHERE user_id=?').run(u.userId);
+ const afterDelete=await req('/journal/2026-10-11');ok('trade deletion/settings change cannot erase or recompute the captured stop',afterDelete.data.guardrail_events?.length>=2 && JSON.stringify(afterDelete.data.guardrail_events[0].snapshot)===original,afterDelete.data.guardrail_events?.length);
+ const tomorrow=await Cor.dailyState(u.userId,{accountId:u.accountId,nowMs:NOW+864e5,entryTf:'5m',forEntry:true});const old=await req('/journal/2026-10-11');ok('tomorrow clear state does not overwrite yesterday history',tomorrow.status==='clear' && old.data.guardrail_events?.length>=2,{tomorrow:tomorrow.status,old:old.data.guardrail_events?.length});
+ const clearEntry=await req('/trades',entry,'POST');ok('admitted record carries actual server snapshot and permission provenance',clearEntry.data.trade?.entry_permission==='admitted' && JSON.parse(clearEntry.data.trade?.guardrail_snapshot || '{}').account_id===u.accountId,clearEntry);
+ const fake=await req('/trades',{...entry,status:'closed',exit:99,opened_at:'2025-01-01T09:00:00Z',closed_at:'2025-01-01T10:00:00Z',guardrail_snapshot:'forged',entry_permission:'admitted',record_only:true},'POST');ok('historical record cannot forge server admission snapshot',fake.status===200 && fake.data.trade?.entry_permission==='record_only' && JSON.parse(fake.data.trade?.guardrail_snapshot || '{}').capture_basis?.startsWith('recording-time'),fake);
+ const preserve=fake.data.trade?.guardrail_snapshot;
+ const edit=await req('/trades/'+fake.data.trade.id,{guardrail_snapshot:'forged update',entry_permission:'admitted'},'PUT');ok('editing history cannot rewrite immutable server provenance',edit.status===200 && edit.data.trade?.guardrail_snapshot===preserve && edit.data.trade?.entry_permission==='record_only',edit);
+ const actual=Cor.dailyState;Cor.dailyState=async()=>{throw Error('Declared read outage');};
+ const outage=await req('/trades',{...entry,status:'closed',exit:101,record_only:true},'POST');Cor.dailyState=actual;
+ ok('permission read outage still allows honest closed record, explicitly unknown/no permit',outage.status===200 && outage.data.permission?.allowed===false && JSON.parse(outage.data.trade?.guardrail_snapshot || '{}').status==='unknown',outage);
+ const imported=await req('/import/json',{trades:[{...entry,opened_at:'2025-01-02T09:00:00Z',entry_permission:'admitted',guardrail_snapshot:'forged import'}]},'POST');
+ const importRow=await D.db.prepare("SELECT * FROM trades WHERE opened_at='2025-01-02T09:00:00.000Z' ORDER BY id DESC LIMIT 1").get();ok('JSON imported open position stays record-only, not permission',imported.status===200 && imported.data.inserted===1 && importRow?.entry_permission==='record_only' && importRow.guardrail_snapshot===null,{response:imported,row:importRow});
+ const csv=await req('/import/csv',{csv:'symbol,entry,exit,size,opened_at,closed_at\nTEST,100,101,1,2025-01-03T09:00:00Z,2025-01-03T10:00:00Z'},'POST');const csvRow=await D.db.prepare("SELECT * FROM trades WHERE opened_at='2025-01-03T09:00:00.000Z' ORDER BY id DESC LIMIT 1").get();ok('CSV imported position stays record-only, never guessed a historical breach',csv.status===200 && csvRow?.entry_permission==='record_only' && csvRow.guardrail_snapshot===null,{response:csv,row:csvRow});
+ const plan=await req('/bots/signals/save-plan',{symbol:'TEST',timeframe:'15m',entry_tf:'5m',entry:100,stop:99,t1:110,research_only:true,guardrail_snapshot:'forged'},'POST');const sig=plan.data.ids?.[0]?await D.db.prepare('SELECT * FROM bot_signals WHERE id=?').get(plan.data.ids[0]):{};
+ ok('research signal explicitly carries no live permission or inferred breach',plan.status===200 && plan.data.permission?.allowed===false && sig.entry_permission==='research_only' && sig.guardrail_snapshot===null,{plan,sig});
+ // Actual browser renderer, not a fabricated review string.
+ const {JSDOM}=require(path.join(APP,'node_modules/jsdom'));const dom=new JSDOM('<!doctype html><body></body>',{runScripts:'outside-only',url:'https://fixture.example'});const w=dom.window;w.Store={user:{settings:{}}};w.eval(fs.readFileSync(path.join(APP,'public/js/util.js'),'utf8'));w.eval(fs.readFileSync(path.join(APP,'public/js/views/journal.js'),'utf8'));
+ if(typeof w.Views.guardrailHistory==='function'){
+   const node=w.Views.guardrailHistory(old.data.guardrail_events || []);w.document.body.appendChild(node);ok('actual day-review renderer shows captured rule and UTC label',/max_trades_day/.test(node.textContent) && /UTC rule day/.test(node.textContent),node.textContent);
+   const empty=w.Views.guardrailHistory([]);ok('empty history never claims older trades followed rules',/does not prove/.test(empty.textContent),empty.textContent);
+   const malicious=w.Views.guardrailHistory([{observed_at:'time',account_id:u.accountId,action:'<img src=x onerror=alert(1)>',kind:'override',reason:'<script>unsafe</script>',snapshot:{breaches:[{rule:'<svg onload=x>',detail:'<img src=x>'}]}}]);ok('rendered rule/reason text is escaped, not executable HTML',!malicious.querySelector('script,img,svg') && malicious.textContent.includes('<script>unsafe</script>'),malicious.innerHTML);
+ }else{for(const label of ['actual day-review renderer shows captured rule and UTC label','empty history never claims older trades followed rules','rendered rule/reason text is escaped, not executable HTML'])ok(label,false,'No historical rule renderer');}dom.window.close();
+ const unauth=await req('/journal/2026-10-11',undefined,'GET','');ok('day history still requires real authentication',unauth.status===401,unauth);
+}catch(e){fail++;console.error(e.stack);}finally{if(server)await new Promise(r=>server.close(r));if(process.env.M79_RESULT)fs.writeFileSync(process.env.M79_RESULT,JSON.stringify({app:APP,pass,fail,results,scope:'Actual local libSQL/auth/review/browser-script history, no backfill, production or broker claim'},null,2)+'\n');console.log(`M90 history: ${pass} passed, ${fail} failed`);for(const x of ['','-wal','-shm'])try{fs.unlinkSync(file+x);}catch{}process.exitCode=fail?1:0;}})();

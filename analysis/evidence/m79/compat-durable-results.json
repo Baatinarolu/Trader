@@ -1,0 +1,959 @@
+{
+  "app": "/tmp/m79-copy-compat-stage/app",
+  "pass": 20,
+  "fail": 28,
+  "results": [
+    {
+      "label": "three actual entry POSTs exhaust the preselected cap",
+      "passed": true
+    },
+    {
+      "label": "each entry has an independently durable admission",
+      "passed": false
+    },
+    {
+      "label": "reaching cap latches before any fourth blocked attempt",
+      "passed": false
+    },
+    {
+      "label": "truthful date/notes correction succeeds without rewriting admission provenance",
+      "passed": true
+    },
+    {
+      "label": "backdating an admitted row cannot refund an entry slot",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "honest journal deletion is still allowed",
+      "passed": true
+    },
+    {
+      "label": "journal truth and durable attempt count are distinct",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "timezone": "UTC",
+        "evaluated_at": "2026-10-11T12:00:00.000Z",
+        "account_id": 3,
+        "guardrails": {
+          "max_risk_pct": 1,
+          "max_trades_day": 3,
+          "cooldown_min": 30,
+          "max_consecutive_losses": 2,
+          "daily_loss_limit_pct": 3,
+          "trade_cap_policy": {
+            "max_trades_day": 3,
+            "selected_at": "2026-10-11T12:00:00.000Z",
+            "rule_date": "2026-10-11",
+            "timezone": "UTC"
+          },
+          "size_cap_note": null,
+          "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet).",
+          "guardrails": {
+            "max_risk_pct": 1,
+            "max_trades_day": 3,
+            "cooldown_min": 30,
+            "max_consecutive_losses": 2,
+            "daily_loss_limit_pct": 3,
+            "trade_cap_policy": {
+              "max_trades_day": 3,
+              "selected_at": "2026-10-11T12:00:00.000Z",
+              "rule_date": "2026-10-11",
+              "timezone": "UTC"
+            },
+            "size_cap_note": null,
+            "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet)."
+          },
+          "stats": null,
+          "user": {
+            "trades": 0
+          },
+          "sample_sufficient": false,
+          "min_trades_for_personal_guardrails": 30
+        },
+        "today": {
+          "trades": 3,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000,
+          "loss_limit": 300,
+          "balance_basis": "day-start realised journal equity"
+        },
+        "breaches": [
+          {
+            "rule": "max_trades_day",
+            "detail": "3 entries today — your preselected cap is 3."
+          }
+        ],
+        "status": "stop",
+        "remaining_trades": 0,
+        "post_loss": {
+          "last_loss_trade_id": null,
+          "last_loss_at": null,
+          "entry_tf": "5m",
+          "entry_tf_required": false,
+          "cooldown_until": null,
+          "next_candle_until": null
+        },
+        "message": "Stand down: 3 entries today — your preselected cap is 3.",
+        "permission": {
+          "allowed": false,
+          "can_override": true,
+          "state": "stopped"
+        }
+      }
+    },
+    {
+      "label": "deletion leaves the personal permission stopped",
+      "passed": true
+    },
+    {
+      "label": "honest bulk deletion remains allowed",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "deleting all rows cannot erase the daily entry cap",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "all three admission records survive all journal deletions",
+      "passed": false
+    },
+    {
+      "label": "already-executed open reality remains recordable, never permission",
+      "passed": true
+    },
+    {
+      "label": "historical close remains recordable at the durable stop",
+      "passed": true
+    },
+    {
+      "label": "record-only/history writes do not fabricate admission records",
+      "passed": false
+    },
+    {
+      "label": "known durable stop permits only an explicitly reasoned action",
+      "passed": true
+    },
+    {
+      "label": "override consumes one further durable entry, not an unlock",
+      "passed": false
+    },
+    {
+      "label": "next entry without its own reason remains blocked",
+      "passed": true
+    },
+    {
+      "label": "durable admission links actual trade, stopped snapshot and reason",
+      "passed": false
+    },
+    {
+      "label": "reopening after deletion still needs a fresh reason",
+      "passed": true
+    },
+    {
+      "label": "reasoned reopen creates a new durable admission",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "reopening the SAME journal id counts again, not once per id",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "account settings edit does not erase the frozen current-day cap",
+      "passed": true
+    },
+    {
+      "label": "another owned account is clear, not poisoned by prior admissions",
+      "passed": true
+    },
+    {
+      "label": "reason/state remain account-ownership scoped",
+      "passed": true
+    },
+    {
+      "label": "durable admission still requires real authentication",
+      "passed": true
+    },
+    {
+      "label": "six concurrent requests with one slot produce one admission/five stops",
+      "passed": true
+    },
+    {
+      "label": "concurrent journal AND durable counts agree at three",
+      "passed": false
+    },
+    {
+      "label": "durable-admission write failure rolls back the journal insert",
+      "passed": false,
+      "detail": 0
+    },
+    {
+      "label": "failed atomic write cannot consume an entry slot",
+      "passed": true
+    },
+    {
+      "label": "two honestly recorded losses latch the day stop",
+      "passed": true
+    },
+    {
+      "label": "honest correction changes P&L/current streak, not observed day stop",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "timezone": "UTC",
+        "evaluated_at": "2026-10-11T12:00:00.000Z",
+        "account_id": 6,
+        "guardrails": {
+          "max_risk_pct": 1,
+          "max_trades_day": 20,
+          "cooldown_min": 30,
+          "max_consecutive_losses": 2,
+          "daily_loss_limit_pct": 3,
+          "trade_cap_policy": {
+            "max_trades_day": 20,
+            "selected_at": "2026-10-11T12:00:00.000Z",
+            "rule_date": "2026-10-11",
+            "timezone": "UTC"
+          },
+          "size_cap_note": null,
+          "basis": "Defaults from the risk engine. 2 closed trades is below the 30-trade minimum the method requires before personal guardrails are derived — Ep 27: \"at least 30 to 50 minimum trades just to see anything meaningful\", and below that \"don't tweak the system at all\". These are NOT your personal numbers yet.",
+          "guardrails": {
+            "max_risk_pct": 1,
+            "max_trades_day": 20,
+            "cooldown_min": 30,
+            "max_consecutive_losses": 2,
+            "daily_loss_limit_pct": 3,
+            "trade_cap_policy": {
+              "max_trades_day": 20,
+              "selected_at": "2026-10-11T12:00:00.000Z",
+              "rule_date": "2026-10-11",
+              "timezone": "UTC"
+            },
+            "size_cap_note": null,
+            "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet)."
+          },
+          "stats": {
+            "trades": 2,
+            "wins": 1,
+            "losses": 1,
+            "win_rate": 50,
+            "net": 0,
+            "expectancy_r": 0,
+            "total_r": 0,
+            "profit_factor": 1,
+            "avg_win_r": 1,
+            "avg_loss_r": -1,
+            "median_risk": 1
+          },
+          "user": {
+            "trades": 2
+          },
+          "sample_sufficient": false,
+          "min_trades_for_personal_guardrails": 30
+        },
+        "today": {
+          "trades": 2,
+          "closed": 2,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000,
+          "loss_limit": 300,
+          "balance_basis": "day-start realised journal equity"
+        },
+        "breaches": [],
+        "status": "clear",
+        "remaining_trades": 18,
+        "post_loss": {
+          "last_loss_trade_id": 12,
+          "last_loss_at": "2026-10-11T11:00:00.000Z",
+          "entry_tf": "5m",
+          "entry_tf_required": false,
+          "cooldown_until": "2026-10-11T11:30:00.000Z",
+          "next_candle_until": "2026-10-11T11:05:00.000Z"
+        },
+        "message": "No personal stop. 18 entries remain under the preselected 20-entry cap. This is not market/setup approval.",
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "clear"
+        }
+      }
+    },
+    {
+      "label": "deleting both loss records cannot reset an observed streak stop",
+      "passed": false,
+      "detail": "clear"
+    },
+    {
+      "label": "retained streak stop is enforced by actual POST",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "exact 3% realised-loss boundary is observed as a day stop",
+      "passed": true
+    },
+    {
+      "label": "corrected positive P&L remains visible while observed loss stop persists",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "timezone": "UTC",
+        "evaluated_at": "2026-10-11T12:00:00.000Z",
+        "account_id": 7,
+        "guardrails": {
+          "max_risk_pct": 1,
+          "max_trades_day": 20,
+          "cooldown_min": 30,
+          "max_consecutive_losses": 2,
+          "daily_loss_limit_pct": 3,
+          "trade_cap_policy": {
+            "max_trades_day": 20,
+            "selected_at": "2026-10-11T12:00:00.000Z",
+            "rule_date": "2026-10-11",
+            "timezone": "UTC"
+          },
+          "size_cap_note": null,
+          "basis": "Defaults from the risk engine. 1 closed trades is below the 30-trade minimum the method requires before personal guardrails are derived — Ep 27: \"at least 30 to 50 minimum trades just to see anything meaningful\", and below that \"don't tweak the system at all\". These are NOT your personal numbers yet.",
+          "guardrails": {
+            "max_risk_pct": 1,
+            "max_trades_day": 20,
+            "cooldown_min": 30,
+            "max_consecutive_losses": 2,
+            "daily_loss_limit_pct": 3,
+            "trade_cap_policy": {
+              "max_trades_day": 20,
+              "selected_at": "2026-10-11T12:00:00.000Z",
+              "rule_date": "2026-10-11",
+              "timezone": "UTC"
+            },
+            "size_cap_note": null,
+            "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet)."
+          },
+          "stats": {
+            "trades": 1,
+            "wins": 1,
+            "losses": 0,
+            "win_rate": 100,
+            "net": 100,
+            "expectancy_r": 10,
+            "total_r": 10,
+            "profit_factor": 99,
+            "avg_win_r": 10,
+            "avg_loss_r": 0,
+            "median_risk": 10
+          },
+          "user": {
+            "trades": 1
+          },
+          "sample_sufficient": false,
+          "min_trades_for_personal_guardrails": 30
+        },
+        "today": {
+          "trades": 1,
+          "closed": 1,
+          "realised": 100,
+          "r_sum": 10,
+          "avg_r": 10,
+          "loss_streak": 0,
+          "balance": 10000,
+          "loss_limit": 300,
+          "balance_basis": "day-start realised journal equity"
+        },
+        "breaches": [],
+        "status": "clear",
+        "remaining_trades": 19,
+        "post_loss": {
+          "last_loss_trade_id": null,
+          "last_loss_at": null,
+          "entry_tf": "5m",
+          "entry_tf_required": false,
+          "cooldown_until": null,
+          "next_candle_until": null
+        },
+        "message": "No personal stop. 19 entries remain under the preselected 20-entry cap. This is not market/setup approval.",
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "clear"
+        }
+      }
+    },
+    {
+      "label": "deletion cannot undo the observed daily-loss stop",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "loss deletion cannot erase its cooldown clock",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "timezone": "UTC",
+        "evaluated_at": "2026-10-11T12:00:00.000Z",
+        "account_id": 8,
+        "guardrails": {
+          "max_risk_pct": 1,
+          "max_trades_day": 20,
+          "cooldown_min": 30,
+          "max_consecutive_losses": 2,
+          "daily_loss_limit_pct": 3,
+          "trade_cap_policy": {
+            "max_trades_day": 20,
+            "selected_at": "2026-10-11T12:00:00.000Z",
+            "rule_date": "2026-10-11",
+            "timezone": "UTC"
+          },
+          "size_cap_note": null,
+          "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet).",
+          "guardrails": {
+            "max_risk_pct": 1,
+            "max_trades_day": 20,
+            "cooldown_min": 30,
+            "max_consecutive_losses": 2,
+            "daily_loss_limit_pct": 3,
+            "trade_cap_policy": {
+              "max_trades_day": 20,
+              "selected_at": "2026-10-11T12:00:00.000Z",
+              "rule_date": "2026-10-11",
+              "timezone": "UTC"
+            },
+            "size_cap_note": null,
+            "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet)."
+          },
+          "stats": null,
+          "user": {
+            "trades": 0
+          },
+          "sample_sufficient": false,
+          "min_trades_for_personal_guardrails": 30
+        },
+        "today": {
+          "trades": 0,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000,
+          "loss_limit": 300,
+          "balance_basis": "day-start realised journal equity"
+        },
+        "breaches": [],
+        "status": "clear",
+        "remaining_trades": 20,
+        "post_loss": {
+          "last_loss_trade_id": null,
+          "last_loss_at": null,
+          "entry_tf": "1h",
+          "entry_tf_required": false,
+          "cooldown_until": null,
+          "next_candle_until": null
+        },
+        "message": "No personal stop. 20 entries remain under the preselected 20-entry cap. This is not market/setup approval.",
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "clear"
+        }
+      }
+    },
+    {
+      "label": "loss deletion cannot erase the actual prospective TF candle boundary",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "timezone": "UTC",
+        "evaluated_at": "2026-10-11T12:00:00.000Z",
+        "account_id": 8,
+        "guardrails": {
+          "max_risk_pct": 1,
+          "max_trades_day": 20,
+          "cooldown_min": 30,
+          "max_consecutive_losses": 2,
+          "daily_loss_limit_pct": 3,
+          "trade_cap_policy": {
+            "max_trades_day": 20,
+            "selected_at": "2026-10-11T12:00:00.000Z",
+            "rule_date": "2026-10-11",
+            "timezone": "UTC"
+          },
+          "size_cap_note": null,
+          "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet).",
+          "guardrails": {
+            "max_risk_pct": 1,
+            "max_trades_day": 20,
+            "cooldown_min": 30,
+            "max_consecutive_losses": 2,
+            "daily_loss_limit_pct": 3,
+            "trade_cap_policy": {
+              "max_trades_day": 20,
+              "selected_at": "2026-10-11T12:00:00.000Z",
+              "rule_date": "2026-10-11",
+              "timezone": "UTC"
+            },
+            "size_cap_note": null,
+            "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet)."
+          },
+          "stats": null,
+          "user": {
+            "trades": 0
+          },
+          "sample_sufficient": false,
+          "min_trades_for_personal_guardrails": 30
+        },
+        "today": {
+          "trades": 0,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000,
+          "loss_limit": 300,
+          "balance_basis": "day-start realised journal equity"
+        },
+        "breaches": [],
+        "status": "clear",
+        "remaining_trades": 20,
+        "post_loss": {
+          "last_loss_trade_id": null,
+          "last_loss_at": null,
+          "entry_tf": "1h",
+          "entry_tf_required": false,
+          "cooldown_until": null,
+          "next_candle_until": null
+        },
+        "message": "No personal stop. 20 entries remain under the preselected 20-entry cap. This is not market/setup approval.",
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "clear"
+        }
+      }
+    },
+    {
+      "label": "missing TF after retained loss remains unavailable, not reason-waivable",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "retained cooldown expires at its exact time; next full 1h candle still blocks",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "timezone": "UTC",
+        "evaluated_at": "2026-10-11T12:29:00.000Z",
+        "account_id": 8,
+        "guardrails": {
+          "max_risk_pct": 1,
+          "max_trades_day": 20,
+          "cooldown_min": 30,
+          "max_consecutive_losses": 2,
+          "daily_loss_limit_pct": 3,
+          "trade_cap_policy": {
+            "max_trades_day": 20,
+            "selected_at": "2026-10-11T12:00:00.000Z",
+            "rule_date": "2026-10-11",
+            "timezone": "UTC"
+          },
+          "size_cap_note": null,
+          "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet).",
+          "guardrails": {
+            "max_risk_pct": 1,
+            "max_trades_day": 20,
+            "cooldown_min": 30,
+            "max_consecutive_losses": 2,
+            "daily_loss_limit_pct": 3,
+            "trade_cap_policy": {
+              "max_trades_day": 20,
+              "selected_at": "2026-10-11T12:00:00.000Z",
+              "rule_date": "2026-10-11",
+              "timezone": "UTC"
+            },
+            "size_cap_note": null,
+            "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet)."
+          },
+          "stats": null,
+          "user": {
+            "trades": 0
+          },
+          "sample_sufficient": false,
+          "min_trades_for_personal_guardrails": 30
+        },
+        "today": {
+          "trades": 1,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000,
+          "loss_limit": 300,
+          "balance_basis": "day-start realised journal equity"
+        },
+        "breaches": [],
+        "status": "clear",
+        "remaining_trades": 19,
+        "post_loss": {
+          "last_loss_trade_id": null,
+          "last_loss_at": null,
+          "entry_tf": "1h",
+          "entry_tf_required": false,
+          "cooldown_until": null,
+          "next_candle_until": null
+        },
+        "message": "No personal stop. 19 entries remain under the preselected 20-entry cap. This is not market/setup approval.",
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "clear"
+        }
+      }
+    },
+    {
+      "label": "retained time stops expire, not a fabricated permanent day latch",
+      "passed": true
+    },
+    {
+      "label": "streak day stop resets only on next UTC rule day",
+      "passed": true
+    },
+    {
+      "label": "next-day cap uses the newly selected 20 and a fresh count",
+      "passed": true
+    },
+    {
+      "label": "midnight resets count but does NOT prematurely reset the loss cooldown",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-12",
+        "timezone": "UTC",
+        "evaluated_at": "2026-10-12T00:00:00.000Z",
+        "account_id": 9,
+        "guardrails": {
+          "max_risk_pct": 1,
+          "max_trades_day": 20,
+          "cooldown_min": 30,
+          "max_consecutive_losses": 2,
+          "daily_loss_limit_pct": 3,
+          "trade_cap_policy": {
+            "max_trades_day": 20,
+            "selected_at": "2026-10-12T00:00:00.000Z",
+            "rule_date": "2026-10-12",
+            "timezone": "UTC"
+          },
+          "size_cap_note": null,
+          "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet).",
+          "guardrails": {
+            "max_risk_pct": 1,
+            "max_trades_day": 20,
+            "cooldown_min": 30,
+            "max_consecutive_losses": 2,
+            "daily_loss_limit_pct": 3,
+            "trade_cap_policy": {
+              "max_trades_day": 20,
+              "selected_at": "2026-10-12T00:00:00.000Z",
+              "rule_date": "2026-10-12",
+              "timezone": "UTC"
+            },
+            "size_cap_note": null,
+            "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet)."
+          },
+          "stats": null,
+          "user": {
+            "trades": 0
+          },
+          "sample_sufficient": false,
+          "min_trades_for_personal_guardrails": 30
+        },
+        "today": {
+          "trades": 0,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000,
+          "loss_limit": 300,
+          "balance_basis": "day-start realised journal equity"
+        },
+        "breaches": [],
+        "status": "clear",
+        "remaining_trades": 20,
+        "post_loss": {
+          "last_loss_trade_id": null,
+          "last_loss_at": null,
+          "entry_tf": "1h",
+          "entry_tf_required": false,
+          "cooldown_until": null,
+          "next_candle_until": null
+        },
+        "message": "No personal stop. 20 entries remain under the preselected 20-entry cap. This is not market/setup approval.",
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "clear"
+        }
+      }
+    },
+    {
+      "label": "next full candle exclusion survives the UTC date boundary",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-12",
+        "timezone": "UTC",
+        "evaluated_at": "2026-10-12T00:00:00.000Z",
+        "account_id": 9,
+        "guardrails": {
+          "max_risk_pct": 1,
+          "max_trades_day": 20,
+          "cooldown_min": 30,
+          "max_consecutive_losses": 2,
+          "daily_loss_limit_pct": 3,
+          "trade_cap_policy": {
+            "max_trades_day": 20,
+            "selected_at": "2026-10-12T00:00:00.000Z",
+            "rule_date": "2026-10-12",
+            "timezone": "UTC"
+          },
+          "size_cap_note": null,
+          "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet).",
+          "guardrails": {
+            "max_risk_pct": 1,
+            "max_trades_day": 20,
+            "cooldown_min": 30,
+            "max_consecutive_losses": 2,
+            "daily_loss_limit_pct": 3,
+            "trade_cap_policy": {
+              "max_trades_day": 20,
+              "selected_at": "2026-10-12T00:00:00.000Z",
+              "rule_date": "2026-10-12",
+              "timezone": "UTC"
+            },
+            "size_cap_note": null,
+            "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet)."
+          },
+          "stats": null,
+          "user": {
+            "trades": 0
+          },
+          "sample_sufficient": false,
+          "min_trades_for_personal_guardrails": 30
+        },
+        "today": {
+          "trades": 0,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000,
+          "loss_limit": 300,
+          "balance_basis": "day-start realised journal equity"
+        },
+        "breaches": [],
+        "status": "clear",
+        "remaining_trades": 20,
+        "post_loss": {
+          "last_loss_trade_id": null,
+          "last_loss_at": null,
+          "entry_tf": "1h",
+          "entry_tf_required": false,
+          "cooldown_until": null,
+          "next_candle_until": null
+        },
+        "message": "No personal stop. 20 entries remain under the preselected 20-entry cap. This is not market/setup approval.",
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "clear"
+        }
+      }
+    },
+    {
+      "label": "fresh Node process recovers durable count/day stop after CRUD",
+      "passed": false,
+      "detail": {
+        "date": "2026-10-11",
+        "timezone": "UTC",
+        "evaluated_at": "2026-10-11T12:00:00.000Z",
+        "account_id": 3,
+        "guardrails": {
+          "max_risk_pct": 1,
+          "max_trades_day": 3,
+          "cooldown_min": 30,
+          "max_consecutive_losses": 2,
+          "daily_loss_limit_pct": 3,
+          "trade_cap_policy": {
+            "max_trades_day": 3,
+            "selected_at": "2026-10-11T12:00:00.000Z",
+            "rule_date": "2026-10-11",
+            "timezone": "UTC"
+          },
+          "size_cap_note": null,
+          "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet).",
+          "guardrails": {
+            "max_risk_pct": 1,
+            "max_trades_day": 3,
+            "cooldown_min": 30,
+            "max_consecutive_losses": 2,
+            "daily_loss_limit_pct": 3,
+            "trade_cap_policy": {
+              "max_trades_day": 3,
+              "selected_at": "2026-10-11T12:00:00.000Z",
+              "rule_date": "2026-10-11",
+              "timezone": "UTC"
+            },
+            "size_cap_note": null,
+            "basis": "Default risk rules and the preselected account trade cap (not enough personal data yet)."
+          },
+          "stats": null,
+          "user": {
+            "trades": 0
+          },
+          "sample_sufficient": false,
+          "min_trades_for_personal_guardrails": 30
+        },
+        "today": {
+          "trades": 5,
+          "closed": 0,
+          "realised": 0,
+          "r_sum": 0,
+          "avg_r": 0,
+          "loss_streak": 0,
+          "balance": 10000,
+          "loss_limit": 300,
+          "balance_basis": "day-start realised journal equity"
+        },
+        "breaches": [
+          {
+            "rule": "max_trades_day",
+            "detail": "5 entries today — your preselected cap is 3."
+          }
+        ],
+        "status": "stop",
+        "remaining_trades": 0,
+        "post_loss": {
+          "last_loss_trade_id": null,
+          "last_loss_at": null,
+          "entry_tf": "5m",
+          "entry_tf_required": false,
+          "cooldown_until": null,
+          "next_candle_until": null
+        },
+        "message": "Stand down: 5 entries today — your preselected cap is 3.",
+        "permission": {
+          "allowed": false,
+          "can_override": true,
+          "state": "stopped"
+        }
+      }
+    },
+    {
+      "label": "corrupt mechanical state fails closed even with a reason",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "unavailable-state response does not leak SQL/driver details",
+      "passed": false,
+      "detail": {
+        "ok": true,
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "admitted",
+          "override_reason": null,
+          "action": "trade_entry",
+          "account_id": 5,
+          "evaluated_at": "2026-10-11T12:00:00.000Z",
+          "scope": "personal rules for this recorded action only, not broker execution or future permission"
+        },
+        "trade": {
+          "id": 20,
+          "user_id": 1,
+          "account_id": 5,
+          "symbol": "TEST",
+          "asset_class": "stocks",
+          "direction": "long",
+          "status": "open",
+          "opened_at": "2026-10-11T12:00:00.000Z",
+          "closed_at": null,
+          "entry": 100,
+          "exit": null,
+          "stop": 99,
+          "target": null,
+          "size": 1,
+          "fees": 0,
+          "gross_pnl": 0,
+          "net_pnl": 0,
+          "risk_amount": 1,
+          "r_multiple": 0,
+          "planned_r": null,
+          "mae_r": null,
+          "mfe_r": null,
+          "stop_moved": 0,
+          "exit_reason": "",
+          "notes": "",
+          "strategy_id": null,
+          "strategy_name": "",
+          "setup_grade": "",
+          "entry_model": null,
+          "entry_tf": "5m",
+          "entry_evidence": null,
+          "session": "overlap",
+          "timeframes": "",
+          "emotion_before": "",
+          "emotion_after": "",
+          "confidence": null,
+          "adherence": null,
+          "mistakes": "",
+          "tags": "",
+          "thesis": "",
+          "lesson": "",
+          "execution_notes": "",
+          "screenshot_url": "",
+          "manual_mae": null,
+          "manual_mfe": null,
+          "created_at": "2026-10-11 15:02:58",
+          "updated_at": "2026-10-11 15:02:58",
+          "legs": null,
+          "entries": null,
+          "guardrail_snapshot": "{\"date\":\"2026-10-11\",\"timezone\":\"UTC\",\"evaluated_at\":\"2026-10-11T12:00:00.000Z\",\"account_id\":5,\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":3,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":3,\"selected_at\":\"2026-10-11T12:00:00.000Z\",\"rule_date\":\"2026-10-11\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\",\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":3,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":3,\"selected_at\":\"2026-10-11T12:00:00.000Z\",\"rule_date\":\"2026-10-11\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\"},\"stats\":null,\"user\":{\"trades\":0},\"sample_sufficient\":false,\"min_trades_for_personal_guardrails\":30},\"today\":{\"trades\":0,\"closed\":0,\"realised\":0,\"r_sum\":0,\"avg_r\":0,\"loss_streak\":0,\"balance\":10000,\"loss_limit\":300,\"balance_basis\":\"day-start realised journal equity\"},\"breaches\":[],\"status\":\"clear\",\"remaining_trades\":3,\"post_loss\":{\"last_loss_trade_id\":null,\"last_loss_at\":null,\"entry_tf\":\"5m\",\"entry_tf_required\":false,\"cooldown_until\":null,\"next_candle_until\":null},\"message\":\"No personal stop. 3 entries remain under the preselected 3-entry cap. This is not market/setup approval.\",\"permission\":{\"allowed\":true,\"can_override\":false,\"state\":\"clear\"},\"admission\":{\"allowed\":true,\"can_override\":false,\"state\":\"admitted\",\"override_reason\":null,\"action\":\"trade_entry\"},\"capture_basis\":\"fresh server admission state, valid only for this recorded action\"}",
+          "entry_permission": "admitted",
+          "override_reason": null,
+          "strategy_version": null,
+          "session_label": "London/NY Overlap",
+          "hour": 13,
+          "weekday": "Sun",
+          "weekday_index": 6,
+          "day": "2026-10-11",
+          "close_day": null,
+          "dir_sign": 1,
+          "is_win": false,
+          "is_loss": false,
+          "is_be": true,
+          "tags_arr": [],
+          "mistakes_arr": [],
+          "hold_minutes": null,
+          "risk_used": 1,
+          "legs_n": 0,
+          "weighted_exit": null
+        }
+      }
+    }
+  ],
+  "scope": "Real local HTTP/auth/transaction/CRUD/restart; explicit server clock; durable observed day stops and admission counter, not broker execution, live feeds or inferred legacy permissions"
+}

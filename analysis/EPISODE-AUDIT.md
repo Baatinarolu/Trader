@@ -4,7 +4,24 @@
 each transcript returns — roughly the first quarter of each video. This ledger tracks a complete pass:
 every episode, every chunk, in playlist order (Ep 0 → 33, then bonuses, then the EdgeFlo tool episodes).
 
-## Current follow-through — M71, 2026-10-11
+## Current follow-through — M79/M80, 2026-10-11
+
+Ledger132: **80 done / 2 partial / 50 todo / 0 no-action**. M79/M80 and
+independently scoped M83/M113/M90 applied. Ep21 mechanical admission/reason,
+Ep22 cooldown/no-next-full-candle, Ep24 immutable day review and Ep31 preselected
+cap; [full staged report](M79-M80-GUARDRAILS.md). The old "detection is correct"
+assertion was disproved by parent10/38 admission and16/28 consumers. Immutable
+history alone also failed enforcement: real three admissions→fourth409→delete→
+fresh200 was retained3/1. Separate durable admission/day-stop state repairs that
+exact test4/0, with expanded48/0 CRUD/concurrency/restart/time-boundary proof.
+Final12 feature probes302/0, no broker/live-feed/pixel/production/edge claim.
+Native API121/0 both; bots204/2 both,19 fills below unchanged20/>20 floors and0
+parity mismatches. Real correction/deletion remains recordable, no admission
+refund. M11floor30, deliberateM103n>=5, entry/stop/target/grade/risk policies
+unchanged (ten engine files byte-identical). Next M81 profit stop/M82 resize;
+M85/M111/M112 stay open.
+
+## Prior follow-through — M71, 2026-10-11
 
 Ledger132: **75 done / 2 partial / 55 todo / 0 no-action**. Primary exact RR now
 binds runway, management explanation, grade cap and hard veto, including opt-in

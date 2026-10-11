@@ -1,0 +1,261 @@
+diff --git a/src/bots/correction.js b/src/bots/correction.js
+index c638dfe..1fef61c 100644
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
+@@ -512,7 +512,9 @@ async function dailyState(userId, { accountId = null, store = db, nowMs = Date.n
+   // M79: this was a Promise used as though it were resolved rule numbers.
+   const g = await guardrails(userId, { accountId: account.id, store, nowMs });
+   const rows = await store.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY opened_at ASC').all(userId,account.id);
+-  const daily = Guards.evaluate({account,guardrails:g,rows,nowMs,entryTf,forEntry});
++  const retained = await Guards.retainedState(store,userId,account.id,nowMs);
++  const daily = Guards.evaluate({account,guardrails:g,rows,nowMs,entryTf,forEntry,retained});
++  await Guards.retainState(store,userId,daily);
+   await Guards.observe(store,userId,daily);
+   return daily;
+ }
+diff --git a/src/bots/guardrails.js b/src/bots/guardrails.js
+index 34f7509..8508f8a 100644
+--- a/src/bots/guardrails.js
++++ b/src/bots/guardrails.js
+@@ -30,6 +30,62 @@ async function dailyCap(store, userId, account, nowMs = Date.now()) {
+   const row = await store.prepare('SELECT * FROM guardrail_day_caps WHERE user_id=? AND account_id=? AND rule_date=?').get(userId, account.id, date);
+   return { max_trades_day: parseCap(row.max_trades_day), selected_at: row.selected_at, rule_date: date, timezone: 'UTC' };
+ }
++const DAY_STOP_RULES = new Set(['max_trades_day','consecutive_losses','daily_loss_limit']);
++/** Durable observations, NOT reconstructed historical admissions. The count is
++ * a monotonic floor: observed journal entries plus subsequent server admissions.
++ * Day stops latch until UTC rollover. Time stops retain the observed loss clock,
++ * but still expire at their exact cooldown/candle boundaries. */
++async function retainedState(store,userId,accountId,nowMs) {
++  const date = dayKey(nowMs);
++  const row = await store.prepare('SELECT * FROM guardrail_day_state WHERE user_id=? AND account_id=? AND rule_date=?').get(userId,accountId,date);
++  const loss = await store.prepare(`SELECT last_loss_at,last_loss_trade_id FROM guardrail_day_state
++    WHERE user_id=? AND account_id=? AND last_loss_at<=? AND last_loss_at IS NOT NULL
++    ORDER BY last_loss_at DESC LIMIT 1`).get(userId,accountId,new Date(nowMs).toISOString());
++  const stops = row ? JSON.parse(row.stops_json) : {};
++  if (!stops || typeof stops!=='object' || Array.isArray(stops)
++      || Object.entries(stops).some(([key,b])=>!DAY_STOP_RULES.has(key) || b?.rule!==key)
++      || (row && (!Number.isInteger(row.entries_count) || row.entries_count<0)))
++    throw new Error('Stored mechanical rule state is invalid');
++  return {entries_count:row?.entries_count || 0,stops,...loss};
++}
++async function retainState(store,userId,daily) {
++  if (!daily.today || daily.status==='unknown') return;
++  const scope = [userId,daily.account_id,daily.date];
++  await store.prepare(`INSERT INTO guardrail_day_state
++    (user_id,account_id,rule_date,entries_count,updated_at) VALUES (?,?,?,?,?)
++    ON CONFLICT(user_id,account_id,rule_date) DO UPDATE SET
++      entries_count=MAX(guardrail_day_state.entries_count,excluded.entries_count),updated_at=excluded.updated_at`)
++    .run(...scope,daily.today.trades,daily.evaluated_at);
++  for (const b of daily.breaches.filter(b=>DAY_STOP_RULES.has(b.rule))) {
++    // Add individual keys atomically: overlapping polling cannot erase an
++    // earlier stop or rewrite its original observation with later corrected P&L.
++    const key = '$.'+b.rule;
++    await store.prepare(`UPDATE guardrail_day_state SET stops_json=json_set(stops_json,?,json(?))
++      WHERE user_id=? AND account_id=? AND rule_date=? AND json_type(stops_json,?) IS NULL`)
++      .run(key,JSON.stringify({...b,latched_at:daily.evaluated_at}),...scope,key);
++  }
++  const at = msOf(daily.post_loss?.last_loss_at);
++  if (Number.isFinite(at)) {
++    const iso = new Date(at).toISOString();
++    await store.prepare(`UPDATE guardrail_day_state SET last_loss_at=?,last_loss_trade_id=?
++      WHERE user_id=? AND account_id=? AND rule_date=? AND (last_loss_at IS NULL OR last_loss_at<?)`)
++      .run(iso,daily.post_loss.last_loss_trade_id,...scope,iso);
++  }
++}
++async function retainAdmission(store,userId,daily,options,result) {
++  // A saved/copied research plan is not an executed position. All entry paths,
++  // including reopen, consume exactly one durable admission in this transaction.
++  if (options.entityType!=='trade') return;
++  const id = options.entityId || result?.id;
++  if (!Number.isInteger(Number(id)) || Number(id)<=0) throw new Error('Missing admitted trade identity');
++  await store.prepare(`INSERT INTO guardrail_entry_admissions
++    (user_id,account_id,rule_date,admitted_at,action,trade_id,admission_state,snapshot)
++    VALUES (?,?,?,?,?,?,?,?)`).run(userId,daily.account_id,daily.date,daily.evaluated_at,
++      options.action || 'entry',id,daily.admission.state,JSON.stringify(daily));
++  const changed = await store.prepare(`UPDATE guardrail_day_state SET entries_count=entries_count+1,updated_at=?
++    WHERE user_id=? AND account_id=? AND rule_date=?`).run(daily.evaluated_at,userId,daily.account_id,daily.date);
++  if (changed.changes!==1) throw new Error('Missing durable rule day');
++}
+ function unavailable({ accountId = null, nowMs = Date.now(), message } = {}) {
+   return { date: dayKey(nowMs), timezone: 'UTC', evaluated_at: new Date(nowMs).toISOString(), account_id: accountId,
+     status: 'unknown', breaches: [], remaining_trades: null, guardrails: null, today: null,
+@@ -42,7 +98,7 @@ const isBlocked = daily => !!daily && (daily.status === 'stop' || daily.status =
+  * Opening a position counts as an attempt. P&L/streak use the CLOSE day, so
+  * overnight positions do not disappear from the loss stop.
+  */
+-function evaluate({ account, guardrails, rows = [], nowMs = Date.now(), entryTf = null, forEntry = false }) {
++function evaluate({ account, guardrails, rows = [], nowMs = Date.now(), entryTf = null, forEntry = false, retained = {} }) {
+   const date = dayKey(nowMs), start = Date.parse(date+'T00:00:00Z'), g = guardrails;
+   if (!account?.id || account.archived || !g || !Number.isFinite(Number(g.max_trades_day))
+       || !(Number(g.daily_loss_limit_pct) > 0) || !(Number(g.max_consecutive_losses) > 0)
+@@ -50,6 +106,7 @@ function evaluate({ account, guardrails, rows = [], nowMs = Date.now(), entryTf
+   // The loader scopes SQL too; keep the pure boundary scoped for other callers.
+   const scoped = rows.filter(t => Number(t.account_id) === Number(account.id) && Number(t.user_id) === Number(account.user_id));
+   const openedToday = scoped.filter(t => msOf(t.opened_at) >= start && msOf(t.opened_at) <= nowMs);
++  const entries = Math.max(openedToday.length,number(retained.entries_count));
+   const closed = scoped.filter(t => t.status === 'closed');
+   const timed = closed.filter(t => Number.isFinite(msOf(t.closed_at)) && msOf(t.closed_at) <= nowMs);
+   const todayClosed = timed.filter(t => msOf(t.closed_at) >= start).sort((a,b) => msOf(b.closed_at)-msOf(a.closed_at) || number(b.id)-number(a.id));
+@@ -63,7 +120,10 @@ function evaluate({ account, guardrails, rows = [], nowMs = Date.now(), entryTf
+   if (!(balance > 0)) return unavailable({accountId: account.id, nowMs, message:'Day-start realised equity must be positive before new entry permission can be verified.'});
+   let streak = 0;
+   for (const t of todayClosed) { if (number(t.net_pnl) < 0) streak++; else break; }
+-  const lastLoss = timed.filter(t=>number(t.net_pnl)<0).sort((a,b)=>msOf(b.closed_at)-msOf(a.closed_at) || number(b.id)-number(a.id))[0] || null;
++  let lastLoss = timed.filter(t=>number(t.net_pnl)<0).sort((a,b)=>msOf(b.closed_at)-msOf(a.closed_at) || number(b.id)-number(a.id))[0] || null;
++  const heldLossMs = msOf(retained.last_loss_at);
++  if (Number.isFinite(heldLossMs) && heldLossMs<=nowMs && (!lastLoss || heldLossMs>msOf(lastLoss.closed_at)))
++    lastLoss = {id:retained.last_loss_trade_id,closed_at:retained.last_loss_at};
+   const lossMs = lastLoss ? msOf(lastLoss.closed_at) : null;
+   const cooldownUntil = lastLoss ? lossMs + Number(g.cooldown_min)*60000 : null;
+   const barMs = TF_MS[entryTf];
+@@ -75,19 +135,22 @@ function evaluate({ account, guardrails, rows = [], nowMs = Date.now(), entryTf
+   if (forEntry && tfRequired) return unavailable({accountId: account.id, nowMs,
+     message:'Record a supported entry timeframe (1m, 5m, 15m, 30m, 1h, 4h, 1d or 1wk) to verify the no-next-candle rule after a loss.'});
+   const breaches = [];
+-  if (openedToday.length >= Number(g.max_trades_day)) breaches.push({rule:'max_trades_day',detail:`${openedToday.length} entries today — your preselected cap is ${g.max_trades_day}.`});
++  if (entries >= Number(g.max_trades_day)) breaches.push({rule:'max_trades_day',detail:`${entries} entries today — your preselected cap is ${g.max_trades_day}.`});
+   if (streak >= Number(g.max_consecutive_losses)) breaches.push({rule:'consecutive_losses',detail:`${streak} consecutive closed losses today — stop for this rule day.`});
+   const lossLimit = balance*Number(g.daily_loss_limit_pct)/100;
+   if (realised <= -lossLimit) breaches.push({rule:'daily_loss_limit',detail:`Realised loss $${r2(-realised)} has reached the ${g.daily_loss_limit_pct}% day-start equity limit ($${r2(lossLimit)}).`});
+   if (cooldownUntil !== null && nowMs < cooldownUntil) breaches.push({rule:'post_loss_cooldown',detail:`After a loss, no new entry until ${new Date(cooldownUntil).toISOString()} (${g.cooldown_min}-minute cooldown).`,until:new Date(cooldownUntil).toISOString()});
+   if (nextEnd !== null && nowMs < nextEnd) breaches.push({rule:'no_next_candle',detail:`Do not enter the very next ${entryTf} candle after the loss; wait until ${new Date(nextEnd).toISOString()}.`,until:new Date(nextEnd).toISOString()});
+-  const status = breaches.length ? 'stop' : openedToday.length >= Number(g.max_trades_day)-1 ? 'caution' : 'clear';
++  for (const b of Object.values(retained.stops || {})) if (!breaches.some(current=>current.rule===b.rule))
++    breaches.push({...b,retained:true,detail:`Previously hit today: ${b.detail} The rule-day stop remains after journal correction; only a fresh reasoned action override can proceed.`});
++  const status = breaches.length ? 'stop' : entries >= Number(g.max_trades_day)-1 ? 'caution' : 'clear';
+   return {date,timezone:'UTC',evaluated_at:new Date(nowMs).toISOString(),account_id:account.id,guardrails:g,
+-    today:{trades:openedToday.length,closed:todayClosed.length,realised,r_sum:rSum,avg_r:todayClosed.length?r2(rSum/todayClosed.length):0,loss_streak:streak,balance,loss_limit:r2(lossLimit),balance_basis:'day-start realised journal equity'},
+-    breaches,status,remaining_trades:Math.max(0,Number(g.max_trades_day)-openedToday.length),
++    today:{trades:entries,closed:todayClosed.length,realised,r_sum:rSum,avg_r:todayClosed.length?r2(rSum/todayClosed.length):0,loss_streak:streak,balance,loss_limit:r2(lossLimit),balance_basis:'day-start realised journal equity'},
++    persistence:{entry_count_basis:'monotonic observed journal entries plus server admissions, not inferred historical permission',journal_entries:openedToday.length,retained_stops:Object.keys(retained.stops || {})},
++    breaches,status,remaining_trades:Math.max(0,Number(g.max_trades_day)-entries),
+     post_loss:{last_loss_trade_id:lastLoss?.id || null,last_loss_at:lastLoss?.closed_at || null,entry_tf:entryTf,entry_tf_required:tfRequired,
+       cooldown_until:cooldownUntil===null?null:new Date(cooldownUntil).toISOString(),next_candle_until:nextEnd===null?null:new Date(nextEnd).toISOString()},
+-    message:breaches.length ? 'Stand down: '+breaches.map(b=>b.detail).join(' ') : `No personal stop. ${Math.max(0,Number(g.max_trades_day)-openedToday.length)} entries remain under the preselected ${g.max_trades_day}-entry cap. This is not market/setup approval.`,
++    message:breaches.length ? 'Stand down: '+breaches.map(b=>b.detail).join(' ') : `No personal stop. ${Math.max(0,Number(g.max_trades_day)-entries)} entries remain under the preselected ${g.max_trades_day}-entry cap. This is not market/setup approval.`,
+     permission:{allowed:!breaches.length,can_override:!!breaches.length,state:breaches.length?'stopped':'clear'}};
+ }
+ /** Preserve all market geometry and grades. The original market eligibility is
+@@ -131,15 +194,21 @@ async function record(userId,options,operation) {
+   const {db} = require('../db');
+   return db.tx(async transaction => {
+     const store = db.transactionStore(transaction);
+-    let daily;
+-    try { daily = await require('./correction').dailyState(userId,{...options,store,forEntry:false}); }
+-    catch { daily = unavailable({accountId:options.accountId}); }
+-    const out = await operation(store,daily);
+-    if (daily.status==='stop' || daily.status==='unknown') await logEvent(store,userId,daily,{kind:'journal_record',action:options.action || 'record_only',entityType:options.entityType || null,entityId:options.entityId || out?.id || null});
+-    // A failed permission READ must not prevent honest journal recording. If a
+-    // post-record read fails, preserve an explicitly unknown observation instead.
+-    try { await require('./correction').dailyState(userId,{...options,store,forEntry:false}); }
+-    catch { await logEvent(store,userId,unavailable({accountId:options.accountId}),{kind:'journal_record',action:'post_record_state_unavailable',entityType:options.entityType || null,entityId:options.entityId || out?.id || null}); }
++    const scopes = options.accountIds?.length ? [...new Set(options.accountIds)] : [options.accountId];
++    const snapshots = [];
++    for (const accountId of scopes) {
++      try { snapshots.push(await require('./correction').dailyState(userId,{...options,accountId,store,forEntry:false})); }
++      catch { snapshots.push(unavailable({accountId})); }
++    }
++    const out = await operation(store,snapshots[0]);
++    for (const daily of snapshots) if (daily.status==='stop' || daily.status==='unknown')
++      await logEvent(store,userId,daily,{kind:'journal_record',action:options.action || 'record_only',entityType:options.entityType || null,entityId:options.entityId || out?.id || null});
++    // Permission read failures do not ban honest recording. Write/audit failures
++    // still roll back atomically: no silently unlogged record or false permit.
++    for (const accountId of scopes) {
++      try { await require('./correction').dailyState(userId,{...options,accountId,store,forEntry:false}); }
++      catch { await logEvent(store,userId,unavailable({accountId}),{kind:'journal_record',action:'post_record_state_unavailable',entityType:options.entityType || null,entityId:options.entityId || out?.id || null}); }
++    }
+     return out;
+   });
+ }
+@@ -182,6 +251,7 @@ async function admit(userId, options, operation) {
+       daily.admission = {allowed:true,can_override:false,state:overridden?'overridden':'admitted',
+         override_reason:overridden?reason:null,action:options.action || 'entry'};
+       const result = await operation(store,daily);
++      await retainAdmission(store,userId,daily,options,result);
+       if (overridden) {
+         const ids = options.entityId ? [options.entityId] : result?.ids || (result?.id ? [result.id] : []);
+         await logEvent(store,userId,{...daily,admission:{...daily.admission,entity_ids:ids}},
+@@ -196,5 +266,5 @@ async function admit(userId, options, operation) {
+   if (out.rejected) throw admissionError(out.rejected);
+   return out.result;
+ }
+-module.exports = { DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
++module.exports = { retainedState, retainState, DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
+   evaluate, unavailable, isBlocked, applyToSetups, admissionError, admit, observe, snapshotFields, logEvent, eventsForDay, record, overrideReason, actionPermission };
+diff --git a/src/db.js b/src/db.js
+index efb1a04..c6ccb32 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -151,6 +151,32 @@ CREATE TABLE IF NOT EXISTS guardrail_day_caps (
+   selected_at TEXT NOT NULL,
+   PRIMARY KEY(user_id,account_id,rule_date)
+ );
++-- Mechanical rule state is independent of editable journal rows. No trade FK:
++-- truthful deletion/correction must not replenish entry permissions.
++CREATE TABLE IF NOT EXISTS guardrail_day_state (
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  rule_date TEXT NOT NULL,
++  entries_count INTEGER NOT NULL DEFAULT 0 CHECK(entries_count >= 0),
++  stops_json TEXT NOT NULL DEFAULT '{}',
++  last_loss_at TEXT,
++  last_loss_trade_id INTEGER,
++  updated_at TEXT NOT NULL,
++  PRIMARY KEY(user_id,account_id,rule_date)
++);
++CREATE TABLE IF NOT EXISTS guardrail_entry_admissions (
++  id INTEGER PRIMARY KEY AUTOINCREMENT,
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  rule_date TEXT NOT NULL,
++  admitted_at TEXT NOT NULL,
++  action TEXT NOT NULL,
++  trade_id INTEGER NOT NULL,
++  admission_state TEXT NOT NULL,
++  snapshot TEXT NOT NULL
++);
++CREATE INDEX IF NOT EXISTS idx_guardrail_admissions_scope
++  ON guardrail_entry_admissions(user_id,account_id,rule_date);
+ -- M50 bias hysteresis. Ep 15 mistake 4 says the bias only changes when its invalidation is hit,
+ -- which needs the prior bias and its level to survive between calls. alignment() is deliberately
+ -- pure so this state lives here rather than inside it, and nothing that measures the engine has to
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 8f1f174..d163e09 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -377,7 +377,7 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   try {
+     if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
+       await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>T.update(store,req.user.id,id,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
+-    } else await T.update(db,req.user.id,id,{...trade,account_id:accountId});
++    } else await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,{...trade,account_id:accountId}));
+   } catch(e) {
+     if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
+     throw e;
+@@ -419,15 +419,22 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+ });
+ 
+ router.delete('/trades/:id', requireAuth, async (req, res) => {
+-  const info = await db.prepare('DELETE FROM trades WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
++  const id = Number(req.params.id);
++  const existing = await db.prepare('SELECT account_id FROM trades WHERE id=? AND user_id=?').get(id,req.user.id);
++  if (!existing) return res.json({ok:false});
++  const info = await Guards.record(req.user.id,{accountId:existing.account_id,action:'journal_delete',entityType:'trade',entityId:id},
++    store=>store.prepare('DELETE FROM trades WHERE id=? AND user_id=?').run(id,req.user.id));
+   res.json({ ok: !!info.changes });
+ });
+ 
+ router.post('/trades/bulk-delete', requireAuth, async (req, res) => {
+   const ids = (req.body && req.body.ids) || [];
+   if (ids.length) {
+-    // one atomic batch (libSQL batches share a single statement shape)
+-    await db.batch(ids.map((id) => ({ sql: 'DELETE FROM trades WHERE id=? AND user_id=?', args: [Number(id), req.user.id] })));
++    const accounts = await db.prepare(`SELECT DISTINCT account_id FROM trades WHERE user_id=? AND id IN (${ids.map(()=>'?').join(',')})`).all(req.user.id,...ids.map(Number));
++    if (accounts.length) await Guards.record(req.user.id,{accountIds:accounts.map(a=>a.account_id),action:'journal_bulk_delete',entityType:'trade'},async store=>{
++      const del = store.prepare('DELETE FROM trades WHERE id=? AND user_id=?');
++      for (const id of ids) await del.run(Number(id),req.user.id);
++    });
+   }
+   res.json({ ok: true, deleted: ids.length });
+ });

@@ -420,6 +420,7 @@
           <label class="field"><span>Currency</span><input id="a-ccy" value="${U.esc(v.currency)}" /></label>
           <label class="field"><span>Starting balance</span><input id="a-bal" type="number" step="any" value="${v.starting_balance}" /></label>
           <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /></label>
+          <label class="field"><span>Max trades per UTC day</span><input id="a-trades" type="number" min="1" max="100" step="1" value="${v.max_trades_day ?? 3}" /><div class="field-note">Course guidance: 3 intraday / 5 scalping. Frozen on the day's first guardrail check; changes then apply tomorrow. History never raises this cap.</div></label>
           <label class="field"><span>Daily loss limit (%)</span><input id="a-daily" type="number" step="0.1" value="${v.daily_loss_limit_pct}" /></label>
           <label class="field"><span>Max drawdown (%)</span><input id="a-dd" type="number" step="0.1" value="${v.max_drawdown_pct}" /></label>
           <label class="field"><span>Profit target (%)</span><input id="a-target" type="number" step="0.1" value="${v.profit_target_pct}" /></label>
@@ -432,7 +433,7 @@
               const payload = {
                 name: U.$('#a-name', body).value, broker: U.$('#a-broker', body).value, account_type: U.$('#a-type', body).value,
                 currency: U.$('#a-ccy', body).value, starting_balance: U.$('#a-bal', body).value,
-                risk_per_trade_pct: U.$('#a-risk', body).value, daily_loss_limit_pct: U.$('#a-daily', body).value,
+                risk_per_trade_pct: U.$('#a-risk', body).value, max_trades_day: U.$('#a-trades', body).value, daily_loss_limit_pct: U.$('#a-daily', body).value,
                 max_drawdown_pct: U.$('#a-dd', body).value, profit_target_pct: U.$('#a-target', body).value,
               };
               if (!payload.name) return global.App.toast('Account needs a name', 'err');

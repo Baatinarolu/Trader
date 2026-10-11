@@ -201,6 +201,12 @@
     const symOptions = Store.instruments.map((i) => `<option value="${i.symbol}" ${t.symbol === i.symbol ? 'selected' : ''}>${i.symbol} — ${U.esc(i.name || '')}</option>`).join('');
 
     node.innerHTML = `
+      <div class="card" style="margin-bottom:12px">
+        <label class="row gap-8"><input id="tf-record-only" type="checkbox" ${!isNew || t.record_only ? 'checked' : ''} /><span>Already executed outside the app / historical record only — not entry permission</span></label>
+        <div class="field-note" id="tf-guardrail-state">Checking the selected account's personal guardrails…</div>
+        <button class="btn xs ghost" id="tf-guardrail-refresh" type="button">Recheck guardrails</button>
+        ${t.override_reason ? `<div class="bot-warn"><b>Recorded override reason (not editable):</b> ${U.esc(t.override_reason)}</div>` : ''}
+      </div>
       <div class="form-grid">
         <label class="field"><span>Symbol</span>
           <input id="tf-symbol" list="tf-symbols" value="${U.esc(t.symbol || '')}" placeholder="EURUSD, ES, AAPL, BTCUSDT…" />
@@ -372,6 +378,7 @@
 
     function collect() {
       const body = {
+        record_only:U.$('#tf-record-only',node).checked,
         symbol: g('symbol').value.toUpperCase().trim(),
         direction: g('direction').value,
         status: g('status').value,
@@ -424,17 +431,50 @@
       syncTv();
       const symInput = U.$('#tf-symbol', node);
       if (symInput) symInput.addEventListener('change', syncTv);
-      tvCopy.addEventListener('click', () => {
+      tvCopy.addEventListener('click', async () => {
         const dir = (U.$('#tf-direction', node).value === 'short' ? 'SELL' : 'BUY');
         const entry = numOf('tf-entry'), stop = numOf('tf-stop'), target = numOf('tf-target');
-        const fmt = (v) => (v == null ? '—' : String(Number(v.toFixed ? v.toFixed(6) : v)).replace(/\.?0+$/, ''));
+        const fmt = (v) => (v == null ? '—' : String(Number(v.toFixed ? v.toFixed(6) : v)));
         const parts = [`${dir} ${symOf()}`, entry != null ? `entry ${fmt(entry)}` : null, stop != null ? `stop ${fmt(stop)}` : null, target != null ? `target ${fmt(target)}` : null].filter(Boolean);
-        global.TV.copy(parts.join(' · '), 'Plan');
+        if (!requiresAdmission()) return global.TV.copy('JOURNAL / RESEARCH ONLY · '+parts.join(' · '),'Recorded plan');
+        try {
+          const out = await global.App.runGuarded(reason=>API.post('/bots/signals/save-plan',{
+            symbol:symOf(),timeframe:g('entrytf').value || '15m',entry_tf:g('entrytf').value || null,account_id:Number(g('account').value),
+            entry,stop,t1:target,...(reason?{override_reason:reason}:{})}),guard);
+          if (out?.saved) global.TV.copy((out.permission?.state==='overridden'?'PERSONAL OVERRIDE RECORDED · ':'')+parts.join(' · '),'Plan');
+        } catch(e) { toast(e.message,'err'); }
       });
       tvBot.addEventListener('click', () => { global.__botRequest = { symbol: symOf(), tf: '15m' }; App.go('bots'); });
     }
 
-    return { node, collect, isNew };
+    let guard = null, guardRequest = 0;
+    const requiresAdmission = () => g('status').value==='open' && !U.$('#tf-record-only',node).checked && (isNew || t.status!=='open');
+    async function refreshGuard() {
+      const request = ++guardRequest;
+      const note = U.$('#tf-guardrail-state',node);
+      if (!requiresAdmission()) {
+        guard = null; note.textContent = 'Journal record/correction only. It records what happened; it does not authorise a new entry.';
+        if (opts.onPermissionChange) opts.onPermissionChange(null); return;
+      }
+      guard = {status:'loading'}; note.textContent = 'Checking personal guardrails — the server rechecks again on entry.';
+      if (opts.onPermissionChange) opts.onPermissionChange(guard);
+      try {
+        const out = await API.get('/bots/guardrails',{account_id:g('account').value,entry_tf:g('entrytf').value || ''});
+        if (request!==guardRequest) return;
+        guard = out.daily;
+        if (!guard?.permission) guard = {status:'unknown',message:'Guardrail response did not include verified permission.',permission:{allowed:false,can_override:false}};
+      } catch(e) {
+        if (request!==guardRequest) return;
+        guard = e.data?.daily || {status:'unknown',message:e.message || 'Guardrails unavailable.',permission:{allowed:false,can_override:false}};
+      }
+      note.textContent = `${guard.message || guard.status} UTC rule day. ${guard.status==='stop' ? 'The grey entry button opens a required-reason override, not an immediate entry.' : ''}`;
+      if (opts.onPermissionChange) opts.onPermissionChange(guard);
+    }
+    for (const field of [g('status'),g('account'),U.$('#tf-record-only',node)]) field.addEventListener('change',refreshGuard);
+    g('entrytf').addEventListener('change',refreshGuard);
+    U.$('#tf-guardrail-refresh',node).addEventListener('click',refreshGuard);
+    refreshGuard();
+    return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
   };
 
   function localNow() { const d = new Date(); return d.toISOString(); }

@@ -1,0 +1,20 @@
+FAIL local input validation returns 400 without writing: model name {"status":400}
+FAIL local input validation returns 400 without writing: model type {"status":400}
+FAIL local input validation returns 400 without writing: stop provenance {"status":400}
+FAIL local input validation returns 400 without writing: entry variant {"status":400}
+FAIL local input validation returns 400 without writing: evidence array {"status":400}
+FAIL local input validation returns 400 without writing: evidence malformed JSON {"status":400}
+FAIL local input validation returns 400 without writing: oversized evidence {"status":400}
+FAIL zero saved actions do not claim personal permission {"status":200,"data":{"ok":false,"saved":0,"ids":[],"reason":"symbol, entry and stop (entry ≠ stop) are required","permission":{"allowed":true,"can_override":false,"state":"admitted","override_reason":null,"action":"save_plan","account_id":1,"evaluated_at":"2026-10-11T15:06:14.567Z","scope":"personal rules for this recorded action only, not broker execution or future permission"}}}
+ok valid plan retains levels, grade-free semantics and real permission
+ok stopped-day validation stays 400 and cannot fabricate an override
+FAIL reason plus no action does not fabricate override permission or audit {"status":200,"data":{"ok":false,"saved":0,"ids":[],"reason":"symbol, entry and stop (entry ≠ stop) are required","permission":{"allowed":true,"can_override":false,"state":"overridden","override_reason":"One consciously reviewed exception, not a persistent unlock.","action":"save_plan","account_id":1,"evaluated_at":"2026-10-11T15:06:14.734Z","scope":"personal rules for this recorded action only, not broker execution or future permission"}}}
+BOT API error on POST /api/bots/signals/save-plan: Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.
+ok unavailable state still cannot be reason-waived
+FAIL tagged validation survives transaction boundary with exact public contract {"status":503,"message":"Personal guardrails could not be verified. No new entry permission; retry or repair the account/history."}
+ok validation after a provisional insert rolls back that insert
+ok arbitrary driver 4xx is NOT treated as public validation
+FAIL a missing/no-op trade write cannot mint a durable entry admission undefined
+BOT API error on POST /api/bots/signals/save-plan: Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.
+ok database write failure remains generic 503 with no secret/detail leak or signal
+M79 input contracts: 6 passed, 11 failed

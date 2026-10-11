@@ -1,0 +1,386 @@
+diff --git a/public/css/app.css b/public/css/app.css
+index 39a6d52..591846e 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -554,3 +554,7 @@ fieldset,legend{border-color:var(--border)}
+ 
+ /* a plan below the trader's own R:R floor: shown, never silently armed */
+ .now-note.rr-warn{border-left:2px solid var(--red);background:rgba(217,84,103,.07);padding:6px 9px;margin-top:8px;color:var(--text)}
++
++/* M79/M80: a grey KNOWN stop opens the reason dialog. Unavailable checks are
++ * actually disabled and cannot be overridden. Server admission remains binding. */
++.btn.guardrail-stop { background: var(--bg-3); color: var(--muted-2); border-color: var(--border); border-style: dashed; }
+diff --git a/public/js/app.js b/public/js/app.js
+index e133509..02799d3 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -250,10 +250,11 @@
+     },
+ 
+     /* -------------------------------------------------------------- modals */
+-    modal({ title, body, actions = [], wide, large, small }) {
++    modal({ title, body, actions = [], wide, large, small, onClose }) {
+       const back = U.h('div', { class: 'modal-back' });
+       const m = U.h('div', { class: 'modal' + (wide ? ' lg' : small ? ' sm' : large ? ' lg' : '') });
+-      const close = () => { back.remove(); this.modalStack = this.modalStack.filter((x) => x !== close); if (!this.modalStack.length) document.body.style.overflow = ''; };
++      let closed = false;
++      const close = () => { if (closed) return; closed = true; back.remove(); this.modalStack = this.modalStack.filter((x) => x !== close); if (!this.modalStack.length) document.body.style.overflow = ''; if (onClose) onClose(); };
+       const head = U.h('div', { class: 'modal-head' }, U.h('h3', { text: title }), U.h('span', { class: 'spacer', style: 'flex:1' }), U.h('button', { class: 'btn xs ghost', text: 'Close', onclick: close }));
+       m.appendChild(head);
+       const b = U.h('div', { class: 'modal-body' });
+@@ -261,7 +262,7 @@
+       m.appendChild(b);
+       if (actions.length) {
+         const foot = U.h('div', { class: 'modal-foot' });
+-        actions.forEach((a) => foot.appendChild(U.h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger ghost' : 'ghost'), text: a.label, onclick: () => a.onClick ? a.onClick(close) : close() })));
++        actions.forEach((a) => { a.node = U.h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger ghost' : 'ghost'), text: a.label, disabled:!!a.disabled, onclick: () => a.onClick ? a.onClick(close) : close() }); foot.appendChild(a.node); });
+         m.appendChild(foot);
+       }
+       back.appendChild(m);
+@@ -274,6 +275,39 @@
+       return { close, node: m };
+     },
+ 
++    /** A known stop opens a reason dialog, never an immediate retry. The server
++     * still rechecks and records the reason/rules atomically for this ONE action. */
++    async runGuarded(operation, daily = null) {
++      if (daily && (daily.status==='unknown' || daily.permission?.can_override===false && daily.permission?.allowed===false)) throw new Error(daily.message || 'Personal guardrails unavailable; no override is permitted.');
++      if (daily?.status==='stop') return this.overrideDialog(daily,operation);
++      try { return await operation(null); }
++      catch(e) {
++        if (e.data?.code==='guardrail_stop' && e.data.daily?.permission?.can_override) return this.overrideDialog(e.data.daily,operation);
++        throw e;
++      }
++    },
++    overrideDialog(daily, operation) {
++      if (daily?.status!=='stop' || daily.permission?.can_override!==true) return Promise.reject(new Error('Only a verified personal stop can be overridden.'));
++      return new Promise(resolve => {
++        let finished = false, busy = false;
++        const body = U.h('div');
++        body.innerHTML = `<div class="bot-warn"><b>Personal stop — reason required</b><p>${U.esc(daily.message)}</p></div>
++          <div class="small muted">Account #${U.esc(daily.account_id)} · ${U.esc(daily.date)} (UTC). This does not waive a technical setup veto or unlock future entries. The reason and the server's fresh violated-rule snapshot will be saved in your day review.</div>
++          <label class="field"><span>Why are you overriding this stop?</span><textarea id="guardrail-override-reason" required maxlength="2000" placeholder="Write your deliberate reason, not a checkbox acknowledgement."></textarea></label>
++          <div class="field-note" id="guardrail-override-error"></div>`;
++        const actions = [{label:'Cancel',ghost:true},{label:'Record override & continue',primary:true,disabled:true,onClick:async close=>{
++          const reason = U.$('#guardrail-override-reason',body).value.trim();
++          if (!reason || busy) return;
++          busy = true; actions[1].node.disabled = true;
++          try { const result = await operation(reason); finished = true; resolve(result); close(); }
++          catch(e) { U.$('#guardrail-override-error',body).textContent = e.message; this.toast(e.message,'err'); }
++          finally { busy = false; actions[1].node.disabled = !U.$('#guardrail-override-reason',body).value.trim(); }
++        }}];
++        this.modal({title:'Override personal guardrail',body,actions,onClose:()=>{if(!finished)resolve(null);}});
++        U.$('#guardrail-override-reason',body).addEventListener('input',e=>{actions[1].node.disabled=busy || !e.target.value.trim();});
++      });
++    },
++
+     /* ------------------------------------------------------------ trade I/O */
+     async openTrade(id, prefill) {
+       let trade = null;
+@@ -284,7 +318,22 @@
+         if (trade.opened_at && /^\d{4}-\d{2}-\d{2}$/.test(trade.opened_at)) trade.opened_at = trade.opened_at + 'T09:00:00';
+       }
+       if (trade && trade.server) delete trade.server;
+-      const form = Views.tradeForm(trade);
++      let form, guard = null;
++      const syncButtons = daily => {
++        guard = daily;
++        if (!form || !actions[1].node) return;
++        const prospective = form.requiresAdmission();
++        const waiting = prospective && (!daily || daily.status==='loading');
++        const unavailable = prospective && daily?.status==='unknown';
++        const stopped = prospective && daily?.status==='stop';
++        for (const a of actions.slice(1)) {
++          a.node.disabled = !!waiting || !!unavailable;
++          a.node.classList.toggle('guardrail-stop',!!stopped);
++          a.node.textContent = waiting ? 'Checking guardrails…' : unavailable ? 'Entry unavailable — recheck' : stopped ? 'Override entry — reason required' : a.label;
++          a.node.setAttribute('aria-label',a.node.textContent);
++          if (stopped) a.node.setAttribute('aria-haspopup','dialog'); else a.node.removeAttribute('aria-haspopup');
++        }
++      };
+       const actions = [
+         { label: id ? 'Delete' : 'Cancel', danger: !!id, onClick: async (close) => {
+             if (!id) return close();
+@@ -294,14 +343,22 @@
+         { label: 'Save & close', ghost: true, onClick: (close) => this.saveTrade(form, id, close, true) },
+         { label: id ? 'Update trade' : 'Save trade', primary: true, onClick: (close) => this.saveTrade(form, id, close, false) },
+       ];
+-      this.modal({ title: id ? `Edit trade — ${U.esc(trade.symbol)}` : 'Log a trade', body: form.node, actions, wide: true });
++      form = Views.tradeForm(trade,{onPermissionChange:daily=>syncButtons(daily)});
++      const view = this.modal({ title: id ? `Edit trade — ${U.esc(trade.symbol)}` : 'Log a trade', body: form.node, actions, wide: true });
++      syncButtons(guard);
++      return view;
+     },
+ 
+     async saveTrade(form, id, close, andNew) {
+       let payload;
+       try { payload = form.collect(); } catch (e) { return this.toast(e.message, 'err'); }
+       try {
+-        const d = id ? await API.put('/trades/' + id, payload) : await API.post('/trades', payload);
++        const operation = reason => {
++          const body = {...payload,...(reason ? {override_reason:reason} : {})};
++          return id ? API.put('/trades/'+id,body) : API.post('/trades',body);
++        };
++        const d = form.requiresAdmission() ? await this.runGuarded(operation,form.guardrailState()) : await operation(null);
++        if (!d) return; // cancelled required-reason dialog, no request/admission
+         Store.invalidate();
+         close();
+         const t = d.trade || {};
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 8320980..4efbed8 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -46,6 +46,17 @@
+         c.levels && c.levels.target_policy && c.levels.target_policy.rule === 'entry_or_one_above'))));
+   }
+ 
++  const guardedCall = (operation,daily) => global.App.runGuarded ? global.App.runGuarded(operation,daily) : operation(null);
++  const personallyStopped = d => d?.daily?.status==='stop' && d.daily.permission?.can_override===true;
++  const personallyUnknown = d => d?.daily?.status==='unknown';
++  function planPayload(d,c) {
++    const lv=c.levels;
++    return {symbol:d.symbol,timeframe:d.timeframe,account_id:d.daily?.account_id || Store.accountId || null,
++      entry:lv.entry,stop:lv.stop,targets:lv.targets,entry_model:c.entry_model,entry_tf:c.entry_tf || lv.entry_tf,
++      entry_evidence:c.entry_evidence,entry_preference:c.entry_preference,grade:c.grade,score:c.score,
++      target_policy:lv.target_policy,stop_policy:lv.stop_policy,risk_atr:lv.risk_atr,note:'Exact entry-aligned candidate; personal permission is rechecked for this saved action.'};
++  }
++
+   const fmt = (v, dp = 4) => (v === null || v === undefined || isNaN(v)) ? '—' : Number(v).toLocaleString(undefined, { maximumFractionDigits: dp });
+   const chip = (text, cls) => h('span', { class: 'chip ' + (cls || ''), text });
+ 
+@@ -189,9 +200,28 @@
+     // M127 — copy only the candidate the final verdict actually permits, never the
+     // highest-scoring refused idea. Keep this selection shared by the button and handler.
+     const setupData = B.data && B.data.setups;
++    const canSaveMarket = !!(setupData?.candidates || []).some(c=>(c.market_ok ?? c.ok)===true && c.levels);
++    saveBtn.disabled = personallyUnknown(B.data) || !!B.data && !canSaveMarket;
++    saveBtn.classList.toggle('guardrail-stop',personallyStopped(B.data));
++    if (personallyStopped(B.data)) saveBtn.textContent = 'Override & save signal';
+     const copyCandidate = setupData && setupData.verdict && setupData.verdict.dir
+       ? (setupData.candidates || []).find((c) => c.ok && c.dir === setupData.verdict.dir && c.levels)
+       : null;
++    const marketCopy = personallyStopped(B.data) && !B.data.topdown?.blocked
++      ? (setupData?.candidates || []).find(c=>c.market_ok===true && c.dir===B.data.topdown?.direction && c.levels) : null;
++    async function copyPlan(candidate) {
++      if (!candidate) return global.App.toast('No eligible market plan to copy','warn');
++      try {
++        let recorded = null;
++        if (B.data?.daily) {
++          recorded = await guardedCall(reason=>global.API.post('/bots/signals/save-plan',{...planPayload(B.data,candidate),...(reason?{override_reason:reason}:{})}),B.data.daily);
++          if (!recorded) return;
++          if (!recorded.saved) return global.App.toast(recorded.reason || 'Plan was not admitted','warn');
++        }
++        const prefix = recorded?.permission?.state==='overridden' ? 'PERSONAL OVERRIDE RECORDED (not a broker order) · ' : '';
++        global.TV.copy(prefix+global.TV.planText(B.symbol,B.tf,candidate),'Trade plan');
++      } catch(e) { global.App.toast(e.message,'err'); }
++    }
+ 
+     symInput.addEventListener('change', () => { B.symbol = symInput.value.trim().toUpperCase(); onChange(); });
+     tfSel.addEventListener('change', () => { B.tf = tfSel.value; onChange(); });
+@@ -213,7 +243,8 @@
+     });
+     saveBtn.addEventListener('click', async () => {
+       try {
+-        const r = await global.API.post('/bots/signals/save', { symbol: B.symbol, timeframe: B.tf, prediction: B.prediction });
++        const r = await guardedCall(reason=>global.API.post('/bots/signals/save', { symbol: B.symbol, timeframe: B.tf, prediction: B.prediction,account_id:Store.accountId || null,...(reason?{override_reason:reason}:{}) }),B.data?.daily);
++        if (!r) return;
+         global.App.toast(r.saved && r.saved.saved ? `Saved ${r.saved.saved} signal(s)` : 'No actionable setup to save', r.saved && r.saved.saved ? 'ok' : 'warn');
+         if (r.saved && r.saved.saved) { B.signals = null; }
+       } catch (e) { global.App.toast(e.message, 'err'); }
+@@ -230,9 +261,10 @@
+ 
+     levelsBtn.addEventListener('click', () => {
+       if (!copyCandidate) return global.App.toast(B.data ? 'No actionable plan — the bot says stand down' : 'Analyse a market first', 'warn');
+-      global.TV.copy(global.TV.planText(B.symbol, B.tf, copyCandidate), 'Trade plan');
++      copyPlan(copyCandidate);
+     });
+     [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
++    if (marketCopy && global.TV) row.appendChild(h('button',{class:'btn sm guardrail-stop',text:'Override & copy plan',onclick:()=>copyPlan(marketCopy)}));
+     row.appendChild(winNote);
+     /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
+      * button will be blocked ... grayed out ... You physically can't press the trade
+@@ -366,20 +398,22 @@
+         box.appendChild(h('div', { class: 'bot-warn', text: `Below your minimum: this pays ${p.safer.rr}R against a ${p.min_rr}R floor. The method is not hiding it — but it is a scenario, not an order.` }));
+       }
+       box.appendChild(h('div', { class: 'muted-2 td-layer-note', text: `Stop goes beyond the candle that made the sweep (${fmt(p.sweep.level, 5)} swept to ${fmt(p.sweep.extreme, 5)}, ${p.sweep.wick_atr} ATR). ${p.invalidation}` }));
+-      const active = (d.setups && d.setups.candidates || []).find((c) => c.dir === td.direction && c.ok);
+-      const executable = d.now && d.now.armed && d.now.order && active && active.levels;
++      const active = (d.setups && d.setups.candidates || []).find((c) => c.dir === td.direction && (c.market_ok ?? c.ok)===true);
++      const executable = !td.blocked && !personallyUnknown(d) && active && active.levels && (personallyStopped(d) || d.now && d.now.armed && d.now.order);
+       box.appendChild(h('div', { class: 'muted-2', text: 'This table is the HTF narrative projection only. Entry-aligned exit and risk come from the eligible candidate / Now order below; this is not a second executable plan.' }));
+-      const save = h('button', { class: 'btn sm', text: executable ? 'Save eligible entry-aligned plan' : 'Nothing eligible to save', disabled: !executable });
++      const save = h('button', { class: 'btn sm'+(personallyStopped(d)?' guardrail-stop':''), text: executable ? personallyStopped(d) ? 'Override & save entry-aligned plan' : 'Save eligible entry-aligned plan' : 'Nothing eligible to save', disabled: !executable });
+       save.addEventListener('click', async () => {
+         if (!executable) return;
+         try {
+-          const lv = active.levels, o = d.now.order;
+-          const r = await global.API.post('/bots/signals/save-plan', {
++          const lv = active.levels, o = d.now.order || lv;
++          const r = await guardedCall(reason=>global.API.post('/bots/signals/save-plan', {
++            account_id:d.daily?.account_id || Store.accountId || null,...(reason?{override_reason:reason}:{}),
+             symbol: d.symbol, timeframe: d.timeframe, entry: o.entry, stop: o.stop,
+             targets: lv.targets.map((t) => ({ ...t })), note: `Entry-aligned CRT ${p.side}: ${lv.entry_tf} entry; ${lv.target_tf} ${lv.targets[0].kind} target. HTF ${td.layers.bias.tf} range is narrative only.`,
+             entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence, entry_preference: active.entry_preference,
+             grade: active.grade, score: active.score, target_policy: lv.target_policy, stop_policy: lv.stop_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
+-          });
++          }),d.daily);
++          if (!r) return;
+           global.App.toast(r.saved ? 'Eligible plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
+         } catch (e) { global.App.toast(e.message, 'err'); }
+       });
+@@ -681,11 +715,12 @@
+       }
+       card.appendChild(h('div', { class: 'bot-action', text: c.action }));
+       const btnRow = h('div', { class: 'row gap-8' });
+-      const logBtn = h('button', { class: 'btn sm primary', text: 'Log this plan', onclick: () => {
++      const marketEligible = (c.market_ok ?? c.ok)===true && !d.topdown?.blocked;
++      const logBtn = h('button', { class: 'btn sm primary'+(personallyStopped(d)?' guardrail-stop':''), disabled:!marketEligible || personallyUnknown(d), text: personallyStopped(d) ? 'Override entry — reason required' : 'Log this plan', onclick: () => {
+         if (!c.levels) return global.App.toast('No levels to log', 'warn');
+         const L = c.levels;
+         global.App.openTrade(null, {
+-          symbol: d.symbol, asset_class: (d.instrument || {}).asset_class || 'stocks',
++          symbol: d.symbol, status:'open', account_id:d.daily?.account_id || Store.accountId || null, asset_class: (d.instrument || {}).asset_class || 'stocks',
+           direction: c.dir > 0 ? 'long' : 'short',
+           entry: L.entry, stop: L.stop, target: L.targets[0] ? L.targets[0].price : null,
+           size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
+@@ -948,16 +983,18 @@
+             const plan = m.plan;
+             const tgt = (plan.targets || []).filter((t) => t.rr >= 0.9);
+             row.appendChild(h('div', { class: 'bot-detail', html: `<strong>Refined plan (${esc(m.tf)} confirmation)</strong> — entry <b>${fmt(plan.entry, 5)}</b> · stop ${fmt(plan.stop, 5)} · risk ${fmt(plan.risk, 5)} (${plan.risk_atr} ATR) · ${tgt.length ? tgt.slice(0, 3).map((t) => `${t.label ? esc(t.label) + ' ' : ''}${fmt(t.price, 5)} (${t.rr}R)`).join(' → ') : 'no target ≥ 0.9R from here'}` }));
+-            const btn = h('button', { class: 'btn small', text: 'Save refined plan to signals' });
++            const btn = h('button', { class: 'btn small'+(personallyStopped(B.data)?' guardrail-stop':''), disabled:personallyUnknown(B.data) || personallyStopped(B.data) && !(B.data.setups?.candidates || []).some(c=>(c.market_ok ?? c.ok)===true), text: personallyStopped(B.data) ? 'Override & save refined plan' : 'Save refined plan to signals' });
+             btn.addEventListener('click', async () => {
+               try {
+-                const r = await global.API.post('/bots/signals/save-plan', {
++                const r = await guardedCall(reason=>global.API.post('/bots/signals/save-plan', {
++                  account_id:B.data?.daily?.account_id || Store.accountId || null,entry_tf:m.tf || B.tf,...(reason?{override_reason:reason}:{}),
+                   symbol: (B.data && B.data.symbol) || B.symbol, timeframe: B.tf,
+                   entry: plan.entry, stop: plan.stop, targets: plan.targets,
+                   grade: s.grade, score: s.score, p_win: s.p_win, rr_primary: plan.rr_primary,
+                   entry_mode: 'mtf', mtf_tf: m.tf, risk_atr: plan.risk_atr,
+                   note: `MTF entry: ${B.tf} setup confirmed by the ${m.tf} (sweep + displacement inside the zone)`,
+-                });
++                }),B.data?.daily);
++                if (!r) return;
+                 global.App.toast(r.saved ? 'Refined plan saved — resolve it later to grade the bot' : (r.reason || 'Not saved'), r.saved ? 'ok' : 'warn');
+                 if (r.saved) B.signals = null;
+               } catch (e) { global.App.toast(e.message, 'err'); }
+@@ -1106,7 +1143,7 @@
+ 
+     const g = c.guardrails.guardrails || {};
+     const gr = h('div', { class: 'card' });
+-    gr.appendChild(h('div', { class: 'card-head', html: `<strong>Your guardrails</strong> <span class="muted">derived from your own winning behaviour</span>` }));
++    gr.appendChild(h('div', { class: 'card-head', html: `<strong>Your guardrails</strong> <span class="muted">preselected daily cap · sample-gated risk suggestions</span>` }));
+     gr.appendChild(h('div', { class: 'stat-strip', html: `
+       <div><div class="l">Risk / trade</div><div class="v">${g.max_risk_pct}%</div></div>
+       <div><div class="l">Trades / day</div><div class="v">${g.max_trades_day}</div></div>
+@@ -1210,6 +1247,9 @@
+   Views.bots = {
+     title: 'Bots',
+     render(root) {
++      const accountKey=Store.accountId || null;
++      if (B.accountKey!==undefined && B.accountKey!==accountKey) {B.data=null;B.chart=null;B.scan=null;B.correction=null;B.error='';B.busy='';}
++      B.accountKey=accountKey;
+       root.innerHTML = '';                       // replace the shell's skeleton placeholder
+       if (global.__botRequest) {                 // handed over from the Market chart panel
+         B.symbol = String(global.__botRequest.symbol || B.symbol).toUpperCase();
+@@ -1259,9 +1299,9 @@
+         const sym = B.symbol, tf = B.tf;
+         const trim = B.trim || 0;
+         Promise.all([
+-          API.get('/bots/analyse', { symbol: sym, tf, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
++          API.get('/bots/analyse', { symbol: sym, tf, account_id:Store.accountId || null, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
+             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }),                     // M26
+-          API.get('/bots/chart', { symbol: sym, tf, bars: 600, min_rr: B.minRR, trim,
++          API.get('/bots/chart', { symbol: sym, tf, account_id:Store.accountId || null, bars: 600, min_rr: B.minRR, trim,
+             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }).catch(() => null),    // M26
+           API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
+         ]).then(([d, ch, dr]) => {
+@@ -1271,7 +1311,7 @@
+           global.App.refresh();
+         }).catch((e) => { B.error = 'Analysis failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'scan') {
+-        API.get('/bots/scan', { symbols: B.scanList.join(','), tf: B.tf })
++        API.get('/bots/scan', { symbols: B.scanList.join(','), tf: B.tf, account_id:Store.accountId || null })
+           .then((r) => { B.scan = r; B.busy = ''; global.App.refresh(); })
+           .catch((e) => { B.error = 'Scan failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'correct') {
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index fb2c891..b9bdf29 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -201,6 +201,12 @@
+     const symOptions = Store.instruments.map((i) => `<option value="${i.symbol}" ${t.symbol === i.symbol ? 'selected' : ''}>${i.symbol} — ${U.esc(i.name || '')}</option>`).join('');
+ 
+     node.innerHTML = `
++      <div class="card" style="margin-bottom:12px">
++        <label class="row gap-8"><input id="tf-record-only" type="checkbox" ${!isNew || t.record_only ? 'checked' : ''} /><span>Already executed outside the app / historical record only — not entry permission</span></label>
++        <div class="field-note" id="tf-guardrail-state">Checking the selected account's personal guardrails…</div>
++        <button class="btn xs ghost" id="tf-guardrail-refresh" type="button">Recheck guardrails</button>
++        ${t.override_reason ? `<div class="bot-warn"><b>Recorded override reason (not editable):</b> ${U.esc(t.override_reason)}</div>` : ''}
++      </div>
+       <div class="form-grid">
+         <label class="field"><span>Symbol</span>
+           <input id="tf-symbol" list="tf-symbols" value="${U.esc(t.symbol || '')}" placeholder="EURUSD, ES, AAPL, BTCUSDT…" />
+@@ -372,6 +378,7 @@
+ 
+     function collect() {
+       const body = {
++        record_only:U.$('#tf-record-only',node).checked,
+         symbol: g('symbol').value.toUpperCase().trim(),
+         direction: g('direction').value,
+         status: g('status').value,
+@@ -424,17 +431,50 @@
+       syncTv();
+       const symInput = U.$('#tf-symbol', node);
+       if (symInput) symInput.addEventListener('change', syncTv);
+-      tvCopy.addEventListener('click', () => {
++      tvCopy.addEventListener('click', async () => {
+         const dir = (U.$('#tf-direction', node).value === 'short' ? 'SELL' : 'BUY');
+         const entry = numOf('tf-entry'), stop = numOf('tf-stop'), target = numOf('tf-target');
+         const fmt = (v) => (v == null ? '—' : String(Number(v.toFixed ? v.toFixed(6) : v)).replace(/\.?0+$/, ''));
+         const parts = [`${dir} ${symOf()}`, entry != null ? `entry ${fmt(entry)}` : null, stop != null ? `stop ${fmt(stop)}` : null, target != null ? `target ${fmt(target)}` : null].filter(Boolean);
+-        global.TV.copy(parts.join(' · '), 'Plan');
++        if (!requiresAdmission()) return global.TV.copy('JOURNAL / RESEARCH ONLY · '+parts.join(' · '),'Recorded plan');
++        try {
++          const out = await global.App.runGuarded(reason=>API.post('/bots/signals/save-plan',{
++            symbol:symOf(),timeframe:g('entrytf').value || '15m',entry_tf:g('entrytf').value || null,account_id:Number(g('account').value),
++            entry,stop,t1:target,...(reason?{override_reason:reason}:{})}),guard);
++          if (out?.saved) global.TV.copy((out.permission?.state==='overridden'?'PERSONAL OVERRIDE RECORDED · ':'')+parts.join(' · '),'Plan');
++        } catch(e) { toast(e.message,'err'); }
+       });
+       tvBot.addEventListener('click', () => { global.__botRequest = { symbol: symOf(), tf: '15m' }; App.go('bots'); });
+     }
+ 
+-    return { node, collect, isNew };
++    let guard = null, guardRequest = 0;
++    const requiresAdmission = () => g('status').value==='open' && !U.$('#tf-record-only',node).checked && (isNew || t.status!=='open');
++    async function refreshGuard() {
++      const request = ++guardRequest;
++      const note = U.$('#tf-guardrail-state',node);
++      if (!requiresAdmission()) {
++        guard = null; note.textContent = 'Journal record/correction only. It records what happened; it does not authorise a new entry.';
++        if (opts.onPermissionChange) opts.onPermissionChange(null); return;
++      }
++      guard = {status:'loading'}; note.textContent = 'Checking personal guardrails — the server rechecks again on entry.';
++      if (opts.onPermissionChange) opts.onPermissionChange(guard);
++      try {
++        const out = await API.get('/bots/guardrails',{account_id:g('account').value,entry_tf:g('entrytf').value || ''});
++        if (request!==guardRequest) return;
++        guard = out.daily;
++        if (!guard?.permission) guard = {status:'unknown',message:'Guardrail response did not include verified permission.',permission:{allowed:false,can_override:false}};
++      } catch(e) {
++        if (request!==guardRequest) return;
++        guard = e.data?.daily || {status:'unknown',message:e.message || 'Guardrails unavailable.',permission:{allowed:false,can_override:false}};
++      }
++      note.textContent = `${guard.message || guard.status} UTC rule day. ${guard.status==='stop' ? 'The grey entry button opens a required-reason override, not an immediate entry.' : ''}`;
++      if (opts.onPermissionChange) opts.onPermissionChange(guard);
++    }
++    for (const field of [g('status'),g('account'),U.$('#tf-record-only',node)]) field.addEventListener('change',refreshGuard);
++    g('entrytf').addEventListener('change',refreshGuard);
++    U.$('#tf-guardrail-refresh',node).addEventListener('click',refreshGuard);
++    refreshGuard();
++    return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
+   };
+ 
+   function localNow() { const d = new Date(); return d.toISOString(); }

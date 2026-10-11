@@ -1,0 +1,13 @@
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index b9bdf29..1b9a4d1 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -434,7 +434,7 @@
+       tvCopy.addEventListener('click', async () => {
+         const dir = (U.$('#tf-direction', node).value === 'short' ? 'SELL' : 'BUY');
+         const entry = numOf('tf-entry'), stop = numOf('tf-stop'), target = numOf('tf-target');
+-        const fmt = (v) => (v == null ? '—' : String(Number(v.toFixed ? v.toFixed(6) : v)).replace(/\.?0+$/, ''));
++        const fmt = (v) => (v == null ? '—' : String(Number(v.toFixed ? v.toFixed(6) : v)));
+         const parts = [`${dir} ${symOf()}`, entry != null ? `entry ${fmt(entry)}` : null, stop != null ? `stop ${fmt(stop)}` : null, target != null ? `target ${fmt(target)}` : null].filter(Boolean);
+         if (!requiresAdmission()) return global.TV.copy('JOURNAL / RESEARCH ONLY · '+parts.join(' · '),'Recorded plan');
+         try {

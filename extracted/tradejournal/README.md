@@ -11,6 +11,15 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings â†’ About â
 
 ---
 
+## Personal-rule admission
+
+New trade/reopen and prospective plan actions now recheck scoped personal rules
+server-side. A known stop needs a recorded reason; an unavailable state cannot be
+waived. Honest journal corrections/deletions remain possible but do not replenish
+the durable admission count. See [the guardrails guide](docs/GUARDRAILS.md) for UTC
+cap selection, record-only/research modes, limits and remaining scope. **No broker
+is connected and an app admission is not a market-validated order.**
+
 ## What it does
 
 | Area | What you get |

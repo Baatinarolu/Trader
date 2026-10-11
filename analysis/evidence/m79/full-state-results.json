@@ -1,0 +1,201 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 48,
+  "fail": 0,
+  "results": [
+    {
+      "label": "resolved rule numbers, never a Promise/empty object",
+      "passed": true
+    },
+    {
+      "label": "empty positive account is clear,3 remain",
+      "passed": true
+    },
+    {
+      "label": "two OPEN attempts count; last remaining entry is caution, not a stop",
+      "passed": true
+    },
+    {
+      "label": "three OPEN attempts exhaust the cap",
+      "passed": true
+    },
+    {
+      "label": "three CLOSED attempts also exhaust the cap",
+      "passed": true
+    },
+    {
+      "label": "foreign account and foreign user do not consume count/P&L/streak",
+      "passed": true
+    },
+    {
+      "label": "omitted account resolves ONE owned default, not combined accounts",
+      "passed": true
+    },
+    {
+      "label": "foreign account cannot receive clear permission",
+      "passed": true
+    },
+    {
+      "label": "archived account cannot receive clear permission",
+      "passed": true
+    },
+    {
+      "label": "daily realised loss stops at EXACT3% boundary",
+      "passed": true
+    },
+    {
+      "label": "one cent short of daily loss limit does not trigger that rule",
+      "passed": true
+    },
+    {
+      "label": "floating/open P&L never triggers realised loss stop",
+      "passed": true
+    },
+    {
+      "label": "overnight trade CLOSED today enters today realised loss",
+      "passed": true
+    },
+    {
+      "label": "a close yesterday is not today realised P&L",
+      "passed": true
+    },
+    {
+      "label": "percentage loss anchor is day-start realised11000, boundary330",
+      "passed": true
+    },
+    {
+      "label": "two consecutive losses today stop",
+      "passed": true
+    },
+    {
+      "label": "later non-loss resets current streak but not an already observed rule-day stop",
+      "passed": true
+    },
+    {
+      "label": "yesterday loss streak does not lock the new day",
+      "passed": true
+    },
+    {
+      "label": "post-loss cooldown is a STOP one millisecond before30min",
+      "passed": true
+    },
+    {
+      "label": "cooldown expires at exact30min boundary",
+      "passed": true
+    },
+    {
+      "label": "very next1h candle still blocks after30min cooldown",
+      "passed": true
+    },
+    {
+      "label": "next-candle barrier expires on its exact close",
+      "passed": true
+    },
+    {
+      "label": "loss inside a bar excludes the next FULL candle",
+      "passed": true
+    },
+    {
+      "label": "unknown prospective entry TF is not guessed: null",
+      "passed": true
+    },
+    {
+      "label": "unknown prospective entry TF is not guessed: bad",
+      "passed": true
+    },
+    {
+      "label": "today closed record with unknown close time fails closed, not a fabricated cooldown",
+      "passed": true
+    },
+    {
+      "label": "future journal timestamps do not count as already occurred",
+      "passed": true
+    },
+    {
+      "label": "zero day-start equity is unavailable, not silently clear",
+      "passed": true
+    },
+    {
+      "label": "Now cannot arm a technically qualifying order during stop",
+      "passed": true
+    },
+    {
+      "label": "Now cannot arm a technically qualifying order during unknown",
+      "passed": true
+    },
+    {
+      "label": "clear live entry is admitted",
+      "passed": true
+    },
+    {
+      "label": "live entry timestamp is server-stamped, cannot dodge count by backdating",
+      "passed": true
+    },
+    {
+      "label": "authenticated POST mechanically blocks open entry at cap",
+      "passed": true
+    },
+    {
+      "label": "blocked POST creates no extra trade",
+      "passed": true
+    },
+    {
+      "label": "honest already-executed OPEN record remains recordable, no permission",
+      "passed": true
+    },
+    {
+      "label": "historical CLOSED record remains recordable at stop, no permission",
+      "passed": true
+    },
+    {
+      "label": "closed-to-open update cannot evade the new-entry gate",
+      "passed": true
+    },
+    {
+      "label": "historical correction is not blocked by current permission",
+      "passed": true
+    },
+    {
+      "label": "recording an actual close is never blocked by entry stop",
+      "passed": true
+    },
+    {
+      "label": "save-plan route rechecks cap, not just client snapshot",
+      "passed": true
+    },
+    {
+      "label": "explicit research plan is recordable, never permission",
+      "passed": true
+    },
+    {
+      "label": "saveSignals cannot replay a formerly clear client/analysis payload through current stop",
+      "passed": true
+    },
+    {
+      "label": "atomic concurrent admission never exceeds the3-entry cap",
+      "passed": true
+    },
+    {
+      "label": "remaining concurrent requests are guardrail stops, not duplicate admissions/errors",
+      "passed": true
+    },
+    {
+      "label": "entry gate still requires real authentication",
+      "passed": true
+    },
+    {
+      "label": "daily-state read error fails closed, no entry record",
+      "passed": true
+    },
+    {
+      "label": "plan daily-state read error fails closed",
+      "passed": true
+    },
+    {
+      "label": "daily state leaves no unhandled guardrail Promise rejection",
+      "passed": true
+    }
+  ],
+  "unhandled_rejections": [],
+  "scope": "Personal rule state/admission, declared history, fixed internal server clock; not market outcomes or external broker enforcement"
+}

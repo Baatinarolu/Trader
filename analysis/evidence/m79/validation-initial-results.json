@@ -1,0 +1,97 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 10,
+  "fail": 7,
+  "results": [
+    {
+      "label": "local input validation returns 400 without writing: model name",
+      "passed": false,
+      "detail": {
+        "status": 400
+      }
+    },
+    {
+      "label": "local input validation returns 400 without writing: model type",
+      "passed": false,
+      "detail": {
+        "status": 400
+      }
+    },
+    {
+      "label": "local input validation returns 400 without writing: stop provenance",
+      "passed": false,
+      "detail": {
+        "status": 400
+      }
+    },
+    {
+      "label": "local input validation returns 400 without writing: entry variant",
+      "passed": false,
+      "detail": {
+        "status": 400
+      }
+    },
+    {
+      "label": "local input validation returns 400 without writing: evidence array",
+      "passed": false,
+      "detail": {
+        "status": 400
+      }
+    },
+    {
+      "label": "local input validation returns 400 without writing: evidence malformed JSON",
+      "passed": false,
+      "detail": {
+        "status": 400
+      }
+    },
+    {
+      "label": "local input validation returns 400 without writing: oversized evidence",
+      "passed": false,
+      "detail": {
+        "status": 400
+      }
+    },
+    {
+      "label": "zero saved actions do not claim personal permission",
+      "passed": true
+    },
+    {
+      "label": "valid plan retains levels, grade-free semantics and real permission",
+      "passed": true
+    },
+    {
+      "label": "stopped-day validation stays 400 and cannot fabricate an override",
+      "passed": true
+    },
+    {
+      "label": "reason plus no action does not fabricate override permission or audit",
+      "passed": true
+    },
+    {
+      "label": "unavailable state still cannot be reason-waived",
+      "passed": true
+    },
+    {
+      "label": "tagged validation survives transaction boundary with exact public contract",
+      "passed": true
+    },
+    {
+      "label": "validation after a provisional insert rolls back that insert",
+      "passed": true
+    },
+    {
+      "label": "arbitrary driver 4xx is NOT treated as public validation",
+      "passed": true
+    },
+    {
+      "label": "a missing/no-op trade write cannot mint a durable entry admission",
+      "passed": true
+    },
+    {
+      "label": "database write failure remains generic 503 with no secret/detail leak or signal",
+      "passed": true
+    }
+  ],
+  "scope": "Real HTTP/auth/SQL, declared local validation and driver-failure seams; transaction contract, not broker/live-feed/outcome proof"
+}

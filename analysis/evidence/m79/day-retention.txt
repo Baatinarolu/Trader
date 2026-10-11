@@ -1,0 +1,5 @@
+ok three initial guarded entry admissions are real, not injected rows
+ok fourth current-journal entry is blocked
+FAIL deleting an honest journal record cannot replenish the admission cap {"status":200,"permission":{"allowed":true,"can_override":false,"state":"admitted","override_reason":null,"action":"trade_entry","account_id":1,"evaluated_at":"2026-10-11T14:50:28.622Z","scope":"personal rules for this recorded action only, not broker execution or future permission"},"override_reason":null}
+ok breach history survives deletion even while remaining gate test exposes row counter gap
+M79 day retention: 3 passed, 1 failed

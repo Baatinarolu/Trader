@@ -8,6 +8,7 @@
  * every claim points at a slice of your own trade rows.
  */
 const P = require('./performance');
+const Guards = require('./bots/guardrails');
 
 /* M11 — Ep 27's floor: "at least 30 to 50 minimum trades just to see anything
  * meaningful", and below that "don't tweak the system at all". Duplicated from
@@ -641,7 +642,7 @@ function briefing({ trades, events = [], quotes = {}, account, journalEntry, ris
     risk_plan: {
       multiplier: r2(riskMultiplier), suggested_risk: suggestedRisk,
       suggested_risk_pct: r2(suggestedRiskPct * riskMultiplier),
-      max_trades_today: Math.max(2, Math.round(k.avg_trades_per_day || 3)),
+      max_trades_today: Guards.configuredCap(account || {}), // M83 fixed account policy, never the historical average
       max_loss_today: r2(bank * (num(account && account.daily_loss_limit_pct, 3) / 100) * (riskMultiplier < 1 ? 0.6 : 1)),
       reasons,
     },

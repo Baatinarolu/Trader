@@ -1,0 +1,20 @@
+FAIL local input validation returns 400 without writing: model name {"status":400}
+FAIL local input validation returns 400 without writing: model type {"status":400}
+FAIL local input validation returns 400 without writing: stop provenance {"status":400}
+FAIL local input validation returns 400 without writing: entry variant {"status":400}
+FAIL local input validation returns 400 without writing: evidence array {"status":400}
+FAIL local input validation returns 400 without writing: evidence malformed JSON {"status":400}
+FAIL local input validation returns 400 without writing: oversized evidence {"status":400}
+ok zero saved actions do not claim personal permission
+ok valid plan retains levels, grade-free semantics and real permission
+ok stopped-day validation stays 400 and cannot fabricate an override
+ok reason plus no action does not fabricate override permission or audit
+BOT API error on POST /api/bots/signals/save-plan: Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.
+ok unavailable state still cannot be reason-waived
+ok tagged validation survives transaction boundary with exact public contract
+ok validation after a provisional insert rolls back that insert
+ok arbitrary driver 4xx is NOT treated as public validation
+ok a missing/no-op trade write cannot mint a durable entry admission
+BOT API error on POST /api/bots/signals/save-plan: Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.
+ok database write failure remains generic 503 with no secret/detail leak or signal
+M79 input contracts: 10 passed, 7 failed

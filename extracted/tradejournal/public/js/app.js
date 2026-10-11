@@ -250,10 +250,11 @@
     },
 
     /* -------------------------------------------------------------- modals */
-    modal({ title, body, actions = [], wide, large, small }) {
+    modal({ title, body, actions = [], wide, large, small, onClose }) {
       const back = U.h('div', { class: 'modal-back' });
       const m = U.h('div', { class: 'modal' + (wide ? ' lg' : small ? ' sm' : large ? ' lg' : '') });
-      const close = () => { back.remove(); this.modalStack = this.modalStack.filter((x) => x !== close); if (!this.modalStack.length) document.body.style.overflow = ''; };
+      let closed = false;
+      const close = () => { if (closed) return; closed = true; back.remove(); this.modalStack = this.modalStack.filter((x) => x !== close); if (!this.modalStack.length) document.body.style.overflow = ''; if (onClose) onClose(); };
       const head = U.h('div', { class: 'modal-head' }, U.h('h3', { text: title }), U.h('span', { class: 'spacer', style: 'flex:1' }), U.h('button', { class: 'btn xs ghost', text: 'Close', onclick: close }));
       m.appendChild(head);
       const b = U.h('div', { class: 'modal-body' });
@@ -261,7 +262,7 @@
       m.appendChild(b);
       if (actions.length) {
         const foot = U.h('div', { class: 'modal-foot' });
-        actions.forEach((a) => foot.appendChild(U.h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger ghost' : 'ghost'), text: a.label, onclick: () => a.onClick ? a.onClick(close) : close() })));
+        actions.forEach((a) => { a.node = U.h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger ghost' : 'ghost'), text: a.label, disabled:!!a.disabled, onclick: () => a.onClick ? a.onClick(close) : close() }); foot.appendChild(a.node); });
         m.appendChild(foot);
       }
       back.appendChild(m);
@@ -274,6 +275,39 @@
       return { close, node: m };
     },
 
+    /** A known stop opens a reason dialog, never an immediate retry. The server
+     * still rechecks and records the reason/rules atomically for this ONE action. */
+    async runGuarded(operation, daily = null) {
+      if (daily && (daily.status==='unknown' || daily.permission?.can_override===false && daily.permission?.allowed===false)) throw new Error(daily.message || 'Personal guardrails unavailable; no override is permitted.');
+      if (daily?.status==='stop') return this.overrideDialog(daily,operation);
+      try { return await operation(null); }
+      catch(e) {
+        if (e.data?.code==='guardrail_stop' && e.data.daily?.permission?.can_override) return this.overrideDialog(e.data.daily,operation);
+        throw e;
+      }
+    },
+    overrideDialog(daily, operation) {
+      if (daily?.status!=='stop' || daily.permission?.can_override!==true) return Promise.reject(new Error('Only a verified personal stop can be overridden.'));
+      return new Promise(resolve => {
+        let finished = false, busy = false;
+        const body = U.h('div');
+        body.innerHTML = `<div class="bot-warn"><b>Personal stop — reason required</b><p>${U.esc(daily.message)}</p></div>
+          <div class="small muted">Account #${U.esc(daily.account_id)} · ${U.esc(daily.date)} (UTC). This does not waive a technical setup veto or unlock future entries. The reason and the server's fresh violated-rule snapshot will be saved in your day review.</div>
+          <label class="field"><span>Why are you overriding this stop?</span><textarea id="guardrail-override-reason" required maxlength="2000" placeholder="Write your deliberate reason, not a checkbox acknowledgement."></textarea></label>
+          <div class="field-note" id="guardrail-override-error"></div>`;
+        const actions = [{label:'Cancel',ghost:true},{label:'Record override & continue',primary:true,disabled:true,onClick:async close=>{
+          const reason = U.$('#guardrail-override-reason',body).value.trim();
+          if (!reason || busy) return;
+          busy = true; actions[1].node.disabled = true;
+          try { const result = await operation(reason); finished = true; resolve(result); close(); }
+          catch(e) { U.$('#guardrail-override-error',body).textContent = e.message; this.toast(e.message,'err'); }
+          finally { busy = false; actions[1].node.disabled = !U.$('#guardrail-override-reason',body).value.trim(); }
+        }}];
+        this.modal({title:'Override personal guardrail',body,actions,onClose:()=>{if(!finished)resolve(null);}});
+        U.$('#guardrail-override-reason',body).addEventListener('input',e=>{actions[1].node.disabled=busy || !e.target.value.trim();});
+      });
+    },
+
     /* ------------------------------------------------------------ trade I/O */
     async openTrade(id, prefill) {
       let trade = null;
@@ -284,7 +318,22 @@
         if (trade.opened_at && /^\d{4}-\d{2}-\d{2}$/.test(trade.opened_at)) trade.opened_at = trade.opened_at + 'T09:00:00';
       }
       if (trade && trade.server) delete trade.server;
-      const form = Views.tradeForm(trade);
+      let form, guard = null;
+      const syncButtons = daily => {
+        guard = daily;
+        if (!form || !actions[1].node) return;
+        const prospective = form.requiresAdmission();
+        const waiting = prospective && (!daily || daily.status==='loading');
+        const unavailable = prospective && daily?.status==='unknown';
+        const stopped = prospective && daily?.status==='stop';
+        for (const a of actions.slice(1)) {
+          a.node.disabled = !!waiting || !!unavailable;
+          a.node.classList.toggle('guardrail-stop',!!stopped);
+          a.node.textContent = waiting ? 'Checking guardrails…' : unavailable ? 'Entry unavailable — recheck' : stopped ? 'Override entry — reason required' : a.label;
+          a.node.setAttribute('aria-label',a.node.textContent);
+          if (stopped) a.node.setAttribute('aria-haspopup','dialog'); else a.node.removeAttribute('aria-haspopup');
+        }
+      };
       const actions = [
         { label: id ? 'Delete' : 'Cancel', danger: !!id, onClick: async (close) => {
             if (!id) return close();
@@ -294,14 +343,22 @@
         { label: 'Save & close', ghost: true, onClick: (close) => this.saveTrade(form, id, close, true) },
         { label: id ? 'Update trade' : 'Save trade', primary: true, onClick: (close) => this.saveTrade(form, id, close, false) },
       ];
-      this.modal({ title: id ? `Edit trade — ${U.esc(trade.symbol)}` : 'Log a trade', body: form.node, actions, wide: true });
+      form = Views.tradeForm(trade,{onPermissionChange:daily=>syncButtons(daily)});
+      const view = this.modal({ title: id ? `Edit trade — ${U.esc(trade.symbol)}` : 'Log a trade', body: form.node, actions, wide: true });
+      syncButtons(guard);
+      return view;
     },
 
     async saveTrade(form, id, close, andNew) {
       let payload;
       try { payload = form.collect(); } catch (e) { return this.toast(e.message, 'err'); }
       try {
-        const d = id ? await API.put('/trades/' + id, payload) : await API.post('/trades', payload);
+        const operation = reason => {
+          const body = {...payload,...(reason ? {override_reason:reason} : {})};
+          return id ? API.put('/trades/'+id,body) : API.post('/trades',body);
+        };
+        const d = form.requiresAdmission() ? await this.runGuarded(operation,form.guardrailState()) : await operation(null);
+        if (!d) return; // cancelled required-reason dialog, no request/admission
         Store.invalidate();
         close();
         const t = d.trade || {};

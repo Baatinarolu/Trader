@@ -16,6 +16,7 @@ function createBotsRouter({ requireAuth }) {
   const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch((err) => {
     console.error(`BOT API error on ${req.method} ${req.originalUrl}:`, err.message);
     if (res.headersSent) return;
+    if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
     res.status(500).json({ error: err.message || 'Bot error' });
   });
   const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));
@@ -145,6 +146,7 @@ router.get('/markets', requireAuth, (req, res) => {
     const tf = String(req.query.tf || '15m');
     const out = await Bots.chart(symbol, tf, {
       bars: Math.min(Math.max(num(req.query.bars, 300), 80), 900), userId: req.user.id,
+      accountId:req.query.account_id ? Number(req.query.account_id) : null,
       sessionPref: await prefOf(req),                                  // M26
       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
     });
@@ -155,7 +157,7 @@ router.get('/markets', requireAuth, (req, res) => {
       checks: out.topdown.checks, score: out.topdown.score, grade: out.topdown.grade,
       status: out.topdown.status, direction: out.topdown.direction,
       headline: out.topdown.headline, playbook: out.topdown.playbook,
-      blocked: out.topdown.blocked, conflicts: out.topdown.conflicts,
+      blocked: out.topdown.blocked || !!out.now?.execution_permission && !out.now.execution_permission.allowed, market_blocked:out.topdown.blocked, execution_permission:out.now?.execution_permission, conflicts: out.topdown.conflicts,
       crt_plan: out.topdown.crt_plan, target_sources: out.topdown.target_sources, levels: out.topdown.levels, inputs: out.topdown.inputs,
       verdict: out.setups.verdict, meta: out.meta,
     });
@@ -168,7 +170,7 @@ router.get('/markets', requireAuth, (req, res) => {
       .split(',').map((s) => s.trim()).filter(Boolean);
     if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
     const tf = String(req.query.tf || '15m');
-    const out = await Bots.scan(symbols, tf, { userId: req.user.id, sessionPref: await prefOf(req) });  // M26
+    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req) });  // M26
     res.json(out);
   }));
 
@@ -239,8 +241,9 @@ router.get('/markets', requireAuth, (req, res) => {
 
   router.get('/guardrails', requireAuth, wrap(async (req, res) => {
     const accountId = req.query.account_id ? Number(req.query.account_id) : null;
-    const g = await Bots.correction.guardrails(req.user.id, { accountId });
-    const daily = await Bots.correction.dailyState(req.user.id, { accountId });
+    const daily = await Bots.correction.dailyState(req.user.id, { accountId, entryTf:req.query.entry_tf || null, forEntry:true });
+    if (daily.status === 'unknown') return res.status(503).json({error:daily.message,code:'guardrail_unavailable',daily});
+    const g = daily.guardrails;
     res.json({ ok: true, guardrails: g.guardrails, stats: g.stats, evidence: g.evidence, daily });
   }));
 
@@ -270,8 +273,8 @@ router.get('/markets', requireAuth, (req, res) => {
       accountId: (req.body && req.body.account_id) || null,
       includePrediction: req.body && req.body.prediction !== false,
     });
-    const saved = await Bots.saveSignals(req.user.id, payload);
-    res.json({ ok: true, saved, headline: payload.headline, setups: payload.setups.verdict });
+    const saved = await Bots.saveSignals(req.user.id, payload, {accountId:req.body?.account_id || null,research_only:req.body?.research_only === true,override_reason:req.body?.override_reason});
+    res.json({ ok: true, saved, permission:saved.permission || null, headline: payload.headline, setups: payload.setups.verdict });
   }));
 
   /**
@@ -300,9 +303,9 @@ router.get('/markets', requireAuth, (req, res) => {
     const out = await Bots.savePlan(req.user.id, {
       symbol: b.symbol, timeframe: b.timeframe, entry: b.entry, stop: b.stop,
       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
-      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
+      account_id:b.account_id || null, research_only:b.research_only === true, override_reason:b.override_reason, mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
     });
-    res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
+    res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null,permission:out.permission || null });
   }));
 
   router.post('/signals/resolve', requireAuth, wrap(async (req, res) => {

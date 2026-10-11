@@ -1,0 +1,38 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 3,
+  "fail": 1,
+  "results": [
+    {
+      "label": "three initial guarded entry admissions are real, not injected rows",
+      "passed": true
+    },
+    {
+      "label": "fourth current-journal entry is blocked",
+      "passed": true
+    },
+    {
+      "label": "deleting an honest journal record cannot replenish the admission cap",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "permission": {
+          "allowed": true,
+          "can_override": false,
+          "state": "admitted",
+          "override_reason": null,
+          "action": "trade_entry",
+          "account_id": 1,
+          "evaluated_at": "2026-10-11T14:50:28.622Z",
+          "scope": "personal rules for this recorded action only, not broker execution or future permission"
+        },
+        "override_reason": null
+      }
+    },
+    {
+      "label": "breach history survives deletion even while remaining gate test exposes row counter gap",
+      "passed": true
+    }
+  ],
+  "scope": "Retained M79 acceptance negative. Needs a separate durable admission/day-stop state; journal CRUD must remain honest."
+}

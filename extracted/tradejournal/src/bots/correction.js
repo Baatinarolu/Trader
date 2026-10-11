@@ -18,6 +18,7 @@
 
 const { db } = require('../db');
 const SMC = require('./smc');
+const Guards = require('./guardrails');
 
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 const dayKey = (iso) => String(iso || '').slice(0, 10);
@@ -34,11 +35,11 @@ const sessionQuality = (s) => {
 
 /* ═══════════════════════════════════════════════════════════ data loading */
 
-async function loadTrades(userId, { days = 365, accountId = null } = {}) {
-  const since = new Date(Date.now() - days * 864e5).toISOString().slice(0, 19).replace('T', ' ');
+async function loadTrades(userId, { days = 365, accountId = null, store = db, nowMs = Date.now() } = {}) {
+  const since = new Date(nowMs - days * 864e5).toISOString().slice(0, 19).replace('T', ' ');
   const rows = accountId
-    ? await db.prepare(`SELECT * FROM trades WHERE user_id=? AND account_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, accountId, since)
-    : await db.prepare(`SELECT * FROM trades WHERE user_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, since);
+    ? await store.prepare(`SELECT * FROM trades WHERE user_id=? AND account_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, accountId, since)
+    : await store.prepare(`SELECT * FROM trades WHERE user_id=? AND opened_at >= ? ORDER BY opened_at ASC`).all(userId, since);
   return rows.filter((t) => t.status === 'closed' && t.exit != null);
 }
 
@@ -64,10 +65,10 @@ function statsOf(trades) {
 }
 
 /** The account the bots should size and guard against. */
-async function accountOf(userId, accountId = null) {
+async function accountOf(userId, accountId = null, store = db) {
   const acc = accountId
-    ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(accountId, userId)
-    : await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
+    ? await store.prepare('SELECT * FROM accounts WHERE id=? AND user_id=? AND archived=0').get(accountId, userId)
+    : await store.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
   return acc || { id: null, current_balance: 0, starting_balance: 0, risk_per_trade_pct: 0.5, daily_loss_limit_pct: 3, currency: 'USD' };
 }
 
@@ -412,12 +413,15 @@ async function backfillGrades(userId) {
  * Derive personal risk guardrails from the trader's own distribution — not from
  * generic advice. These are the numbers the app will hold them to.
  */
-async function guardrails(userId, { accountId = null } = {}) {
-  const trades = await loadTrades(userId, { days: 180, accountId });
+async function guardrails(userId, { accountId = null, store = db, nowMs = Date.now() } = {}) {
+  const account = await accountOf(userId, accountId, store);
+  const chosenCap = await Guards.dailyCap(store, userId, account, nowMs);
+  const trades = await loadTrades(userId, { days: 180, accountId: account.id, store, nowMs });
   const st = statsOf(trades);
   const base = {
-    max_risk_pct: 1, max_trades_day: 3, cooldown_min: 30, max_consecutive_losses: 2,
-    daily_loss_limit_pct: 3, size_cap_note: null, basis: 'Defaults from the risk engine (not enough personal data yet).',
+    max_risk_pct: 1, max_trades_day: chosenCap.max_trades_day, cooldown_min: 30, max_consecutive_losses: 2,
+    daily_loss_limit_pct: Number(account.daily_loss_limit_pct) > 0 ? Number(account.daily_loss_limit_pct) : 3,
+    trade_cap_policy: chosenCap, size_cap_note: null, basis: 'Default risk rules and the preselected account trade cap (not enough personal data yet).',
   };
   /* M11 — this was `trades.length < 10`. At 10 trades the app began deriving the
    * trader's max risk %, max trades/day, cooldown, consecutive-loss stop and daily
@@ -443,7 +447,6 @@ async function guardrails(userId, { accountId = null } = {}) {
   const winners = trades.filter((t) => t.net_pnl > 0).map((t) => t.risk_amount || 0).filter((x) => x > 0);
   // their own best practice: the risk level on winning trades (90th percentile is still winning)
   const riskCap = percentile(winners.length >= 8 ? winners : risks, 90);
-  const account = await accountOf(userId, accountId);
   const accountBalance = Number(account.current_balance || account.starting_balance || 0);
   // cap = min(their configured risk %, the risk their own winning trades actually survived)
   const ownCapPct = accountBalance > 0 ? (riskCap / accountBalance) * 100 : 0;
@@ -485,7 +488,8 @@ async function guardrails(userId, { accountId = null } = {}) {
 
   const g = {
     max_risk_pct: maxRiskPct,
-    max_trades_day: cap,
+    max_trades_day: chosenCap.max_trades_day,
+    trade_cap_policy: chosenCap,
     cooldown_min: 30,
     max_consecutive_losses: 2,
     daily_loss_limit_pct: dailyLossLimit,
@@ -493,7 +497,8 @@ async function guardrails(userId, { accountId = null } = {}) {
     basis: `Derived from your last ${trades.length} closed trades (${byDay.size} trading days, ${consecutive} losers in the sample).`,
     evidence: {
       risk_p90_of_winners: r2(riskCap), median_risk: r2(median(risks)),
-      trade_cap_basis: `your profitable days average ${r2(percentile(profitDayTrades.length ? profitDayTrades : [3], 70))} trades`,
+      trade_cap_suggestion: cap,
+      trade_cap_basis: `Historical suggestion only, never an automatic cap: your profitable days average ${r2(percentile(profitDayTrades.length ? profitDayTrades : [3], 70))} trades`,
       trades_past_cap: lateCount ? { count: lateCount, win_rate: lateRate } : null,
     },
   };
@@ -501,37 +506,17 @@ async function guardrails(userId, { accountId = null } = {}) {
 }
 
 /** Today's live risk state — what the guardrails say RIGHT NOW. */
-async function dailyState(userId, { accountId = null } = {}) {
-  const today = new Date().toISOString().slice(0, 10);
-  const g = guardrails(userId, { accountId });
-  const rows = (await db.prepare(`SELECT * FROM trades WHERE user_id=? ORDER BY opened_at ASC`).all(userId)).filter((t) => dayKey(t.opened_at) === today);
-  const closed = rows.filter((t) => t.status === 'closed');
-  const realised = r2(closed.reduce((s, t) => s + (t.net_pnl || 0), 0));
-  const rSum = r2(closed.reduce((s, t) => s + (t.r_multiple || 0), 0));
-  // consecutive losses counting back from the most recent closed trade of today
-  const recent = await db.prepare(`SELECT r_multiple, net_pnl, opened_at FROM trades WHERE user_id=? AND status='closed' ORDER BY closed_at DESC LIMIT 10`).all(userId);
-  let streak = 0;
-  for (const t of recent) { if ((t.net_pnl || 0) < 0) streak++; else break; }
-  const account = await accountOf(userId, accountId);
-  const balance = Number(account.current_balance || account.starting_balance || 0);
-
-  const breaches = [];
-  if (closed.length >= g.max_trades_day) breaches.push({ rule: 'max_trades_day', detail: `${closed.length} trades today — your cap is ${g.max_trades_day}.` });
-  if (streak >= g.max_consecutive_losses) breaches.push({ rule: 'consecutive_losses', detail: `${streak} losses in a row — the cooldown/stop rule is triggered.` });
-  if (balance > 0 && realised < -Math.abs(balance * g.daily_loss_limit_pct / 100)) breaches.push({ rule: 'daily_loss_limit', detail: `Down $${r2(Math.abs(realised))} today (limit ${g.daily_loss_limit_pct}% = $${r2(balance * g.daily_loss_limit_pct / 100)}).` });
-
-  return {
-    date: today,
-    guardrails: g,
-    today: { trades: rows.length, closed: closed.length, realised, r_sum: rSum, avg_r: closed.length ? r2(rSum / closed.length) : 0, loss_streak: streak, balance: r2(balance) },
-    breaches,
-    status: breaches.length ? 'stop' : closed.length >= g.max_trades_day - 1 ? 'caution' : 'clear',
-    message: breaches.length
-      ? `Stand down: ${breaches.map((b) => b.detail).join(' ')}`
-      : streak >= 1 ? `${streak} loss${streak > 1 ? 'es' : ''} in a row — take the ${g.cooldown_min}-minute cooldown before the next entry.`
-        : `Clear to trade. Cap: ${g.max_trades_day} trades / ${g.max_risk_pct}% risk per trade today.`,
-    remaining_trades: Math.max(0, g.max_trades_day - closed.length),
-  };
+async function dailyState(userId, { accountId = null, store = db, nowMs = Date.now(), entryTf = null, forEntry = false } = {}) {
+  const account = await accountOf(userId, accountId, store);
+  if (!account.id) return Guards.unavailable({accountId,nowMs});
+  // M79: this was a Promise used as though it were resolved rule numbers.
+  const g = await guardrails(userId, { accountId: account.id, store, nowMs });
+  const rows = await store.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY opened_at ASC').all(userId,account.id);
+  const retained = await Guards.retainedState(store,userId,account.id,nowMs);
+  const daily = Guards.evaluate({account,guardrails:g,rows,nowMs,entryTf,forEntry,retained});
+  await Guards.retainState(store,userId,daily);
+  await Guards.observe(store,userId,daily);
+  return daily;
 }
 
 /* ═════════════════════════════════════════════════ 4. PER-TRADE FEEDBACK */

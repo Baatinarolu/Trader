@@ -1,0 +1,14 @@
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index d860c77..4f2cf89 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -219,7 +219,8 @@
+           if (!recorded.saved) return global.App.toast(recorded.reason || 'Plan was not admitted','warn');
+         }
+         const prefix = recorded?.permission?.state==='overridden' ? 'PERSONAL OVERRIDE RECORDED (not a broker order) · ' : '';
+-        global.TV.copy(prefix+global.TV.planText(B.symbol,B.tf,candidate),'Trade plan');
++        const text = global.TV.planText(B.symbol,B.tf,candidate);
++        global.TV.copy(prefix ? prefix+text : text,'Trade plan');
+       } catch(e) { global.App.toast(e.message,'err'); }
+     }
+ 

@@ -1,0 +1,49 @@
+ok three actual entry POSTs exhaust the preselected cap
+ok each entry has an independently durable admission
+ok reaching cap latches before any fourth blocked attempt
+ok truthful date/notes correction succeeds without rewriting admission provenance
+ok backdating an admitted row cannot refund an entry slot
+ok honest journal deletion is still allowed
+ok journal truth and durable attempt count are distinct
+ok deletion leaves the personal permission stopped
+ok honest bulk deletion remains allowed
+ok deleting all rows cannot erase the daily entry cap
+ok all three admission records survive all journal deletions
+ok already-executed open reality remains recordable, never permission
+ok historical close remains recordable at the durable stop
+ok record-only/history writes do not fabricate admission records
+ok known durable stop permits only an explicitly reasoned action
+ok override consumes one further durable entry, not an unlock
+ok next entry without its own reason remains blocked
+ok durable admission links actual trade, stopped snapshot and reason
+ok reopening after deletion still needs a fresh reason
+ok reasoned reopen creates a new durable admission
+ok reopening the SAME journal id counts again, not once per id
+ok account settings edit does not erase the frozen current-day cap
+ok another owned account is clear, not poisoned by prior admissions
+ok reason/state remain account-ownership scoped
+ok durable admission still requires real authentication
+ok six concurrent requests with one slot produce one admission/five stops
+ok concurrent journal AND durable counts agree at three
+ok durable-admission write failure rolls back the journal insert
+ok failed atomic write cannot consume an entry slot
+ok two honestly recorded losses latch the day stop
+ok honest correction changes P&L/current streak, not observed day stop
+ok deleting both loss records cannot reset an observed streak stop
+ok retained streak stop is enforced by actual POST
+ok exact 3% realised-loss boundary is observed as a day stop
+ok corrected positive P&L remains visible while observed loss stop persists
+ok deletion cannot undo the observed daily-loss stop
+ok loss deletion cannot erase its cooldown clock
+ok loss deletion cannot erase the actual prospective TF candle boundary
+ok missing TF after retained loss remains unavailable, not reason-waivable
+ok retained cooldown expires at its exact time; next full 1h candle still blocks
+ok retained time stops expire, not a fabricated permanent day latch
+ok streak day stop resets only on next UTC rule day
+ok next-day cap uses the newly selected 20 and a fresh count
+ok midnight resets count but does NOT prematurely reset the loss cooldown
+ok next full candle exclusion survives the UTC date boundary
+ok fresh Node process recovers durable count/day stop after CRUD
+ok corrupt mechanical state fails closed even with a reason
+ok unavailable-state response does not leak SQL/driver details
+M79 durable state: 48 passed, 0 failed

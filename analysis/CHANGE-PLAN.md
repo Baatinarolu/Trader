@@ -1,5 +1,19 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
+## Current plan status — M79/M80, 2026-10-11
+
+**132:80 done/2 partial/50 todo/0 no-action**, exact eight-group partition. M79,
+M80,M83,M90,M113 complete;302/0 final feature assertions, with substantive
+pre-retention3/1 deletion negative retained and exact4/0 + expanded48/0 repair.
+[Report](M79-M80-GUARDRAILS.md). Native API121/0 both; bots204/2 both (19fills /
+0mismatches; unchanged sample floors). No edge, target shrink, new calibration or
+broker claim. App admissions/day stops survive honest journal CRUD; recording
+is not permission. **Next M81 profit stop, then M82 behavioural resizing**, followed
+by remaining risk mechanisms in PROGRESS; M85/M111/M112 still open. Keep M11floor30,
+deliberateM103n>=5 and all model/geometry/RR/grade policies. Do not repeat the
+completed M71 twelve-run study or claim old historical counts as current.
+
+
 ## Current M71 status — 2026-10-11
 
 **132:75 done/2 partial/55 todo/0 no-action.** Exact first-target floor binds all

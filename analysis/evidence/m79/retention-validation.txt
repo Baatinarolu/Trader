@@ -1,0 +1,27 @@
+ok existing HTTP input validation remains 400 without writing: model name
+FAIL direct plan admission preserves trusted 400 instead of masking as outage: model name {"status":503,"code":"guardrail_unavailable"}
+ok existing HTTP input validation remains 400 without writing: model type
+FAIL direct plan admission preserves trusted 400 instead of masking as outage: model type {"status":503,"code":"guardrail_unavailable"}
+ok existing HTTP input validation remains 400 without writing: stop provenance
+FAIL direct plan admission preserves trusted 400 instead of masking as outage: stop provenance {"status":503,"code":"guardrail_unavailable"}
+ok existing HTTP input validation remains 400 without writing: entry variant
+FAIL direct plan admission preserves trusted 400 instead of masking as outage: entry variant {"status":503,"code":"guardrail_unavailable"}
+ok existing HTTP input validation remains 400 without writing: evidence array
+FAIL direct plan admission preserves trusted 400 instead of masking as outage: evidence array {"status":503,"code":"guardrail_unavailable"}
+ok existing HTTP input validation remains 400 without writing: evidence malformed JSON
+FAIL direct plan admission preserves trusted 400 instead of masking as outage: evidence malformed JSON {"status":503,"code":"guardrail_unavailable"}
+ok existing HTTP input validation remains 400 without writing: oversized evidence
+FAIL direct plan admission preserves trusted 400 instead of masking as outage: oversized evidence {"status":503,"code":"guardrail_unavailable"}
+FAIL zero saved actions do not claim personal permission {"status":200,"data":{"ok":false,"saved":0,"ids":[],"reason":"symbol, entry and stop (entry ≠ stop) are required","permission":{"allowed":true,"can_override":false,"state":"admitted","override_reason":null,"action":"save_plan","account_id":1,"evaluated_at":"2026-10-11T15:06:50.727Z","scope":"personal rules for this recorded action only, not broker execution or future permission"}}}
+ok valid plan retains levels, grade-free semantics and real permission
+ok stopped-day validation stays 400 and cannot fabricate an override
+FAIL reason plus no action does not fabricate override permission or audit {"status":200,"data":{"ok":false,"saved":0,"ids":[],"reason":"symbol, entry and stop (entry ≠ stop) are required","permission":{"allowed":true,"can_override":false,"state":"overridden","override_reason":"One consciously reviewed exception, not a persistent unlock.","action":"save_plan","account_id":1,"evaluated_at":"2026-10-11T15:06:50.839Z","scope":"personal rules for this recorded action only, not broker execution or future permission"}}}
+BOT API error on POST /api/bots/signals/save-plan: Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.
+ok unavailable state still cannot be reason-waived
+FAIL tagged validation survives transaction boundary with exact public contract {"status":503,"message":"Personal guardrails could not be verified. No new entry permission; retry or repair the account/history."}
+ok validation after a provisional insert rolls back that insert
+ok arbitrary driver 4xx is NOT treated as public validation
+FAIL a missing/no-op trade write cannot mint a durable entry admission undefined
+BOT API error on POST /api/bots/signals/save-plan: Personal guardrails could not be verified. No new entry permission; retry or repair the account/history.
+ok database write failure remains generic 503 with no secret/detail leak or signal
+M79 input contracts: 13 passed, 11 failed
