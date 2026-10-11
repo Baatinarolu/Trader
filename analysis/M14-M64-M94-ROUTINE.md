@@ -171,7 +171,10 @@ probes abort early: measured752 assertions is **not** expected full828.
 first-entry capture; legacy22 additionally use the already documented writing/
 emotion/prompt seam. Original test sources untouched. This verifies **older**
 contracts given fulfilled new prerequisites, **not integrated current M64 policy**.
-New321 and raw current-native use neither seam.
+New321 and raw current-native use neither seam. The actual UI probe exercises a
+manual plan; **owned-strategy UI preview freshness is unmeasured**. Server-owned
+plan snapshot/version enforcement is tested separately in workflow/contracts,
+not falsely counted as that browser preview proof. No pixel/layout proof.
 
 - Unchanged Now50/0, Topdown77/0, Chart36/0 and settings15/0: actual/no adapter.
 - Four old market-consumer raw runs now abort on unsupplied routine; retained in
