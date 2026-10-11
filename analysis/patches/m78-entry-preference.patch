@@ -1,0 +1,626 @@
+diff --git a/public/js/tv.js b/public/js/tv.js
+index 70c52c0..f956c42 100644
+--- a/public/js/tv.js
++++ b/public/js/tv.js
+@@ -127,7 +127,8 @@
+       const targets = (lv.targets || []).map((t) => `${t.label || t.role || 'T'} ${Number(t.price).toFixed(4)}${t.source_tf || t.tf || lv.target_tf ? ' [' + (t.source_tf || t.tf || lv.target_tf) + ']' : ''}`).join(' → ');
+       const model = plan.entry_model || lv.entry_model;
+       const execution = plan.entry_tf || lv.entry_tf;
+-      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'}${lv.stop_tf ? ' [' + lv.stop_tf + ']' : ''}${lv.stop_policy ? ' (' + lv.stop_policy.kind + '; ' + lv.stop_policy.rule + ')' : ''} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
++      const preference = plan.entry_preference || lv.entry_preference;
++      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''}${preference ? ` | ${preference.variant} preference (${preference.entry_tf || 'unknown TF'} internal ${preference.trend || 'unknown'}; ${preference.execution === 'crt_scenario' ? 'scenario only' : 'basic pullback'})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'}${lv.stop_tf ? ' [' + lv.stop_tf + ']' : ''}${lv.stop_policy ? ' (' + lv.stop_policy.kind + '; ' + lv.stop_policy.rule + ')' : ''} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
+     },
+ 
+     /**
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index e24327c..0f79b45 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -359,6 +359,9 @@
+         + `<tr><td class="num">${fmt(p.safer.entry, 5)}</td><td class="num">${fmt(p.safer.stop, 5)}</td><td class="num">${fmt(p.safer.target, 5)}</td><td class="num">${p.safer.rr}R</td><td class="muted">safer — on the pullback into the range</td></tr>`
+         + '</tbody>';
+       box.appendChild(tbl);
++      const preference = p.entry_selection || td.entry_preference;
++      if (preference) box.appendChild(h('div', { class: 'muted bot-detail entry-preference',
++        text: `${preference.variant} preference — ${preference.reason} This table is projection only, not an advanced entry model.` }));
+       if (p.below_min_rr) {
+         box.appendChild(h('div', { class: 'bot-warn', text: `Below your minimum: this pays ${p.safer.rr}R against a ${p.min_rr}R floor. The method is not hiding it — but it is a scenario, not an order.` }));
+       }
+@@ -374,7 +377,7 @@
+           const r = await global.API.post('/bots/signals/save-plan', {
+             symbol: d.symbol, timeframe: d.timeframe, entry: o.entry, stop: o.stop,
+             targets: lv.targets.map((t) => ({ ...t })), note: `Entry-aligned CRT ${p.side}: ${lv.entry_tf} entry; ${lv.target_tf} ${lv.targets[0].kind} target. HTF ${td.layers.bias.tf} range is narrative only.`,
+-            entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence,
++            entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence, entry_preference: active.entry_preference,
+             grade: active.grade, score: active.score, target_policy: lv.target_policy, stop_policy: lv.stop_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
+           });
+           global.App.toast(r.saved ? 'Eligible plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
+@@ -436,6 +439,8 @@
+     head.appendChild(h('span', { class: 'chip', text: `steps ${n.steps_done}/${n.steps_total}` }));
+     if (n.entry_model && n.entry_model !== 'none') head.appendChild(h('span', { class: 'chip info', text: `${n.entry_model} · ${n.entry_tf}` }));
+     card.appendChild(head);
++    if (n.entry_preference) card.appendChild(h('div', { class: 'muted bot-detail entry-preference',
++      text: `Entry preference: ${n.entry_preference.variant}. ${n.entry_preference.reason}` }));
+ 
+     // the four facts a decision needs, side by side
+     const grid = h('div', { class: 'now-grid' });
+@@ -636,6 +641,8 @@
+       if (dirAllowed && c.dir !== dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: 'This side is not the one the higher timeframe permits — it is shown for context only, and no order belongs here.' }));
+       else if (!dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: `The method has not permitted a side yet${(d.topdown && d.topdown.blocked) ? ' (it is blocking this market)' : ''}, so this is the entry model's best read rather than a trade. Nothing here is armed.` }));
+       if (c.entry_model) card.appendChild(h('div', { class: 'muted bot-detail', text: `Entry model: ${c.entry_model} · ${c.entry_tf || 'no lower model'} · ${c.entry_model_state || ''}` }));
++      if (c.entry_preference) card.appendChild(h('div', { class: 'muted bot-detail entry-preference',
++        text: `Entry preference: ${c.entry_preference.variant}. ${c.entry_preference.reason}` }));
+       if (c.levels) {
+         const L = c.levels;
+         const rows = (L.targets || []).map((t) => `<tr><td>${esc(t.role)}</td><td>${esc(t.label)}</td><td class="mono">${fmt(t.price, 5)}</td><td class="mono">${t.rr}R</td></tr>`).join('');
+@@ -680,7 +687,7 @@
+           size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
+           planned_r: L.rr_final, setup_grade: c.grade, entry_model: c.entry_model, entry_tf: c.entry_tf, entry_evidence: c.entry_evidence, session: (d.smc.sessions || {}).killzone || '',
+           timeframes: c.entry_tf ? `${d.timeframe} POI / ${c.entry_tf} entry` : d.timeframe.toUpperCase(), strategy_name: 'Market Mechanics',
+-          thesis: `${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
++          thesis: `${c.entry_preference ? `Entry preference ${c.entry_preference.variant} by ${c.entry_preference.entry_tf} internal structure; basic pullback retained. ` : ''}${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
+           tags: 'bot,smc', adherence: 5,
+         });
+       } });
+diff --git a/scripts/now-test.js b/scripts/now-test.js
+index 62681e2..8486089 100644
+--- a/scripts/now-test.js
++++ b/scripts/now-test.js
+@@ -9,6 +9,7 @@
+  *   node scripts/now-test.js
+  */
+ const Now = require('../src/bots/now');
++const EntryPreference = require('../src/bots/entry-preference');
+ 
+ let pass = 0, fail = 0;
+ const ok = (cond, label, detail) => {
+@@ -69,6 +70,15 @@ const setups = (dirs = [{ dir: -1, side: 'short', grade: 'B', score: 78 }, { dir
+ 
+ const NOW = Date.UTC(2026, 9, 6, 14, 5);
+ const S = series({ nowMs: NOW });
++// M78 is declared structure, not OHLC discovery. All bars behind this label
++// are actually closed; legacy unscoped CRT is tested separately from live M77.
++function internal(trend) {
++  const s = series({ nowMs: NOW });
++  s.candles = s.candles.map(b => ({ ...b, t: b.t - TF_MS['1h'] }));
++  s.smc = { ok: true, tf: '1h', atr: s.atr, structure: { trend,
++    last_break: { dir: 'down' } }, structure_source: EntryPreference.source(s.candles, '1h', NOW) };
++  return s;
++}
+ 
+ /* ------------------------------------------------------------------ 1. waiting */
+ {
+@@ -84,20 +94,30 @@ const S = series({ nowMs: NOW });
+ 
+ /* ------------------------------------------------------------------ 2. armed */
+ {
+-  const n = Now.build({ td: armedTd(), setups: setups(), series: S, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
++  const aligned = internal('bearish');
++  const n = Now.build({ td: armedTd(), setups: setups(), series: aligned, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
+   ok(n.action === 'SELL' && n.side === -1, 'a confirmed short sets the action to SELL');
+   ok(n.armed && n.order && n.order.side === 'short', 'the order is priced');
+   ok(n.order.entry === 1.1248 && n.order.stop === 1.1266 && n.order.target === 1.1162, 'entry / stop / target come from the method plan');
+-  ok(n.order.mode === 'aggressive' && /Half risk/.test(n.order.size_note), 'conviction B takes the deeper fill at half risk', n.order.size_note);
++  ok(n.order.mode === 'aggressive' && /Half risk/.test(n.order.size_note), 'aligned internal structure selects aggressive; conviction B independently keeps half risk', n.order.size_note);
+   ok(n.other_side && n.other_side.side === 'long', 'the other side is named');
+   ok(!n.other_side.levels, 'the other side carries no levels (never two priced plans)', JSON.stringify(n.other_side.levels || null));
+   ok(/higher timeframe decides direction/.test(n.other_side.text), 'the other side states why it is blocked');
+ 
+   const a = Now.build({
+     td: armedTd({ conviction: { tier: 'A', text: 'ltf confirmed' } }),
+-    setups: setups(), series: S, symbol: 'EURUSD', tf: '1h', nowMs: NOW,
++    setups: setups(), series: aligned, symbol: 'EURUSD', tf: '1h', nowMs: NOW,
+   });
+-  ok(a.full_risk === true && a.order.mode === 'safer', 'conviction A takes full risk at the better-quality fill', a.order && a.order.mode);
++  ok(a.full_risk === true && a.order.mode === 'aggressive', 'conviction A keeps full risk but does NOT invert the aligned aggressive preference', a.order && a.order.mode);
++  for (const tier of ['A', 'B']) {
++    const opposed = Now.build({ td: armedTd({ conviction: { tier } }), setups: setups(), series: internal('bullish'), symbol: 'EURUSD', tf: '1h', nowMs: NOW });
++    ok(opposed.order.mode === 'safer' && opposed.entry_preference.variant === 'conservative', `opposed internal structure selects conservative for BOTH risk tiers (${tier})`);
++  }
++  const unknown = Now.build({ td: armedTd(), setups: setups(), series: S, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
++  ok(unknown.order.mode === 'safer' && unknown.entry_preference.state === 'unknown', 'unknown structure remains explicitly conservative, not automatically aggressive B');
++  const projected = armedTd(); projected.crt_plan.projection_only = true;
++  const projection = Now.build({ td: projected, setups: setups([]), series: aligned, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
++  ok(!projection.armed && projection.action === 'WAIT', 'even an aligned preference never promotes an HTF projection into an order');
+ }
+ 
+ /* --------------------------------------------------- 2b. execution vetoes (M127) */
+diff --git a/src/bots/entry-models.js b/src/bots/entry-models.js
+index 9a4b07b..916e992 100644
+--- a/src/bots/entry-models.js
++++ b/src/bots/entry-models.js
+@@ -4,6 +4,7 @@
+  * the two-model LTF composer (M68). Geometry, not strength, defines extreme.
+  */
+ const Protected = require('./protected');
++const EntryPreference = require('./entry-preference');
+ const number = (v) => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
+ function preferExtreme({ chosen, flipZones = [], orderBlocks = [], sweeps = [], dir, enabled = true }) {
+   if (!enabled || !chosen || !chosen.zone) return null;
+@@ -63,6 +64,7 @@ function compose({ medium, lower, dir, poi, useBreakers = false, observedAt = Da
+   if (!mediumMs || !lowMs || lowMs >= mediumMs || !lower.smc || lower.smc.ok === false
+       || !(lower.candles || []).length || !(medium.candles || []).length)
+     return wait('unknown', 'Distinct lower-timeframe model data is unavailable; no named model is inferred.');
++  result.entry_preference = EntryPreference.read({ dir, series: lower, tf: lower.tf, observedAt });
+   result.applies = true;
+   const closed = lower.candles.filter((b) => number(b.t) !== null && b.t + lowMs <= observedAt);
+   const z = poi && poi.zone;
+@@ -172,6 +174,7 @@ function evidence(model) {
+     poi: model.point_of_interest, sweep: model.sweep, stop_sweep: model.stop_sweep || model.sweep, shift: model.shift,
+     zone: model.zone ? { kind: model.zone.kind, bottom: model.zone.bottom, top: model.zone.top,
+       entry: model.zone.entry, origin_t: model.zone.origin_t, formation_t: model.zone.formation_t } : null,
++    entry_preference: model.entry_preference || null,
+     mitigation_at: model.mitigation_at, preference: model.preference,
+     protection: model.protection ? { state: model.protection.state, tf: model.protection.tf,
+       observed_at: model.protection.observed_at, current: Protected.forSweep(model.protection, model.stop_sweep || model.sweep) } : null };
+@@ -185,6 +188,8 @@ function encodeEvidence(v, model, tf = null) {
+   const data = typeof v === 'string' ? JSON.parse(v) : v;
+   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('entry_evidence must be a JSON object');
+   if (data.model !== model || (tf && data.tf !== tf)) return null;
++  if (data.entry_preference) EntryPreference.check(data.entry_preference, data.tf,
++    data.shift ? sign(data.shift.dir) : null);
+   const encoded = JSON.stringify(data);
+   if (encoded.length > 16000) throw new Error('entry_evidence exceeds 16000 characters');
+   return encoded;
+diff --git a/src/bots/entry-preference.js b/src/bots/entry-preference.js
+new file mode 100644
+index 0000000..eddfabe
+--- /dev/null
++++ b/src/bots/entry-preference.js
+@@ -0,0 +1,93 @@
++'use strict';
++/** M78 — Ep20 10:34–11:48. Use actual entry-TF INTERNAL structure, not HTF
++ * narrative, conviction/risk or M69's mandatory shift gate. The legacy CRT pair
++ * is a scenario axis, NOT the unspecified proprietary advanced Ep18 shortcut.
++ * Named basic execution always retains its causal-zone post-shift pullback.
++ */
++const { TF_MS, number } = require('./protected');
++const VARIANTS = Object.freeze(['aggressive', 'conservative']);
++const EXECUTIONS = Object.freeze(['basic_causal_pullback', 'crt_scenario']);
++const agreement = (dir, trend) => (dir === 1 && trend === 'bullish') || (dir === -1 && trend === 'bearish');
++
++/** Stamp the window the existing SMC algorithm actually read; annotation ONLY. */
++function source(candles, tf, observedAt) {
++  const step = TF_MS[tf], clock = number(observedAt), bars = Array.isArray(candles) ? candles : [];
++  return { version: 'm78', tf: tf || null, observed_at: clock, bars: bars.length,
++    first_t: bars.length ? number(bars[0].t) : null, last_t: bars.length ? number(bars.at(-1).t) : null,
++    closed_only: !!step && clock !== null && bars.length >= 30
++      && bars.every((b, i) => number(b.t) !== null && Number(b.t) + step <= clock
++        && (!i || Number(b.t) > Number(bars[i - 1].t))) };
++}
++function read({ dir, series, tf, observedAt, execution = 'basic_causal_pullback' } = {}) {
++  const smc = series && series.smc, physicalTf = series && series.tf;
++  const clock = number(observedAt), step = TF_MS[tf];
++  const out = { version: 'm78', rule: 'entry_tf_internal_structure', state: 'unknown',
++    variant: 'conservative', dir: [1, -1].includes(dir) ? dir : null,
++    entry_tf: tf || null, source_tf: physicalTf || null,
++    trend: null, aligned: null, observed_at: clock, source_close_at: null,
++    execution, advanced_shortcut: false,
++    reason: 'Internal structure is unknown: conservative preference; no guessed agreement and no bypass of causal entry requirements.' };
++  if (![1, -1].includes(dir) || !step || clock === null || !smc || smc.ok === false
++      || physicalTf !== tf || smc.tf !== tf || !Array.isArray(series.candles) || !series.candles.length)
++    return out;
++  // Ignore later appended unobserved bars, but never guess that a missing,
++  // mismatched or forming-bar-built structural label was observed closed.
++  const src = smc.structure_source;
++  if (!src || src.version !== 'm78' || src.tf !== tf || src.closed_only !== true
++      || number(src.observed_at) === null || src.observed_at > clock
++      || number(src.first_t) === null || number(src.last_t) === null || src.first_t > src.last_t
++      || src.last_t + step > clock || !Number.isInteger(src.bars) || src.bars < 30) return out;
++  const used = series.candles.filter(b => b.t >= src.first_t && b.t <= src.last_t);
++  if (used.length !== src.bars || new Set(used.map(b => b.t)).size !== src.bars
++      || used.some(b => number(b.t) === null || Number(b.t) + step > clock)) return out;
++  const trend = smc.structure && smc.structure.trend;
++  if (!['bullish', 'bearish', 'ranging'].includes(trend)) return out;
++  out.state = 'known'; out.trend = trend; out.source_close_at = src.last_t + step;
++  out.aligned = agreement(dir, trend);
++  out.variant = out.aligned ? 'aggressive' : 'conservative';
++  out.reason = out.aligned
++    ? `${tf} internal structure is ${trend}, with the ${dir > 0 ? 'long' : 'short'} execution: aggressive preference (Ep20). Risk tier is independent; the basic causal-zone pullback still applies.`
++    : `${tf} internal structure is ${trend}, not with the ${dir > 0 ? 'long' : 'short'} execution: conservative preference (Ep20). Risk tier and the HTF narrative are not this selector.`;
++  return out;
++}
++
++/** Reuse only matching observed evidence, including the execution direction. */
++function scope(p, tf, observedAt, dir) {
++  const clock = number(observedAt);
++  if (!p || p.entry_tf !== tf || p.dir !== dir || clock === null
++      || number(p.observed_at) === null || p.observed_at > clock) return null;
++  try { return check(p, tf, dir); } catch (_) { return null; }
++}
++function choose(plan, p) {
++  const variant = p && p.variant === 'aggressive' ? 'aggressive' : 'conservative';
++  const field = variant === 'aggressive' ? 'aggressive' : 'safer';
++  return { variant, field, scenario: plan && plan[field] || null };
++}
++/** Consistency of client-supplied evidence, NOT server reconstruction of OHLC. */
++function check(p, tf, dir = null) {
++  if (!p || typeof p !== 'object' || Array.isArray(p) || p.version !== 'm78'
++      || p.rule !== 'entry_tf_internal_structure' || !VARIANTS.includes(p.variant)
++      || !['known', 'unknown'].includes(p.state) || p.entry_tf !== tf
++      || !EXECUTIONS.includes(p.execution) || p.advanced_shortcut !== false
++      || typeof p.reason !== 'string' || p.reason.length > 1000 || JSON.stringify(p).length > 3000
++      || ([1, -1].includes(dir) && p.dir !== dir))
++    throw new Error('entry_preference must be a bounded M78 snapshot matching entry TF/direction');
++  if (p.state === 'known' && (p.source_tf !== tf || ![1, -1].includes(p.dir)
++      || !['bullish', 'bearish', 'ranging'].includes(p.trend) || p.aligned !== agreement(p.dir, p.trend)
++      || p.variant !== (p.aligned ? 'aggressive' : 'conservative')
++      || number(p.observed_at) === null || number(p.source_close_at) === null
++      || p.source_close_at > p.observed_at))
++    throw new Error('entry_preference structure/variant evidence is contradictory');
++  if (p.state === 'unknown' && (p.variant !== 'conservative' || p.aligned !== null || p.trend !== null))
++    throw new Error('unknown entry_preference must remain explicitly conservative/unknown');
++  return p;
++}
++function same(a, b) {
++  return !!(a && b) && ['version', 'rule', 'state', 'variant', 'dir', 'entry_tf', 'source_tf',
++    'trend', 'aligned', 'observed_at', 'source_close_at', 'execution', 'advanced_shortcut', 'reason']
++    .every(k => a[k] === b[k]);
++}
++function note(p) {
++  return `Entry preference ${p.variant} on ${p.entry_tf || 'unknown TF'} internal structure (${p.trend || 'unknown'}); ${p.execution === 'crt_scenario' ? 'CRT scenario only' : 'basic causal pullback retained'}. `;
++}
++module.exports = { source, read, scope, choose, check, same, note, VARIANTS };
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 78e7e2c..51d4d46 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -25,6 +25,7 @@ const SMC = require('./smc');
+ const Setup = require('./setup');
+ const Entry = require('./entry-models');
+ const Stops = require('./stops');
++const EntryPreference = require('./entry-preference');
+ const Now = require('./now');
+ const Predict = require('./predict');
+ const Cor = require('./correction');
+@@ -276,7 +277,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
+ 
+   const setups = Setup.buildSetups(series.smc, {
+-    price: series.price, atr: series.atr,
++    price: series.price, atr: series.atr, entrySeries: series, observedAt: cut.asOf || opts.nowMs,
+     bias: momentumEff.bias, biasReason: momentum.alignment.reason,
+     indicators: series.ind,
+     balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
+@@ -484,7 +485,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
+ 
+   const setups = Setup.buildSetups(entry.smc, {
+-    price: entry.price, atr: entry.atr, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
++    price: entry.price, atr: entry.atr, entrySeries: entry, observedAt: cut.asOf || opts.nowMs, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
+     indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
+     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
+     sessionPref: opts.sessionPref || null,   // M26
+@@ -498,11 +499,14 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   let plan = null;
+   if (crt && td.direction !== 0 && !td.blocked && best && best.ok && !['flip', 'market_shift'].includes(best.entry_model)
+       && !(best.levels && best.levels.target_policy && best.levels.target_policy.rule === 'entry_or_one_above')) {
++    const selection = EntryPreference.choose(crt, best.entry_preference || td.entry_preference);
++    const selected = selection.scenario;
+     plan = {
+-      source: 'crt', dir: crt.dir, side: crt.side, method: td.method.name,
+-      entry: crt.safer.entry, stop: crt.safer.stop,
+-      targets: [{ price: crt.aggressive.target, rr: crt.safer.rr, role: 'T1' }],
+-      rr_final: crt.safer.rr,
++      source: 'crt', entry_preference: best.entry_preference || td.entry_preference,
++      projection_only: true, dir: crt.dir, side: crt.side, method: td.method.name,
++      entry: selected.entry, stop: selected.stop,
++      targets: [{ price: selected.target, rr: selected.rr, role: 'T1' }],
++      rr_final: selected.rr,
+       entry_status: td.status === 'confirmed' ? 'confirmed' : td.status,
+       alternatives: { aggressive: crt.aggressive, safer: crt.safer },
+       management: {
+@@ -513,7 +517,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+     };
+   } else if (best && best.ok && best.levels && !td.blocked) {
+     plan = {
+-      source: td.countertrend ? 'countertrend-pullback' : 'setup', entry_model: best.entry_model || null, entry_tf: best.entry_tf || null, dir: best.dir, side: best.side, method: td.countertrend ? td.method.name : null,
++      source: td.countertrend ? 'countertrend-pullback' : 'setup', entry_model: best.entry_model || null, entry_tf: best.entry_tf || null, entry_preference: best.entry_preference, dir: best.dir, side: best.side, method: td.countertrend ? td.method.name : null,
+       ...best.levels,
+       entry_status: best.levels.entry_status,
+     };
+@@ -521,7 +525,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+ 
+   const smc = {
+     price: entry.smc.price, atr: entry.smc.atr, counts: entry.smc.counts,
+-    structure: entry.smc.structure, htf_structure: entry.smc.htf_structure,
++    structure: entry.smc.structure, structure_source: entry.smc.structure_source, htf_structure: entry.smc.htf_structure,
+     premium_discount: entry.smc.premium_discount, sessions: entry.smc.sessions,
+     order_blocks: entry.smc.order_blocks.slice(0, 8), fvgs: entry.smc.fvgs.slice(0, 8),
+     sweeps: entry.smc.sweeps.slice(0, 6), displacement: entry.smc.displacement.slice(0, 4),
+@@ -588,7 +592,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+       candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok,
+         // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
+         // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
+-        entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence,
++        entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence, entry_preference: c.entry_preference,
+         no_trade: c.no_trade || [], levels: c.levels, action: c.action })),
+     },
+     quote: { price: entry.price, atr: entry.atr, change_pct: entry.candles.length > 1 ? r2(((entry.price - entry.candles[0].c) / entry.candles[0].c) * 100) : null },
+@@ -612,7 +616,7 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+         // different biases, which is worse than either rule applied consistently.
+         const scanHyst = await applyBiasHysteresis(sym, tf, momentum, series);
+         const specs = Setup.buildSetups(series.smc, {
+-          price: series.price, atr: series.atr, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
++          price: series.price, atr: series.atr, entrySeries: series, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
+           indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
+           sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
+                          // No symbol on this path either, so the pair-conflict note stays
+@@ -639,6 +643,7 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+           stop_rule: best && best.levels && best.levels.stop_policy ? best.levels.stop_policy.rule : null,
+           target_tf: best && best.levels ? best.levels.target_tf : null,
+           target_kind: best && best.levels && best.levels.targets[0] ? best.levels.targets[0].kind : null,
++          entry_preference: best ? best.entry_preference : null,
+           entry_tf: best ? best.entry_tf : null, entry_evidence: best ? best.entry_evidence : null,
+           entry_status: best && best.levels ? best.levels.entry_status : null,
+           entry: best && best.levels ? best.levels.entry : null,
+@@ -726,6 +731,10 @@ async function savePlan(userId, p = {}) {
+   if (p.stop_policy) Stops.check(p.stop_policy, stop, p.entry_tf);
+   const evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
+   const dir = stop < entry ? 1 : -1;
++  if (p.entry_preference) EntryPreference.check(p.entry_preference, p.entry_tf, dir);
++  if (p.entry_preference && p.entry_evidence && JSON.parse(evidence || '{}').entry_preference
++      && !EntryPreference.same(p.entry_preference, JSON.parse(evidence).entry_preference))
++    throw new Error('entry_preference contradicts the named entry_evidence snapshot');
+   const risk = Math.abs(entry - stop);
+   const prices = (Array.isArray(p.targets) ? p.targets : [])
+     .map((t) => Number(t && (t.price !== undefined ? t.price : t))).filter((x) => Number.isFinite(x));
+@@ -740,7 +749,9 @@ async function savePlan(userId, p = {}) {
+     p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.target_policy || p.p_win == null ? null : Number(p.p_win),
+     entry, stop, t1, t2, rr(t1), rr(t2),
+     p.mechanics == null ? null : Number(p.mechanics),
+-    p.stop_policy ? (Stops.note(p.stop_policy) + (p.note || '')).slice(0, 400) : p.note ? String(p.note).slice(0, 400) : null,
++    p.stop_policy || p.entry_preference || p.note
++      ? ((p.stop_policy ? Stops.note(p.stop_policy) : '')
++        + (p.entry_preference ? EntryPreference.note(p.entry_preference) : '') + (p.note || '')).slice(0, 400) : null,
+     p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
+     Number.isFinite(Number(p.risk_atr)) ? Number(p.risk_atr) : null,
+     model, p.entry_tf || null, evidence,
+@@ -778,7 +789,8 @@ async function saveSignals(userId, payload) {
+       L.targets.length > 1 ? L.targets[L.targets.length - 1].price : null,
+       L.rr_primary, L.rr_final,
+       payload.momentum ? payload.momentum.mechanics.score : null,
+-      L.target_policy ? ((L.stop_policy ? Stops.note(L.stop_policy) : '') + `Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
++      L.target_policy ? ((L.stop_policy ? Stops.note(L.stop_policy) : '')
++        + (c.entry_preference ? EntryPreference.note(c.entry_preference) : '') + `Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
+       td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
+       model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
+     );
+diff --git a/src/bots/momentum.js b/src/bots/momentum.js
+index fa1b591..2376466 100644
+--- a/src/bots/momentum.js
++++ b/src/bots/momentum.js
+@@ -550,7 +550,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+       method: td.method, layers: td.layers, steps: td.steps, checks: td.checks,
+       score: td.score, grade: td.grade, status: td.status, direction: td.direction,
+       headline: td.headline, playbook: td.playbook, blocked: td.blocked,
+-      conviction: td.conviction, entry_setup: td.entry_setup, target_sources: td.target_sources,
++      conviction: td.conviction, entry_setup: td.entry_setup, entry_preference: td.entry_preference, target_sources: td.target_sources,
+       ...(td.countertrend ? { countertrend: td.countertrend } : {}),
+       conflicts: td.conflicts, // both aliases survive; Now/method gate consume this one
+       conflict_detail: td.conflicts, crt_plan: td.crt_plan, levels: td.levels,
+diff --git a/src/bots/now.js b/src/bots/now.js
+index d34a42a..821fec5 100644
+--- a/src/bots/now.js
++++ b/src/bots/now.js
+@@ -22,6 +22,7 @@
+  */
+ 
+ const SMC = require('./smc');
++const EntryPreference = require('./entry-preference');
+ const Setup = require('./setup');   // M39: one clock, one list of windows
+ const MS = { m: 60000, h: 3600000, d: 86400000, w: 604800000 };
+ const TF_MS = { '1m': MS.m, '5m': 5 * MS.m, '15m': 15 * MS.m, '30m': 30 * MS.m, '1h': MS.h, '4h': 4 * MS.h, '1d': MS.d, '1w': MS.w };
+@@ -138,6 +139,12 @@ function build(p = {}) {
+   const convictionTier = conviction && conviction.tier ? conviction.tier : null;
+   const confirmed = convictionTier === 'A';
+   const fullRisk = confirmed && Setup.methodRiskMult(td, direction) === 1;
++  const entryTf = allowed && (allowed.entry_tf || allowed.levels && allowed.levels.entry_tf)
++    || td.entry_setup && td.entry_setup.entry_tf || td.entry_preference && td.entry_preference.entry_tf || tf;
++  let entryPreference = (allowed && EntryPreference.scope(allowed.entry_preference
++      || allowed.levels && allowed.levels.entry_preference, entryTf, nowMs, direction))
++    || EntryPreference.scope(td.entry_preference, entryTf, nowMs, direction)
++    || EntryPreference.read({ dir: direction, series, tf: entryTf, observedAt: nowMs });
+ 
+   const pendingStep = (td.steps || []).find((s) => !s.done) || null;
+   const doneSteps = (td.steps || []).filter((s) => s.done).length;
+@@ -241,19 +248,20 @@ function build(p = {}) {
+   } else if (direction && plan) {
+     side = direction;
+     action = direction > 0 ? 'BUY' : 'SELL';
++    entryPreference = { ...entryPreference, execution: 'crt_scenario' };
+     const ag = plan.aggressive || {};
+-    const sf = plan.safer || {};
+-    const chosen = confirmed ? sf : ag;      // tier B = half risk, so take the better price
++    const selection = EntryPreference.choose(plan, entryPreference);
++    const chosen = selection.scenario || {}; // M78: structure, never conviction/risk
+     order = {
+       side: direction > 0 ? 'long' : 'short',
+-      type: 'stop-limit at the confirmation',
++      type: selection.variant === 'aggressive' ? 'stop-limit at the confirmation' : 'limit on the swept-edge retest',
+       entry: num(chosen.entry), stop: num(chosen.stop), target: num(chosen.target),
+       rr: num(chosen.rr), alt_entry: num(ag.entry), alt_target: num(ag.target), alt_rr: num(ag.rr),
+       size_note: Setup.methodRiskMult(td, direction) < 1
+         ? 'Counter-HTF rotation: at most half ordinary same-grade risk, even with lower-timeframe confirmation.'
+         : fullRisk ? 'Full risk: the method is confirmed and the lower timeframe has confirmed it too.'
+-          : 'Half risk: the range is confirmed but the lower-timeframe confirmation is not in yet — take the deeper (safer) fill.',
+-      mode: confirmed ? 'safer' : 'aggressive',
++          : 'Half risk: lower-timeframe confirmation is not in yet. Sizing does not choose the entry variant.',
++      mode: selection.field,
+       // the trader asked for these to be shown rather than hidden — but never silently
+       rr_warning: (Number(num(chosen.rr)) > 0 && Number(num(chosen.rr)) < minRR)
+         ? `Below your ${minRR}R minimum — this pays ${num(chosen.rr)}R. The range is real; the reward does not pay for the risk. Treat it as a scenario, not an order.`
+@@ -263,7 +271,7 @@ function build(p = {}) {
+     watch = {
+       level: num(chosen.entry), kind: 'entry',
+       condition: `price must trade into ${num(chosen.entry)} with the range ${plan.range ? `${num(plan.range.low)} – ${num(plan.range.high)}` : ''} still holding`,
+-      text: `Order sits at ${num(chosen.entry)} (${fullRisk ? 'the confirmation' : 'the pullback into the range'}). Stop ${num(chosen.stop)}, target ${num(chosen.target)} (${num(chosen.rr)}R).`,
++      text: `Order sits at ${num(chosen.entry)} (${selection.variant === 'aggressive' ? 'the confirmation' : 'the retest of the swept edge'}). Stop ${num(chosen.stop)}, target ${num(chosen.target)} (${num(chosen.rr)}R).`,
+     };
+     invalidate = plan.invalidation || `If price closes back through ${num(chosen.stop)} the read is wrong — take the loss, do not average.`;
+     if (plan.lopsided) {
+@@ -283,6 +291,10 @@ function build(p = {}) {
+       action = 'WAIT';
+       headline = `${symbol} ${tf}: the ${direction > 0 ? 'long' : 'short'} idea is real but the easy part of the range is gone — wait for the next right candle rather than chasing this one.`;
+       order = null;
++    } else if (plan.projection_only) {
++      action = 'WAIT'; side = 0; order = null;
++      headline = `${symbol} ${tf}: CRT ${selection.variant} preference is a projection only — no eligible candidate order. ${entryPreference.reason}`;
++      watch.condition = 'obtain an eligible causal entry candidate; the HTF projection is not permission to enter';
+     }
+   } else if (direction) {
+     action = 'WAIT';
+@@ -315,6 +327,11 @@ function build(p = {}) {
+     invalidate = 'Nothing to invalidate — there is no read yet. A sweep that closes back inside the range creates one.';
+   }
+ 
++  if (order) {
++    order.entry_variant = entryPreference.variant;
++    order.entry_preference = entryPreference;
++  }
++
+   /* ------------------------------------------------- the other side ------- */
+   let otherSide = null;
+   // A refused call has side=0: there is no permitted side to contrast with. Its
+@@ -394,7 +411,7 @@ function build(p = {}) {
+       replay: !!replay, trim: replay ? replay.trim : 0,
+     },
+     live: quote ? { price: num(quote.price), at: quote.at ? new Date(quote.at).toISOString() : null, provider: quote.provider || null, drift_atr: drift === null ? null : Number(drift.toFixed(2)) } : null,
+-    action, side, headline,
++    action, side, headline, entry_preference: entryPreference,
+     ...(td.entry_setup ? { entry_model: allowed ? allowed.entry_model || 'none' : 'none', entry_tf: allowed ? allowed.entry_tf : null } : {}),
+     armed: !!order,
+     order,
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index bc370e1..6bf8214 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -34,6 +34,7 @@ const Entry = require('./entry-models');
+ const Targets = require('./targets');
+ const Protected = require('./protected');
+ const Stops = require('./stops');
++const EntryPreference = require('./entry-preference');
+ const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
+ 
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+@@ -517,6 +518,12 @@ function buildSetups(analysis, ctx = {}) {
+         ? 'No real opposing target on the entry timeframe or one level above — wait; the HTF projection is not an executable exit, and no measured-move or farther-target rescue is allowed.'
+         : 'No real opposing target — wait for a valid magnet; no measured-move or farther-target rescue.';
+     const entryAtr = useModel ? model.atr : atr;
++    const preferenceClock = ctx.observedAt || (td && td.entry_preference && td.entry_preference.observed_at)
++      || (analysis && analysis.structure_source && analysis.structure_source.observed_at) || Date.now();
++    const entryPreference = { ...((useModel ? EntryPreference.scope(model.entry_preference, entryTf, preferenceClock, dir) : null)
++      || (td && EntryPreference.scope(td.entry_preference, entryTf, preferenceClock, dir))
++      || EntryPreference.read({ dir, series: ctx.entrySeries, tf: entryTf,
++        observedAt: preferenceClock, execution: 'basic_causal_pullback' })), execution: 'basic_causal_pullback' };
+     const ladderTargets = !!ctx.ladderTargets && !counter && !boundedCRT; // a bounded pullback has ONE HTF target
+     const triggerRead = useModel ? model : counter ? counter.confirmation : null;
+     const checks = [];
+@@ -675,7 +682,7 @@ function buildSetups(analysis, ctx = {}) {
+       const stop = stopChoice.raw_stop;
+       const risk = stop === null ? 0 : Math.abs(entry - stop);
+       const stopEvidence = ctx.stopPolicy === 'legacy' ? null : Stops.evidence(stopChoice);
+-      const entryEvidence = useModel ? { ...Entry.evidence(model), ...(stopEvidence ? { stop_policy: stopEvidence } : {}) } : null;
++      const entryEvidence = useModel ? { ...Entry.evidence(model), entry_preference: entryPreference, ...(stopEvidence ? { stop_policy: stopEvidence } : {}) } : null;
+       if (ctx.stopPolicy !== 'legacy') add('stop_valid', 'Defined adverse stop at the selected invalidation boundary',
+         stopChoice.state === 'known', 0, stopChoice.reason);
+       const ordinarySources = targetAlignment ? scopedTargets.sources.map((s) => s.analysis) : [analysis];
+@@ -828,7 +835,7 @@ function buildSetups(analysis, ctx = {}) {
+       levels = {
+         target_policy: targetPolicy, target_tf: ladder[0] ? ladder[0].source_tf || ladder[0].tf || null : null,
+         entry_tf: entryTf, stop_tf: ctx.stopPolicy === 'legacy' ? entryTf : stopChoice.source_tf,
+-        stop_policy: stopEvidence,
++        stop_policy: stopEvidence, entry_preference: entryPreference,
+         ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counterTargetKnown ? counterTargetTf : null } : {}),
+         ...(useModel ? { entry_model: model.entry_model, entry_tf: model.entry_tf,
+           stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: entryEvidence,
+@@ -1080,6 +1087,7 @@ function buildSetups(analysis, ctx = {}) {
+         reason: stoodDown ? standDown.reason : null,
+       },
+       dir, side, score, grade: g.grade, grade_label: g.label,
++      entry_preference: entryPreference,
+       ...(td && td.entry_setup ? { entry_model: useModel ? model.entry_model : 'none',
+         entry_tf: levels ? levels.entry_tf : model ? model.entry_tf : null,
+         entry_model_state: model ? model.state : 'not_permitted_direction',
+diff --git a/src/bots/smc.js b/src/bots/smc.js
+index 63f82f8..40a8753 100644
+--- a/src/bots/smc.js
++++ b/src/bots/smc.js
+@@ -31,6 +31,7 @@
+ 
+ const I = require('../indicators');
+ const Protected = require('./protected');
++const EntryPreference = require('./entry-preference');
+ 
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+ const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
+@@ -1409,6 +1410,7 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
+   out.swings = { minor: Protected.annotate(nestedSwings.slice(-14), protectedLevels),
+     major: Protected.annotate(majorSwings.slice(-10), protectedLevels),
+     nested: nested && nestedSwings !== minorSwings };
++  out.structure_source = EntryPreference.source(candles, tf, protectionClock);
+   out.structure = { ...structure, labels: Protected.annotate(structure.labels, protectedLevels),
+     recent_labels: Protected.annotate(structure.recent_labels, protectedLevels),
+     last_swing_high: structure.last_swing_high ? Protected.annotate([{ ...structure.last_swing_high, type: 'high' }], protectedLevels)[0] : null,
+diff --git a/src/bots/topdown.js b/src/bots/topdown.js
+index ab1e1ab..37acb19 100644
+--- a/src/bots/topdown.js
++++ b/src/bots/topdown.js
+@@ -53,6 +53,7 @@
+ const C = require('../candles');
+ const Setup = require('./setup');
+ const Entry = require('./entry-models');
++const EntryPreference = require('./entry-preference');
+ const Targets = require('./targets');
+ 
+ const r4 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 10000) / 10000);
+@@ -626,14 +627,24 @@ function build(args) {
+     report.crt_plan.execution_authority = 'setup_candidate';
+     report.crt_plan.target_note += ' HTF projection only; the final candidate selects an entry-aligned exit (M77).';
+   }
++  const observation = opts.observedAt || args.triggerSeries && args.triggerSeries.observed_at || Date.now();
++  const preferenceSource = opts.entryModels === false ? args.series : args.triggerSeries || args.series;
++  report.entry_preference = EntryPreference.read({ dir: report.direction, series: preferenceSource,
++    tf: preferenceSource.tf, observedAt: observation,
++    execution: opts.entryModels === false ? 'crt_scenario' : 'basic_causal_pullback' });
++  if (report.crt_plan) report.crt_plan.entry_selection = { ...report.entry_preference,
++    selected_field: report.entry_preference.variant === 'aggressive' ? 'aggressive' : 'safer', projection_only: true };
+   if (opts.entryModels === false) return report; // isolated pre-M68 research arm
+   const lower = args.triggerSeries || args.series;
+   const model = report.direction ? Entry.compose({ medium: args.series, lower,
+     dir: report.direction, poi: Setup.selectZone(args.series.smc, report.direction, opts),
+-    useBreakers: !!opts.useBreakers, observedAt: opts.observedAt || lower.observed_at || Date.now(),
++    useBreakers: !!opts.useBreakers, observedAt: observation,
+     maxSweepAge: Setup.SWEEP_LOOKBACK }) : { applies: false, entry_model: 'none',
+       entry_tf: lower.tf, ready: false, state: 'waiting_direction', reasons: ['The HTF method has not permitted an execution direction.'] };
+   report.entry_setup = { ...model, dir: report.direction };
++  if (model.entry_preference) report.entry_preference = model.entry_preference;
++  if (report.crt_plan) report.crt_plan.entry_selection = { ...report.entry_preference,
++    selected_field: report.entry_preference.variant === 'aggressive' ? 'aggressive' : 'safer', projection_only: true };
+   if (!model.applies) return report;
+   const info = report.layers.trigger.confirmation;
+   if (info) {
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index a8a33f5..9031293 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -289,10 +289,18 @@ router.get('/markets', requireAuth, (req, res) => {
+       try { require('../bots/stops').check(b.stop_policy, Number(b.stop), b.entry_tf); }
+       catch (e) { return res.status(400).json({ error: e.message }); }
+     }
++    if (b.entry_preference) {
++      try {
++        require('../bots/entry-preference').check(b.entry_preference, b.entry_tf, Number(b.stop) < Number(b.entry) ? 1 : -1);
++        const evidence = typeof b.entry_evidence === 'string' ? JSON.parse(b.entry_evidence) : b.entry_evidence;
++        if (evidence && evidence.entry_preference && !require('../bots/entry-preference').same(evidence.entry_preference, b.entry_preference))
++          throw new Error('entry_preference contradicts the named entry_evidence snapshot');
++      } catch (e) { return res.status(400).json({ error: e.message }); }
++    }
+     const out = await Bots.savePlan(req.user.id, {
+       symbol: b.symbol, timeframe: b.timeframe, entry: b.entry, stop: b.stop,
+       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
+-      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy,
++      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
+     });
+     res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
+   }));

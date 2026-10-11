@@ -289,10 +289,18 @@ router.get('/markets', requireAuth, (req, res) => {
       try { require('../bots/stops').check(b.stop_policy, Number(b.stop), b.entry_tf); }
       catch (e) { return res.status(400).json({ error: e.message }); }
     }
+    if (b.entry_preference) {
+      try {
+        require('../bots/entry-preference').check(b.entry_preference, b.entry_tf, Number(b.stop) < Number(b.entry) ? 1 : -1);
+        const evidence = typeof b.entry_evidence === 'string' ? JSON.parse(b.entry_evidence) : b.entry_evidence;
+        if (evidence && evidence.entry_preference && !require('../bots/entry-preference').same(evidence.entry_preference, b.entry_preference))
+          throw new Error('entry_preference contradicts the named entry_evidence snapshot');
+      } catch (e) { return res.status(400).json({ error: e.message }); }
+    }
     const out = await Bots.savePlan(req.user.id, {
       symbol: b.symbol, timeframe: b.timeframe, entry: b.entry, stop: b.stop,
       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
-      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy,
+      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
     });
     res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
   }));

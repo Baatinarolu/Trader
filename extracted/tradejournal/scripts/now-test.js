@@ -9,6 +9,7 @@
  *   node scripts/now-test.js
  */
 const Now = require('../src/bots/now');
+const EntryPreference = require('../src/bots/entry-preference');
 
 let pass = 0, fail = 0;
 const ok = (cond, label, detail) => {
@@ -69,6 +70,15 @@ const setups = (dirs = [{ dir: -1, side: 'short', grade: 'B', score: 78 }, { dir
 
 const NOW = Date.UTC(2026, 9, 6, 14, 5);
 const S = series({ nowMs: NOW });
+// M78 is declared structure, not OHLC discovery. All bars behind this label
+// are actually closed; legacy unscoped CRT is tested separately from live M77.
+function internal(trend) {
+  const s = series({ nowMs: NOW });
+  s.candles = s.candles.map(b => ({ ...b, t: b.t - TF_MS['1h'] }));
+  s.smc = { ok: true, tf: '1h', atr: s.atr, structure: { trend,
+    last_break: { dir: 'down' } }, structure_source: EntryPreference.source(s.candles, '1h', NOW) };
+  return s;
+}
 
 /* ------------------------------------------------------------------ 1. waiting */
 {
@@ -84,20 +94,30 @@ const S = series({ nowMs: NOW });
 
 /* ------------------------------------------------------------------ 2. armed */
 {
-  const n = Now.build({ td: armedTd(), setups: setups(), series: S, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
+  const aligned = internal('bearish');
+  const n = Now.build({ td: armedTd(), setups: setups(), series: aligned, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
   ok(n.action === 'SELL' && n.side === -1, 'a confirmed short sets the action to SELL');
   ok(n.armed && n.order && n.order.side === 'short', 'the order is priced');
   ok(n.order.entry === 1.1248 && n.order.stop === 1.1266 && n.order.target === 1.1162, 'entry / stop / target come from the method plan');
-  ok(n.order.mode === 'aggressive' && /Half risk/.test(n.order.size_note), 'conviction B takes the deeper fill at half risk', n.order.size_note);
+  ok(n.order.mode === 'aggressive' && /Half risk/.test(n.order.size_note), 'aligned internal structure selects aggressive; conviction B independently keeps half risk', n.order.size_note);
   ok(n.other_side && n.other_side.side === 'long', 'the other side is named');
   ok(!n.other_side.levels, 'the other side carries no levels (never two priced plans)', JSON.stringify(n.other_side.levels || null));
   ok(/higher timeframe decides direction/.test(n.other_side.text), 'the other side states why it is blocked');
 
   const a = Now.build({
     td: armedTd({ conviction: { tier: 'A', text: 'ltf confirmed' } }),
-    setups: setups(), series: S, symbol: 'EURUSD', tf: '1h', nowMs: NOW,
+    setups: setups(), series: aligned, symbol: 'EURUSD', tf: '1h', nowMs: NOW,
   });
-  ok(a.full_risk === true && a.order.mode === 'safer', 'conviction A takes full risk at the better-quality fill', a.order && a.order.mode);
+  ok(a.full_risk === true && a.order.mode === 'aggressive', 'conviction A keeps full risk but does NOT invert the aligned aggressive preference', a.order && a.order.mode);
+  for (const tier of ['A', 'B']) {
+    const opposed = Now.build({ td: armedTd({ conviction: { tier } }), setups: setups(), series: internal('bullish'), symbol: 'EURUSD', tf: '1h', nowMs: NOW });
+    ok(opposed.order.mode === 'safer' && opposed.entry_preference.variant === 'conservative', `opposed internal structure selects conservative for BOTH risk tiers (${tier})`);
+  }
+  const unknown = Now.build({ td: armedTd(), setups: setups(), series: S, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
+  ok(unknown.order.mode === 'safer' && unknown.entry_preference.state === 'unknown', 'unknown structure remains explicitly conservative, not automatically aggressive B');
+  const projected = armedTd(); projected.crt_plan.projection_only = true;
+  const projection = Now.build({ td: projected, setups: setups([]), series: aligned, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
+  ok(!projection.armed && projection.action === 'WAIT', 'even an aligned preference never promotes an HTF projection into an order');
 }
 
 /* --------------------------------------------------- 2b. execution vetoes (M127) */

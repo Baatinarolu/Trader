@@ -25,6 +25,7 @@ const SMC = require('./smc');
 const Setup = require('./setup');
 const Entry = require('./entry-models');
 const Stops = require('./stops');
+const EntryPreference = require('./entry-preference');
 const Now = require('./now');
 const Predict = require('./predict');
 const Cor = require('./correction');
@@ -276,7 +277,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
 
   const setups = Setup.buildSetups(series.smc, {
-    price: series.price, atr: series.atr,
+    price: series.price, atr: series.atr, entrySeries: series, observedAt: cut.asOf || opts.nowMs,
     bias: momentumEff.bias, biasReason: momentum.alignment.reason,
     indicators: series.ind,
     balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
@@ -484,7 +485,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
 
   const setups = Setup.buildSetups(entry.smc, {
-    price: entry.price, atr: entry.atr, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
+    price: entry.price, atr: entry.atr, entrySeries: entry, observedAt: cut.asOf || opts.nowMs, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
     indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
     sessionPref: opts.sessionPref || null,   // M26
@@ -498,11 +499,14 @@ async function chart(symbol, tf = '15m', opts = {}) {
   let plan = null;
   if (crt && td.direction !== 0 && !td.blocked && best && best.ok && !['flip', 'market_shift'].includes(best.entry_model)
       && !(best.levels && best.levels.target_policy && best.levels.target_policy.rule === 'entry_or_one_above')) {
+    const selection = EntryPreference.choose(crt, best.entry_preference || td.entry_preference);
+    const selected = selection.scenario;
     plan = {
-      source: 'crt', dir: crt.dir, side: crt.side, method: td.method.name,
-      entry: crt.safer.entry, stop: crt.safer.stop,
-      targets: [{ price: crt.aggressive.target, rr: crt.safer.rr, role: 'T1' }],
-      rr_final: crt.safer.rr,
+      source: 'crt', entry_preference: best.entry_preference || td.entry_preference,
+      projection_only: true, dir: crt.dir, side: crt.side, method: td.method.name,
+      entry: selected.entry, stop: selected.stop,
+      targets: [{ price: selected.target, rr: selected.rr, role: 'T1' }],
+      rr_final: selected.rr,
       entry_status: td.status === 'confirmed' ? 'confirmed' : td.status,
       alternatives: { aggressive: crt.aggressive, safer: crt.safer },
       management: {
@@ -513,7 +517,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
     };
   } else if (best && best.ok && best.levels && !td.blocked) {
     plan = {
-      source: td.countertrend ? 'countertrend-pullback' : 'setup', entry_model: best.entry_model || null, entry_tf: best.entry_tf || null, dir: best.dir, side: best.side, method: td.countertrend ? td.method.name : null,
+      source: td.countertrend ? 'countertrend-pullback' : 'setup', entry_model: best.entry_model || null, entry_tf: best.entry_tf || null, entry_preference: best.entry_preference, dir: best.dir, side: best.side, method: td.countertrend ? td.method.name : null,
       ...best.levels,
       entry_status: best.levels.entry_status,
     };
@@ -521,7 +525,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
 
   const smc = {
     price: entry.smc.price, atr: entry.smc.atr, counts: entry.smc.counts,
-    structure: entry.smc.structure, htf_structure: entry.smc.htf_structure,
+    structure: entry.smc.structure, structure_source: entry.smc.structure_source, htf_structure: entry.smc.htf_structure,
     premium_discount: entry.smc.premium_discount, sessions: entry.smc.sessions,
     order_blocks: entry.smc.order_blocks.slice(0, 8), fvgs: entry.smc.fvgs.slice(0, 8),
     sweeps: entry.smc.sweeps.slice(0, 6), displacement: entry.smc.displacement.slice(0, 4),
@@ -588,7 +592,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
       candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok,
         // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
         // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
-        entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence,
+        entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence, entry_preference: c.entry_preference,
         no_trade: c.no_trade || [], levels: c.levels, action: c.action })),
     },
     quote: { price: entry.price, atr: entry.atr, change_pct: entry.candles.length > 1 ? r2(((entry.price - entry.candles[0].c) / entry.candles[0].c) * 100) : null },
@@ -612,7 +616,7 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
         // different biases, which is worse than either rule applied consistently.
         const scanHyst = await applyBiasHysteresis(sym, tf, momentum, series);
         const specs = Setup.buildSetups(series.smc, {
-          price: series.price, atr: series.atr, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
+          price: series.price, atr: series.atr, entrySeries: series, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
           indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
           sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
                          // No symbol on this path either, so the pair-conflict note stays
@@ -639,6 +643,7 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
           stop_rule: best && best.levels && best.levels.stop_policy ? best.levels.stop_policy.rule : null,
           target_tf: best && best.levels ? best.levels.target_tf : null,
           target_kind: best && best.levels && best.levels.targets[0] ? best.levels.targets[0].kind : null,
+          entry_preference: best ? best.entry_preference : null,
           entry_tf: best ? best.entry_tf : null, entry_evidence: best ? best.entry_evidence : null,
           entry_status: best && best.levels ? best.levels.entry_status : null,
           entry: best && best.levels ? best.levels.entry : null,
@@ -726,6 +731,10 @@ async function savePlan(userId, p = {}) {
   if (p.stop_policy) Stops.check(p.stop_policy, stop, p.entry_tf);
   const evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
   const dir = stop < entry ? 1 : -1;
+  if (p.entry_preference) EntryPreference.check(p.entry_preference, p.entry_tf, dir);
+  if (p.entry_preference && p.entry_evidence && JSON.parse(evidence || '{}').entry_preference
+      && !EntryPreference.same(p.entry_preference, JSON.parse(evidence).entry_preference))
+    throw new Error('entry_preference contradicts the named entry_evidence snapshot');
   const risk = Math.abs(entry - stop);
   const prices = (Array.isArray(p.targets) ? p.targets : [])
     .map((t) => Number(t && (t.price !== undefined ? t.price : t))).filter((x) => Number.isFinite(x));
@@ -740,7 +749,9 @@ async function savePlan(userId, p = {}) {
     p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.target_policy || p.p_win == null ? null : Number(p.p_win),
     entry, stop, t1, t2, rr(t1), rr(t2),
     p.mechanics == null ? null : Number(p.mechanics),
-    p.stop_policy ? (Stops.note(p.stop_policy) + (p.note || '')).slice(0, 400) : p.note ? String(p.note).slice(0, 400) : null,
+    p.stop_policy || p.entry_preference || p.note
+      ? ((p.stop_policy ? Stops.note(p.stop_policy) : '')
+        + (p.entry_preference ? EntryPreference.note(p.entry_preference) : '') + (p.note || '')).slice(0, 400) : null,
     p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
     Number.isFinite(Number(p.risk_atr)) ? Number(p.risk_atr) : null,
     model, p.entry_tf || null, evidence,
@@ -778,7 +789,8 @@ async function saveSignals(userId, payload) {
       L.targets.length > 1 ? L.targets[L.targets.length - 1].price : null,
       L.rr_primary, L.rr_final,
       payload.momentum ? payload.momentum.mechanics.score : null,
-      L.target_policy ? ((L.stop_policy ? Stops.note(L.stop_policy) : '') + `Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
+      L.target_policy ? ((L.stop_policy ? Stops.note(L.stop_policy) : '')
+        + (c.entry_preference ? EntryPreference.note(c.entry_preference) : '') + `Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
       td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
       model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
     );

@@ -31,6 +31,7 @@
 
 const I = require('../indicators');
 const Protected = require('./protected');
+const EntryPreference = require('./entry-preference');
 
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
@@ -1409,6 +1410,7 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
   out.swings = { minor: Protected.annotate(nestedSwings.slice(-14), protectedLevels),
     major: Protected.annotate(majorSwings.slice(-10), protectedLevels),
     nested: nested && nestedSwings !== minorSwings };
+  out.structure_source = EntryPreference.source(candles, tf, protectionClock);
   out.structure = { ...structure, labels: Protected.annotate(structure.labels, protectedLevels),
     recent_labels: Protected.annotate(structure.recent_labels, protectedLevels),
     last_swing_high: structure.last_swing_high ? Protected.annotate([{ ...structure.last_swing_high, type: 'high' }], protectedLevels)[0] : null,

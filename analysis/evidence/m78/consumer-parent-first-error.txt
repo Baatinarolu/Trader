@@ -1,0 +1,7 @@
+Initial parent consumer probe was incomplete; it failed on missing M78 metadata before the final test count.
+Captured stderr from that first run:
+TypeError: Cannot set properties of undefined (setting 'advanced_shortcut')
+    at /home/user/Trader/analysis/probe-m78-entry-consumers.js:152:104
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+Probe input correction: submit the SAME explicitly declared valid client snapshot to both implementations instead of dereferencing a new field absent in the parent. No production algorithm or assertion was relaxed. Final full control: consumers-parent.txt, 122 passed/47 failed.

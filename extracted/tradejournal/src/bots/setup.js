@@ -34,6 +34,7 @@ const Entry = require('./entry-models');
 const Targets = require('./targets');
 const Protected = require('./protected');
 const Stops = require('./stops');
+const EntryPreference = require('./entry-preference');
 const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
 
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -517,6 +518,12 @@ function buildSetups(analysis, ctx = {}) {
         ? 'No real opposing target on the entry timeframe or one level above — wait; the HTF projection is not an executable exit, and no measured-move or farther-target rescue is allowed.'
         : 'No real opposing target — wait for a valid magnet; no measured-move or farther-target rescue.';
     const entryAtr = useModel ? model.atr : atr;
+    const preferenceClock = ctx.observedAt || (td && td.entry_preference && td.entry_preference.observed_at)
+      || (analysis && analysis.structure_source && analysis.structure_source.observed_at) || Date.now();
+    const entryPreference = { ...((useModel ? EntryPreference.scope(model.entry_preference, entryTf, preferenceClock, dir) : null)
+      || (td && EntryPreference.scope(td.entry_preference, entryTf, preferenceClock, dir))
+      || EntryPreference.read({ dir, series: ctx.entrySeries, tf: entryTf,
+        observedAt: preferenceClock, execution: 'basic_causal_pullback' })), execution: 'basic_causal_pullback' };
     const ladderTargets = !!ctx.ladderTargets && !counter && !boundedCRT; // a bounded pullback has ONE HTF target
     const triggerRead = useModel ? model : counter ? counter.confirmation : null;
     const checks = [];
@@ -675,7 +682,7 @@ function buildSetups(analysis, ctx = {}) {
       const stop = stopChoice.raw_stop;
       const risk = stop === null ? 0 : Math.abs(entry - stop);
       const stopEvidence = ctx.stopPolicy === 'legacy' ? null : Stops.evidence(stopChoice);
-      const entryEvidence = useModel ? { ...Entry.evidence(model), ...(stopEvidence ? { stop_policy: stopEvidence } : {}) } : null;
+      const entryEvidence = useModel ? { ...Entry.evidence(model), entry_preference: entryPreference, ...(stopEvidence ? { stop_policy: stopEvidence } : {}) } : null;
       if (ctx.stopPolicy !== 'legacy') add('stop_valid', 'Defined adverse stop at the selected invalidation boundary',
         stopChoice.state === 'known', 0, stopChoice.reason);
       const ordinarySources = targetAlignment ? scopedTargets.sources.map((s) => s.analysis) : [analysis];
@@ -828,7 +835,7 @@ function buildSetups(analysis, ctx = {}) {
       levels = {
         target_policy: targetPolicy, target_tf: ladder[0] ? ladder[0].source_tf || ladder[0].tf || null : null,
         entry_tf: entryTf, stop_tf: ctx.stopPolicy === 'legacy' ? entryTf : stopChoice.source_tf,
-        stop_policy: stopEvidence,
+        stop_policy: stopEvidence, entry_preference: entryPreference,
         ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counterTargetKnown ? counterTargetTf : null } : {}),
         ...(useModel ? { entry_model: model.entry_model, entry_tf: model.entry_tf,
           stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: entryEvidence,
@@ -1080,6 +1087,7 @@ function buildSetups(analysis, ctx = {}) {
         reason: stoodDown ? standDown.reason : null,
       },
       dir, side, score, grade: g.grade, grade_label: g.label,
+      entry_preference: entryPreference,
       ...(td && td.entry_setup ? { entry_model: useModel ? model.entry_model : 'none',
         entry_tf: levels ? levels.entry_tf : model ? model.entry_tf : null,
         entry_model_state: model ? model.state : 'not_permitted_direction',

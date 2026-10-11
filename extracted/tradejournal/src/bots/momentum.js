@@ -550,7 +550,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
       method: td.method, layers: td.layers, steps: td.steps, checks: td.checks,
       score: td.score, grade: td.grade, status: td.status, direction: td.direction,
       headline: td.headline, playbook: td.playbook, blocked: td.blocked,
-      conviction: td.conviction, entry_setup: td.entry_setup, target_sources: td.target_sources,
+      conviction: td.conviction, entry_setup: td.entry_setup, entry_preference: td.entry_preference, target_sources: td.target_sources,
       ...(td.countertrend ? { countertrend: td.countertrend } : {}),
       conflicts: td.conflicts, // both aliases survive; Now/method gate consume this one
       conflict_detail: td.conflicts, crt_plan: td.crt_plan, levels: td.levels,

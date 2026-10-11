@@ -359,6 +359,9 @@
         + `<tr><td class="num">${fmt(p.safer.entry, 5)}</td><td class="num">${fmt(p.safer.stop, 5)}</td><td class="num">${fmt(p.safer.target, 5)}</td><td class="num">${p.safer.rr}R</td><td class="muted">safer — on the pullback into the range</td></tr>`
         + '</tbody>';
       box.appendChild(tbl);
+      const preference = p.entry_selection || td.entry_preference;
+      if (preference) box.appendChild(h('div', { class: 'muted bot-detail entry-preference',
+        text: `${preference.variant} preference — ${preference.reason} This table is projection only, not an advanced entry model.` }));
       if (p.below_min_rr) {
         box.appendChild(h('div', { class: 'bot-warn', text: `Below your minimum: this pays ${p.safer.rr}R against a ${p.min_rr}R floor. The method is not hiding it — but it is a scenario, not an order.` }));
       }
@@ -374,7 +377,7 @@
           const r = await global.API.post('/bots/signals/save-plan', {
             symbol: d.symbol, timeframe: d.timeframe, entry: o.entry, stop: o.stop,
             targets: lv.targets.map((t) => ({ ...t })), note: `Entry-aligned CRT ${p.side}: ${lv.entry_tf} entry; ${lv.target_tf} ${lv.targets[0].kind} target. HTF ${td.layers.bias.tf} range is narrative only.`,
-            entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence,
+            entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence, entry_preference: active.entry_preference,
             grade: active.grade, score: active.score, target_policy: lv.target_policy, stop_policy: lv.stop_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
           });
           global.App.toast(r.saved ? 'Eligible plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
@@ -436,6 +439,8 @@
     head.appendChild(h('span', { class: 'chip', text: `steps ${n.steps_done}/${n.steps_total}` }));
     if (n.entry_model && n.entry_model !== 'none') head.appendChild(h('span', { class: 'chip info', text: `${n.entry_model} · ${n.entry_tf}` }));
     card.appendChild(head);
+    if (n.entry_preference) card.appendChild(h('div', { class: 'muted bot-detail entry-preference',
+      text: `Entry preference: ${n.entry_preference.variant}. ${n.entry_preference.reason}` }));
 
     // the four facts a decision needs, side by side
     const grid = h('div', { class: 'now-grid' });
@@ -636,6 +641,8 @@
       if (dirAllowed && c.dir !== dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: 'This side is not the one the higher timeframe permits — it is shown for context only, and no order belongs here.' }));
       else if (!dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: `The method has not permitted a side yet${(d.topdown && d.topdown.blocked) ? ' (it is blocking this market)' : ''}, so this is the entry model's best read rather than a trade. Nothing here is armed.` }));
       if (c.entry_model) card.appendChild(h('div', { class: 'muted bot-detail', text: `Entry model: ${c.entry_model} · ${c.entry_tf || 'no lower model'} · ${c.entry_model_state || ''}` }));
+      if (c.entry_preference) card.appendChild(h('div', { class: 'muted bot-detail entry-preference',
+        text: `Entry preference: ${c.entry_preference.variant}. ${c.entry_preference.reason}` }));
       if (c.levels) {
         const L = c.levels;
         const rows = (L.targets || []).map((t) => `<tr><td>${esc(t.role)}</td><td>${esc(t.label)}</td><td class="mono">${fmt(t.price, 5)}</td><td class="mono">${t.rr}R</td></tr>`).join('');
@@ -680,7 +687,7 @@
           size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
           planned_r: L.rr_final, setup_grade: c.grade, entry_model: c.entry_model, entry_tf: c.entry_tf, entry_evidence: c.entry_evidence, session: (d.smc.sessions || {}).killzone || '',
           timeframes: c.entry_tf ? `${d.timeframe} POI / ${c.entry_tf} entry` : d.timeframe.toUpperCase(), strategy_name: 'Market Mechanics',
-          thesis: `${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
+          thesis: `${c.entry_preference ? `Entry preference ${c.entry_preference.variant} by ${c.entry_preference.entry_tf} internal structure; basic pullback retained. ` : ''}${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
           tags: 'bot,smc', adherence: 5,
         });
       } });

@@ -1,6 +1,21 @@
 # Independent backtest harness
 
-## Current M76/M75 verification (2026-10-11)
+## Current M78 verification (2026-10-11)
+
+Actual-entry-TF internal structure selects aggressive/conservative preference;
+current basic causal execution geometry remains candidate-owned. **Eight fresh
+runs** compare shipped256299e and M78: **all four entire outputs equal except
+runtime**,real outputs byte-equal already. Bare36/19.4%/−0.2944R/PF0.61;
+real15 n9/22.2%/+0.2222R/PF1.40;native named outcomes0. No improvement/edge.
+Core119/0,consumers169/0;actual100read census discriminates81aggressive/
+119conservative directional preferences with zero old facts/geometry changes.
+`run-m78-measurements.py` runs the controls; `verify-m78-measurements.py` checks
+whole-output equality and unchanged input-file hashes. Source guards, raw stdout
+and negatives in `evidence/m78`. [Report](../M78-ENTRY-PREFERENCE.md), latest
+BASELINE section and **74done/2partial/56todo** generated progress are current.
+Next M71 floor invariant scope check; no manufactured/shrunken2Rtarget.
+
+## Prior M76/M75 verification (2026-10-11)
 
 M76 annotation alone leaves all4 profiles unchanged. M75 current-protected-first /
 nearer-valid fallback with original buffer measures **bare36/19.4%/−0.2944R/PF0.61**,

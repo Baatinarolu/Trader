@@ -1,7 +1,7 @@
 # Backtest baselines — what changed, and why the older numbers must not be quoted
 
-LATEST: M76/M75 section at the end; earlier labels saying CURRENT are historical.
-Current ledger132:71 done/2 partial (M30/M103)/59 todo; M125 stays todo.
+LATEST: M78 section at the end; earlier labels saying CURRENT are historical.
+Current ledger132:74 done/2 partial (M30/M103)/56 todo; M125 stays todo.
 
 `node analysis/harness/backtest.js --seeds 60 --bars 1500 --window 300`
 Engine: `src/bots/smc.js analyse()` + `src/bots/setup.js buildSetups()`, unmodified call paths.
@@ -3234,3 +3234,48 @@ Cumulative pristine38 appfiles/521991 bytes,clean apply/reverse/byte0;ZIP109 app
 source files/byte0,no .git/env/keys/DBs/deps/downloads. Report M75-M76-PROTECTED-STOPS.md.
 Next M78 internal-structure ENTRY selection, not stop buffer. All57todo/2partial
 remain visible. M125 remains todo; no70% goal or borrowed higherTF protection.
+
+
+## CURRENT — M78 internal-structure entry preference, 2026-10-11
+
+Parent/control256299e; frozen110-file source guard evidence/m78/final-source.json.
+ALL EIGHT runs fresh (not reused native parent output): bare60x1500/window300,
+real15/window300, native synthetic10x1500/window300, native real5/window300.
+Raw commands/run status/stdout hashes: evidence/m78/measurement-runs.json.
+verify-m78-measurements.py compares every byte except the single synthetic elapsed
+runtime field; two real outputs already byte-equal, all four profile outputs equal.
+Same4 recovered data bytes verified against evidence/m54-m77/INPUTS.json.
+
+                   parent256299e                      M78
+bare              n36 /19.4%/ -0.2944R /PF0.61        IDENTICAL
+  A+              n13 /15.4%/ -0.5130R /PF0.39        IDENTICAL
+  A               n23 /21.7%/ -0.1709R /PF0.75        IDENTICAL
+real15            n9  /22.2%/ +0.2222R /PF1.40        IDENTICAL
+native synthetic  reads13750/known1006/ready0/outcomes0 IDENTICAL (whole states)
+native real5      reads4761/known677/ready0/outcomes0   IDENTICAL (whole states)
+
+M78 selection uses observed actual entry-TF internal trend, NOT HTF/conviction/
+risk or M69 last-break gate; unknown-conservative. CRT stays projection only;
+named basic post-shift pullback/actual stop/nearest target and risk unchanged.
+Restricted advanced aggressive shortcut NOT specified/invented; source quotes
+Ep20 10:34-11:48 and Ep18 38:25-39:08/44:17-44:39 in M78-ENTRY-PREFERENCE.md.
+No measured improvement/70% goal/edge/calibration. Realn9 dependent/below30;
+synthetic distorted, zero named native outcomes. M75 deterioration retained.
+
+Core119/0 vsparent22/97; consumers169/0 vsparent122/47. Actual100 OHLC reads,
+200 preferences:81aggressive/119conservative,37bearish/44bullish/19ranging,
+77 event-label disagreements;zero oldSMC/oldSetup/source/future errors.
+Composition seams explicitly declared; actual OHLC census separate.
+
+Regressions M33 67/0,M68 62/0,detector16/0,M70 30/0,M54 54/0,M77 87/0,
+consumers41/0,M75 41/0,consumers57/0,M76 34/0,M21 11/0,M26 49/0,reverify67/0.
+TD77/0,Now50/0,chart36/0,API121/0. Botscurrent/parent204/2,current12/parent17
+fills,both0parity mismatch,same>=20/>20 floors. API offline-clock/cache-dependent
+cohorts not a pinned paired measurement. Smoke underload21/22->same source/code
+serialized22/22;zero console/style,canvas seam disclosed. Firstconsumer164/5
+fixed missing forwarding; parent instrumentation missing-field error corrected
+with identical declared inputs;M70unpinned unknown clock29/1->pin full equality30/0;
+oldNowpremise44/2->explicit structure and added checks50/0. All negatives retained.
+
+Authoritative report analysis/M78-ENTRY-PREFERENCE.md; progress74/2/56/0/132.
+NextM71 target-floor invariant scope check; never shrink/manufacture2Rtarget.

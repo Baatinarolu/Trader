@@ -1,6 +1,17 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
-## Current M76/M75 status — 2026-10-11
+## Current M78 status — 2026-10-11
+
+**132:74 done/2 partial/56 todo/0 no-action.** M78 structure-based actual-entry-TF
+preference and legacy selector complete; no advanced shortcut/CRT execution or
+risk override. Core119/0,consumers169/0; **eight fresh runs/all four complete
+outputs unchanged except runtime**, no measured improvement. [Report](M78-ENTRY-PREFERENCE.md).
+Next **M71**: re-check primary/final RR invariant now that M51/M54/M77 make one
+real nearest target the default. Scope from Ep18 simple-2R exercise versus Ep20
+actual exits; do not impose a manufactured 2R target or optimize toward70%.
+Remaining56 todos/two partials stay visible; M125 remains open.
+
+## Prior M76/M75 status — 2026-10-11
 
 **132:73 done/2 partial/57 todo/0 no-action.** Protected-level annotation and
 current-protected-first/nearer-valid fallback stop hierarchy measured separately;

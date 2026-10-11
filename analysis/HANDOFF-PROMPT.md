@@ -1,6 +1,77 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M76/M75 continuation state — 2026-10-11
+## Current M78 continuation state — 2026-10-11
+
+- Fixed branch **arena/762c0295-trader**. M78 complete; parent/control **256299e**.
+  Read git for exact commit/push status. Ledger **132:74 done/2 partial/56 todo/
+  0 no-action**, asserted eight-group partition. M30/M103 partial; M125 TODO.
+  User CONTINUE; do not repeat clarifying questions or resurrect70% goal.
+- Ep20 10:34–11:48 structural agreement selector; actual entry-TF internal flow
+  per03:41/09:01,notHTF/conviction/risk. Historical selector was confirmed(tier A)
+  ?sf:ag,notfullRisk. Recovered Ep18 does not establish old personality quotation.
+  Free Ep18 causal pullback10:43–12:18 remains; advanced38:25–39:08/44:17–44:39
+  restricted/unspecified, NOT invented. Preference vs named basic execution distinct.
+- entry-preference.js pure rule: known bullish+long/bearish+short aggressive;
+  opposed/ranging/unknown conservative. SMC structure_source stamps actual
+  closed window/TF/clock; no structure algorithm change. Missing/mismatched/
+  future/forming/truncated metadata cannot be guessed closed knowledge. Appended
+  unobserved display candles don't change an already-closed labelled read.
+- Candidate/Now/chart/scan/Copy/Save/UI/evidence/notes carry same actual TF/variant.
+  Momentum compact projection had dropped new field, caught/fixed by consumer
+  tests. CRT preferred field remains projection only; no fallback live order
+  from projection. Actual candidates own entry/stop/target/RR/risk. Basic post-shift
+  zone pullback/M70 fuel/M75 hierarchy+originalbuffer/M33 narrative+half-risk/
+  M54/M77 nearest target/noRRrescue and all existing gates preserved.
+- Bounded saved preference validates direction/TF/label/variant/clock and no
+  advanced permission; nested/duplicate mismatch refused; key reorder accepted.
+  Client consistency, NOT server OHLC replay. No DB column/guessed backfill.
+  Old live calibration withheld, no new probability or advanced model claim.
+- Feature tests **119/0 vs22/97**,consumers **169/0 vs122/47**;288 assertions is
+  not132 ledger findings. Actual100 SMC reads/200 preferences **81 aggressive/
+  119 conservative**, trends37 bearish/44 bullish/19 ranging;77 last-break/label
+  disagreements. Zero source/oldSMC/oldSetup/future read errors. Composition
+  fixtures explicitly declare closed structural labels/pools/CRT context; real
+  validator/composer/auth/DB/browser run, not full HTF/MTF OHLC-only discovery.
+- **ALL EIGHT profile runs freshly executed**, same unchanged4 real datasets.
+  Whole four stdout equal parent except runtime (real outputs byte-equal already):
+  bare **36/19.4%/−0.2944R/PF0.61**,real15 **9/22.2%/+0.2222R/PF1.40**;
+  native13750/known1006/ready0/outcomes0;real4761/known677/ready0/outcomes0.
+  No improvement. Real dependent/n9<30; synthetic distorted; native outcomes0
+  precludes calibration/ranking. M75 negative result remains, not tuned away.
+- Regressions:M33 67/0,M68 62/0,detector16/0,M70 30/0,M54 54/0,M77 87/0,
+  M77consumers41/0,M75stops41/0,consumers57/0,M76 34/0,M21 11/0,M26 49/0,
+  reverify67/0,TD77/0,Now50/0,chart36/0,API121/0. Botscurrent/parent204/2,
+  current12 vsparent17 fills, both0parity mismatches, same≥20/>20 sample floors.
+  Wall-clock/cache dependent API cohorts NOT pinned paired outcomes.
+- Initialconsumer164/5 exposed scan missing forwarding; final169/0, noassert
+  weakened. Initialparent probe dereferenced absent metadata; fixed test input
+  to same declared client snapshot, final122/47. M70initial29/1 unknown observation
+  timestamp drift; fixture clock pinned, FULL object equality retained30/0.
+  Nowoldpremise44/2→explicitstructure+extra cases50/0. Provider failures before
+  offlineenv are retained; offline results do not establish production transport.
+  Smoke load21/22→serialized SAME code22/22,zero style/console; both retained,
+  canvas seam is not pixel/zoom/pan proof. Historical chart issue remains.
+- Current preview3000: offline synthetic/localSQLite **/tmp/m78-regressions.db**,
+  scheduler0/blank remote credentials. Parent3001 temporary API control is
+  **stopped** after verification. ProductionYahoo/Turso/Vercel/auth/cron unvalidated;
+  no credentials modified/rotated/stored. Source guards/results evidence/m78,
+  complete report **M78-ENTRY-PREFERENCE.md**;110 guarded app files.
+- Durable m78-entry-preference.patch applies on256299e; M78-STAGES.json,
+  cumulative pristine patch and tradingpro-fixed.zip rebuilt with clean apply+
+  reverse/byte comparison, original lock unchanged. Delta12files/45754bytes/
+  SHA935fd68f…67cb73e; pristine39files/541853bytes/SHA4c1b5cc3…7b8133a.
+  ZIP110appfiles/byte0. Historical builders are
+  source-locked; use latest builder, never run old main() on changed source.
+- **NEXT M71**: primary/final RR invariant after existing single-target fixes;
+  re-check Ep18 simple2R exercise against Ep20 actual-nearest exits, preserve
+  user floors and do NOT manufacture/shrink a2Rtarget. M72 optional/gated,
+  M73/M46 inducement open; all56todo+2partial remain. Course30 comparison floor
+  and M103 deliberately≥5 detector gate unchanged.
+
+Everything below is historical; current state above supersedes earlier counts,
+selectors, branch instructions and next-work prescriptions.
+
+## Prior M76/M75 continuation state — historical — 2026-10-11
 
 - Fixed branch **arena/762c0295-trader**; parent/control **9f629c1**. M76/M75
   complete in this milestone; read git for exact commit/push status.

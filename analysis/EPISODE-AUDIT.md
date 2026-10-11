@@ -4,7 +4,25 @@
 each transcript returns — roughly the first quarter of each video. This ledger tracks a complete pass:
 every episode, every chunk, in playlist order (Ep 0 → 33, then bonuses, then the EdgeFlo tool episodes).
 
-## Current follow-through — M76/M75,2026-10-11
+## Current follow-through — M78, 2026-10-11
+
+Ledger132: **74 done / 2 partial / 56 todo / 0 no-action**. M78 uses observed
+actual-entry-TF internal structure, not conviction/risk/HTF or the mandatory shift
+event. Known agreement → aggressive; opposed/ranging/unknown → conservative.
+Free causal sweep→later shift→post-shift pullback and current-protected stop /
+nearest qualified target / risk authority remain. CRT preference is projection,
+not proprietary advanced entry permission. Corrected old source description:
+shipped selector was confirmed(tier A)?safer:aggressive; the recovered Ep18 does
+not establish the old personality quotation. Ep20 10:34–11:48 independently
+supplies the rule; Ep18 38:25–39:08/44:17–44:39 restricts advanced shortcuts.
+Core119/0,consumers169/0 versus controls22/97 and122/47. Actual100 reads:81
+aggressive/119 conservative over both directions,zero old facts/geometry/risk
+changes. **Eight fresh four-profile comparisons, whole outputs unchanged except
+runtime**:bare36/−0.2944R,real15 n9/+0.2222R,native outcomes0. No improvement/edge.
+[Authoritative scope, controls and negative results](M78-ENTRY-PREFERENCE.md).
+Next M71 target-floor invariant re-check; do not manufacture/shrink a 2R target.
+
+## Prior follow-through — M76/M75,2026-10-11
 
 Ledger132: **73 done/2 partial/57 todo/0 no-action**. Current causal protected
 high/low first; nearer valid older protection/zone fallback, same buffer. This
@@ -2957,11 +2975,18 @@ all four measured outputs unchanged from M54 except runtime. Named native outcom
 sample remains zero. Only1m→5m is course-explicit; broader adjacency is documented
 engineering policy. `analysis/M54-M77-TARGETS.md` has exact scope/limitations.
 
-**M78 (S3) — the aggressive/conservative selection criterion is not implemented.** Ep 18 left
-the choice to *"your personality"*; Ep 20 gives a rule — **internal structure on your side →
-aggressive; not → conservative**. The code's `aggressive`/`safer` pair (`topdown.js:329`, `:364`)
-belongs to the **CRT** plan and is selected at `now.js:169` on `fullRisk`, not on structure
-agreement. The axis exists; the signal driving it is different.
+**M78 (S3) — APPLIED, with the original source description corrected.** Ep20
+**10:34–11:48** gives **internal structure on your side → aggressive; opposed or
+uncertain → conservative**; 03:41/09:01 identify actual entry-TF internal flow,
+not HTF agreement. The historical personality attribution is not established by
+the recovered Ep18 and is withdrawn. Actual shipped256299e legacy Now selected
+`confirmed ? sf : ag` (conviction tier A), not fullRisk. M69's trendAligned is a
+mandatory break-event gate, not the label used for this preference. Shared M78
+selector and observed physical-TF evidence now survive actual consumers/storage;
+CRT scenarios remain projections, basic named causal pullback remains mandatory.
+No unspecified restricted advanced shortcut is invented (Ep18 38:25–39:08,
+44:17–44:39). Core119/0 vs22/97; consumers169/0 vs122/47; all four fresh outcome
+profiles unchanged in full except runtime. See [M78 report](M78-ENTRY-PREFERENCE.md).
 
 **Ep 20 complete — 4/4 chunks.**
 

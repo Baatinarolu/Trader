@@ -64,9 +64,10 @@ for (const dir of [-1, 1]) {
 ok('short-series sentinel says protection is UNKNOWN, not a fabricated false/zero level',
   SMC.analyse([], { tf: '15m', observedAt: T }).protected_levels?.state === 'unknown');
 
-// ACTUAL OHLC discovery; same full inputs on current and parent. Only M76 fields
-// are removed for neutrality -- never prices, grades, states, or existing evidence.
-const annotationKeys = new Set(['protected', 'protection_state', 'protected_level', 'protected_levels', 'protection', 'stop_policy']);
+// ACTUAL OHLC discovery; same full inputs on current and parent. Only added
+// M76/M75/M78 annotation fields are removed -- never old prices/gates/grades/risk.
+// M78 separately proves its annotation neutrality against shipped 256299e.
+const annotationKeys = new Set(['protected', 'protection_state', 'protected_level', 'protected_levels', 'protection', 'stop_policy', 'entry_preference', 'structure_source']);
 function strip(x) {
   if (Array.isArray(x)) return x.map(strip);
   if (x && typeof x === 'object') return Object.fromEntries(Object.entries(x).filter(([k]) => !annotationKeys.has(k)).map(([k, v]) => [k, strip(v)]));

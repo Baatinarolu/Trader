@@ -4,6 +4,7 @@
  * the two-model LTF composer (M68). Geometry, not strength, defines extreme.
  */
 const Protected = require('./protected');
+const EntryPreference = require('./entry-preference');
 const number = (v) => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
 function preferExtreme({ chosen, flipZones = [], orderBlocks = [], sweeps = [], dir, enabled = true }) {
   if (!enabled || !chosen || !chosen.zone) return null;
@@ -63,6 +64,7 @@ function compose({ medium, lower, dir, poi, useBreakers = false, observedAt = Da
   if (!mediumMs || !lowMs || lowMs >= mediumMs || !lower.smc || lower.smc.ok === false
       || !(lower.candles || []).length || !(medium.candles || []).length)
     return wait('unknown', 'Distinct lower-timeframe model data is unavailable; no named model is inferred.');
+  result.entry_preference = EntryPreference.read({ dir, series: lower, tf: lower.tf, observedAt });
   result.applies = true;
   const closed = lower.candles.filter((b) => number(b.t) !== null && b.t + lowMs <= observedAt);
   const z = poi && poi.zone;
@@ -172,6 +174,7 @@ function evidence(model) {
     poi: model.point_of_interest, sweep: model.sweep, stop_sweep: model.stop_sweep || model.sweep, shift: model.shift,
     zone: model.zone ? { kind: model.zone.kind, bottom: model.zone.bottom, top: model.zone.top,
       entry: model.zone.entry, origin_t: model.zone.origin_t, formation_t: model.zone.formation_t } : null,
+    entry_preference: model.entry_preference || null,
     mitigation_at: model.mitigation_at, preference: model.preference,
     protection: model.protection ? { state: model.protection.state, tf: model.protection.tf,
       observed_at: model.protection.observed_at, current: Protected.forSweep(model.protection, model.stop_sweep || model.sweep) } : null };
@@ -185,6 +188,8 @@ function encodeEvidence(v, model, tf = null) {
   const data = typeof v === 'string' ? JSON.parse(v) : v;
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('entry_evidence must be a JSON object');
   if (data.model !== model || (tf && data.tf !== tf)) return null;
+  if (data.entry_preference) EntryPreference.check(data.entry_preference, data.tf,
+    data.shift ? sign(data.shift.dir) : null);
   const encoded = JSON.stringify(data);
   if (encoded.length > 16000) throw new Error('entry_evidence exceeds 16000 characters');
   return encoded;

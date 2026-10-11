@@ -22,6 +22,7 @@
  */
 
 const SMC = require('./smc');
+const EntryPreference = require('./entry-preference');
 const Setup = require('./setup');   // M39: one clock, one list of windows
 const MS = { m: 60000, h: 3600000, d: 86400000, w: 604800000 };
 const TF_MS = { '1m': MS.m, '5m': 5 * MS.m, '15m': 15 * MS.m, '30m': 30 * MS.m, '1h': MS.h, '4h': 4 * MS.h, '1d': MS.d, '1w': MS.w };
@@ -138,6 +139,12 @@ function build(p = {}) {
   const convictionTier = conviction && conviction.tier ? conviction.tier : null;
   const confirmed = convictionTier === 'A';
   const fullRisk = confirmed && Setup.methodRiskMult(td, direction) === 1;
+  const entryTf = allowed && (allowed.entry_tf || allowed.levels && allowed.levels.entry_tf)
+    || td.entry_setup && td.entry_setup.entry_tf || td.entry_preference && td.entry_preference.entry_tf || tf;
+  let entryPreference = (allowed && EntryPreference.scope(allowed.entry_preference
+      || allowed.levels && allowed.levels.entry_preference, entryTf, nowMs, direction))
+    || EntryPreference.scope(td.entry_preference, entryTf, nowMs, direction)
+    || EntryPreference.read({ dir: direction, series, tf: entryTf, observedAt: nowMs });
 
   const pendingStep = (td.steps || []).find((s) => !s.done) || null;
   const doneSteps = (td.steps || []).filter((s) => s.done).length;
@@ -241,19 +248,20 @@ function build(p = {}) {
   } else if (direction && plan) {
     side = direction;
     action = direction > 0 ? 'BUY' : 'SELL';
+    entryPreference = { ...entryPreference, execution: 'crt_scenario' };
     const ag = plan.aggressive || {};
-    const sf = plan.safer || {};
-    const chosen = confirmed ? sf : ag;      // tier B = half risk, so take the better price
+    const selection = EntryPreference.choose(plan, entryPreference);
+    const chosen = selection.scenario || {}; // M78: structure, never conviction/risk
     order = {
       side: direction > 0 ? 'long' : 'short',
-      type: 'stop-limit at the confirmation',
+      type: selection.variant === 'aggressive' ? 'stop-limit at the confirmation' : 'limit on the swept-edge retest',
       entry: num(chosen.entry), stop: num(chosen.stop), target: num(chosen.target),
       rr: num(chosen.rr), alt_entry: num(ag.entry), alt_target: num(ag.target), alt_rr: num(ag.rr),
       size_note: Setup.methodRiskMult(td, direction) < 1
         ? 'Counter-HTF rotation: at most half ordinary same-grade risk, even with lower-timeframe confirmation.'
         : fullRisk ? 'Full risk: the method is confirmed and the lower timeframe has confirmed it too.'
-          : 'Half risk: the range is confirmed but the lower-timeframe confirmation is not in yet — take the deeper (safer) fill.',
-      mode: confirmed ? 'safer' : 'aggressive',
+          : 'Half risk: lower-timeframe confirmation is not in yet. Sizing does not choose the entry variant.',
+      mode: selection.field,
       // the trader asked for these to be shown rather than hidden — but never silently
       rr_warning: (Number(num(chosen.rr)) > 0 && Number(num(chosen.rr)) < minRR)
         ? `Below your ${minRR}R minimum — this pays ${num(chosen.rr)}R. The range is real; the reward does not pay for the risk. Treat it as a scenario, not an order.`
@@ -263,7 +271,7 @@ function build(p = {}) {
     watch = {
       level: num(chosen.entry), kind: 'entry',
       condition: `price must trade into ${num(chosen.entry)} with the range ${plan.range ? `${num(plan.range.low)} – ${num(plan.range.high)}` : ''} still holding`,
-      text: `Order sits at ${num(chosen.entry)} (${fullRisk ? 'the confirmation' : 'the pullback into the range'}). Stop ${num(chosen.stop)}, target ${num(chosen.target)} (${num(chosen.rr)}R).`,
+      text: `Order sits at ${num(chosen.entry)} (${selection.variant === 'aggressive' ? 'the confirmation' : 'the retest of the swept edge'}). Stop ${num(chosen.stop)}, target ${num(chosen.target)} (${num(chosen.rr)}R).`,
     };
     invalidate = plan.invalidation || `If price closes back through ${num(chosen.stop)} the read is wrong — take the loss, do not average.`;
     if (plan.lopsided) {
@@ -283,6 +291,10 @@ function build(p = {}) {
       action = 'WAIT';
       headline = `${symbol} ${tf}: the ${direction > 0 ? 'long' : 'short'} idea is real but the easy part of the range is gone — wait for the next right candle rather than chasing this one.`;
       order = null;
+    } else if (plan.projection_only) {
+      action = 'WAIT'; side = 0; order = null;
+      headline = `${symbol} ${tf}: CRT ${selection.variant} preference is a projection only — no eligible candidate order. ${entryPreference.reason}`;
+      watch.condition = 'obtain an eligible causal entry candidate; the HTF projection is not permission to enter';
     }
   } else if (direction) {
     action = 'WAIT';
@@ -313,6 +325,11 @@ function build(p = {}) {
       watch = { level: null, kind: 'none', condition: 'no qualifying range on the higher timeframe yet', text: 'Nothing to watch until a right candle forms at a level that matters.' };
     }
     invalidate = 'Nothing to invalidate — there is no read yet. A sweep that closes back inside the range creates one.';
+  }
+
+  if (order) {
+    order.entry_variant = entryPreference.variant;
+    order.entry_preference = entryPreference;
   }
 
   /* ------------------------------------------------- the other side ------- */
@@ -394,7 +411,7 @@ function build(p = {}) {
       replay: !!replay, trim: replay ? replay.trim : 0,
     },
     live: quote ? { price: num(quote.price), at: quote.at ? new Date(quote.at).toISOString() : null, provider: quote.provider || null, drift_atr: drift === null ? null : Number(drift.toFixed(2)) } : null,
-    action, side, headline,
+    action, side, headline, entry_preference: entryPreference,
     ...(td.entry_setup ? { entry_model: allowed ? allowed.entry_model || 'none' : 'none', entry_tf: allowed ? allowed.entry_tf : null } : {}),
     armed: !!order,
     order,

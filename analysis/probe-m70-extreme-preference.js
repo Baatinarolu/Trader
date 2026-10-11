@@ -27,6 +27,7 @@ function fixture(dir) {
     t: f.END - 2 * 900000, i: 117, bars_ago: 2 }];
   const read = (raw, opts = {}) => Setup.buildSetups(raw, { price: raw.price, atr: 1,
     bias: dir, indicators: f.input.series.ind, minRR: 2, balance: 10000, riskPct: .5,
+    observedAt: f.END, // pin the added M78 observation snapshot; retain full-candidate equality
     useBreakers: true, ...opts }).candidates.find((c) => c.dir === dir);
   return { f, a, m, bounds, read };
 }

@@ -1,0 +1,121 @@
+ FAIL -1/bearish: actual internal label selects aggressive, not the opposed break/HTF
+ FAIL -1/bearish: A AND B select the same CRT variant/price
+ ok   -1/bearish: conviction still sizes independently
+ FAIL -1/bearish: selector exposes the rule/reason, not an advanced shortcut
+ FAIL -1/bullish: actual internal label selects conservative, not the opposed break/HTF
+ FAIL -1/bullish: A AND B select the same CRT variant/price
+ ok   -1/bullish: conviction still sizes independently
+ FAIL -1/bullish: selector exposes the rule/reason, not an advanced shortcut
+ FAIL -1/ranging: actual internal label selects conservative, not the opposed break/HTF
+ FAIL -1/ranging: A AND B select the same CRT variant/price
+ ok   -1/ranging: conviction still sizes independently
+ FAIL -1/ranging: selector exposes the rule/reason, not an advanced shortcut
+ FAIL -1/unknown: actual internal label selects conservative, not the opposed break/HTF
+ FAIL -1/unknown: A AND B select the same CRT variant/price
+ ok   -1/unknown: conviction still sizes independently
+ FAIL -1/unknown: selector exposes the rule/reason, not an advanced shortcut
+ FAIL 1/bearish: actual internal label selects conservative, not the opposed break/HTF
+ FAIL 1/bearish: A AND B select the same CRT variant/price
+ ok   1/bearish: conviction still sizes independently
+ FAIL 1/bearish: selector exposes the rule/reason, not an advanced shortcut
+ FAIL 1/bullish: actual internal label selects aggressive, not the opposed break/HTF
+ FAIL 1/bullish: A AND B select the same CRT variant/price
+ ok   1/bullish: conviction still sizes independently
+ FAIL 1/bullish: selector exposes the rule/reason, not an advanced shortcut
+ FAIL 1/ranging: actual internal label selects conservative, not the opposed break/HTF
+ FAIL 1/ranging: A AND B select the same CRT variant/price
+ ok   1/ranging: conviction still sizes independently
+ FAIL 1/ranging: selector exposes the rule/reason, not an advanced shortcut
+ FAIL 1/unknown: actual internal label selects conservative, not the opposed break/HTF
+ FAIL 1/unknown: A AND B select the same CRT variant/price
+ ok   1/unknown: conviction still sizes independently
+ FAIL 1/unknown: selector exposes the rule/reason, not an advanced shortcut
+ FAIL missing source provenance: explicitly unknown/conservative, never guessed agreement
+ FAIL wrong analysis TF: explicitly unknown/conservative, never guessed agreement
+ FAIL wrong physical TF: explicitly unknown/conservative, never guessed agreement
+ FAIL future snapshot: explicitly unknown/conservative, never guessed agreement
+ FAIL forming-built label: explicitly unknown/conservative, never guessed agreement
+ FAIL unobserved last close: explicitly unknown/conservative, never guessed agreement
+ FAIL truncated stamp/window mismatch: explicitly unknown/conservative, never guessed agreement
+ FAIL duplicate timestamps: explicitly unknown/conservative, never guessed agreement
+ FAIL unsupported trend label: explicitly unknown/conservative, never guessed agreement
+ FAIL short-series sentinel: explicitly unknown/conservative, never guessed agreement
+ FAIL appending unobserved display candles cannot change a genuinely closed structural snapshot
+ FAIL scope rejects another TF, direction and future decision clock
+ FAIL saved metadata cannot claim aligned aggression against its declared internal trend
+ FAIL saved unknown metadata cannot claim aggression
+ FAIL saved metadata cannot claim proprietary advanced authorization
+ FAIL saved metadata cannot hide a wrong execution TF/direction
+ FAIL CRT preference NEVER promotes projection-only prices into an executable Now fallback
+ FAIL -1/market_shift/true: actual candidate exposes aggressive on actual 5m, independent of opposing HTF narrative
+ FAIL -1/market_shift/true: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   -1/market_shift/true: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL -1/market_shift/true: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL -1/market_shift/true: named evidence stores the same selection and no advanced authorization
+ FAIL -1/market_shift/false: actual candidate exposes conservative on actual 5m, independent of opposing HTF narrative
+ FAIL -1/market_shift/false: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   -1/market_shift/false: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL -1/market_shift/false: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL -1/market_shift/false: named evidence stores the same selection and no advanced authorization
+ FAIL -1/market_shift/null: actual candidate exposes conservative on actual 5m, independent of opposing HTF narrative
+ FAIL -1/market_shift/null: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   -1/market_shift/null: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL -1/market_shift/null: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL -1/market_shift/null: named evidence stores the same selection and no advanced authorization
+ FAIL -1/market_shift: aligned aggressive preference does not bypass missing post-shift pullback
+ FAIL -1/flip/true: actual candidate exposes aggressive on actual 5m, independent of opposing HTF narrative
+ FAIL -1/flip/true: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   -1/flip/true: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL -1/flip/true: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL -1/flip/true: named evidence stores the same selection and no advanced authorization
+ FAIL -1/flip/false: actual candidate exposes conservative on actual 5m, independent of opposing HTF narrative
+ FAIL -1/flip/false: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   -1/flip/false: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL -1/flip/false: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL -1/flip/false: named evidence stores the same selection and no advanced authorization
+ FAIL -1/flip/null: actual candidate exposes conservative on actual 5m, independent of opposing HTF narrative
+ FAIL -1/flip/null: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   -1/flip/null: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL -1/flip/null: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL -1/flip/null: named evidence stores the same selection and no advanced authorization
+ FAIL -1/flip: aligned aggressive preference does not bypass missing post-shift pullback
+ FAIL 1/market_shift/true: actual candidate exposes aggressive on actual 5m, independent of opposing HTF narrative
+ FAIL 1/market_shift/true: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   1/market_shift/true: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL 1/market_shift/true: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL 1/market_shift/true: named evidence stores the same selection and no advanced authorization
+ FAIL 1/market_shift/false: actual candidate exposes conservative on actual 5m, independent of opposing HTF narrative
+ FAIL 1/market_shift/false: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   1/market_shift/false: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL 1/market_shift/false: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL 1/market_shift/false: named evidence stores the same selection and no advanced authorization
+ FAIL 1/market_shift/null: actual candidate exposes conservative on actual 5m, independent of opposing HTF narrative
+ FAIL 1/market_shift/null: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   1/market_shift/null: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL 1/market_shift/null: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL 1/market_shift/null: named evidence stores the same selection and no advanced authorization
+ FAIL 1/market_shift: aligned aggressive preference does not bypass missing post-shift pullback
+ FAIL 1/flip/true: actual candidate exposes aggressive on actual 5m, independent of opposing HTF narrative
+ FAIL 1/flip/true: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   1/flip/true: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL 1/flip/true: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL 1/flip/true: named evidence stores the same selection and no advanced authorization
+ FAIL 1/flip/false: actual candidate exposes conservative on actual 5m, independent of opposing HTF narrative
+ FAIL 1/flip/false: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   1/flip/false: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL 1/flip/false: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL 1/flip/false: named evidence stores the same selection and no advanced authorization
+ FAIL 1/flip/null: actual candidate exposes conservative on actual 5m, independent of opposing HTF narrative
+ FAIL 1/flip/null: M69 shift remains mandatory but does NOT trivialize this selector
+ ok   1/flip/null: basic causal pullback entry/stop/target/RR/risk/grade remain unchanged
+ FAIL 1/flip/null: Now actual prices remain candidate-owned, not an aggressive CRT shortcut
+ FAIL 1/flip/null: named evidence stores the same selection and no advanced authorization
+ FAIL 1/flip: aligned aggressive preference does not bypass missing post-shift pullback
+ FAIL actual OHLC census exercises 100 genuine SMC reads with both observed structural preferences
+ FAIL actual OHLC preference source/clock/TF/label selection errors: ZERO — 200
+ FAIL actual closed source snapshot ignores appended future display bars: ZERO preference differences — 200
+ FAIL labels recomputed with unobserved candles are NOT promoted as closed knowledge — 200
+ ok   actual detector old SMC facts unchanged versus 256299e (only M78 annotation removed)
+ ok   actual detector old Setup prices/gates/grades/risk unchanged versus 256299e
+{"reads":100,"preferences":{"aggressive":0,"conservative":0},"trends":{"bearish":37,"bullish":44,"ranging":19},"break_label_disagreements":77,"source_errors":200,"smc_differences":0,"setup_differences":0,"appended_future_differences":200,"forming_source_errors":200}
+M78 CORE: 22 passed, 97 failed

@@ -53,6 +53,7 @@
 const C = require('../candles');
 const Setup = require('./setup');
 const Entry = require('./entry-models');
+const EntryPreference = require('./entry-preference');
 const Targets = require('./targets');
 
 const r4 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 10000) / 10000);
@@ -626,14 +627,24 @@ function build(args) {
     report.crt_plan.execution_authority = 'setup_candidate';
     report.crt_plan.target_note += ' HTF projection only; the final candidate selects an entry-aligned exit (M77).';
   }
+  const observation = opts.observedAt || args.triggerSeries && args.triggerSeries.observed_at || Date.now();
+  const preferenceSource = opts.entryModels === false ? args.series : args.triggerSeries || args.series;
+  report.entry_preference = EntryPreference.read({ dir: report.direction, series: preferenceSource,
+    tf: preferenceSource.tf, observedAt: observation,
+    execution: opts.entryModels === false ? 'crt_scenario' : 'basic_causal_pullback' });
+  if (report.crt_plan) report.crt_plan.entry_selection = { ...report.entry_preference,
+    selected_field: report.entry_preference.variant === 'aggressive' ? 'aggressive' : 'safer', projection_only: true };
   if (opts.entryModels === false) return report; // isolated pre-M68 research arm
   const lower = args.triggerSeries || args.series;
   const model = report.direction ? Entry.compose({ medium: args.series, lower,
     dir: report.direction, poi: Setup.selectZone(args.series.smc, report.direction, opts),
-    useBreakers: !!opts.useBreakers, observedAt: opts.observedAt || lower.observed_at || Date.now(),
+    useBreakers: !!opts.useBreakers, observedAt: observation,
     maxSweepAge: Setup.SWEEP_LOOKBACK }) : { applies: false, entry_model: 'none',
       entry_tf: lower.tf, ready: false, state: 'waiting_direction', reasons: ['The HTF method has not permitted an execution direction.'] };
   report.entry_setup = { ...model, dir: report.direction };
+  if (model.entry_preference) report.entry_preference = model.entry_preference;
+  if (report.crt_plan) report.crt_plan.entry_selection = { ...report.entry_preference,
+    selected_field: report.entry_preference.variant === 'aggressive' ? 'aggressive' : 'safer', projection_only: true };
   if (!model.applies) return report;
   const info = report.layers.trigger.confirmation;
   if (info) {
