@@ -15,8 +15,10 @@
  * METHODOLOGY (stated so the numbers are auditable):
  *   · at each bar i, the engine sees ONLY candles[0..i] — no lookahead
  *   · a signal is acted on from bar i+1 onward
- *   · single target = targets[0] (T1). The code ships a 3-target ladder with a 50%
- *     partial (M51, unresolved); using T1 alone is the conservative single-target read
+ *   · single target = targets[0] (T1). M51 ships ONE target by default.
+ *     --ladder is an explicit optional management/research view; this harness
+ *     STILL values only T1, not 50% partial + BE + runner. M71 ladder measurements
+ *     test eligibility/first-target outcomes, NOT managed ladder expectancy.
  *   · same-bar ambiguity (both stop and target inside one bar) resolves to the STOP —
  *     deliberately pessimistic
  *   · one position at a time; scanning resumes after the trade closes

@@ -1,6 +1,62 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M78 continuation state — 2026-10-11
+## Current M71 continuation state — 2026-10-11
+
+- Fixed branch **arena/762c0295-trader**. M71 complete; actual parent **184695d**.
+  Read git for exact HEAD/push. **132:75 done/2 partial/55 todo/0 no-action**,
+  exact eight-group partition. M30/M103 partial; M125 TODO. Do not ask more
+  clarifiers, lower targets/floors for win rate or revive the70% objective.
+- [M71 authoritative report](M71-PRIMARY-RR.md): first paid magnet qualifies RR,
+  no optional runner rescue. Runway/check/cap/hard veto read rr_primary_exact;
+  rr_floor records primary/floor/price/TF/precision. Existing conservative min
+  of working/published geometry and1e-9R tolerance; display-rounded2.00 cannot pass
+  actual sub-floor. Explicit pre-M77 research rounding remains honestly labelled.
+- Default single-target path was already correct. No entry/stop/target/catalogue/
+  physicalTF/causal evidence/risk coefficients move. Refused grade-C hypothetical
+  size may drop through existing grade policy. Default/eligible sizing identical.
+  Single-target instruction now set-and-forget (no algorithm change); Copy labels
+  first floor/final not floor evidence; journal targetT1/planned_r now same endpoint.
+  Optional ladder display/50%/50%/BE kept; bounded M33/CRT still one target.
+- Saved route min_rr and M26 session_pref were silently ignored (undefined db).
+  **Separately measured** D.db repairs: primary consumers45/3→floor-only48/0;
+  isolated settings7/8→12/3→full15/0. Query wins, defaults/clamps preserved, saved
+  NY/queryLondon and savedLondon/queryNY actual gates exercised. API/UIdefault1,
+  direct Setup2; user0.1–10 floors retained. Scan existing fixed2 unchanged.
+- Feature226/0+48/0+15/0+clipboard6/0=295; exhaustive default full-output path neutrality1/0.
+  Parent132/94,12/36,7/8. Actual100 syntheticOHLC→SMC reads/400 candidates:zero
+  changed geometry/configured-policy/evidence and default score/grade/permission;
+  zero permitted sub-floor targets, but zero detected-candle positive runner rescues in
+  this small census. Named composition fixtures explicitly declare narrative/IO.
+- **Twelve fresh engine runs** (both arms) on frozen184695d/primary-M71, four
+  defaults+two explicit ladder profiles. Every110 appfile/harness/dataset hash
+  guarded. All four full default outputs equal except elapsed runtime:bare36/
+  19.4%/−0.2944R/PF0.61;real15n9/22.2%/+0.2222R/PF1.40;native outcomes0.
+  No improvement/edge. Optional ladder harness STILL valuesT1 only, not partial/
+  BE/runner lifecycle:synthetic61/23.0%/−0.2070R/PF0.64→36/19.4%/−0.2944R/PF0.61
+  (**deterioration−0.0874R**);real30/23.3%/−0.0263R/PF0.93→9/22.2%/+0.2222R/PF1.40.
+  Cohorts differ/sequential scan, not paired causal estimates; realn9<30/dependent.
+- Historical current M78core118/1/M76core33/1 are ENTIRE-object comparator failures
+  after intentional M71 newfields/narration; raw failures retained, not weakened.
+  Frozen pre-M71 tests119/0 and34/0; exhaustive current-vs184695d validates ONLY
+  new RR evidence/narration differences and finds zero other changed paths.
+  M78consumers169/0,M77core87/0/cons41/0,M75core41/0/cons57/0; rest in report.
+- Four independent stage patches + combined M71 delta/cumulative pristineZIP
+  patch guarded in M71-STAGES.json; builders clean apply/reverse/byte proofs;
+  package lock untouched; root tradingpro-fixed.zip has110 final application files.
+  Archive hash companion evidence/m71/archive-sha256.json deliberately excluded
+  from ZIP to avoid circular self-hash. Older stage patches preserved.
+- Current preview3000 offline synthetic/localDB /tmp/m71-regressions.db,
+  scheduler0/blank remote credentials. Parent3001 stopped; correctly addressed
+  API121/0 both, bots204/2 both with17 fills/0 mismatches, unchanged sample floors.
+  Initial parent bots URL misinvocation203/3 retained, not valid parent evidence;
+  explicit TJ_BASE reruns correct. Smoke22/22,0UIstyle/console errors. No live Yahoo/Turso/Vercel/auth/cron/pixel
+  proof. Manual save/journal remains research input, not execution authorization
+  or server OHLC validation. Production/chart historical issues stay visible.
+- **NEXT M79/M80**, guardrail enforcement/accountable override and dependent
+  gates independently scoped/measured; preserve course30 M11, deliberate M103
+  n>=5 and all existing risk/grade/narrative/basic-pullback/current-stop policies.
+
+## Historical M78 continuation state — 2026-10-11
 
 - Fixed branch **arena/762c0295-trader**. M78 complete; parent/control **256299e**.
   Read git for exact commit/push status. Ledger **132:74 done/2 partial/56 todo/

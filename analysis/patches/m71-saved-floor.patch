@@ -1,0 +1,13 @@
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 9031293..6b556a8 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -47,7 +47,7 @@ async function floorOf(req) {
+   const q = Number(req.query.min_rr);
+   if (Number.isFinite(q) && q > 0) return Math.min(Math.max(q, 0.1), 10);
+   try {
+-    const row = await db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
++    const row = await D.db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
+     const set = row && row.settings ? JSON.parse(row.settings) : {};
+     const v = Number(set.min_rr);
+     if (Number.isFinite(v) && v > 0) return Math.min(Math.max(v, 0.1), 10);

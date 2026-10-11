@@ -1,0 +1,13 @@
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 6b556a8..e47942a 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -36,7 +36,7 @@ async function prefOf(req) {
+   const q = req.query.session_pref;
+   if (q != null && String(q).trim() !== '') return String(q).trim();
+   try {
+-    const row = await db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
++    const row = await D.db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
+     const set = row && row.settings ? JSON.parse(row.settings) : {};
+     if (set.session_pref != null && String(set.session_pref).trim() !== '') return String(set.session_pref).trim();
+   } catch (e) { /* no row, no settings — no restriction */ }

@@ -675,6 +675,10 @@
         chk.appendChild(row);
       });
       card.appendChild(chk);
+      if (c.levels && c.levels.rr_floor) {
+        const f = c.levels.rr_floor;
+        card.appendChild(h('div', { class: 'muted-2', text: `First-target RR floor: ${Number(f.rr).toFixed(4)}R / ${f.min_rr}R — ${f.passed ? 'met' : 'refused'}. Farther displayed targets cannot qualify the trade.` }));
+      }
       card.appendChild(h('div', { class: 'bot-action', text: c.action }));
       const btnRow = h('div', { class: 'row gap-8' });
       const logBtn = h('button', { class: 'btn sm primary', text: 'Log this plan', onclick: () => {
@@ -685,7 +689,7 @@
           direction: c.dir > 0 ? 'long' : 'short',
           entry: L.entry, stop: L.stop, target: L.targets[0] ? L.targets[0].price : null,
           size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
-          planned_r: L.rr_final, setup_grade: c.grade, entry_model: c.entry_model, entry_tf: c.entry_tf, entry_evidence: c.entry_evidence, session: (d.smc.sessions || {}).killzone || '',
+          planned_r: L.rr_primary, setup_grade: c.grade, entry_model: c.entry_model, entry_tf: c.entry_tf, entry_evidence: c.entry_evidence, session: (d.smc.sessions || {}).killzone || '',
           timeframes: c.entry_tf ? `${d.timeframe} POI / ${c.entry_tf} entry` : d.timeframe.toUpperCase(), strategy_name: 'Market Mechanics',
           thesis: `${c.entry_preference ? `Entry preference ${c.entry_preference.variant} by ${c.entry_preference.entry_tf} internal structure; basic pullback retained. ` : ''}${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
           tags: 'bot,smc', adherence: 5,

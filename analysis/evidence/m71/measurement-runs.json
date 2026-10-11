@@ -1,0 +1,220 @@
+[
+  {
+    "stage": "parent",
+    "profile": "bare",
+    "app": "/tmp/m71-control/extracted/tradejournal",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--seeds",
+      "60",
+      "--bars",
+      "1500",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 696.933,
+    "stdout_sha256": "939e15d2f7dca963573353ce4fbb5c4f0d35d5967e41594debfeea8aef49c39f"
+  },
+  {
+    "stage": "m71",
+    "profile": "bare",
+    "app": "/tmp/m71-stage/app",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--seeds",
+      "60",
+      "--bars",
+      "1500",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 699.012,
+    "stdout_sha256": "cf82f99a6f70b865fc74a68323777aabf1e02727f26e75856253979dd964d3f9"
+  },
+  {
+    "stage": "parent",
+    "profile": "real15",
+    "app": "/tmp/m71-control/extracted/tradejournal",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--real",
+      "--realtf",
+      "15m",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 129.197,
+    "stdout_sha256": "d8895f1f1f1fcbfc8733231872a8cf2c019f51d50cd59a534e2679436ae43b7b"
+  },
+  {
+    "stage": "m71",
+    "profile": "real15",
+    "app": "/tmp/m71-stage/app",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--real",
+      "--realtf",
+      "15m",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 130.215,
+    "stdout_sha256": "d8895f1f1f1fcbfc8733231872a8cf2c019f51d50cd59a534e2679436ae43b7b"
+  },
+  {
+    "stage": "parent",
+    "profile": "native",
+    "app": "/tmp/m71-control/extracted/tradejournal",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--topdown",
+      "--seeds",
+      "10",
+      "--bars",
+      "1500",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 275.343,
+    "stdout_sha256": "1861e5afc00a790a43cdd1845694bb7f6187410136fa64f7cbfed3477b9e10b2"
+  },
+  {
+    "stage": "m71",
+    "profile": "native",
+    "app": "/tmp/m71-stage/app",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--topdown",
+      "--seeds",
+      "10",
+      "--bars",
+      "1500",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 277.396,
+    "stdout_sha256": "28a3845bfd22420b6569789373b75f7b68838c3a61227ffa85803a50e6099aba"
+  },
+  {
+    "stage": "parent",
+    "profile": "real-native",
+    "app": "/tmp/m71-control/extracted/tradejournal",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--topdown",
+      "--real",
+      "--realtf",
+      "5m",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 234.437,
+    "stdout_sha256": "9331764b70c54ab5ffbdb47de55475a1152dc1d432ceab62e3db8147c8b4a5ca"
+  },
+  {
+    "stage": "m71",
+    "profile": "real-native",
+    "app": "/tmp/m71-stage/app",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--topdown",
+      "--real",
+      "--realtf",
+      "5m",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 233.061,
+    "stdout_sha256": "9331764b70c54ab5ffbdb47de55475a1152dc1d432ceab62e3db8147c8b4a5ca"
+  },
+  {
+    "stage": "parent",
+    "profile": "ladder-bare",
+    "app": "/tmp/m71-control/extracted/tradejournal",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--ladder",
+      "--seeds",
+      "60",
+      "--bars",
+      "1500",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 413.478,
+    "stdout_sha256": "c2dff3e1526ab81266d6ee9039b4c0b32e00c02a74c7c56902e852aef38c07e1"
+  },
+  {
+    "stage": "m71",
+    "profile": "ladder-bare",
+    "app": "/tmp/m71-stage/app",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--ladder",
+      "--seeds",
+      "60",
+      "--bars",
+      "1500",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 416.252,
+    "stdout_sha256": "4b5056b22f576836f2d82fdf3bac3dad55e4fbf5c4a7a755878ad339691bf7cb"
+  },
+  {
+    "stage": "parent",
+    "profile": "ladder-real15",
+    "app": "/tmp/m71-control/extracted/tradejournal",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--ladder",
+      "--real",
+      "--realtf",
+      "15m",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 125.81,
+    "stdout_sha256": "3aab931d2d802aadb623f3ddffb4898b8994bada0eb31736af30f2ba69dd9b89"
+  },
+  {
+    "stage": "m71",
+    "profile": "ladder-real15",
+    "app": "/tmp/m71-stage/app",
+    "command": [
+      "node",
+      "/home/user/Trader/analysis/harness/backtest.js",
+      "--ladder",
+      "--real",
+      "--realtf",
+      "15m",
+      "--window",
+      "300"
+    ],
+    "exit_code": 0,
+    "seconds": 128.884,
+    "stdout_sha256": "d8895f1f1f1fcbfc8733231872a8cf2c019f51d50cd59a534e2679436ae43b7b"
+  }
+]

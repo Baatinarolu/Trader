@@ -1,6 +1,21 @@
 # Independent backtest harness
 
-## Current M78 verification (2026-10-11)
+## Current M71 verification (2026-10-11)
+
+**75done/2partial/55todo of132**. Exact primary-floor rule closes optional runner
+rescue; no moved geometry or lowered floor. Saved RR/session setting reads have
+independently measured auth/SQL/Setup stages. Twelve fresh184695d-vs-primary-M71
+runs: **all4 complete default outputs unchanged except runtime**, bare36/19.4%/
+−0.2944R/PF0.61, real15n9/22.2%/+0.2222R/PF1.40, native named outcomes0.
+`--ladder` STILL values T1 only, NOT partial/BE/runner managed expectancy:
+synthetic61/−0.2070R→36/−0.2944R (deterioration), real30/−0.0263R→9/+0.2222R.
+Post ladder outputs equal default outputs except runtime; cohort changes preclude
+paired causal estimates; real dependent/n9<30, synthetic distorted. No improvement
+claim. `run-m71-measurements.py`, `verify-m71-measurements.py`, guarded `evidence/m71`
+and [full report](../M71-PRIMARY-RR.md) carry controls and retained negatives.
+Next M79/M80; do not shrink targets or revive70% objective.
+
+## Prior M78 verification (2026-10-11)
 
 Actual-entry-TF internal structure selects aggressive/conservative preference;
 current basic causal execution geometry remains candidate-owned. **Eight fresh

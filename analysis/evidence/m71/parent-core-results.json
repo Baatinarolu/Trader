@@ -1,0 +1,729 @@
+{
+  "app": "/tmp/m71-control/extracted/tradejournal",
+  "control": "/tmp/m71-control/extracted/tradejournal",
+  "pass": 132,
+  "fail": 94,
+  "fixtures": [
+    {
+      "label": "-1/sub-1R/single",
+      "primary_r": 0.45,
+      "final_r": 0.45,
+      "configured_floor": 2,
+      "before_ok": false,
+      "after_ok": false,
+      "targets": [
+        {
+          "price": 99.604,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/sub-1R/ladder",
+      "primary_r": 0.45,
+      "final_r": 11.36,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 99.604,
+          "source_tf": "15m"
+        },
+        {
+          "price": 92,
+          "source_tf": "15m"
+        },
+        {
+          "price": 90,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/sub-2R/single",
+      "primary_r": 1.5,
+      "final_r": 1.5,
+      "configured_floor": 2,
+      "before_ok": false,
+      "after_ok": false,
+      "targets": [
+        {
+          "price": 98.68,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/sub-2R/ladder",
+      "primary_r": 1.5,
+      "final_r": 11.36,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 98.68,
+          "source_tf": "15m"
+        },
+        {
+          "price": 92,
+          "source_tf": "15m"
+        },
+        {
+          "price": 90,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/display rounds to 2.00R/single",
+      "primary_r": 2,
+      "final_r": 2,
+      "configured_floor": 2,
+      "before_ok": false,
+      "after_ok": false,
+      "targets": [
+        {
+          "price": 98.2409,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/display rounds to 2.00R/ladder",
+      "primary_r": 2,
+      "final_r": 11.36,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 98.2409,
+          "source_tf": "15m"
+        },
+        {
+          "price": 92,
+          "source_tf": "15m"
+        },
+        {
+          "price": 90,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/exact boundary/single",
+      "primary_r": 2,
+      "final_r": 2,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 98.24,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/exact boundary/ladder",
+      "primary_r": 2,
+      "final_r": 9.09,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 98.24,
+          "source_tf": "15m"
+        },
+        {
+          "price": 92,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/above floor/single",
+      "primary_r": 2.5,
+      "final_r": 2.5,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 97.8,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/above floor/ladder",
+      "primary_r": 2.5,
+      "final_r": 9.09,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 97.8,
+          "source_tf": "15m"
+        },
+        {
+          "price": 92,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/custom lower floor/single",
+      "primary_r": 1.5,
+      "final_r": 1.5,
+      "configured_floor": 1,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 98.68,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/custom lower floor/ladder",
+      "primary_r": 1.5,
+      "final_r": 9.09,
+      "configured_floor": 1,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 98.68,
+          "source_tf": "15m"
+        },
+        {
+          "price": 92,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/custom higher floor/single",
+      "primary_r": 2.5,
+      "final_r": 2.5,
+      "configured_floor": 4,
+      "before_ok": false,
+      "after_ok": false,
+      "targets": [
+        {
+          "price": 97.8,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/custom higher floor/ladder",
+      "primary_r": 2.5,
+      "final_r": 11.36,
+      "configured_floor": 4,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 97.8,
+          "source_tf": "15m"
+        },
+        {
+          "price": 92,
+          "source_tf": "15m"
+        },
+        {
+          "price": 90,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/custom higher boundary/single",
+      "primary_r": 4,
+      "final_r": 4,
+      "configured_floor": 4,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 96.48,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/custom higher boundary/ladder",
+      "primary_r": 4,
+      "final_r": 9.09,
+      "configured_floor": 4,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 96.48,
+          "source_tf": "15m"
+        },
+        {
+          "price": 92,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/0.1R configured floor/single",
+      "primary_r": 0.45,
+      "final_r": 0.45,
+      "configured_floor": 0.1,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 99.604,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/0.1R configured floor/ladder",
+      "primary_r": 0.45,
+      "final_r": 9.09,
+      "configured_floor": 0.1,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 99.604,
+          "source_tf": "15m"
+        },
+        {
+          "price": 92,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/non-integer configured floor/single",
+      "primary_r": 1.5,
+      "final_r": 1.5,
+      "configured_floor": 1.25,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 98.68,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "-1/non-integer configured floor/ladder",
+      "primary_r": 1.5,
+      "final_r": 9.09,
+      "configured_floor": 1.25,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 98.68,
+          "source_tf": "15m"
+        },
+        {
+          "price": 92,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/sub-1R/single",
+      "primary_r": 0.45,
+      "final_r": 0.45,
+      "configured_floor": 2,
+      "before_ok": false,
+      "after_ok": false,
+      "targets": [
+        {
+          "price": 100.396,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/sub-1R/ladder",
+      "primary_r": 0.45,
+      "final_r": 11.36,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 100.396,
+          "source_tf": "15m"
+        },
+        {
+          "price": 108,
+          "source_tf": "15m"
+        },
+        {
+          "price": 110,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/sub-2R/single",
+      "primary_r": 1.5,
+      "final_r": 1.5,
+      "configured_floor": 2,
+      "before_ok": false,
+      "after_ok": false,
+      "targets": [
+        {
+          "price": 101.32,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/sub-2R/ladder",
+      "primary_r": 1.5,
+      "final_r": 11.36,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 101.32,
+          "source_tf": "15m"
+        },
+        {
+          "price": 108,
+          "source_tf": "15m"
+        },
+        {
+          "price": 110,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/display rounds to 2.00R/single",
+      "primary_r": 2,
+      "final_r": 2,
+      "configured_floor": 2,
+      "before_ok": false,
+      "after_ok": false,
+      "targets": [
+        {
+          "price": 101.7591,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/display rounds to 2.00R/ladder",
+      "primary_r": 2,
+      "final_r": 11.36,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 101.7591,
+          "source_tf": "15m"
+        },
+        {
+          "price": 108,
+          "source_tf": "15m"
+        },
+        {
+          "price": 110,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/exact boundary/single",
+      "primary_r": 2,
+      "final_r": 2,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 101.76,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/exact boundary/ladder",
+      "primary_r": 2,
+      "final_r": 9.09,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 101.76,
+          "source_tf": "15m"
+        },
+        {
+          "price": 108,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/above floor/single",
+      "primary_r": 2.5,
+      "final_r": 2.5,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 102.2,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/above floor/ladder",
+      "primary_r": 2.5,
+      "final_r": 9.09,
+      "configured_floor": 2,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 102.2,
+          "source_tf": "15m"
+        },
+        {
+          "price": 108,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/custom lower floor/single",
+      "primary_r": 1.5,
+      "final_r": 1.5,
+      "configured_floor": 1,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 101.32,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/custom lower floor/ladder",
+      "primary_r": 1.5,
+      "final_r": 9.09,
+      "configured_floor": 1,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 101.32,
+          "source_tf": "15m"
+        },
+        {
+          "price": 108,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/custom higher floor/single",
+      "primary_r": 2.5,
+      "final_r": 2.5,
+      "configured_floor": 4,
+      "before_ok": false,
+      "after_ok": false,
+      "targets": [
+        {
+          "price": 102.2,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/custom higher floor/ladder",
+      "primary_r": 2.5,
+      "final_r": 11.36,
+      "configured_floor": 4,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 102.2,
+          "source_tf": "15m"
+        },
+        {
+          "price": 108,
+          "source_tf": "15m"
+        },
+        {
+          "price": 110,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/custom higher boundary/single",
+      "primary_r": 4,
+      "final_r": 4,
+      "configured_floor": 4,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 103.52,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/custom higher boundary/ladder",
+      "primary_r": 4,
+      "final_r": 9.09,
+      "configured_floor": 4,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 103.52,
+          "source_tf": "15m"
+        },
+        {
+          "price": 108,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/0.1R configured floor/single",
+      "primary_r": 0.45,
+      "final_r": 0.45,
+      "configured_floor": 0.1,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 100.396,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/0.1R configured floor/ladder",
+      "primary_r": 0.45,
+      "final_r": 9.09,
+      "configured_floor": 0.1,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 100.396,
+          "source_tf": "15m"
+        },
+        {
+          "price": 108,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/non-integer configured floor/single",
+      "primary_r": 1.5,
+      "final_r": 1.5,
+      "configured_floor": 1.25,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 101.32,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    },
+    {
+      "label": "1/non-integer configured floor/ladder",
+      "primary_r": 1.5,
+      "final_r": 9.09,
+      "configured_floor": 1.25,
+      "before_ok": true,
+      "after_ok": true,
+      "targets": [
+        {
+          "price": 101.32,
+          "source_tf": "15m"
+        },
+        {
+          "price": 108,
+          "source_tf": "15m"
+        }
+      ],
+      "geometry_equal": true
+    }
+  ],
+  "census": {
+    "reads": 100,
+    "candidates": 400,
+    "defaultChanges": 0,
+    "geometryChanges": 0,
+    "floorErrors": 0,
+    "previously_rescued": 0
+  },
+  "scope": "Declared boundary fixtures plus actual synthetic OHLC geometry census. Not market edge; no native named outcome claim."
+}

@@ -1,6 +1,19 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
-## Current M78 status — 2026-10-11
+## Current M71 status — 2026-10-11
+
+**132:75 done/2 partial/55 todo/0 no-action.** Exact first-target floor binds all
+tradeability paths; no optional runner rescue, manufactured target or stop tweak.
+Saved RR and already-applied M26 saved-window DB reads corrected in independent
+stages. Feature295/0 + exhaustive default-output neutrality1/0. Twelve fresh
+profile runs: all4 defaults unchanged; opt-in T1-valued synthetic deterioration
+−0.0874R retained, real post n9 below30; no edge/managed-expectancy claim.
+[Authoritative report](M71-PRIMARY-RR.md); next **M79/M80** guardrail enforcement
+and accountable override with dependencies measured separately. All55 TODOs and
+M30/M103 partials remain visible; M125 remains open. Existing user floors/risk/
+grade choices, narrative/basic pullback/current stops/nearest targets remain.
+
+## Prior M78 status — 2026-10-11
 
 **132:74 done/2 partial/56 todo/0 no-action.** M78 structure-based actual-entry-TF
 preference and legacy selector complete; no advanced shortcut/CRT execution or

@@ -22,8 +22,8 @@ GROUPS = [
      # differently for the same bar, which is the gate giving two verdicts. The files are
      # index.js and now.js, not setup.js, but the concern is group A's.
      # M125 is here because it lives in setup.js and it corrupts the number the whole
-     # tradeability gate reads: rr_final. The runway check, the minRR veto and the grade
-     # all key off it, so a degenerate target is a gate defect, not a cosmetic one.
+     # tradeability gate reads: target RR (primary since M71; historically final).
+     # Reachability/outlier evidence remains open; this is not a cosmetic one.
      ['M3', 'M7', 'M8', 'M35', 'M63', 'M68', 'M69', 'M70', 'M95', 'M96', 'M97', 'M98', 'M118',
       'M124', 'M125', 'M127']),
     ('B \u2014 structure, zones & liquidity  (smc.js)',

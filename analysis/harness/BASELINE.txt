@@ -1,7 +1,7 @@
 # Backtest baselines — what changed, and why the older numbers must not be quoted
 
-LATEST: M78 section at the end; earlier labels saying CURRENT are historical.
-Current ledger132:74 done/2 partial (M30/M103)/56 todo; M125 stays todo.
+LATEST: M71 section at the end; earlier labels saying CURRENT are historical.
+Current ledger132:75 done/2 partial (M30/M103)/55 todo; M125 stays todo.
 
 `node analysis/harness/backtest.js --seeds 60 --bars 1500 --window 300`
 Engine: `src/bots/smc.js analyse()` + `src/bots/setup.js buildSetups()`, unmodified call paths.
@@ -3279,3 +3279,52 @@ oldNowpremise44/2->explicit structure and added checks50/0. All negatives retain
 
 Authoritative report analysis/M78-ENTRY-PREFERENCE.md; progress74/2/56/0/132.
 NextM71 target-floor invariant scope check; never shrink/manufacture2Rtarget.
+
+
+## CURRENT — M71 primary-floor and separately measured saved-settings regressions (2026-10-11)
+
+Parent184695db783c869b0e4e330cc68c0386914c8581; all12 engine arms freshly run.
+Full guarded output/data verification: analysis/verify-m71-measurements.py;
+raw outputs/run records and110-file manifests in analysis/evidence/m71/.
+
+Default profile            parent                         M71
+bare60×1500/window300       36 /19.4% /−0.2944R /PF0.61     IDENTICAL except elapsed runtime
+real15/window300           9 /22.2% /+0.2222R /PF1.40      RAW BYTE IDENTICAL
+native10×1500              outcomes0                      IDENTICAL except runtime
+real-native5               outcomes0                      RAW BYTE IDENTICAL
+
+Native synthetic13750reads/1006known/ready0/outcomes0; counter220/completed167.
+Native real4761reads/677known/ready0/outcomes0; counter81/completed27.
+No default outcome improvement/model ranking/edge/calibration.
+
+Opt-in ladder profiles — T1 ONLY, NOT partial/BE/runner managed expectancy:
+ladder-bare parent61/23.0%/−0.2070R/PF0.64 → M7136/19.4%/−0.2944R/PF0.61.
+Deterioration−0.0874R RETAINED, not tuned away. Ladder-real15 parent30/23.3%/
+−0.0263R/PF0.93 → M719/22.2%/+0.2222R/PF1.40 (+0.2485R descriptive only).
+After ladder stdout equals corresponding default stdout except synthetic runtime.
+Changed sequential scan cohorts, not paired fixed trades/causal estimator; real
+post n9 dependent/<30; synthetic range distortion remains. No performance claim.
+
+Feature primary226/0 vs132/94; consumers48/0 vs12/36; saved settings7/8→12/3→15/0.
+The route referenced undefined db, ignoring saved min_rr and M26 session_pref;
+each read repaired independently, not hidden inside the strategy measurement.
+API/UI1R, direct Setup2R, configured query/saved0.1–10R retained. Physical target/
+entry/stop/evidence/risk coefficients unchanged. Refused grade-C hypothetical size
+can change through the EXISTING grade coefficient; no tighter stop/new formula.
+100 real SMC reads on synthetic OHLC/400 candidates:0 moved geometry/policy,
+0 default score/grade/permission changes,0 permitted sub-floor targets; this census
+has0 old runner-rescued candidates. Full default object path comparison1/0;
+only explicitly validated new RR evidence/narration differs.
+
+Historical M78/M76 aggregate full-object parity tests current118/1 and33/1 because
+M71 fields/narration are not their older annotation whitelist. Raw failures retained;
+same historical probes frozen pre-M71184695d119/0 and34/0; no tests weakened.
+Report analysis/M71-PRIMARY-RR.md contains full scope/negative results/artifacts.
+Generated ledger132:75done/2partial/55todo; M125TODO. NextM79/M80; no70%/exit shrinking.
+
+Clipboard compatibility independently measured4/2→6/0; engine stage unchanged.
+Properly addressed HTTP API121/0 both; bot API204/2 both,17fills/0mismatches,
+unchanged≥20/>20 sample floors. Initial parent bot URL invocation203/3 invalid
+(control actually hit3000); retained, not parent proof. Corrected TJ_BASE headers
+and cleanup verified. Offline smoke22/22,0UIstyle/console errors. Current3000
+synthetic/local /tmp/m71-regressions.db; parent3001 stopped. No production proof.

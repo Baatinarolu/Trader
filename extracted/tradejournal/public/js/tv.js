@@ -128,7 +128,8 @@
       const model = plan.entry_model || lv.entry_model;
       const execution = plan.entry_tf || lv.entry_tf;
       const preference = plan.entry_preference || lv.entry_preference;
-      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''}${preference ? ` | ${preference.variant} preference (${preference.entry_tf || 'unknown TF'} internal ${preference.trend || 'unknown'}; ${preference.execution === 'crt_scenario' ? 'scenario only' : 'basic pullback'})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'}${lv.stop_tf ? ' [' + lv.stop_tf + ']' : ''}${lv.stop_policy ? ' (' + lv.stop_policy.kind + '; ' + lv.stop_policy.rule + ')' : ''} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
+      const rr = lv.rr_floor ? ` | first-target ${Number(lv.rr_floor.rr).toFixed(4)}R / ${lv.rr_floor.min_rr}R floor (${lv.rr_floor.passed ? 'met' : 'refused'})${(lv.targets || []).length > 1 ? `; final ${Number(lv.rr_final).toFixed(2)}R (not floor evidence)` : ''}` : lv.rr_primary != null ? ` | first-target ${Number(lv.rr_primary).toFixed(2)}R` : lv.rr_final != null ? ` | final ${Number(lv.rr_final).toFixed(2)}R (legacy payout; not floor evidence)` : '';
+      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''}${preference ? ` | ${preference.variant} preference (${preference.entry_tf || 'unknown TF'} internal ${preference.trend || 'unknown'}; ${preference.execution === 'crt_scenario' ? 'scenario only' : 'basic pullback'})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'}${lv.stop_tf ? ' [' + lv.stop_tf + ']' : ''}${lv.stop_policy ? ' (' + lv.stop_policy.kind + '; ' + lv.stop_policy.rule + ')' : ''} | ${targets}${rr}`;
     },
 
     /**

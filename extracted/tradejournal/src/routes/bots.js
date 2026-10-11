@@ -36,7 +36,7 @@ async function prefOf(req) {
   const q = req.query.session_pref;
   if (q != null && String(q).trim() !== '') return String(q).trim();
   try {
-    const row = await db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
+    const row = await D.db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
     const set = row && row.settings ? JSON.parse(row.settings) : {};
     if (set.session_pref != null && String(set.session_pref).trim() !== '') return String(set.session_pref).trim();
   } catch (e) { /* no row, no settings — no restriction */ }
@@ -47,7 +47,7 @@ async function floorOf(req) {
   const q = Number(req.query.min_rr);
   if (Number.isFinite(q) && q > 0) return Math.min(Math.max(q, 0.1), 10);
   try {
-    const row = await db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
+    const row = await D.db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
     const set = row && row.settings ? JSON.parse(row.settings) : {};
     const v = Number(set.min_rr);
     if (Number.isFinite(v) && v > 0) return Math.min(Math.max(v, 0.1), 10);

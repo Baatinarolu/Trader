@@ -1,0 +1,54 @@
+{
+  "base_commit": "184695db783c869b0e4e330cc68c0386914c8581",
+  "stage_source_manifests": [
+    "parent-source.json",
+    "final-source.json",
+    "floor-source.json",
+    "window-source.json",
+    "full-source.json"
+  ],
+  "patches": {
+    "m71-primary-rr.patch": {
+      "files": 3,
+      "bytes": 10332,
+      "sha256": "e2cf0fe035158bda01f7223758baddd16b46c393d07c84b0c3f890ca765f856d",
+      "roundtrip_differences": 0
+    },
+    "m71-saved-floor.patch": {
+      "files": 1,
+      "bytes": 674,
+      "sha256": "feb2ced7abb71b0aef755c6d45cdcbe0e5f02ccbdcfcd51fc9b9bfc7878fcbc7",
+      "roundtrip_differences": 0
+    },
+    "m26-saved-window-regression.patch": {
+      "files": 1,
+      "bytes": 735,
+      "sha256": "b96a4149813ac44d9bffaf45d16c4fef0364c2bbca0851c823aa43bb66a52287",
+      "roundtrip_differences": 0
+    },
+    "m71-copy-compatibility.patch": {
+      "files": 1,
+      "bytes": 1774,
+      "sha256": "5f8740c8b727b187e998ed997a0989fc95eca321e09e6048ef16b13c847f62fa",
+      "roundtrip_differences": 0
+    },
+    "m71-complete.patch": {
+      "files": 4,
+      "bytes": 11714,
+      "sha256": "a8def6c361088560ced46aeddbc100cb0d719ace7cc2c5a1a3cc3dcbe1a2d72f",
+      "roundtrip_differences": 0
+    },
+    "applied-so-far.patch": {
+      "files": 39,
+      "bytes": 544234,
+      "sha256": "f5693ca2aea77a3c9f20f7dc4daddbe710d3cfcc4b86230b248d002f4cfd2afb",
+      "roundtrip_differences": 0
+    }
+  },
+  "fixed_zip": {
+    "source_files": 110,
+    "roundtrip_differences": 0
+  },
+  "measurement": "Twelve fresh engine runs: four default profiles unchanged except runtime; two optional T1-valued profiles per arm. Saved floor/M26 window reads and clipboard compatibility measured in independent stages.",
+  "scope": "Primary minimum RR, not artificial target/stop shrinking. API default1/direct Setup2/configured floors preserved; restored saved setting reads. No market edge or managed ladder expectancy claim."
+}

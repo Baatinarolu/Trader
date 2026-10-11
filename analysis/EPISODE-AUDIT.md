@@ -4,7 +4,23 @@
 each transcript returns — roughly the first quarter of each video. This ledger tracks a complete pass:
 every episode, every chunk, in playlist order (Ep 0 → 33, then bonuses, then the EdgeFlo tool episodes).
 
-## Current follow-through — M78, 2026-10-11
+## Current follow-through — M71, 2026-10-11
+
+Ledger132: **75 done / 2 partial / 55 todo / 0 no-action**. Primary exact RR now
+binds runway, management explanation, grade cap and hard veto, including opt-in
+ladders. A farther runner cannot rescue a sub-floor first magnet. The default
+single target was already correct. Ep18 30:01 explicitly scopes2R to the lesson;
+Ep20 real nearest exits remain; API/UI1R/direct Setup2R/configured floors retained.
+Saved RR and already-applied M26 session reads silently ignored settings via an
+undefined db; corrected/measured as separate stages. Feature226/0+48/0+15/0+clipboard6/0;
+full-default-output neutrality1/0. **Twelve fresh controlled runs:** all four
+default outputs unchanged except runtime, native outcomes0. Opt-in T1-only
+synthetic diagnostic worsens−0.2070R→−0.2944R; real−0.0263R→+0.2222R at post n9,
+not a paired cohort, managed-ladder expectancy or market edge. Historical aggregate
+full-object failures retained/explained, not weakened. [Report](M71-PRIMARY-RR.md).
+Next **M79/M80** guardrail enforcement/accountable override; M125 stays TODO.
+
+## Prior follow-through — M78, 2026-10-11
 
 Ledger132: **74 done / 2 partial / 56 todo / 0 no-action**. M78 uses observed
 actual-entry-TF internal structure, not conviction/risk/HTF or the mandatory shift

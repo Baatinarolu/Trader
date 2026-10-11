@@ -748,13 +748,15 @@ function buildSetups(analysis, ctx = {}) {
       const meetsFloor = (t) => !!t && targetRR(t) + 1e-9 >= minRR;
       const runner = targets.find((t) => meetsFloor(t)) || targets[targets.length - 1] || null;
       const wallRisk = first && first.rr < 1.3 ? first : null;
-      const runwayTarget = ladderTargets ? runner : first;
+      // M71: even an opt-in partial/runner cannot rescue a sub-floor FIRST
+      // paid target. M51 defaults to one target; the same primary gate binds both.
+      const runwayTarget = first;
 
       add('runway', `Open runway to the selected opposing magnet (target ≥ 1:${minRR})`,
         meetsFloor(runwayTarget), 14,
         meetsFloor(runwayTarget)
           ? (ladderTargets
-            ? `Partial at ${first.label} (${first.rr}R), runner to ${runner.label} at ${runner.price} = ${runner.rr}R`
+            ? `First paid target ${first.label} at ${first.price} meets the ${minRR}R floor (${first.rr}R); farther displayed targets do not qualify the idea.`
             : `One target: ${first.label} at ${first.price} = ${first.rr}R — pick one and manage one position.`)
           : first ? `The nearest selected magnet (${first.label}, ${first.price}) is only ${first.rr}R away — refuse the idea, not substitute a farther target.`
             : noTargetReason);
@@ -784,6 +786,7 @@ function buildSetups(analysis, ctx = {}) {
       if (!ladder.length && !counter && !boundedCRT && !targetMagnets) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
       const rrPrimary = ladder.length ? ladder[0].rr : 0;
       const rrFinal = ladder.length ? ladder[ladder.length - 1].rr : 0;
+      const rrPrimaryExact = ladder.length ? targetRR(ladder[0]) : 0;
       const rrFinalExact = ladder.length ? targetRR(ladder[ladder.length - 1]) : 0;
 
       // entry status: are we at the zone, or chasing?
@@ -825,7 +828,7 @@ function buildSetups(analysis, ctx = {}) {
         : bestFvg ? Math.abs((long ? bestFvg.top : bestFvg.bottom) - price) / (atr || 1)
           : 6;
       add('entry', 'Entry not chased (price at/near the zone)', entryStatus !== 'waiting' || zoneReach <= 2.5, 8, entryNote);
-      add('management', 'Risk plan protects the trade at the first pool', rrFinal >= minRR, 0,
+      add('management', 'First paid target meets the configured minimum RR', ladder.length > 0 && rrPrimaryExact + 1e-9 >= minRR, 0,
         !ladder.length ? 'No real target — no executable trade.'
           : counter ? `One target at ${ladder[0].label} (${rrPrimary}R) — the counter-HTF pullback ends there.`
             : ladder.length === 1 ? `One target at ${ladder[0].label} (${rrPrimary}R); manage one position, no partials.`
@@ -854,7 +857,11 @@ function buildSetups(analysis, ctx = {}) {
           // longer being updated when the decision changes.
           : `Beyond the ${{ order_block: 'order block', flip_zone: 'flip zone', fvg: 'FVG' }[zone.kind] || zone.kind} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(entryAtr * 0.18)} buffer`,
         targets: ladder, target_candidates: targets.map((t) => ({ ...t })), primary_target: ladder[0] ? { ...ladder[0] } : null,
-        rr_primary: rrPrimary, rr_final: rrFinal, rr_final_exact: rrFinalExact,
+        rr_primary: rrPrimary, rr_primary_exact: rrPrimaryExact, rr_final: rrFinal, rr_final_exact: rrFinalExact,
+        rr_floor: { rule: 'primary_target', min_rr: minRR, rr: rrPrimaryExact,
+          passed: ladder.length > 0 && rrPrimaryExact + 1e-9 >= minRR,
+          precision: targetAlignment ? 'working_and_published' : 'legacy_display_rounding',
+          target_price: ladder[0] ? ladder[0].price : null, target_tf: ladder[0] ? ladder[0].source_tf || ladder[0].tf || null : null },
         management: {
           // M51: with a single target there is no partial to take and nothing to move to
           // break-even at - the old code emitted `partial_at` at 50% and a `runner_target` at
@@ -866,7 +873,7 @@ function buildSetups(analysis, ctx = {}) {
           rule: ladder.length > 1
             ? `Bank 50% at T1 (${ladder[0].rr}R) and move the stop to entry. The runner is free — let the pool at ${ladder[ladder.length - 1].price} do the work.`
             : counter ? 'Bounded counter-HTF pullback: close the whole position at the HTF opposing zone; no farther runner.'
-              : 'Single target: manage as one position, trail behind structure after 1R.',
+              : 'Single target: set and forget the defined stop and selected target; no partials or break-even move.',
         },
         wall: wallRisk ? { label: wallRisk.label, price: wallRisk.price, rr: wallRisk.rr } : null,
         entry_status: entryStatus, entry_note: entryNote,
@@ -899,7 +906,7 @@ function buildSetups(analysis, ctx = {}) {
     const hasZone = checks.find((c) => c.key === 'zone').pass;
     if (!hasTrigger) score = Math.min(score, 38);
     if (!hasZone) score = Math.min(score, 34);
-    const floorRR = levels ? (targetAlignment ? levels.rr_final_exact : levels.rr_final) : null;
+    const floorRR = levels ? (targetAlignment ? levels.rr_primary_exact : levels.rr_primary) : null;
     if (levels && floorRR > 0 && floorRR + 1e-9 < minRR) score = Math.min(score, 45);
     if (levels && levels.entry_status === 'invalid') score = Math.min(score, 20);
     if (blackout) score = Math.min(score, 40);
@@ -955,7 +962,7 @@ function buildSetups(analysis, ctx = {}) {
     // ~21% win rate, break-even needs (1 - 0.21) / 0.21 = 3.8R, so a sub-2R idea cannot win.
     if (levels && ((floorRR > 0 && floorRR + 1e-9 < minRR) || ((counter || boundedCRT || targetMagnets || targetAlignment) && !(floorRR + 1e-9 >= minRR)))) {
       vetoes.push(levels.targets.length
-        ? `Risk:reward ${Math.round(floorRR * 10000) / 10000}R (unrounded geometry) is below the ${minRR}R floor — passing on the trade.`
+        ? `First-target risk:reward ${Math.round(floorRR * 10000) / 10000}R (${targetAlignment ? 'unrounded geometry' : 'legacy display rounding'}) is below the ${minRR}R floor — passing on the trade; a farther runner cannot rescue it.`
         : noTargetReason);
     }
     if (levels && levels.stop_policy && levels.stop_policy.state !== 'known') {

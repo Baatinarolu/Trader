@@ -1,0 +1,17 @@
+ ok   no settings: API default1R/no session restriction retained
+ FAIL persisted3R reaches the primary veto, not a caught ReferenceError/default1 — {"status":200,"received":{"minRR":1,"sessionPref":null},"ok":true,"no_trade":[]}
+ ok   positive query1R overrides persisted3R without rewriting it
+ FAIL invalid query falls back to persisted3R — {"status":200,"received":{"minRR":1,"sessionPref":null},"ok":true,"no_trade":[]}
+ FAIL zero query falls back to persisted3R — {"status":200,"received":{"minRR":1,"sessionPref":null},"ok":true,"no_trade":[]}
+ FAIL persisted floor is still clamped10R — {"status":200,"received":{"minRR":1,"sessionPref":null},"ok":true,"no_trade":[]}
+ FAIL persisted floor is still clamped0.1R — {"status":200,"received":{"minRR":1,"sessionPref":null},"ok":true,"no_trade":[]}
+ FAIL M26 persisted NY window actually vetoes a London-only decision — {"status":200,"received":{"minRR":1,"sessionPref":null},"ok":true,"no_trade":[]}
+ FAIL saved NY veto is explicitly the chosen-window gate, not an RR/grade artifact
+ ok   explicit London query overrides saved NY preference and permits
+ FAIL saved open London preference retains eligibility — {"status":200,"received":{"minRR":1,"sessionPref":null},"ok":true,"no_trade":[]}
+ ok   explicit NY query overrides saved London and vetoes
+ ok   second authenticated user never inherits first user RR/window settings
+ ok   malformed stored JSON follows documented1R/no-restriction fallback, not guessed settings
+ ok   route still requires actual authentication
+
+M71 saved settings: 7 passed, 8 failed

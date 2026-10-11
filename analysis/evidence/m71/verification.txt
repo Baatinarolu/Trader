@@ -1,0 +1,176 @@
+{
+  "parent_commit": "184695db783c869b0e4e330cc68c0386914c8581",
+  "all_twelve_runs_fresh": true,
+  "default_profiles_unchanged_except_runtime": true,
+  "engine_stage": "m71 primary RR (final-source.json); two route config stages separately authenticated/SQL-tested; clipboard fallback independently tested",
+  "profiles": [
+    {
+      "profile": "bare",
+      "default": true,
+      "equal_except_runtime": true,
+      "already_byte_equal": false,
+      "runtime_fields_removed": [
+        1,
+        1
+      ],
+      "before": {
+        "n": 36,
+        "win_pct": 19.4,
+        "expectancy_r": -0.2944,
+        "pf": 0.61
+      },
+      "after": {
+        "n": 36,
+        "win_pct": 19.4,
+        "expectancy_r": -0.2944,
+        "pf": 0.61
+      },
+      "valuation": "T1 only; optional ladder does not simulate partial/BE/runner management",
+      "same_after_output_as_default_except_runtime": false
+    },
+    {
+      "profile": "real15",
+      "default": true,
+      "equal_except_runtime": true,
+      "already_byte_equal": true,
+      "runtime_fields_removed": [
+        0,
+        0
+      ],
+      "before": {
+        "n": 9,
+        "win_pct": 22.2,
+        "expectancy_r": 0.2222,
+        "pf": 1.4
+      },
+      "after": {
+        "n": 9,
+        "win_pct": 22.2,
+        "expectancy_r": 0.2222,
+        "pf": 1.4
+      },
+      "valuation": "T1 only; optional ladder does not simulate partial/BE/runner management",
+      "same_after_output_as_default_except_runtime": false
+    },
+    {
+      "profile": "native",
+      "default": true,
+      "equal_except_runtime": true,
+      "already_byte_equal": false,
+      "runtime_fields_removed": [
+        1,
+        1
+      ],
+      "before": {
+        "n": 0,
+        "win_pct": null,
+        "expectancy_r": null,
+        "pf": null
+      },
+      "after": {
+        "n": 0,
+        "win_pct": null,
+        "expectancy_r": null,
+        "pf": null
+      },
+      "valuation": "T1 only; optional ladder does not simulate partial/BE/runner management",
+      "same_after_output_as_default_except_runtime": false
+    },
+    {
+      "profile": "real-native",
+      "default": true,
+      "equal_except_runtime": true,
+      "already_byte_equal": true,
+      "runtime_fields_removed": [
+        0,
+        0
+      ],
+      "before": {
+        "n": 0,
+        "win_pct": null,
+        "expectancy_r": null,
+        "pf": null
+      },
+      "after": {
+        "n": 0,
+        "win_pct": null,
+        "expectancy_r": null,
+        "pf": null
+      },
+      "valuation": "T1 only; optional ladder does not simulate partial/BE/runner management",
+      "same_after_output_as_default_except_runtime": false
+    },
+    {
+      "profile": "ladder-bare",
+      "default": false,
+      "equal_except_runtime": false,
+      "already_byte_equal": false,
+      "runtime_fields_removed": [
+        1,
+        1
+      ],
+      "before": {
+        "n": 61,
+        "win_pct": 23.0,
+        "expectancy_r": -0.207,
+        "pf": 0.64
+      },
+      "after": {
+        "n": 36,
+        "win_pct": 19.4,
+        "expectancy_r": -0.2944,
+        "pf": 0.61
+      },
+      "valuation": "T1 only; optional ladder does not simulate partial/BE/runner management",
+      "same_after_output_as_default_except_runtime": true
+    },
+    {
+      "profile": "ladder-real15",
+      "default": false,
+      "equal_except_runtime": false,
+      "already_byte_equal": false,
+      "runtime_fields_removed": [
+        0,
+        0
+      ],
+      "before": {
+        "n": 30,
+        "win_pct": 23.3,
+        "expectancy_r": -0.0263,
+        "pf": 0.93
+      },
+      "after": {
+        "n": 9,
+        "win_pct": 22.2,
+        "expectancy_r": 0.2222,
+        "pf": 1.4
+      },
+      "valuation": "T1 only; optional ladder does not simulate partial/BE/runner management",
+      "same_after_output_as_default_except_runtime": true
+    }
+  ],
+  "inputs_provenance": "analysis/evidence/m54-m77/INPUTS.json",
+  "inputs": [
+    {
+      "file": "EURUSD-15m.csv",
+      "sha256": "07fd2d8f7d51431c4261780badd35c8c7cdd23355b3c33899a45c5dde4a94bc8",
+      "unchanged": true
+    },
+    {
+      "file": "EURUSD-5m.csv",
+      "sha256": "6168ac85fae5a28ff4150f7ce479a9c80593b7fc241423311cb74fcf373c324d",
+      "unchanged": true
+    },
+    {
+      "file": "XAUUSD-15m.csv",
+      "sha256": "a2da1f39aaff2660d02a331d352afc6dddebe99cbe06e162ddc83a3afb50b67c",
+      "unchanged": true
+    },
+    {
+      "file": "XAUUSD-5m.csv",
+      "sha256": "2c44e18f2dda7d6986390640f0704782981d35a2b5473530f4f7b7c2420ddcea",
+      "unchanged": true
+    }
+  ],
+  "scope": "No default outcome improvement. Optional ladder uses T1-only diagnostic, not managed expectancy or paired fixed cohort. Synthetic distorted; real dependent; native outcomes zero."
+}

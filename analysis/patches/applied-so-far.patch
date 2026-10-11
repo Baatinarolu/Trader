@@ -471,10 +471,10 @@ index 8e16034..ed4e333 100644
      // the plot box is often laid out after the first paint; observe it
      if (global.ResizeObserver) {
 diff --git a/public/js/tv.js b/public/js/tv.js
-index 4ca4e5e..f956c42 100644
+index 4ca4e5e..e13fa5d 100644
 --- a/public/js/tv.js
 +++ b/public/js/tv.js
-@@ -124,8 +124,11 @@
+@@ -124,8 +124,12 @@
      planText(symbol, tf, plan) {
        if (!plan) return '';
        const lv = plan.levels || plan;
@@ -484,7 +484,8 @@ index 4ca4e5e..f956c42 100644
 +      const model = plan.entry_model || lv.entry_model;
 +      const execution = plan.entry_tf || lv.entry_tf;
 +      const preference = plan.entry_preference || lv.entry_preference;
-+      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''}${preference ? ` | ${preference.variant} preference (${preference.entry_tf || 'unknown TF'} internal ${preference.trend || 'unknown'}; ${preference.execution === 'crt_scenario' ? 'scenario only' : 'basic pullback'})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'}${lv.stop_tf ? ' [' + lv.stop_tf + ']' : ''}${lv.stop_policy ? ' (' + lv.stop_policy.kind + '; ' + lv.stop_policy.rule + ')' : ''} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
++      const rr = lv.rr_floor ? ` | first-target ${Number(lv.rr_floor.rr).toFixed(4)}R / ${lv.rr_floor.min_rr}R floor (${lv.rr_floor.passed ? 'met' : 'refused'})${(lv.targets || []).length > 1 ? `; final ${Number(lv.rr_final).toFixed(2)}R (not floor evidence)` : ''}` : lv.rr_primary != null ? ` | first-target ${Number(lv.rr_primary).toFixed(2)}R` : lv.rr_final != null ? ` | final ${Number(lv.rr_final).toFixed(2)}R (legacy payout; not floor evidence)` : '';
++      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''}${preference ? ` | ${preference.variant} preference (${preference.entry_tf || 'unknown TF'} internal ${preference.trend || 'unknown'}; ${preference.execution === 'crt_scenario' ? 'scenario only' : 'basic pullback'})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'}${lv.stop_tf ? ' [' + lv.stop_tf + ']' : ''}${lv.stop_policy ? ' (' + lv.stop_policy.kind + '; ' + lv.stop_policy.rule + ')' : ''} | ${targets}${rr}`;
      },
  
      /**
@@ -518,7 +519,7 @@ index a3eb318..a5dc09b 100644
                <tbody>${rows.sort((a, b) => b.net_pnl - a.net_pnl).map((r) => `<tr><td>${U.esc(r.key)}</td><td class="num">${r.trades}</td><td class="num">${U.pct(r.win_rate, 0)}</td>
                  <td class="num ${U.cls(r.expectancy_r)}">${U.signed(r.expectancy_r, 2)}R</td><td class="num">${r.profit_factor === null ? '∞' : U.num(r.profit_factor, 2)}</td>
 diff --git a/public/js/views/bots.js b/public/js/views/bots.js
-index 2222ac3..0f79b45 100644
+index 2222ac3..8320980 100644
 --- a/public/js/views/bots.js
 +++ b/public/js/views/bots.js
 @@ -13,6 +13,11 @@
@@ -743,20 +744,31 @@ index 2222ac3..0f79b45 100644
          if (L.risk_warning) card.appendChild(h('div', { class: 'bot-warn', text: 'Risk: ' + L.risk_warning }));
          card.appendChild(h('div', { class: 'muted bot-detail', text: L.invalidation }));
        }
-@@ -607,9 +685,9 @@
+@@ -597,6 +675,10 @@
+         chk.appendChild(row);
+       });
+       card.appendChild(chk);
++      if (c.levels && c.levels.rr_floor) {
++        const f = c.levels.rr_floor;
++        card.appendChild(h('div', { class: 'muted-2', text: `First-target RR floor: ${Number(f.rr).toFixed(4)}R / ${f.min_rr}R — ${f.passed ? 'met' : 'refused'}. Farther displayed targets cannot qualify the trade.` }));
++      }
+       card.appendChild(h('div', { class: 'bot-action', text: c.action }));
+       const btnRow = h('div', { class: 'row gap-8' });
+       const logBtn = h('button', { class: 'btn sm primary', text: 'Log this plan', onclick: () => {
+@@ -607,9 +689,9 @@
            direction: c.dir > 0 ? 'long' : 'short',
            entry: L.entry, stop: L.stop, target: L.targets[0] ? L.targets[0].price : null,
            size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
 -          planned_r: L.rr_final, setup_grade: c.grade, session: (d.smc.sessions || {}).killzone || '',
 -          timeframes: d.timeframe.toUpperCase(), strategy_name: 'Market Mechanics',
 -          thesis: `${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
-+          planned_r: L.rr_final, setup_grade: c.grade, entry_model: c.entry_model, entry_tf: c.entry_tf, entry_evidence: c.entry_evidence, session: (d.smc.sessions || {}).killzone || '',
++          planned_r: L.rr_primary, setup_grade: c.grade, entry_model: c.entry_model, entry_tf: c.entry_tf, entry_evidence: c.entry_evidence, session: (d.smc.sessions || {}).killzone || '',
 +          timeframes: c.entry_tf ? `${d.timeframe} POI / ${c.entry_tf} entry` : d.timeframe.toUpperCase(), strategy_name: 'Market Mechanics',
 +          thesis: `${c.entry_preference ? `Entry preference ${c.entry_preference.variant} by ${c.entry_preference.entry_tf} internal structure; basic pullback retained. ` : ''}${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
            tags: 'bot,smc', adherence: 5,
          });
        } });
-@@ -636,7 +714,7 @@
+@@ -636,7 +718,7 @@
      }
  
      /* --- prediction teaser inside mechanic panel --- */
@@ -765,7 +777,7 @@ index 2222ac3..0f79b45 100644
        const p = h('div', { class: 'card' });
        p.appendChild(h('div', { class: 'card-head', html: `<strong>Odds</strong> <span class="muted">from the historical replay</span>` }));
        (d.prediction.summary || []).forEach((x) => p.appendChild(h('div', { class: 'bot-detail', text: '• ' + x })));
-@@ -677,7 +755,14 @@
+@@ -677,7 +759,14 @@
  
    function panelPredict(pane) {
      const p = B.predict || (B.data && B.data.prediction);
@@ -781,7 +793,7 @@ index 2222ac3..0f79b45 100644
      if (p.ok === false) { pane.appendChild(h('div', { class: 'card', text: 'Prediction unavailable: ' + (p.error || 'unknown error') })); return; }
  
      const strip = h('div', { class: 'card' });
-@@ -761,7 +846,7 @@
+@@ -761,7 +850,7 @@
       * ------------------------------------------------------------------ */
      const views = bt.frontier_views || {};
      const plain = bt.target_frontier || [];
@@ -790,7 +802,7 @@ index 2222ac3..0f79b45 100644
      const hc = h('div', { class: 'card' });
      hc.appendChild(h('div', { class: 'card-head', html: `<strong>Win rate is a dial, not a skill badge</strong> <span class="muted">measured on ${esc(p.symbol || (B.data && B.data.symbol) || '')} with its own costs</span>` }));
      hc.appendChild(h('div', { class: 'bot-detail', text: `Every row below exits the whole position at that target. Two questions are separated on purpose: how often price reached the target before the stop (the mechanical hit rate) and how often the trade actually finished in profit after costs. On this market the round-trip cost is ${bt.meta && bt.meta.cost_r_median != null ? bt.meta.cost_r_median + 'R' : '—'} per trade (${bt.meta && bt.meta.cost_bps != null ? bt.meta.cost_bps + ' bp of price' : '—'}${bt.meta && bt.meta.cost_source ? ', ' + esc(bt.meta.cost_source) : ''}) — so a target smaller than the cost cannot win, however often it is touched.` }));
-@@ -821,6 +906,13 @@
+@@ -821,6 +910,13 @@
      const grid = h('div', { class: 'bot-grid' });
      const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
  
@@ -804,7 +816,7 @@ index 2222ac3..0f79b45 100644
      /* live probabilities */
      const live = h('div', { class: 'card' });
      live.appendChild(h('div', { class: 'card-head', html: `<strong>Live setups</strong> <span class="muted">probability to reach the first target before the stop</span>` }));
-@@ -1094,13 +1186,15 @@
+@@ -1094,13 +1190,15 @@
        <td>#${g.id}</td><td><b>${esc(g.symbol)}</b> <span class="muted">${esc(g.timeframe)}</span></td>
        <td class="${g.dir > 0 ? 'pos' : 'neg'}">${esc(g.side.toUpperCase())}</td>
        <td>${esc(g.grade)} <span class="muted">${g.score}</span></td>
@@ -821,7 +833,7 @@ index 2222ac3..0f79b45 100644
      if ((st.by_grade || []).length) {
        pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Signal quality by grade</strong></div><div class="table-wrap"><table class="table"><thead><tr><th>Grade</th><th>Resolved</th><th>Win rate</th><th>Expectancy</th></tr></thead><tbody>${st.by_grade.map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.resolved}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('')}</tbody></table></div>` }));
      }
-@@ -1161,8 +1255,10 @@
+@@ -1161,8 +1259,10 @@
          const sym = B.symbol, tf = B.tf;
          const trim = B.trim || 0;
          Promise.all([
@@ -3465,7 +3477,7 @@ index 0000000..f43d8e2
 +}
 +module.exports = { discover, scope, forSweep, annotate, unknown, TF_MS, number, samePrice };
 diff --git a/src/bots/setup.js b/src/bots/setup.js
-index 138beb4..6bf8214 100644
+index 138beb4..bfcba0f 100644
 --- a/src/bots/setup.js
 +++ b/src/bots/setup.js
 @@ -15,13 +15,27 @@
@@ -4186,7 +4198,7 @@ index 138beb4..6bf8214 100644
          const extreme = long ? pd.range_high : pd.range_low;
          const reward = Math.abs(extreme - entry);
          if (reward > 0) {
-@@ -194,28 +731,60 @@ function buildSetups(analysis, ctx = {}) {
+@@ -194,28 +731,63 @@ function buildSetups(analysis, ctx = {}) {
            }
          }
        }
@@ -4211,7 +4223,9 @@ index 138beb4..6bf8214 100644
 +      const meetsFloor = (t) => !!t && targetRR(t) + 1e-9 >= minRR;
 +      const runner = targets.find((t) => meetsFloor(t)) || targets[targets.length - 1] || null;
        const wallRisk = first && first.rr < 1.3 ? first : null;
-+      const runwayTarget = ladderTargets ? runner : first;
++      // M71: even an opt-in partial/runner cannot rescue a sub-floor FIRST
++      // paid target. M51 defaults to one target; the same primary gate binds both.
++      const runwayTarget = first;
  
 -      add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
 -        runner && runner.rr >= minRR
@@ -4222,7 +4236,7 @@ index 138beb4..6bf8214 100644
 +        meetsFloor(runwayTarget), 14,
 +        meetsFloor(runwayTarget)
 +          ? (ladderTargets
-+            ? `Partial at ${first.label} (${first.rr}R), runner to ${runner.label} at ${runner.price} = ${runner.rr}R`
++            ? `First paid target ${first.label} at ${first.price} meets the ${minRR}R floor (${first.rr}R); farther displayed targets do not qualify the idea.`
 +            : `One target: ${first.label} at ${first.price} = ${first.rr}R — pick one and manage one position.`)
 +          : first ? `The nearest selected magnet (${first.label}, ${first.price}) is only ${first.rr}R away — refuse the idea, not substitute a farther target.`
 +            : noTargetReason);
@@ -4260,11 +4274,12 @@ index 138beb4..6bf8214 100644
 +      if (!ladder.length && !counter && !boundedCRT && !targetMagnets) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
 +      const rrPrimary = ladder.length ? ladder[0].rr : 0;
 +      const rrFinal = ladder.length ? ladder[ladder.length - 1].rr : 0;
++      const rrPrimaryExact = ladder.length ? targetRR(ladder[0]) : 0;
 +      const rrFinalExact = ladder.length ? targetRR(ladder[ladder.length - 1]) : 0;
  
        // entry status: are we at the zone, or chasing?
        let entryStatus, entryNote;
-@@ -230,6 +799,26 @@ function buildSetups(analysis, ctx = {}) {
+@@ -230,38 +802,88 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
@@ -4291,11 +4306,12 @@ index 138beb4..6bf8214 100644
        // Distance still to travel to the zone we would enter at. An FVG-only read has
        // no order-block `reach` — measure to its near edge instead of dereferencing null.
        const zoneReach = bestOB ? bestOB.reach
-@@ -237,31 +826,57 @@ function buildSetups(analysis, ctx = {}) {
+         : bestFvg ? Math.abs((long ? bestFvg.top : bestFvg.bottom) - price) / (atr || 1)
            : 6;
        add('entry', 'Entry not chased (price at/near the zone)', entryStatus !== 'waiting' || zoneReach <= 2.5, 8, entryNote);
-       add('management', 'Risk plan protects the trade at the first pool', rrFinal >= minRR, 0,
+-      add('management', 'Risk plan protects the trade at the first pool', rrFinal >= minRR, 0,
 -        `Take 50% at ${ladder[0].label} (${rrPrimary}R), move the stop to break-even, run the rest to ${ladder[ladder.length - 1].label} (${rrFinal}R).`);
++      add('management', 'First paid target meets the configured minimum RR', ladder.length > 0 && rrPrimaryExact + 1e-9 >= minRR, 0,
 +        !ladder.length ? 'No real target — no executable trade.'
 +          : counter ? `One target at ${ladder[0].label} (${rrPrimary}R) — the counter-HTF pullback ends there.`
 +            : ladder.length === 1 ? `One target at ${ladder[0].label} (${rrPrimary}R); manage one position, no partials.`
@@ -4330,7 +4346,11 @@ index 138beb4..6bf8214 100644
 +          // longer being updated when the decision changes.
 +          : `Beyond the ${{ order_block: 'order block', flip_zone: 'flip zone', fvg: 'FVG' }[zone.kind] || zone.kind} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(entryAtr * 0.18)} buffer`,
 +        targets: ladder, target_candidates: targets.map((t) => ({ ...t })), primary_target: ladder[0] ? { ...ladder[0] } : null,
-+        rr_primary: rrPrimary, rr_final: rrFinal, rr_final_exact: rrFinalExact,
++        rr_primary: rrPrimary, rr_primary_exact: rrPrimaryExact, rr_final: rrFinal, rr_final_exact: rrFinalExact,
++        rr_floor: { rule: 'primary_target', min_rr: minRR, rr: rrPrimaryExact,
++          passed: ladder.length > 0 && rrPrimaryExact + 1e-9 >= minRR,
++          precision: targetAlignment ? 'working_and_published' : 'legacy_display_rounding',
++          target_price: ladder[0] ? ladder[0].price : null, target_tf: ladder[0] ? ladder[0].source_tf || ladder[0].tf || null : null },
          management: {
 -          partial_at: ladder[0] ? { price: ladder[0].price, rr: ladder[0].rr, label: ladder[0].label, size: '50%' } : null,
 -          break_even_after: ladder[0] ? ladder[0].price : null,
@@ -4345,7 +4365,7 @@ index 138beb4..6bf8214 100644
              ? `Bank 50% at T1 (${ladder[0].rr}R) and move the stop to entry. The runner is free — let the pool at ${ladder[ladder.length - 1].price} do the work.`
 -            : 'Single target: manage as one position, trail behind structure after 1R.',
 +            : counter ? 'Bounded counter-HTF pullback: close the whole position at the HTF opposing zone; no farther runner.'
-+              : 'Single target: manage as one position, trail behind structure after 1R.',
++              : 'Single target: set and forget the defined stop and selected target; no partials or break-even move.',
          },
          wall: wallRisk ? { label: wallRisk.label, price: wallRisk.price, rr: wallRisk.rr } : null,
          entry_status: entryStatus, entry_note: entryNote,
@@ -4363,7 +4383,7 @@ index 138beb4..6bf8214 100644
        };
      } else {
        add('runway', 'Open runway to opposing liquidity', false, 14, 'No zone, so no defined risk — the model needs a level to trade against.');
-@@ -271,37 +886,187 @@ function buildSetups(analysis, ctx = {}) {
+@@ -271,37 +893,187 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -4383,7 +4403,7 @@ index 138beb4..6bf8214 100644
      if (!hasTrigger) score = Math.min(score, 38);
      if (!hasZone) score = Math.min(score, 34);
 -    if (levels && levels.rr_final > 0 && levels.rr_final < minRR) score = Math.min(score, 45);
-+    const floorRR = levels ? (targetAlignment ? levels.rr_final_exact : levels.rr_final) : null;
++    const floorRR = levels ? (targetAlignment ? levels.rr_primary_exact : levels.rr_primary) : null;
 +    if (levels && floorRR > 0 && floorRR + 1e-9 < minRR) score = Math.min(score, 45);
      if (levels && levels.entry_status === 'invalid') score = Math.min(score, 20);
      if (blackout) score = Math.min(score, 40);
@@ -4439,7 +4459,7 @@ index 138beb4..6bf8214 100644
 +    // ~21% win rate, break-even needs (1 - 0.21) / 0.21 = 3.8R, so a sub-2R idea cannot win.
 +    if (levels && ((floorRR > 0 && floorRR + 1e-9 < minRR) || ((counter || boundedCRT || targetMagnets || targetAlignment) && !(floorRR + 1e-9 >= minRR)))) {
 +      vetoes.push(levels.targets.length
-+        ? `Risk:reward ${Math.round(floorRR * 10000) / 10000}R (unrounded geometry) is below the ${minRR}R floor — passing on the trade.`
++        ? `First-target risk:reward ${Math.round(floorRR * 10000) / 10000}R (${targetAlignment ? 'unrounded geometry' : 'legacy display rounding'}) is below the ${minRR}R floor — passing on the trade; a farther runner cannot rescue it.`
 +        : noTargetReason);
 +    }
 +    if (levels && levels.stop_policy && levels.stop_policy.state !== 'known') {
@@ -4558,7 +4578,7 @@ index 138beb4..6bf8214 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +1076,60 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +1083,60 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -4625,7 +4645,7 @@ index 138beb4..6bf8214 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -331,7 +1138,11 @@ function buildSetups(analysis, ctx = {}) {
+@@ -331,7 +1145,11 @@ function buildSetups(analysis, ctx = {}) {
    candidates.sort((a, b) => b.score - a.score);
  
    /* --------------------------------------------------------------- top verdict */
@@ -4638,7 +4658,7 @@ index 138beb4..6bf8214 100644
    const buy = candidates.find((c) => c.dir === 1);
    const sell = candidates.find((c) => c.dir === -1);
  
-@@ -350,8 +1161,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -350,8 +1168,7 @@ function buildSetups(analysis, ctx = {}) {
      const aligned = candidates.find((c) => c.dir === td.direction);
      if (aligned) best = aligned;                    // the higher timeframe chooses the side
    }
@@ -4648,7 +4668,7 @@ index 138beb4..6bf8214 100644
    const methodBlocked = !!(td && (td.blocked || (td.direction !== 0 && (!best || best.dir !== td.direction))));
  
    let verdict;
-@@ -367,20 +1177,22 @@ function buildSetups(analysis, ctx = {}) {
+@@ -367,20 +1184,22 @@ function buildSetups(analysis, ctx = {}) {
        detail: `${why}${pendingStep(td)}`,
        next_trigger: [td.playbook && td.playbook.length ? td.playbook[0] : null, nextTriggerHint(analysis)].filter(Boolean),
        source: 'topdown-gate', method, setup_action: setupAction,
@@ -4676,7 +4696,7 @@ index 138beb4..6bf8214 100644
        : `${best.grade} ${best.side} setup`;
      const methodOk = !td ? null : (td.direction !== 0 && td.direction === best.dir);
      verdict = {
-@@ -399,7 +1211,52 @@ function buildSetups(analysis, ctx = {}) {
+@@ -399,7 +1218,52 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -4729,7 +4749,7 @@ index 138beb4..6bf8214 100644
        news_blackout: blackout || null,
        min_rr: minRR,
      },
-@@ -430,4 +1287,8 @@ function pendingStep(td) {
+@@ -430,4 +1294,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  
@@ -7915,10 +7935,10 @@ index 0bb768c..3e54492 100644
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
 diff --git a/src/routes/bots.js b/src/routes/bots.js
-index 2c6ff6c..9031293 100644
+index 2c6ff6c..e47942a 100644
 --- a/src/routes/bots.js
 +++ b/src/routes/bots.js
-@@ -28,6 +28,21 @@ function createBotsRouter({ requireAuth }) {
+@@ -28,11 +28,26 @@ function createBotsRouter({ requireAuth }) {
   * scenario". `?min_rr=` overrides it for a single request so a probe or a test
   * can measure the same plan against a different floor.
   */
@@ -7930,7 +7950,7 @@ index 2c6ff6c..9031293 100644
 +  const q = req.query.session_pref;
 +  if (q != null && String(q).trim() !== '') return String(q).trim();
 +  try {
-+    const row = await db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
++    const row = await D.db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
 +    const set = row && row.settings ? JSON.parse(row.settings) : {};
 +    if (set.session_pref != null && String(set.session_pref).trim() !== '') return String(set.session_pref).trim();
 +  } catch (e) { /* no row, no settings — no restriction */ }
@@ -7940,6 +7960,12 @@ index 2c6ff6c..9031293 100644
  async function floorOf(req) {
    const q = Number(req.query.min_rr);
    if (Number.isFinite(q) && q > 0) return Math.min(Math.max(q, 0.1), 10);
+   try {
+-    const row = await db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
++    const row = await D.db.prepare('SELECT settings FROM users WHERE id=?').get(req.user.id);
+     const set = row && row.settings ? JSON.parse(row.settings) : {};
+     const v = Number(set.min_rr);
+     if (Number.isFinite(v) && v > 0) return Math.min(Math.max(v, 0.1), 10);
 @@ -88,6 +103,7 @@ router.get('/markets', requireAuth, (req, res) => {
        predictionBars: Math.min(Math.max(num(req.query.bars, 1200), 300), 3000),
        step: Math.min(Math.max(num(req.query.step, 2), 1), 6),

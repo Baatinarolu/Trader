@@ -1,0 +1,94 @@
+
+==============================================================================
+ INDEPENDENT WALK-FORWARD BACKTEST  —  SYNTHETIC DATA
+==============================================================================
+ seeds=60 bars=1500 window=300 warmup=120 maxBars=20 fillWindow=12 cooldown=12  gate=entry_status==='at-entry'  ·  36 trades  ·  696783ms
+ engine: src/bots/smc.js analyse() + src/bots/setup.js buildSetups()  (unmodified paths)
+ M3 chase guard (Ep 5 BOS timing / Ep 2 anti-chase): ON — a candidate graded during an expansion is refused  ·  M26 window restriction: none
+ M10 stand-down arm: course (Monday + Friday + December — what ships)
+
+ ALL SIGNALS WHERE ok===true (the CURRENT gate, includes B and C)
+  n=  36  win= 19.4%  exp=-0.2944R  PF=0.61
+   grade A+  n=  13  win= 15.4%  exp=-0.5130R  PF=0.39
+   grade A   n=  23  win= 21.7%  exp=-0.1709R  PF=0.75
+
+ THE M95 DECISION, MEASURED
+   A+ and A only   n=  36  win= 19.4%  exp=-0.2944R  PF=0.61
+   B and C only    n=0
+   -> dropping B and C changes expectancy by 0.0000R
+
+ DECLARED R:R vs REALISED (is the target actually reachable?)
+   avg declared 4.26R   avg realised -0.294R   ratio -0.069
+   target 4  ·  stop 27  ·  expired 3
+
+ M58 — FLAT vs GRADE-SIZED DEPLOYMENT ($10k account, 1% configured risk)
+   flat  1% on every trade   total $ -1060   maxDD $ 1460   sd/trade $145.60
+   sized by grade            total $ -1060   maxDD $ 1460   sd/trade $145.60
+   -> expectancy in R is unchanged by design (-0.2944R); sizing moves dollars and variance
+   -> no change in dollars
+
+ PER-SEED (is one series dominating the result?)
+   seed 1  n=   1  win=100.0%  exp=+4.0000R  PF=inf
+   seed 2  n=0
+   seed 3  n=0
+   seed 4  n=0
+   seed 5  n=0
+   seed 6  n=0
+   seed 7  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 8  n=0
+   seed 9  n=0
+   seed 10  n=   1  win=  0.0%  exp=+0.0000R  PF=0.00
+   seed 11  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 12  n=   2  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 13  n=   1  win=100.0%  exp=+2.5385R  PF=inf
+   seed 14  n=   3  win= 33.3%  exp=+0.3333R  PF=1.50
+   seed 15  n=0
+   seed 16  n=   2  win= 50.0%  exp=-0.3346R  PF=0.33
+   seed 17  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 18  n=   2  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 19  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 20  n=0
+   seed 21  n=0
+   seed 22  n=0
+   seed 23  n=0
+   seed 24  n=0
+   seed 25  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 26  n=0
+   seed 27  n=0
+   seed 28  n=0
+   seed 29  n=0
+   seed 30  n=0
+   seed 31  n=0
+   seed 32  n=0
+   seed 33  n=   3  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 34  n=0
+   seed 35  n=0
+   seed 36  n=   2  win= 50.0%  exp=+1.3396R  PF=3.68
+   seed 37  n=0
+   seed 38  n=   2  win= 50.0%  exp=+0.8529R  PF=2.71
+   seed 39  n=0
+   seed 40  n=0
+   seed 41  n=0
+   seed 42  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 43  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 44  n=0
+   seed 45  n=0
+   seed 46  n=   2  win= 50.0%  exp=-0.4267R  PF=0.15
+   seed 47  n=0
+   seed 48  n=0
+   seed 49  n=   2  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 50  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 51  n=0
+   seed 52  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 53  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 54  n=0
+   seed 55  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 56  n=   1  win=  0.0%  exp=-1.0000R  PF=0.00
+   seed 57  n=   1  win=  0.0%  exp=+0.0000R  PF=0.00
+   seed 58  n=0
+   seed 59  n=0
+   seed 60  n=0
+
+⚠ Synthetic data. This measures internal consistency of the entry/stop/target
+  logic, NOT real-market edge. Do not quote these figures as performance.
+

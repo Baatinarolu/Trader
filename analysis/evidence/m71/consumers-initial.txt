@@ -1,0 +1,52 @@
+ ok   -1/market_shift: final analyser refuses 1.5R T1 even when final runner is >2R
+ ok   -1/market_shift: Now/chart cannot arm the refused candidate or HTF projection
+ ok   -1/market_shift: scan cannot emit BUY/SELL from this runner-rescued idea
+ ok   -1/market_shift: automatic signal storage cannot persist refused first-target geometry
+ ok   -1/market_shift: primary-floor correction cannot resurrect stale 99% probabilities
+ ok   -1/market_shift: configured 1R may permit that same 1.5R magnet; no forced 2R floor or price change
+ ok   -1/market_shift: eligible signal preserves distinct primary/final endpoints, not runner-as-T1
+ ok   1/market_shift: final analyser refuses 1.5R T1 even when final runner is >2R
+ ok   1/market_shift: Now/chart cannot arm the refused candidate or HTF projection
+ ok   1/market_shift: scan cannot emit BUY/SELL from this runner-rescued idea
+ ok   1/market_shift: automatic signal storage cannot persist refused first-target geometry
+ ok   1/market_shift: primary-floor correction cannot resurrect stale 99% probabilities
+ ok   1/market_shift: configured 1R may permit that same 1.5R magnet; no forced 2R floor or price change
+ ok   1/market_shift: eligible signal preserves distinct primary/final endpoints, not runner-as-T1
+ FAIL -1/flip: final analyser refuses 1.5R T1 even when final runner is >2R
+ ok   -1/flip: Now/chart cannot arm the refused candidate or HTF projection
+ ok   -1/flip: scan cannot emit BUY/SELL from this runner-rescued idea
+ ok   -1/flip: automatic signal storage cannot persist refused first-target geometry
+ ok   -1/flip: primary-floor correction cannot resurrect stale 99% probabilities
+ ok   -1/flip: configured 1R may permit that same 1.5R magnet; no forced 2R floor or price change
+ FAIL -1/flip: eligible signal preserves distinct primary/final endpoints, not runner-as-T1
+ FAIL 1/flip: final analyser refuses 1.5R T1 even when final runner is >2R
+ ok   1/flip: Now/chart cannot arm the refused candidate or HTF projection
+ ok   1/flip: scan cannot emit BUY/SELL from this runner-rescued idea
+ ok   1/flip: automatic signal storage cannot persist refused first-target geometry
+ ok   1/flip: primary-floor correction cannot resurrect stale 99% probabilities
+ ok   1/flip: configured 1R may permit that same 1.5R magnet; no forced 2R floor or price change
+ FAIL 1/flip: eligible signal preserves distinct primary/final endpoints, not runner-as-T1
+ ok   authenticated route (no query) uses floor 1 on PRIMARY geometry
+ ok   authenticated route &min_rr=2 uses floor 2 on PRIMARY geometry
+ ok   authenticated route &min_rr=0.01 uses floor 0.1 on PRIMARY geometry
+ ok   authenticated route &min_rr=100 uses floor 10 on PRIMARY geometry
+ FAIL authenticated route (no query) uses floor 3 on PRIMARY geometry — {"status":200,"floor":{"rule":"primary_target","min_rr":1,"rr":1.4999999999999662,"passed":true,"precision":"working_and_published","target_price":95.605,"target_tf":"5m"},"ok":true}
+ ok   authenticated route &min_rr=1 uses floor 1 on PRIMARY geometry
+ FAIL authenticated route &min_rr=bad uses floor 3 on PRIMARY geometry — {"status":200,"floor":{"rule":"primary_target","min_rr":1,"rr":1.4999999999999662,"passed":true,"precision":"working_and_published","target_price":95.605,"target_tf":"5m"},"ok":true}
+ FAIL authenticated route &min_rr=0 uses floor 3 on PRIMARY geometry — {"status":200,"floor":{"rule":"primary_target","min_rr":1,"rr":1.4999999999999662,"passed":true,"precision":"working_and_published","target_price":95.605,"target_tf":"5m"},"ok":true}
+ ok   authentication remains mandatory; RR tests do not replace authorization
+ ok   authenticated route &min_rr=2&save=1 uses floor 2 on PRIMARY geometry
+ ok   actual authenticated analyser/save=1 endpoint stores no refused primary-floor signal
+ ok   authenticated route &min_rr=2 uses floor 2 on PRIMARY geometry
+ ok   actual route retains one-target default management, never manufactures 2R geometry
+ ok   actual browser Copy/Save cannot promote the refused runner-rescued candidate
+ ok   actual browser displays first-target floor/refusal, not final runner as permission
+ ok   actual browser Copy retains first-target floor snapshot and ladder endpoints
+ ok   actual browser Save uses permitted T1/stop/entry, not farther CRT scenario
+ ok   actual Log-this-plan payout matches the journal target T1, not rr_final runner
+ ok   actual clipboard formatter labels primary floor and final as NOT floor evidence
+ ok   browser-script composition has no console/runtime errors
+
+Scope: optional ladder forced at Setup boundary; not a newly exposed API option. Manual save-plan/journal entry is not an execution authorization or server OHLC validation.
+
+M71 consumers: 41 passed, 7 failed
