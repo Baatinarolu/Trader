@@ -1,11 +1,13 @@
 'use strict';
 /**
  * ─────────────────────────────────────────────────────────────────────────────
- *  TOP-DOWN ANALYSIS — the video's method, implemented literally
+ *  TOP-DOWN ANALYSIS — HTF narrative, MTF location, LTF execution
  * ─────────────────────────────────────────────────────────────────────────────
  *
- *  The playlist (Market Mechanics / Brad Goh) teaches one procedure, and it is
- *  not "average three timeframes and wait for them to agree". It is:
+ *  M33 implements Ep 11/15's internal counter-HTF pullback separately from the
+ *  legacy CRT branch below. An MTF execution direction does not replace the HTF
+ *  daily narrative. The old CRT branch follows this procedure (its broader course
+ *  attribution remains tracked in M17/M18), never an average of indicator votes:
  *
  *    STEP 1  Pick the timeframe stack and give every timeframe ONE job.
  *              higher timeframe = bias + the range    ("where are we going")
@@ -49,6 +51,7 @@
  */
 
 const C = require('../candles');
+const Setup = require('./setup');
 
 const r4 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 10000) / 10000);
 const r2 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
@@ -468,6 +471,138 @@ function confirmation(trigger, dir, atr) {
 
 /* ---------------------------------------------------------- the three layers */
 
+/** M33 — Ep 11's internal-structure counter-HTF pullback, not an HTF CRT reversal.
+ * Ep 15: trade the pullback direction UNTIL it completes; the HTF narrative does not flip.
+ * No new bar-age threshold: M3 phase, the existing LTF confirmation and sweep lookback
+ * are reused. The existing entry-zone model stays intact (M68's LTF entry-location work
+ * is separate). A missing HTF target/confirmed MTF break never becomes an invented magnet.
+ */
+function counterTrendRead({ tf, L, series, biasSeries, trigger, opts }) {
+  const num = (v) => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
+  const hs = biasSeries && biasSeries.smc, ms = series && series.smc;
+  const hb = hs && hs.structure && (hs.structure.trend === 'bullish' ? 1 : hs.structure.trend === 'bearish' ? -1 : 0);
+  const shift = ms && ms.structure && ms.structure.last_break;
+  if (!hb || !shift
+      || dirSign(shift.dir) !== -hb || num(shift.t) === null || num(shift.bars_ago) === null
+      || shift.bars_ago < 0 || !(series.candles || []).length
+      || shift.t > series.candles[series.candles.length - 1].t
+      || !['bullish', 'bearish'].includes(ms.structure.trend)
+      || L.bias_tf === tf) return null;
+  const dir = -hb;
+  // Use the SAME selector/entry geometry the actual setup engine uses, rather than
+  // independently choosing a different OB. This call has no topdown context/side effects.
+  const base = Setup.buildSetups(ms, { price: series.price, atr: series.atr, bias: hb,
+    minRR: opts.minRR, useBreakers: !!opts.useBreakers, chaseGuard: opts.chaseGuard }).candidates.find((c) => c.dir === dir);
+  const lv = base && base.levels;
+  if (!lv || !lv.entry_zone || num(lv.entry) === null) return null;
+  const obsoleteBeforeShift = (z) => z.breached === true && (biasSeries.candles || []).some((b) =>
+    b.t > z.t && b.t + TF_MS[L.bias_tf] <= shift.t + TF_MS[tf]
+    && (hb > 0 ? b.c < z.bottom : b.c > z.top));
+  const zones = (hs.order_blocks || []).filter((z) => !obsoleteBeforeShift(z) && dirSign(z.dir) === hb
+    && num(z.bottom) !== null && num(z.top) !== null && z.top > z.bottom
+    && num(z.t) !== null && z.t <= shift.t
+    && dir * ((dir > 0 ? z.bottom : z.top) - lv.entry) > 0)
+    .sort((a, b) => Math.abs((dir > 0 ? a.bottom : a.top) - lv.entry)
+      - Math.abs((dir > 0 ? b.bottom : b.top) - lv.entry));
+  const z = zones[0];
+  if (!z) return null;
+  const price = dir > 0 ? z.bottom : z.top;
+  const target = { kind: 'htf_order_block', tf: L.bias_tf, price: r4(price),
+    bottom: r4(z.bottom), top: r4(z.top), origin_t: z.t,
+    label: `${L.bias_tf} ${hb > 0 ? 'demand' : 'supply'} zone (${r4(z.bottom)}–${r4(z.top)})` };
+  const sinceShift = (series.candles || []).filter((b) => b.t >= shift.t);
+  // Include a zone consumed DURING this leg, but not one already obsolete before it:
+  // never replace this leg's hit target with
+  // a farther one just to keep the pullback alive or clear the RR floor.
+  const completed = z.breached === true || sinceShift.some((b) => dir > 0 ? b.h >= price : b.l <= price);
+  const touch = sinceShift.find((b) => b.h >= lv.entry_zone[0] && b.l <= lv.entry_zone[1]);
+  const atZone = lv.entry_status === 'at-entry';
+  const phaseReady = opts.chaseGuard === false || !base.phase || base.phase.phase !== 'expansion';
+  const conf = confirmation(trigger, dir, series.atr);
+  const low = trigger && trigger.smc;
+  const lowShift = low && low.structure && low.structure.last_break;
+  const distinct = trigger && typeof trigger.tf === 'string' && trigger.tf !== tf && trigger.tf !== L.bias_tf;
+  const shiftOk = distinct && conf.structure_shift && conf.structure_shift.ok
+    && lowShift && num(lowShift.t) !== null && (trigger.candles || []).length > 0
+    && lowShift.t <= trigger.candles[trigger.candles.length - 1].t
+;
+  const sweep = shiftOk && touch ? (low.sweeps || []).filter((x) => dirSign(x.dir) === dir
+    && num(x.t) !== null && x.t >= touch.t && x.t <= lowShift.t
+    && num(x.extreme) !== null && num(x.bars_ago) !== null
+    && x.bars_ago >= 0 && x.bars_ago <= Setup.SWEEP_LOOKBACK)
+    .sort((a, b) => b.t - a.t)[0] || null : null;
+  const lowReady = !!(shiftOk && sweep);
+  const disp = sweep ? (low.displacement || []).filter((d) => dirSign(d.dir) === dir
+    && d.t >= sweep.t).sort((a, b) => b.t - a.t)[0] || null : null;
+  const reasons = [];
+  if (completed) reasons.push('The counter-HTF pullback has reached its nearest opposing HTF zone — it is complete; do not substitute a farther target.');
+  if (!atZone || !touch) reasons.push(`Wait for price to touch the ${tf} point of interest ${lv.entry_zone[0]}–${lv.entry_zone[1]} before using the lower timeframe.`);
+  if (!phaseReady) reasons.push('The MTF break is still in M3’s expansion phase — expect the retrace, do not chase it.');
+  if (!lowReady) reasons.push(`Wait for a ${L.trigger_tf} liquidity sweep at/after the POI touch, then a confirmed structural break ${dir > 0 ? 'up' : 'down'}; displacement alone is not the two prerequisites.`);
+  const ready = reasons.length === 0;
+  return { kind: 'internal-pullback', dir, htf_bias: hb, htf_tf: L.bias_tf, mtf_tf: tf,
+    ltf_tf: trigger ? trigger.tf : L.trigger_tf, shift: { ...shift, type: shift.type || 'structural break' }, target,
+    point_of_interest: { kind: lv.entry_kind, bottom: lv.entry_zone[0], top: lv.entry_zone[1],
+      entry: lv.entry, entry_status: lv.entry_status, touch_at: touch ? touch.t : null },
+    confirmation: { sweep: sweep ? { ...sweep } : null, shift: shiftOk ? { ...lowShift } : null,
+      displacement: disp ? { ...disp } : null, ok: lowReady, details: { ...conf, ok: lowReady } },
+    phase: base.phase || null, phase_blocked: !phaseReady, completed, blocked: !ready,
+    state: completed ? 'completed' : ready ? 'ready' : 'waiting',
+    risk_multiplier: 0.5, // conservative policy mirroring the existing counter-CRT rule, not a quoted course percentage
+    reasons };
+}
+
+function counterTrendReport({ counter: ct, L, series, biasSeries, trigger, levels, levelFrom, levelBars }) {
+  const ready = !ct.blocked;
+  const stepData = [
+    ['Timeframe stack', true, `${L.bias_tf} narrative → ${L.entry_tf} location → ${L.trigger_tf} entry confirmation.`],
+    ['Keep the HTF narrative', true, `${L.bias_tf} remains ${ct.htf_bias > 0 ? 'bullish' : 'bearish'}; a counter pullback is not a reset of the daily bias.`],
+    ['MTF shift and point of interest', ct.point_of_interest.entry_status === 'at-entry' && ct.point_of_interest.touch_at !== null && !ct.phase_blocked,
+      `${L.entry_tf} ${ct.shift.type} ${ct.shift.dir}; POI ${ct.point_of_interest.bottom}–${ct.point_of_interest.top}.`],
+    ['Sweep, then shift on the LTF', ct.confirmation.ok, `${L.trigger_tf} must confirm in the pullback direction after the POI touch.`],
+    ['One bounded target, reduced risk', !ct.completed, `Stop the pullback at ${ct.target.label}; at most half ordinary same-grade risk, never a farther runner.`],
+  ];
+  const steps = stepData.map(([title, done, text], i) => ({ n: i + 1, title, done, text }));
+  const checks = steps.map((x) => ({ key: `pullback_${x.n}`, label: x.title, ok: x.done, detail: x.text }));
+  const score = Math.round(checks.filter((x) => x.ok).length / checks.length * 100);
+  const headline = `${L.bias_tf} narrative stays ${ct.htf_bias > 0 ? 'bullish' : 'bearish'}; `
+    + `${L.entry_tf} has a confirmed ${ct.shift.type} ${ct.shift.dir}, so ${ct.dir > 0 ? 'long' : 'short'} is a bounded counter-HTF pullback to ${ct.target.label}. `
+    + (ready ? `The POI is touched and ${L.trigger_tf} swept then shifted: reduced-risk execution is permitted, subject to the setup vetoes.` : ct.reasons.join(' '));
+  const conflicts = [{ kind: 'counter-trend-structure', blocks_trade: false,
+    sides: `${L.bias_tf} narrative vs ${L.entry_tf} internal pullback`,
+    rule: 'Ep 11/15 allow trading the internal pullback against the higher-timeframe narrative until its opposing zone is reached; this does not flip the daily bias.',
+    resolution: 'Trade only the confirmed pullback, reduced size, with exactly one HTF-zone target.' },
+    ...ct.reasons.map((resolution) => ({ kind: 'countertrend-wait', blocks_trade: true,
+      sides: 'counter-HTF execution not ready', rule: 'Narrative, location and lower confirmation have separate jobs.', resolution }))];
+  return {
+    method: { name: 'Internal-structure counter-HTF pullback (Ep 11/15)', style: L.style,
+      stack: `${L.bias_tf} narrative → ${L.entry_tf} location → ${L.trigger_tf} trigger`,
+      steps: steps.map((x) => x.title), conflict_rule: conflicts[0].rule },
+    layers: {
+      bias: { tf: L.bias_tf, job: 'narrative + bounded target', role_note: steps[1].text,
+        structure: ct.htf_bias > 0 ? 'bullish' : 'bearish', state: 'countertrend-context',
+        range: null, right_candle: null, plan: null, levels: levels.length,
+        bars: biasSeries.candles.length, atr: r4(biasSeries.atr), consumed_ranges: [] },
+      zone: { tf: L.entry_tf, job: 'location', role_note: steps[2].text,
+        structure: series.smc.structure.trend, fresh_zone: { side: ct.dir > 0 ? 'demand' : 'supply',
+          bottom: ct.point_of_interest.bottom, top: ct.point_of_interest.top },
+        premium_discount: null, unfilled_fvg: null, crt: null },
+      trigger: { tf: L.trigger_tf, job: 'sweep then shift', role_note: steps[3].text,
+        bar_count: (trigger.candles || []).length, session: null, confirmation: ct.confirmation.details },
+    },
+    steps, checks, score, grade: score >= 80 ? 'A' : score >= 60 ? 'B' : 'C',
+    direction: ct.dir, side: ct.dir > 0 ? 'long' : 'short', status: ready ? 'confirmed' : 'waiting',
+    conviction: ready ? { tier: 'A', why: 'All three roles confirmed the bounded internal pullback.',
+      size_hint: 'half ordinary same-grade risk even with LTF confirmation; single HTF-zone target' }
+      : { tier: 'watch', why: ct.reasons.join(' '), size_hint: 'no position until execution is ready' },
+    headline, playbook: ready ? [steps[4].text] : ct.reasons, conflicts, blocked: ct.blocked,
+    countertrend: ct, crt_plan: null, levels: levels.slice(0, 6), price: r4(series.price),
+    inputs: { bias_bars: biasSeries.candles.length, entry_bars: series.candles.length,
+      trigger_bars: (trigger.candles || []).length, aggregated_bias: false,
+      level_window_bars: levelBars, level_window_from: levelFrom ? new Date(levelFrom).toISOString() : null },
+  };
+}
+
 /**
  * The full top-down object.
  *
@@ -514,6 +649,13 @@ function build({ symbol, tf, series, biasSeries = null, triggerSeries = null, op
 
   // ---- Layer 3: the trigger ----------------------------------------------
   const trigger = triggerSeries || entrySeries;
+  // The original HTF-CRT path keeps priority, including its genuine blocked/chop/chase
+  // states. M33 supplies the DIFFERENT sanctioned method only when no HTF sweep is in play.
+  if (opts.counterTrend !== false && (!biasRange || biasRange.state === 'no-sweep')) {
+    const counter = counterTrendRead({ tf, L, series: entrySeries, biasSeries, trigger, opts });
+    if (counter) return counterTrendReport({ counter, L, series: entrySeries, biasSeries, trigger,
+      levels, levelFrom, levelBars: LEVEL_BARS });
+  }
   const dirForConfirm = (biasRange && biasRange.dir) || (biasSmc && biasSmc.structure && biasSmc.structure.trend === 'bullish' ? 1 : biasSmc && biasSmc.structure && biasSmc.structure.trend === 'bearish' ? -1 : 0);
   const conf = dirForConfirm ? confirmation(trigger, dirForConfirm, entrySeries.atr) : { ok: false, note: 'No direction yet, so there is nothing to confirm.' };
 

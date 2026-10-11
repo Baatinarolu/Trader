@@ -196,6 +196,29 @@ ok(tdGo.conflicts.some((c) => c.kind === 'ltf-against-htf' && !c.blocks_trade),
   JSON.stringify(tdGo.conflicts.map((c) => c.kind)));
 ok(tdGo.conviction && ['A', 'B'].includes(tdGo.conviction.tier), `conviction tier ${tdGo.conviction && tdGo.conviction.tier} with the size rule attached`, (tdGo.conviction || {}).size_hint);
 
+section('M33: internal counter-HTF execution does not change the daily narrative');
+{
+  const fixture = require('./fixtures/countertrend-fixture');
+  const SMC = require('../src/bots/smc');
+  for (const dir of [-1, 1]) {
+    const f = fixture(dir);
+    for (const x of [f.input.series, f.input.biasSeries, f.input.triggerSeries]) x.smc.sessions = SMC.sessionState(new Date(f.END));
+    const td = TD.build(f.input);
+    const align = Momentum.alignment(f.input.biasSeries, f.input.series, f.input.triggerSeries, td);
+    const r = Setup.buildSetups(f.input.series.smc, { price: f.input.series.price, bias: f.htfDir,
+      topdown: td, balance: 10000, riskPct: .5, valuePerPoint: 1 });
+    const c = r.candidates.find((x) => x.dir === dir);
+    ok(td.countertrend && !td.blocked && td.direction === dir, `counter execution ${dir} is permitted after all three roles confirm`);
+    ok(align.bias === f.htfDir, `daily narrative ${f.htfDir} is NOT overwritten by execution ${dir}`);
+    ok(r.verdict.dir === dir && c.levels.targets.length === 1 && c.levels.targets[0].price === f.target,
+      'one authoritative target: nearest HTF opposing zone');
+    ok(c.risk.method_risk_multiplier === .5 && c.risk.risk_pct === .25,
+      'reduced counter risk is numeric, not just a label');
+  }
+  const f = fixture(); f.input.triggerSeries.smc.structure.last_break = null;
+  ok(TD.build(f.input).blocked, 'a lower sweep alone cannot replace the confirmed lower structural shift');
+}
+
 section('the method gate on the setup engine');
 
 const blockedTd = { ...tdWait, blocked: true, step: undefined };

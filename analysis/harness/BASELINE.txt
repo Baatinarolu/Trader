@@ -2789,3 +2789,183 @@ M33 remains OPEN and its old execution evidence is corrected, not hidden:
 
 Progress:63 done /2 partial /64 todo /0 no-action /129 total. Cumulative source patch:
 29 files, clean application to a second pristine unzip, 0 round-trip diff lines.
+
+
+==============================================================================
+M130 — fixed defining invalidation across successive calls (M50 re-verification)
+2026-10-10. Parent cefa4db. Measured BEFORE M33.
+==============================================================================
+The original level was tested, then overwritten from today’s range/plan on EVERY
+call, even agreement. Widening range long1.0->0.9 / short1.2->1.3 meant later closes
+0.95/1.25 through the ORIGINAL key did not release the plan. The pure rule returned
+on agreement before inspecting a breach. The held-bias harness ALSO moved the key,
+choosing the FRESH sign while it held the opposite one.
+
+Fix: nextBiasInvalidation is one lifecycle shared by server and harness. A valid
+original level/side persists until a reported reset; missing legacy anchors may
+attach the first usable one, flat plans store null, 0 remains a real number. Test
+invalidation before label agreement: a same-direction re-read may follow a breach,
+but that is an explicit reset/new origin, not an unreported moved defining key.
+Already overwritten historical keys cannot be reconstructed and are not guessed.
+
+probe-m130-fixed-invalidation:42/0 against real Bots.analyse + isolated SQLite;
+parent negative8 passed/25 failed. Range/CRT xlong/short:
+  original anchor kept after changing range/plan:0/4 ->4/4
+  breach through original key releases plan:0/4 ->4/4
+Existing M50 probe44/0 remains green.
+
+--seeds60 --bars1500 --window300 --bias held (separate pre-M33 arms):
+  reads82018 in both; holds39555(48.2%)->35965(43.9%);
+  plan resets134->648; invalidating resets73->569 (resets include same-direction
+  reassessment, so calling them sign flips would now misstate the count).
+  total population unchanged:n24 win29.2% exp+0.7908R PF2.33
+  A+ BEFORE n19 win31.6% exp+0.9631R PF2.62
+     AFTER  n17 win23.5% exp-0.3740R PF0.48
+  A  BEFORE n5 win20.0% exp+0.1359R PF1.23
+     AFTER  n7 win42.9% exp+3.6196R PF13.38
+RECORDED NEGATIVE, not better discrimination. Grade subsets below30; no performance
+claim. These historical arms still used the HTF lookahead found next (M131), so their
+absolute return/grade figures are compromised. The successive-call API proof is not.
+
+==============================================================================
+M131 — causal higher-timeframe aggregation (independent harness)
+2026-10-10. Controlled prefix comparison and separate M130-only snapshot.
+==============================================================================
+The harness aggregated the FULL walk first, then made an HTF bar available when its
+FIRST child timestamp arrived. Its fourth close/high/low were therefore visible
+while three children were still future. This contradicted its no-lookahead claim.
+An assumed fixed end is also wrong across weekend/fixture gaps.
+
+Synth.aggregate adds actual last_t; visibleAggregates only exposes observed complete
+input. The harness consumes it. probe-m131-causal-aggregation19/0; old expression
+5 passed/14 failed. Arbitrarily changing FUTURE prices changed observed HTF features
+at9/12 decisions BEFORE and0/12 AFTER. Precomputed visible bars equal fresh aggregation
+of ONLY the observed prefix, including nonempty prefixes and an irregular gap.
+
+--seeds60 --bars1500 --window300 default, M130-only vs M131-only snapshots:
+  BOTH n24 win29.2% exp+0.7908R PF2.33
+  A+ n11 -0.0326R PF0.94; A n13 +1.4875R PF3.40
+  FULL output unchanged after normalizing ONLY runtime.
+This is NOT permission to keep future features: the acted-on sample simply did not
+discriminate the leak. Prior contaminated figures (including historical held-bias
+comparisons) must not be treated as performance evidence. Model returns remain
+synthetic, costs absent, default n24 below the course’s30-trade floor.
+
+==============================================================================
+M33 — bounded internal counter-HTF execution (Ep11 +Ep15)
+2026-10-10. Pre-M33 snapshot: cefa4db + separately measured M130/M131.
+==============================================================================
+Ep11 sanctions 4h bullish /15m shift down ->short toward the HTF demand zone.
+Ep15 says trade the counter-HTF pullback UNTIL it completes, while daily bias is a
+plan with invalidation. The execution sign and daily narrative are DIFFERENT roles.
+
+New alternative method (default enabled where fully qualified; opts.counterTrend:false
+is the isolated control): only with non-ranging HTF context, opposing confirmed MTF
+break, actual MTF point of interest and an existing opposing HTF zone. No HTF sweep in
+play: the legacy CRT keeps priority INCLUDING its true chop/chase/ongoing-sweep blocks.
+Location must be touched now; distinct lower timeframe must sweep after/at the POI
+touch and THEN confirm the structural break. Displacement or labels alone cannot do it.
+Future events are not evidence. BOS/CHoCH/MSS taxonomy remains REPORT-ONLY (M23/M24),
+not a string-name gate — the direction/timestamp/confirmed break are what matter.
+
+M3’s phase, M8/M26 sessions, held-narrative agreement and actual RR remain vetoes.
+Nearest HTF opposing OB’s NEAR edge is the ONLY target, never an arbitrary weak pool,
+measured move or farther runner; ladder mode cannot change that. A too-close target
+remains in the output and FAILS the floor instead of being replaced. A zone proven
+obsolete BEFORE the shift is ignored; a target consumed DURING this leg completes it.
+The first draft included every old breached zone and would permanently select a
+historical invalid magnet; the pre-leg invalid-zone fixture found that, fixed before
+measurement/shipping. This HTF-zone distance is an explicit Ep11 exception for M77,
+not permission to extend every ordinary entry’s target timeframe.
+
+Risk:half ordinary same-grade/range risk, AFTER ordinary risk rounding. Tiny0.005%
+is not rounded back up to0.01%, cancelling reduction. Half is conservative policy,
+not an Ep11-quoted percentage. The existing counter-CRT half-risk promise was only
+prose when LTF conviction was A; numeric risk and Now’s flag now use the same helper.
+Its original confirmed safer-entry choice is preserved (risk reduction is not timing).
+
+Momentum.alignment preserves HTF narrative; td.direction carries execution. The
+explicit-field topdown projection forwards countertrend AND conflicts. analyse/chart/
+scan preserve stored daily bias and its ORIGINAL anchor. A genuinely held opposing
+narrative refuses the fresh counter context, never loosens M50 to accommodate it.
+Now, chart and Copy plan use the actual eligible candidate’s IDENTICAL prices.
+UI calls this an internal counter pullback, NOT CRT and NOT a daily-bias reset.
+Signal storage consumes ok (M127 follow-through); a letter alone cannot save a veto.
+Legacy-target p_win is withheld for the new target/method rather than invent calibration.
+The existing MTF entry-zone location stays intact: M68’s lower-entry-zone work remains
+OPEN, not falsely claimed as completed by this narrower counter-direction fix.
+
+probe-m33-countertrend-execution67/0; pre-M33 control21 passed/30 failed.
+Controlled structural INPUTS specify both directions and matching event times/geometry;
+not an OHLC-only trend-discovery test, not market history or profit evidence.
+  HTF long /exec short: configured0.5% ->0.25%; target4h demand92.5
+  HTF short/exec long: configured0.5% ->0.25%; target4h supply107.5
+  actual candidate == Now order == chart == copied/saved target
+  stored narrative/defining key unchanged across analyse/chart/scan
+  held-context disagreement ->NO TRADE, no stored rejected signal
+  std tests: topdown68->77, Now43->46
+The old slope-only Ep11 diagnostic is replaced; it read ranging/ranging under BOS/
+nested defaults and its old grade-based sole-blocker cases were not eligible trades.
+
+ACTUAL THREE-ROLE MEASUREMENT, --seeds20 --bars1500 --window300 --topdown:
+  Native5m ->complete calendar15m/4h buckets using the actual TD aggregator; unique
+  aligned source times; higher input only after its last child; no interpolation.
+  Native real input is supported only at5m (--real --realtf5m); no fabricated lower
+  bars from15m. Held narrative uses the shared lifecycle and server’s anchor policy.
+  Only the FINAL method-permitted direction can enter. Actual emitted risk_pct is
+  captured separately from the old M58 grade-only isolation table.
+  counter OFF:27500 method reads,0 counter contexts,0 fills
+  counter ON :27500 method reads,657 counter contexts,562 completed,0 ready,0 fills
+  unmet prerequisites (overlap, NOT a partition):POI657, phase32, lower confirmation648
+RECORDED NEGATIVE: this generator contains NO eligible counter sample. Every context
+missed current POI touch. Both arms are0 fills; that cannot rank/select performance
+or establish market edge. It is not evidence the new path is inert: controlled cases
+execute both directions, while this random generator never supplies their prerequisites.
+Do NOT loosen gates just to populate the test or claim a win-rate improvement.
+Bare default60-seed FULL output stays identical to post-M131 except runtime, as expected:
+it never supplies topdown. n24/PF2.33 is below30 AND not a measurement of this new method.
+
+Regression controls adjusted without weakening decisions:
+  - M34 disables ONLY the later M33 counter addition to isolate its dead-config
+    removal:110 full outputs unchanged,12/0 (otherwise5 intentional new-method
+    outputs differed, not a fourth-layer regression).
+  - M69’s polarity-specific prose was wrong when the event passed and label lagged;
+    new wording says they disagree and the event decides. Its semantic assertion
+    updated. M127 normalizes ONLY that exact prose change in historical full-array
+    comparisons;0/920 remaining differences,306->0 phantom verdicts,21/0.
+  - First draft gated on type-name inclusion. GroupB rejected that contradiction
+    of M23/M24’s report-only resolution. Removed it; physical events/sequence still
+    required. GroupB10/10 and M6916/0; no taxonomy gate smuggled in.
+
+==============================================================================
+M132 — cleanup helper’s owner-column assumption (isolated fixture dependency)
+2026-10-10. No actual user workspace erased. No public route currently invokes it.
+==============================================================================
+clearWorkspace tried DELETE rule_checks WHEREuser_id; that table owns through trade_id.
+It failed even for an empty workspace, also omitted drawings/custom instruments/other
+owner tables, and deleted user outside the batch. Found during isolated M33 cleanup.
+Fixed through trade/strategy joins for indirect children; direct user ownership is
+schema-discovered with quoted identifiers. All deletes+user are ONE transaction.
+Global/null-owner instrument rows and market-scoped bias remain untouched.
+probe-m132-workspace-cleanup24/0; old helper2 passed/22 failed. Two users, FK ON and OFF:
+only target owner’s rows/children deleted; other owner, presets and shared bias retained.
+No new destructive UI/API endpoint is introduced.
+
+Final verification after source restart:
+  api121/0; chart36/0; Now46/0; topdown77/0; bots205/1.
+  ONLY bots failure:filled parity sample20 against strict>20 floor,0 mismatches.
+  Parent cefa4db PC.backtest(BTCUSDT,1h,{bars800,step6,force:true}) ALSO fills20 at
+  same clock. Attributed clock-dependent sample; threshold never reduced.
+  Original suite expected a saved signal even after refusal: now correctly checks
+  zero eligible records+reason instead of demanding a fabricated recommendation.
+  A parallel smoke/API run hit SQLITE_BUSY during bots process initialization;
+  isolated serial bots run completes205/1. Do not run those DB-writing suites in parallel.
+  Smoke21/21,0 UI-style failures,0 console errors (jsdom canvas limitation only).
+  Fleet green:m33 67/0,m13042/0,m13119/0,m13224/0,m3 36/0,m26 49/0,m37 20/0,
+   m38-m40 51/0,m39 34/0,m41 27/0 (233ms idle),m57 6/0,m69 16/0,groupa18/18,
+   groupb10/10,m36 17/17,batch0 11/0,m58 23/0,m21 10/0,m1245/0,m10230/0,
+   engine51/0,candles-yahoo62/0,m50 44/0,m52 33/0,reverify67/0,m11 25/0,
+   m12721/0,m34 12/0,m126-m12819/0,m12944/0.
+
+Progress:67 done/2 partial/63 todo/0 no-action/132 total. Cumulative source patch:
+30 files, clean application to a second pristine unzip, 0 round-trip diff lines.

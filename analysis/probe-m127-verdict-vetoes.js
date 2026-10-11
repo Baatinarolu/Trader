@@ -84,7 +84,14 @@ async function uiCase(setups) {
       if (!allowedFixture && yes) allowedFixture = { an, r, c: yes, cs: csWin };
       if (control) {
         const pre = control.buildSetups(an, ctx(cs[i].c));
-        if (JSON.stringify(pre.candidates) !== JSON.stringify(r.candidates)) changedCandidates++;
+        // M33 clarified M69's polarity-neutral report (the old wording was wrong
+        // when the EVENT passed and the trend LABEL lagged). Normalize ONLY that
+        // exact prose rewrite; every numeric field, gate, price, size and other
+        // message still participates in this full-result comparison.
+        const comparable = (cs) => JSON.stringify(cs).replaceAll(
+          'the LABEL agrees but the EVENT does not, which is what M69 exists to catch',
+          'trend label and confirmed break disagree; the break event decides (M69)');
+        if (comparable(pre.candidates) !== comparable(r.candidates)) changedCandidates++;
         if (directional(pre.verdict)) { beforeActs++; if (!selected(pre) || !selected(pre).ok) beforeBad++; }
       }
     }

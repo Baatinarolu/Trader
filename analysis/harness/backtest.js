@@ -32,11 +32,16 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..', '..', 'extracted', 'tradejournal');
 const SMC = require(path.join(ROOT, 'src/bots/smc.js'));
 const Setup = require(path.join(ROOT, 'src/bots/setup.js'));
+const TD = require(path.join(ROOT, 'src/bots/topdown.js'));
 const MOM = require(path.join(ROOT, 'src/bots/momentum.js'));   // M50: --bias held
 const Synth = require('./synth.js');
 
 const argv = process.argv.slice(2);
 const arg = (k, d) => { const i = argv.indexOf('--' + k); return i >= 0 ? Number(argv[i + 1]) : d; };
+const TOPDOWN = argv.includes('--topdown');
+const COUNTER_TREND = !argv.includes('--no-countertrend');
+const methodStats = { reads: 0, counter_reads: 0, ready: 0, completed: 0, permitted: 0, fills: 0,
+  waiting_poi: 0, waiting_phase: 0, waiting_lower: 0 };
 const SEEDS = arg('seeds', 5);
 const BARS = arg('bars', 900);
 const WINDOW = arg('window', 300);
@@ -254,12 +259,35 @@ if (REAL && !REAL_SETS.length) {
   console.error('Re-fetch them per the provenance table in analysis/candle-shim.js (via api.github.com).');
   process.exit(2);
 }
+if (TOPDOWN && REAL && REAL_TF !== '5m') {
+  console.error('--topdown needs native 5m input (--real --realtf 5m); it NEVER invents lower bars from 15m data.');
+  process.exit(2);
+}
 const NWALK = REAL ? REAL_SETS.length : SEEDS;
+const FIVE_MS = 300000;
+function closedFrames(raw, tf) {
+  const stamps = new Set(raw.map((b) => b.t));
+  if (stamps.size !== raw.length || raw.some((b) => b.t % FIVE_MS !== 0)) {
+    throw new Error('The three-role arm requires unique, calendar-aligned native 5m candles.');
+  }
+  const factor = TD.TF_MS[tf] / FIVE_MS;
+  return TD.aggregateByTf(raw, '5m', tf).filter((b) => b.n === factor)
+    .map((b) => ({ ...b, last_t: b.t + TD.TF_MS[tf] - FIVE_MS }));
+}
+function pack(tf, candles, smc) {
+  return { tf, candles, smc, price: candles.length ? candles[candles.length - 1].c : 0,
+    atr: smc.atr || 0, ind: { ok: false, score: 0, ind: {} }, meta: {} };
+}
 
 for (let wi = 0; wi < NWALK; wi++) {
   const seed = wi + 1;                       // kept so every downstream `seed` reference still works
-  const candles = REAL ? loadFixture(REAL_SETS[wi]) : Synth.series({ seed, bars: BARS });
-  const htfAll = Synth.aggregate(candles, 4);
+  const rawFive = TOPDOWN ? (REAL ? loadFixture(REAL_SETS[wi])
+    : Synth.series({ seed, bars: BARS * 3 }).map((b, i) => ({ ...b, t: Date.UTC(2024, 0, 1) + i * FIVE_MS }))) : null;
+  const candles = TOPDOWN ? closedFrames(rawFive, '15m')
+    : REAL ? loadFixture(REAL_SETS[wi]) : Synth.series({ seed, bars: BARS });
+  const htfAll = TOPDOWN ? closedFrames(rawFive, '4h') : Synth.aggregate(candles, 4);
+  const inferredSymbol = TOPDOWN && REAL ? (REAL_SETS[wi].match(/^([A-Z]{6,8})[-_]/) || [])[1] : null;
+  const signalSymbol = SYMBOL || inferredSymbol || (TOPDOWN ? 'EURUSD' : null);
   let openUntil = -1;
   // Per-walk hysteresis state: what the server keeps in the bias_state table. Reset with the walk,
   // never carried between seeds — unrelated windows must not share a bias.
@@ -268,7 +296,9 @@ for (let wi = 0; wi < NWALK; wi++) {
   for (let i = WARMUP; i < candles.length - 5; i++) {
     if (i <= openUntil) continue;
     const win = candles.slice(Math.max(0, i - WINDOW), i + 1);
-    const htf = htfAll.filter((b) => b.t <= candles[i].t).slice(-80);
+    const observedAt = TOPDOWN ? candles[i].last_t : candles[i].t;
+    const clockAt = TOPDOWN ? observedAt + FIVE_MS : candles[i].t;
+    const htf = Synth.visibleAggregates(htfAll, observedAt).slice(-80); // M131: no future child closes
     let analysis;
     // `now` is driven from the candle, not the wall clock. The engine multiplies the score by
     // (0.82 + 0.18 * sessions.quality) and quality runs 0.30 -> 1.00 across the day, so leaving
@@ -276,7 +306,7 @@ for (let wi = 0; wi < NWALK; wi++) {
     // scored 30.57-33.13 depending on the hour). The series starts 2024-01-01T00:00Z on 15m
     // bars, so advancing `now` with the bar walks the run through every killzone -- which is
     // also what makes the killzone veto measurable instead of all-or-nothing per run.
-    try { analysis = SMC.analyse(win, { tf: '15m', htfCandles: htf.length > 30 ? htf : null, now: AT_MS != null ? AT_MS : candles[i].t, swingMode: SWING, nested: NESTED, obRequiresFvg: OB_FVG, allSwings: ALL_SWINGS }); }
+    try { analysis = SMC.analyse(win, { tf: '15m', htfCandles: htf.length > 30 ? htf : null, now: AT_MS != null ? AT_MS : clockAt, swingMode: SWING, nested: NESTED, obRequiresFvg: OB_FVG, allSwings: ALL_SWINGS }); }
     catch (e) { continue; }
     if (!analysis || !analysis.ok) continue;
 
@@ -286,8 +316,27 @@ for (let wi = 0; wi < NWALK; wi++) {
     // M120: supply the bias the server would have supplied, when asked to. Left absent
     // (not 0) in the default mode so the recorded baselines reproduce exactly.
     const htfTrend = analysis.htf_structure ? analysis.htf_structure.trend : null;
+    let td = null, freshMethodBias = null;
+    if (TOPDOWN) {
+      const lowCandles = rawFive.filter((b) => b.t <= observedAt).slice(-400);
+      const high = pack('4h', htf, SMC.analyse(htf, { tf: '4h', now: clockAt }));
+      const medium = pack('15m', win, analysis);
+      const low = pack('5m', lowCandles, SMC.analyse(lowCandles, { tf: '5m', now: clockAt }));
+      td = TD.build({ symbol: signalSymbol, tf: '15m', series: medium,
+        biasSeries: high, triggerSeries: low, opts: { counterTrend: COUNTER_TREND, chaseGuard: CHASE_GUARD } });
+      freshMethodBias = MOM.alignment(high, medium, low, td).bias;
+      methodStats.reads++;
+      if (td.countertrend) {
+        methodStats.counter_reads++;
+        if (!td.blocked) methodStats.ready++;
+        if (td.countertrend.completed) methodStats.completed++;
+        if (td.countertrend.point_of_interest.entry_status !== 'at-entry' || !td.countertrend.point_of_interest.touch_at) methodStats.waiting_poi++;
+        if (td.countertrend.phase_blocked) methodStats.waiting_phase++;
+        if (!td.countertrend.confirmation.ok) methodStats.waiting_lower++;
+      }
+    }
     let biasDir = BIAS_MODE === 'htf' ? (htfTrend === 'bullish' ? 1 : htfTrend === 'bearish' ? -1 : 0) : null;
-    if (BIAS_MODE === 'held') {
+    if (BIAS_MODE === 'held' || TOPDOWN) {
       // M50 — run the SHIPPED rule over the walk instead of handing buildSetups the raw HTF read.
       // `biasHysteresis` is pure, so the walk carries the state itself: exactly what db.js and
       // bots/index.js do in the server, minus the persistence. The invalidation level mirrors
@@ -296,11 +345,23 @@ for (let wi = 0; wi < NWALK; wi++) {
       // extreme, which is topdown.js's own documented fallback (sweepPrice || R.h / R.l).
       // The level TESTED is the one stored when the bias was adopted, not one recomputed from
       // today's range: recomputing lets the market move the goalposts that define being wrong.
-      const fresh = htfTrend === 'bullish' ? 1 : htfTrend === 'bearish' ? -1 : 0;
+      const fresh = TOPDOWN ? freshMethodBias : htfTrend === 'bullish' ? 1 : htfTrend === 'bearish' ? -1 : 0;
       let hh = -Infinity, ll = Infinity;
       for (const b of htf) { if (b.h > hh) hh = b.h; if (b.l < ll) ll = b.l; }
       const hasRange = Number.isFinite(hh) && Number.isFinite(ll) && hh > ll;
-      const h = MOM.biasHysteresis({ priorBias: heldState.bias, freshBias: fresh, invalidation: { level: heldState.level, side: heldState.side }, close: candles[i].c });
+      const levelFor = (b) => {
+        if (!b) return { level: null, side: null };
+        const plan = td && td.layers && td.layers.bias && td.layers.bias.plan;
+        if (TOPDOWN && plan && plan.dir === b && Number.isFinite(plan.invalidation_level)) {
+          return { level: plan.invalidation_level, side: plan.invalidation_side };
+        }
+        const pd = analysis.premium_discount;
+        return TOPDOWN ? { level: pd ? (b > 0 ? pd.range_low : pd.range_high) : null,
+          side: b > 0 ? 'below' : 'above' }
+          : { level: hasRange ? (b < 0 ? hh : ll) : null, side: b < 0 ? 'above' : 'below' };
+      };
+      const h = MOM.biasHysteresis({ priorBias: heldState.bias, freshBias: fresh,
+        invalidation: { level: heldState.level, side: heldState.side }, close: candles[i].c });
       biasStats.calls++;
       if (h.changed) biasStats.flips++;
       if (h.held) biasStats.holds++;
@@ -308,19 +369,27 @@ for (let wi = 0; wi < NWALK; wi++) {
       if (h.disagreement !== null && h.disagreement !== undefined) biasStats.disagreements++;
       if (fresh === 0) biasStats.ranged++;
       if (!hasRange) biasStats.nolvl++;
-      heldState = { bias: h.bias, level: fresh === -1 && hasRange ? hh : fresh === 1 && hasRange ? ll : null, side: fresh === -1 ? 'above' : fresh === 1 ? 'below' : null };
+      // M130: the old harness recomputed the key from FRESH direction even while
+      // holding the OPPOSITE bias. Use the same immutable-anchor lifecycle as the server.
+      const next = MOM.nextBiasInvalidation({
+        prior: { bias: heldState.bias, invalidation_level: heldState.level, invalidation_side: heldState.side },
+        result: h, proposed: levelFor(h.bias),
+      });
+      heldState = { bias: h.bias, level: next.level, side: next.side };
       biasDir = h.bias;
     }
-    try { res = Setup.buildSetups(analysis, { price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex', ...(SYMBOL ? { symbol: SYMBOL } : {}), ...(SESSION_PREF ? { sessionPref: SESSION_PREF } : {}), ...(CHASE_GUARD ? {} : { chaseGuard: false }), useBreakers: USE_BREAKERS, standDownOnWall: STAND_DOWN_WALL, ladderTargets: LADDER, ...(STANDDOWN_CFG !== undefined ? { standDown: STANDDOWN_CFG } : {}), ...(biasDir !== null ? { bias: biasDir } : {}) }); }
+    try { res = Setup.buildSetups(analysis, { price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex', ...(signalSymbol ? { symbol: signalSymbol } : {}), ...(td ? { topdown: td } : {}), ...(SESSION_PREF ? { sessionPref: SESSION_PREF } : {}), ...(CHASE_GUARD ? {} : { chaseGuard: false }), useBreakers: USE_BREAKERS, standDownOnWall: STAND_DOWN_WALL, ladderTargets: LADDER, ...(STANDDOWN_CFG !== undefined ? { standDown: STANDDOWN_CFG } : {}), ...(biasDir !== null ? { bias: biasDir } : {}) }); }
     catch (e) { continue; }
 
     const cands = (res && res.candidates) || [];
-    const c = cands.find((x) => x.ok && x.levels && x.levels.entry > 0 && x.levels.stop > 0 &&
+    const c = cands.find((x) => x.ok && (!TOPDOWN || (td.direction !== 0 && !td.blocked && res.verdict.dir === x.dir)) && x.levels && x.levels.entry > 0 && x.levels.stop > 0 &&
       (!ONLY_AT_ENTRY || x.levels.entry_status === 'at-entry'));
     if (!c) continue;
 
+    if (td && td.countertrend) methodStats.permitted++;
     const sim = simulate(candles, i + 1, c.levels, MAX_BARS, FILL_WINDOW);
     if (!sim) continue;
+    if (td && td.countertrend) methodStats.fills++;
     openUntil = i + sim.bars + COOLDOWN;
     all.push({ seed, bar: i, dow: new Date(candles[i].t).getUTCDay(), side: c.levels.side, grade: c.grade, score: c.score,
       entry_status: c.levels.entry_status, rr_declared: (c.levels.targets[0] || {}).rr,
@@ -331,6 +400,9 @@ for (let wi = 0; wi < NWALK; wi++) {
       // Taken from what the engine EMITTED, not recomputed here — a harness that re-derived the
       // rule would be testing its own copy of it.
       rangeMult: (c.risk && c.risk.range_risk_multiplier != null) ? c.risk.range_risk_multiplier : 1,
+      ...(TOPDOWN ? { counter: !!td.countertrend,
+        methodMult: c.risk && c.risk.method_risk_multiplier != null ? c.risk.method_risk_multiplier : 1,
+        riskFraction: c.risk ? c.risk.risk_pct : 0 } : {}),
       ...sim });
   }
 }
@@ -345,6 +417,11 @@ console.log('=' .repeat(78));
 // identical to Baselines 1-6 and a diff against BASELINE.txt still means what it says.
 console.log(REAL ? ` REAL DATA (${REAL_TF}) — ${REAL_SETS.length} fixture(s): ${REAL_SETS.join(', ')}  ·  windows=${WINDOW} warmup=${WARMUP} maxBars=${MAX_BARS} fillWindow=${FILL_WINDOW} cooldown=${COOLDOWN}` : ` seeds=${SEEDS} bars=${BARS} window=${WINDOW} warmup=${WARMUP} maxBars=${MAX_BARS} fillWindow=${FILL_WINDOW} cooldown=${COOLDOWN}  gate=${ONLY_AT_ENTRY ? "entry_status==='at-entry'" : 'any status'}${BIAS_MODE !== 'off' ? `  bias=${BIAS_MODE}` : ''}${RANGE_SIZED ? '  range-sized=on' : ''}  ·  ${all.length} trades  ·  ${ms}ms`);
 console.log(` engine: src/bots/smc.js analyse() + src/bots/setup.js buildSetups()  (unmodified paths)`);
+if (TOPDOWN) {
+  console.log(` M33 three-role arm: native 5m → complete 15m/4h buckets; held HTF narrative; counter path ${COUNTER_TREND ? 'ON' : 'OFF'}`);
+  console.log(` method reads=${methodStats.reads} counter reads=${methodStats.counter_reads} ready=${methodStats.ready} completed=${methodStats.completed} permitted=${methodStats.permitted} fills=${methodStats.fills}`);
+  console.log(` counter unmet prerequisites (overlap, not a partition): POI=${methodStats.waiting_poi} phase=${methodStats.waiting_phase} LTF=${methodStats.waiting_lower}`);
+}
 /* M3 / M26 — printed so a run is reproducible from its own output: both change which
  * signals survive, and neither is visible in the aggregate line. */
 console.log(` M3 chase guard (Ep 5 BOS timing / Ep 2 anti-chase): ${CHASE_GUARD ? 'ON — a candidate graded during an expansion is refused' : 'OFF (--no-chase-guard, the pre-M3 arm)'}`
@@ -358,14 +435,14 @@ for (const g of ['A+', 'A', 'B', 'C']) {
 }
 const aa = by((t) => t.grade === 'A+' || t.grade === 'A');
 const bc = by((t) => t.grade === 'B' || t.grade === 'C');
-if (BIAS_MODE === 'held') {
+if (BIAS_MODE === 'held' || TOPDOWN) {
   // Printed only for the arm that produces them, and always with the denominator: 0 flips out of
   // 0 evaluated would otherwise look identical to 0 flips out of 7000.
   console.log('\n BIAS HYSTERESIS (M50) — the shipped rule, run over the walk');
   console.log(`   bias reads evaluated        ${biasStats.calls}`);
   console.log(`   ...held against a fresh read ${biasStats.holds} (${(100 * biasStats.holds / Math.max(1, biasStats.calls)).toFixed(1)}%)`);
   console.log(`   ...where fresh disagreed     ${biasStats.disagreements} (${(100 * biasStats.disagreements / Math.max(1, biasStats.calls)).toFixed(1)}%)`);
-  console.log(`   bias changes                 ${biasStats.flips} (${(100 * biasStats.flips / Math.max(1, biasStats.calls)).toFixed(2)}%)`);
+  console.log(`   bias plan resets             ${biasStats.flips} (${(100 * biasStats.flips / Math.max(1, biasStats.calls)).toFixed(2)}%)  · includes same-direction re-reads after invalidation`);
   console.log(`   ...with an invalidating close ${biasStats.invalidations} of ${biasStats.flips}`);
   console.log(`   fresh reads that were flat    ${biasStats.ranged} (held, not invalidated)`);
   console.log(`   bars with no usable HTF range ${biasStats.nolvl} (no level to store)`);
@@ -416,6 +493,14 @@ const delta = eqS - flat.total;
 if (flat.total < 0 && delta > 0) console.log(`   -> losses reduced by $${delta.toFixed(0)} (${((1 - eqS / flat.total) * 100).toFixed(1)}%); drawdown down $${(flat.maxDD - maxDDS).toFixed(0)}, per-trade sd down $${(flat.sd - sdS).toFixed(2)}`);
 else if (delta < 0) console.log(`   -> costs $${Math.abs(delta).toFixed(0)} of profit (the price of sizing down B and C), but drawdown down $${(flat.maxDD - maxDDS).toFixed(0)}`);
 else console.log(`   -> no change in dollars`);
+
+if (TOPDOWN) {
+  const ordinary = all.reduce((sum, t) => sum + BAL * PCT / 100 * t.riskFraction / t.methodMult * t.r, 0);
+  const reduced = all.reduce((sum, t) => sum + BAL * PCT / 100 * t.riskFraction * t.r, 0);
+  console.log('\n M33 — ACTUAL GRADE x RANGE x COUNTER-METHOD DEPLOYMENT (same trades)');
+  console.log(`   before counter reduction $${ordinary.toFixed(2)}; after $${reduced.toFixed(2)}; counter-method reductions on ${all.filter((t) => t.methodMult < 1).length}/${all.length} fills`);
+  console.log('   The M58 table above isolates grade ONLY; this table consumes the actual emitted risk_pct. No sizing policy changes expectancy in R.');
+}
 
 if (RANGE_SIZED) {
   // M52: grade x range position. Same trade population — sizing does not decide entries — so this

@@ -115,6 +115,7 @@ function aggregate(candles, factor = 4) {
     const g = candles.slice(i, i + factor);
     out.push({
       t: g[0].t,
+      last_t: g[g.length - 1].t,
       o: g[0].o,
       c: g[g.length - 1].c,
       h: Math.max.apply(null, g.map((b) => b.h)),
@@ -125,4 +126,14 @@ function aggregate(candles, factor = 4) {
   return out;
 }
 
-module.exports = { series, aggregate, rng, SYNTHETIC: true };
+/** M131 — a bucket is observable only once its LAST constituent is observable.
+ * Selecting by the first timestamp leaked up to three future closes into HTF reads.
+ * An explicit last_t also handles real-fixture gaps without inventing interval spacing.
+ */
+function visibleAggregates(aggregates, asOf) {
+  if (!Number.isFinite(Number(asOf)) || asOf == null || asOf === '') return [];
+  return (aggregates || []).filter((b) => b.last_t != null
+    && Number.isFinite(Number(b.last_t)) && Number(b.last_t) <= Number(asOf));
+}
+
+module.exports = { series, aggregate, visibleAggregates, rng, SYNTHETIC: true };

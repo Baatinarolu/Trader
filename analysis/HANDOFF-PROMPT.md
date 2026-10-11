@@ -1,60 +1,75 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current continuation state — 2026-10-10 (supersedes the historical handoff below)
+## Current continuation state — 2026-10-10 (supersedes historical handoff below)
 
-- Working repository: `/home/user/Trader`; session branch **`arena/762c0295-trader`**.
-  Do not execute the obsolete branch/push instructions in the original §2/§8 below.
-- M3 now consumes M25’s BOS-age classifier as an anti-chase veto. The before-imbalance
-  quote is **Ep 2**, reinforcing Ep 5’s BOS/retrace rule; RECENT=5 is implementation judgment.
-- M127 was discovered by M3’s final-verdict test: explicit candidate vetoes had no consumer
-  in the summary, Now order or Copy plan. Fixed and separately measured with M3 OFF:
-  306 phantom directions out of 920 reads → 0, candidate-array differences 0/920.
-- Ledger: **129 rows; 63 done / 2 partial / 64 todo / 0 deliberate no-action**.
-  `gen-progress.py` remains the sole writer of PROGRESS.md and asserts the exact partition.
-- Current regression baseline: `--seeds 60 --bars 1500 --window 300` **n=24 / 29.2% /
-  +0.7908R / PF2.33** (below 30; NO performance claim). Parent `29fa456`: n=25 / +0.7191R.
-  At 200 seeds: M3 OFF n=99 / −0.0111R / PF0.98; ON n=97 / +0.0108R / PF1.02.
-  Net two fills and cooldown composition shifts do not demonstrate improvement.
-- Verified suites: **api 121/0, bots 206/0, chart 36/0, now 43/0, topdown 68/0**;
-  smoke **21/21 views**, 0 errors. Parity floors currently pass at 22 filled trades.
-- New probes: `probe-m3-chase-guard.js` **36/0**, pristine **0/7**;
-  `probe-m127-verdict-vetoes.js` **21/0** (TJ_CONTROL parent; parent negative **9/10**).
-  Full fleet green, `probe-reverify-applied.js` **67/0** (three new verdict invariants).
-  Run `probe-candles-yahoo.js` with TJ_OFFLINE_CANDLES UNSET (its fetch is stubbed);
-  API-backed probes/suites need the flag and a restarted live server.
-- Next mechanism row: **M33** (Ep 11 + Ep 15), then the remaining 64 todo rows.
-  Its old diagnostic now yields ranging/ranging on BOS/nested defaults and 0 sole-blocker
-  cases in 400 seeds; rebuild a VALID confirmed-shift fixture, not a slope-only proxy.
-  The old examples checked grade-derived setup_action, not candidate.ok. A sanctioned
-  counter-HTF pullback execution direction is not a reset of the held daily bias.
-  Before wiring it, re-check M50's moving-goalposts invariant across SUCCESSIVE calls:
-  applyBiasHysteresis tests the stored level but also computes/stores levelFor(h.bias)
-  each call. Whether that can drift the held invalidation has not yet been probed;
-  do not trust the comment or the existing same-range fixture as proof.
-- M34 now removes the dead fourth-timeframe declaration (zone/zone_tf/zoneSeries),
-  preserving the recommended three-role sets: **12/0**, 110 full topdown outputs unchanged,
-  including confirmed +/-1. M20's annotation-only resolution is superseded by this removal.
-- M126 adopts documented option (b): original **coarse UTC overlay**, not invented ET
-  exchange hours; killzones supply quality while open, calendar stays UTC. Its last stale
-  outside-window UTC hint now uses the next bullet's own label.
-- New M128 corrects open_session=always Sydney and next_session=array-index overlap;
-  **336 wrong metadata pairs of 384 -> 0**. Combined provenance/overlay probe **19/0**.
-- New M129 resolves each NY boundary on its own local date, active/NEXT occurrence:
-  spring gap, fall repeated hour, tomorrow's offset and sub-minute timestamps.
-  Probe **44/0**, parent negative **30/14**. 732 UTC labels /144 countdowns corrected in
-  1536 bullet reads; **0 gate/quality/pair/calendar changes**. Default 60-seed harness
-  FULL output remains identical to M3 after normalizing only runtime.
-- Negative controls matter: **M127 must use 29fa456**, which precedes its fix;
-  **M34/M126/M128/M129 use b7ec114**. A parent that already contains a fix cannot show
-  its historical defect. Temp worktrees do not survive resets; rebuild detached controls.
-  M41's absolute <250ms cost check is CPU-load-sensitive: 475ms during concurrent heavy
-  benchmarks, 247ms on a narrowed rerun, with the threshold and nyWhen body unchanged.
-- Cumulative source patch: **29 files**, clean apply and **0 round-trip differences**.
-- The app source is tracked; dependencies/tmp controls may need restoring after a reset.
-  Keep `.env`, databases and fixtures untracked. Rebuild the cumulative source patch by
-  overlaying the app onto a pristine unzip, excluding `.env`, data, node_modules and .git;
-  use an explicit scratch git identity, apply to a second pristine copy and require zero
-  round-trip differences. No need to commit/push credentials.
+- Repository `/home/user/Trader`; fixed session branch **arena/762c0295-trader**. Never
+  execute old branch/switch/push instructions below. New milestone closes **M33** and
+  dependency findings **M130/M131/M132**. Tree/commit state must be read from git.
+- Ledger: **132 rows;67 done/2 partial/63 todo/0 no-action**. PROGRESS.md is generated
+  only by `gen-progress.py`, whose groups remain an exact anti-omission partition.
+- M33: a confirmed MTF internal break may originate a bounded counter-HTF execution,
+  but HTF narrative/held daily bias do not flip. Actual MTF OB touch now, LTF sweep THEN
+  shift, nearest HTF opposing-zone target, half ordinary same-grade/range risk. One target
+  even with ladder requested; reached target completes it, no farther replacement. Old
+  zones proven obsolete BEFORE this leg are ignored, not mistaken for its target.
+  Legacy HTF-CRT priority and M3/M8/M26/RR vetoes remain. M68’s lower-entry-zone work
+  remains OPEN: this change deliberately inherits the existing MTF entry-level selection.
+- New half-risk helper also fixes the existing counter-CRT promise when conviction=A;
+  its confirmed safer entry remains unchanged. Tiny0.005% is not rounded up to0.01%.
+  Counter metadata+conflicts survive Momentum’s explicit-field map. analyse/chart/scan
+  preserve narrative and original anchor; Now/chart/Copy/saved target prices match.
+  Legacy p_win is withheld for the new model, not invented as calibration.
+- M130 fixes M50’s actual moving-key bug (confirmed0/4 old anchors retained;0/4 breaches
+  released ->4/4 each). Shared nextBiasInvalidation lifecycle; check breach before
+  agreement. Same-direction reset is reported; original anchor frozen until reset.
+  Existing corrupted historical keys cannot be reconstructed. Server and --bias held
+  harness now share this policy; the old harness even selected the key from FRESH sign
+  while holding the opposite one.
+- M131 fixes higher-feature lookahead in independent harness. actual last_t/causal
+  selector, prefix oracle+future perturbation test19/0 (old5/14,9/12 leaking decisions).
+  **Prior contaminated backtest figures must not be performance evidence.** Default
+ 60-seed output stays n24/29.2%/+0.7908R/PF2.33; below30 and blind to topdown. Neither
+  invariance proves no leak nor this number proves market edge.
+- New --topdown harness: native5m ->complete calendar15m/4h, observed complete higher
+  buckets, actual TD/alignment/held bias/Setup, final method-permitted entries only.
+  --no-countertrend isolated old arm. At20 seeds x1500:27500 reads; ON657 counter
+  contexts,562 complete,0 ready/fills; OFF0 contexts/fills. All657 missed current POI,
+  32 phase waits,648 lower waits (overlap). **No sample, no ranking, no gate loosening.**
+  Native REAL inputs supported ONLY at5m; do not interpolate lower bars from15m.
+- M132 fixes unused clearWorkspace helper: indirect rule/strategy ownership joins,
+  schema-discovered directly user-scoped tables, one atomic batch. Tested two users
+  with FK ON/OFF24/0 versus old2/22; global presets/market bias preserved. No new route,
+  no actual workspace was erased. Discovered by the isolated M33 cleanup fixture.
+- New probes: **M33 67/0** (pre-M33 snapshot21/30), **M13042/0** (cefa4db8/25),
+  **M13119/0** (M130-only snapshot5/14), **M13224/0** (old2/22). Fixture now lives in
+  app scripts/fixtures so standalone restored app tests do not depend on analysis/;
+  analysis/helpers just re-exports it. Rebuilt Ep11 diagnostic uses explicit confirmed
+  structural inputs; old slope-only walk was ranging/ranging and its old grade-based
+  sole-blocker examples were invalid.
+- Verified suites: **API121/0,chart36/0,Now46/0,topdown77/0,bots205/1**. Sole bots
+  failure is strict filled sample >20 at20, with0 mismatches. Parent cefa4db in-process
+  predict backtest ALSO fills20 at same clock. Never reduce that floor. Corrected suite
+  no longer demands a stored recommendation from a refused analysis; saved=0+reason
+  is asserted, with new M33 positive approved-storage coverage.
+- Smoke21/21,0 UI-style failures,0 errors. **Run DB-writing suites serially:** parallel
+  smoke/API initialization hit SQLITE_BUSY; narrowed serial bots completes205/1.
+- Full fleet green, reverify67/0. M41 cost gate CPU-sensitive:233ms idle (<250 unchanged).
+  M34 turns ONLY M33 off to isolate dead-layer neutrality (110 results unchanged).
+  M127 uses its original29fa456 negative control; normalizes ONLY M69’s known neutral
+  prose rewrite in full candidate comparison (0/920 remaining changes). M69 tests its
+  new accurate label/event wording. BOS/CHoCH/MSS taxonomy stays report-only (groupB).
+- Controls: M12729fa456; docs/clock probesb7ec114; M130cefa4db; pre-M33/M132=cefa4db
+  plus separately measured M130/M131. Temp controls/node_modules may vanish on reset.
+  Run candles-yahoo WITHOUT TJ_OFFLINE_CANDLES (fetch is stubbed); API-backed probes
+  need the flag and a restarted server. Preview uses labelled synthetic candles only.
+- Next: remaining **63 todo**, in mechanism order. High-related work **M68** (named
+  entry models and actual LTF entry zones), **M54/M77** (ordinary target composition/
+  explicit TF constraint, preserving M33’s sanctioned counter-HTF exception); also the
+  two partial rows M30 and M125. Keep every row, measure separately, record negatives.
+- Cumulative source patch: **30 files**, clean apply, **0 round-trip differences**.
+- Rebuild cumulative source patch from pristine zip + app overlay, excluding .env,
+  data,node_modules,.git; explicit scratch git identity; second-pristine clean apply
+  and ZERO round-trip differences. Preserve credentials/database/fixtures untracked.
 
 The original handoff is retained below as provenance, not as the current branch/state.
 

@@ -29,7 +29,7 @@ GROUPS = [
     ('B \u2014 structure, zones & liquidity  (smc.js)',
      ['M1', 'M2', 'M16', 'M21', 'M22', 'M23', 'M24'] + ['M%d' % i for i in range(29, 33)]
      + ['M36'] + ['M%d' % i for i in range(42, 56)]
-     + ['M67', 'M71', 'M72', 'M73', 'M75', 'M76', 'M77', 'M78', 'M119']),
+     + ['M67', 'M71', 'M72', 'M73', 'M75', 'M76', 'M77', 'M78', 'M119', 'M130']),
     ('C \u2014 sessions, killzones & no-trade conditions',
      ['M5', 'M10', 'M26', 'M33', 'M37', 'M38', 'M39', 'M40', 'M41', 'M74', 'M112',
      # M126 was raised while applying M39: SESSIONS is still hardcoded UTC in the same
@@ -48,7 +48,7 @@ GROUPS = [
      # M120 is an audit-of-the-audit finding raised by the §8.2 re-verification sweep: the
      # measurement harness omitted an input the server supplies. It sits with the other
      # provenance rows (M6, M19, M20, M117) rather than with a mechanism group.
-     + ['M120']),
+     + ['M120', 'M131', 'M132']),
     ('H \u2014 market data & feed integrity  (candles.js)',
      # M121: the candle-provider path. Not a docs/config row and not a scoring mechanism —
      # it is the integrity of the bars every mechanism downstream is handed. Its own group so

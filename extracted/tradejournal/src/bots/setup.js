@@ -30,6 +30,7 @@
  */
 
 const I = require('../instruments');
+const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
 
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
 const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
@@ -331,6 +332,17 @@ function targetPools(analysis, dir, entry) {
  */
 const SMC = require('./smc');   // M38/M40: sessionAffinity
 
+/** M33 — counter-HTF execution is reduced even with A-grade confirmation.
+ * Reuse the existing counter-CRT policy too: it previously promised half size in
+ * words but the actual sizing/Now full-risk flag never consumed that promise.
+ */
+function methodRiskMult(td, dir) {
+  if (!td || td.direction !== dir) return 1;
+  const counter = td.countertrend && td.countertrend.kind === 'internal-pullback';
+  const conflicts = td.conflicts || td.conflict_detail || [];
+  return counter || conflicts.some((c) => c.kind === 'counter-trend-crt') ? 0.5 : 1;
+}
+
 function buildSetups(analysis, ctx = {}) {
   const price = Number(ctx.price || (analysis && analysis.price));
   const atr = Number(ctx.atr || (analysis && analysis.atr)) || price * 0.001;
@@ -407,18 +419,24 @@ function buildSetups(analysis, ctx = {}) {
   for (const dir of [1, -1]) {
     const long = dir > 0;
     const side = long ? 'buy' : 'sell';
+    const counter = td && td.countertrend && td.countertrend.kind === 'internal-pullback'
+      && td.countertrend.dir === dir ? td.countertrend : null;
+    const ladderTargets = !!ctx.ladderTargets && !counter; // a bounded pullback has ONE HTF target
+    const triggerRead = counter ? counter.confirmation : null;
     const checks = [];
     const add = (key, label, pass, weight, detail) => checks.push({ key, label, pass: !!pass, weight, detail: detail || null });
 
     /* ---------------------------------------------------------------- 1. trigger: sweep */
-    const sweeps = ((analysis && analysis.sweeps) || []).filter((s) => s.dir === dir);
-    const recentSweep = sweeps.find((s) => s.bars_ago <= 25) || null;
+    const sweeps = (counter ? (triggerRead && triggerRead.sweep ? [triggerRead.sweep] : [])
+      : ((analysis && analysis.sweeps) || [])).filter((s) => s.dir === dir);
+    const recentSweep = sweeps.find((s) => s.bars_ago <= SWEEP_LOOKBACK) || null;
     const sweepQuality = recentSweep ? clamp(recentSweep.wick_atr / 1.2, 0.3, 1.2) : 0;
     add('sweep', long ? 'Sell-side liquidity was swept (stops taken)' : 'Buy-side liquidity was swept (stops taken)',
       !!recentSweep, 18, recentSweep ? `${recentSweep.label} · ${recentSweep.wick_atr} ATR wick · ${recentSweep.bars_ago} bars ago` : 'No sweep of the opposing liquidity yet — the model has no trigger.');
 
     /* ------------------------------------------------------- 2. displacement after sweep */
-    const disps = ((analysis && analysis.displacement) || []).filter((d) => d.dir === dir);
+    const disps = (counter ? (triggerRead && triggerRead.displacement ? [triggerRead.displacement] : [])
+      : ((analysis && analysis.displacement) || [])).filter((d) => d.dir === dir);
     const disp = disps.find((d) => !recentSweep || d.i > recentSweep.i) || disps[0] || null;
     add('displacement', 'Displacement leg in your direction',
       !!disp, 15, disp ? `${disp.rangeAtr} ATR expansion bar, ${(disp.bodyRatio * 100).toFixed(0)}% body` : 'No expansion bar — price is drifting, not displacing.');
@@ -544,7 +562,7 @@ function buildSetups(analysis, ctx = {}) {
           + (lastBreak
             ? `the last break was a ${lastBreak.type} ${lastBreak.dir} ${lastBreak.bars_ago} bars ago${lastBreak.mss ? ' (MSS — sweep then shift)' : ''}`
             : 'no structural break in this window')
-          + `. Label reads ${trend}${labelAligned === marketShift ? '' : ` — the LABEL agrees but the EVENT does not, which is what M69 exists to catch`}.`);
+          + `. Label reads ${trend}${labelAligned === marketShift ? '' : ` — trend label and confirmed break disagree; the break event decides (M69)`}.`);
     if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
 
     /* ------------------------------------------------------------- 6. higher-timeframe bias */
@@ -585,7 +603,7 @@ function buildSetups(analysis, ctx = {}) {
       const buffer = atr * 0.18;
       const stop = long ? stopBase - buffer : stopBase + buffer;
       const risk = Math.abs(entry - stop);
-      const pools = targetPools(analysis, dir, entry);
+      const pools = counter ? [] : targetPools(analysis, dir, entry);
       const targets = [];
       for (const p of pools) {
         const reward = Math.abs(p.price - entry);
@@ -593,8 +611,16 @@ function buildSetups(analysis, ctx = {}) {
         if (rr < 0.9) continue;                       // ignore pools the entry already sits on
         targets.push({ label: p.label, kind: p.kind, price: r4(p.price), rr: r2(rr), strength: p.strength, touches: p.touches || null });
       }
+      if (counter) {
+        const target = counter.target || {};
+        // No 0.9R discard, measured move, weak-structure override or farther runner:
+        // keep the prescribed target even when it FAILS the floor; the veto then says so.
+        targets.push({ label: target.label || 'HTF opposing zone', kind: 'htf_order_block',
+          tf: target.tf, price: r4(target.price), rr: risk ? r2(dir * (target.price - entry) / risk) : 0,
+          strength: 1, touches: null });
+      }
       // dealing-range extreme as a structural target
-      if (pd) {
+      if (pd && !counter) {
         const extreme = long ? pd.range_high : pd.range_low;
         const reward = Math.abs(extreme - entry);
         if (reward > 0) {
@@ -624,7 +650,7 @@ function buildSetups(analysis, ctx = {}) {
         runner && runner.rr >= minRR
           // M51: this described a partial that no longer exists by default. Re-read every
           // string that describes a decision whenever the decision changes.
-          ? (ctx.ladderTargets
+          ? (ladderTargets
             ? `Partial at ${first.label} (${first.rr}R), runner to ${runner.label} at ${runner.price} = ${runner.rr}R`
             : `One target: ${runner.label} at ${runner.price} = ${runner.rr}R — pick one and manage one position.`)
           : first ? `The furthest real pool (${first.label}, ${first.price}) is only ${first.rr}R away — not enough runway for the risk taken.`
@@ -642,7 +668,7 @@ function buildSetups(analysis, ctx = {}) {
       // the nearest pool: that keeps the minRR floor meaningful rather than letting the choice
       // of one target quietly drop the risk:reward requirement.
       const ladder = [];
-      if (ctx.ladderTargets) {
+      if (ladderTargets) {
         if (first) ladder.push({ ...first, role: 'T1' });
         if (runner && (!first || runner.rr > first.rr + 0.3)) ladder.push({ ...runner, role: 'T2' });
         const beyond = targets.filter((t) => runner && t.rr > runner.rr + 0.6).slice(0, 1);
@@ -703,10 +729,12 @@ function buildSetups(analysis, ctx = {}) {
           : 6;
       add('entry', 'Entry not chased (price at/near the zone)', entryStatus !== 'waiting' || zoneReach <= 2.5, 8, entryNote);
       add('management', 'Risk plan protects the trade at the first pool', rrFinal >= minRR, 0,
-        `Take 50% at ${ladder[0].label} (${rrPrimary}R), move the stop to break-even, run the rest to ${ladder[ladder.length - 1].label} (${rrFinal}R).`);
+        counter ? `One target at ${ladder[0].label} (${rrPrimary}R) — the counter-HTF pullback ends there.`
+          : `Take 50% at ${ladder[0].label} (${rrPrimary}R), move the stop to break-even, run the rest to ${ladder[ladder.length - 1].label} (${rrFinal}R).`);
       if (entryStatus === 'invalid') add('entry_valid', 'Zone not already invalidated', false, 0, entryNote);
 
       levels = {
+        ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counter.target.tf } : {}),
         dir, side, entry: r4(entry), entry_zone: [r4(zone.bottom), r4(zone.top)], entry_kind: zone.kind,
         stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / atr),
         stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
@@ -727,7 +755,8 @@ function buildSetups(analysis, ctx = {}) {
           runner_target: ladder[ladder.length - 1] ? { price: ladder[ladder.length - 1].price, rr: ladder[ladder.length - 1].rr, label: ladder[ladder.length - 1].label, size: ladder.length > 1 ? '50%' : '100%' } : null,
           rule: ladder.length > 1
             ? `Bank 50% at T1 (${ladder[0].rr}R) and move the stop to entry. The runner is free — let the pool at ${ladder[ladder.length - 1].price} do the work.`
-            : 'Single target: manage as one position, trail behind structure after 1R.',
+            : counter ? 'Bounded counter-HTF pullback: close the whole position at the HTF opposing zone; no farther runner.'
+              : 'Single target: manage as one position, trail behind structure after 1R.',
         },
         wall: wallRisk ? { label: wallRisk.label, price: wallRisk.price, rr: wallRisk.rr } : null,
         entry_status: entryStatus, entry_note: entryNote,
@@ -808,7 +837,7 @@ function buildSetups(analysis, ctx = {}) {
     // M7 / M96 — "no matter how many confluences I have, no matter how confident I am,
     // I'm going to be passing on the trade." This is arithmetic, not taste: at the measured
     // ~21% win rate, break-even needs (1 - 0.21) / 0.21 = 3.8R, so a sub-2R idea cannot win.
-    if (levels && levels.rr_final > 0 && levels.rr_final < minRR) {
+    if (levels && ((levels.rr_final > 0 && levels.rr_final < minRR) || (counter && !(levels.rr_final >= minRR)))) {
       vetoes.push(`Risk:reward ${levels.rr_final}R is below the ${minRR}R floor — passing on the trade.`);
     }
     if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
@@ -839,6 +868,10 @@ function buildSetups(analysis, ctx = {}) {
     // lower time frame." It stays visible with its action string so it can be alerted on.
     if (levels && levels.entry_status === 'waiting') {
       vetoes.push('Price has not reached the point of interest yet — waiting for the retrace is not an entry.');
+    }
+    if (counter && counter.blocked) vetoes.push(counter.reasons.join(' '));
+    if (counter && ctx.bias != null && Math.sign(Number(ctx.bias)) !== counter.htf_bias) {
+      vetoes.push('The held daily bias disagrees with this HTF narrative — wait for its defining invalidation, not an MTF override.');
     }
     const tradeable = vetoes.length === 0 && g.grade !== 'no-trade';
 
@@ -877,7 +910,11 @@ function buildSetups(analysis, ctx = {}) {
         const rangeInfo = rangeRiskMult(pd, long);
         const rangeMult = rangeInfo.mult;
         const sizeMult = gradeMult * rangeMult;
-        const effectiveRiskPct = r2(riskPct * sizeMult);
+        const ordinaryRiskPct = r2(riskPct * sizeMult);
+        const methodMult = methodRiskMult(td, dir);
+        // Half AFTER the ordinary grade/range policy has rounded; rounding 0.005%
+        // back to 0.01% would silently cancel a small account's risk reduction.
+        const effectiveRiskPct = methodMult < 1 ? r4(ordinaryRiskPct * methodMult) : ordinaryRiskPct;
         const sizing = I.positionSize({
           balance, riskPct: effectiveRiskPct, entry: levels.entry, stop: levels.stop,
           value_per_point: vpp, asset_class: ctx.assetClass || 'stocks',
@@ -888,6 +925,8 @@ function buildSetups(analysis, ctx = {}) {
           size: sizing.size, unit: sizing.unit, actual_risk: perR, per_unit: sizing.perUnit,
           note: sizing.note || null,
           grade_risk_multiplier: gradeMult,
+          ...(methodMult < 1 ? { method_risk_multiplier: methodMult,
+            risk_pct_ordinary: ordinaryRiskPct, method_risk_note: 'Counter-HTF execution: at most half ordinary same-grade risk.' } : {}),
           // M52: reported so a reduction is auditable and attributable to its cause. `depth` is
           // the signed distance beyond the midpoint toward the favourable extreme, which is what
           // the multiplier is a function of — without it a reviewer cannot tell a mid-range cut
@@ -901,6 +940,7 @@ function buildSetups(analysis, ctx = {}) {
             const why = [];
             if (gradeMult !== 1) why.push(`grade ${g.grade} ×${gradeMult} — the setup is ${g.label.toLowerCase()}`);
             if (rangeMult !== 1) why.push(`range position ×${rangeMult} — price is at ${pd.position_pct}% of the dealing range, ${rangeInfo.reason}`);
+            if (methodMult < 1) why.push('counter-HTF execution ×0.5 — the daily narrative has not reversed');
             // Null only when NOTHING reduced risk, so the field stays a faithful "was this
             // adjusted?" flag rather than a grade-only one.
             return why.length ? `Risk scaled ${riskPct}% → ${effectiveRiskPct}%: ${why.join('; ')}.` : null;
@@ -1122,4 +1162,4 @@ function pendingStep(td) {
 // multiplier curve can be unit-tested on its own instead of only being observable through a full
 // engine run that has to happen to produce a mid-range candidate.
 module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK,
-  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX };
+  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX, SWEEP_LOOKBACK, methodRiskMult };

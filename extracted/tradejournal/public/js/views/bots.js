@@ -245,7 +245,7 @@
         line.appendChild(h('span', {
           class: 'chip ' + (hl.method_blocked ? 'warn' : 'pos'),
           text: `method ${hl.method_status}${hl.method_direction ? (hl.method_direction > 0 ? ' · long' : ' · short') : ''}`,
-          title: 'The higher-timeframe CRT state: a confirmed sweep is what arms a trade',
+          title: B.data.topdown && B.data.topdown.countertrend ? 'HTF narrative, MTF internal pullback, LTF execution confirmation — daily bias is unchanged' : 'The higher-timeframe CRT state: a confirmed sweep is what arms a trade',
         }));
       }
       line.appendChild(h('span', { class: 'chip', text: `mechanics ${hl.mechanics}` }));
@@ -299,7 +299,7 @@
       box.appendChild(h('div', { class: 'muted-2 td-layer-note', text: lay.role_note || '' }));
       if (key === 'bias') {
         box.appendChild(h('div', { class: 'kv', html: `<span>structure</span><b>${esc(lay.structure || 'ranging')}</b>` }));
-        box.appendChild(h('div', { class: 'kv', html: `<span>CRT state</span><b>${esc(lay.state || '—')}</b>` }));
+        box.appendChild(h('div', { class: 'kv', html: `<span>${td.countertrend ? 'narrative stage' : 'CRT state'}</span><b>${esc(lay.state || '—')}</b>` }));
         if (lay.range) box.appendChild(h('div', { class: 'kv', html: `<span>range</span><b>${fmt(lay.range.low, 5)} – ${fmt(lay.range.high, 5)}</b>` }));
         if (lay.right_candle) {
           box.appendChild(h('div', { class: 'kv', html: `<span>right candle</span><b>${esc(lay.right_candle.level.label)} ${fmt(lay.right_candle.level.price, 5)}</b>` }));
@@ -330,6 +330,16 @@
       pb.appendChild(h('div', { class: 'td-sub', text: 'What the method says to do next' }));
       td.playbook.forEach((line) => pb.appendChild(h('div', { class: 'td-play', text: line })));
       card.appendChild(pb);
+    }
+
+    if (td.countertrend) {
+      const ct = td.countertrend;
+      const box = h('div', { class: 'td-plan' });
+      box.appendChild(h('div', { class: 'td-sub', text: 'Counter-HTF internal pullback — not a daily-bias reset' }));
+      box.appendChild(h('div', { class: 'bot-detail', text: `${ct.htf_tf} narrative ${ct.htf_bias > 0 ? 'bullish' : 'bearish'} · ${ct.mtf_tf} execution ${ct.dir > 0 ? 'long' : 'short'} · ${ct.state}.` }));
+      box.appendChild(h('div', { class: 'bot-detail', text: `ONE target: ${ct.target.label}, near edge ${fmt(ct.target.price, 5)}. No farther runner; at most half ordinary same-grade risk.` }));
+      box.appendChild(h('div', { class: 'muted-2', text: 'The final instruction below decides whether anything is armed. Legacy setup-model probabilities do not calibrate this new bounded-target method.' }));
+      card.appendChild(box);
     }
 
     /* the CRT plan, when there is one */
@@ -407,7 +417,8 @@
     // a size is only claimed when the method has actually graded the setup:
     // "conviction none · half size" would be a promise the engine is not making
     const tier = n.conviction && String(n.conviction).toUpperCase();
-    if (tier === 'A' || tier === 'B') head.appendChild(h('span', { class: 'chip ' + (tier === 'A' ? 'pos' : ''), text: `conviction ${tier} · ${n.full_risk ? 'full size' : 'half size'}` }));
+    if ((tier === 'A' || tier === 'B') && n.armed) head.appendChild(h('span', { class: 'chip ' + (tier === 'A' ? 'pos' : ''), text: `conviction ${tier} · ${n.full_risk ? 'full size' : 'half size'}` }));
+    else if (tier === 'A' || tier === 'B') head.appendChild(h('span', { class: 'chip muted', text: `conviction ${tier} · nothing armed` }));
     else head.appendChild(h('span', { class: 'chip muted', text: 'no conviction yet — nothing to size' }));
     head.appendChild(h('span', { class: 'chip', text: `steps ${n.steps_done}/${n.steps_total}` }));
     card.appendChild(head);

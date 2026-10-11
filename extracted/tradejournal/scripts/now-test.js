@@ -112,6 +112,16 @@ const S = series({ nowMs: NOW });
   ok(!!n.checkpoint.at && !/order live/.test(n.checkpoint.label), 'a refused scenario retains a re-check clock, not order validity');
 }
 
+/* -------------------------------------------------------- M33 bounded counter order */
+{
+  const td = armedTd({ conviction: { tier: 'A' }, countertrend: { kind: 'internal-pullback', dir: -1,
+    htf_bias: 1, ltf_tf: '5m', target: { label: '4h demand zone' } } });
+  const n = Now.build({ td, setups: setups(), series: S, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
+  ok(n.action === 'SELL' && n.order.mode === 'countertrend-pullback', 'M33 uses the bounded counter execution path');
+  ok(n.order.entry === 1.1250 && n.order.target === 1.1162, 'counter order uses actual candidate prices, not CRT alternatives');
+  ok(!n.full_risk, 'A confirmation does not turn counter-HTF execution into full risk');
+}
+
 /* ------------------------------------------------------------------ 3. blocked */
 {
   const td = baseTd({

@@ -762,10 +762,25 @@ async function userFromWebhookToken(token) {
 
 /** Wipe every table for a workspace (used by the "fresh workspace" flow). */
 async function clearWorkspace(userId) {
-  const tables = ['tv_alerts', 'webhook_tokens', 'bot_signals', 'rule_checks', 'journal_entries', 'goals', 'watchlist', 'trades', 'strategies', 'accounts'];
-  await batch(tables.map((t) => ({ sql: `DELETE FROM ${t} WHERE user_id=?`, args: [userId] })));
-  await db.prepare('DELETE FROM sessions WHERE user_id=?').run(userId);
-  await db.prepare('DELETE FROM users WHERE id=?').run(userId);
+  await ready;
+  // M132 — rule_checks has trade_id, not user_id. Delete indirect children through
+  // their owning parents, even where FK cascading is not enabled (e.g. a remote DB).
+  // Discover DIRECT ownership from the actual schema so drawings/custom instruments
+  // and future user-scoped tables are not silently omitted. Global/null-owner rows
+  // and market-scoped bias_state are deliberately untouched.
+  const quote = (name) => '"' + String(name).replace(/"/g, '""') + '"';
+  const tables = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
+  const owned = [];
+  for (const t of tables) {
+    const columns = await db.prepare(`PRAGMA table_info(${quote(t.name)})`).all();
+    if (columns.some((c) => c.name === 'user_id')) owned.push(t.name);
+  }
+  await batch([
+    { sql: 'DELETE FROM rule_checks WHERE trade_id IN (SELECT id FROM trades WHERE user_id=?)', args: [userId] },
+    { sql: 'DELETE FROM strategy_versions WHERE strategy_id IN (SELECT id FROM strategies WHERE user_id=?)', args: [userId] },
+    ...owned.map((t) => ({ sql: `DELETE FROM ${quote(t)} WHERE user_id=?`, args: [userId] })),
+    { sql: 'DELETE FROM users WHERE id=?', args: [userId] },
+  ]); // every deletion, including the owner, is in ONE transaction
 }
 
 module.exports = {

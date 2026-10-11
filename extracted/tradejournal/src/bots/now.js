@@ -21,7 +21,8 @@
  * Inputs are the objects the API already builds; this file adds no new data feeds.
  */
 
-const SMC = require('./smc');   // M39: one clock, one list of windows
+const SMC = require('./smc');
+const Setup = require('./setup');   // M39: one clock, one list of windows
 const MS = { m: 60000, h: 3600000, d: 86400000, w: 604800000 };
 const TF_MS = { '1m': MS.m, '5m': 5 * MS.m, '15m': 15 * MS.m, '30m': 30 * MS.m, '1h': MS.h, '4h': 4 * MS.h, '1d': MS.d, '1w': MS.w };
 
@@ -135,7 +136,8 @@ function build(p = {}) {
   const otherDir = direction ? cands.find((c) => c.dir === -direction) : null;
   const conviction = td.conviction || null;
   const convictionTier = conviction && conviction.tier ? conviction.tier : null;
-  const fullRisk = convictionTier === 'A';
+  const confirmed = convictionTier === 'A';
+  const fullRisk = confirmed && Setup.methodRiskMult(td, direction) === 1;
 
   const pendingStep = (td.steps || []).find((s) => !s.done) || null;
   const doneSteps = (td.steps || []).filter((s) => s.done).length;
@@ -152,7 +154,11 @@ function build(p = {}) {
     action = /chase/i.test(block ? block.kind : '') ? 'WAIT' : 'NO TRADE';
     headline = `${symbol} ${tf}: do not trade this right now. ${td.headline || ''}`.trim();
     if (block) headline += ` ${block.resolution}`;
-    if (bias.range) {
+    if (td.countertrend) {
+      const poi = td.countertrend.point_of_interest;
+      watch = { level: poi.entry, kind: 'zone', condition: 'touch the MTF POI, then obtain a fresh LTF sweep and structural shift',
+        text: td.countertrend.completed ? 'The bounded pullback is complete; wait for a new narrative.' : `Watch ${poi.bottom}–${poi.top}; a lower-timeframe read is not permission to skip the MTF location.` };
+    } else if (bias.range) {
       watch = {
         level: side ? bias.range.low : null, kind: 'level',
         condition: 'wait for a fresh right candle at the range edge, then a sweep that closes back inside',
@@ -175,21 +181,37 @@ function build(p = {}) {
         text: `Watch for the retrace to ${zone[0]} – ${zone[1]}; reaching it is a reason to re-check, not permission to enter.` };
     }
     invalidate = 'Nothing is armed. Re-run the analysis when the blocking condition changes.';
+  } else if (direction && td.countertrend && allowed && allowed.ok && allowed.levels) {
+    // M33: one authority for prices — the actual eligible setup owns the stop and
+    // its SINGLE HTF-zone target. Never re-price it from a parallel CRT scenario.
+    const lv = allowed.levels, target = lv.targets[0];
+    side = direction;
+    action = direction > 0 ? 'BUY' : 'SELL';
+    order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the confirmed point of interest',
+      entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
+      mode: 'countertrend-pullback', risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
+      size_note: 'Counter-HTF pullback: at most half ordinary same-grade risk; the daily narrative stays intact.',
+      rr_warning: null };
+    headline = `${symbol} ${tf}: ${direction > 0 ? 'long' : 'short'} internal pullback is armed at reduced risk, only to ${td.countertrend.target.label}. The HTF narrative is still ${td.countertrend.htf_bias > 0 ? 'bullish' : 'bearish'}.`;
+    watch = { level: lv.entry, kind: 'entry', condition: 'the confirmed POI and counter-leg stop must still hold',
+      text: `Limit ${lv.entry}, stop ${lv.stop}, ONE target ${target.price} (${target.rr}R). No farther runner.` };
+    invalidate = `${td.countertrend.ltf_tf} close beyond the counter-leg stop voids this execution, not the held daily bias. ${lv.invalidation}`;
   } else if (direction && plan) {
     side = direction;
     action = direction > 0 ? 'BUY' : 'SELL';
     const ag = plan.aggressive || {};
     const sf = plan.safer || {};
-    const chosen = fullRisk ? sf : ag;      // tier B = half risk, so take the better price
+    const chosen = confirmed ? sf : ag;      // tier B = half risk, so take the better price
     order = {
       side: direction > 0 ? 'long' : 'short',
       type: 'stop-limit at the confirmation',
       entry: num(chosen.entry), stop: num(chosen.stop), target: num(chosen.target),
       rr: num(chosen.rr), alt_entry: num(ag.entry), alt_target: num(ag.target), alt_rr: num(ag.rr),
-      size_note: fullRisk
-        ? 'Full risk: the method is confirmed and the lower timeframe has confirmed it too.'
-        : 'Half risk: the range is confirmed but the lower-timeframe confirmation is not in yet — take the deeper (safer) fill.',
-      mode: fullRisk ? 'safer' : 'aggressive',
+      size_note: Setup.methodRiskMult(td, direction) < 1
+        ? 'Counter-HTF rotation: at most half ordinary same-grade risk, even with lower-timeframe confirmation.'
+        : fullRisk ? 'Full risk: the method is confirmed and the lower timeframe has confirmed it too.'
+          : 'Half risk: the range is confirmed but the lower-timeframe confirmation is not in yet — take the deeper (safer) fill.',
+      mode: confirmed ? 'safer' : 'aggressive',
       // the trader asked for these to be shown rather than hidden — but never silently
       rr_warning: (Number(num(chosen.rr)) > 0 && Number(num(chosen.rr)) < minRR)
         ? `Below your ${minRR}R minimum — this pays ${num(chosen.rr)}R. The range is real; the reward does not pay for the risk. Treat it as a scenario, not an order.`

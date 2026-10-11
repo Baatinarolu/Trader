@@ -41,6 +41,8 @@ for (const tf of tfs) {
   for (let seed = 1; seed <= 12; seed++) {
     const input = { symbol: 'EURUSD', tf, series: series(seed, tf, 240),
       biasSeries: series(seed + 20, l.bias_tf, 120), triggerSeries: series(seed + 40, l.trigger_tf, 300) };
+    // Isolate M34's dead-config removal from the later M33 execution addition.
+    input.opts = { counterTrend: false };
     const r = TD.build(input);
     reads++;
     directions.add(r.direction);
@@ -74,7 +76,9 @@ for (const dir of [1, -1]) {
     order_blocks: [], fvgs: [], displacement: [], sweeps: [], sessions: {} };
   const pack = (tf, candles) => ({ tf, candles: mirror(candles), smc, atr: 0.8, price: mirror(candles).at(-1).c, ind: null });
   const input = { symbol: 'TEST', tf: '15m', series: pack('15m', e), biasSeries: pack('4h', h), triggerSeries: pack('5m', e) };
-  const r = TD.build(input);
+  // Isolate M34's dead-config removal from the later M33 execution addition.
+    input.opts = { counterTrend: false };
+    const r = TD.build(input);
   reads++;
   directions.add(r.direction);
   if (r.layers.zone.tf !== '15m') wrongLocation++;

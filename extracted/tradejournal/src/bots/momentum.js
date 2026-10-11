@@ -110,7 +110,7 @@ function alignment(htf, mtf, ltf, td = null) {
       tf: mtf.tf, weight: 2, role: 'location', job: 'premium/discount · zone · gap',
       bias: indScore(mtf), trend: mtfTrend,
       decisive: mtfTrend !== 'ranging',
-      note: 'Where the entry lives. This layer cannot choose the direction.',
+      note: td && td.countertrend ? 'The confirmed internal break can define bounded counter-pullback execution, never reset the daily narrative.' : 'Where the entry lives. This layer cannot choose the direction.',
     },
     {
       tf: ltf.tf, weight: 1, role: 'trigger', job: 'confirmation only',
@@ -121,14 +121,18 @@ function alignment(htf, mtf, ltf, td = null) {
   ];
 
   /* --- direction: higher timeframe first, then its CRT, then nothing ------ */
-  const crtDir = td && td.direction ? td.direction : 0;
+  const counter = td && td.countertrend && td.countertrend.kind === 'internal-pullback' ? td.countertrend : null;
+  const crtDir = !counter && td && td.direction ? td.direction : 0;
   const structDir = htfTrend === 'bullish' ? 1 : htfTrend === 'bearish' ? -1 : 0;
   const crtState = td && td.layers && td.layers.bias ? td.layers.bias.state : null;
   let source = 'none';
   let bias = 0;
   let provisional = false;
 
-  if (crtDir) {
+  if (counter) {
+    bias = structDir;
+    source = `${htf.tf} structural narrative (unchanged by the internal pullback)`;
+  } else if (crtDir) {
     bias = crtDir;
     source = `CRT confirmed on ${htf.tf}`;
   } else if (structDir) {
@@ -150,7 +154,9 @@ function alignment(htf, mtf, ltf, td = null) {
   const ltfAgainst = bias !== 0 && ltfTrend !== 'ranging' && (ltfTrend === 'bullish' ? 1 : -1) === -bias;
   const conflict = !!(td && td.conflicts && td.conflicts.some((c) => c.blocks_trade));
 
-  const reason = bias === 0
+  const reason = counter
+    ? `${htf.tf} narrative remains ${bias > 0 ? 'long' : 'short'}; ${mtf.tf}'s confirmed ${counter.shift.type} ${counter.shift.dir} supplies a bounded ${counter.dir > 0 ? 'long' : 'short'} execution toward ${counter.target.label}. This does not reset the daily bias.`
+    : bias === 0
     ? `Higher timeframe first: ${htf.tf} structure reads ${htfTrend}${crtState ? ` and its CRT range is "${crtState}"` : ''} — with no decisive higher-timeframe read there is no direction to trade.${source.startsWith(`${htf.tf} ranging`) ? ' A lower-timeframe trend is not a substitute for the higher-timeframe bias.' : ''}`
     : `${htf.tf} decides direction (${bias > 0 ? 'long' : 'short'}) from ${source}. `
       + `${agree ? `All three layers line up: ${rows.map((r) => `${r.tf} ${r.trend}`).join(', ')}.` : ''}`
@@ -160,9 +166,10 @@ function alignment(htf, mtf, ltf, td = null) {
 
   return {
     rows, score, bias, agree, conflict, reason,
+    ...(counter ? { execution_direction: counter.dir, execution_kind: counter.kind } : {}),
     source, provisional, ltf_against_htf: ltfAgainst,
-    hierarchy: 'higher timeframe decides direction · lower timeframes only time it',
-    display_note: 'The weighted score below is a display of the three indicator readings only. Direction is taken from the top of the stack, never from this average.',
+    hierarchy: counter ? 'higher timeframe decides daily narrative · medium defines bounded internal execution · lower confirms it' : 'higher timeframe decides direction · lower timeframes only time it',
+    display_note: counter ? 'HTF narrative and MTF counter-execution have distinct roles; neither comes from averaging these indicators.' : 'The weighted score below is a display of the three indicator readings only. Direction is taken from the top of the stack, never from this average.',
     trends: { bias: htfTrend, location: mtfTrend, trigger: ltfTrend },
   };
 }
@@ -217,9 +224,6 @@ function biasHysteresis({ priorBias = null, freshBias = 0, invalidation = null, 
     return out;
   }
 
-  // The from-scratch read agrees: hold, and say nothing.
-  if (fresh === prior) { out.bias = prior; return out; }
-
   // It disagrees. His rule: the bias changes ONLY when the invalidation is hit — a CLOSE beyond
   // the level, not a wick and not a structure relabel.
   //
@@ -243,6 +247,11 @@ function biasHysteresis({ priorBias = null, freshBias = 0, invalidation = null, 
     return out;
   }
 
+  // M130: invalidation belongs to the OLD idea, independently of whether today's
+  // label still agrees. Test it first; an agreeing re-read may adopt a new same-side
+  // idea, but that is a reported reset, not permission to silently move the old level.
+  if (fresh === prior) return out;
+
   // Not breached: HOLD the prior bias and report the disagreement rather than hiding it. A fresh
   // read of 0 (the higher timeframe went ranging) is an ABSENCE of information, not an
   // invalidation, so it is held too — the `ranging` vetoes elsewhere already stand the trade down,
@@ -252,6 +261,21 @@ function biasHysteresis({ priorBias = null, freshBias = 0, invalidation = null, 
   out.disagreement = fresh;
   out.changed_because = null;
   return out;
+}
+
+/** M130 — one anchor lifecycle for the server AND the held-bias harness.
+ * A valid defining level is immutable until the idea resets; changing today's
+ * range/plan is not a reset. Missing legacy anchors may attach their first usable level.
+ */
+function nextBiasInvalidation({ prior = null, result, proposed = null }) {
+  const num = (v) => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
+  const valid = (v) => v && num(v.level) !== null && ['above', 'below'].includes(v.side);
+  const previous = prior ? { level: prior.invalidation_level, side: prior.invalidation_side } : null;
+  if (!result || !result.bias) return { level: null, side: null };
+  if (prior && Number(prior.bias) === result.bias && !result.changed && valid(previous)) {
+    return { level: num(previous.level), side: previous.side };
+  }
+  return valid(proposed) ? { level: num(proposed.level), side: proposed.side } : { level: null, side: null };
 }
 
 function mechanics({ htf, mtf, ltf, align, td = null, symbol = null }) {
@@ -417,7 +441,7 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
 
   /* ---- conflicts: sentences for the API, structured objects for the UI ---- */
   const detail = (td && td.conflicts ? td.conflicts.slice() : []);
-  if (ind && ind.ok && align.bias !== 0 && Math.sign(ind.score) !== Math.sign(align.bias) && Math.abs(ind.score) > 25) {
+  if (!(td && td.countertrend) && ind && ind.ok && align.bias !== 0 && Math.sign(ind.score) !== Math.sign(align.bias) && Math.abs(ind.score) > 25) {
     detail.push({
       kind: 'indicators-against-bias',
       sides: `${mtf.tf} indicators read ${ind.score} against a ${align.bias > 0 ? 'long' : 'short'} bias`,
@@ -453,7 +477,7 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
 
 /** The live CRT read, in the shape the API/UI already consume as `smc.crt`. */
 function crtView(td, tf) {
-  if (!td || !td.layers || !td.layers.bias || !td.layers.bias.range) return null;
+  if (!td || td.countertrend || !td.layers || !td.layers.bias || !td.layers.bias.range) return null;
   const L = td.layers.bias;
   const plan = L.plan;
   const price = td.price;
@@ -494,14 +518,15 @@ function regimeOf(htf) {
 async function analyse(symbol, tf = '15m', opts = {}) {
   const L = TD.layersFor(tf);
   const cut = { trim: opts.trim || 0, asOf: opts.asOf || null };
+  const loadSeries = typeof opts.seriesLoader === 'function' ? opts.seriesLoader : series;
   const [htf, mtf, ltfRaw] = await Promise.all([
-    series(symbol, L.bias_tf, opts.htfLimit || 400, cut),
-    series(symbol, tf, opts.limit || 600, cut),
-    L.trigger_tf === tf ? null : series(symbol, L.trigger_tf, opts.ltfLimit || 400, cut),
+    loadSeries(symbol, L.bias_tf, opts.htfLimit || 400, cut),
+    loadSeries(symbol, tf, opts.limit || 600, cut),
+    L.trigger_tf === tf ? null : loadSeries(symbol, L.trigger_tf, opts.ltfLimit || 400, cut),
   ]);
   const ltf = ltfRaw || mtf;
 
-  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR } });
+  const td = TD.build({ symbol, tf, series: mtf, biasSeries: htf, triggerSeries: ltf, opts: { minRR: opts.minRR, counterTrend: opts.counterTrend, useBreakers: opts.useBreakers } });
   const align = alignment(htf, mtf, ltf, td);
   const mech = mechanics({ htf, mtf, ltf, align, td, symbol });
   const read = narrative({ symbol, mtf, htf, ltf, align, mech, td });
@@ -517,6 +542,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
       score: td.score, grade: td.grade, status: td.status, direction: td.direction,
       headline: td.headline, playbook: td.playbook, blocked: td.blocked,
       conviction: td.conviction,
+      ...(td.countertrend ? { countertrend: td.countertrend } : {}),
+      conflicts: td.conflicts, // both aliases survive; Now/method gate consume this one
       conflict_detail: td.conflicts, crt_plan: td.crt_plan, levels: td.levels,
       inputs: td.inputs,
     },
@@ -551,5 +578,5 @@ module.exports = {
   MTF, htfOf, ltfOf, topdown: TD,
   // M50: exported pure so the hysteresis RULE can be unit-tested and measured against the same
   // walk that found the defect, without any caller having to own a state store first.
-  biasHysteresis,
+  biasHysteresis, nextBiasInvalidation,
 };

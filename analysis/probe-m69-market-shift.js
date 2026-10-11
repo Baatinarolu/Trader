@@ -107,7 +107,7 @@ const fresh = () => Smc.analyse(candles, { tf: '15m' });
     `vetoes: ${L.vetoes.filter((s) => SHIFT_VETO.test(s)).join(' / ') || '(none)'}`);
   ok('  ...and the weighted structure check FAILS on the event, not the label', L.checkPass === false,
     `checkPass=${L.checkPass}`);
-  ok('  ...and the report says the label and the event disagree', /LABEL agrees but the EVENT does not/.test(L.detail),
+  ok('  ...and the report says the label and the event disagree', /trend label and confirmed break disagree; the break event decides/.test(L.detail),
     L.detail.slice(0, 96));
 }
 {

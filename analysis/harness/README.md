@@ -1,5 +1,35 @@
 # Independent backtest harness
 
+## Current verification state (2026-10-10)
+
+The original baseline below is **historical**, not the current server or performance evidence.
+M131 found HTF lookahead: the harness precomputed complete higher bars and exposed them at
+FIRST child time. It now stores the actual last constituent (`last_t`) and requires it to be
+observed. Prior contaminated return/grade figures must not be quoted as validated performance.
+
+- Bare setup-engine regression: `--seeds 60 --bars 1500 --window 300` = **24 trades,
+  29.2%, +0.7908R, PF2.33**; **below 30**, not an edge claim and blind to topdown.
+- `--bias held` exercises the actual immutable-anchor lifecycle after M130. Changes count
+  **plan resets**, including same-direction reassessment after an invalidation, not just flips.
+- `--topdown` exercises **4h narrative /15m POI /5m execution**. It generates native5m
+  synthetic data and derives complete, calendar-aligned higher buckets with the actual TD
+  aggregator. It uses TD.build, alignment, held-bias state and the final method-permitted
+  setup, never merely candidate.ok on a side the method rejects.
+- `--topdown --no-countertrend` is the isolated pre-M33 execution arm. At20 seeds x1500
+  MTF bars both arms have0 fills: ON has657 counter contexts but every one misses current
+  POI touch, OFF has0 contexts. **No executable sample and no performance inference.**
+- Native real5m may be used with `--topdown --real --realtf 5m`. Higher native input is
+  rejected: the harness never fabricates/interpolates a lower timeframe.
+- The default M58 dollar table isolates grade only. The M33 method-mode table separately
+  consumes emitted risk_pct (grade x range x counter reduction) rather than disguising a
+  half-risk policy as a change in expectancy R.
+
+M33's controlled regression fixtures validate actual order/chart/copy/storage consumers
+and unchanged daily narrative; they are **explicit structural inputs**, not historical prices
+or an OHLC-only discovery test. See `BASELINE.txt` for every separate measurement and negative.
+
+---
+
 Rebuilt this pass. `analysis/fixtures/` and `analysis/harness/` were lost in a workspace
 reset; this is the replacement, and it is the gate for the whole entry-model batch — nothing in
 Batches 2–4 can be measured without it.

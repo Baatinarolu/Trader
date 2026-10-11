@@ -212,7 +212,7 @@ async function applyBiasHysteresis(sym, tf, momentum, series) {
     const changed = !prior || h.changed;
     const sinceT = changed ? lastT : (num(prior && prior.since_t) !== null ? num(prior.since_t) : lastT);
     const ageBars = changed ? 0 : (num(prior && prior.age_bars) === null ? 0 : num(prior.age_bars) + 1);
-    const next = levelFor(h.bias);
+    const next = Momentum.nextBiasInvalidation({ prior, result: h, proposed: levelFor(h.bias) });
 
     Object.assign(out, {
       bias: h.bias, held: h.held, changed: h.changed, invalidated: h.invalidated,
@@ -294,7 +294,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
 
   // blend: the setup's own grade + the market's measured edge + this setup's probability
   const best = setups.candidates[0] || null;
-  const predRow = prediction && prediction.setups && best ? prediction.setups.find((p) => p.dir === best.dir) : null;
+  const predRow = !momentum.topdown.countertrend && prediction && prediction.setups && best ? prediction.setups.find((p) => p.dir === best.dir) : null;
   let daily = null;
   if (opts.userId) { try { daily = await Cor.dailyState(opts.userId, { accountId: opts.accountId }); } catch (e) { daily = null; } }
 
@@ -344,7 +344,9 @@ async function analyse(symbol, tf = '15m', opts = {}) {
     method_verdict: methodVerdict,
     topdown: td,
     momentum: {
-      direction: momentumEff.direction, bias: momentumEff.bias, bias_score: momentum.bias_score,
+      direction: momentumEff.direction, bias: momentumEff.bias,
+      ...(td.countertrend ? { execution_direction: td.direction, execution_kind: td.countertrend.kind } : {}),
+      bias_score: momentum.bias_score,
       // M50: `bias` is the HELD bias, the one every decision below was made with. `bias_fresh` is
       // what a from-scratch derivation said this candle, and `bias_score` scores THAT read — it is
       // the alignment score, not a confidence in the held bias, so the two are reported separately
@@ -387,8 +389,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
   parts.push(`${sym} ${tf}: ${v.action}${v.grade && v.grade !== 'no-trade' ? ` (${v.grade}, ${v.score}/100)` : ''} — ${v.headline}`);
   if (td.headline) parts.push(`${td.status === 'confirmed' ? 'Method: confirmed' : 'Method: waiting'} — ${td.headline}`);
   if (td.playbook && td.playbook.length) parts.push(`Next: ${td.playbook[0]}`);
-  if (predRow && predRow.p_win != null) parts.push(`Modelled chance ${predRow.p_win}% to the first target (${predRow.similar_setups} similar setups, expected ${predRow.expected_r}R).`);
-  if (prediction && prediction.backtest && prediction.backtest.expectancy_r != null) parts.push(`This market/timeframe shows ${prediction.backtest.expectancy_r > 0 ? '+' : ''}${prediction.backtest.expectancy_r}R expectancy over ${prediction.backtest.decided} resolved setups.`);
+  if (!td.countertrend && predRow && predRow.p_win != null) parts.push(`Modelled chance ${predRow.p_win}% to the first target (${predRow.similar_setups} similar setups, expected ${predRow.expected_r}R).`);
+  if (!td.countertrend && prediction && prediction.backtest && prediction.backtest.expectancy_r != null) parts.push(`This market/timeframe shows ${prediction.backtest.expectancy_r > 0 ? '+' : ''}${prediction.backtest.expectancy_r}R expectancy over ${prediction.backtest.decided} resolved setups.`);
   if (news.blackout) parts.push(`NEWS BLACKOUT: ${news.blackout}`);
   if (daily && daily.status !== 'clear') parts.push(`Personal guardrail: ${daily.message}`);
   if (momentum.conflicts.length) parts.push(`Caution: ${momentum.conflicts.join(' ')}`);
@@ -451,7 +453,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
 
   const biasTrend = bias.smc.structure ? bias.smc.structure.trend : 'ranging';
   const momentum = {
-    bias: td.direction || (biasTrend === 'bullish' ? 1 : biasTrend === 'bearish' ? -1 : 0),
+    bias: (!td.countertrend && td.direction) || (biasTrend === 'bullish' ? 1 : biasTrend === 'bearish' ? -1 : 0),
     alignment: { reason: td.headline },
     topdown: td,
   };
@@ -477,7 +479,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
   const crt = td.crt_plan;
   const best = setups.candidates.find((c) => c.levels && c.dir === td.direction) || setups.candidates[0] || null;
   let plan = null;
-  if (crt && td.direction !== 0) {
+  if (crt && td.direction !== 0 && !td.blocked && best && best.ok) {
     plan = {
       source: 'crt', dir: crt.dir, side: crt.side, method: td.method.name,
       entry: crt.safer.entry, stop: crt.safer.stop,
@@ -491,9 +493,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
       },
       note: `${crt.side} after the ${crt.sweep.level} sweep failed to hold · ${crt.target_note}`,
     };
-  } else if (best && best.levels && !td.blocked) {
+  } else if (best && best.ok && best.levels && !td.blocked) {
     plan = {
-      source: 'setup', dir: best.dir, side: best.side, method: null,
+      source: td.countertrend ? 'countertrend-pullback' : 'setup', dir: best.dir, side: best.side, method: td.countertrend ? td.method.name : null,
       ...best.levels,
       entry_status: best.levels.entry_status,
     };
@@ -515,7 +517,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
 
   const stack = {
     bias: {
-      tf: L.bias_tf, job: 'decides direction', candles: bias.candles.slice(-180),
+      tf: L.bias_tf, job: td.countertrend ? 'HTF narrative' : 'decides direction', candles: bias.candles.slice(-180),
       structure: bias.smc.structure ? bias.smc.structure.trend : null,
       state: td.layers.bias.state,
       level: td.layers.bias.range ? { low: td.layers.bias.range.low, high: td.layers.bias.range.high, label: 'CRT range' } : null,
@@ -607,6 +609,8 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
           price: series.price, atr: series.atr,
           direction: scanHyst.bias > 0 ? 'bullish' : scanHyst.bias < 0 ? 'bearish' : 'neutral',
           bias: scanHyst.bias, bias_fresh: momentum.bias,
+          ...(momentum.topdown.countertrend ? { execution_direction: momentum.topdown.direction,
+            execution_kind: momentum.topdown.countertrend.kind } : {}),
           bias_held: scanHyst.held, bias_changed_because: scanHyst.changed_because,
           mechanics: momentum.mechanics.score, mechanics_grade: momentum.mechanics.grade,
           action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
@@ -716,10 +720,12 @@ async function savePlan(userId, p = {}) {
 async function saveSignals(userId, payload) {
   await ensureSignalsTable();
   const cands = (payload.setups && payload.setups.candidates ? payload.setups.candidates : [])
-    .filter((c) => c.levels && c.grade !== 'no-trade' && c.levels.entry_status !== 'invalid')
+    .filter((c) => c.ok === true && c.levels && c.levels.entry_status !== 'invalid')
     .slice(0, 2);
   if (!cands.length) return { saved: 0, reason: 'no actionable setup in this analysis' };
-  // Signals are stored even when the method has not fired, but they are stamped
+  // M127 follow-through: `ok` must survive storage too; a good letter on a vetoed
+  // setup is not an actionable model signal. Eligible model-only hypotheticals
+  // may still be stored before the method fires, but they are stamped
   // (method_state / method_blocked) so the ledger can later be split into
   // "the method approved this" and "the setup model liked it anyway".
   const td = payload.topdown || null;
@@ -731,7 +737,7 @@ async function saveSignals(userId, payload) {
   const out = [];
   for (const c of cands) {
     const L = c.levels;
-    const predRow = payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
+    const predRow = !(td && td.countertrend) && payload.prediction && payload.prediction.setups ? payload.prediction.setups.find((p) => p.dir === c.dir) : null;
     const info = await ins.run(
       userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
       predRow ? predRow.p_win : null,

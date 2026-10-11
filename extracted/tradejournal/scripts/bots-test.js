@@ -398,7 +398,13 @@ async function call(path, opts = {}) {
   if (sig) {
     ok(sig.symbol === 'XAUUSD' && sig.status === 'pending', `stored signal: ${sig.side} ${sig.symbol} ${sig.timeframe} @ ${sig.entry}`);
     ok(sig.entry > 0 && sig.stop > 0 && (sig.dir > 0 ? sig.stop < sig.entry : sig.stop > sig.entry), 'stored levels are coherent');
-  } else ok(false, 'signal stored');
+  } else {
+    // M127/M33: a refusal must not be turned into a stored recommendation just
+    // because the weighted letter still looks good. A valid no-signal result is real.
+    ok(save.json.saved && save.json.saved.saved === 0 && save.json.saved.reason === 'no actionable setup in this analysis',
+      'a refused analysis reports zero eligible signals with its reason');
+    ok(list.json.signals.length === 0, 'no signal is fabricated for a refused analysis');
+  }
   const resolve = await call('/api/bots/signals/resolve', { method: 'POST', body: JSON.stringify({ limit: 10 }) });
   ok(resolve.status === 200 && resolve.json.ok, `/signals/resolve checked ${resolve.json.checked} signals`);
   ok(resolve.json.stats && typeof resolve.json.stats.total === 'number', `stats: ${resolve.json.stats.total} tracked, ${resolve.json.stats.resolved} resolved`);
