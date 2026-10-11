@@ -1,0 +1,56 @@
+[
+  {
+    "arm": "parent",
+    "suite": "api",
+    "pass": 120,
+    "fail": 1,
+    "exit_code": 1,
+    "output": "native-parent-api-initial.txt",
+    "scope": "INITIAL HARNESS ERROR: cleanup DB was not server DB; bots-test ignores CLI URL and used3000, so parent/fixture bots labels were wrong. Corrected runs use TJ_BASE + exact per-server DB/cwd. Raw api stopped/aborted from real setup-required policy."
+  },
+  {
+    "arm": "parent",
+    "suite": "bots",
+    "pass": 201,
+    "fail": 5,
+    "exit_code": 1,
+    "output": "native-parent-bots-initial.txt",
+    "scope": "INITIAL HARNESS ERROR: cleanup DB was not server DB; bots-test ignores CLI URL and used3000, so parent/fixture bots labels were wrong. Corrected runs use TJ_BASE + exact per-server DB/cwd. Raw api stopped/aborted from real setup-required policy."
+  },
+  {
+    "arm": "raw",
+    "suite": "api",
+    "pass": null,
+    "fail": null,
+    "exit_code": 2,
+    "output": "native-raw-api-initial.txt",
+    "scope": "INITIAL HARNESS ERROR: cleanup DB was not server DB; bots-test ignores CLI URL and used3000, so parent/fixture bots labels were wrong. Corrected runs use TJ_BASE + exact per-server DB/cwd. Raw api stopped/aborted from real setup-required policy."
+  },
+  {
+    "arm": "raw",
+    "suite": "bots",
+    "pass": 201,
+    "fail": 5,
+    "exit_code": 1,
+    "output": "native-raw-bots-initial.txt",
+    "scope": "INITIAL HARNESS ERROR: cleanup DB was not server DB; bots-test ignores CLI URL and used3000, so parent/fixture bots labels were wrong. Corrected runs use TJ_BASE + exact per-server DB/cwd. Raw api stopped/aborted from real setup-required policy."
+  },
+  {
+    "arm": "fixture",
+    "suite": "api",
+    "pass": 120,
+    "fail": 1,
+    "exit_code": 1,
+    "output": "native-fixture-api-initial.txt",
+    "scope": "INITIAL HARNESS ERROR: cleanup DB was not server DB; bots-test ignores CLI URL and used3000, so parent/fixture bots labels were wrong. Corrected runs use TJ_BASE + exact per-server DB/cwd. Raw api stopped/aborted from real setup-required policy."
+  },
+  {
+    "arm": "fixture",
+    "suite": "bots",
+    "pass": 201,
+    "fail": 5,
+    "exit_code": 1,
+    "output": "native-fixture-bots-initial.txt",
+    "scope": "INITIAL HARNESS ERROR: cleanup DB was not server DB; bots-test ignores CLI URL and used3000, so parent/fixture bots labels were wrong. Corrected runs use TJ_BASE + exact per-server DB/cwd. Raw api stopped/aborted from real setup-required policy."
+  }
+]

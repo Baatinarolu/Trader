@@ -1,6 +1,47 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M84/M85 continuation state — 2026-10-11
+## Current M14/M64/M94 routine follow-through — 2026-10-11
+
+**132:87 done /3 partial /42 todo /0 no-action**, exact eight groups. M14/M64/M94
+complete together; M108 **PARTIAL** for the mandatory routine15-minute timer only,
+not the broader Sanctuary/toolkit. **321/0 across10 new probes**, no inherited
+prerequisite adapters. Explicit own HH:MM/IANA schedule, frozen cycle/reset inclDST,
+calendar→own plan→human charts/alert→server-running-time15m→FOUR morning checks;
+selectable meditation-first variant uses only the known partial bonus +Ep17 steps.
+Actual persistent shell banner, owned workflow/diary/report UI, nullable human
+self-report distinct from automatic workflow and on-time/first-entry preparation.
+Late completion/typed exceptions/edits/deletion do not rewrite first admissions or
+refund old guards. Descriptive UTC close-day daily realised P&L, unknown distinct,
+no missing-net zero/causation/risk tuning. [Report](M14-M64-M94-ROUTINE.md).
+Original inherited597/155/21completed-nonzero plus1UI timeout/aborts retained;
+**828/0** only under DECLARED new-prerequisite isolation (NOT integrated routine
+proof). Native raw current API aborts on missing preparation; bots202/4. Parent and
+DECLARED actual-module synthetic preparation fixture API121/0,bots206/0,23synthetic
+parity fills/0mismatches, unchanged thresholds. Changed cohort is not edge. Smoke
+22/22,0style/console,8canvas limits; completed log after tool timeout, exit unobserved.
+M89/M106/M111/M112 stay open; morning confirmations are not the separate fresh
+in-session gate, calendar review not feed clearance, clock not actual meditation.
+M30/M103/M108 partial; all42TODOs retained. Next M86 loss-drill workflow, then M87–M89
+capture/provenance in mechanism order. No70%/target shrink or production/broker claim.
+
+### Current working/artifact pointers
+
+- Fixed branch `arena/762c0295-trader`; measured parent75172759d134e63ed57a20c5e2941eb6c28e9855. Read git for actual current commit/push.
+- App117 files; source manifests +9 stage patches, `analysis/build-m64-routine-artifacts.py`, `analysis/patches/M64-ROUTINE-STAGES.json`. Normal rebuild uses durable patches, not `/tmp` stages. `tradingpro-main.zip` untouched.
+- `src/routine.js`: own local schedule/cycles, validated immutable metadata, human ordered steps/four morning checks, server start/pause/resume/complete15min; corrupt latest-cycle/rollback cannot mint fresh known state.
+- `src/routine-records.js`: independent per-account UTC nullable self-reports, actual workflow, independent no-trade-FK first-executed-admission facts; current done vs on-time/before-first-entry distinct. Stored corruption stays nullable/unwaivable, never self-report pass.
+- Gate in correction/guardrails, never permanent new routine day latch. Known setup/pending stop +fresh reason, unknown no waiver; old cap/count/loss clocks retained even on FIRST unknown routine read. All honest close/correction/record-only/import/history remains legal.
+- `public/js/views/routine.js` +App shell owns banner outside view, periodic server recheck inclaccount/stale-response/reset/fault; actual Settings/day/report surfaces. `docs/GUARDRAILS.md`, README, API docs contain contracts.
+- Evidence `analysis/evidence/m64` +m94:321/0 new actual/no adapters, per-stage controls/errors, actual751upgrade/restarts24/0. Old raw597/155 plusUI timeout; isolation828/0 explicitly NOT full current-policy proof. Old market consumer raw aborts retained; M64-only isolation325/0. Pure Now50/Topdown77/Chart36/settings15 unchanged/no adapter.
+- Native raw currentAPI aborted, bots202/4 on unsupplied mandatory routine. Correct parent and DECLARED real-module synthetic15m/human fixture both API121/0,bots206/0,23 parityfills/0mismatches. Initial wrong TJ_BASE/cleanupDB/scheduler-variable/JSON-preload errors retained. Do not claim raw native green or fixture as real human timer proof.
+- Smoke22/22 completed after90s tool wait timeout,0style/console,8canvas limits; exitstatus not observed, conditional view switch actually ran this cohort.
+- Current preview process/DB at preparation `tradejournal-synthetic-test-prev-7d0ddfcd`,port3000, `/tmp/m64-final-regressions.db`, unadapted synthetic/TJ_SCHEDULER0/blankremotecredentials. Recheck actual liveness; parent3001 and fixture3002 stopped.
+
+### Every remaining ID (no omissions)
+
+Partials: **M30,M103,M108**. TODO42: **M125,M45,M46,M49,M53,M55,M67,M72,M73,M74,M112,M12,M13,M15,M56,M59,M60,M65,M66,M86,M87,M88,M89,M91,M92,M93,M99,M100,M101,M104,M105,M106,M107,M115,M17,M18,M19,M62,M109,M110,M111,M117**. Generated PROGRESS asserts exact132/eightgroups. Do not confuse historical counts below with current87/3/42.
+
+## Historical M84/M85 continuation state — 2026-10-11
 
 - Fixed branch **arena/762c0295-trader**; measured parent **446e705d1fb0ae03d6bbfcd0913145619bd395fe**.
   Read git for current commit/push. **132:84done/2partial/46todo/0no-action**, exact8groups.

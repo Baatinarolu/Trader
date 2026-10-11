@@ -1,0 +1,94 @@
+{
+  "app": "/tmp/m64-records-stage/app",
+  "pass": 0,
+  "fail": 19,
+  "results": [
+    {
+      "label": "legacy/default account does not fabricate a local trading-window hour",
+      "passed": false
+    },
+    {
+      "label": "no selected schedule is explicit setup_required, never falsely completed",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "label": "bad config400/no write {\"routine_window_start\":\"25:00\"}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "bad config400/no write {\"routine_window_start\":\"9:3\"}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "bad config400/no write {\"routine_window_start\":true}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "bad config400/no write {\"routine_timezone\":\"Bad/Zone\"}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "bad config400/no write {\"routine_timezone\":[]}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "bad config400/no write {\"routine_lead_minutes\":0}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "bad config400/no write {\"routine_lead_minutes\":181}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "bad config400/no write {\"routine_lead_minutes\":1.5}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "bad config400/no write {\"routine_lead_minutes\":true}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "bad config400/no write {\"routine_order\":\"made_up\"}",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "account selects valid HH:MM/IANA/default-hour/order roundtrip",
+      "passed": false
+    },
+    {
+      "label": "unrelated rename retains all selected routine fields",
+      "passed": false
+    },
+    {
+      "label": "before local reset current cycle is previous local window, not tomorrow early pass",
+      "passed": false
+    },
+    {
+      "label": "inclusive14:00Lagos reset creates fresh15:00Lagos/14:00UTC window cycle",
+      "passed": false
+    },
+    {
+      "label": "full Ep17 step order is explicit calendar/plan/charts/meditation/check-in",
+      "passed": false
+    },
+    {
+      "label": "new cycle has no invented step confirmations or completion time",
+      "passed": false
+    }
+  ],
+  "scope": "Actual owned config/SQL with mutable UTC and declared IANA local window/reset policy; not broker allowed-hour enforcement or live providers/production/DST-calendar authority"
+}

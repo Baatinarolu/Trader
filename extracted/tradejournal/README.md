@@ -274,6 +274,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded 
 
 Guides: [docs/BOTS.md](docs/BOTS.md) · [docs/PLAYLIST-CURRICULUM.md](docs/PLAYLIST-CURRICULUM.md)
 
+## Pre-market routine (M14/M64/M94)
+
+Use the **Routine** button in the header, or **Settings → Accounts → Edit rules**,
+to select your own local trading-window start, an explicit IANA timezone and a
+reset lead (1–180 minutes; Ep17 default60). No venue/broker hour is inferred.
+An unfinished/setup-required routine keeps a banner across all pages. The default
+steps are **calendar → own plan → chart/range, daily bias and alert report →
+15-minute meditation/breathwork → four morning questions**. Meditation-first is
+an explicit variant from the available bonus excerpt, not a claimed full bonus
+workflow. The other known Ep17 steps remain. Policy and acknowledgments freeze
+for the active cycle; edits take effect after its saved reset, including across
+restart/midnight. DST uses the earlier repeated time and shifts a nonexistent
+clock forward by the gap. This is not allowed-hour/broker-session enforcement.
+
+The timer verifies only **server running time** between start/resume and pause/
+completion, not actual meditation/focus. A running marker continues when the page
+closes and survives restart; an explicit pause does not count. Human calendar and
+chart/alert acknowledgments are not live provider clearance or order authority.
+All FOUR morning answers must be explicit yes; no answers are retained and leave
+the routine unfinished. They are not a fresh in-session/per-entry mental-state gate.
+
+Known incomplete preparation uses the existing one-action typed-reason exception;
+unknown/corrupt data cannot be waived. Truthful close/correction/history/import/
+record-only writes remain legal. Completing a routine, editing its policy or
+correcting/deleting a journal never refunds other caps/loss clocks or rewrites an
+actual first-entry preparation snapshot. Late completion is shown as late.
+
+**Journal** shows actual workflow completion, on-time preparation and separately
+labelled nullable daily self-reports. Unrelated notebook edits preserve the human
+flag/source/time. Workflow and self-report are not interchangeable permission.
+The **routine vs daily realised P&L** table uses UTC close-day daily totals with
+completed/not-completed/unknown groups and evidence basis; unknown P&L is not zero.
+It is descriptive only, not causal proof, per-trade overnight attribution or an
+instruction to resize/change strategy. No older completion is fabricated.
+
+M108 is **partial**: this mandatory routine timer is not the full Sanctuary presets,
+ambient audio, intention, toolkit or independent session-log/progress feature.
+M89 capture provenance, M106 fresh in-session questions, M111 fail-closed news and
+M112 allowed hours remain open. See [docs/GUARDRAILS.md](docs/GUARDRAILS.md) and
+[docs/API.md](docs/API.md#pre-market-routine).
+
 ## Docs
 
 * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.

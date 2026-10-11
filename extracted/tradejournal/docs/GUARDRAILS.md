@@ -204,12 +204,77 @@ are retained even while the new writing state is unavailable.
 
 **"Core complete" is deliberately scoped to the fields above.** It does not claim
 all course screenshots/confluences/timing/routine/state checks are implemented.
-M87/M88/M89/M94/M106 and all other unresolved findings stay visible in the ledger.
+M87/M88/M89/M106 and all other unresolved findings stay visible. M94 is now separately implemented with the actual M64 workflow; core trade writing alone does not satisfy it.
+
+## Pre-market routine and daily preparation evidence (M14/M64/M94)
+
+The **Routine** header button and account rules choose an explicit local HH:MM
+window, IANA timezone, lead1–180 minutes (default60) and `ep17` or
+`meditation_first` order. Default account/legacy hour and timezone are NULL:
+setup-required is a **known preparation stop**, not an invented broker session.
+An active cycle freezes its local/UTC date, policy, reset/window/next-reset,
+server selection and steps until its saved expiry. Changes apply after that;
+a midnight UTC rollover is not necessarily the local reset. DST folds select
+the earlier occurrence; a missing civil clock shifts forward by the gap.
+Invalid/future/contradictory stored metadata cannot silently create a replacement
+known cycle. Broker hours and allowed-hours enforcement are separate/open.
+
+Ep17 default: **calendar → own plan → charts/bias/alert → meditation → morning
+check-in**. Calendar is actual human external-review acknowledgment with text,
+never machine/live-feed no-news clearance. Plan snapshots the owner's selected
+playbook at server acknowledgment, or their explicit manual plan text. Charts/
+range, daily bias and set/not-applicable alert explanation are human reports,
+not OHLC or broker-order authority. A checkbox cannot complete the whole routine.
+
+The meditation step requires15 minutes of server **running time**. Start/resume
+set the server clock; pause freezes accumulated active time; paused gaps do not
+count. Completion rechecks actual duration transactionally, not a client clock/
+elapsed flag. A running timer survives process/page closure; it does not verify
+actual meditation, breathing, focus or mental state. Out-of-order and stale-cycle
+submissions are refused. The explicit meditation-first variant keeps the other
+known Ep17 steps: only1/6 bonus was captured, so its remaining sequence is not
+claimed. Every workflow ends with FOUR literal human morning answers: calm,
+clear, following my plan, would take it if already up big. “No” attempts persist
+but do not finish; these are not M106's fresh in-session/per-entry questions.
+
+The shell-owned banner persists across pages until all current steps are
+acknowledged. It polls server state, reappears at the saved reset and cannot reuse
+an older account's async response/completion. Unknown read/clock/step data stays
+visible and **unwaivable**. Setup/incomplete is a known personal stop, with the
+existing **fresh one-action typed reason**. A reason neither completes steps nor
+unlocks the next action/technical veto. Routine completion resolves only its own
+stop; it never refunds independent trade/profit/loss/streak latches or loss clocks.
+Even the first check that finds routine uncertainty retains known old observations.
+Truthful closes/corrections/deletion/record-only/import/history remain legal.
+
+### Daily facts and descriptive comparison
+
+The existing shared one-note-per-user/day notebook has nullable `pre_market_done`
+with source/capture time. Independent user/account/UTC-date self-report rows avoid
+colliding account flags. Automatic workflow facts are separate: Journal shows
+current completion, deadline/on-time status and a frozen **first actual executed
+trade admission** observation. Saved research plans/blocked attempts/record-only
+imports do not create such execution facts. This observation has no trade foreign
+key, so honest trade deletion/correction cannot erase or reclassify it. It commits
+with the actual entry; capture failure rolls back the trade/admission together.
+Later completion—even before the window—and manual true cannot rewrite an earlier
+not-prepared entry. Current workflow-done can therefore be true while prepared is
+false. Unrecorded/unknown is never automatically skipped, done or backfilled.
+
+The Journal comparison groups **UTC close-day realised daily P&L**, not trade-
+weighted means or floating P&L. First-executed-admission evidence takes precedence,
+otherwise selected-window deadline workflow, otherwise labelled self-report or
+unknown. Before an unfinished deadline with no entry, preparation is unknown.
+Missing net P&L makes that day unavailable, not zero; known/unavailable counts and
+per-day evidence basis are shown. Overnight entries can close on a different day:
+this does **not** attribute each trade to its own entry routine. Small/selected
+samples, human/retrospective reports and close-day association do not establish
+causation or justify risk sizing, strategy changes or a win-rate promise.
 
 ## Scope still open
 
-M94's pre-market routine (paired with M64/M14 and the M108 meditation step),
-M111's news fail-closed policy, M112's time restrictions, M89's verified emotion
+M108's full Sanctuary presets/ambient/intention/toolkit/independent session log
+and progress remain partial beyond this routine timer. M111's news fail-closed policy, M112's time restrictions, M89's verified emotion
 capture timing, M106's four-question state gate and all other unresolved findings
 stay open. **Correction:** M116 is already classified APPLIED in the ledger; the
 prior guide/summaries incorrectly listed it open. No new closure/retuning is counted.

@@ -1,0 +1,19 @@
+FAIL unhandled boundary SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at parseJSONFromBytes (node:internal/deps/undici/undici:5880:19)
+    at successSteps (node:internal/deps/undici/undici:5861:27)
+    at fullyReadBody (node:internal/deps/undici/undici:4753:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async consumeBody (node:internal/deps/undici/undici:5870:7)
+    at async req (/home/user/Trader/analysis/probe-m64-routine-workflow.js:8:281)
+    at async /home/user/Trader/analysis/probe-m64-routine-workflow.js:12:7
+SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at parseJSONFromBytes (node:internal/deps/undici/undici:5880:19)
+    at successSteps (node:internal/deps/undici/undici:5861:27)
+    at fullyReadBody (node:internal/deps/undici/undici:4753:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async consumeBody (node:internal/deps/undici/undici:5870:7)
+    at async req (/home/user/Trader/analysis/probe-m64-routine-workflow.js:8:281)
+    at async /home/user/Trader/analysis/probe-m64-routine-workflow.js:12:7
+M64 routine workflow: 0 passed, 1 failed

@@ -1,0 +1,142 @@
+diff --git a/src/db.js b/src/db.js
+index 8281d22..2db3592 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -295,6 +295,17 @@ CREATE TABLE IF NOT EXISTS guardrail_reflections (
+   completion_source TEXT CHECK(completion_source IS NULL OR completion_source IN ('trade_journal','loss_reflection'))
+ );
+ CREATE INDEX IF NOT EXISTS idx_reflections_scope ON guardrail_reflections(user_id,account_id,rule_date,id);
++-- Manual daily self-reports are not workflow completion or admission permission.
++-- Independent account/date key avoids conflating the single daily notebook.
++CREATE TABLE IF NOT EXISTS routine_day_records (
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  rule_date TEXT NOT NULL,
++  pre_market_done INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1)),
++  basis TEXT NOT NULL DEFAULT 'self_reported' CHECK(basis='self_reported'),
++  recorded_at TEXT NOT NULL,
++  PRIMARY KEY(user_id,account_id,rule_date)
++);
+ CREATE TABLE IF NOT EXISTS journal_entries (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -316,6 +327,9 @@ CREATE TABLE IF NOT EXISTS journal_entries (
+   rule_broke TEXT DEFAULT '',                 -- one moment you broke it
+   broke_trigger TEXT DEFAULT '',              -- and what triggered it
+   screen_time_minutes INTEGER,
++  pre_market_done INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1)),
++  pre_market_basis TEXT,
++  pre_market_recorded_at TEXT,
+   created_at TEXT NOT NULL DEFAULT (datetime('now')),
+   UNIQUE(user_id, entry_date)
+ );
+@@ -560,6 +574,9 @@ async function migrate() {
+   await add('trades','mistakes_none','INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1))');
+   await add('trades','journal_reviewed_at','TEXT');
+   await add('trades','journal_review_hash','TEXT');
++  await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
++  await add('journal_entries','pre_market_basis','TEXT');
++  await add('journal_entries','pre_market_recorded_at','TEXT');
+   // M68: never backfill a named model from grade/zone guesses. Unknown != none.
+   for (const table of ['trades', 'bot_signals']) {
+     await add(table, 'entry_model', 'TEXT');
+diff --git a/src/routes/api.js b/src/routes/api.js
+index c0eebef..336f6ce 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -11,6 +11,7 @@ const T = require('../trades');
+ const Guards = require('../bots/guardrails');
+ const SessionTime = require('../session-time');
+ const J = require('../journaling');
++const RR = require('../routine-records');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+@@ -601,7 +602,13 @@ router.get('/journal', requireAuth, async (req, res) => {
+   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
+   if(req.query.account_id && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(Number(req.query.account_id),req.user.id))return res.status(404).json({error:'Account not found'});
+   const journalRows=await db.prepare('SELECT * FROM trades WHERE user_id=?'+(req.query.account_id?' AND account_id=?':'')).all(...(req.query.account_id?[req.user.id,Number(req.query.account_id)]:[req.user.id]));
+-  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),journal_timezone:'UTC' });
++  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC' });
++});
++router.get('/routine/daily/:date',requireAuth,async(req,res)=>{
++  try{res.json({pre_market:await RR.daily(req.user.id,{accountId:req.query.account_id,date:req.params.date})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Daily routine record could not be verified.'});}
++});
++router.get('/routine/report',requireAuth,async(req,res)=>{
++  try{res.json({report:await RR.report(req.user.id,{accountId:req.query.account_id,from:req.query.from,to:req.query.to})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Routine/day outcome comparison could not be verified.'});}
+ });
+ router.get('/journal/reflections',requireAuth,async(req,res)=>{
+   try{res.json({reflections:await J.reflectionsForDay(req.user.id,{accountId:req.query.account_id?Number(req.query.account_id):null,date:req.query.date||Guards.dayKey(Date.now())}),timezone:'UTC'});}
+@@ -618,27 +625,34 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
+   if(accountId!==null && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Account not found'});
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
+-  res.json({ entry: row || null, trades, journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
++  res.json({ entry: row || null, trades,pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+-  if (!b.entry_date) return res.status(400).json({ error: 'entry_date is required' });
+-  const acc = b.account_id ? Number(b.account_id) : (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
++  let acc;try{RR.dateKey(b.entry_date);acc=(await RR.owned(db,req.user.id,b.account_id)).id;if(Object.prototype.hasOwnProperty.call(b,'pre_market_done')){RR.parseFlag(b.pre_market_done);if(b.pre_market_done!==null && b.entry_date>Guards.dayKey(Date.now()))throw RR.input('Future routine completion cannot be recorded as an actual daily fact.');}}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message});throw e;}
++  const explicit=Object.prototype.hasOwnProperty.call(b,'pre_market_done');
++  const result=await db.tx(async tx=>{const store=db.transactionStore(tx),prior=await store.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id,b.entry_date);
++  const pre_market=explicit?await RR.setManual(store,req.user.id,acc,b.entry_date,b.pre_market_done):await RR.daily(req.user.id,{accountId:acc,date:b.entry_date,store});
++  const mirror=(!prior||Number(prior.account_id)===acc);
++  const mirrorDone=explicit&&mirror?(pre_market.done===null?null:pre_market.done?1:0):prior?.pre_market_done??null;
++  const mirrorBasis=explicit&&mirror?pre_market.basis:prior?.pre_market_basis??null,mirrorAt=explicit&&mirror?pre_market.recorded_at:prior?.pre_market_recorded_at??null;
+   // M28: proof_lived / rule_broke / broke_trigger are Ep 4's nightly reflection protocol.
+-  await db.prepare(`INSERT INTO journal_entries (user_id,account_id,entry_date,market_bias,mood,energy,focus,plan,review,lessons,tomorrow,proof_lived,rule_broke,broke_trigger,screen_time_minutes)
+-    VALUES (@user_id,@account_id,@entry_date,@market_bias,@mood,@energy,@focus,@plan,@review,@lessons,@tomorrow,@proof_lived,@rule_broke,@broke_trigger,@screen_time_minutes)
++  await store.prepare(`INSERT INTO journal_entries (user_id,account_id,entry_date,market_bias,mood,energy,focus,plan,review,lessons,tomorrow,proof_lived,rule_broke,broke_trigger,screen_time_minutes,pre_market_done,pre_market_basis,pre_market_recorded_at)
++    VALUES (@user_id,@account_id,@entry_date,@market_bias,@mood,@energy,@focus,@plan,@review,@lessons,@tomorrow,@proof_lived,@rule_broke,@broke_trigger,@screen_time_minutes,@pre_market_done,@pre_market_basis,@pre_market_recorded_at)
+     ON CONFLICT(user_id,entry_date) DO UPDATE SET
+       market_bias=excluded.market_bias, mood=excluded.mood, energy=excluded.energy, focus=excluded.focus,
+       plan=excluded.plan, review=excluded.review, lessons=excluded.lessons, tomorrow=excluded.tomorrow,
+       proof_lived=excluded.proof_lived, rule_broke=excluded.rule_broke, broke_trigger=excluded.broke_trigger,
+-      screen_time_minutes=excluded.screen_time_minutes`).run({
++      screen_time_minutes=excluded.screen_time_minutes,pre_market_done=excluded.pre_market_done,pre_market_basis=excluded.pre_market_basis,pre_market_recorded_at=excluded.pre_market_recorded_at`).run({
+     user_id: req.user.id, account_id: acc, entry_date: b.entry_date,
+     market_bias: b.market_bias || '', mood: b.mood || null, energy: b.energy || null,
+     focus: b.focus || '', plan: b.plan || '', review: b.review || '', lessons: b.lessons || '',
+     tomorrow: b.tomorrow || '', proof_lived: b.proof_lived || '', rule_broke: b.rule_broke || '',
+     broke_trigger: b.broke_trigger || '', screen_time_minutes: b.screen_time_minutes || null,
++    pre_market_done:mirrorDone,pre_market_basis:mirrorBasis,pre_market_recorded_at:mirrorAt,
+   });
+-  res.json({ ok: true, entry: await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, b.entry_date) });
++  return {ok:true,entry:await store.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id,b.entry_date),pre_market};
++  });res.json(result);
+ });
+ router.delete('/journal/:id', requireAuth, async (req, res) => {
+   await db.prepare('DELETE FROM journal_entries WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
+diff --git a/src/routine-records.js b/src/routine-records.js
+new file mode 100644
+index 0000000..bbcb298
+--- /dev/null
++++ b/src/routine-records.js
+@@ -0,0 +1,25 @@
++'use strict';
++/** M14/M94: explicit daily facts and descriptive outcomes. Self-reports never
++ * satisfy a workflow gate. NULL/unrecorded stays unknown, not skipped/complete.
++ * UTC close-day realised P&L, no inferential/causal/strategy-sizing claim. */
++const {db}=require('./db');const {dayKey,msOf}=require('./bots/guardrails');
++function input(message,status=400){const e=new Error(message);e.status=status;e.code='routine_input_invalid';return e;}
++function dateKey(value){if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(msOf(value))||dayKey(msOf(value))!==value)throw input('A valid UTC calendar date is required.');return value;}
++function parseFlag(value){if(value===null)return null;if(typeof value!=='boolean')throw input('pre_market_done must be an explicit true, false or null/unknown.');return value?1:0;}
++async function owned(store,userId,accountId=null){
++  let row;if(accountId==null||accountId==='')row=await store.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY archived,is_default DESC,id LIMIT 1').get(userId);
++  else{if(typeof accountId==='boolean'||!Number.isSafeInteger(Number(accountId))||Number(accountId)<=0)throw input('Account not found',404);row=await store.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(accountId),userId);}
++  if(!row)throw input('Account not found',404);return row;
++}
++function publicRecord(row,date,accountId){return {date,account_id:accountId,done:row?.pre_market_done==null?null:row.pre_market_done===1,basis:row?.basis||'unrecorded',recorded_at:row?.recorded_at||null,workflow_complete:false,scope:'Daily self-reported fact, not derived workflow or reusable permission; NULL means unknown'};}
++async function daily(userId,{accountId=null,date,store=db}={}){date=dateKey(date);const acc=await owned(store,userId,accountId),row=await store.prepare('SELECT * FROM routine_day_records WHERE user_id=? AND account_id=? AND rule_date=?').get(userId,acc.id,date);return publicRecord(row,date,acc.id);}
++async function setManual(store,userId,accountId,date,value){date=dateKey(date);const done=parseFlag(value);if(done!==null && date>dayKey(Date.now()))throw input('Future routine completion/skipping cannot be recorded as an actual daily fact.');await owned(store,userId,accountId);await store.prepare(`INSERT INTO routine_day_records(user_id,account_id,rule_date,pre_market_done,basis,recorded_at) VALUES (?,?,?,?,?,?) ON CONFLICT(user_id,account_id,rule_date) DO UPDATE SET pre_market_done=excluded.pre_market_done,basis=excluded.basis,recorded_at=excluded.recorded_at`).run(userId,accountId,date,done,'self_reported',new Date().toISOString());return daily(userId,{accountId,date,store});}
++async function list(userId,{accountId=null,store=db}={}){const acc=await owned(store,userId,accountId),rows=await store.prepare('SELECT * FROM routine_day_records WHERE user_id=? AND account_id=? ORDER BY rule_date DESC LIMIT 400').all(userId,acc.id);return rows.map(r=>publicRecord(r,r.rule_date,acc.id));}
++async function report(userId,{accountId=null,from=null,to=null,store=db,nowMs=Date.now()}={}){
++  if(from)dateKey(from);if(to)dateKey(to);if(from&&to&&from>to)throw input('from must not be after to.');const acc=await owned(store,userId,accountId),rows=await store.prepare("SELECT * FROM trades WHERE user_id=? AND account_id=? AND status='closed'").all(userId,acc.id),records=await store.prepare('SELECT * FROM routine_day_records WHERE user_id=? AND account_id=?').all(userId,acc.id),byDate=new Map(records.map(r=>[r.rule_date,r])),grouped=new Map(),unassigned=[];
++  for(const t of rows){const ms=msOf(t.closed_at);if(!Number.isFinite(ms)){unassigned.push(t.id);continue;}if(ms>nowMs)continue;const date=dayKey(ms);if((from&&date<from)||(to&&date>to))continue;if(!grouped.has(date))grouped.set(date,[]);grouped.get(date).push(t);}
++  const days=[...grouped].map(([date,trades])=>{const known=trades.every(t=>t.net_pnl!==null&&t.net_pnl!==undefined&&t.net_pnl!==''&&Number.isFinite(Number(t.net_pnl))),r=publicRecord(byDate.get(date),date,acc.id);return {date,trades:trades.length,realised_pnl:known?trades.reduce((s,t)=>s+Number(t.net_pnl),0):null,pre_market:r,status:r.done===null?'unknown':r.done?'completed':'not_completed'};}).sort((a,b)=>a.date.localeCompare(b.date));
++  const buckets=['completed','not_completed','unknown'].map(status=>{const all=days.filter(d=>d.status===status),known=all.filter(d=>d.realised_pnl!==null),net=known.reduce((s,d)=>s+d.realised_pnl,0);return {status,days:all.length,known_pnl_days:known.length,unavailable_pnl_days:all.length-known.length,net_pnl:known.length?net:null,mean_daily_pnl:known.length?net/known.length:null};});
++  return {account_id:acc.id,timezone:'UTC',days,buckets,total_closed_trades:days.reduce((s,d)=>s+d.trades,0),unassigned_close_date_ids:unassigned,descriptive_only:true,causation_established:false,note:'Observational self-reported routine/day P&L buckets, trading days only. Unknown is not skipped, missing P&L is not zero; small/selected samples and retrospective self-reports do not prove causation or justify resizing/strategy tuning.'};
++}
++module.exports={input,dateKey,parseFlag,owned,daily,setManual,list,report};

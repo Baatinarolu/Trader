@@ -1,0 +1,11 @@
+ ok   -1/market_shift: final analyser refuses 1.5R T1 even when final runner is >2R
+ ok   -1/market_shift: Now/chart cannot arm the refused candidate or HTF projection
+ ok   -1/market_shift: scan cannot emit BUY/SELL from this runner-rescued idea
+ ok   -1/market_shift: automatic signal storage cannot persist refused first-target geometry
+ ok   -1/market_shift: primary-floor correction cannot resurrect stale 99% probabilities
+
+M71 consumers: 5 passed, 1 failed
+Error: Stand down: Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.
+    at admissionError (/home/user/Trader/extracted/tradejournal/src/bots/guardrails.js:280:13)
+    at Object.admit (/home/user/Trader/extracted/tradejournal/src/bots/guardrails.js:318:27)
+    at async /home/user/Trader/analysis/probe-m71-rr-consumers.js:63:73

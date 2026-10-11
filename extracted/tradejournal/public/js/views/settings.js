@@ -32,6 +32,7 @@
                 <div class="tiny muted">${U.esc(a.broker || 'No broker set')} · ${U.esc(a.currency)} · risk ${U.num(a.risk_per_trade_pct, 2)}%/trade</div></div>
                 <span class="mono ${U.cls(st.net_pnl)}" style="font-size:1.05rem">${U.moneySign(st.net_pnl)}</span></div>
               <div class="tiny muted" style="margin-top:8px">Saved daily realised profit stop: ${a.daily_profit_limit_pct == null ? 'Off (optional)' : U.esc(a.daily_profit_limit_pct) + '%'} · UTC choice; edits after the first check apply tomorrow.</div>
+              <div class="tiny muted" style="margin-top:6px">Routine schedule: ${a.routine_window_start?U.esc(a.routine_window_start)+' '+U.esc(a.routine_timezone)+' · '+U.esc(a.routine_lead_minutes)+'m lead · '+U.esc(a.routine_order):'Setup required (no window inferred)'}. Active cycle keeps its saved policy until reset.</div>
               <div class="sep"></div>
               <div class="stats grid g4" style="gap:8px">
                 <div><div class="k-label">Equity</div><div class="mono">${U.money(st.equity)}</div></div>
@@ -429,6 +430,7 @@
           <label class="field"><span>Lifetime / prop profit target (%)</span><input id="a-target" type="number" step="0.1" value="${v.profit_target_pct}" /></label>
         </div>
         <div class="field-note">Prop-firm rules live here: the app tracks how much of your daily loss limit and max drawdown you have actually used.</div>`;
+        if(Views.routine)body.appendChild(Views.routine.scheduleFields(v));
         const profitEnabled = U.$('#a-profit-enabled', body), profitInput = U.$('#a-profit', body);
         profitEnabled.addEventListener('change', () => { profitInput.disabled = !profitEnabled.checked; });
         const sessionEnabled = U.$('#a-session-enabled',body),sessionInput = U.$('#a-session',body);
@@ -445,6 +447,7 @@
                 daily_profit_limit_pct: profitEnabled.checked ? profitInput.value : null,
                 max_session_minutes: sessionEnabled.checked ? sessionInput.value : null,
               };
+              if(Views.routine){try{Object.assign(payload,Views.routine.collectSchedule(body));}catch(e){return global.App.toast(e.message,'err');}}
               if (!payload.name) return global.App.toast('Account needs a name', 'err');
               if (profitEnabled.checked && !(Number(profitInput.value)>0 && Number(profitInput.value)<=100))
                 return global.App.toast('Daily profit stop needs a positive percentage up to 100, or turn it off.', 'err');

@@ -138,6 +138,10 @@ CREATE TABLE IF NOT EXISTS accounts (
   max_trades_day INTEGER NOT NULL DEFAULT 3, -- M83/M113 preselected, not derived from overtrading
   daily_loss_limit_pct REAL DEFAULT 3.0,
   max_session_minutes INTEGER CHECK(max_session_minutes IS NULL OR (max_session_minutes BETWEEN 1 AND 1440 AND max_session_minutes=CAST(max_session_minutes AS INTEGER))), -- M84 optional manual/advisory time ceiling
+  routine_window_start TEXT,
+  routine_timezone TEXT,
+  routine_lead_minutes INTEGER NOT NULL DEFAULT 60 CHECK(routine_lead_minutes BETWEEN 1 AND 180),
+  routine_order TEXT NOT NULL DEFAULT 'ep17' CHECK(routine_order IN ('ep17','meditation_first')),
   daily_profit_limit_pct REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100)), -- M81 optional, separate from lifetime profit target
   max_drawdown_pct REAL DEFAULT 10.0,
   profit_target_pct REAL DEFAULT 8.0,
@@ -295,6 +299,68 @@ CREATE TABLE IF NOT EXISTS guardrail_reflections (
   completion_source TEXT CHECK(completion_source IS NULL OR completion_source IN ('trade_journal','loss_reflection'))
 );
 CREATE INDEX IF NOT EXISTS idx_reflections_scope ON guardrail_reflections(user_id,account_id,rule_date,id);
+-- Manual daily self-reports are not workflow completion or admission permission.
+-- Independent account/date key avoids conflating the single daily notebook.
+-- Frozen local-window cycles and explicit human steps, not inferred broker hours.
+CREATE TABLE IF NOT EXISTS routine_cycles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  cycle_date TEXT NOT NULL,
+  rule_date TEXT NOT NULL,
+  timezone TEXT NOT NULL,
+  window_start TEXT NOT NULL,
+  lead_minutes INTEGER NOT NULL CHECK(lead_minutes BETWEEN 1 AND 180),
+  step_order TEXT NOT NULL CHECK(step_order IN ('ep17','meditation_first')),
+  reset_at TEXT NOT NULL,
+  window_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  selected_at TEXT NOT NULL,
+  meditation_state TEXT NOT NULL DEFAULT 'not_started' CHECK(meditation_state IN ('not_started','running','paused','completed')),
+  meditation_started_at TEXT,
+  meditation_elapsed_ms INTEGER NOT NULL DEFAULT 0 CHECK(meditation_elapsed_ms>=0),
+  completed_at TEXT,
+  completed_before_window INTEGER CHECK(completed_before_window IS NULL OR completed_before_window IN (0,1)),
+  first_action_at TEXT,
+  UNIQUE(user_id,account_id,reset_at)
+);
+CREATE INDEX IF NOT EXISTS idx_routine_cycles_active ON routine_cycles(user_id,account_id,reset_at,expires_at);
+CREATE TABLE IF NOT EXISTS routine_checks (
+  cycle_id INTEGER NOT NULL REFERENCES routine_cycles(id) ON DELETE CASCADE,
+  step TEXT NOT NULL CHECK(step IN ('calendar','plan','charts','meditation','check_in')),
+  completed_at TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  PRIMARY KEY(cycle_id,step)
+);
+CREATE TABLE IF NOT EXISTS routine_checkin_attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  cycle_id INTEGER NOT NULL REFERENCES routine_cycles(id) ON DELETE CASCADE,
+  captured_at TEXT NOT NULL,
+  passed INTEGER NOT NULL CHECK(passed IN (0,1)),
+  answers TEXT NOT NULL
+);
+-- First actual executed admission, independent of mutable/deleted journal rows.
+CREATE TABLE IF NOT EXISTS routine_day_admissions (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  rule_date TEXT NOT NULL,
+  first_trade_id INTEGER NOT NULL,
+  cycle_id INTEGER,
+  recorded_at TEXT NOT NULL,
+  prepared INTEGER CHECK(prepared IS NULL OR prepared IN (0,1)),
+  workflow_complete_at_entry INTEGER CHECK(workflow_complete_at_entry IS NULL OR workflow_complete_at_entry IN (0,1)),
+  snapshot TEXT NOT NULL,
+  PRIMARY KEY(user_id,account_id,rule_date)
+);
+CREATE TABLE IF NOT EXISTS routine_day_records (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  rule_date TEXT NOT NULL,
+  pre_market_done INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1)),
+  basis TEXT NOT NULL DEFAULT 'self_reported' CHECK(basis='self_reported'),
+  recorded_at TEXT NOT NULL,
+  PRIMARY KEY(user_id,account_id,rule_date)
+);
 CREATE TABLE IF NOT EXISTS journal_entries (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -316,6 +382,9 @@ CREATE TABLE IF NOT EXISTS journal_entries (
   rule_broke TEXT DEFAULT '',                 -- one moment you broke it
   broke_trigger TEXT DEFAULT '',              -- and what triggered it
   screen_time_minutes INTEGER,
+  pre_market_done INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1)),
+  pre_market_basis TEXT,
+  pre_market_recorded_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(user_id, entry_date)
 );
@@ -560,6 +629,13 @@ async function migrate() {
   await add('trades','mistakes_none','INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1))');
   await add('trades','journal_reviewed_at','TEXT');
   await add('trades','journal_review_hash','TEXT');
+  await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
+  await add('journal_entries','pre_market_basis','TEXT');
+  await add('journal_entries','pre_market_recorded_at','TEXT');
+  await add('accounts','routine_window_start','TEXT');
+  await add('accounts','routine_timezone','TEXT');
+  await add('accounts','routine_lead_minutes','INTEGER NOT NULL DEFAULT 60 CHECK(routine_lead_minutes BETWEEN 1 AND 180)');
+  await add('accounts','routine_order',"TEXT NOT NULL DEFAULT 'ep17' CHECK(routine_order IN ('ep17','meditation_first'))");
   // M68: never backfill a named model from grade/zone guesses. Unknown != none.
   for (const table of ['trades', 'bot_signals']) {
     await add(table, 'entry_model', 'TEXT');

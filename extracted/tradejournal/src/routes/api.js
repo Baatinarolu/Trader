@@ -11,6 +11,8 @@ const T = require('../trades');
 const Guards = require('../bots/guardrails');
 const SessionTime = require('../session-time');
 const J = require('../journaling');
+const RR = require('../routine-records');
+const Routine = require('../routine');
 const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t)});
 const O = require('../options');
 const Exp = require('../exposure');
@@ -601,7 +603,22 @@ router.get('/journal', requireAuth, async (req, res) => {
   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
   if(req.query.account_id && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(Number(req.query.account_id),req.user.id))return res.status(404).json({error:'Account not found'});
   const journalRows=await db.prepare('SELECT * FROM trades WHERE user_id=?'+(req.query.account_id?' AND account_id=?':'')).all(...(req.query.account_id?[req.user.id,Number(req.query.account_id)]:[req.user.id]));
-  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),journal_timezone:'UTC' });
+  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC' });
+});
+router.get('/routine',requireAuth,async(req,res)=>{
+  try{res.json({routine:await Routine.current(req.user.id,{accountId:req.query.account_id})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine state could not be verified.'});}
+});
+router.post('/routine/step',requireAuth,async(req,res)=>{
+  try{res.json({routine:await Routine.acknowledge(req.user.id,req.body)});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine step could not be verified.'});}
+});
+router.post('/routine/meditation',requireAuth,async(req,res)=>{
+  try{res.json({routine:await Routine.meditation(req.user.id,req.body)});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market meditation timer could not be verified.'});}
+});
+router.get('/routine/daily/:date',requireAuth,async(req,res)=>{
+  try{res.json({pre_market:await RR.daily(req.user.id,{accountId:req.query.account_id,date:req.params.date})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Daily routine record could not be verified.'});}
+});
+router.get('/routine/report',requireAuth,async(req,res)=>{
+  try{res.json({report:await RR.report(req.user.id,{accountId:req.query.account_id,from:req.query.from,to:req.query.to})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Routine/day outcome comparison could not be verified.'});}
 });
 router.get('/journal/reflections',requireAuth,async(req,res)=>{
   try{res.json({reflections:await J.reflectionsForDay(req.user.id,{accountId:req.query.account_id?Number(req.query.account_id):null,date:req.query.date||Guards.dayKey(Date.now())}),timezone:'UTC'});}
@@ -618,27 +635,34 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
   if(accountId!==null && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Account not found'});
   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
-  res.json({ entry: row || null, trades, journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+  res.json({ entry: row || null, trades,pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
 });
 router.post('/journal', requireAuth, async (req, res) => {
   const b = req.body || {};
-  if (!b.entry_date) return res.status(400).json({ error: 'entry_date is required' });
-  const acc = b.account_id ? Number(b.account_id) : (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
+  let acc;try{RR.dateKey(b.entry_date);acc=(await RR.owned(db,req.user.id,b.account_id)).id;if(Object.prototype.hasOwnProperty.call(b,'pre_market_done')){RR.parseFlag(b.pre_market_done);if(b.pre_market_done!==null && b.entry_date>Guards.dayKey(Date.now()))throw RR.input('Future routine completion cannot be recorded as an actual daily fact.');}}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message});throw e;}
+  const explicit=Object.prototype.hasOwnProperty.call(b,'pre_market_done');
+  const result=await db.tx(async tx=>{const store=db.transactionStore(tx),prior=await store.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id,b.entry_date);
+  const pre_market=explicit?await RR.setManual(store,req.user.id,acc,b.entry_date,b.pre_market_done):await RR.daily(req.user.id,{accountId:acc,date:b.entry_date,store});
+  const mirror=(!prior||Number(prior.account_id)===acc);
+  const mirrorDone=explicit&&mirror?RR.parseFlag(b.pre_market_done):prior?.pre_market_done??null;
+  const mirrorBasis=explicit&&mirror?'self_reported':prior?.pre_market_basis??null,mirrorAt=explicit&&mirror?pre_market.self_report.recorded_at:prior?.pre_market_recorded_at??null;
   // M28: proof_lived / rule_broke / broke_trigger are Ep 4's nightly reflection protocol.
-  await db.prepare(`INSERT INTO journal_entries (user_id,account_id,entry_date,market_bias,mood,energy,focus,plan,review,lessons,tomorrow,proof_lived,rule_broke,broke_trigger,screen_time_minutes)
-    VALUES (@user_id,@account_id,@entry_date,@market_bias,@mood,@energy,@focus,@plan,@review,@lessons,@tomorrow,@proof_lived,@rule_broke,@broke_trigger,@screen_time_minutes)
+  await store.prepare(`INSERT INTO journal_entries (user_id,account_id,entry_date,market_bias,mood,energy,focus,plan,review,lessons,tomorrow,proof_lived,rule_broke,broke_trigger,screen_time_minutes,pre_market_done,pre_market_basis,pre_market_recorded_at)
+    VALUES (@user_id,@account_id,@entry_date,@market_bias,@mood,@energy,@focus,@plan,@review,@lessons,@tomorrow,@proof_lived,@rule_broke,@broke_trigger,@screen_time_minutes,@pre_market_done,@pre_market_basis,@pre_market_recorded_at)
     ON CONFLICT(user_id,entry_date) DO UPDATE SET
       market_bias=excluded.market_bias, mood=excluded.mood, energy=excluded.energy, focus=excluded.focus,
       plan=excluded.plan, review=excluded.review, lessons=excluded.lessons, tomorrow=excluded.tomorrow,
       proof_lived=excluded.proof_lived, rule_broke=excluded.rule_broke, broke_trigger=excluded.broke_trigger,
-      screen_time_minutes=excluded.screen_time_minutes`).run({
+      screen_time_minutes=excluded.screen_time_minutes,pre_market_done=excluded.pre_market_done,pre_market_basis=excluded.pre_market_basis,pre_market_recorded_at=excluded.pre_market_recorded_at`).run({
     user_id: req.user.id, account_id: acc, entry_date: b.entry_date,
     market_bias: b.market_bias || '', mood: b.mood || null, energy: b.energy || null,
     focus: b.focus || '', plan: b.plan || '', review: b.review || '', lessons: b.lessons || '',
     tomorrow: b.tomorrow || '', proof_lived: b.proof_lived || '', rule_broke: b.rule_broke || '',
     broke_trigger: b.broke_trigger || '', screen_time_minutes: b.screen_time_minutes || null,
+    pre_market_done:mirrorDone,pre_market_basis:mirrorBasis,pre_market_recorded_at:mirrorAt,
   });
-  res.json({ ok: true, entry: await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, b.entry_date) });
+  return {ok:true,entry:await store.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id,b.entry_date),pre_market};
+  });res.json(result);
 });
 router.delete('/journal/:id', requireAuth, async (req, res) => {
   await db.prepare('DELETE FROM journal_entries WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
@@ -796,13 +820,14 @@ router.post('/accounts', requireAuth, async (req, res) => {
   let sessionLimit;
   try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes); }
   catch(e){return res.status(400).json({error:e.message});}
+  let routineConfig;try{routineConfig=Routine.config(b);}catch(e){return res.status(400).json({error:e.message});}
   const unlocked = !!b.risk_unlocked;
   const riskPct = I.clampRiskPct(b.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked });
-  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes,routine_window_start,routine_timezone,routine_lead_minutes,routine_order)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     req.user.id, b.name, b.broker || '', b.account_type || 'live', b.currency || 'USD',
     num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0, maxTrades,
-    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit);
+    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit,routineConfig.routine_window_start,routineConfig.routine_timezone,routineConfig.routine_lead_minutes,routineConfig.routine_order);
   res.json({
     ok: true,
     account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(info.lastInsertRowid),
@@ -823,6 +848,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
   let sessionLimit;
   try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes === undefined ? cur.max_session_minutes : b.max_session_minutes); }
   catch(e){return res.status(400).json({error:e.message});}
+  let routineConfig;try{routineConfig=Routine.config({...cur,...b});}catch(e){return res.status(400).json({error:e.message});}
   // M9: the same guardrail on the update path, which also stored the value via num() with no
   // clamp. Only a value THIS request supplies is clamped — a row stored above the guardrail
   // before the fix is left untouched here and clamped on READ (bots/index.js) instead, so an
@@ -833,7 +859,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
     : num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct);
   await db.prepare(`UPDATE accounts SET name=@name, broker=@broker, account_type=@account_type, currency=@currency,
     starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, max_trades_day=@max_trades_day, daily_loss_limit_pct=@daily_loss_limit_pct,
-    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, max_session_minutes=@max_session_minutes, prop_preset=@prop_preset,
+    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, max_session_minutes=@max_session_minutes,routine_window_start=@routine_window_start,routine_timezone=@routine_timezone,routine_lead_minutes=@routine_lead_minutes,routine_order=@routine_order, prop_preset=@prop_preset,
     prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
     id, user_id: req.user.id,
     name: b.name !== undefined ? b.name : cur.name,
@@ -846,6 +872,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
     max_trades_day: maxTrades,
     daily_profit_limit_pct: profitLimit,
     max_session_minutes: sessionLimit,
+    ...routineConfig,
     daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
     max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
     prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,

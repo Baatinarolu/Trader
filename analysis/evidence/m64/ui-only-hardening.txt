@@ -1,0 +1,14 @@
+FAIL numeric UTC offset is not explicit IANA timezone400 200
+FAIL array query account id not silently coerced into owned account404 200
+FAIL strict owned account wire type array 200
+ok strict owned account wire type object
+ok strict owned account wire type Boolean
+FAIL strict current cycle wire type array 200
+ok strict current cycle wire type object
+ok strict current cycle wire type Boolean
+FAIL corrupt stored future configuration is unavailable503, not request400 400
+ok first read with corrupt routine genuinely returns UNKNOWN
+ok first unknown-routine read independently retains old cap/count AND observed loss clock
+ok known old cap breach captured even before unknown routine response
+ok honest delete/repair/reflection do not refund known old cap/cooldown/full-candle
+M64 routine strict/old-retention: 8 passed, 5 failed

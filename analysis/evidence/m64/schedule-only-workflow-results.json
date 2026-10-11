@@ -1,0 +1,315 @@
+{
+  "app": "/tmp/m64-schedule-stage/app",
+  "passed": 4,
+  "failed": 39,
+  "checks": [
+    {
+      "name": "reject out-of-order chart acknowledgment409",
+      "ok": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "name": "Ep17 cannot skip calendar/plan/charts to start meditation",
+      "ok": false,
+      "detail": {
+        "status": 404,
+        "data": {}
+      }
+    },
+    {
+      "name": "calendar reviewed requires literal Boolean true: string",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "calendar reviewed requires literal Boolean true: one",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "calendar reviewed requires literal Boolean true: null",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "calendar reviewed requires literal Boolean true: missing",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "cannot spoof machine/live provider news review",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "ack calendar stores explicit human source/time",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "completed step snapshot cannot be rewritten",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "foreign plan snapshot404",
+      "ok": true,
+      "detail": 404
+    },
+    {
+      "name": "own plan step snapshots exact stored plan, not client override",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "later plan edit cannot retrospectively change reviewed snapshot",
+      "ok": false
+    },
+    {
+      "name": "reject incomplete or coercive chart human report daily_bias",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "reject incomplete or coercive chart human report alert_status",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "reject incomplete or coercive chart human report alert_note",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "reject incomplete or coercive chart human report reviewed",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "human chart bias/alert report stored without order-authority claim",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "reject client-supplied elapsed/start completion proof400",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "server starts actual next meditation step at own clock",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "pause retains10m server elapsed",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "two-hour paused gap cannot count toward meditation",
+      "ok": false,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "not_started",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 0,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [],
+          "next_step": "calendar",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "not_started",
+            "elapsed_ms": 0
+          },
+          "evaluated_at": "2026-10-11T15:10:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "cannot complete paused timer with only10m409",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "resume uses server clock, not client clock",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "14m59.999 active remains incomplete409",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "inclusive15m active completes timer, still requires four checks",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "strict Boolean readiness calm",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "strict Boolean readiness clear",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "strict Boolean readiness following_plan",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "strict Boolean readiness would_take_if_up_big",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "false morning answer retained but cannot complete",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "all four literal true finishes actual current workflow",
+      "ok": false
+    },
+    {
+      "name": "late completion recorded as late, never on-time preparation",
+      "ok": false
+    },
+    {
+      "name": "repeat completion idempotent, no new completion time",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "foreign cycle/account mutation404",
+      "ok": true,
+      "detail": 404
+    },
+    {
+      "name": "step mutation auth401",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "cannot submit arbitrary or prior cycle409",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "meditation-first prevents calendar bypass409",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "variant meditation completes first, not whole routine",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "explicit manual own plan allowed and labelled self-reported snapshot",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "on-time variant complete preserves chosen sequence/context",
+      "ok": false,
+      "detail": {}
+    },
+    {
+      "name": "next reset actually removes current-cycle step/timer completion",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 3,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 3,
+            "user_id": 1,
+            "account_id": 3,
+            "cycle_date": "2026-10-13",
+            "rule_date": "2026-10-13",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 120,
+            "step_order": "meditation_first",
+            "reset_at": "2026-10-13T12:00:00.000Z",
+            "window_at": "2026-10-13T14:00:00.000Z",
+            "expires_at": "2026-10-14T12:00:00.000Z",
+            "selected_at": "2026-10-13T12:00:00.000Z",
+            "meditation_state": "not_started",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 0,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "meditation",
+            "calendar",
+            "plan",
+            "charts",
+            "check_in"
+          ],
+          "steps": [],
+          "next_step": "meditation",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "not_started",
+            "elapsed_ms": 0
+          },
+          "evaluated_at": "2026-10-13T12:00:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "stale completed cycle not reusable after reset409",
+      "ok": false,
+      "detail": 404
+    },
+    {
+      "name": "routine reads/steps do not reset or fabricate mechanical day policy/admissions",
+      "ok": true,
+      "detail": []
+    }
+  ]
+}

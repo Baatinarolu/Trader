@@ -1,0 +1,79 @@
+FAIL reject out-of-order chart acknowledgment409 { status: 404, data: {} }
+FAIL Ep17 cannot skip calendar/plan/charts to start meditation { status: 404, data: {} }
+FAIL calendar reviewed requires literal Boolean true: string 404
+FAIL calendar reviewed requires literal Boolean true: one 404
+FAIL calendar reviewed requires literal Boolean true: null 404
+FAIL calendar reviewed requires literal Boolean true: missing 404
+FAIL cannot spoof machine/live provider news review 404
+FAIL ack calendar stores explicit human source/time {}
+FAIL completed step snapshot cannot be rewritten 404
+ok foreign plan snapshot404
+FAIL own plan step snapshots exact stored plan, not client override {}
+FAIL later plan edit cannot retrospectively change reviewed snapshot undefined
+FAIL reject incomplete or coercive chart human report daily_bias 404
+FAIL reject incomplete or coercive chart human report alert_status 404
+FAIL reject incomplete or coercive chart human report alert_note 404
+FAIL reject incomplete or coercive chart human report reviewed 404
+FAIL human chart bias/alert report stored without order-authority claim {}
+FAIL reject client-supplied elapsed/start completion proof400 404
+FAIL server starts actual next meditation step at own clock {}
+FAIL pause retains10m server elapsed {}
+FAIL two-hour paused gap cannot count toward meditation {
+  routine: {
+    account_id: 1,
+    state: 'pending',
+    complete: false,
+    cycle: {
+      id: 1,
+      user_id: 1,
+      account_id: 1,
+      cycle_date: '2026-10-11',
+      rule_date: '2026-10-11',
+      timezone: 'Africa/Lagos',
+      window_start: '15:00',
+      lead_minutes: 60,
+      step_order: 'ep17',
+      reset_at: '2026-10-11T13:00:00.000Z',
+      window_at: '2026-10-11T14:00:00.000Z',
+      expires_at: '2026-10-12T13:00:00.000Z',
+      selected_at: '2026-10-11T13:00:00.000Z',
+      meditation_state: 'not_started',
+      meditation_started_at: null,
+      meditation_elapsed_ms: 0,
+      completed_at: null,
+      completed_before_window: null,
+      first_action_at: null,
+      dst_policy: 'earlier fold / shift forward gap'
+    },
+    order: [ 'calendar', 'plan', 'charts', 'meditation', 'check_in' ],
+    steps: [],
+    next_step: 'calendar',
+    meditation: { minimum_ms: 900000, state: 'not_started', elapsed_ms: 0 },
+    evaluated_at: '2026-10-11T15:10:00.000Z',
+    message: 'Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.',
+    scope: 'Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof'
+  }
+}
+FAIL cannot complete paused timer with only10m409 404
+FAIL resume uses server clock, not client clock {}
+FAIL 14m59.999 active remains incomplete409 404
+FAIL inclusive15m active completes timer, still requires four checks {}
+FAIL strict Boolean readiness calm 404
+FAIL strict Boolean readiness clear 404
+FAIL strict Boolean readiness following_plan 404
+FAIL strict Boolean readiness would_take_if_up_big 404
+FAIL false morning answer retained but cannot complete {}
+FAIL all four literal true finishes actual current workflow undefined
+FAIL late completion recorded as late, never on-time preparation undefined
+FAIL repeat completion idempotent, no new completion time {}
+ok foreign cycle/account mutation404
+FAIL step mutation auth401 404
+FAIL cannot submit arbitrary or prior cycle409 404
+FAIL meditation-first prevents calendar bypass409 404
+FAIL variant meditation completes first, not whole routine {}
+FAIL explicit manual own plan allowed and labelled self-reported snapshot {}
+FAIL on-time variant complete preserves chosen sequence/context {}
+ok next reset actually removes current-cycle step/timer completion
+FAIL stale completed cycle not reusable after reset409 404
+ok routine reads/steps do not reset or fabricate mechanical day policy/admissions
+M64 routine workflow: 4 passed, 39 failed

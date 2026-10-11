@@ -383,3 +383,51 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m' 
 | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
 | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
 | `DELETE /api/chart/drawings?symbol=…&tf=…` | clears that market |
+
+
+## Pre-market routine
+
+All endpoints are authenticated and owned-account scoped. Account POST/PUT adds
+`routine_window_start` (nullable explicit local HH:MM), `routine_timezone`
+(nullable IANA, required with a window; numeric offsets are not IANA),
+`routine_lead_minutes` (integer1–180, default60), `routine_order` (`ep17` default
+or `meditation_first`). No account broker/session field infers a window. Active
+cycle policy/steps freeze until saved expiry, then future settings are adopted.
+
+| Method | Path | Body / response |
+|---|---|---|
+| GET | `/routine?account_id=…` | `routine`: setup-required/pending/complete; immutable cycle/reset/window/expiry, selected order/steps, timer/current next step. Storage/clock/provenance fault503, never a cached permit |
+| POST | `/routine/step` | `{account_id,cycle_id,step,…}` literal human acknowledgments below. Actual current cycle/selected order required; stale/out-of-order409; cannot supply completed-at/complete/client timer proof |
+| POST | `/routine/meditation` | `{account_id,cycle_id,action:"start"/"pause"/"resume"/"complete"}` only. Server running-time15m; too early409, clock/client elapsed/start fields400; pause gaps excluded. No actual mental/meditation claim |
+| GET | `/routine/daily/:date?account_id=…` | Valid UTC YYYY-MM-DD, nullable daily `pre_market`: actual workflow `done`, separately labelled `self_report`, `workflow`, immutable `first_admission`, nullable `prepared`, `cohort_basis`. No historical backfill |
+| GET | `/routine/report?account_id=…&from=…&to=…` | Descriptive UTC close-day realised daily P&L buckets completed/not-completed/unknown, known/unavailable P&L counts and daily evidence; NOT causation/strategy-sizing permission |
+| POST | `/journal` | Existing note fields +owned `account_id`,`entry_date`; optionally `pre_market_done` must be literal true/false/null. Omit on unrelated note edits to preserve human flag/source/time. Retrospective human flag never satisfies workflow/admission. Future actual done/skipped400 |
+| GET | `/journal` or `/journal/:date` | `pre_market_days` / `pre_market` workflow +daily evidence beside separate core closed-trade journal completeness |
+
+Step payloads (with actual current owned account/cycle):
+
+- `calendar`: `{reviewed:true,method:"manual_external",summary:"What I actually reviewed"}`.
+  Human external-calendar review, not verified provider/no-news clearance.
+- `plan`: `{reviewed:true,plan_id:123}` selects an **owned strategy/playbook**,
+  snapshots current server fields/version at acknowledgment; or
+  `{reviewed:true,plan_text:"My actual manual plan"}`. No foreign snapshot.
+- `charts`: `{reviewed:true,daily_bias:"bullish"/"bearish"/"neutral",htf_range:"…",
+  alert_status:"set"/"not_applicable",alert_note:"Location or why not applicable"}`.
+  Human report, not OHLC/order authority. Unset/missing report cannot complete.
+- `meditation`: only the timer endpoint completes this step, not `/routine/step`.
+- `check_in`: `{calm:true/false,clear:true/false,following_plan:true/false,
+  would_take_if_up_big:true/false}`. All four literal Booleans required; any false
+  attempt is retained but unfinished. Once-per-routine morning human answers,
+  **not** the separate fresh in-session/per-entry mental-state gate.
+
+Known incomplete/setup-required preparation contributes `pre_market_routine`
+with the existing personal409 `guardrail_stop` /fresh one-action typed reason.
+Reasoned exception never completes steps or refunds other caps/clocks. Unknown/
+corrupt/unavailable routine evidence contributes unwaivable503. All actual new
+entry/reopen/save/copy consumers recheck server state; technical veto never revived.
+Truthful close/correction/deletion/history/record-only/import remains legal.
+First **executed trade** preparation commits atomically with the entry, not saved
+research plans, and survives journal edits/deletion independently. Late completion
+or a human flag cannot rewrite its original preparation basis. Current done and
+on-time/before-first-entry prepared are different facts. Neither is broker activity,
+a live emotional/feed clearance or proof of a profitable causal effect.

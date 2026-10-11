@@ -1,0 +1,168 @@
+=== 1. Both explicit structural-input directions, final consumers included ===
+ ok   HTF long / MTF short: the prescribed roles are distinct and the break is confirmed
+ ok   HTF long / MTF short: the MTF internal shift can originate the counter execution
+ ok   HTF long / MTF short: the daily narrative is unchanged, not the execution sign
+ ok   HTF long / MTF short: final summary AND visible order use the permitted execution
+ ok   HTF long / MTF short: exactly ONE target is the nearest HTF opposing zone
+ ok   HTF long / MTF short: order prices are EXACTLY the actual candidate, not a parallel CRT plan
+ ok   HTF long / MTF short: confirmed A does NOT mean full counter-trend risk
+ ok   HTF long / MTF short: the lower sweep, not the MTF sweep, defines the stop geometry
+ ok   HTF long / MTF short: the model is not falsely named/represented as CRT
+ ok   HTF short / MTF long: the prescribed roles are distinct and the break is confirmed
+ ok   HTF short / MTF long: the MTF internal shift can originate the counter execution
+ ok   HTF short / MTF long: the daily narrative is unchanged, not the execution sign
+ ok   HTF short / MTF long: final summary AND visible order use the permitted execution
+ ok   HTF short / MTF long: exactly ONE target is the nearest HTF opposing zone
+ ok   HTF short / MTF long: order prices are EXACTLY the actual candidate, not a parallel CRT plan
+ ok   HTF short / MTF long: confirmed A does NOT mean full counter-trend risk
+ ok   HTF short / MTF long: the lower sweep, not the MTF sweep, defines the stop geometry
+ ok   HTF short / MTF long: the model is not falsely named/represented as CRT
+
+=== 2. Every prerequisite gets its own negative control ===
+ ok   HTF ranging never yields an MTF-originated counter order
+ ok   MTF label alone, with no break event, cannot originate execution
+ ok   a wrong-direction MTF break cannot masquerade as the internal shift
+ ok   a future MTF event is not observed evidence
+ ok   no HTF opposing zone means no invented target
+ ok   a target zone formed AFTER the MTF shift is not its pre-existing magnet
+ ok   no MTF OB means no standalone-FVG counter entry
+ ok   no lower sweep cannot borrow the MTF sweep
+ ok   no lower structural shift cannot be replaced by displacement
+ ok   a lower shift BEFORE its sweep is not the required sequence
+ ok   future LTF confirmation is not observed evidence
+ ok   one reused timeframe is not three mandatory roles
+ ok   M3 recent expansion remains a refusal even at the zone
+ ok   M26 chosen-window restriction still refuses the otherwise valid counter order
+ ok   an untouched MTF POI cannot be front-run from the lower chart
+ ok   a valid LOWER sweep is sufficient when the MTF has no sweep of its own
+ ok   confirmed MTF break, not a lagging trend label, supplies execution
+ ok   a reached target completes the pullback instead of switching to a farther HTF zone
+ ok   an HTF zone proven obsolete BEFORE the shift is not this leg’s permanent target
+ ok   the ACTUAL bounded target fails the RR floor; no farther pool replaces it
+ ok   even the optional ladder cannot run a counter leg beyond its one HTF target
+ ok   0.005% is not rounded back up to 0.01%, cancelling half risk
+
+=== 2b. Old CRT priority and actual counter-CRT risk consumption ===
+ ok   a real confirmed HTF-CRT keeps priority over the other MTF direction
+ ok   a both-sides HTF-CRT block is NOT bypassed by M33
+ ok   legacy counter-CRT’s promised half risk now reaches actual sizing, not just prose
+ ok   M77 confirmed counter-CRT uses the actual candidate geometry, still at half risk
+
+=== 3. Actual orchestration, state, chart, scan, and signal storage ===
+ ok   dir -1: actual Momentum.analyse whitelist retains the counter read and blockers
+ ok   dir -1: API orchestration preserves daily narrative but arms counter execution
+ ok   dir -1: repeated execution does NOT move or flip the stored daily plan
+ ok   dir -1: chart path also preserves the original defining anchor
+ ok   dir -1: chart/analysis action AND execution prices match
+ ok   dir -1: chart draws the permitted bounded plan, not the opposite raw score
+ ok   dir -1: scan carries separate narrative and execution signs
+ ok   dir 1: actual Momentum.analyse whitelist retains the counter read and blockers
+ ok   dir 1: API orchestration preserves daily narrative but arms counter execution
+ ok   dir 1: repeated execution does NOT move or flip the stored daily plan
+ ok   dir 1: chart path also preserves the original defining anchor
+ ok   dir 1: chart/analysis action AND execution prices match
+ ok   dir 1: chart draws the permitted bounded plan, not the opposite raw score
+ ok   dir 1: scan carries separate narrative and execution signs
+ ok   a genuinely HELD opposite narrative blocks the fresh counter context, never resets it
+ ok   signal storage rejects a good letter with ok=false
+Error: Stand down: Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.
+    at admissionError (/home/user/Trader/extracted/tradejournal/src/bots/guardrails.js:280:13)
+    at Object.admit (/home/user/Trader/extracted/tradejournal/src/bots/guardrails.js:318:27)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async /home/user/Trader/analysis/probe-m33-countertrend-execution.js:246:21 {
+  status: 409,
+  code: 'guardrail_stop',
+  daily: {
+    date: '2026-10-11',
+    timezone: 'UTC',
+    evaluated_at: '2026-10-11T18:27:59.082Z',
+    account_id: 1,
+    guardrails: {
+      max_risk_pct: 1,
+      max_trades_day: 3,
+      cooldown_min: 30,
+      max_consecutive_losses: 2,
+      daily_profit_limit_pct: null,
+      daily_loss_limit_pct: 3,
+      trade_cap_policy: [Object],
+      size_cap_note: null,
+      basis: 'Default risk rules and the preselected account trade cap (not enough personal data yet).',
+      guardrails: [Object],
+      stats: null,
+      user: [Object],
+      sample_sufficient: false,
+      min_trades_for_personal_guardrails: 30
+    },
+    today: {
+      trades: 0,
+      closed: 0,
+      realised: 0,
+      r_sum: 0,
+      avg_r: 0,
+      loss_streak: 0,
+      balance: 10000,
+      loss_limit: 300,
+      balance_basis: 'day-start realised journal equity'
+    },
+    profit_stop: {
+      enabled: false,
+      limit_pct: null,
+      limit_amount: null,
+      realised_amount: 0,
+      selected_at: '2026-10-11T18:27:59.082Z',
+      balance_basis: 'day-start realised journal equity',
+      timezone: 'UTC'
+    },
+    persistence: {
+      entry_count_basis: 'monotonic observed journal entries plus server admissions, not inferred historical permission',
+      journal_entries: 0,
+      retained_stops: []
+    },
+    breaches: [ [Object] ],
+    status: 'stop',
+    remaining_trades: 3,
+    post_loss: {
+      last_loss_trade_id: null,
+      last_loss_at: null,
+      entry_tf: '5m',
+      entry_tf_required: false,
+      cooldown_until: null,
+      next_candle_until: null
+    },
+    message: 'Stand down: Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.',
+    permission: { allowed: false, can_override: true, state: 'stopped' },
+    session_time: {
+      account_id: 1,
+      advisory: true,
+      evaluated_at: '2026-10-11T18:27:59.082Z',
+      timezone: 'UTC',
+      saved_limit_minutes: null,
+      scope: 'Manual marker only, not measured broker/chart screen time or execution permission',
+      state: 'off',
+      limit_minutes: null,
+      elapsed_minutes: null,
+      started_at: null,
+      ended_at: null,
+      message: 'Session-duration warning is Off (optional).'
+    },
+    post_loss_journal: {
+      pending_count: 0,
+      pending: [],
+      completed_count: 0,
+      timezone: 'UTC',
+      rule_date: '2026-10-11',
+      scope: 'Observed current-day known losses, required writing; not a broker-time entry violation or all historical incomplete journals'
+    },
+    routine: {
+      account_id: 1,
+      state: 'setup_required',
+      complete: false,
+      cycle: null,
+      order: [Array],
+      steps: [],
+      next_step: 'setup',
+      message: 'Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.',
+      scope: 'Personal preparation requirement, not broker-hours or market permission'
+    }
+  }
+}

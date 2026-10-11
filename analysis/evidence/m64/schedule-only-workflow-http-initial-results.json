@@ -1,0 +1,12 @@
+{
+  "app": "/tmp/m64-schedule-stage/app",
+  "passed": 0,
+  "failed": 1,
+  "checks": [
+    {
+      "name": "unhandled boundary",
+      "ok": false,
+      "detail": "SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON\n    at JSON.parse (<anonymous>)\n    at parseJSONFromBytes (node:internal/deps/undici/undici:5880:19)\n    at successSteps (node:internal/deps/undici/undici:5861:27)\n    at fullyReadBody (node:internal/deps/undici/undici:4753:9)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async consumeBody (node:internal/deps/undici/undici:5870:7)\n    at async req (/home/user/Trader/analysis/probe-m64-routine-workflow.js:8:281)\n    at async /home/user/Trader/analysis/probe-m64-routine-workflow.js:12:7"
+    }
+  ]
+}

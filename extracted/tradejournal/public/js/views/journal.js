@@ -6,7 +6,7 @@
   Views.journal = {
     title: 'Journal',
     async render(root) {
-      const [entries, goals] = await Promise.all([API.get('/journal',{account_id:Store.accountId}), API.get('/goals')]);
+      const [entries, goals,outcomes] = await Promise.all([API.get('/journal',{account_id:Store.accountId}), API.get('/goals'),API.get('/routine/report',{account_id:Store.accountId}).catch(()=>({report:{state:'unknown'}}))]);
       root.innerHTML = '';
       const layout = U.h('div', { class: 'grid g-2-1' });
       root.appendChild(layout);
@@ -50,6 +50,11 @@
         ${(entries.guardrail_days || []).map(d=>`<div class="row-between" style="padding:8px"><span class="mono">${U.esc(d.rule_date)} · ${d.events} events · ${d.overrides || 0} overrides</span><button class="btn xs ghost" data-open="${U.esc(d.rule_date)}">Review rules & reasons</button></div>`).join('') || '<div class="empty">No stops captured yet. Older violations are not inferred or backfilled.</div>'}`;
       captured.addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(b)openEditor(b.dataset.open,root);});
       listCol.appendChild(captured);
+      if(Views.routine){
+        const routineDays=U.h('div',{class:'card',style:'margin-top:14px'});
+        routineDays.innerHTML=`<div class="card-head"><h3>Recorded pre-market routine days (UTC)</h3></div><div class="tiny muted">Actual workflow and separately labelled self-reports, not inferred older completion. Shared daily notes do not merge independent account routine facts.</div>${(entries.pre_market_days||[]).map(d=>`<div class="row-between" style="padding:8px"><span>${U.esc(d.date)} · workflow ${d.workflow?.complete===true?'complete':d.workflow?.complete===false?'incomplete':'unknown'} · prepared ${d.prepared===true?'yes':d.prepared===false?'no':'unknown'} · ${U.esc(d.cohort_basis||d.basis)}</span><button class="btn xs ghost" data-routine-day="${U.esc(d.date)}">Review routine fact</button></div>`).join('')||'<div class="empty">No observed routine days; missing history is unknown, not skipped.</div>'}`;
+        routineDays.querySelectorAll('[data-routine-day]').forEach(b=>b.addEventListener('click',()=>openEditor(b.dataset.routineDay,root)));listCol.appendChild(routineDays);listCol.appendChild(Views.routine.reportCard(outcomes.report));
+      }
       layout.appendChild(listCol);
 
       /* goals column */
@@ -162,6 +167,13 @@
         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+    let routineDirty=false;
+    if(Views.routine){
+      body.prepend(Views.routine.dayCard(day.pre_market||{}));
+      const flag=day.pre_market?.self_report?.done??(day.pre_market?.basis==='self_reported'?day.pre_market.done:null),selection=U.h('label',{class:'field'});
+      selection.innerHTML=`<span>Daily routine completion — explicit self-report (never workflow permission)</span><select id="j-pre-market"><option value="" ${flag===null?'selected':''}>Unknown / not recorded</option><option value="true" ${flag===true?'selected':''}>Completed — my self-report</option><option value="false" ${flag===false?'selected':''}>Not completed — my self-report</option></select><div class="field-note">Current account only, separate from the shared daily note and actual ordered/timed workflow. Unrelated note edits preserve this flag/source/time. Retrospective self-report cannot rewrite first-entry/on-time evidence.</div>`;
+      U.$('#j-pre-market',selection).addEventListener('change',()=>{routineDirty=true;});body.prepend(selection);
+    }
     body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
     if(Views.lossWritingCard)body.appendChild(Views.lossWritingCard({pending:(day.loss_reflections||[]).filter(r=>r.completed_at===null),pending_count:(day.loss_reflections||[]).filter(r=>r.completed_at===null).length}));
     body.appendChild(Views.guardrailHistory(day.guardrail_events || []));
@@ -170,12 +182,13 @@
       actions: [{ label: 'Cancel', ghost: true }, {
         label: 'Save review', primary: true, onClick: async (close) => {
           const payload = {
-            entry_date: dateISO,
+            entry_date: dateISO,account_id:Store.accountId,
             market_bias: U.$('#j-bias', body).value, mood: U.$('#j-mood', body).value || null, energy: U.$('#j-energy', body).value || null,
             focus: U.$('#j-focus', body).value, plan: U.$('#j-plan', body).value, review: U.$('#j-review', body).value,
             lessons: U.$('#j-lessons', body).value, tomorrow: U.$('#j-tomorrow', body).value,
             screen_time_minutes: U.$('#j-screen', body).value || null,
           };
+          if(routineDirty){const v=U.$('#j-pre-market',body).value;payload.pre_market_done=v===''?null:v==='true';}
           try { await API.post('/journal', payload); close(); global.App.toast('Review saved', 'ok'); global.App.refresh(); }
           catch (err) { global.App.toast(err.message, 'err'); }
         },

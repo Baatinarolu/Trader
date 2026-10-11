@@ -1,6 +1,30 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
-## Current M84/M85 status — 2026-10-11
+## Current M14/M64/M94 routine follow-through — 2026-10-11
+
+**132:87 done /3 partial /42 todo /0 no-action**, exact eight groups. M14/M64/M94
+complete together; M108 **PARTIAL** for the mandatory routine15-minute timer only,
+not the broader Sanctuary/toolkit. **321/0 across10 new probes**, no inherited
+prerequisite adapters. Explicit own HH:MM/IANA schedule, frozen cycle/reset inclDST,
+calendar→own plan→human charts/alert→server-running-time15m→FOUR morning checks;
+selectable meditation-first variant uses only the known partial bonus +Ep17 steps.
+Actual persistent shell banner, owned workflow/diary/report UI, nullable human
+self-report distinct from automatic workflow and on-time/first-entry preparation.
+Late completion/typed exceptions/edits/deletion do not rewrite first admissions or
+refund old guards. Descriptive UTC close-day daily realised P&L, unknown distinct,
+no missing-net zero/causation/risk tuning. [Report](M14-M64-M94-ROUTINE.md).
+Original inherited597/155/21completed-nonzero plus1UI timeout/aborts retained;
+**828/0** only under DECLARED new-prerequisite isolation (NOT integrated routine
+proof). Native raw current API aborts on missing preparation; bots202/4. Parent and
+DECLARED actual-module synthetic preparation fixture API121/0,bots206/0,23synthetic
+parity fills/0mismatches, unchanged thresholds. Changed cohort is not edge. Smoke
+22/22,0style/console,8canvas limits; completed log after tool timeout, exit unobserved.
+M89/M106/M111/M112 stay open; morning confirmations are not the separate fresh
+in-session gate, calendar review not feed clearance, clock not actual meditation.
+M30/M103/M108 partial; all42TODOs retained. Next M86 loss-drill workflow, then M87–M89
+capture/provenance in mechanism order. No70%/target shrink or production/broker claim.
+
+## Historical M84/M85 status — 2026-10-11
 
 **132:84 done/2partial/46todo/0no-action**, exact eight groups. Optional manual
 time marker +required post-loss/core-journal writing complete.244/0 new checks;

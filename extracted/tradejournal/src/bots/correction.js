@@ -534,6 +534,22 @@ async function dailyState(userId, { accountId = null, store = db, nowMs = Date.n
     daily.status='stop';daily.permission={allowed:false,can_override:true,state:'stopped'};
     daily.message='Stand down: '+daily.breaches.map(b=>b.detail).join(' ');
   }
+  // M64: real selected-window preparation is distinct from journal self-reports,
+  // fresh in-session emotion/news/hours, and the optional M84 warning. Known
+  // unfinished preparation has the existing one-action reason friction. Any
+  // new storage/clock/provenance uncertainty stays unwaivable, WITHOUT hiding
+  // independently known older cap/count/loss-clock observations above.
+  try { daily.routine=await require('../routine').current(userId,{account,store,nowMs}); }
+  catch {
+    await Guards.observe(store,userId,daily);
+    return {...daily,status:'unknown',routine:{state:'unknown',complete:null,message:'Routine state could not be verified.'},
+      permission:{allowed:false,can_override:false,state:'unavailable'},message:'Pre-market routine storage, clock or step provenance could not be verified. Repair/retry before new execution; honest records and closes remain legal.'};
+  }
+  if(daily.status!=='unknown'&&!daily.routine.complete){
+    daily.breaches.push({rule:'pre_market_routine',cycle_id:daily.routine.cycle?.id||null,next_step:daily.routine.next_step,detail:daily.routine.message});
+    daily.status='stop';daily.permission={allowed:false,can_override:true,state:'stopped'};
+    daily.message='Stand down: '+daily.breaches.map(b=>b.detail).join(' ');
+  }
   await Guards.retainState(store,userId,daily);
   await Guards.observe(store,userId,daily);
   return daily;

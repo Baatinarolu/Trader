@@ -1,0 +1,28 @@
+diff --git a/src/routine.js b/src/routine.js
+index 4fad93b..6740906 100644
+--- a/src/routine.js
++++ b/src/routine.js
+@@ -33,13 +33,19 @@ function boundaries(cfg,nowMs=Date.now()){
+   for(const n of [-1,0,1]){const date=addDay(today,n),window=windowAt(date,cfg.routine_window_start,cfg.routine_timezone),reset=window-cfg.routine_lead_minutes*60000,next=windowAt(addDay(date,1),cfg.routine_window_start,cfg.routine_timezone)-cfg.routine_lead_minutes*60000;if(nowMs>=reset&&nowMs<next)return {cycle_date:date,rule_date:dayKey(window),reset_at:new Date(reset).toISOString(),window_at:new Date(window).toISOString(),expires_at:new Date(next).toISOString()};}
+   throw RR.input('Routine cycle boundary could not be resolved.',503);
+ }
+-function validateCycle(row,nowMs){clock(nowMs);const cfg=config({routine_window_start:row.window_start,routine_timezone:row.timezone,routine_lead_minutes:row.lead_minutes,routine_order:row.step_order}),reset=msOf(row.reset_at),end=msOf(row.expires_at),selected=msOf(row.selected_at),window=msOf(row.window_at);
+-  if(!Number.isFinite(reset)||!Number.isFinite(end)||!Number.isFinite(selected)||!Number.isFinite(window)||selected>nowMs||selected<reset||selected>=end||!(reset<=nowMs&&nowMs<end)||reset>=window||window>=end||dayKey(window)!==row.rule_date)throw RR.input('Stored routine cycle is unavailable.',503);
+-  const expected=boundaries(cfg,nowMs);if(['cycle_date','rule_date','reset_at','window_at','expires_at'].some(k=>row[k]!==expected[k]))throw RR.input('Stored routine boundary is unavailable.',503);return cfg;
++function validateCycle(row,nowMs,{active=true}={}){
++  clock(nowMs);let cfg;try{cfg=config({routine_window_start:row.window_start,routine_timezone:row.timezone,routine_lead_minutes:row.lead_minutes,routine_order:row.step_order});}catch{throw RR.input('Stored routine policy is unavailable.',503);}
++  const reset=msOf(row.reset_at),end=msOf(row.expires_at),selected=msOf(row.selected_at),window=msOf(row.window_at);
++  if(cfg.routine_window_start===null||!Number.isFinite(reset)||!Number.isFinite(end)||!Number.isFinite(selected)||!Number.isFinite(window)||selected>nowMs||selected<reset||selected>=end||(active&&!(reset<=nowMs&&nowMs<end))||reset>=window||window>=end||dayKey(window)!==row.rule_date)throw RR.input('Stored routine cycle is unavailable.',503);
++  // Validate the frozen boundary even when a corrupt row would be excluded by
++  // an active-range SQL query. Never silently create a replacement known cycle.
++  const expected=boundaries(cfg,window);if(['cycle_date','rule_date','reset_at','window_at','expires_at'].some(k=>row[k]!==expected[k]))throw RR.input('Stored routine boundary is unavailable.',503);return cfg;
+ }
+ async function current(userId,{accountId=null,account=null,store=db,nowMs=Date.now()}={}){
+   clock(nowMs);const acc=account||await RR.owned(store,userId,accountId),at=new Date(nowMs).toISOString();
+-  let row=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? AND reset_at<=? AND expires_at>? ORDER BY reset_at DESC LIMIT 1').get(userId,acc.id,at,at);
++  const last=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? ORDER BY id DESC LIMIT 1').get(userId,acc.id);
++  if(last)validateCycle(last,nowMs,{active:false});
++  let row=last&&msOf(last.reset_at)<=nowMs&&nowMs<msOf(last.expires_at)?last:null;
+   if(!row){const cfg=config(acc);if(cfg.routine_window_start===null)return {account_id:acc.id,state:'setup_required',complete:false,cycle:null,order:ORDERS[cfg.routine_order],steps:[],next_step:'setup',message:'Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.',scope:'Personal preparation requirement, not broker-hours or market permission'};
+     const b=boundaries(cfg,nowMs);await store.prepare(`INSERT OR IGNORE INTO routine_cycles(user_id,account_id,cycle_date,rule_date,timezone,window_start,lead_minutes,step_order,reset_at,window_at,expires_at,selected_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(userId,acc.id,b.cycle_date,b.rule_date,cfg.routine_timezone,cfg.routine_window_start,cfg.routine_lead_minutes,cfg.routine_order,b.reset_at,b.window_at,b.expires_at,at);
+     row=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? AND reset_at=?').get(userId,acc.id,b.reset_at);

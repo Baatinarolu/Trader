@@ -1,0 +1,20 @@
+FAIL corrupt persisted reset_at cannot silently mint fresh known cycle {"status":200,"rows":2}
+FAIL corrupt persisted reset_at cannot silently mint fresh known cycle {"status":200,"rows":2}
+ok corrupt persisted expires_at cannot silently mint fresh known cycle
+ok corrupt persisted window_at cannot silently mint fresh known cycle
+ok corrupt persisted selected_at cannot silently mint fresh known cycle
+ok corrupt persisted cycle_date cannot silently mint fresh known cycle
+ok corrupt persisted rule_date cannot silently mint fresh known cycle
+FAIL corrupt persisted timezone cannot silently mint fresh known cycle {"status":400,"rows":1}
+ok client completion timestamps rejected, not silently accepted
+ok ordinary strict real step still works in contracts cohort
+ok stored acknowledgement missing source/payload is503
+ok persisted out-of-order step cannot satisfy workflow
+ok timer state alone not a completed meditation acknowledgement
+ok stored coercive four-question Boolean record503
+FAIL server clock rollback before cycle selection is unverified503 200
+ok timer-complete acknowledgement driver error returns503
+ok failed acknowledgement rolls back speculative timer completed state
+ok retry after storage repair completes timer without invented/short time
+ok completion-row failure rolls back check-in acknowledgement/attempt as one transaction
+M64 routine contracts: 15 passed, 4 failed

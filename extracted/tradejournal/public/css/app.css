@@ -558,3 +558,17 @@ fieldset,legend{border-color:var(--border)}
 /* M79/M80: a grey KNOWN stop opens the reason dialog. Unavailable checks are
  * actually disabled and cannot be overridden. Server admission remains binding. */
 .btn.guardrail-stop { background: var(--bg-3); color: var(--muted-2); border-color: var(--border); border-style: dashed; }
+
+/* Persistent pre-market banner is shell-owned, never dismissed by navigation. */
+.routine-banner{position:sticky;top:47px;z-index:29;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--bg-2);border-bottom:2px solid var(--warn,#e7b769);box-shadow:0 4px 12px rgba(0,0,0,.18)}
+.routine-banner[hidden]{display:none}
+.routine-banner-copy{min-width:0;overflow-wrap:anywhere}
+.routine-banner.routine-unknown{border-bottom-color:var(--neg,#f27d91)}
+.routine-step-list{padding-left:20px;margin:12px 0}.routine-step-list li{margin:7px 0}
+.routine-step-list .chip{margin-left:8px}.routine-step-form{margin-top:15px}
+.routine-schedule{border:1px solid var(--border);border-radius:8px;padding:12px;margin:14px 0}.routine-schedule legend{font-weight:600;font-size:.82rem;padding:0 6px}
+.routine-plan-preview{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.78rem;margin:0 0 8px}
+.routine-timer-clock{font:600 1.15rem var(--mono,monospace);padding:12px 0}
+.routine-day-card{border:1px solid var(--border);border-radius:8px;padding:12px;margin:12px 0}
+.routine-report{margin-top:14px}.routine-report th{white-space:normal}
+@media(max-width:700px){.routine-banner{position:relative;top:auto;align-items:flex-start;padding:10px;flex-wrap:wrap}.routine-schedule .form-grid{grid-template-columns:1fr!important}}

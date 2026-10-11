@@ -1,0 +1,987 @@
+diff --git a/README.md b/README.md
+index d130e9d..ce03d77 100644
+--- a/README.md
++++ b/README.md
+@@ -274,6 +274,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
+ 
+ Guides: [docs/BOTS.md](docs/BOTS.md) · [docs/PLAYLIST-CURRICULUM.md](docs/PLAYLIST-CURRICULUM.md)
+ 
++## Pre-market routine (M14/M64/M94)
++
++Use the **Routine** button in the header, or **Settings → Accounts → Edit rules**,
++to select your own local trading-window start, an explicit IANA timezone and a
++reset lead (1–180 minutes; Ep17 default60). No venue/broker hour is inferred.
++An unfinished/setup-required routine keeps a banner across all pages. The default
++steps are **calendar → own plan → chart/range, daily bias and alert report →
++15-minute meditation/breathwork → four morning questions**. Meditation-first is
++an explicit variant from the available bonus excerpt, not a claimed full bonus
++workflow. The other known Ep17 steps remain. Policy and acknowledgments freeze
++for the active cycle; edits take effect after its saved reset, including across
++restart/midnight. DST uses the earlier repeated time and shifts a nonexistent
++clock forward by the gap. This is not allowed-hour/broker-session enforcement.
++
++The timer verifies only **server running time** between start/resume and pause/
++completion, not actual meditation/focus. A running marker continues when the page
++closes and survives restart; an explicit pause does not count. Human calendar and
++chart/alert acknowledgments are not live provider clearance or order authority.
++All FOUR morning answers must be explicit yes; no answers are retained and leave
++the routine unfinished. They are not a fresh in-session/per-entry mental-state gate.
++
++Known incomplete preparation uses the existing one-action typed-reason exception;
++unknown/corrupt data cannot be waived. Truthful close/correction/history/import/
++record-only writes remain legal. Completing a routine, editing its policy or
++correcting/deleting a journal never refunds other caps/loss clocks or rewrites an
++actual first-entry preparation snapshot. Late completion is shown as late.
++
++**Journal** shows actual workflow completion, on-time preparation and separately
++labelled nullable daily self-reports. Unrelated notebook edits preserve the human
++flag/source/time. Workflow and self-report are not interchangeable permission.
++The **routine vs daily realised P&L** table uses UTC close-day daily totals with
++completed/not-completed/unknown groups and evidence basis; unknown P&L is not zero.
++It is descriptive only, not causal proof, per-trade overnight attribution or an
++instruction to resize/change strategy. No older completion is fabricated.
++
++M108 is **partial**: this mandatory routine timer is not the full Sanctuary presets,
++ambient audio, intention, toolkit or independent session-log/progress feature.
++M89 capture provenance, M106 fresh in-session questions, M111 fail-closed news and
++M112 allowed hours remain open. See [docs/GUARDRAILS.md](docs/GUARDRAILS.md) and
++[docs/API.md](docs/API.md#pre-market-routine).
++
+ ## Docs
+ 
+ * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.
+diff --git a/docs/API.md b/docs/API.md
+index 4475db3..d2a4cf7 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -383,3 +383,51 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
+ | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
+ | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
+ | `DELETE /api/chart/drawings?symbol=…&tf=…` | clears that market |
++
++
++## Pre-market routine
++
++All endpoints are authenticated and owned-account scoped. Account POST/PUT adds
++`routine_window_start` (nullable explicit local HH:MM), `routine_timezone`
++(nullable IANA, required with a window; numeric offsets are not IANA),
++`routine_lead_minutes` (integer1–180, default60), `routine_order` (`ep17` default
++or `meditation_first`). No account broker/session field infers a window. Active
++cycle policy/steps freeze until saved expiry, then future settings are adopted.
++
++| Method | Path | Body / response |
++|---|---|---|
++| GET | `/routine?account_id=…` | `routine`: setup-required/pending/complete; immutable cycle/reset/window/expiry, selected order/steps, timer/current next step. Storage/clock/provenance fault503, never a cached permit |
++| POST | `/routine/step` | `{account_id,cycle_id,step,…}` literal human acknowledgments below. Actual current cycle/selected order required; stale/out-of-order409; cannot supply completed-at/complete/client timer proof |
++| POST | `/routine/meditation` | `{account_id,cycle_id,action:"start"/"pause"/"resume"/"complete"}` only. Server running-time15m; too early409, clock/client elapsed/start fields400; pause gaps excluded. No actual mental/meditation claim |
++| GET | `/routine/daily/:date?account_id=…` | Valid UTC YYYY-MM-DD, nullable daily `pre_market`: actual workflow `done`, separately labelled `self_report`, `workflow`, immutable `first_admission`, nullable `prepared`, `cohort_basis`. No historical backfill |
++| GET | `/routine/report?account_id=…&from=…&to=…` | Descriptive UTC close-day realised daily P&L buckets completed/not-completed/unknown, known/unavailable P&L counts and daily evidence; NOT causation/strategy-sizing permission |
++| POST | `/journal` | Existing note fields +owned `account_id`,`entry_date`; optionally `pre_market_done` must be literal true/false/null. Omit on unrelated note edits to preserve human flag/source/time. Retrospective human flag never satisfies workflow/admission. Future actual done/skipped400 |
++| GET | `/journal` or `/journal/:date` | `pre_market_days` / `pre_market` workflow +daily evidence beside separate core closed-trade journal completeness |
++
++Step payloads (with actual current owned account/cycle):
++
++- `calendar`: `{reviewed:true,method:"manual_external",summary:"What I actually reviewed"}`.
++  Human external-calendar review, not verified provider/no-news clearance.
++- `plan`: `{reviewed:true,plan_id:123}` selects an **owned strategy/playbook**,
++  snapshots current server fields/version at acknowledgment; or
++  `{reviewed:true,plan_text:"My actual manual plan"}`. No foreign snapshot.
++- `charts`: `{reviewed:true,daily_bias:"bullish"/"bearish"/"neutral",htf_range:"…",
++  alert_status:"set"/"not_applicable",alert_note:"Location or why not applicable"}`.
++  Human report, not OHLC/order authority. Unset/missing report cannot complete.
++- `meditation`: only the timer endpoint completes this step, not `/routine/step`.
++- `check_in`: `{calm:true/false,clear:true/false,following_plan:true/false,
++  would_take_if_up_big:true/false}`. All four literal Booleans required; any false
++  attempt is retained but unfinished. Once-per-routine morning human answers,
++  **not** the separate fresh in-session/per-entry mental-state gate.
++
++Known incomplete/setup-required preparation contributes `pre_market_routine`
++with the existing personal409 `guardrail_stop` /fresh one-action typed reason.
++Reasoned exception never completes steps or refunds other caps/clocks. Unknown/
++corrupt/unavailable routine evidence contributes unwaivable503. All actual new
++entry/reopen/save/copy consumers recheck server state; technical veto never revived.
++Truthful close/correction/deletion/history/record-only/import remains legal.
++First **executed trade** preparation commits atomically with the entry, not saved
++research plans, and survives journal edits/deletion independently. Late completion
++or a human flag cannot rewrite its original preparation basis. Current done and
++on-time/before-first-entry prepared are different facts. Neither is broker activity,
++a live emotional/feed clearance or proof of a profitable causal effect.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index 9ff4e0e..b6556fc 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -204,12 +204,77 @@ are retained even while the new writing state is unavailable.
+ 
+ **"Core complete" is deliberately scoped to the fields above.** It does not claim
+ all course screenshots/confluences/timing/routine/state checks are implemented.
+-M87/M88/M89/M94/M106 and all other unresolved findings stay visible in the ledger.
++M87/M88/M89/M106 and all other unresolved findings stay visible. M94 is now separately implemented with the actual M64 workflow; core trade writing alone does not satisfy it.
++
++## Pre-market routine and daily preparation evidence (M14/M64/M94)
++
++The **Routine** header button and account rules choose an explicit local HH:MM
++window, IANA timezone, lead1–180 minutes (default60) and `ep17` or
++`meditation_first` order. Default account/legacy hour and timezone are NULL:
++setup-required is a **known preparation stop**, not an invented broker session.
++An active cycle freezes its local/UTC date, policy, reset/window/next-reset,
++server selection and steps until its saved expiry. Changes apply after that;
++a midnight UTC rollover is not necessarily the local reset. DST folds select
++the earlier occurrence; a missing civil clock shifts forward by the gap.
++Invalid/future/contradictory stored metadata cannot silently create a replacement
++known cycle. Broker hours and allowed-hours enforcement are separate/open.
++
++Ep17 default: **calendar → own plan → charts/bias/alert → meditation → morning
++check-in**. Calendar is actual human external-review acknowledgment with text,
++never machine/live-feed no-news clearance. Plan snapshots the owner's selected
++playbook at server acknowledgment, or their explicit manual plan text. Charts/
++range, daily bias and set/not-applicable alert explanation are human reports,
++not OHLC or broker-order authority. A checkbox cannot complete the whole routine.
++
++The meditation step requires15 minutes of server **running time**. Start/resume
++set the server clock; pause freezes accumulated active time; paused gaps do not
++count. Completion rechecks actual duration transactionally, not a client clock/
++elapsed flag. A running timer survives process/page closure; it does not verify
++actual meditation, breathing, focus or mental state. Out-of-order and stale-cycle
++submissions are refused. The explicit meditation-first variant keeps the other
++known Ep17 steps: only1/6 bonus was captured, so its remaining sequence is not
++claimed. Every workflow ends with FOUR literal human morning answers: calm,
++clear, following my plan, would take it if already up big. “No” attempts persist
++but do not finish; these are not M106's fresh in-session/per-entry questions.
++
++The shell-owned banner persists across pages until all current steps are
++acknowledged. It polls server state, reappears at the saved reset and cannot reuse
++an older account's async response/completion. Unknown read/clock/step data stays
++visible and **unwaivable**. Setup/incomplete is a known personal stop, with the
++existing **fresh one-action typed reason**. A reason neither completes steps nor
++unlocks the next action/technical veto. Routine completion resolves only its own
++stop; it never refunds independent trade/profit/loss/streak latches or loss clocks.
++Even the first check that finds routine uncertainty retains known old observations.
++Truthful closes/corrections/deletion/record-only/import/history remain legal.
++
++### Daily facts and descriptive comparison
++
++The existing shared one-note-per-user/day notebook has nullable `pre_market_done`
++with source/capture time. Independent user/account/UTC-date self-report rows avoid
++colliding account flags. Automatic workflow facts are separate: Journal shows
++current completion, deadline/on-time status and a frozen **first actual executed
++trade admission** observation. Saved research plans/blocked attempts/record-only
++imports do not create such execution facts. This observation has no trade foreign
++key, so honest trade deletion/correction cannot erase or reclassify it. It commits
++with the actual entry; capture failure rolls back the trade/admission together.
++Later completion—even before the window—and manual true cannot rewrite an earlier
++not-prepared entry. Current workflow-done can therefore be true while prepared is
++false. Unrecorded/unknown is never automatically skipped, done or backfilled.
++
++The Journal comparison groups **UTC close-day realised daily P&L**, not trade-
++weighted means or floating P&L. First-executed-admission evidence takes precedence,
++otherwise selected-window deadline workflow, otherwise labelled self-report or
++unknown. Before an unfinished deadline with no entry, preparation is unknown.
++Missing net P&L makes that day unavailable, not zero; known/unavailable counts and
++per-day evidence basis are shown. Overnight entries can close on a different day:
++this does **not** attribute each trade to its own entry routine. Small/selected
++samples, human/retrospective reports and close-day association do not establish
++causation or justify risk sizing, strategy changes or a win-rate promise.
+ 
+ ## Scope still open
+ 
+-M94's pre-market routine (paired with M64/M14 and the M108 meditation step),
+-M111's news fail-closed policy, M112's time restrictions, M89's verified emotion
++M108's full Sanctuary presets/ambient/intention/toolkit/independent session log
++and progress remain partial beyond this routine timer. M111's news fail-closed policy, M112's time restrictions, M89's verified emotion
+ capture timing, M106's four-question state gate and all other unresolved findings
+ stay open. **Correction:** M116 is already classified APPLIED in the ledger; the
+ prior guide/summaries incorrectly listed it open. No new closure/retuning is counted.
+diff --git a/public/css/app.css b/public/css/app.css
+index 591846e..877c80b 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -558,3 +558,17 @@ fieldset,legend{border-color:var(--border)}
+ /* M79/M80: a grey KNOWN stop opens the reason dialog. Unavailable checks are
+  * actually disabled and cannot be overridden. Server admission remains binding. */
+ .btn.guardrail-stop { background: var(--bg-3); color: var(--muted-2); border-color: var(--border); border-style: dashed; }
++
++/* Persistent pre-market banner is shell-owned, never dismissed by navigation. */
++.routine-banner{position:sticky;top:47px;z-index:29;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--bg-2);border-bottom:2px solid var(--warn,#e7b769);box-shadow:0 4px 12px rgba(0,0,0,.18)}
++.routine-banner[hidden]{display:none}
++.routine-banner-copy{min-width:0;overflow-wrap:anywhere}
++.routine-banner.routine-unknown{border-bottom-color:var(--neg,#f27d91)}
++.routine-step-list{padding-left:20px;margin:12px 0}.routine-step-list li{margin:7px 0}
++.routine-step-list .chip{margin-left:8px}.routine-step-form{margin-top:15px}
++.routine-schedule{border:1px solid var(--border);border-radius:8px;padding:12px;margin:14px 0}.routine-schedule legend{font-weight:600;font-size:.82rem;padding:0 6px}
++.routine-plan-preview{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.78rem;margin:0 0 8px}
++.routine-timer-clock{font:600 1.15rem var(--mono,monospace);padding:12px 0}
++.routine-day-card{border:1px solid var(--border);border-radius:8px;padding:12px;margin:12px 0}
++.routine-report{margin-top:14px}.routine-report th{white-space:normal}
++@media(max-width:700px){.routine-banner{position:relative;top:auto;align-items:flex-start;padding:10px;flex-wrap:wrap}.routine-schedule .form-grid{grid-template-columns:1fr!important}}
+diff --git a/public/index.html b/public/index.html
+index 7ed122b..5560dda 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -36,6 +36,7 @@
+ <script src="/js/views/risk.js?v={{V}}"></script>
+ <script src="/js/views/market.js?v={{V}}"></script>
+ <script src="/js/views/settings.js?v={{V}}"></script>
++<script src="/js/views/routine.js?v={{V}}"></script>
+ <script src="/js/app.js?v={{V}}"></script>
+ </body>
+ </html>
+diff --git a/public/js/app.js b/public/js/app.js
+index 6081139..2c26329 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -133,14 +133,18 @@
+         <select id="range-switch" style="width:auto">
+           ${[['30d', 'Last 30 days'], ['7d', 'Last 7 days'], ['90d', 'Last 90 days'], ['mtd', 'Month to date'], ['ytd', 'Year to date'], ['all', 'All time'], ['custom', 'Custom range…']].map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}
+         </select>
++        <button class="btn sm" id="top-routine">Routine</button>
+         <button class="btn sm" id="top-new">+ Trade</button>`;
+       main.appendChild(top);
++      const routineSlot=U.h('section',{id:'routine-banner','aria-live':'polite'});main.appendChild(routineSlot);
+       const content = U.h('main', { class: 'content', id: 'content' });
+       main.appendChild(content);
+       shell.appendChild(main);
+       app.appendChild(shell);
++      if(Views.routine)Views.routine.mount(routineSlot);
+ 
+       U.$('#side-new', side).addEventListener('click', () => this.openTrade(null));
++      U.$('#top-routine',top).addEventListener('click',()=>Views.routine?.open());
+       U.$('#top-new', top).addEventListener('click', () => this.openTrade(null));
+       U.$('#user-chip', side).addEventListener('click', () => this.go('settings'));
+       const buildEl = U.$('#build-tag', side);
+@@ -149,7 +153,7 @@
+         const stamp = /^[0-9a-z]{4,}$/i.test(raw) ? raw : '';
+         if (stamp) buildEl.textContent = 'build ' + stamp + ' · UI v2';
+       }
+-      U.$('#account-switch', top).addEventListener('change', (e) => { Store.setAccount(e.target.value); Store.invalidate(); this.refresh(); });
++      U.$('#account-switch', top).addEventListener('change', (e) => { Store.setAccount(e.target.value); Store.invalidate(); if(Views.routine)Views.routine.refresh(); this.refresh(); });
+       U.$('#range-switch', top).addEventListener('change', (e) => {
+         const v = e.target.value;
+         if (v === 'custom') {
+@@ -236,6 +240,8 @@
+       skeleton.innerHTML = '<div class="skeleton" style="height:220px;margin-bottom:14px"></div><div class="skeleton" style="height:320px"></div>';
+       content.replaceChildren ? content.replaceChildren(skeleton) : (content.innerHTML = skeleton.innerHTML);
+       try {
++        if(Views.routine)await Views.routine.refresh();
++        if(token!==this._renderToken)return;
+         await view.render(content);
+         if (token !== this._renderToken) return;      // superseded while we were awaiting
+         Store.booted && this.updateSidebarStats();
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 1e75de3..3d9fdc6 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -6,7 +6,7 @@
+   Views.journal = {
+     title: 'Journal',
+     async render(root) {
+-      const [entries, goals] = await Promise.all([API.get('/journal',{account_id:Store.accountId}), API.get('/goals')]);
++      const [entries, goals,outcomes] = await Promise.all([API.get('/journal',{account_id:Store.accountId}), API.get('/goals'),API.get('/routine/report',{account_id:Store.accountId}).catch(()=>({report:{state:'unknown'}}))]);
+       root.innerHTML = '';
+       const layout = U.h('div', { class: 'grid g-2-1' });
+       root.appendChild(layout);
+@@ -50,6 +50,11 @@
+         ${(entries.guardrail_days || []).map(d=>`<div class="row-between" style="padding:8px"><span class="mono">${U.esc(d.rule_date)} · ${d.events} events · ${d.overrides || 0} overrides</span><button class="btn xs ghost" data-open="${U.esc(d.rule_date)}">Review rules & reasons</button></div>`).join('') || '<div class="empty">No stops captured yet. Older violations are not inferred or backfilled.</div>'}`;
+       captured.addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(b)openEditor(b.dataset.open,root);});
+       listCol.appendChild(captured);
++      if(Views.routine){
++        const routineDays=U.h('div',{class:'card',style:'margin-top:14px'});
++        routineDays.innerHTML=`<div class="card-head"><h3>Recorded pre-market routine days (UTC)</h3></div><div class="tiny muted">Actual workflow and separately labelled self-reports, not inferred older completion. Shared daily notes do not merge independent account routine facts.</div>${(entries.pre_market_days||[]).map(d=>`<div class="row-between" style="padding:8px"><span>${U.esc(d.date)} · workflow ${d.workflow?.complete===true?'complete':d.workflow?.complete===false?'incomplete':'unknown'} · prepared ${d.prepared===true?'yes':d.prepared===false?'no':'unknown'} · ${U.esc(d.cohort_basis||d.basis)}</span><button class="btn xs ghost" data-routine-day="${U.esc(d.date)}">Review routine fact</button></div>`).join('')||'<div class="empty">No observed routine days; missing history is unknown, not skipped.</div>'}`;
++        routineDays.querySelectorAll('[data-routine-day]').forEach(b=>b.addEventListener('click',()=>openEditor(b.dataset.routineDay,root)));listCol.appendChild(routineDays);listCol.appendChild(Views.routine.reportCard(outcomes.report));
++      }
+       layout.appendChild(listCol);
+ 
+       /* goals column */
+@@ -162,6 +167,13 @@
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    let routineDirty=false;
++    if(Views.routine){
++      body.prepend(Views.routine.dayCard(day.pre_market||{}));
++      const flag=day.pre_market?.self_report?.done??(day.pre_market?.basis==='self_reported'?day.pre_market.done:null),selection=U.h('label',{class:'field'});
++      selection.innerHTML=`<span>Daily routine completion — explicit self-report (never workflow permission)</span><select id="j-pre-market"><option value="" ${flag===null?'selected':''}>Unknown / not recorded</option><option value="true" ${flag===true?'selected':''}>Completed — my self-report</option><option value="false" ${flag===false?'selected':''}>Not completed — my self-report</option></select><div class="field-note">Current account only, separate from the shared daily note and actual ordered/timed workflow. Unrelated note edits preserve this flag/source/time. Retrospective self-report cannot rewrite first-entry/on-time evidence.</div>`;
++      U.$('#j-pre-market',selection).addEventListener('change',()=>{routineDirty=true;});body.prepend(selection);
++    }
+     body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
+     if(Views.lossWritingCard)body.appendChild(Views.lossWritingCard({pending:(day.loss_reflections||[]).filter(r=>r.completed_at===null),pending_count:(day.loss_reflections||[]).filter(r=>r.completed_at===null).length}));
+     body.appendChild(Views.guardrailHistory(day.guardrail_events || []));
+@@ -170,12 +182,13 @@
+       actions: [{ label: 'Cancel', ghost: true }, {
+         label: 'Save review', primary: true, onClick: async (close) => {
+           const payload = {
+-            entry_date: dateISO,
++            entry_date: dateISO,account_id:Store.accountId,
+             market_bias: U.$('#j-bias', body).value, mood: U.$('#j-mood', body).value || null, energy: U.$('#j-energy', body).value || null,
+             focus: U.$('#j-focus', body).value, plan: U.$('#j-plan', body).value, review: U.$('#j-review', body).value,
+             lessons: U.$('#j-lessons', body).value, tomorrow: U.$('#j-tomorrow', body).value,
+             screen_time_minutes: U.$('#j-screen', body).value || null,
+           };
++          if(routineDirty){const v=U.$('#j-pre-market',body).value;payload.pre_market_done=v===''?null:v==='true';}
+           try { await API.post('/journal', payload); close(); global.App.toast('Review saved', 'ok'); global.App.refresh(); }
+           catch (err) { global.App.toast(err.message, 'err'); }
+         },
+diff --git a/public/js/views/routine.js b/public/js/views/routine.js
+new file mode 100644
+index 0000000..615aef0
+--- /dev/null
++++ b/public/js/views/routine.js
+@@ -0,0 +1,124 @@
++/* M64 persistent, account-scoped pre-market workflow. Server facts only: local
++ * timer display is never a completion/admission proof. No verified mental/news
++ * state, broker activity, allowed-hour enforcement or full Sanctuary claim. */
++(function (global) {
++  'use strict';
++  const Views = global.Views = global.Views || {};
++  const NAMES = {calendar:'Review the economic calendar',plan:'Review your own trading plan',charts:'Review charts, daily bias and zone alert',meditation:'15-minute meditation / breathwork',check_in:'Four morning readiness questions'};
++  const truth = v => v === true ? 'Yes' : v === false ? 'No' : 'Unknown';
++  const money = v => v === null || v === undefined ? 'Unavailable' : U.moneySign(v);
++  const R = Views.routine = {
++    state:null, slot:null, sequence:0, timer:null,
++    async mount(slot) {
++      this.slot=slot;this.state=null;this.sequence++;if(this.timer)clearInterval(this.timer);
++      this.paint({state:'unknown',complete:null,message:'Checking this account’s routine…'});
++      this.timer=setInterval(()=>this.refresh(),15000);await this.refresh();
++    },
++    async refresh() {
++      if(!this.slot?.isConnected)return null;
++      const account=Number(Store.accountId),seq=++this.sequence;
++      if(this.state?.account_id!==account){this.state={state:'unknown',complete:null,message:'Checking the selected account…'};this.paint(this.state);}
++      try {
++        const d=await API.get('/routine',{account_id:account});
++        if(seq!==this.sequence || account!==Number(Store.accountId))return null;
++        if(!d.routine || d.routine.account_id!==account)throw new Error('Current account routine is unavailable.');
++        this.state=d.routine;this.paint(d.routine);this.updateTimer();return d.routine;
++      }catch(e){
++        if(seq!==this.sequence || account!==Number(Store.accountId))return null;
++        this.state={state:'unknown',complete:null,message:e.message};this.paint(this.state);this.updateTimer();return this.state;
++      }
++    },
++    paint(state) {
++      if(!this.slot)return;
++      const finished=state.state==='complete'&&state.complete===true&&!!state.cycle;
++      this.slot.hidden=finished;this.slot.className='routine-banner '+(state.state==='unknown'?'routine-unknown':'');
++      if(finished){this.slot.replaceChildren();return;}
++      const c=state.cycle;
++      this.slot.innerHTML=`<div class="routine-banner-copy"><b>Pre-market routine ${state.state==='unknown'?'unavailable':state.state==='setup_required'?'needs a schedule':'unfinished'}</b>
++        <div class="small">${U.esc(state.state==='unknown'?'No verified preparation state. An explanation cannot waive missing data.':state.message||'Complete every selected step before execution.')}</div>
++        <div class="tiny muted">${c?`${state.steps?.length||0} / ${state.order?.length||5} steps · ${U.esc(c.cycle_date)} · ${U.esc(c.window_start)} ${U.esc(c.timezone)} · reset ${U.esc(c.reset_at)} · `:''}Human confirmations + server timing, not live mental/news/broker permission.</div></div>`;
++      this.slot.appendChild(U.h('button',{class:'btn sm',id:'routine-continue',text:state.state==='unknown'?'Retry routine':state.state==='setup_required'?'Choose my window':'Continue routine',onclick:()=>state.state==='unknown'?this.refresh():this.open()}));
++    },
++    scheduleFields(account={}) {
++      const box=U.h('fieldset',{class:'routine-schedule'});
++      box.innerHTML=`<legend>My pre-market routine schedule</legend><div class="form-grid" style="grid-template-columns:1fr 1fr">
++        <label class="field"><span>My selected local window start</span><input type="time" id="r-window" value="${U.esc(account.routine_window_start||'')}" /><div class="field-note">Leave blank if not selected. No broker/trader hour is invented.</div></label>
++        <label class="field"><span>Explicit IANA timezone</span><input id="r-zone" value="${U.esc(account.routine_timezone||'')}" placeholder="e.g. Africa/Lagos" /></label>
++        <label class="field"><span>Lead / reset before window (minutes)</span><input id="r-lead" type="number" min="1" max="180" step="1" value="${U.esc(account.routine_lead_minutes??60)}" /></label>
++        <label class="field"><span>Selected step order</span><select id="r-order"><option value="ep17" ${account.routine_order!=='meditation_first'?'selected':''}>Ep17 — meditation last</option><option value="meditation_first" ${account.routine_order==='meditation_first'?'selected':''}>Meditation first — explicit variant</option></select></label>
++      </div><div class="field-note">Ep17 suggests one-hour lead and calendar → plan → charts → meditation. The partially captured bonus says 30–45 minutes lead and meditation first; its remaining order is unknown. This variant keeps the remaining known Ep17 steps. Both end with four morning human checks, not the separate in-session gate. Active cycles freeze until their saved reset; edits apply after that, never reset other rules. DST: earlier repeated clock / shift a nonexistent clock forward by the gap.</div>`;
++      return box;
++    },
++    collectSchedule(node) {
++      const start=U.$('#r-window',node).value,zone=U.$('#r-zone',node).value.trim(),lead=Number(U.$('#r-lead',node).value);
++      if(start&&!zone)throw new Error('Choose an explicit IANA timezone with your own window.');
++      if(!Number.isInteger(lead)||lead<1||lead>180)throw new Error('Routine lead must be whole minutes from 1 to 180.');
++      return {routine_window_start:start||null,routine_timezone:zone||null,routine_lead_minutes:lead,routine_order:U.$('#r-order',node).value};
++    },
++    openSchedule() {
++      const account=Store.account(),body=U.h('div');if(!account)return;
++      body.appendChild(this.scheduleFields(account));
++      global.App.modal({title:'Select my routine schedule',body,wide:true,actions:[{label:'Cancel',ghost:true},{label:'Save schedule',primary:true,onClick:async close=>{
++        try{const b=this.collectSchedule(body);await API.put('/accounts/'+account.id,b);await Store.load(true);close();await this.refresh();global.App.toast('Routine schedule saved. An active cycle keeps its original policy until reset.','ok');}
++        catch(e){global.App.toast(e.message,'err');}
++      }}]});
++    },
++    updateTimer() {
++      const el=U.$('#routine-timer-clock');if(!el)return;
++      const state=this.state,c=state?.cycle,match=state?.account_id===Number(el.dataset.account)&&c?.id===Number(el.dataset.cycle);
++      if(!match){el.textContent='State/reset/account changed. Close and reopen the current routine.';const finish=U.$('#routine-timer-complete');if(finish)finish.disabled=true;return;}
++      const ms=state.meditation?.elapsed_ms||0;
++      el.textContent=`${Math.floor(ms/60000)}:${String(Math.floor(ms/1000)%60).padStart(2,'0')} / 15:00 · ${state.meditation?.state||'unavailable'} (server running time)`;
++      const finish=U.$('#routine-timer-complete');if(finish)finish.disabled=ms<900000||!['running','paused'].includes(state.meditation?.state);
++    },
++    async open() {
++      const state=await this.refresh();if(!state)return;
++      if(state.state==='unknown'){global.App.toast('Routine data is unavailable; repair/retry, not a reason waiver.','err');return;}
++      if(state.state==='setup_required'){this.openSchedule();return;}
++      const account=state.account_id,cycle=state.cycle.id,step=state.next_step,body=U.h('div');
++      body.innerHTML=`<div class="small"><b>${U.esc(state.cycle.cycle_date)}</b> · window ${U.esc(state.cycle.window_start)} ${U.esc(state.cycle.timezone)} · ${U.esc(state.cycle.step_order)} · reset ${U.esc(state.cycle.reset_at)}</div>
++        <ol class="routine-step-list">${state.order.map(s=>`<li>${U.esc(NAMES[s])} <span class="chip ${state.steps.some(x=>x.step===s)?'pos':'warn'}">${state.steps.some(x=>x.step===s)?'Acknowledged':s===step?'Current':'Pending'}</span></li>`).join('')}</ol>
++        <div class="tiny muted">Preparation only. Manual calendar review is not live-feed no-news clearance. Chart bias/alert is your report, not an OHLC/broker order. Morning questions are not reusable in-session emotional permission.</div>`;
++      if(state.complete){body.appendChild(this.dayCard({workflow:{state:'complete',complete:true,completed_at:state.cycle.completed_at,completed_before_window:state.cycle.completed_before_window===1},prepared:null}));body.appendChild(U.h('button',{class:'btn sm',text:'Edit next-cycle schedule',onclick:()=>this.openSchedule()}));global.App.modal({title:'Routine complete',body,wide:true,actions:[{label:'Close',ghost:true}]});return;}
++      const form=U.h('div',{class:'routine-step-form'});body.appendChild(form);
++      if(step==='calendar')form.innerHTML='<label class="field"><span>What did you actually review in the external economic calendar?</span><textarea id="r-calendar-summary" rows="3" maxlength="4000"></textarea></label><label class="field"><span><input id="r-reviewed" type="checkbox" /> I reviewed the external calendar myself (human attestation, not machine clearance)</span></label>';
++      if(step==='plan'){
++        form.innerHTML=`<label class="field"><span>My owned plan / playbook</span><select id="r-plan"><option value="">Use my explicitly written manual plan</option>${Store.strategies.map(p=>`<option value="${p.id}">${U.esc(p.name)}</option>`).join('')}</select></label><pre id="r-plan-preview" class="routine-plan-preview"></pre><label class="field"><span>My manual plan (required if no owned playbook selected)</span><textarea id="r-plan-text" rows="4" maxlength="4000"></textarea></label><label class="field"><span><input id="r-reviewed" type="checkbox" /> I actually reviewed this plan; snapshot it at acknowledgment</span></label>`;
++        U.$('#r-plan',form).addEventListener('change',()=>{const p=Store.strategyById(Number(U.$('#r-plan',form).value));U.$('#r-plan-preview',form).textContent=p?`${p.name}\nEntry: ${p.entry_rules}\nExit: ${p.exit_rules}\nRisk: ${p.risk_rules}`:'';});
++      }
++      if(step==='charts')form.innerHTML='<label class="field"><span>My human daily-bias report</span><select id="r-bias"><option value="">Choose explicitly</option><option value="bullish">Bullish</option><option value="bearish">Bearish</option><option value="neutral">Neutral / no directional edge</option></select></label><label class="field"><span>Higher-timeframe range / chart review</span><textarea id="r-range" rows="3" maxlength="4000"></textarea></label><label class="field"><span>My zone alert report</span><select id="r-alert"><option value="">Choose explicitly</option><option value="set">I set the relevant alert</option><option value="not_applicable">Not applicable — explain why</option></select></label><label class="field"><span>Alert location / not-applicable reason (human report)</span><textarea id="r-alert-note" rows="2" maxlength="4000"></textarea></label><label class="field"><span><input id="r-reviewed" type="checkbox" /> I reviewed the charts/range and reported my bias/alert</span></label>';
++      if(step==='check_in')form.innerHTML=`<div class="small">Answer all FOUR questions explicitly. A “No” is retained but leaves the routine unfinished. Reassess after regulating; these are morning human reports, not a live mental-state assessment.</div>${[['calm','Am I calm?'],['clear','Am I clear?'],['following_plan','Am I following my plan?'],['would_take_if_up_big','Would I take this trade if I were already up big?']].map(([k,label])=>`<label class="field"><span>${label}</span><select id="r-${k}"><option value="">Choose explicitly</option><option value="true">Yes</option><option value="false">No</option></select></label>`).join('')}`;
++      const guarded=()=>{if(Number(Store.accountId)!==account||this.state?.cycle?.id!==cycle)throw new Error('The account or cycle changed. Close and reopen the current routine.');};
++      const actions=[{label:'Close (unfinished)',ghost:true}];
++      if(step==='meditation'){
++        form.innerHTML=`<div id="routine-timer-clock" class="routine-timer-clock" data-account="${account}" data-cycle="${cycle}" role="status"></div><p class="small muted">Fifteen minutes of server-timed running time, including explicit start/resume and excluding pause. A running timer survives restart. It does not verify actual meditation, breathing, focus or mental state. This is the routine subset, not the full Sanctuary toolkit.</p><div class="row gap-8" id="r-timer-actions"></div>`;
++        const buttons=U.$('#r-timer-actions',form),timerState=state.meditation.state,allowed=timerState==='not_started'?['start']:timerState==='running'?['pause']:['resume'];
++        for(const action of [...allowed,'complete'])buttons.appendChild(U.h('button',{class:'btn sm',id:action==='complete'?'routine-timer-complete':'routine-timer-'+action,text:action==='complete'?'Acknowledge 15-minute step':action[0].toUpperCase()+action.slice(1),onclick:async()=>{try{guarded();await API.post('/routine/meditation',{account_id:account,cycle_id:cycle,action});closeDialog.close();await this.open();}catch(e){global.App.toast(e.message,'err');}}}));
++      }else actions.push({label:'Save step & continue',primary:true,onClick:async close=>{
++        try{
++          guarded();let b={account_id:account,cycle_id:cycle,step};
++          if(step==='calendar')b={...b,reviewed:U.$('#r-reviewed',form).checked,method:'manual_external',summary:U.$('#r-calendar-summary',form).value};
++          if(step==='plan')b={...b,reviewed:U.$('#r-reviewed',form).checked,...(U.$('#r-plan',form).value?{plan_id:Number(U.$('#r-plan',form).value)}:{plan_text:U.$('#r-plan-text',form).value})};
++          if(step==='charts')b={...b,reviewed:U.$('#r-reviewed',form).checked,daily_bias:U.$('#r-bias',form).value,htf_range:U.$('#r-range',form).value,alert_status:U.$('#r-alert',form).value,alert_note:U.$('#r-alert-note',form).value};
++          if(step==='check_in')for(const k of ['calm','clear','following_plan','would_take_if_up_big']){const v=U.$('#r-'+k,form).value;if(!v)throw new Error('Answer every morning question explicitly.');b[k]=v==='true';}
++          await API.post('/routine/step',b);close();await this.open();Store.invalidate();
++        }catch(e){global.App.toast(e.message,'err');}
++      }});
++      const closeDialog=global.App.modal({title:NAMES[step],body,wide:true,actions});this.updateTimer();
++    },
++    dayCard(fact={}) {
++      const node=U.h('div',{class:'routine-day-card'}),w=fact.workflow||{};
++      node.innerHTML=`<h3>Pre-market routine facts</h3><div class="small">Workflow completed: <b>${truth(w.complete)}</b> · On time before selected window: <b>${truth(w.completed_before_window)}</b> · Prepared at first observed entry / deadline: <b>${truth(fact.prepared)}</b></div>
++        <div class="tiny muted">${U.esc(w.completed_at||'No verified workflow completion time')} · ${U.esc(fact.cohort_basis||'unrecorded')} ${fact.first_admission?.recorded_at?'· first entry capture '+U.esc(fact.first_admission.recorded_at):''}</div>
++        <div class="tiny muted">Late completion does not rewrite earlier admissions. Daily self-report: ${truth(fact.self_report?.done)} · ${U.esc(fact.self_report?.basis||'unrecorded')} · ${U.esc(fact.self_report?.recorded_at||'no capture')}. Human morning preparation, not reusable execution/mental/news permission.</div>`;
++      return node;
++    },
++    reportCard(report={}) {
++      const node=U.h('div',{class:'card routine-report'});
++      node.innerHTML=`<div class="card-head"><h3>Routine vs daily realised P&L — descriptive only</h3></div><div class="tiny muted">UTC close-day, trading days only. Completed/prepared uses frozen first-entry evidence when available, otherwise deadline workflow, otherwise labelled self-report. Unknown is not skipped; missing P&L is not zero. No causation or risk/strategy tuning.</div>
++        ${report.buckets?`<div class="table-wrap"><table><thead><tr><th>Preparation group</th><th>Days</th><th>Known / unavailable P&L days</th><th>Net</th><th>Mean daily P&L</th></tr></thead><tbody>${report.buckets.map(b=>`<tr><td>${U.esc(b.status)}</td><td>${b.days}</td><td>${b.known_pnl_days} / ${b.unavailable_pnl_days}</td><td>${money(b.net_pnl)}</td><td>${money(b.mean_daily_pnl)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Routine outcome report unavailable — no inferred correlation.</div>'}
++        ${(report.days||[]).length?`<details><summary>Inspect day and evidence basis</summary>${report.days.map(d=>`<div class="tiny" style="padding:6px">${U.esc(d.date)} · ${U.esc(d.status)} · ${money(d.realised_pnl)} · ${U.esc(d.cohort_basis||'unrecorded')} · workflow ${truth(d.pre_market?.workflow?.complete)}</div>`).join('')}</details>`:''}<p class="tiny muted">${U.esc(report.note||'Unknown or small samples are not proof of benefit. Overnight trades may close on another day; this is not per-trade attribution.')}</p>`;
++      return node;
++    },
++  };
++})(window);
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index 6e08954..18856dc 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -32,6 +32,7 @@
+                 <div class="tiny muted">${U.esc(a.broker || 'No broker set')} · ${U.esc(a.currency)} · risk ${U.num(a.risk_per_trade_pct, 2)}%/trade</div></div>
+                 <span class="mono ${U.cls(st.net_pnl)}" style="font-size:1.05rem">${U.moneySign(st.net_pnl)}</span></div>
+               <div class="tiny muted" style="margin-top:8px">Saved daily realised profit stop: ${a.daily_profit_limit_pct == null ? 'Off (optional)' : U.esc(a.daily_profit_limit_pct) + '%'} · UTC choice; edits after the first check apply tomorrow.</div>
++              <div class="tiny muted" style="margin-top:6px">Routine schedule: ${a.routine_window_start?U.esc(a.routine_window_start)+' '+U.esc(a.routine_timezone)+' · '+U.esc(a.routine_lead_minutes)+'m lead · '+U.esc(a.routine_order):'Setup required (no window inferred)'}. Active cycle keeps its saved policy until reset.</div>
+               <div class="sep"></div>
+               <div class="stats grid g4" style="gap:8px">
+                 <div><div class="k-label">Equity</div><div class="mono">${U.money(st.equity)}</div></div>
+@@ -429,6 +430,7 @@
+           <label class="field"><span>Lifetime / prop profit target (%)</span><input id="a-target" type="number" step="0.1" value="${v.profit_target_pct}" /></label>
+         </div>
+         <div class="field-note">Prop-firm rules live here: the app tracks how much of your daily loss limit and max drawdown you have actually used.</div>`;
++        if(Views.routine)body.appendChild(Views.routine.scheduleFields(v));
+         const profitEnabled = U.$('#a-profit-enabled', body), profitInput = U.$('#a-profit', body);
+         profitEnabled.addEventListener('change', () => { profitInput.disabled = !profitEnabled.checked; });
+         const sessionEnabled = U.$('#a-session-enabled',body),sessionInput = U.$('#a-session',body);
+@@ -445,6 +447,7 @@
+                 daily_profit_limit_pct: profitEnabled.checked ? profitInput.value : null,
+                 max_session_minutes: sessionEnabled.checked ? sessionInput.value : null,
+               };
++              if(Views.routine){try{Object.assign(payload,Views.routine.collectSchedule(body));}catch(e){return global.App.toast(e.message,'err');}}
+               if (!payload.name) return global.App.toast('Account needs a name', 'err');
+               if (profitEnabled.checked && !(Number(profitInput.value)>0 && Number(profitInput.value)<=100))
+                 return global.App.toast('Daily profit stop needs a positive percentage up to 100, or turn it off.', 'err');
+diff --git a/src/bots/correction.js b/src/bots/correction.js
+index bb0ff71..e0fb389 100644
+--- a/src/bots/correction.js
++++ b/src/bots/correction.js
+@@ -534,6 +534,22 @@ async function dailyState(userId, { accountId = null, store = db, nowMs = Date.n
+     daily.status='stop';daily.permission={allowed:false,can_override:true,state:'stopped'};
+     daily.message='Stand down: '+daily.breaches.map(b=>b.detail).join(' ');
+   }
++  // M64: real selected-window preparation is distinct from journal self-reports,
++  // fresh in-session emotion/news/hours, and the optional M84 warning. Known
++  // unfinished preparation has the existing one-action reason friction. Any
++  // new storage/clock/provenance uncertainty stays unwaivable, WITHOUT hiding
++  // independently known older cap/count/loss-clock observations above.
++  try { daily.routine=await require('../routine').current(userId,{account,store,nowMs}); }
++  catch {
++    await Guards.observe(store,userId,daily);
++    return {...daily,status:'unknown',routine:{state:'unknown',complete:null,message:'Routine state could not be verified.'},
++      permission:{allowed:false,can_override:false,state:'unavailable'},message:'Pre-market routine storage, clock or step provenance could not be verified. Repair/retry before new execution; honest records and closes remain legal.'};
++  }
++  if(daily.status!=='unknown'&&!daily.routine.complete){
++    daily.breaches.push({rule:'pre_market_routine',cycle_id:daily.routine.cycle?.id||null,next_step:daily.routine.next_step,detail:daily.routine.message});
++    daily.status='stop';daily.permission={allowed:false,can_override:true,state:'stopped'};
++    daily.message='Stand down: '+daily.breaches.map(b=>b.detail).join(' ');
++  }
+   await Guards.retainState(store,userId,daily);
+   await Guards.observe(store,userId,daily);
+   return daily;
+diff --git a/src/bots/guardrails.js b/src/bots/guardrails.js
+index 569c41c..dd6a036 100644
+--- a/src/bots/guardrails.js
++++ b/src/bots/guardrails.js
+@@ -105,6 +105,9 @@ async function retainAdmission(store,userId,daily,options,result) {
+     (user_id,account_id,rule_date,admitted_at,action,trade_id,admission_state,snapshot)
+     VALUES (?,?,?,?,?,?,?,?)`).run(userId,daily.account_id,daily.date,daily.evaluated_at,
+       options.action || 'entry',id,daily.admission.state,JSON.stringify(daily));
++  // Commit the immutable first-entry routine observation with this actual entry,
++  // never with blocked attempts/research plans/record-only historical imports.
++  await require('../routine').observeAdmission(store,userId,daily,id);
+   const changed = await store.prepare(`UPDATE guardrail_day_state SET entries_count=entries_count+1,updated_at=?
+     WHERE user_id=? AND account_id=? AND rule_date=?`).run(daily.evaluated_at,userId,daily.account_id,daily.date);
+   if (changed.changes!==1) throw new Error('Missing durable rule day');
+diff --git a/src/db.js b/src/db.js
+index 8281d22..70ba4fa 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -138,6 +138,10 @@ CREATE TABLE IF NOT EXISTS accounts (
+   max_trades_day INTEGER NOT NULL DEFAULT 3, -- M83/M113 preselected, not derived from overtrading
+   daily_loss_limit_pct REAL DEFAULT 3.0,
+   max_session_minutes INTEGER CHECK(max_session_minutes IS NULL OR (max_session_minutes BETWEEN 1 AND 1440 AND max_session_minutes=CAST(max_session_minutes AS INTEGER))), -- M84 optional manual/advisory time ceiling
++  routine_window_start TEXT,
++  routine_timezone TEXT,
++  routine_lead_minutes INTEGER NOT NULL DEFAULT 60 CHECK(routine_lead_minutes BETWEEN 1 AND 180),
++  routine_order TEXT NOT NULL DEFAULT 'ep17' CHECK(routine_order IN ('ep17','meditation_first')),
+   daily_profit_limit_pct REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100)), -- M81 optional, separate from lifetime profit target
+   max_drawdown_pct REAL DEFAULT 10.0,
+   profit_target_pct REAL DEFAULT 8.0,
+@@ -295,6 +299,68 @@ CREATE TABLE IF NOT EXISTS guardrail_reflections (
+   completion_source TEXT CHECK(completion_source IS NULL OR completion_source IN ('trade_journal','loss_reflection'))
+ );
+ CREATE INDEX IF NOT EXISTS idx_reflections_scope ON guardrail_reflections(user_id,account_id,rule_date,id);
++-- Manual daily self-reports are not workflow completion or admission permission.
++-- Independent account/date key avoids conflating the single daily notebook.
++-- Frozen local-window cycles and explicit human steps, not inferred broker hours.
++CREATE TABLE IF NOT EXISTS routine_cycles (
++  id INTEGER PRIMARY KEY AUTOINCREMENT,
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  cycle_date TEXT NOT NULL,
++  rule_date TEXT NOT NULL,
++  timezone TEXT NOT NULL,
++  window_start TEXT NOT NULL,
++  lead_minutes INTEGER NOT NULL CHECK(lead_minutes BETWEEN 1 AND 180),
++  step_order TEXT NOT NULL CHECK(step_order IN ('ep17','meditation_first')),
++  reset_at TEXT NOT NULL,
++  window_at TEXT NOT NULL,
++  expires_at TEXT NOT NULL,
++  selected_at TEXT NOT NULL,
++  meditation_state TEXT NOT NULL DEFAULT 'not_started' CHECK(meditation_state IN ('not_started','running','paused','completed')),
++  meditation_started_at TEXT,
++  meditation_elapsed_ms INTEGER NOT NULL DEFAULT 0 CHECK(meditation_elapsed_ms>=0),
++  completed_at TEXT,
++  completed_before_window INTEGER CHECK(completed_before_window IS NULL OR completed_before_window IN (0,1)),
++  first_action_at TEXT,
++  UNIQUE(user_id,account_id,reset_at)
++);
++CREATE INDEX IF NOT EXISTS idx_routine_cycles_active ON routine_cycles(user_id,account_id,reset_at,expires_at);
++CREATE TABLE IF NOT EXISTS routine_checks (
++  cycle_id INTEGER NOT NULL REFERENCES routine_cycles(id) ON DELETE CASCADE,
++  step TEXT NOT NULL CHECK(step IN ('calendar','plan','charts','meditation','check_in')),
++  completed_at TEXT NOT NULL,
++  payload TEXT NOT NULL,
++  PRIMARY KEY(cycle_id,step)
++);
++CREATE TABLE IF NOT EXISTS routine_checkin_attempts (
++  id INTEGER PRIMARY KEY AUTOINCREMENT,
++  cycle_id INTEGER NOT NULL REFERENCES routine_cycles(id) ON DELETE CASCADE,
++  captured_at TEXT NOT NULL,
++  passed INTEGER NOT NULL CHECK(passed IN (0,1)),
++  answers TEXT NOT NULL
++);
++-- First actual executed admission, independent of mutable/deleted journal rows.
++CREATE TABLE IF NOT EXISTS routine_day_admissions (
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  rule_date TEXT NOT NULL,
++  first_trade_id INTEGER NOT NULL,
++  cycle_id INTEGER,
++  recorded_at TEXT NOT NULL,
++  prepared INTEGER CHECK(prepared IS NULL OR prepared IN (0,1)),
++  workflow_complete_at_entry INTEGER CHECK(workflow_complete_at_entry IS NULL OR workflow_complete_at_entry IN (0,1)),
++  snapshot TEXT NOT NULL,
++  PRIMARY KEY(user_id,account_id,rule_date)
++);
++CREATE TABLE IF NOT EXISTS routine_day_records (
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  rule_date TEXT NOT NULL,
++  pre_market_done INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1)),
++  basis TEXT NOT NULL DEFAULT 'self_reported' CHECK(basis='self_reported'),
++  recorded_at TEXT NOT NULL,
++  PRIMARY KEY(user_id,account_id,rule_date)
++);
+ CREATE TABLE IF NOT EXISTS journal_entries (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -316,6 +382,9 @@ CREATE TABLE IF NOT EXISTS journal_entries (
+   rule_broke TEXT DEFAULT '',                 -- one moment you broke it
+   broke_trigger TEXT DEFAULT '',              -- and what triggered it
+   screen_time_minutes INTEGER,
++  pre_market_done INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1)),
++  pre_market_basis TEXT,
++  pre_market_recorded_at TEXT,
+   created_at TEXT NOT NULL DEFAULT (datetime('now')),
+   UNIQUE(user_id, entry_date)
+ );
+@@ -560,6 +629,13 @@ async function migrate() {
+   await add('trades','mistakes_none','INTEGER NOT NULL DEFAULT 0 CHECK(mistakes_none IN (0,1))');
+   await add('trades','journal_reviewed_at','TEXT');
+   await add('trades','journal_review_hash','TEXT');
++  await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
++  await add('journal_entries','pre_market_basis','TEXT');
++  await add('journal_entries','pre_market_recorded_at','TEXT');
++  await add('accounts','routine_window_start','TEXT');
++  await add('accounts','routine_timezone','TEXT');
++  await add('accounts','routine_lead_minutes','INTEGER NOT NULL DEFAULT 60 CHECK(routine_lead_minutes BETWEEN 1 AND 180)');
++  await add('accounts','routine_order',"TEXT NOT NULL DEFAULT 'ep17' CHECK(routine_order IN ('ep17','meditation_first'))");
+   // M68: never backfill a named model from grade/zone guesses. Unknown != none.
+   for (const table of ['trades', 'bot_signals']) {
+     await add(table, 'entry_model', 'TEXT');
+diff --git a/src/routes/api.js b/src/routes/api.js
+index c0eebef..06e88a8 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -11,6 +11,8 @@ const T = require('../trades');
+ const Guards = require('../bots/guardrails');
+ const SessionTime = require('../session-time');
+ const J = require('../journaling');
++const RR = require('../routine-records');
++const Routine = require('../routine');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+@@ -601,7 +603,22 @@ router.get('/journal', requireAuth, async (req, res) => {
+   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
+   if(req.query.account_id && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(Number(req.query.account_id),req.user.id))return res.status(404).json({error:'Account not found'});
+   const journalRows=await db.prepare('SELECT * FROM trades WHERE user_id=?'+(req.query.account_id?' AND account_id=?':'')).all(...(req.query.account_id?[req.user.id,Number(req.query.account_id)]:[req.user.id]));
+-  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),journal_timezone:'UTC' });
++  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC' });
++});
++router.get('/routine',requireAuth,async(req,res)=>{
++  try{res.json({routine:await Routine.current(req.user.id,{accountId:req.query.account_id})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine state could not be verified.'});}
++});
++router.post('/routine/step',requireAuth,async(req,res)=>{
++  try{res.json({routine:await Routine.acknowledge(req.user.id,req.body)});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine step could not be verified.'});}
++});
++router.post('/routine/meditation',requireAuth,async(req,res)=>{
++  try{res.json({routine:await Routine.meditation(req.user.id,req.body)});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market meditation timer could not be verified.'});}
++});
++router.get('/routine/daily/:date',requireAuth,async(req,res)=>{
++  try{res.json({pre_market:await RR.daily(req.user.id,{accountId:req.query.account_id,date:req.params.date})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Daily routine record could not be verified.'});}
++});
++router.get('/routine/report',requireAuth,async(req,res)=>{
++  try{res.json({report:await RR.report(req.user.id,{accountId:req.query.account_id,from:req.query.from,to:req.query.to})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Routine/day outcome comparison could not be verified.'});}
+ });
+ router.get('/journal/reflections',requireAuth,async(req,res)=>{
+   try{res.json({reflections:await J.reflectionsForDay(req.user.id,{accountId:req.query.account_id?Number(req.query.account_id):null,date:req.query.date||Guards.dayKey(Date.now())}),timezone:'UTC'});}
+@@ -618,27 +635,34 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
+   if(accountId!==null && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Account not found'});
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
+-  res.json({ entry: row || null, trades, journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
++  res.json({ entry: row || null, trades,pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+-  if (!b.entry_date) return res.status(400).json({ error: 'entry_date is required' });
+-  const acc = b.account_id ? Number(b.account_id) : (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
++  let acc;try{RR.dateKey(b.entry_date);acc=(await RR.owned(db,req.user.id,b.account_id)).id;if(Object.prototype.hasOwnProperty.call(b,'pre_market_done')){RR.parseFlag(b.pre_market_done);if(b.pre_market_done!==null && b.entry_date>Guards.dayKey(Date.now()))throw RR.input('Future routine completion cannot be recorded as an actual daily fact.');}}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message});throw e;}
++  const explicit=Object.prototype.hasOwnProperty.call(b,'pre_market_done');
++  const result=await db.tx(async tx=>{const store=db.transactionStore(tx),prior=await store.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id,b.entry_date);
++  const pre_market=explicit?await RR.setManual(store,req.user.id,acc,b.entry_date,b.pre_market_done):await RR.daily(req.user.id,{accountId:acc,date:b.entry_date,store});
++  const mirror=(!prior||Number(prior.account_id)===acc);
++  const mirrorDone=explicit&&mirror?RR.parseFlag(b.pre_market_done):prior?.pre_market_done??null;
++  const mirrorBasis=explicit&&mirror?'self_reported':prior?.pre_market_basis??null,mirrorAt=explicit&&mirror?pre_market.self_report.recorded_at:prior?.pre_market_recorded_at??null;
+   // M28: proof_lived / rule_broke / broke_trigger are Ep 4's nightly reflection protocol.
+-  await db.prepare(`INSERT INTO journal_entries (user_id,account_id,entry_date,market_bias,mood,energy,focus,plan,review,lessons,tomorrow,proof_lived,rule_broke,broke_trigger,screen_time_minutes)
+-    VALUES (@user_id,@account_id,@entry_date,@market_bias,@mood,@energy,@focus,@plan,@review,@lessons,@tomorrow,@proof_lived,@rule_broke,@broke_trigger,@screen_time_minutes)
++  await store.prepare(`INSERT INTO journal_entries (user_id,account_id,entry_date,market_bias,mood,energy,focus,plan,review,lessons,tomorrow,proof_lived,rule_broke,broke_trigger,screen_time_minutes,pre_market_done,pre_market_basis,pre_market_recorded_at)
++    VALUES (@user_id,@account_id,@entry_date,@market_bias,@mood,@energy,@focus,@plan,@review,@lessons,@tomorrow,@proof_lived,@rule_broke,@broke_trigger,@screen_time_minutes,@pre_market_done,@pre_market_basis,@pre_market_recorded_at)
+     ON CONFLICT(user_id,entry_date) DO UPDATE SET
+       market_bias=excluded.market_bias, mood=excluded.mood, energy=excluded.energy, focus=excluded.focus,
+       plan=excluded.plan, review=excluded.review, lessons=excluded.lessons, tomorrow=excluded.tomorrow,
+       proof_lived=excluded.proof_lived, rule_broke=excluded.rule_broke, broke_trigger=excluded.broke_trigger,
+-      screen_time_minutes=excluded.screen_time_minutes`).run({
++      screen_time_minutes=excluded.screen_time_minutes,pre_market_done=excluded.pre_market_done,pre_market_basis=excluded.pre_market_basis,pre_market_recorded_at=excluded.pre_market_recorded_at`).run({
+     user_id: req.user.id, account_id: acc, entry_date: b.entry_date,
+     market_bias: b.market_bias || '', mood: b.mood || null, energy: b.energy || null,
+     focus: b.focus || '', plan: b.plan || '', review: b.review || '', lessons: b.lessons || '',
+     tomorrow: b.tomorrow || '', proof_lived: b.proof_lived || '', rule_broke: b.rule_broke || '',
+     broke_trigger: b.broke_trigger || '', screen_time_minutes: b.screen_time_minutes || null,
++    pre_market_done:mirrorDone,pre_market_basis:mirrorBasis,pre_market_recorded_at:mirrorAt,
+   });
+-  res.json({ ok: true, entry: await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, b.entry_date) });
++  return {ok:true,entry:await store.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id,b.entry_date),pre_market};
++  });res.json(result);
+ });
+ router.delete('/journal/:id', requireAuth, async (req, res) => {
+   await db.prepare('DELETE FROM journal_entries WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
+@@ -796,13 +820,14 @@ router.post('/accounts', requireAuth, async (req, res) => {
+   let sessionLimit;
+   try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes); }
+   catch(e){return res.status(400).json({error:e.message});}
++  let routineConfig;try{routineConfig=Routine.config(b);}catch(e){return res.status(400).json({error:e.message});}
+   const unlocked = !!b.risk_unlocked;
+   const riskPct = I.clampRiskPct(b.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked });
+-  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes,routine_window_start,routine_timezone,routine_lead_minutes,routine_order)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     req.user.id, b.name, b.broker || '', b.account_type || 'live', b.currency || 'USD',
+     num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0, maxTrades,
+-    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit);
++    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit,routineConfig.routine_window_start,routineConfig.routine_timezone,routineConfig.routine_lead_minutes,routineConfig.routine_order);
+   res.json({
+     ok: true,
+     account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(info.lastInsertRowid),
+@@ -823,6 +848,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+   let sessionLimit;
+   try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes === undefined ? cur.max_session_minutes : b.max_session_minutes); }
+   catch(e){return res.status(400).json({error:e.message});}
++  let routineConfig;try{routineConfig=Routine.config({...cur,...b});}catch(e){return res.status(400).json({error:e.message});}
+   // M9: the same guardrail on the update path, which also stored the value via num() with no
+   // clamp. Only a value THIS request supplies is clamped — a row stored above the guardrail
+   // before the fix is left untouched here and clamped on READ (bots/index.js) instead, so an
+@@ -833,7 +859,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+     : num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct);
+   await db.prepare(`UPDATE accounts SET name=@name, broker=@broker, account_type=@account_type, currency=@currency,
+     starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, max_trades_day=@max_trades_day, daily_loss_limit_pct=@daily_loss_limit_pct,
+-    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, max_session_minutes=@max_session_minutes, prop_preset=@prop_preset,
++    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, max_session_minutes=@max_session_minutes,routine_window_start=@routine_window_start,routine_timezone=@routine_timezone,routine_lead_minutes=@routine_lead_minutes,routine_order=@routine_order, prop_preset=@prop_preset,
+     prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
+     id, user_id: req.user.id,
+     name: b.name !== undefined ? b.name : cur.name,
+@@ -846,6 +872,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+     max_trades_day: maxTrades,
+     daily_profit_limit_pct: profitLimit,
+     max_session_minutes: sessionLimit,
++    ...routineConfig,
+     daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
+     max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
+     prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
+diff --git a/src/routine-records.js b/src/routine-records.js
+new file mode 100644
+index 0000000..cff4507
+--- /dev/null
++++ b/src/routine-records.js
+@@ -0,0 +1,57 @@
++'use strict';
++/** M14/M94: owned nullable human records, actual workflow and immutable first
++ * executed-admission evidence. No retrospective permission/causal/sizing claim.
++ * Outcome buckets are UTC CLOSE-day daily realised P&L, not floating/sample-
++ * weighted expectancy. This does not attribute an overnight trade to its entry. */
++const {db}=require('./db');const {dayKey,msOf}=require('./bots/guardrails');
++function input(message,status=400){const e=new Error(message);e.status=status;e.code='routine_input_invalid';return e;}
++function dateKey(value){if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(msOf(value))||dayKey(msOf(value))!==value)throw input('A valid UTC calendar date is required.');return value;}
++function parseFlag(value){if(value===null)return null;if(typeof value!=='boolean')throw input('pre_market_done must be an explicit true, false or null/unknown.');return value?1:0;}
++async function owned(store,userId,accountId=null){
++  let row;if(accountId==null||accountId==='')row=await store.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY archived,is_default DESC,id LIMIT 1').get(userId);
++  else{if(!['number','string'].includes(typeof accountId)||(typeof accountId==='string'&&!/^[1-9]\d*$/.test(accountId))||!Number.isSafeInteger(Number(accountId))||Number(accountId)<=0)throw input('Account not found',404);row=await store.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(accountId),userId);}
++  if(!row)throw input('Account not found',404);return row;
++}
++function publicRecord(row,date,accountId,nowMs=Date.now()){
++  const valid=!row||([null,0,1].includes(row.pre_market_done)&&row.basis==='self_reported'&&Number.isFinite(msOf(row.recorded_at))&&msOf(row.recorded_at)<=nowMs);
++  return {date,account_id:accountId,done:!valid||row?.pre_market_done==null?null:row.pre_market_done===1,basis:valid?(row?.basis||'unrecorded'):'self_report_unavailable',recorded_at:valid?(row?.recorded_at||null):null,workflow_complete:false,scope:'Self-reported daily fact alone never satisfies workflow; NULL/unrecorded/unavailable means unknown'};
++}
++async function admission(store,userId,accountId,date,nowMs=Date.now(),{strict=false}={}){
++  const row=await store.prepare('SELECT * FROM routine_day_admissions WHERE user_id=? AND account_id=? AND rule_date=?').get(userId,accountId,date);if(!row)return null;
++  try{
++    const s=JSON.parse(row.snapshot),at=msOf(row.recorded_at),complete=s?.workflow_complete_at_entry,before=s?.completed_before_window;
++    if(!s||s.user_id!==userId||s.account_id!==accountId||s.rule_date!==date||s.recorded_at!==row.recorded_at||s.first_trade_id!==row.first_trade_id||s.cycle_id!==row.cycle_id||!Number.isSafeInteger(row.first_trade_id)||row.first_trade_id<=0||!Number.isFinite(at)||at>nowMs||dayKey(at)!==date||typeof complete!=='boolean'||(before!==null&&typeof before!=='boolean')||![0,1].includes(row.prepared)||![0,1].includes(row.workflow_complete_at_entry)||row.workflow_complete_at_entry!==(complete?1:0)||row.prepared!==((complete&&before===true)?1:0)||s.prepared_at_entry!==(row.prepared===1)||s.source!=='first_executed_admission')throw Error();
++    if(row.cycle_id===null){if(complete||before!==null||s.completed_at!==null||s.window_at!==null)throw Error();}
++    else{if(!Number.isSafeInteger(row.cycle_id)||row.cycle_id<=0||!Number.isFinite(msOf(s.window_at)))throw Error();if(complete&&(!Number.isFinite(msOf(s.completed_at))||msOf(s.completed_at)>at||before!==(msOf(s.completed_at)<=msOf(s.window_at))))throw Error();if(!complete&&(s.completed_at!==null||before!==null))throw Error();}
++    return {state:'captured',cycle_id:row.cycle_id,prepared:row.prepared===1,workflow_complete_at_entry:complete,first_trade_id:row.first_trade_id,recorded_at:row.recorded_at,snapshot:s};
++  }catch{if(strict)throw input('Stored first-entry preparation evidence is unavailable.',503);return {state:'unknown',prepared:null,recorded_at:null,cycle_id:null,message:'First-entry preparation evidence could not be verified; not a self-report fallback pass.'};}
++}
++async function enrich(store,userId,accountId,date,manual,nowMs=Date.now()){
++  const first=await admission(store,userId,accountId,date,nowMs),cycles=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? AND rule_date=? ORDER BY id DESC').all(userId,accountId,date);
++  let workflow={state:'unrecorded',complete:null,completed_at:null,completed_before_window:null,scope:'No inferred legacy routine or actual meditation/mental/news proof'};
++  if(cycles.length){try{const R=require('./routine'),row=cycles[0],cfg=R.validateCycle(row,nowMs,{active:false}),steps=(await store.prepare('SELECT * FROM routine_checks WHERE cycle_id=?').all(row.id)).map(r=>({...r,payload:JSON.parse(r.payload)})).sort((a,b)=>R.ORDERS[cfg.routine_order].indexOf(a.step)-R.ORDERS[cfg.routine_order].indexOf(b.step));R.validateSteps(row,steps,R.ORDERS[cfg.routine_order],userId,nowMs);workflow={state:row.completed_at?'complete':'pending',cycle_id:row.id,cycle_date:row.cycle_date,cycle_count:cycles.length,complete:!!row.completed_at,completed_at:row.completed_at,completed_before_window:row.completed_before_window===null?null:row.completed_before_window===1,window_at:row.window_at,observed_at:row.selected_at,first_action_at:row.first_action_at,scope:'Latest actual selected-window workflow for UTC window-day; human steps + server running-time only, not actual mental state/news or per-trade attribution'};}catch{workflow={state:'unknown',complete:null,completed_at:null,completed_before_window:null,scope:'Stored workflow unavailable; not self-reported or inferred complete'};}}
++  const result={...manual,self_report:{done:manual.done,basis:manual.basis,recorded_at:manual.recorded_at},workflow,first_admission:first};
++  if(workflow.state!=='unrecorded'){result.done=workflow.complete;result.workflow_complete=workflow.complete===true;result.basis=workflow.state==='unknown'?'workflow_unavailable':'workflow_steps';result.recorded_at=workflow.completed_at||workflow.observed_at||null;}
++  else if(first?.state==='captured'){result.done=first.workflow_complete_at_entry;result.workflow_complete=first.workflow_complete_at_entry;result.basis='first_executed_admission';result.recorded_at=first.recorded_at;}
++  if(first){result.prepared=first.prepared;result.cohort_basis=first.state==='captured'?'first_executed_admission':'first_admission_unavailable';}
++  else if(workflow.state==='unknown'){result.prepared=null;result.cohort_basis='workflow_unavailable';}
++  else if(workflow.state!=='unrecorded'){
++    result.prepared=workflow.completed_before_window===true?true:nowMs>=msOf(workflow.window_at)?false:null;result.cohort_basis=workflow.completed_before_window===true||nowMs>=msOf(workflow.window_at)?'scheduled_deadline':'pending_deadline';
++  }else{result.prepared=manual.done;result.cohort_basis=manual.basis;}
++  result.scope='Current workflow completion is distinct from on-time/before-first-entry preparation. Manual self-report is shown separately; it never satisfies the execution gate. UTC window-day/close-day association is descriptive, not causal/per-trade evidence.';
++  return result;
++}
++async function daily(userId,{accountId=null,date,store=db,nowMs=Date.now()}={}){date=dateKey(date);const acc=await owned(store,userId,accountId),row=await store.prepare('SELECT * FROM routine_day_records WHERE user_id=? AND account_id=? AND rule_date=?').get(userId,acc.id,date);return enrich(store,userId,acc.id,date,publicRecord(row,date,acc.id,nowMs),nowMs);}
++async function setManual(store,userId,accountId,date,value){date=dateKey(date);const done=parseFlag(value);if(done!==null && date>dayKey(Date.now()))throw input('Future routine completion/skipping cannot be recorded as an actual daily fact.');await owned(store,userId,accountId);await store.prepare(`INSERT INTO routine_day_records(user_id,account_id,rule_date,pre_market_done,basis,recorded_at) VALUES (?,?,?,?,?,?) ON CONFLICT(user_id,account_id,rule_date) DO UPDATE SET pre_market_done=excluded.pre_market_done,basis=excluded.basis,recorded_at=excluded.recorded_at`).run(userId,accountId,date,done,'self_reported',new Date().toISOString());return daily(userId,{accountId,date,store});}
++async function list(userId,{accountId=null,store=db,nowMs=Date.now()}={}){
++  const acc=await owned(store,userId,accountId),rows=await store.prepare(`SELECT rule_date FROM routine_day_records WHERE user_id=? AND account_id=? UNION SELECT rule_date FROM routine_cycles WHERE user_id=? AND account_id=? UNION SELECT rule_date FROM routine_day_admissions WHERE user_id=? AND account_id=? ORDER BY rule_date DESC LIMIT 400`).all(userId,acc.id,userId,acc.id,userId,acc.id);
++  const result=[];for(const r of rows)result.push(await daily(userId,{accountId:acc.id,date:r.rule_date,store,nowMs}));return result;
++}
++async function report(userId,{accountId=null,from=null,to=null,store=db,nowMs=Date.now()}={}){
++  if(from)dateKey(from);if(to)dateKey(to);if(from&&to&&from>to)throw input('from must not be after to.');const acc=await owned(store,userId,accountId),rows=await store.prepare("SELECT * FROM trades WHERE user_id=? AND account_id=? AND status='closed'").all(userId,acc.id),grouped=new Map(),unassigned=[];
++  for(const t of rows){const ms=msOf(t.closed_at);if(!Number.isFinite(ms)){unassigned.push(t.id);continue;}if(ms>nowMs)continue;const date=dayKey(ms);if((from&&date<from)||(to&&date>to))continue;if(!grouped.has(date))grouped.set(date,[]);grouped.get(date).push(t);}
++  const days=[];for(const [date,trades] of grouped){const known=trades.every(t=>t.net_pnl!==null&&t.net_pnl!==undefined&&t.net_pnl!==''&&Number.isFinite(Number(t.net_pnl))),r=await daily(userId,{accountId:acc.id,date,store,nowMs});days.push({date,trades:trades.length,realised_pnl:known?trades.reduce((s,t)=>s+Number(t.net_pnl),0):null,pre_market:r,cohort_basis:r.cohort_basis,status:r.prepared===null?'unknown':r.prepared?'completed':'not_completed'});}days.sort((a,b)=>a.date.localeCompare(b.date));
++  const buckets=['completed','not_completed','unknown'].map(status=>{const all=days.filter(d=>d.status===status),known=all.filter(d=>d.realised_pnl!==null),net=known.reduce((s,d)=>s+d.realised_pnl,0);return {status,days:all.length,known_pnl_days:known.length,unavailable_pnl_days:all.length-known.length,net_pnl:known.length?net:null,mean_daily_pnl:known.length?net/known.length:null};});
++  return {account_id:acc.id,timezone:'UTC',days,buckets,total_closed_trades:days.reduce((s,d)=>s+d.trades,0),unassigned_close_date_ids:unassigned,cohort:'Frozen first executed admission preparation where observed, otherwise selected-window deadline workflow, otherwise explicit self-report/unknown',descriptive_only:true,causation_established:false,note:'Observational UTC close-day daily realised P&L, trading days only. Workflow-completed is not necessarily on-time/before-first-entry prepared. Overnight entries can close on another day: this is NOT per-trade routine attribution. Unknown is not skipped, missing P&L is not zero; small/selected samples and retrospective self-reports do not prove causation or justify resizing/strategy tuning.'};
++}
++module.exports={input,dateKey,parseFlag,owned,daily,setManual,list,report,admission,enrich};
+diff --git a/src/routine.js b/src/routine.js
+new file mode 100644
+index 0000000..719f778
+--- /dev/null
++++ b/src/routine.js
+@@ -0,0 +1,167 @@
++'use strict';
++/** M64: explicitly selected local-window routine, immutable active-cycle policy.
++ * Human steps/timer are preparation, not broker activity/verified mental state,
++ * provider news clearance, allowed-hour enforcement or new market geometry. */
++const {db}=require('./db'),RR=require('./routine-records'),{dayKey,msOf}=require('./bots/guardrails');
++const ORDERS={ep17:['calendar','plan','charts','meditation','check_in'],meditation_first:['meditation','calendar','plan','charts','check_in']};
++const MEDITATION_MS=15*60000;
++function clock(value){if(!Number.isFinite(value))throw RR.input('Routine server clock is unavailable.',503);return value;}
++function config(raw={}){
++  const start=raw.routine_window_start==null||raw.routine_window_start===''?null:raw.routine_window_start;
++  if(start!==null&&(typeof start!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)))throw RR.input('Select a local trading-window start as HH:MM.');
++  const zone=raw.routine_timezone==null||raw.routine_timezone===''?null:raw.routine_timezone;
++  if(zone!==null){if(typeof zone!=='string'||zone.length>100||/^[+-]/.test(zone))throw RR.input('Select a valid IANA routine timezone.');try{new Intl.DateTimeFormat('en',{timeZone:zone}).format(0);}catch{throw RR.input('Select a valid IANA routine timezone.');}}
++  if(start!==null && zone===null)throw RR.input('An explicit IANA timezone is required with the selected window.');
++  const lead=raw.routine_lead_minutes??60;if((typeof lead!=='number'&&typeof lead!=='string')||(typeof lead==='string'&&!/^\d+$/.test(lead))||!Number.isInteger(Number(lead))||Number(lead)<1||Number(lead)>180)throw RR.input('Routine lead must be whole minutes from 1 to 180.');
++  const order=raw.routine_order??'ep17';if(!Object.prototype.hasOwnProperty.call(ORDERS,order))throw RR.input('Choose ep17 or meditation_first routine order.');
++  return {routine_window_start:start,routine_timezone:zone,routine_lead_minutes:Number(lead),routine_order:order};
++}
++const formatters=new Map(),windows=new Map();
++function parts(ms,zone){let fmt=formatters.get(zone);if(!fmt){fmt=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});formatters.set(zone,fmt);}return Object.fromEntries(fmt.formatToParts(new Date(ms)).filter(p=>p.type!=='literal').map(p=>[p.type,Number(p.value)]));}
++function civil(p){return Date.UTC(p.year,p.month-1,p.day,p.hour||0,p.minute||0);}
++function localDate(ms,zone){const p=parts(ms,zone);return `${p.year}-${String(p.month).padStart(2,'0')}-${String(p.day).padStart(2,'0')}`;}
++function addDay(date,n){return dayKey(msOf(date)+n*864e5);}
++/** Explicit DST policy: earlier fold occurrence, shift nonexistent clocks forward
++ * by the gap. Offset candidates from +/-36h avoid a hard-coded UTC session. */
++function windowAt(date,time,zone){const key=[date,time,zone].join('|');if(windows.has(key))return windows.get(key);const [year,month,day]=date.split('-').map(Number),[hour,minute]=time.split(':').map(Number),wanted=Date.UTC(year,month-1,day,hour,minute),offsets=new Set([-36,-12,0,12,36].map(h=>{const sample=wanted+h*3600000;return civil(parts(sample,zone))-sample;}));
++  const candidates=[...offsets].map(offset=>wanted-offset),exact=candidates.filter(ms=>civil(parts(ms,zone))===wanted);let value;
++  if(exact.length)value=Math.min(...exact);else{const shifted=candidates.map(ms=>({ms,delta:civil(parts(ms,zone))-wanted})).filter(x=>x.delta>0).sort((a,b)=>a.delta-b.delta||a.ms-b.ms);if(!shifted.length)throw RR.input('Selected local routine time could not be resolved.',503);value=shifted[0].ms;}
++  if(windows.size>500)windows.clear();windows.set(key,value);return value;
++}
++function boundaries(cfg,nowMs=Date.now()){
++  clock(nowMs);const today=localDate(nowMs,cfg.routine_timezone);
++  for(const n of [-1,0,1]){const date=addDay(today,n),window=windowAt(date,cfg.routine_window_start,cfg.routine_timezone),reset=window-cfg.routine_lead_minutes*60000,next=windowAt(addDay(date,1),cfg.routine_window_start,cfg.routine_timezone)-cfg.routine_lead_minutes*60000;if(nowMs>=reset&&nowMs<next)return {cycle_date:date,rule_date:dayKey(window),reset_at:new Date(reset).toISOString(),window_at:new Date(window).toISOString(),expires_at:new Date(next).toISOString()};}
++  throw RR.input('Routine cycle boundary could not be resolved.',503);
++}
++function validateCycle(row,nowMs,{active=true}={}){
++  clock(nowMs);let cfg;try{cfg=config({routine_window_start:row.window_start,routine_timezone:row.timezone,routine_lead_minutes:row.lead_minutes,routine_order:row.step_order});}catch{throw RR.input('Stored routine policy is unavailable.',503);}
++  const reset=msOf(row.reset_at),end=msOf(row.expires_at),selected=msOf(row.selected_at),window=msOf(row.window_at);
++  if(cfg.routine_window_start===null||!Number.isFinite(reset)||!Number.isFinite(end)||!Number.isFinite(selected)||!Number.isFinite(window)||selected>nowMs||selected<reset||selected>=end||(active&&!(reset<=nowMs&&nowMs<end))||reset>=window||window>=end||dayKey(window)!==row.rule_date)throw RR.input('Stored routine cycle is unavailable.',503);
++  // Validate the frozen boundary even when a corrupt row would be excluded by
++  // an active-range SQL query. Never silently create a replacement known cycle.
++  const expected=boundaries(cfg,window);if(['cycle_date','rule_date','reset_at','window_at','expires_at'].some(k=>row[k]!==expected[k]))throw RR.input('Stored routine boundary is unavailable.',503);return cfg;
++}
++async function current(userId,{accountId=null,account=null,store=db,nowMs=Date.now()}={}){
++  clock(nowMs);const acc=account||await RR.owned(store,userId,accountId),at=new Date(nowMs).toISOString();
++  const last=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? ORDER BY id DESC LIMIT 1').get(userId,acc.id);
++  if(last)validateCycle(last,nowMs,{active:false});
++  let row=last&&msOf(last.reset_at)<=nowMs&&nowMs<msOf(last.expires_at)?last:null;
++  if(!row){let cfg;try{cfg=config(acc);}catch{throw RR.input('Stored routine configuration is unavailable.',503);}if(cfg.routine_window_start===null){await RR.admission(store,userId,acc.id,dayKey(nowMs),nowMs,{strict:true});return {account_id:acc.id,state:'setup_required',complete:false,cycle:null,order:ORDERS[cfg.routine_order],steps:[],next_step:'setup',message:'Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.',scope:'Personal preparation requirement, not broker-hours or market permission'};}
++    const b=boundaries(cfg,nowMs);await store.prepare(`INSERT OR IGNORE INTO routine_cycles(user_id,account_id,cycle_date,rule_date,timezone,window_start,lead_minutes,step_order,reset_at,window_at,expires_at,selected_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(userId,acc.id,b.cycle_date,b.rule_date,cfg.routine_timezone,cfg.routine_window_start,cfg.routine_lead_minutes,cfg.routine_order,b.reset_at,b.window_at,b.expires_at,at);
++    row=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? AND reset_at=?').get(userId,acc.id,b.reset_at);
++  }
++  await RR.admission(store,userId,acc.id,dayKey(nowMs),nowMs,{strict:true});
++  const cfg=validateCycle(row,nowMs),order=ORDERS[cfg.routine_order],checks=await store.prepare('SELECT * FROM routine_checks WHERE cycle_id=? ORDER BY completed_at').all(row.id);
++  const steps=checks.map(r=>({...r,payload:JSON.parse(r.payload)})).sort((a,b)=>order.indexOf(a.step)-order.indexOf(b.step));
++  validateSteps(row,steps,order,userId,nowMs);
++  const complete=steps.length===order.length&&!!row.completed_at;
++  const attempts=await store.prepare('SELECT * FROM routine_checkin_attempts WHERE cycle_id=? ORDER BY id').all(row.id);
++  const check_in_attempts=attempts.map(r=>({...r,answers:JSON.parse(r.answers)}));
++  if(check_in_attempts.some(r=>!Number.isFinite(msOf(r.captured_at))||msOf(r.captured_at)>nowMs||msOf(r.captured_at)<msOf(row.selected_at)||![0,1].includes(r.passed)||!validAnswers(r.answers)||r.passed!==(Object.values(r.answers).every(v=>v===true)?1:0)))throw RR.input('Stored morning check-in is unavailable.',503);
++  return {account_id:acc.id,state:complete?'complete':'pending',complete,cycle:{...row,dst_policy:'earlier fold / shift forward gap'},order,steps,check_in_attempts,next_step:order.find(s=>!steps.some(c=>c.step===s))||null,meditation:{minimum_ms:MEDITATION_MS,state:row.meditation_state,elapsed_ms:elapsed(row,nowMs),actual_meditation_verified:false},evaluated_at:at,
++    message:complete?'Current routine steps acknowledged; this is preparation, not reusable entry/mental/news permission.':'Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.',scope:'Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof'};
++}
++
++function text(value,label,max=4000){if(typeof value!=='string'||!value.trim()||value.length>max)throw RR.input(`${label}: enter plain nonblank text, at most ${max} characters.`);return value.trim();}
++const ANSWERS=['calm','clear','following_plan','would_take_if_up_big'];
++function validAnswers(p){return p&&typeof p==='object'&&!Array.isArray(p)&&Object.keys(p).length===4&&ANSWERS.every(k=>typeof p[k]==='boolean');}
++function answers(body){const out=Object.fromEntries(ANSWERS.map(k=>[k,body[k]]));if(!validAnswers(out))throw RR.input('Answer all four morning questions with literal true/false values. These are human morning confirmations, not fresh in-session clearance.');return out;}
++function elapsed(row,nowMs){
++  if(!['not_started','running','paused','completed'].includes(row.meditation_state)||!Number.isSafeInteger(row.meditation_elapsed_ms)||row.meditation_elapsed_ms<0)throw RR.input('Stored meditation timer is unavailable.',503);
++  const started=msOf(row.meditation_started_at);
++  if(row.meditation_state==='running'){
++    if(!Number.isFinite(started)||started>nowMs||started<msOf(row.selected_at)||started>=msOf(row.expires_at))throw RR.input('Stored meditation timer clock is unavailable.',503);return row.meditation_elapsed_ms+nowMs-started;
++  }
++  if(row.meditation_started_at!==null||(row.meditation_state==='not_started'&&row.meditation_elapsed_ms!==0))throw RR.input('Stored meditation timer state is unavailable.',503);
++  return row.meditation_elapsed_ms;
++}
++function validateSteps(row,steps,order,userId,nowMs){
++  elapsed(row,nowMs);let previous=msOf(row.selected_at);
++  for(let i=0;i<steps.length;i++){
++    const s=steps[i],p=s.payload,at=msOf(s.completed_at);
++    if(s.step!==order[i]||!Number.isFinite(at)||at<previous||at>nowMs||at>=msOf(row.expires_at)||!p||typeof p!=='object')throw RR.input('Stored routine step order/time is unavailable.',503);previous=at;
++    try{
++      if(s.step==='calendar'){if(p.reviewed!==true||p.method!=='manual_external'||p.source!=='human_calendar_review')throw Error();text(p.summary,'Calendar review');}
++      if(s.step==='plan'){if(p.reviewed!==true)throw Error();if(p.source==='own_strategy_snapshot'){if(p.snapshot?.user_id!==userId||!Number.isSafeInteger(p.snapshot?.id))throw Error();}else if(p.source==='manual_plan_text')text(p.plan_text,'Manual plan');else throw Error();}
++      if(s.step==='charts'){if(p.reviewed!==true||p.source!=='human_chart_review'||!['bullish','bearish','neutral'].includes(p.daily_bias)||!['set','not_applicable'].includes(p.alert_status))throw Error();text(p.htf_range,'Chart review');text(p.alert_note,'Alert report');}
++      if(s.step==='meditation'){if(p.source!=='server_running_time'||p.minimum_ms!==MEDITATION_MS||p.actual_meditation_verified!==false||!Number.isSafeInteger(p.elapsed_ms)||p.elapsed_ms<MEDITATION_MS||row.meditation_state!=='completed'||row.meditation_elapsed_ms!==p.elapsed_ms)throw Error();}
++      if(s.step==='check_in'){if(p.source!=='human_morning_check_in'||!validAnswers(p.answers)||!Object.values(p.answers).every(v=>v===true))throw Error();}
++    }catch{throw RR.input('Stored routine acknowledgement is unavailable.',503);}
++  }
++  const hasMeditation=steps.some(s=>s.step==='meditation');if((row.meditation_state==='completed')!==hasMeditation)throw RR.input('Stored timer acknowledgement is unavailable.',503);
++  if(row.meditation_state!=='not_started'&&!hasMeditation&&order[steps.length]!=='meditation')throw RR.input('Stored timer step order is unavailable.',503);
++  if(steps.length===order.length){const at=msOf(row.completed_at);if(!Number.isFinite(at)||at!==previous||![0,1].includes(row.completed_before_window)||row.completed_before_window!==(at<=msOf(row.window_at)?1:0))throw RR.input('Stored completion provenance is unavailable.',503);}
++  else if(row.completed_at!==null||row.completed_before_window!==null)throw RR.input('Stored incomplete routine provenance is unavailable.',503);
++  if(row.first_action_at!==null&&(!Number.isFinite(msOf(row.first_action_at))||msOf(row.first_action_at)>nowMs||msOf(row.first_action_at)<msOf(row.selected_at)||msOf(row.first_action_at)>=msOf(row.expires_at)))throw RR.input('Stored first-action provenance is unavailable.',503);
++}
++async function actionState(store,userId,body,nowMs){
++  const account=await RR.owned(store,userId,body.account_id);if(account.archived)throw RR.input('Archived accounts cannot complete a new execution routine.',409);
++  if(!['number','string'].includes(typeof body.cycle_id)||(typeof body.cycle_id==='string'&&!/^[1-9]\d*$/.test(body.cycle_id))||!Number.isSafeInteger(Number(body.cycle_id))||Number(body.cycle_id)<=0)throw RR.input('Select the actual current routine cycle.',409);
++  const state=await current(userId,{account,store,nowMs});if(!state.cycle||state.cycle.id!==Number(body.cycle_id))throw RR.input('This is not the current routine cycle. Reload the current routine.',409);
++  return state;
++}
++async function stepPayload(store,userId,step,body){
++  if(step==='calendar'){if(body.reviewed!==true||body.method!=='manual_external')throw RR.input('Acknowledge your actual external-calendar review. It is not verified provider clearance.');return {reviewed:true,method:'manual_external',summary:text(body.summary,'Calendar review'),source:'human_calendar_review'};}
++  if(step==='plan'){
++    if(body.reviewed!==true)throw RR.input('Explicitly acknowledge reviewing your own plan.');
++    if(body.plan_id!==undefined&&body.plan_id!==null&&body.plan_id!==''){
++      if(typeof body.plan_id==='boolean'||!Number.isSafeInteger(Number(body.plan_id))||Number(body.plan_id)<=0)throw RR.input('Owned plan not found',404);
++      const snapshot=await store.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(Number(body.plan_id),userId);if(!snapshot)throw RR.input('Owned plan not found',404);
++      const version=await store.prepare('SELECT MAX(version) AS version FROM strategy_versions WHERE strategy_id=?').get(snapshot.id);
++      return {reviewed:true,source:'own_strategy_snapshot',snapshot:{...snapshot,version:version?.version||null}};
++    }
++    return {reviewed:true,source:'manual_plan_text',plan_text:text(body.plan_text,'Your explicit manual plan')};
++  }
++  if(step==='charts'){
++    if(body.reviewed!==true||!['bullish','bearish','neutral'].includes(body.daily_bias)||!['set','not_applicable'].includes(body.alert_status))throw RR.input('Review the chart/range, report a human daily bias and an actual alert or explicit not-applicable reason.');
++    return {reviewed:true,daily_bias:body.daily_bias,htf_range:text(body.htf_range,'Chart/range review'),alert_status:body.alert_status,alert_note:text(body.alert_note,'Alert report/reason'),source:'human_chart_review'};
++  }
++  if(step==='check_in')return {source:'human_morning_check_in',answers:answers(body)};
++  throw RR.input('Choose the actual next named step. Complete meditation with the server timer.');
++}
++async function saveStep(store,state,step,payload,nowMs){
++  const at=new Date(nowMs).toISOString();await store.prepare('INSERT INTO routine_checks(cycle_id,step,completed_at,payload) VALUES (?,?,?,?)').run(state.cycle.id,step,at,JSON.stringify(payload));
++  if(step==='check_in')await store.prepare('UPDATE routine_cycles SET completed_at=?,completed_before_window=? WHERE id=? AND completed_at IS NULL').run(at,nowMs<=msOf(state.cycle.window_at)?1:0,state.cycle.id);
++}
++async function acknowledge(userId,body={},nowMs=Date.now()){
++  clock(nowMs);return db.tx(async tx=>{const store=db.transactionStore(tx),state=await actionState(store,userId,body,nowMs),step=body.step;
++    if(['completed_at','elapsed_ms','started_at','complete','pre_market_done'].some(k=>Object.prototype.hasOwnProperty.call(body,k)))throw RR.input('Routine completion/source/time are derived by the server, not client proof.');
++    // Resolve payload ownership/strict values before an idempotency/order response.
++    const payload=await stepPayload(store,userId,step,body),existing=state.steps.find(s=>s.step===step);
++    if(existing){if(JSON.stringify(existing.payload)!==JSON.stringify(payload))throw RR.input('The completed step is frozen. It cannot be rewritten for this cycle.',409);return state;}
++    if(state.next_step!==step)throw RR.input('Complete the current routine step in your selected order.',409);
++    if(step==='check_in'){
++      const passed=Object.values(payload.answers).every(v=>v===true);await store.prepare('INSERT INTO routine_checkin_attempts(cycle_id,captured_at,passed,answers) VALUES (?,?,?,?)').run(state.cycle.id,new Date(nowMs).toISOString(),passed?1:0,JSON.stringify(payload.answers));
++      if(!passed)return current(userId,{accountId:state.account_id,store,nowMs});
++    }
++    await saveStep(store,state,step,payload,nowMs);return current(userId,{accountId:state.account_id,store,nowMs});
++  });
++}
++async function meditation(userId,body={},nowMs=Date.now()){
++  clock(nowMs);return db.tx(async tx=>{const store=db.transactionStore(tx),state=await actionState(store,userId,body,nowMs),row=state.cycle,action=body.action;
++    if(Object.keys(body).some(k=>!['account_id','cycle_id','action'].includes(k))||!['start','pause','resume','complete'].includes(action))throw RR.input('Choose start, pause, resume or complete. No client elapsed/start/finish clocks are accepted.');
++    if(row.meditation_state==='completed'&&action==='complete')return state;
++    if(state.next_step!=='meditation')throw RR.input('Complete the current routine step before meditation.',409);
++    const value=elapsed(row,nowMs),at=new Date(nowMs).toISOString();
++    if(action==='start'||action==='resume'){
++      if(row.meditation_state!==(action==='start'?'not_started':'paused'))throw RR.input('Timer is not in the state required for this action.',409);
++      await store.prepare("UPDATE routine_cycles SET meditation_state='running',meditation_started_at=? WHERE id=?").run(at,row.id);
++    }else if(action==='pause'){
++      if(row.meditation_state!=='running')throw RR.input('Only an active timer can be paused.',409);
++      await store.prepare("UPDATE routine_cycles SET meditation_state='paused',meditation_started_at=NULL,meditation_elapsed_ms=? WHERE id=?").run(value,row.id);
++    }else{
++      if(!['running','paused'].includes(row.meditation_state)||value<MEDITATION_MS)throw RR.input('Fifteen minutes of server-timed running time are required. A paused gap does not count.',409);
++      await store.prepare("UPDATE routine_cycles SET meditation_state='completed',meditation_started_at=NULL,meditation_elapsed_ms=? WHERE id=?").run(value,row.id);
++      await saveStep(store,state,'meditation',{source:'server_running_time',minimum_ms:MEDITATION_MS,elapsed_ms:value,actual_meditation_verified:false},nowMs);
++    }
++    return current(userId,{accountId:state.account_id,store,nowMs});
++  });
++}
++async function observeAdmission(store,userId,daily,tradeId){
++  const r=daily.routine;if(!r||!['pending','complete','setup_required'].includes(r.state)||typeof r.complete!=='boolean')throw RR.input('Routine observation missing from actual admission.',503);
++  const before=r.cycle?.completed_before_window===null||!r.cycle?null:r.cycle.completed_before_window===1,prepared=r.complete&&before===true;
++  const snapshot={user_id:userId,account_id:daily.account_id,rule_date:daily.date,recorded_at:daily.evaluated_at,first_trade_id:Number(tradeId),cycle_id:r.cycle?.id||null,workflow_complete_at_entry:r.complete,completed_before_window:before,completed_at:r.cycle?.completed_at||null,window_at:r.cycle?.window_at||null,prepared_at_entry:prepared,source:'first_executed_admission'};
++  await store.prepare(`INSERT INTO routine_day_admissions(user_id,account_id,rule_date,first_trade_id,cycle_id,recorded_at,prepared,workflow_complete_at_entry,snapshot) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id,account_id,rule_date) DO NOTHING`).run(userId,daily.account_id,daily.date,Number(tradeId),r.cycle?.id||null,daily.evaluated_at,prepared?1:0,r.complete?1:0,JSON.stringify(snapshot));
++  if(r.cycle)await store.prepare('UPDATE routine_cycles SET first_action_at=? WHERE id=? AND user_id=? AND account_id=? AND first_action_at IS NULL').run(daily.evaluated_at,r.cycle.id,userId,daily.account_id);
++}
++module.exports={ORDERS,MEDITATION_MS,config,parts,windowAt,boundaries,validateCycle,current,acknowledge,meditation,elapsed,validateSteps,observeAdmission};

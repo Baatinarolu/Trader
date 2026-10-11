@@ -1,0 +1,44 @@
+diff --git a/src/routine-records.js b/src/routine-records.js
+index 258c5fd..cff4507 100644
+--- a/src/routine-records.js
++++ b/src/routine-records.js
+@@ -9,7 +9,7 @@ function dateKey(value){if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(
+ function parseFlag(value){if(value===null)return null;if(typeof value!=='boolean')throw input('pre_market_done must be an explicit true, false or null/unknown.');return value?1:0;}
+ async function owned(store,userId,accountId=null){
+   let row;if(accountId==null||accountId==='')row=await store.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY archived,is_default DESC,id LIMIT 1').get(userId);
+-  else{if(typeof accountId==='boolean'||!Number.isSafeInteger(Number(accountId))||Number(accountId)<=0)throw input('Account not found',404);row=await store.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(accountId),userId);}
++  else{if(!['number','string'].includes(typeof accountId)||(typeof accountId==='string'&&!/^[1-9]\d*$/.test(accountId))||!Number.isSafeInteger(Number(accountId))||Number(accountId)<=0)throw input('Account not found',404);row=await store.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(accountId),userId);}
+   if(!row)throw input('Account not found',404);return row;
+ }
+ function publicRecord(row,date,accountId,nowMs=Date.now()){
+diff --git a/src/routine.js b/src/routine.js
+index f0ffac9..719f778 100644
+--- a/src/routine.js
++++ b/src/routine.js
+@@ -10,7 +10,7 @@ function config(raw={}){
+   const start=raw.routine_window_start==null||raw.routine_window_start===''?null:raw.routine_window_start;
+   if(start!==null&&(typeof start!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)))throw RR.input('Select a local trading-window start as HH:MM.');
+   const zone=raw.routine_timezone==null||raw.routine_timezone===''?null:raw.routine_timezone;
+-  if(zone!==null){if(typeof zone!=='string'||zone.length>100)throw RR.input('Select a valid IANA routine timezone.');try{new Intl.DateTimeFormat('en',{timeZone:zone}).format(0);}catch{throw RR.input('Select a valid IANA routine timezone.');}}
++  if(zone!==null){if(typeof zone!=='string'||zone.length>100||/^[+-]/.test(zone))throw RR.input('Select a valid IANA routine timezone.');try{new Intl.DateTimeFormat('en',{timeZone:zone}).format(0);}catch{throw RR.input('Select a valid IANA routine timezone.');}}
+   if(start!==null && zone===null)throw RR.input('An explicit IANA timezone is required with the selected window.');
+   const lead=raw.routine_lead_minutes??60;if((typeof lead!=='number'&&typeof lead!=='string')||(typeof lead==='string'&&!/^\d+$/.test(lead))||!Number.isInteger(Number(lead))||Number(lead)<1||Number(lead)>180)throw RR.input('Routine lead must be whole minutes from 1 to 180.');
+   const order=raw.routine_order??'ep17';if(!Object.prototype.hasOwnProperty.call(ORDERS,order))throw RR.input('Choose ep17 or meditation_first routine order.');
+@@ -46,7 +46,7 @@ async function current(userId,{accountId=null,account=null,store=db,nowMs=Date.n
+   const last=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? ORDER BY id DESC LIMIT 1').get(userId,acc.id);
+   if(last)validateCycle(last,nowMs,{active:false});
+   let row=last&&msOf(last.reset_at)<=nowMs&&nowMs<msOf(last.expires_at)?last:null;
+-  if(!row){const cfg=config(acc);if(cfg.routine_window_start===null){await RR.admission(store,userId,acc.id,dayKey(nowMs),nowMs,{strict:true});return {account_id:acc.id,state:'setup_required',complete:false,cycle:null,order:ORDERS[cfg.routine_order],steps:[],next_step:'setup',message:'Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.',scope:'Personal preparation requirement, not broker-hours or market permission'};}
++  if(!row){let cfg;try{cfg=config(acc);}catch{throw RR.input('Stored routine configuration is unavailable.',503);}if(cfg.routine_window_start===null){await RR.admission(store,userId,acc.id,dayKey(nowMs),nowMs,{strict:true});return {account_id:acc.id,state:'setup_required',complete:false,cycle:null,order:ORDERS[cfg.routine_order],steps:[],next_step:'setup',message:'Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.',scope:'Personal preparation requirement, not broker-hours or market permission'};}
+     const b=boundaries(cfg,nowMs);await store.prepare(`INSERT OR IGNORE INTO routine_cycles(user_id,account_id,cycle_date,rule_date,timezone,window_start,lead_minutes,step_order,reset_at,window_at,expires_at,selected_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(userId,acc.id,b.cycle_date,b.rule_date,cfg.routine_timezone,cfg.routine_window_start,cfg.routine_lead_minutes,cfg.routine_order,b.reset_at,b.window_at,b.expires_at,at);
+     row=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? AND reset_at=?').get(userId,acc.id,b.reset_at);
+   }
+@@ -96,7 +96,7 @@ function validateSteps(row,steps,order,userId,nowMs){
+ }
+ async function actionState(store,userId,body,nowMs){
+   const account=await RR.owned(store,userId,body.account_id);if(account.archived)throw RR.input('Archived accounts cannot complete a new execution routine.',409);
+-  if(!Number.isSafeInteger(Number(body.cycle_id))||typeof body.cycle_id==='boolean'||Number(body.cycle_id)<=0)throw RR.input('Select the actual current routine cycle.',409);
++  if(!['number','string'].includes(typeof body.cycle_id)||(typeof body.cycle_id==='string'&&!/^[1-9]\d*$/.test(body.cycle_id))||!Number.isSafeInteger(Number(body.cycle_id))||Number(body.cycle_id)<=0)throw RR.input('Select the actual current routine cycle.',409);
+   const state=await current(userId,{account,store,nowMs});if(!state.cycle||state.cycle.id!==Number(body.cycle_id))throw RR.input('This is not the current routine cycle. Reload the current routine.',409);
+   return state;
+ }

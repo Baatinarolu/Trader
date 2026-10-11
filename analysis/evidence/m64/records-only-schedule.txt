@@ -1,0 +1,31 @@
+FAIL legacy/default account does not fabricate a local trading-window hour undefined
+FAIL no selected schedule is explicit setup_required, never falsely completed {"status":404,"data":{}}
+FAIL bad config400/no write {"routine_window_start":"25:00"} 200
+FAIL bad config400/no write {"routine_window_start":"9:3"} 200
+FAIL bad config400/no write {"routine_window_start":true} 200
+FAIL bad config400/no write {"routine_timezone":"Bad/Zone"} 200
+FAIL bad config400/no write {"routine_timezone":[]} 200
+FAIL bad config400/no write {"routine_lead_minutes":0} 200
+FAIL bad config400/no write {"routine_lead_minutes":181} 200
+FAIL bad config400/no write {"routine_lead_minutes":1.5} 200
+FAIL bad config400/no write {"routine_lead_minutes":true} 200
+FAIL bad config400/no write {"routine_order":"made_up"} 200
+FAIL account selects valid HH:MM/IANA/default-hour/order roundtrip undefined
+FAIL unrelated rename retains all selected routine fields undefined
+FAIL before local reset current cycle is previous local window, not tomorrow early pass undefined
+FAIL inclusive14:00Lagos reset creates fresh15:00Lagos/14:00UTC window cycle undefined
+FAIL full Ep17 step order is explicit calendar/plan/charts/meditation/check-in undefined
+FAIL new cycle has no invented step confirmations or completion time undefined
+FAIL same active cycle freezes original schedule/order despite timezone/hour edits undefined
+FAIL clearing future window cannot erase active pending cycle undefined
+FAIL next scheduled reset does not carry previous-cycle completion/checks undefined
+ok another owner cannot read routine404
+ok another owner cannot edit routine configuration404
+FAIL routine inspection requires real auth401 404
+FAIL reset-before-midnight correctly identifies upcoming window localdate undefined
+FAIL IANA DST summer preserves selected09:30local/16:30UTC undefined
+FAIL IANA standard time changes UTC, not selected09:30local undefined
+FAIL ambiguous DST fold uses explicitly disclosed earlier occurrence undefined
+FAIL nonexistent DST clock shifts forward by gap, disclosed not silent fake time undefined
+FAIL explicit bonus variant has meditation first and chosen45-minute lead undefined
+M64 routine schedule: 2 passed, 28 failed

@@ -1,0 +1,187 @@
+diff --git a/src/db.js b/src/db.js
+index 2db3592..74b4083 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -138,6 +138,10 @@ CREATE TABLE IF NOT EXISTS accounts (
+   max_trades_day INTEGER NOT NULL DEFAULT 3, -- M83/M113 preselected, not derived from overtrading
+   daily_loss_limit_pct REAL DEFAULT 3.0,
+   max_session_minutes INTEGER CHECK(max_session_minutes IS NULL OR (max_session_minutes BETWEEN 1 AND 1440 AND max_session_minutes=CAST(max_session_minutes AS INTEGER))), -- M84 optional manual/advisory time ceiling
++  routine_window_start TEXT,
++  routine_timezone TEXT,
++  routine_lead_minutes INTEGER NOT NULL DEFAULT 60 CHECK(routine_lead_minutes BETWEEN 1 AND 180),
++  routine_order TEXT NOT NULL DEFAULT 'ep17' CHECK(routine_order IN ('ep17','meditation_first')),
+   daily_profit_limit_pct REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100)), -- M81 optional, separate from lifetime profit target
+   max_drawdown_pct REAL DEFAULT 10.0,
+   profit_target_pct REAL DEFAULT 8.0,
+@@ -297,6 +301,37 @@ CREATE TABLE IF NOT EXISTS guardrail_reflections (
+ CREATE INDEX IF NOT EXISTS idx_reflections_scope ON guardrail_reflections(user_id,account_id,rule_date,id);
+ -- Manual daily self-reports are not workflow completion or admission permission.
+ -- Independent account/date key avoids conflating the single daily notebook.
++-- Frozen local-window cycles and explicit human steps, not inferred broker hours.
++CREATE TABLE IF NOT EXISTS routine_cycles (
++  id INTEGER PRIMARY KEY AUTOINCREMENT,
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++  cycle_date TEXT NOT NULL,
++  rule_date TEXT NOT NULL,
++  timezone TEXT NOT NULL,
++  window_start TEXT NOT NULL,
++  lead_minutes INTEGER NOT NULL CHECK(lead_minutes BETWEEN 1 AND 180),
++  step_order TEXT NOT NULL CHECK(step_order IN ('ep17','meditation_first')),
++  reset_at TEXT NOT NULL,
++  window_at TEXT NOT NULL,
++  expires_at TEXT NOT NULL,
++  selected_at TEXT NOT NULL,
++  meditation_state TEXT NOT NULL DEFAULT 'not_started' CHECK(meditation_state IN ('not_started','running','paused','completed')),
++  meditation_started_at TEXT,
++  meditation_elapsed_ms INTEGER NOT NULL DEFAULT 0 CHECK(meditation_elapsed_ms>=0),
++  completed_at TEXT,
++  completed_before_window INTEGER CHECK(completed_before_window IS NULL OR completed_before_window IN (0,1)),
++  first_action_at TEXT,
++  UNIQUE(user_id,account_id,reset_at)
++);
++CREATE INDEX IF NOT EXISTS idx_routine_cycles_active ON routine_cycles(user_id,account_id,reset_at,expires_at);
++CREATE TABLE IF NOT EXISTS routine_checks (
++  cycle_id INTEGER NOT NULL REFERENCES routine_cycles(id) ON DELETE CASCADE,
++  step TEXT NOT NULL CHECK(step IN ('calendar','plan','charts','meditation','check_in')),
++  completed_at TEXT NOT NULL,
++  payload TEXT NOT NULL,
++  PRIMARY KEY(cycle_id,step)
++);
+ CREATE TABLE IF NOT EXISTS routine_day_records (
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+   account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+@@ -577,6 +612,10 @@ async function migrate() {
+   await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
+   await add('journal_entries','pre_market_basis','TEXT');
+   await add('journal_entries','pre_market_recorded_at','TEXT');
++  await add('accounts','routine_window_start','TEXT');
++  await add('accounts','routine_timezone','TEXT');
++  await add('accounts','routine_lead_minutes','INTEGER NOT NULL DEFAULT 60 CHECK(routine_lead_minutes BETWEEN 1 AND 180)');
++  await add('accounts','routine_order',"TEXT NOT NULL DEFAULT 'ep17' CHECK(routine_order IN ('ep17','meditation_first'))");
+   // M68: never backfill a named model from grade/zone guesses. Unknown != none.
+   for (const table of ['trades', 'bot_signals']) {
+     await add(table, 'entry_model', 'TEXT');
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 336f6ce..05d63e9 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -12,6 +12,7 @@ const Guards = require('../bots/guardrails');
+ const SessionTime = require('../session-time');
+ const J = require('../journaling');
+ const RR = require('../routine-records');
++const Routine = require('../routine');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+@@ -604,6 +605,9 @@ router.get('/journal', requireAuth, async (req, res) => {
+   const journalRows=await db.prepare('SELECT * FROM trades WHERE user_id=?'+(req.query.account_id?' AND account_id=?':'')).all(...(req.query.account_id?[req.user.id,Number(req.query.account_id)]:[req.user.id]));
+   res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC' });
+ });
++router.get('/routine',requireAuth,async(req,res)=>{
++  try{res.json({routine:await Routine.current(req.user.id,{accountId:req.query.account_id})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine state could not be verified.'});}
++});
+ router.get('/routine/daily/:date',requireAuth,async(req,res)=>{
+   try{res.json({pre_market:await RR.daily(req.user.id,{accountId:req.query.account_id,date:req.params.date})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Daily routine record could not be verified.'});}
+ });
+@@ -810,13 +814,14 @@ router.post('/accounts', requireAuth, async (req, res) => {
+   let sessionLimit;
+   try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes); }
+   catch(e){return res.status(400).json({error:e.message});}
++  let routineConfig;try{routineConfig=Routine.config(b);}catch(e){return res.status(400).json({error:e.message});}
+   const unlocked = !!b.risk_unlocked;
+   const riskPct = I.clampRiskPct(b.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked });
+-  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes,routine_window_start,routine_timezone,routine_lead_minutes,routine_order)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+     req.user.id, b.name, b.broker || '', b.account_type || 'live', b.currency || 'USD',
+     num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0, maxTrades,
+-    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit);
++    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit,routineConfig.routine_window_start,routineConfig.routine_timezone,routineConfig.routine_lead_minutes,routineConfig.routine_order);
+   res.json({
+     ok: true,
+     account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(info.lastInsertRowid),
+@@ -837,6 +842,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+   let sessionLimit;
+   try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes === undefined ? cur.max_session_minutes : b.max_session_minutes); }
+   catch(e){return res.status(400).json({error:e.message});}
++  let routineConfig;try{routineConfig=Routine.config({...cur,...b});}catch(e){return res.status(400).json({error:e.message});}
+   // M9: the same guardrail on the update path, which also stored the value via num() with no
+   // clamp. Only a value THIS request supplies is clamped — a row stored above the guardrail
+   // before the fix is left untouched here and clamped on READ (bots/index.js) instead, so an
+@@ -847,7 +853,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+     : num(cur.risk_per_trade_pct, I.RISK_GUARDRAIL.default_pct);
+   await db.prepare(`UPDATE accounts SET name=@name, broker=@broker, account_type=@account_type, currency=@currency,
+     starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, max_trades_day=@max_trades_day, daily_loss_limit_pct=@daily_loss_limit_pct,
+-    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, max_session_minutes=@max_session_minutes, prop_preset=@prop_preset,
++    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, max_session_minutes=@max_session_minutes,routine_window_start=@routine_window_start,routine_timezone=@routine_timezone,routine_lead_minutes=@routine_lead_minutes,routine_order=@routine_order, prop_preset=@prop_preset,
+     prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
+     id, user_id: req.user.id,
+     name: b.name !== undefined ? b.name : cur.name,
+@@ -860,6 +866,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+     max_trades_day: maxTrades,
+     daily_profit_limit_pct: profitLimit,
+     max_session_minutes: sessionLimit,
++    ...routineConfig,
+     daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
+     max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
+     prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
+diff --git a/src/routine.js b/src/routine.js
+new file mode 100644
+index 0000000..3779200
+--- /dev/null
++++ b/src/routine.js
+@@ -0,0 +1,52 @@
++'use strict';
++/** M64: explicitly selected local-window routine, immutable active-cycle policy.
++ * Human steps/timer are preparation, not broker activity/verified mental state,
++ * provider news clearance, allowed-hour enforcement or new market geometry. */
++const {db}=require('./db'),RR=require('./routine-records'),{dayKey,msOf}=require('./bots/guardrails');
++const ORDERS={ep17:['calendar','plan','charts','meditation','check_in'],meditation_first:['meditation','calendar','plan','charts','check_in']};
++const MEDITATION_MS=15*60000;
++function clock(value){if(!Number.isFinite(value))throw RR.input('Routine server clock is unavailable.',503);return value;}
++function config(raw={}){
++  const start=raw.routine_window_start==null||raw.routine_window_start===''?null:raw.routine_window_start;
++  if(start!==null&&(typeof start!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)))throw RR.input('Select a local trading-window start as HH:MM.');
++  const zone=raw.routine_timezone==null||raw.routine_timezone===''?null:raw.routine_timezone;
++  if(zone!==null){if(typeof zone!=='string'||zone.length>100)throw RR.input('Select a valid IANA routine timezone.');try{new Intl.DateTimeFormat('en',{timeZone:zone}).format(0);}catch{throw RR.input('Select a valid IANA routine timezone.');}}
++  if(start!==null && zone===null)throw RR.input('An explicit IANA timezone is required with the selected window.');
++  const lead=raw.routine_lead_minutes??60;if((typeof lead!=='number'&&typeof lead!=='string')||(typeof lead==='string'&&!/^\d+$/.test(lead))||!Number.isInteger(Number(lead))||Number(lead)<1||Number(lead)>180)throw RR.input('Routine lead must be whole minutes from 1 to 180.');
++  const order=raw.routine_order??'ep17';if(!Object.prototype.hasOwnProperty.call(ORDERS,order))throw RR.input('Choose ep17 or meditation_first routine order.');
++  return {routine_window_start:start,routine_timezone:zone,routine_lead_minutes:Number(lead),routine_order:order};
++}
++const formatters=new Map(),windows=new Map();
++function parts(ms,zone){let fmt=formatters.get(zone);if(!fmt){fmt=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});formatters.set(zone,fmt);}return Object.fromEntries(fmt.formatToParts(new Date(ms)).filter(p=>p.type!=='literal').map(p=>[p.type,Number(p.value)]));}
++function civil(p){return Date.UTC(p.year,p.month-1,p.day,p.hour||0,p.minute||0);}
++function localDate(ms,zone){const p=parts(ms,zone);return `${p.year}-${String(p.month).padStart(2,'0')}-${String(p.day).padStart(2,'0')}`;}
++function addDay(date,n){return dayKey(msOf(date)+n*864e5);}
++/** Explicit DST policy: earlier fold occurrence, shift nonexistent clocks forward
++ * by the gap. Offset candidates from +/-36h avoid a hard-coded UTC session. */
++function windowAt(date,time,zone){const key=[date,time,zone].join('|');if(windows.has(key))return windows.get(key);const [year,month,day]=date.split('-').map(Number),[hour,minute]=time.split(':').map(Number),wanted=Date.UTC(year,month-1,day,hour,minute),offsets=new Set([-36,-12,0,12,36].map(h=>{const sample=wanted+h*3600000;return civil(parts(sample,zone))-sample;}));
++  const candidates=[...offsets].map(offset=>wanted-offset),exact=candidates.filter(ms=>civil(parts(ms,zone))===wanted);let value;
++  if(exact.length)value=Math.min(...exact);else{const shifted=candidates.map(ms=>({ms,delta:civil(parts(ms,zone))-wanted})).filter(x=>x.delta>0).sort((a,b)=>a.delta-b.delta||a.ms-b.ms);if(!shifted.length)throw RR.input('Selected local routine time could not be resolved.',503);value=shifted[0].ms;}
++  if(windows.size>500)windows.clear();windows.set(key,value);return value;
++}
++function boundaries(cfg,nowMs=Date.now()){
++  clock(nowMs);const today=localDate(nowMs,cfg.routine_timezone);
++  for(const n of [-1,0,1]){const date=addDay(today,n),window=windowAt(date,cfg.routine_window_start,cfg.routine_timezone),reset=window-cfg.routine_lead_minutes*60000,next=windowAt(addDay(date,1),cfg.routine_window_start,cfg.routine_timezone)-cfg.routine_lead_minutes*60000;if(nowMs>=reset&&nowMs<next)return {cycle_date:date,rule_date:dayKey(window),reset_at:new Date(reset).toISOString(),window_at:new Date(window).toISOString(),expires_at:new Date(next).toISOString()};}
++  throw RR.input('Routine cycle boundary could not be resolved.',503);
++}
++function validateCycle(row,nowMs){clock(nowMs);const cfg=config({routine_window_start:row.window_start,routine_timezone:row.timezone,routine_lead_minutes:row.lead_minutes,routine_order:row.step_order}),reset=msOf(row.reset_at),end=msOf(row.expires_at),selected=msOf(row.selected_at),window=msOf(row.window_at);
++  if(!Number.isFinite(reset)||!Number.isFinite(end)||!Number.isFinite(selected)||!Number.isFinite(window)||selected>nowMs||selected<reset||selected>=end||!(reset<=nowMs&&nowMs<end)||reset>=window||window>=end||dayKey(window)!==row.rule_date)throw RR.input('Stored routine cycle is unavailable.',503);
++  const expected=boundaries(cfg,nowMs);if(['cycle_date','rule_date','reset_at','window_at','expires_at'].some(k=>row[k]!==expected[k]))throw RR.input('Stored routine boundary is unavailable.',503);return cfg;
++}
++async function current(userId,{accountId=null,account=null,store=db,nowMs=Date.now()}={}){
++  clock(nowMs);const acc=account||await RR.owned(store,userId,accountId),at=new Date(nowMs).toISOString();
++  let row=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? AND reset_at<=? AND expires_at>? ORDER BY reset_at DESC LIMIT 1').get(userId,acc.id,at,at);
++  if(!row){const cfg=config(acc);if(cfg.routine_window_start===null)return {account_id:acc.id,state:'setup_required',complete:false,cycle:null,order:ORDERS[cfg.routine_order],steps:[],next_step:'setup',message:'Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.',scope:'Personal preparation requirement, not broker-hours or market permission'};
++    const b=boundaries(cfg,nowMs);await store.prepare(`INSERT OR IGNORE INTO routine_cycles(user_id,account_id,cycle_date,rule_date,timezone,window_start,lead_minutes,step_order,reset_at,window_at,expires_at,selected_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(userId,acc.id,b.cycle_date,b.rule_date,cfg.routine_timezone,cfg.routine_window_start,cfg.routine_lead_minutes,cfg.routine_order,b.reset_at,b.window_at,b.expires_at,at);
++    row=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? AND reset_at=?').get(userId,acc.id,b.reset_at);
++  }
++  const cfg=validateCycle(row,nowMs),order=ORDERS[cfg.routine_order],checks=await store.prepare('SELECT * FROM routine_checks WHERE cycle_id=? ORDER BY completed_at').all(row.id);
++  const steps=checks.map(r=>({...r,payload:JSON.parse(r.payload)}));const complete=steps.length===order.length&&!!row.completed_at;
++  return {account_id:acc.id,state:complete?'complete':'pending',complete,cycle:{...row,dst_policy:'earlier fold / shift forward gap'},order,steps,next_step:order.find(s=>!steps.some(c=>c.step===s))||null,meditation:{minimum_ms:MEDITATION_MS,state:row.meditation_state,elapsed_ms:row.meditation_elapsed_ms},evaluated_at:at,
++    message:complete?'Current routine steps acknowledged; this is preparation, not reusable entry/mental/news permission.':'Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.',scope:'Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof'};
++}
++module.exports={ORDERS,MEDITATION_MS,config,parts,windowAt,boundaries,validateCycle,current};

@@ -1,0 +1,50 @@
+[
+  {
+    "script": "scripts/now-test.js",
+    "exit_code": 0,
+    "output": "regression-now.txt",
+    "scope": "Original pure/read-settings source, NO prerequisite adapter"
+  },
+  {
+    "script": "scripts/topdown-test.js",
+    "exit_code": 0,
+    "output": "regression-topdown.txt",
+    "scope": "Original pure/read-settings source, NO prerequisite adapter"
+  },
+  {
+    "script": "scripts/chart-test.js",
+    "exit_code": 0,
+    "output": "regression-chart.txt",
+    "scope": "Original pure/read-settings source, NO prerequisite adapter"
+  },
+  {
+    "script": "analysis/probe-m33-countertrend-execution.js",
+    "exit_code": 1,
+    "output": "regression-m33.txt",
+    "scope": "Original pure/read-settings source, NO prerequisite adapter"
+  },
+  {
+    "script": "analysis/probe-m78-entry-consumers.js",
+    "exit_code": 1,
+    "output": "regression-m78.txt",
+    "scope": "Original pure/read-settings source, NO prerequisite adapter"
+  },
+  {
+    "script": "analysis/probe-m77-target-consumers.js",
+    "exit_code": 1,
+    "output": "regression-m77.txt",
+    "scope": "Original pure/read-settings source, NO prerequisite adapter"
+  },
+  {
+    "script": "analysis/probe-m71-rr-consumers.js",
+    "exit_code": 1,
+    "output": "regression-m71.txt",
+    "scope": "Original pure/read-settings source, NO prerequisite adapter"
+  },
+  {
+    "script": "analysis/probe-m71-saved-settings.js",
+    "exit_code": 0,
+    "output": "regression-settings.txt",
+    "scope": "Original pure/read-settings source, NO prerequisite adapter"
+  }
+]

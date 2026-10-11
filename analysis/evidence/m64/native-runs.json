@@ -1,0 +1,62 @@
+[
+  {
+    "arm": "parent",
+    "suite": "api",
+    "pass": 121,
+    "fail": 0,
+    "exit_code": 0,
+    "output": "native-parent-api.txt",
+    "scope": "Actual pristine shipped751 runtime, original scripts/no new fixture; same DB for suite hygiene",
+    "database": "/tmp/m64-native-parent-corrected.db"
+  },
+  {
+    "arm": "parent",
+    "suite": "bots",
+    "pass": 206,
+    "fail": 0,
+    "exit_code": 0,
+    "output": "native-parent-bots.txt",
+    "scope": "Actual pristine shipped751 runtime, original scripts/no new fixture; same DB for suite hygiene",
+    "database": "/tmp/m64-native-parent-corrected.db"
+  },
+  {
+    "arm": "raw",
+    "suite": "api",
+    "pass": null,
+    "fail": null,
+    "exit_code": 2,
+    "output": "native-raw-api.txt",
+    "scope": "Actual current policy, original unchanged scripts, no prerequisite fixture; expected missing routine negatives",
+    "database": "/tmp/m64-final-regressions.db"
+  },
+  {
+    "arm": "raw",
+    "suite": "bots",
+    "pass": 202,
+    "fail": 4,
+    "exit_code": 1,
+    "output": "native-raw-bots.txt",
+    "scope": "Actual current policy, original unchanged scripts, no prerequisite fixture; expected missing routine negatives",
+    "database": "/tmp/m64-final-regressions.db"
+  },
+  {
+    "arm": "fixture",
+    "suite": "api",
+    "pass": 121,
+    "fail": 0,
+    "exit_code": 0,
+    "output": "native-fixture-api.txt",
+    "scope": "DECLARED synthetic owned preparation through actual routine module/15m controlled-clock fixture, original scripts/no price/floor/assertion adapter. NOT integrated routine/human/timer proof",
+    "database": "/tmp/m64-native-fixture.db"
+  },
+  {
+    "arm": "fixture",
+    "suite": "bots",
+    "pass": 206,
+    "fail": 0,
+    "exit_code": 0,
+    "output": "native-fixture-bots.txt",
+    "scope": "DECLARED synthetic owned preparation through actual routine module/15m controlled-clock fixture, original scripts/no price/floor/assertion adapter. NOT integrated routine/human/timer proof",
+    "database": "/tmp/m64-native-fixture.db"
+  }
+]

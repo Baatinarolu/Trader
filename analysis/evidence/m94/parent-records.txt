@@ -1,0 +1,28 @@
+FAIL nullable journal routine flag exists without invented legacy completion undefined
+FAIL omitted flag remains explicitly unknownNULL rather than false/true undefined
+FAIL strict explicit daily flag roundtrip true {"status":200,"data":{"ok":true,"entry":{"id":2,"user_id":1,"account_id":1,"entry_date":"2026-10-02","market_bias":"","mood":null,"energy":null,"focus":"","plan":"","review":"","lessons":"","tomorrow":"","proof_lived":"","rule_broke":"","broke_trigger":"","screen_time_minutes":null,"created_at":"2026-10-11 17:51:32"}}}
+FAIL strict explicit daily flag roundtrip false {"status":200,"data":{"ok":true,"entry":{"id":2,"user_id":1,"account_id":1,"entry_date":"2026-10-02","market_bias":"","mood":null,"energy":null,"focus":"","plan":"","review":"","lessons":"","tomorrow":"","proof_lived":"","rule_broke":"","broke_trigger":"","screen_time_minutes":null,"created_at":"2026-10-11 17:51:32"}}}
+FAIL strict explicit daily flag roundtrip null {"status":200,"data":{"ok":true,"entry":{"id":2,"user_id":1,"account_id":1,"entry_date":"2026-10-02","market_bias":"","mood":null,"energy":null,"focus":"","plan":"","review":"","lessons":"","tomorrow":"","proof_lived":"","rule_broke":"","broke_trigger":"","screen_time_minutes":null,"created_at":"2026-10-11 17:51:32"}}}
+FAIL invalid flag type400/no journal mutation "true" 200
+FAIL invalid flag type400/no journal mutation "false" 200
+FAIL invalid flag type400/no journal mutation 1 200
+FAIL invalid flag type400/no journal mutation 0 200
+FAIL invalid flag type400/no journal mutation [] 200
+FAIL invalid flag type400/no journal mutation {} 200
+FAIL invalid flag type400/no journal mutation "yes" 200
+FAIL unrelated notebook update preserves flag/source/server capture clock undefined
+FAIL manual daily value labels source and is never reusable routine permission undefined
+FAIL invalid date is local400, not normalized into another day 200
+FAIL manual future completion cannot fabricate actual prior preparation 200
+FAIL foreign account cannot persist misattributed daily flag404 200
+ok foreign account cannot inspect daily records404
+FAIL routine records require real authentication401 404
+FAIL independent per-account flags survive existing one-notebook-per-user/day constraint {}
+FAIL descriptive daily outcome buckets use actual whole-day realised sum, not per-trade weighting undefined
+FAIL unknown routine days are separate, not fabricated as skipped undefined
+FAIL missing net P&L is unavailable, not an invented zero observation undefined
+FAIL open floating values and other accounts cannot inflate routine association undefined
+FAIL small sample remains descriptive/no causal or automatic sizing/permission claim undefined
+FAIL actual UTC day review exposes routine fact/source beside core journal stats undefined
+FAIL actual notebook index includes per-account routine records for review undefined
+M14/M94 routine records: 1 passed, 26 failed

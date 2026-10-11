@@ -1,0 +1,29 @@
+ok no schedule is known setup-required preparation STOP, not broker-hours unknown
+ok actual unscheduled execution409 with zero admissions
+ok known missing preparation retains fresh typed single-action override
+ok exception never completes routine or permits another unreasoned entry
+ok previous override reason not reusable409
+FAIL manual daily true cannot satisfy actual workflow gate {"account_id":2,"state":"setup_required","complete":false,"cycle":null,"order":["calendar","plan","charts","meditation","check_in"],"steps":[],"next_step":"setup","message":"Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.","scope":"Personal preparation requirement, not broker-hours or market permission"}
+ok valid schedule still has pending actual steps stop
+ok one checkbox is not completed pre-market routine
+ok record-only open history remains legal, not execution/admission
+ok truthful close legal while current routine incomplete
+ok truthful correction legal while preparation incomplete
+ok prospective reopen must obey actual routine409
+ok truthful delete legal without completing preparation
+ok actual ordered/timed/four-check workflow resolves its own stop
+ok real fresh transactional entry after workflow succeeds200
+ok old max-trades cap observed independently while routine pending
+ok routine completion never refunds old observed cap/admissions
+ok future/corrupt stored timer makes routine UNKNOWN, not known-stop override
+ok typed reason never waives routine unknown503/zero admissions
+ok honest closed record remains writable under routine uncertainty
+ok unknown routine plus truth delete cannot erase already observed old cap
+ok routine storage I/O failure unknown, no cached reusable pass
+ok six real concurrent incomplete entries all409/no admissions
+FAIL unhandled boundary "TypeError: Cannot read properties of undefined (reading 'market_action')\n    at Object.applyToSetups (/home/user/Trader/extracted/tradejournal/src/bots/guardrails.js:207:34)\n    at /home/user/Trader/analysis/probe-m64-routine-gate.js:21:227\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)"
+TypeError: Cannot read properties of undefined (reading 'market_action')
+    at Object.applyToSetups (/home/user/Trader/extracted/tradejournal/src/bots/guardrails.js:207:34)
+    at /home/user/Trader/analysis/probe-m64-routine-gate.js:21:227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+M64 routine gate: 22 passed, 2 failed

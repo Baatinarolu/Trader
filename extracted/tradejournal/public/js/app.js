@@ -133,14 +133,18 @@
         <select id="range-switch" style="width:auto">
           ${[['30d', 'Last 30 days'], ['7d', 'Last 7 days'], ['90d', 'Last 90 days'], ['mtd', 'Month to date'], ['ytd', 'Year to date'], ['all', 'All time'], ['custom', 'Custom range…']].map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}
         </select>
+        <button class="btn sm" id="top-routine">Routine</button>
         <button class="btn sm" id="top-new">+ Trade</button>`;
       main.appendChild(top);
+      const routineSlot=U.h('section',{id:'routine-banner','aria-live':'polite'});main.appendChild(routineSlot);
       const content = U.h('main', { class: 'content', id: 'content' });
       main.appendChild(content);
       shell.appendChild(main);
       app.appendChild(shell);
+      if(Views.routine)Views.routine.mount(routineSlot);
 
       U.$('#side-new', side).addEventListener('click', () => this.openTrade(null));
+      U.$('#top-routine',top).addEventListener('click',()=>Views.routine?.open());
       U.$('#top-new', top).addEventListener('click', () => this.openTrade(null));
       U.$('#user-chip', side).addEventListener('click', () => this.go('settings'));
       const buildEl = U.$('#build-tag', side);
@@ -149,7 +153,7 @@
         const stamp = /^[0-9a-z]{4,}$/i.test(raw) ? raw : '';
         if (stamp) buildEl.textContent = 'build ' + stamp + ' · UI v2';
       }
-      U.$('#account-switch', top).addEventListener('change', (e) => { Store.setAccount(e.target.value); Store.invalidate(); this.refresh(); });
+      U.$('#account-switch', top).addEventListener('change', (e) => { Store.setAccount(e.target.value); Store.invalidate(); if(Views.routine)Views.routine.refresh(); this.refresh(); });
       U.$('#range-switch', top).addEventListener('change', (e) => {
         const v = e.target.value;
         if (v === 'custom') {
@@ -236,6 +240,8 @@
       skeleton.innerHTML = '<div class="skeleton" style="height:220px;margin-bottom:14px"></div><div class="skeleton" style="height:320px"></div>';
       content.replaceChildren ? content.replaceChildren(skeleton) : (content.innerHTML = skeleton.innerHTML);
       try {
+        if(Views.routine)await Views.routine.refresh();
+        if(token!==this._renderToken)return;
         await view.render(content);
         if (token !== this._renderToken) return;      // superseded while we were awaiting
         Store.booted && this.updateSidebarStats();

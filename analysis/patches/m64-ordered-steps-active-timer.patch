@@ -1,0 +1,152 @@
+diff --git a/src/db.js b/src/db.js
+index 74b4083..4625b41 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -332,6 +332,13 @@ CREATE TABLE IF NOT EXISTS routine_checks (
+   payload TEXT NOT NULL,
+   PRIMARY KEY(cycle_id,step)
+ );
++CREATE TABLE IF NOT EXISTS routine_checkin_attempts (
++  id INTEGER PRIMARY KEY AUTOINCREMENT,
++  cycle_id INTEGER NOT NULL REFERENCES routine_cycles(id) ON DELETE CASCADE,
++  captured_at TEXT NOT NULL,
++  passed INTEGER NOT NULL CHECK(passed IN (0,1)),
++  answers TEXT NOT NULL
++);
+ CREATE TABLE IF NOT EXISTS routine_day_records (
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+   account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 05d63e9..8b1236e 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -608,6 +608,12 @@ router.get('/journal', requireAuth, async (req, res) => {
+ router.get('/routine',requireAuth,async(req,res)=>{
+   try{res.json({routine:await Routine.current(req.user.id,{accountId:req.query.account_id})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine state could not be verified.'});}
+ });
++router.post('/routine/step',requireAuth,async(req,res)=>{
++  try{res.json({routine:await Routine.acknowledge(req.user.id,req.body)});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine step could not be verified.'});}
++});
++router.post('/routine/meditation',requireAuth,async(req,res)=>{
++  try{res.json({routine:await Routine.meditation(req.user.id,req.body)});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market meditation timer could not be verified.'});}
++});
+ router.get('/routine/daily/:date',requireAuth,async(req,res)=>{
+   try{res.json({pre_market:await RR.daily(req.user.id,{accountId:req.query.account_id,date:req.params.date})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Daily routine record could not be verified.'});}
+ });
+diff --git a/src/routine.js b/src/routine.js
+index 3779200..4fad93b 100644
+--- a/src/routine.js
++++ b/src/routine.js
+@@ -45,8 +45,109 @@ async function current(userId,{accountId=null,account=null,store=db,nowMs=Date.n
+     row=await store.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? AND reset_at=?').get(userId,acc.id,b.reset_at);
+   }
+   const cfg=validateCycle(row,nowMs),order=ORDERS[cfg.routine_order],checks=await store.prepare('SELECT * FROM routine_checks WHERE cycle_id=? ORDER BY completed_at').all(row.id);
+-  const steps=checks.map(r=>({...r,payload:JSON.parse(r.payload)}));const complete=steps.length===order.length&&!!row.completed_at;
+-  return {account_id:acc.id,state:complete?'complete':'pending',complete,cycle:{...row,dst_policy:'earlier fold / shift forward gap'},order,steps,next_step:order.find(s=>!steps.some(c=>c.step===s))||null,meditation:{minimum_ms:MEDITATION_MS,state:row.meditation_state,elapsed_ms:row.meditation_elapsed_ms},evaluated_at:at,
++  const steps=checks.map(r=>({...r,payload:JSON.parse(r.payload)})).sort((a,b)=>order.indexOf(a.step)-order.indexOf(b.step));
++  validateSteps(row,steps,order,userId,nowMs);
++  const complete=steps.length===order.length&&!!row.completed_at;
++  const attempts=await store.prepare('SELECT * FROM routine_checkin_attempts WHERE cycle_id=? ORDER BY id').all(row.id);
++  const check_in_attempts=attempts.map(r=>({...r,answers:JSON.parse(r.answers)}));
++  if(check_in_attempts.some(r=>!Number.isFinite(msOf(r.captured_at))||msOf(r.captured_at)>nowMs||msOf(r.captured_at)<msOf(row.selected_at)||![0,1].includes(r.passed)||!validAnswers(r.answers)||r.passed!==(Object.values(r.answers).every(v=>v===true)?1:0)))throw RR.input('Stored morning check-in is unavailable.',503);
++  return {account_id:acc.id,state:complete?'complete':'pending',complete,cycle:{...row,dst_policy:'earlier fold / shift forward gap'},order,steps,check_in_attempts,next_step:order.find(s=>!steps.some(c=>c.step===s))||null,meditation:{minimum_ms:MEDITATION_MS,state:row.meditation_state,elapsed_ms:elapsed(row,nowMs),actual_meditation_verified:false},evaluated_at:at,
+     message:complete?'Current routine steps acknowledged; this is preparation, not reusable entry/mental/news permission.':'Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.',scope:'Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof'};
+ }
+-module.exports={ORDERS,MEDITATION_MS,config,parts,windowAt,boundaries,validateCycle,current};
++
++function text(value,label,max=4000){if(typeof value!=='string'||!value.trim()||value.length>max)throw RR.input(`${label}: enter plain nonblank text, at most ${max} characters.`);return value.trim();}
++const ANSWERS=['calm','clear','following_plan','would_take_if_up_big'];
++function validAnswers(p){return p&&typeof p==='object'&&!Array.isArray(p)&&Object.keys(p).length===4&&ANSWERS.every(k=>typeof p[k]==='boolean');}
++function answers(body){const out=Object.fromEntries(ANSWERS.map(k=>[k,body[k]]));if(!validAnswers(out))throw RR.input('Answer all four morning questions with literal true/false values. These are human morning confirmations, not fresh in-session clearance.');return out;}
++function elapsed(row,nowMs){
++  if(!['not_started','running','paused','completed'].includes(row.meditation_state)||!Number.isSafeInteger(row.meditation_elapsed_ms)||row.meditation_elapsed_ms<0)throw RR.input('Stored meditation timer is unavailable.',503);
++  const started=msOf(row.meditation_started_at);
++  if(row.meditation_state==='running'){
++    if(!Number.isFinite(started)||started>nowMs||started<msOf(row.selected_at)||started>=msOf(row.expires_at))throw RR.input('Stored meditation timer clock is unavailable.',503);return row.meditation_elapsed_ms+nowMs-started;
++  }
++  if(row.meditation_started_at!==null||(row.meditation_state==='not_started'&&row.meditation_elapsed_ms!==0))throw RR.input('Stored meditation timer state is unavailable.',503);
++  return row.meditation_elapsed_ms;
++}
++function validateSteps(row,steps,order,userId,nowMs){
++  elapsed(row,nowMs);let previous=msOf(row.selected_at);
++  for(let i=0;i<steps.length;i++){
++    const s=steps[i],p=s.payload,at=msOf(s.completed_at);
++    if(s.step!==order[i]||!Number.isFinite(at)||at<previous||at>nowMs||!p||typeof p!=='object')throw RR.input('Stored routine step order/time is unavailable.',503);previous=at;
++    try{
++      if(s.step==='calendar'){if(p.reviewed!==true||p.method!=='manual_external'||p.source!=='human_calendar_review')throw Error();text(p.summary,'Calendar review');}
++      if(s.step==='plan'){if(p.reviewed!==true)throw Error();if(p.source==='own_strategy_snapshot'){if(p.snapshot?.user_id!==userId||!Number.isSafeInteger(p.snapshot?.id))throw Error();}else if(p.source==='manual_plan_text')text(p.plan_text,'Manual plan');else throw Error();}
++      if(s.step==='charts'){if(p.reviewed!==true||p.source!=='human_chart_review'||!['bullish','bearish','neutral'].includes(p.daily_bias)||!['set','not_applicable'].includes(p.alert_status))throw Error();text(p.htf_range,'Chart review');text(p.alert_note,'Alert report');}
++      if(s.step==='meditation'){if(p.source!=='server_running_time'||p.minimum_ms!==MEDITATION_MS||p.actual_meditation_verified!==false||!Number.isSafeInteger(p.elapsed_ms)||p.elapsed_ms<MEDITATION_MS||row.meditation_state!=='completed'||row.meditation_elapsed_ms!==p.elapsed_ms)throw Error();}
++      if(s.step==='check_in'){if(p.source!=='human_morning_check_in'||!validAnswers(p.answers)||!Object.values(p.answers).every(v=>v===true))throw Error();}
++    }catch{throw RR.input('Stored routine acknowledgement is unavailable.',503);}
++  }
++  const hasMeditation=steps.some(s=>s.step==='meditation');if((row.meditation_state==='completed')!==hasMeditation)throw RR.input('Stored timer acknowledgement is unavailable.',503);
++  if(row.meditation_state!=='not_started'&&!hasMeditation&&order[steps.length]!=='meditation')throw RR.input('Stored timer step order is unavailable.',503);
++  if(steps.length===order.length){const at=msOf(row.completed_at);if(!Number.isFinite(at)||at!==previous||![0,1].includes(row.completed_before_window)||row.completed_before_window!==(at<=msOf(row.window_at)?1:0))throw RR.input('Stored completion provenance is unavailable.',503);}
++  else if(row.completed_at!==null||row.completed_before_window!==null)throw RR.input('Stored incomplete routine provenance is unavailable.',503);
++  if(row.first_action_at!==null&&(!Number.isFinite(msOf(row.first_action_at))||msOf(row.first_action_at)>nowMs||msOf(row.first_action_at)<msOf(row.selected_at)))throw RR.input('Stored first-action provenance is unavailable.',503);
++}
++async function actionState(store,userId,body,nowMs){
++  const account=await RR.owned(store,userId,body.account_id);if(account.archived)throw RR.input('Archived accounts cannot complete a new execution routine.',409);
++  if(!Number.isSafeInteger(Number(body.cycle_id))||typeof body.cycle_id==='boolean'||Number(body.cycle_id)<=0)throw RR.input('Select the actual current routine cycle.',409);
++  const state=await current(userId,{account,store,nowMs});if(!state.cycle||state.cycle.id!==Number(body.cycle_id))throw RR.input('This is not the current routine cycle. Reload the current routine.',409);
++  return state;
++}
++async function stepPayload(store,userId,step,body){
++  if(step==='calendar'){if(body.reviewed!==true||body.method!=='manual_external')throw RR.input('Acknowledge your actual external-calendar review. It is not verified provider clearance.');return {reviewed:true,method:'manual_external',summary:text(body.summary,'Calendar review'),source:'human_calendar_review'};}
++  if(step==='plan'){
++    if(body.reviewed!==true)throw RR.input('Explicitly acknowledge reviewing your own plan.');
++    if(body.plan_id!==undefined&&body.plan_id!==null&&body.plan_id!==''){
++      if(typeof body.plan_id==='boolean'||!Number.isSafeInteger(Number(body.plan_id))||Number(body.plan_id)<=0)throw RR.input('Owned plan not found',404);
++      const snapshot=await store.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(Number(body.plan_id),userId);if(!snapshot)throw RR.input('Owned plan not found',404);
++      const version=await store.prepare('SELECT MAX(version) AS version FROM strategy_versions WHERE strategy_id=?').get(snapshot.id);
++      return {reviewed:true,source:'own_strategy_snapshot',snapshot:{...snapshot,version:version?.version||null}};
++    }
++    return {reviewed:true,source:'manual_plan_text',plan_text:text(body.plan_text,'Your explicit manual plan')};
++  }
++  if(step==='charts'){
++    if(body.reviewed!==true||!['bullish','bearish','neutral'].includes(body.daily_bias)||!['set','not_applicable'].includes(body.alert_status))throw RR.input('Review the chart/range, report a human daily bias and an actual alert or explicit not-applicable reason.');
++    return {reviewed:true,daily_bias:body.daily_bias,htf_range:text(body.htf_range,'Chart/range review'),alert_status:body.alert_status,alert_note:text(body.alert_note,'Alert report/reason'),source:'human_chart_review'};
++  }
++  if(step==='check_in')return {source:'human_morning_check_in',answers:answers(body)};
++  throw RR.input('Choose the actual next named step. Complete meditation with the server timer.');
++}
++async function saveStep(store,state,step,payload,nowMs){
++  const at=new Date(nowMs).toISOString();await store.prepare('INSERT INTO routine_checks(cycle_id,step,completed_at,payload) VALUES (?,?,?,?)').run(state.cycle.id,step,at,JSON.stringify(payload));
++  if(step==='check_in')await store.prepare('UPDATE routine_cycles SET completed_at=?,completed_before_window=? WHERE id=? AND completed_at IS NULL').run(at,nowMs<=msOf(state.cycle.window_at)?1:0,state.cycle.id);
++}
++async function acknowledge(userId,body={},nowMs=Date.now()){
++  clock(nowMs);return db.tx(async tx=>{const store=db.transactionStore(tx),state=await actionState(store,userId,body,nowMs),step=body.step;
++    if(['completed_at','elapsed_ms','started_at','complete','pre_market_done'].some(k=>Object.prototype.hasOwnProperty.call(body,k)))throw RR.input('Routine completion/source/time are derived by the server, not client proof.');
++    // Resolve payload ownership/strict values before an idempotency/order response.
++    const payload=await stepPayload(store,userId,step,body),existing=state.steps.find(s=>s.step===step);
++    if(existing){if(JSON.stringify(existing.payload)!==JSON.stringify(payload))throw RR.input('The completed step is frozen. It cannot be rewritten for this cycle.',409);return state;}
++    if(state.next_step!==step)throw RR.input('Complete the current routine step in your selected order.',409);
++    if(step==='check_in'){
++      const passed=Object.values(payload.answers).every(v=>v===true);await store.prepare('INSERT INTO routine_checkin_attempts(cycle_id,captured_at,passed,answers) VALUES (?,?,?,?)').run(state.cycle.id,new Date(nowMs).toISOString(),passed?1:0,JSON.stringify(payload.answers));
++      if(!passed)return current(userId,{accountId:state.account_id,store,nowMs});
++    }
++    await saveStep(store,state,step,payload,nowMs);return current(userId,{accountId:state.account_id,store,nowMs});
++  });
++}
++async function meditation(userId,body={},nowMs=Date.now()){
++  clock(nowMs);return db.tx(async tx=>{const store=db.transactionStore(tx),state=await actionState(store,userId,body,nowMs),row=state.cycle,action=body.action;
++    if(Object.keys(body).some(k=>!['account_id','cycle_id','action'].includes(k))||!['start','pause','resume','complete'].includes(action))throw RR.input('Choose start, pause, resume or complete. No client elapsed/start/finish clocks are accepted.');
++    if(row.meditation_state==='completed'&&action==='complete')return state;
++    if(state.next_step!=='meditation')throw RR.input('Complete the current routine step before meditation.',409);
++    const value=elapsed(row,nowMs),at=new Date(nowMs).toISOString();
++    if(action==='start'||action==='resume'){
++      if(row.meditation_state!==(action==='start'?'not_started':'paused'))throw RR.input('Timer is not in the state required for this action.',409);
++      await store.prepare("UPDATE routine_cycles SET meditation_state='running',meditation_started_at=? WHERE id=?").run(at,row.id);
++    }else if(action==='pause'){
++      if(row.meditation_state!=='running')throw RR.input('Only an active timer can be paused.',409);
++      await store.prepare("UPDATE routine_cycles SET meditation_state='paused',meditation_started_at=NULL,meditation_elapsed_ms=? WHERE id=?").run(value,row.id);
++    }else{
++      if(!['running','paused'].includes(row.meditation_state)||value<MEDITATION_MS)throw RR.input('Fifteen minutes of server-timed running time are required. A paused gap does not count.',409);
++      await store.prepare("UPDATE routine_cycles SET meditation_state='completed',meditation_started_at=NULL,meditation_elapsed_ms=? WHERE id=?").run(value,row.id);
++      await saveStep(store,state,'meditation',{source:'server_running_time',minimum_ms:MEDITATION_MS,elapsed_ms:value,actual_meditation_verified:false},nowMs);
++    }
++    return current(userId,{accountId:state.account_id,store,nowMs});
++  });
++}
++module.exports={ORDERS,MEDITATION_MS,config,parts,windowAt,boundaries,validateCycle,current,acknowledge,meditation,elapsed,validateSteps};

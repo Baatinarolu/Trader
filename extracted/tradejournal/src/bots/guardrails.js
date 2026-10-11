@@ -105,6 +105,9 @@ async function retainAdmission(store,userId,daily,options,result) {
     (user_id,account_id,rule_date,admitted_at,action,trade_id,admission_state,snapshot)
     VALUES (?,?,?,?,?,?,?,?)`).run(userId,daily.account_id,daily.date,daily.evaluated_at,
       options.action || 'entry',id,daily.admission.state,JSON.stringify(daily));
+  // Commit the immutable first-entry routine observation with this actual entry,
+  // never with blocked attempts/research plans/record-only historical imports.
+  await require('../routine').observeAdmission(store,userId,daily,id);
   const changed = await store.prepare(`UPDATE guardrail_day_state SET entries_count=entries_count+1,updated_at=?
     WHERE user_id=? AND account_id=? AND rule_date=?`).run(daily.evaluated_at,userId,daily.account_id,daily.date);
   if (changed.changes!==1) throw new Error('Missing durable rule day');

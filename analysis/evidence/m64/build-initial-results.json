@@ -1,0 +1,8 @@
+{
+  "stage": "First artifact builder before packaging",
+  "exit_code": 1,
+  "error": "AssertionError: Measured application changed/unknown source",
+  "cause": "Unfiltered shared contents(APP) enumerated ignored local artifacts, not the guarded117 source set. Nothing published. No private contents/hashes persisted or printed.",
+  "repair": "Use only git enumerated tracked/untracked-nonignored app paths; validate allowed sources; byte-hash those117. Temporary proof trees contain only explicit guarded source.",
+  "runtime_changed": false
+}
