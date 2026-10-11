@@ -75,6 +75,7 @@ const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN);
 const distinct = (a) => [...new Set(a)];
 
 /* ------------------------------------------------------------- collect a sample */
+const readings = [];      // verdict + candidates: M127 tests consumption, not just flags
 const cand = [];          // every emitted candidate
 const tradeable = [];     // ok === true
 const obs = [];           // order blocks
@@ -106,6 +107,7 @@ for (let seed = 1; seed <= SEEDS; seed++) {
         price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex',
       });
     } catch (e) { continue; }
+    readings.push(res);
     for (const c of ((res && res.candidates) || [])) {
       cand.push(c);
       if (c.ok) tradeable.push(c);
@@ -127,6 +129,17 @@ if (!cand.length) {
 
 /* ============================================================ SURVIVAL TO OUTPUT */
 console.log('— does the value survive to the emitted object? —');
+
+// M127 — the original sweep proved vetoes exist but never tested their consumer.
+{
+  const acts = readings.filter((r) => r && r.verdict && ['BUY', 'SELL'].includes(r.verdict.action));
+  check('M127 directional verdict sample is nonempty', acts.length > 0, `${acts.length}/${readings.length} directional`);
+  const wrong = acts.filter((r) => !r.candidates.some((c) => c.dir === r.verdict.dir && c.ok));
+  check('M127 every directional verdict selects a tradeable candidate', wrong.length === 0, `${wrong.length} violations`);
+  const phantom = readings.filter((r) => r && !r.candidates.some((c) => c.ok) && r.verdict.setup_action);
+  check('M127 no setup_action is advertised when every candidate is refused', phantom.length === 0, `${phantom.length} violations`);
+}
+
 
 // M2 — swing range. Sanctioned scope: "emitted, not enforced".
 {

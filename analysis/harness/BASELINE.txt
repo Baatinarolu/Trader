@@ -2545,3 +2545,125 @@ under M41 was the same gate at a different hour.)
 Fleet re-run because the legsOf() extraction touched a shared path: m37 20/0, m38-m40 51/0, m39 34/0,
 m41 27/0, m57 6/0, m69 16/0, groupa 18, groupb 10, m36 17, batch0 11/0, m58 23/0, m21 10/0, m124 5/0,
 m102 30/0, engine 51/0, candles-yahoo 62/0, m50 44/0, m52 33/0, reverify 64/0, m11 25/0.
+
+
+==============================================================================
+M3 — BOS-keyed anti-chase (Ep 5), reinforced by the phase rule in Ep 2
+2026-10-10. Source control: 29fa456. Change measured before M127; M127 does NOT
+change candidates and the harness already selects c.ok, so it cannot create this delta.
+==============================================================================
+Ep 5: "after a break of structure... expect... retracing or pulling back".
+Ep 2 (NOT Ep 5): "your goal is not to get in after the imbalance, but rather before
+ the imbalance" and "chase after price during an expansion". The stronger quote was
+misattributed in the initial implementation comments; corrected before shipping.
+
+M25's classifier is consumed as a veto, rather than only reported:
+  trend ranging -> balance; directional structure with BOS age <= 5 -> expansion;
+  otherwise -> pullback. One classifier and one RECENT constant, computed once.
+M3 refuses expansion, default ON; ctx.chaseGuard:false / --no-chase-guard is the OFF arm.
+Five bars is implementation judgment INHERITED FROM M25, not a transcript number and
+not a proof that price has yet to retrace. This does NOT turn consolidation into a
+permission to trade: other structure, zone, session and method rules remain independent.
+filters.chase_guard reports on/phase/bars_since_break/blocking/note. The refusal names
+the BOS and its age. No score, letter grade, entry, stop, target or size is changed.
+
+Separately measured walk-forward arms (--seeds 200 --bars 1500 --window 300):
+  OFF (pre-M3 behavior)  n=99  win=24.2%  exp=-0.0111R  PF=0.98
+    A+ n=28 win=25.0% exp=-0.3210R PF0.53; A n=71 win=23.9% exp=+0.1111R PF1.18
+    targets 10 / stops 61 / expiries 20; flat 1% $-110; maxDD $2175
+  ON (ships)           n=97  win=24.7%  exp=+0.0108R  PF=1.02
+    A+ n=28 win=25.0% exp=-0.3210R PF0.53; A n=69 win=24.6% exp=+0.1454R PF1.24
+    targets 10 / stops 59 / expiries 20; flat 1% $105; maxDD $2061
+The OFF arm reproduces the recorded post-M41/post-M26 n=99 baseline.
+
+RECORDED NEGATIVE: no demonstrated improvement. Net two fewer fills, a 0.0219R
+expectancy movement and a PF 0.98 -> 1.02 sign flip do not establish an edge. Both total
+samples pass the 30-trade floor; the DIFFERENCE does not supply evidence for a performance
+claim. This is synthetic data, with no costs and no real-market inference.
+The trade lists are NOT simply identical with two losers removed: seed 6's -1R fill and
+one of seed 182's -1R fills disappear, but cooldown also alters later entries/outcomes:
+  seed 139 n=1 exp=+0.1128R -> +0.2993R
+  seed 174 n=3 exp=+0.0574R -> +0.0439R
+Aggregate target/stop counts alone had hidden that composition change.
+
+Additional regression arms, actual parent worktree vs current source:
+  --seeds 60 --bars 1500 --window 300
+  parent 29fa456: n=25 win=28.0% exp=+0.7191R PF2.18
+    A+ n=11 -0.0326R PF0.94; A n=14 +1.3098R PF3.03
+  current ON:    n=24 win=29.2% exp=+0.7908R PF2.33
+    A+ n=11 -0.0326R PF0.94; A n=13 +1.4875R PF3.40
+Both are BELOW 30. Regression gates only, not performance claims. The old handoff's
+n=27 was pre-M41 and is no longer the baseline for this branch.
+
+Probe analysis/probe-m3-chase-guard.js: 36/0; pristine negative 0/7 (tallies, does not crash).
+  80 series: expansion 6, pullback 45, balance 29; 1 near-zone expansion candidate,
+  and it IS tradeable with the guard off, refused with it on.
+  The first probe used !c.no_trade on an EMPTY ARRAY, which is truthy in JS, and therefore
+  falsely reported 0 tradeable. Fixed to c.ok; the rarity claim based on that was withdrawn.
+  Natural fixture seed 6/bar 797: at-entry buy A; BOS up 3 bars ago; guard OFF
+  ok=true, no_trade=[]; guard ON ok=false and ONLY the timing veto. Grade, score,
+  levels and risk stay identical. Boundary ages 0/5/6 pin the inclusive threshold;
+  the short-series sentinel remains unknown, not expansion.
+  The test that checked the FINAL verdict exposed M127: candidate refused, summary BUY.
+
+==============================================================================
+M127 — veto propagation to final verdict, Now order and Copy plan
+2026-10-10. Measured separately with chaseGuard:false against control 29fa456.
+==============================================================================
+The pristine zip's verdict selects by grade, never candidate.ok. This became a bypass
+when the fixes added boolean vetoes without erasing the grade (ranking and permission
+are deliberately separate). In M3's natural fixture the new timing veto worked, while
+the summary still advertised BUY. Now.build computed the same-side allowed candidate
+and never consumed it; a method scenario could arm an order despite that same refusal.
+Copy plan exported candidates[0], even when the high score was refused or the method
+chose the other side. Candidate-only probes had allowed this to stay green.
+
+Fix, without changing the candidate model:
+  summary selects an eligible setup; keeps a refused one only for diagnostics;
+  method side is still authoritative; final action tests ok, not grade;
+  phantom setup_action becomes null when no candidate is eligible;
+  Now consumes allowed.ok===false before arming the method plan, returns NO TRADE,
+  side=0, order=null, armed=false, names the exact veto, preserves a re-check clock;
+  missing/unknown eligibility remains unknown, never invented as a refusal;
+  a refused call has no "other side of the permitted trade", because nothing is permitted;
+  Copy plan selects the same-side eligible candidate and is disabled on a refused verdict.
+  The old "No A-grade setup" summary becomes "No tradeable setup" (B/C are kept by user choice).
+
+Probe analysis/probe-m127-verdict-vetoes.js: 21/0 with TJ_CONTROL set to parent;
+parent negative control: 9 passed / 10 failed.
+  8 seeds x 1500 bars, window300, stride12: 920 identical analyses, M3 OFF in both.
+  directional summaries: 309 -> 3
+  summaries selecting a refused candidate: 306 -> 0
+  phantom setup_action when every candidate is refused: 306 -> 0
+  FULL candidate-array JSON diffs: 0/920 (grades, levels, risk, vetoes, everything).
+Therefore this is propagation, not a tighter model or new selectivity. The historical
+backtest already selected c.ok, so it never measured those phantom user-facing orders.
+No performance claim is made or measurable from a verdict-only fix.
+
+The probe exercises Now with actual allowed/refused candidates and a valid method scenario,
+and Copy plan in jsdom: disabled on NO TRADE, no export on even a forced click; permitted
+lower-score B copied instead of refused A+; M26's independent closed-window disable retained.
+App now-test adds FIVE direct consumer assertions (36 -> 41). The re-verification sweep
+adds THREE final-verdict invariants (64 -> 67), over 11,475 reads and 22,950 candidates:
+  70 directional summaries, 0 refused selections, 0 phantom setup_action.
+
+Final suites after restart: api 121/0; bots 206/0; chart 36/0; now 41/0; topdown 66/0.
+The bot parity sample is now 22 trades with 0 mismatches, so its two clock-dependent
+sample floors pass without weakening them. An intermediate failure was INTRODUCED here:
+Now's refused side=0 still exposed other_side based on the method's old nonzero direction.
+Fixed by requiring a permitted side before emitting that contrast; pinned in the probe
+and Now suite. A concurrently run parent bots script hit the SAME new HTTP server and
+therefore was not an old-server control; its extra workspace-purge failure was test
+interference. Neither is reported as a pre-existing product failure.
+Smoke: 21/21 views OK, 0 UI-style failures, 0 console errors (jsdom canvas limitation only).
+Fleet: m3 36/0, m127 21/0, m26 49/0, m37 20/0, m38-m40 51/0, m39 34/0, m41 27/0,
+ m57 6/0, m69 16/0, groupa 18/18, groupb 10/10, m36 17/17, batch0 11/0, m58 23/0,
+ m21 10/0, m124 5/0, m102 30/0, engine 51/0, candles-yahoo 62/0, m50 44/0, m52 33/0,
+ reverify 67/0, m11 25/0. Run candles-yahoo WITHOUT TJ_OFFLINE_CANDLES: its fetch stubs
+otherwise get bypassed and it reports 45/17 instead of exercising the provider path.
+
+Source changes in this milestone: setup.js (phase veto + verdict consumption), now.js
+(same-side veto consumption), public/js/views/bots.js (eligible Copy plan), scripts/now-test.js.
+The cumulative pristine-zip source patch is 28 files, applies cleanly to a second pristine
+unzip and reproduces the app with 0 round-trip diff lines. Progress: 59 done / 2 partial /
+66 todo / 0 no-action / 127 total.

@@ -483,7 +483,7 @@ index a3eb318..f9d364b 100644
              ['Risk-adjusted', [['Sharpe (ann.)', U.num(k.sharpe, 2), k.sharpe > 1 ? 'pos' : ''], ['Sortino (ann.)', U.num(k.sortino, 2), k.sortino > 1 ? 'pos' : ''], ['SQN', U.num(k.sqn, 2), ''], ['Calmar', U.num(k.calmar, 2), ''], ['Recovery factor', U.num(k.recovery_factor, 2), ''], ['Std dev of R', U.num(k.std_r, 2), ''], ['Median R', U.signed(k.median_r, 2) + 'R', ''], ['Total R', U.signed(k.total_r, 1) + 'R', U.cls(k.total_r)], ['Profit concentration', U.pct(k.profit_concentration, 0), '']]],
              ['Discipline', [['Avg adherence', k.avg_adherence ? U.num(k.avg_adherence, 2) + ' / 5' : '—', ''], ['Risk consistency', '±' + U.pct(k.risk_consistency, 0), k.risk_consistency < 35 ? 'pos' : 'warn'], ['Avg risk / trade', U.money(k.avg_risk), ''], ['Avg risk % of balance', U.pct(k.avg_risk_pct_of_balance, 2), ''], ['Trades without stop', k.stops_overshot ? `${an.by_symbol.length ? '' : ''}${k.stops_overshot} over -1R` : '0', ''], ['Current streak', k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + ' wins' : Math.abs(k.streaks.current) + ' losses'), k.streaks.current_type === 'loss' ? 'neg' : 'pos'], ['Longest win streak', k.streaks.longest_win, ''], ['Longest loss streak', k.streaks.longest_loss, 'neg'], ['Trading days', `${k.trading_days} (${U.num(k.avg_trades_per_day, 1)}/day)`, '']]],
 diff --git a/public/js/views/bots.js b/public/js/views/bots.js
-index 2222ac3..cf3df7a 100644
+index 2222ac3..86b85fd 100644
 --- a/public/js/views/bots.js
 +++ b/public/js/views/bots.js
 @@ -13,6 +13,11 @@
@@ -532,7 +532,16 @@ index 2222ac3..cf3df7a 100644
      const predChk = h('label', { class: 'row gap-4 muted', style: 'align-items:center' });
      const predBox = h('input', { type: 'checkbox', checked: B.prediction ? 'checked' : null });
      predChk.appendChild(predBox); predChk.appendChild(document.createTextNode('prediction'));
-@@ -160,6 +183,16 @@
+@@ -157,9 +180,25 @@
+       global.App.go('market');
+     });
+     const levelsBtn = h('button', { class: 'btn ghost sm', text: 'Copy plan', title: 'Copy entry / stop / targets as text — handy for a TradingView alert' });
++    // M127 — copy only the candidate the final verdict actually permits, never the
++    // highest-scoring refused idea. Keep this selection shared by the button and handler.
++    const setupData = B.data && B.data.setups;
++    const copyCandidate = setupData && setupData.verdict && setupData.verdict.dir
++      ? (setupData.candidates || []).find((c) => c.ok && c.dir === setupData.verdict.dir && c.levels)
++      : null;
  
      symInput.addEventListener('change', () => { B.symbol = symInput.value.trim().toUpperCase(); onChange(); });
      tfSel.addEventListener('change', () => { B.tf = tfSel.value; onChange(); });
@@ -549,9 +558,15 @@ index 2222ac3..cf3df7a 100644
      predBox.addEventListener('change', () => { B.prediction = predBox.checked; });
      runBtn.addEventListener('click', async () => {
        B.symbol = symInput.value.trim().toUpperCase();
-@@ -188,7 +221,13 @@
-       if (!best) return global.App.toast('Analyse a market first', 'warn');
-       global.TV.copy(global.TV.planText(B.symbol, B.tf, best), 'Trade plan');
+@@ -184,11 +223,16 @@
+     });
+ 
+     levelsBtn.addEventListener('click', () => {
+-      const best = B.data && B.data.setups && B.data.setups.candidates ? B.data.setups.candidates[0] : null;
+-      if (!best) return global.App.toast('Analyse a market first', 'warn');
+-      global.TV.copy(global.TV.planText(B.symbol, B.tf, best), 'Trade plan');
++      if (!copyCandidate) return global.App.toast(B.data ? 'No actionable plan — the bot says stand down' : 'Analyse a market first', 'warn');
++      global.TV.copy(global.TV.planText(B.symbol, B.tf, copyCandidate), 'Trade plan');
      });
 -    [symInput, tfSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
 +    [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
@@ -560,11 +575,11 @@ index 2222ac3..cf3df7a 100644
 +     * button will be blocked ... grayed out ... You physically can't press the trade
 +     * button." The nearest thing here is the control that hands you an order to place, so
 +     * when the chosen window is closed it is disabled rather than left to argue with. */
-+    levelsBtn.disabled = !!(sp && sp.blocked_now);
++    levelsBtn.disabled = !!(sp && sp.blocked_now) || !!(B.data && !copyCandidate);
      const wrap = h('div', { class: 'card' });
      wrap.appendChild(row);
      wrap.appendChild(dl);
-@@ -1161,8 +1200,10 @@
+@@ -1161,8 +1205,10 @@
          const sym = B.symbol, tf = B.tf;
          const trim = B.trim || 0;
          Promise.all([
@@ -637,6 +652,38 @@ index c463eda..9865d46 100644
  
    /* -------------------------------------------------------------- candles */
    section('candles');
+diff --git a/scripts/now-test.js b/scripts/now-test.js
+index e5a185d..79551a8 100644
+--- a/scripts/now-test.js
++++ b/scripts/now-test.js
+@@ -64,7 +64,7 @@ const armedTd = (over = {}) => baseTd({
+ 
+ const setups = (dirs = [{ dir: -1, side: 'short', grade: 'B', score: 78 }, { dir: 1, side: 'long', grade: 'C', score: 52 }]) => ({
+   verdict: { action: 'SELL', dir: -1, grade: 'B', score: 78, headline: 'short setup' },
+-  candidates: dirs.map((d) => ({ ...d, levels: { entry: 1.1250, stop: 1.1266, targets: [{ price: 1.1162, rr: 2 }] } })),
++  candidates: dirs.map((d) => ({ ok: true, no_trade: [], ...d, levels: { entry: 1.1250, stop: 1.1266, targets: [{ price: 1.1162, rr: 2 }] } })),
+ });
+ 
+ const NOW = Date.UTC(2026, 9, 6, 14, 5);
+@@ -100,6 +100,18 @@ const S = series({ nowMs: NOW });
+   ok(a.full_risk === true && a.order.mode === 'safer', 'conviction A takes full risk at the better-quality fill', a.order && a.order.mode);
+ }
+ 
++/* --------------------------------------------------- 2b. execution vetoes (M127) */
++{
++  const refused = setups([{ dir: -1, side: 'short', grade: 'A', score: 84, ok: false,
++    no_trade: ['Outside your window — this bot is restricted to London.'] }]);
++  const n = Now.build({ td: armedTd(), setups: refused, series: S, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
++  ok(n.action === 'NO TRADE' && n.side === 0, 'a same-side execution veto overrides a confirmed method scenario');
++  ok(!n.armed && n.order === null, 'the refused scenario exposes no order');
++  ok(n.other_side === null, 'a refused call has no permitted side to contrast with');
++  ok(/Outside your window/.test(n.headline), 'the final instruction names the actual execution veto');
++  ok(!!n.checkpoint.at && !/order live/.test(n.checkpoint.label), 'a refused scenario retains a re-check clock, not order validity');
++}
++
+ /* ------------------------------------------------------------------ 3. blocked */
+ {
+   const td = baseTd({
 diff --git a/scripts/vercel-check.js b/scripts/vercel-check.js
 index 818bf26..08bbea4 100644
 --- a/scripts/vercel-check.js
@@ -1656,7 +1703,7 @@ index 2e664e5..7720789 100644
 +  biasHysteresis,
  };
 diff --git a/src/bots/now.js b/src/bots/now.js
-index 66e0bbb..38a2fad 100644
+index 66e0bbb..8db2eef 100644
 --- a/src/bots/now.js
 +++ b/src/bots/now.js
 @@ -21,6 +21,7 @@
@@ -1714,7 +1761,40 @@ index 66e0bbb..38a2fad 100644
  }
  
  const num = (v) => (v === null || v === undefined || isNaN(Number(v)) ? null : Number(v));
-@@ -319,7 +325,7 @@ function build(p = {}) {
+@@ -152,6 +158,21 @@ function build(p = {}) {
+       };
+     }
+     invalidate = 'This is not a bearish or bullish opinion — it is the absence of a qualifying setup. It stops applying when a new right candle forms at a level that matters.';
++  } else if (direction && allowed && allowed.ok === false) {
++    // M127 — the visible order must obey the same-side candidate's execution vetoes.
++    // `allowed` used to be computed and never read: a CRT plan could arm an order after
++    // the setup engine refused the session, phase, shift or RR. Unknown/missing setup
++    // data is not a refusal; only the explicit false is. The scenario remains in td.
++    action = 'NO TRADE';
++    const reasons = Array.isArray(allowed.no_trade) ? allowed.no_trade : [];
++    headline = `${symbol} ${tf}: no trade — ${reasons.join(' ') || allowed.action || 'the setup is not tradeable.'}`;
++    const zone = allowed.levels && allowed.levels.entry_zone;
++    if (zone && allowed.levels.entry_status === 'waiting') {
++      watch = { level: num(zone[direction > 0 ? 1 : 0]), kind: 'zone',
++        condition: 'wait for the retrace, then re-check every entry condition',
++        text: `Watch for the retrace to ${zone[0]} – ${zone[1]}; reaching it is a reason to re-check, not permission to enter.` };
++    }
++    invalidate = 'Nothing is armed. Re-run the analysis when the blocking condition changes.';
+   } else if (direction && plan) {
+     side = direction;
+     action = direction > 0 ? 'BUY' : 'SELL';
+@@ -230,7 +251,9 @@ function build(p = {}) {
+ 
+   /* ------------------------------------------------- the other side ------- */
+   let otherSide = null;
+-  if (direction && otherDir) {
++  // A refused call has side=0: there is no permitted side to contrast with. Its
++  // scenarios stay in setups.candidates rather than implying a live opposite trade.
++  if (side && otherDir) {
+     otherSide = {
+       dir: -direction,
+       side: otherDir.side,
+@@ -319,7 +342,7 @@ function build(p = {}) {
      steps_done: doneSteps,
      steps_total: (td.steps || []).length,
      pending_step: pendingStep ? { n: pendingStep.n, title: pendingStep.title, text: pendingStep.text } : null,
@@ -1756,7 +1836,7 @@ index bacfca7..38ec2fa 100644
   * the same candle series and reports, honestly, what taking that second tap did:
   * whether it happened, and whether re-risking 1R on it made money.
 diff --git a/src/bots/setup.js b/src/bots/setup.js
-index 138beb4..34ffe52 100644
+index 138beb4..d03fcf6 100644
 --- a/src/bots/setup.js
 +++ b/src/bots/setup.js
 @@ -15,7 +15,15 @@
@@ -2047,7 +2127,7 @@ index 138beb4..34ffe52 100644
    for (const p of outward) {
      const key = p.price.toFixed(5);
      if (seen.has(key)) continue;
-@@ -70,12 +329,49 @@ function targetPools(analysis, dir, entry) {
+@@ -70,12 +329,72 @@ function targetPools(analysis, dir, entry) {
   *                                    only that side can be armed.
   * @returns {{candidates:Array, verdict:object}}
   */
@@ -2085,8 +2165,31 @@ index 138beb4..34ffe52 100644
 +  /* M26 + M25: the window says WHEN, the phase says whether there is anything to trade
 +   * in it. Inside the chosen window the phase is read once, so consolidation is visible
 +   * there instead of being mistaken for a slow market. Gating on the phase is M3's
-+   * timing rule and is deliberately not done here. */
-+  const prefPhase = (winPref && winPref.restricted && !prefBlocked) ? marketPhase(analysis) : null;
++   * timing rule and applies separately below. */
++  /* M3 — Ep 5 keys the expected retrace to the BOS. Ep 2 reinforces the timing rule:
++   *   "your goal as a trader is to get in during the balance phase, so that you can capture
++   *    the imbalance. Your goal is not to get in after the imbalance, but rather before the
++   *    imbalance."
++   * with the failure mode he names in that same Ep 2 passage:
++   *   "The reason why they fail is because they tend to chase after price during an
++   *    expansion... It's because you are not trading price. You are just trading your ego."
++   * The bot already had an anti-chase rule, but it was keyed to DISTANCE FROM A ZONE
++   * (entry_status 'waiting'/'approaching', and "Chasing here breaks the model's edge"), and
++   * the two are not equivalent: price can be far from a zone and mid-expansion, or NEAR a
++   * zone and mid-expansion. The second case is what the zone rule cannot see, and it is the
++   * one this gate refuses. Keying it to the break-of-structure event is also exactly what
++   * the row asks for — "after a break of structure... expect price to start retracing" hangs
++   * the expected pullback off the BOS, not off how far price is from a level.
++   * The classifier is M25's marketPhase(), used as defined: one threshold, one source. Its
++   * RECENT = 5 bars is a classifier setting, NOT a number the course gives — he never counts
++   * bars — so it is recorded as a judgment call and measured, not defended as scripture.
++   * Computed once above the loop rather than per candidate: it depends only on the analysis,
++   * exactly like M10's standDown. */
++  const phaseInfo = marketPhase(analysis);
++  /* Ships ON. `chaseGuard: false` is the opt-out arm, so the two can be measured against
++   * each other without editing the engine — same pattern as useBreakers / standDownOnWall. */
++  const chaseGuard = ctx.chaseGuard !== false;
++  const prefPhase = (winPref && winPref.restricted && !prefBlocked) ? phaseInfo : null;
 +  /* M10 — computed ONCE here rather than per candidate: it depends only on the bar's
 +   * calendar and the caller's configuration, not on anything about an individual setup.
 +   * It was originally declared inside the scoring loop, which put it out of scope for the
@@ -2097,7 +2200,7 @@ index 138beb4..34ffe52 100644
    const strike = sessions.quality != null ? sessions.quality : 0.5;
    const blackout = ctx.newsBlackout || null;
    const ind = ctx.indicators || null;
-@@ -83,7 +379,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -83,7 +402,7 @@ function buildSetups(analysis, ctx = {}) {
    const td = ctx.topdown || null;                   // the method gate
  
    const candidates = [];
@@ -2106,7 +2209,7 @@ index 138beb4..34ffe52 100644
  
    for (const dir of [1, -1]) {
      const long = dir > 0;
-@@ -108,22 +404,62 @@ function buildSetups(analysis, ctx = {}) {
+@@ -108,22 +427,62 @@ function buildSetups(analysis, ctx = {}) {
      const obs = ((analysis && analysis.order_blocks) || []).filter((z) => z.dir === dir && !z.breached);
      const fvgs = ((analysis && analysis.fvgs) || []).filter((g) => g.dir === dir && !g.filled);
      // prefer a fresh, strong OB with an unfilled FVG overlapping or nested
@@ -2176,7 +2279,7 @@ index 138beb4..34ffe52 100644
  
      if (zone && zone.overlap) add('nested', 'Zone + imbalance overlap (confluence)', true, 8, 'The order block contains an unfilled FVG — two reasons for price to react at the same price.');
  
-@@ -135,10 +471,57 @@ function buildSetups(analysis, ctx = {}) {
+@@ -135,10 +494,57 @@ function buildSetups(analysis, ctx = {}) {
  
      /* ------------------------------------------------------------- 5. trend alignment */
      const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
@@ -2236,7 +2339,7 @@ index 138beb4..34ffe52 100644
      if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
  
      /* ------------------------------------------------------------- 6. higher-timeframe bias */
-@@ -155,12 +538,16 @@ function buildSetups(analysis, ctx = {}) {
+@@ -155,12 +561,16 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      /* ------------------------------------------------------- 8. session / killzone */
@@ -2255,7 +2358,7 @@ index 138beb4..34ffe52 100644
  
      /* ------------------------------------------------------------- 10. volatility */
      const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
-@@ -195,6 +582,15 @@ function buildSetups(analysis, ctx = {}) {
+@@ -195,6 +605,15 @@ function buildSetups(analysis, ctx = {}) {
          }
        }
        targets.sort((a, b) => a.rr - b.rr);
@@ -2271,7 +2374,7 @@ index 138beb4..34ffe52 100644
        // The FIRST pool is a wall, not a nuisance: price usually reacts there. The model
        // banks a partial on it, protects the trade, and runs the rest to the 2R+ pool.
        const first = targets[0] || null;
-@@ -203,16 +599,47 @@ function buildSetups(analysis, ctx = {}) {
+@@ -203,16 +622,47 @@ function buildSetups(analysis, ctx = {}) {
  
        add('runway', `Open runway to opposing liquidity (final target ≥ 1:${minRR})`, !!runner && runner.rr >= minRR, 14,
          runner && runner.rr >= minRR
@@ -2325,7 +2428,7 @@ index 138beb4..34ffe52 100644
        if (!ladder.length) ladder.push({ label: '1.5R measured move', kind: 'measured', price: r4(entry + dir * risk * 1.5), rr: 1.5, role: 'T1' });
        const rrPrimary = ladder[0].rr;
        const rrFinal = ladder[ladder.length - 1].rr;
-@@ -230,6 +657,22 @@ function buildSetups(analysis, ctx = {}) {
+@@ -230,6 +680,22 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
@@ -2348,7 +2451,7 @@ index 138beb4..34ffe52 100644
        // Distance still to travel to the zone we would enter at. An FVG-only read has
        // no order-block `reach` — measure to its near edge instead of dereferencing null.
        const zoneReach = bestOB ? bestOB.reach
-@@ -245,12 +688,19 @@ function buildSetups(analysis, ctx = {}) {
+@@ -245,12 +711,19 @@ function buildSetups(analysis, ctx = {}) {
          stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / atr),
          stop_reason: recentSweep && Math.abs(stopBase - recentSweep.extreme) < 1e-9
            ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(atr * 0.18)} buffer`
@@ -2371,7 +2474,7 @@ index 138beb4..34ffe52 100644
            runner_target: ladder[ladder.length - 1] ? { price: ladder[ladder.length - 1].price, rr: ladder[ladder.length - 1].rr, label: ladder[ladder.length - 1].label, size: ladder.length > 1 ? '50%' : '100%' } : null,
            rule: ladder.length > 1
              ? `Bank 50% at T1 (${ladder[0].rr}R) and move the stop to entry. The runner is free — let the pool at ${ladder[ladder.length - 1].price} do the work.`
-@@ -271,8 +721,14 @@ function buildSetups(analysis, ctx = {}) {
+@@ -271,8 +744,14 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -2388,7 +2491,7 @@ index 138beb4..34ffe52 100644
      // a missing trigger or zone is disqualifying regardless of the rest
      const hasTrigger = checks.find((c) => c.key === 'sweep').pass;
      const hasZone = checks.find((c) => c.key === 'zone').pass;
-@@ -284,24 +740,138 @@ function buildSetups(analysis, ctx = {}) {
+@@ -284,24 +763,148 @@ function buildSetups(analysis, ctx = {}) {
      if (levels && levels.entry_status === 'waiting') score = Math.min(score, 66); // great idea, not yet valid
      score = round1(clamp(score, 0, 100));
  
@@ -2454,6 +2557,15 @@ index 138beb4..34ffe52 100644
 +    } else if (sess.in_killzone === false) {
 +      vetoes.push(`Outside the killzone — "if the setup appears before or after that window, I personally will not enter."${sess.best_time ? ` ${sess.best_time}` : ''}`);
 +    }
++    /* M3 — the anti-chase veto. It is placed AHEAD of M35's zone veto on purpose: when both
++     * are true, "the impulse is still running" is the sharper statement about timing, and
++     * M35's watch instruction is still appended by the action string, so nothing is lost. */
++    if (chaseGuard && phaseInfo.phase === 'expansion') {
++      const ago = phaseInfo.bars_since_break;
++      vetoes.push(`Chasing an expansion — a break of structure printed ${ago} bar${ago === 1 ? '' : 's'} ago `
++        + `and the impulse is still running, so the retrace is what to expect next. `
++        + `"Your goal is not to get in after the imbalance, but rather before the imbalance."`);
++    }
 +    // M35 — a cap at 66 left this tradeable as a B. The course stands it down instead:
 +    // "when price is hovering around here in the middle of nowhere, we do not go down to the
 +    // lower time frame." It stays visible with its action string so it can be alerted on.
@@ -2462,7 +2574,8 @@ index 138beb4..34ffe52 100644
 +    }
 +    const tradeable = vetoes.length === 0 && g.grade !== 'no-trade';
 +
-+    const phaseInfo = marketPhase(analysis);   // M25
++    // M25's phaseInfo now lives above the loop (M3 gates on it before the vetoes are
++    // assembled); only the per-candidate strong/weak read stays here.
 +    const swInfo = strongWeak(analysis);        // M21
 +
      /* --------------------------------------------------------------- risk plan */
@@ -2530,7 +2643,7 @@ index 138beb4..34ffe52 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +881,55 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +914,55 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -2592,7 +2705,48 @@ index 138beb4..34ffe52 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -399,7 +1006,44 @@ function buildSetups(analysis, ctx = {}) {
+@@ -331,7 +971,11 @@ function buildSetups(analysis, ctx = {}) {
+   candidates.sort((a, b) => b.score - a.score);
+ 
+   /* --------------------------------------------------------------- top verdict */
+-  let best = candidates[0] || null;
++  // M127 — grades rank ideas; only `ok` permits an action. The original verdict used
++  // grade alone and could print BUY above a candidate whose own action said "No trade".
++  const rawBest = candidates[0] || null;
++  const setupBest = candidates.find((c) => c.ok) || null;
++  let best = setupBest || rawBest;                  // keep a refused idea visible, not actionable
+   const buy = candidates.find((c) => c.dir === 1);
+   const sell = candidates.find((c) => c.dir === -1);
+ 
+@@ -350,8 +994,7 @@ function buildSetups(analysis, ctx = {}) {
+     const aligned = candidates.find((c) => c.dir === td.direction);
+     if (aligned) best = aligned;                    // the higher timeframe chooses the side
+   }
+-  const rawBest = candidates[0] || null;
+-  const setupAction = !rawBest || rawBest.grade === 'no-trade' ? null : (rawBest.dir > 0 ? 'BUY' : 'SELL');
++  const setupAction = setupBest ? (setupBest.dir > 0 ? 'BUY' : 'SELL') : null;
+   const methodBlocked = !!(td && (td.blocked || (td.direction !== 0 && (!best || best.dir !== td.direction))));
+ 
+   let verdict;
+@@ -367,13 +1010,13 @@ function buildSetups(analysis, ctx = {}) {
+       detail: `${why}${pendingStep(td)}`,
+       next_trigger: [td.playbook && td.playbook.length ? td.playbook[0] : null, nextTriggerHint(analysis)].filter(Boolean),
+       source: 'topdown-gate', method, setup_action: setupAction,
+-      setup_dir: rawBest ? rawBest.dir : 0,
++      setup_dir: setupBest ? setupBest.dir : 0,
+     };
+-  } else if (!best || best.grade === 'no-trade') {
++  } else if (!best || !best.ok) {
+     verdict = {
+       action: 'NO TRADE', dir: 0, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
+-      headline: 'No A-grade setup right now — the model says wait.',
+-      detail: best ? best.why_not.slice(0, 4).join(' ') : 'Not enough data.',
++      headline: 'No tradeable setup right now — the model says wait.',
++      detail: best ? best.action : 'Not enough data.',
+       next_trigger: nextTriggerHint(analysis),
+       source: 'setup-model', method, setup_action: setupAction,
+     };
+@@ -399,7 +1042,52 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -2634,10 +2788,18 @@ index 138beb4..34ffe52 100644
 +        note: `Unknown window "${winPref.error}" — the restriction was NOT applied. Expected one of: `
 +          + Object.keys(SMC.WINDOW_BY_KEY).join(', ') + ', or "any".',
 +      } : null),
++      /* M3 — the timing state this analysis was graded in. The row's optional half asks for
++       * "BOS just printed, expect retrace" as a DISTINCT STATE; that is phase 'expansion' with
++       * its bars_since_break, so it is exposed rather than left inside a veto string. */
++      chase_guard: {
++        on: chaseGuard, phase: phaseInfo.phase, bars_since_break: phaseInfo.bars_since_break,
++        blocking: chaseGuard && phaseInfo.phase === 'expansion',
++        note: phaseInfo.note,
++      },
        news_blackout: blackout || null,
        min_rr: minRR,
      },
-@@ -430,4 +1074,8 @@ function pendingStep(td) {
+@@ -430,4 +1118,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  

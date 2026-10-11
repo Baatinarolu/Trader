@@ -64,7 +64,7 @@ const armedTd = (over = {}) => baseTd({
 
 const setups = (dirs = [{ dir: -1, side: 'short', grade: 'B', score: 78 }, { dir: 1, side: 'long', grade: 'C', score: 52 }]) => ({
   verdict: { action: 'SELL', dir: -1, grade: 'B', score: 78, headline: 'short setup' },
-  candidates: dirs.map((d) => ({ ...d, levels: { entry: 1.1250, stop: 1.1266, targets: [{ price: 1.1162, rr: 2 }] } })),
+  candidates: dirs.map((d) => ({ ok: true, no_trade: [], ...d, levels: { entry: 1.1250, stop: 1.1266, targets: [{ price: 1.1162, rr: 2 }] } })),
 });
 
 const NOW = Date.UTC(2026, 9, 6, 14, 5);
@@ -98,6 +98,18 @@ const S = series({ nowMs: NOW });
     setups: setups(), series: S, symbol: 'EURUSD', tf: '1h', nowMs: NOW,
   });
   ok(a.full_risk === true && a.order.mode === 'safer', 'conviction A takes full risk at the better-quality fill', a.order && a.order.mode);
+}
+
+/* --------------------------------------------------- 2b. execution vetoes (M127) */
+{
+  const refused = setups([{ dir: -1, side: 'short', grade: 'A', score: 84, ok: false,
+    no_trade: ['Outside your window — this bot is restricted to London.'] }]);
+  const n = Now.build({ td: armedTd(), setups: refused, series: S, symbol: 'EURUSD', tf: '1h', nowMs: NOW });
+  ok(n.action === 'NO TRADE' && n.side === 0, 'a same-side execution veto overrides a confirmed method scenario');
+  ok(!n.armed && n.order === null, 'the refused scenario exposes no order');
+  ok(n.other_side === null, 'a refused call has no permitted side to contrast with');
+  ok(/Outside your window/.test(n.headline), 'the final instruction names the actual execution veto');
+  ok(!!n.checkpoint.at && !/order live/.test(n.checkpoint.label), 'a refused scenario retains a re-check clock, not order validity');
 }
 
 /* ------------------------------------------------------------------ 3. blocked */

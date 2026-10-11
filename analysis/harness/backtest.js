@@ -84,6 +84,10 @@ const USE_BREAKERS = argv.indexOf('--breakers') >= 0;
 const STAND_DOWN_WALL = argv.indexOf('--stand-down-wall') >= 0;
 // M51: restore the three-rung ladder with a 50% partial instead of one target.
 const LADDER = argv.indexOf('--ladder') >= 0;
+/* M3 — Ep 5's anti-chase gate ships ON, so this is the OPT-OUT arm: --no-chase-guard
+ * reproduces the pre-M3 engine. Passed only when false, so the default arm's ctx is
+ * byte-for-byte what it was and the recorded baselines stay comparable. */
+const CHASE_GUARD = argv.indexOf('--no-chase-guard') < 0;
 // M52 — the dollar arm below captured ONLY `grade_risk_multiplier`, so this harness was blind to
 // the mid-range risk multiplier the engine now applies. Shipping M52 left
 // `--seeds 60 --bars 1500 --window 300` byte-identical, which is a MEASUREMENT GAP, not evidence
@@ -307,7 +311,7 @@ for (let wi = 0; wi < NWALK; wi++) {
       heldState = { bias: h.bias, level: fresh === -1 && hasRange ? hh : fresh === 1 && hasRange ? ll : null, side: fresh === -1 ? 'above' : fresh === 1 ? 'below' : null };
       biasDir = h.bias;
     }
-    try { res = Setup.buildSetups(analysis, { price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex', ...(SYMBOL ? { symbol: SYMBOL } : {}), ...(SESSION_PREF ? { sessionPref: SESSION_PREF } : {}), useBreakers: USE_BREAKERS, standDownOnWall: STAND_DOWN_WALL, ladderTargets: LADDER, ...(STANDDOWN_CFG !== undefined ? { standDown: STANDDOWN_CFG } : {}), ...(biasDir !== null ? { bias: biasDir } : {}) }); }
+    try { res = Setup.buildSetups(analysis, { price: candles[i].c, balance: 10000, riskPct: 1, valuePerPoint: 100000, assetClass: 'forex', ...(SYMBOL ? { symbol: SYMBOL } : {}), ...(SESSION_PREF ? { sessionPref: SESSION_PREF } : {}), ...(CHASE_GUARD ? {} : { chaseGuard: false }), useBreakers: USE_BREAKERS, standDownOnWall: STAND_DOWN_WALL, ladderTargets: LADDER, ...(STANDDOWN_CFG !== undefined ? { standDown: STANDDOWN_CFG } : {}), ...(biasDir !== null ? { bias: biasDir } : {}) }); }
     catch (e) { continue; }
 
     const cands = (res && res.candidates) || [];
@@ -341,6 +345,10 @@ console.log('=' .repeat(78));
 // identical to Baselines 1-6 and a diff against BASELINE.txt still means what it says.
 console.log(REAL ? ` REAL DATA (${REAL_TF}) — ${REAL_SETS.length} fixture(s): ${REAL_SETS.join(', ')}  ·  windows=${WINDOW} warmup=${WARMUP} maxBars=${MAX_BARS} fillWindow=${FILL_WINDOW} cooldown=${COOLDOWN}` : ` seeds=${SEEDS} bars=${BARS} window=${WINDOW} warmup=${WARMUP} maxBars=${MAX_BARS} fillWindow=${FILL_WINDOW} cooldown=${COOLDOWN}  gate=${ONLY_AT_ENTRY ? "entry_status==='at-entry'" : 'any status'}${BIAS_MODE !== 'off' ? `  bias=${BIAS_MODE}` : ''}${RANGE_SIZED ? '  range-sized=on' : ''}  ·  ${all.length} trades  ·  ${ms}ms`);
 console.log(` engine: src/bots/smc.js analyse() + src/bots/setup.js buildSetups()  (unmodified paths)`);
+/* M3 / M26 — printed so a run is reproducible from its own output: both change which
+ * signals survive, and neither is visible in the aggregate line. */
+console.log(` M3 chase guard (Ep 5 BOS timing / Ep 2 anti-chase): ${CHASE_GUARD ? 'ON — a candidate graded during an expansion is refused' : 'OFF (--no-chase-guard, the pre-M3 arm)'}`
+  + `${SESSION_PREF ? `  ·  M26 window restriction: ${SESSION_PREF}` : '  ·  M26 window restriction: none'}`);
 console.log(` M10 stand-down arm: ${STANDDOWN_MODE}${STANDDOWN_MODE === 'course' ? ' (Monday + Friday + December — what ships)' : STANDDOWN_MODE === 'mondec' ? ' (Monday + December — Friday excluded per the Baseline 7 measurement)' : ' (disabled)'}`);
 console.log('\n ALL SIGNALS WHERE ok===true (the CURRENT gate, includes B and C)');
 console.log('  ' + fmt(by(() => true)));

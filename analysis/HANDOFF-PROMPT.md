@@ -1,5 +1,40 @@
 # Handoff prompt — paste this into a new Arena coding session
 
+## Current continuation state — 2026-10-10 (supersedes the historical handoff below)
+
+- Working repository: `/home/user/Trader`; session branch **`arena/762c0295-trader`**.
+  Do not execute the obsolete branch/push instructions in the original §2/§8 below.
+- M3 now consumes M25’s BOS-age classifier as an anti-chase veto. The before-imbalance
+  quote is **Ep 2**, reinforcing Ep 5’s BOS/retrace rule; RECENT=5 is implementation judgment.
+- M127 was discovered by M3’s final-verdict test: explicit candidate vetoes had no consumer
+  in the summary, Now order or Copy plan. Fixed and separately measured with M3 OFF:
+  306 phantom directions out of 920 reads → 0, candidate-array differences 0/920.
+- Ledger: **127 rows; 59 done / 2 partial / 66 todo / 0 deliberate no-action**.
+  `gen-progress.py` remains the sole writer of PROGRESS.md and asserts the exact partition.
+- Current regression baseline: `--seeds 60 --bars 1500 --window 300` **n=24 / 29.2% /
+  +0.7908R / PF2.33** (below 30; NO performance claim). Parent `29fa456`: n=25 / +0.7191R.
+  At 200 seeds: M3 OFF n=99 / −0.0111R / PF0.98; ON n=97 / +0.0108R / PF1.02.
+  Net two fills and cooldown composition shifts do not demonstrate improvement.
+- Verified suites: **api 121/0, bots 206/0, chart 36/0, now 41/0, topdown 66/0**;
+  smoke **21/21 views**, 0 errors. Parity floors currently pass at 22 filled trades.
+- New probes: `probe-m3-chase-guard.js` **36/0**, pristine **0/7**;
+  `probe-m127-verdict-vetoes.js` **21/0** (TJ_CONTROL parent; parent negative **9/10**).
+  Full fleet green, `probe-reverify-applied.js` **67/0** (three new verdict invariants).
+  Run `probe-candles-yahoo.js` with TJ_OFFLINE_CANDLES UNSET (its fetch is stubbed);
+  API-backed probes/suites need the flag and a restarted live server.
+- Next mechanism rows: **M33/M34 (Ep 11; cross-check M33 against Ep 15), then M126**.
+  The old Ep 11 diagnostic probe checks `setup_action` without verifying candidate.ok;
+  do not take its historical grade-B examples as newly measured tradeable signals.
+- The app source is tracked; dependencies/tmp controls may need restoring after a reset.
+  Keep `.env`, databases and fixtures untracked. Rebuild the cumulative source patch by
+  overlaying the app onto a pristine unzip, excluding `.env`, data, node_modules and .git;
+  use an explicit scratch git identity, apply to a second pristine copy and require zero
+  round-trip differences. No need to commit/push credentials.
+
+The original handoff is retained below as provenance, not as the current branch/state.
+
+---
+
 > Copy everything below the line into the new chat as the first message.
 > It is written to be self-contained: it assumes the new session has read nothing else.
 

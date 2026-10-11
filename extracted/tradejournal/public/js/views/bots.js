@@ -180,6 +180,12 @@
       global.App.go('market');
     });
     const levelsBtn = h('button', { class: 'btn ghost sm', text: 'Copy plan', title: 'Copy entry / stop / targets as text — handy for a TradingView alert' });
+    // M127 — copy only the candidate the final verdict actually permits, never the
+    // highest-scoring refused idea. Keep this selection shared by the button and handler.
+    const setupData = B.data && B.data.setups;
+    const copyCandidate = setupData && setupData.verdict && setupData.verdict.dir
+      ? (setupData.candidates || []).find((c) => c.ok && c.dir === setupData.verdict.dir && c.levels)
+      : null;
 
     symInput.addEventListener('change', () => { B.symbol = symInput.value.trim().toUpperCase(); onChange(); });
     tfSel.addEventListener('change', () => { B.tf = tfSel.value; onChange(); });
@@ -217,9 +223,8 @@
     });
 
     levelsBtn.addEventListener('click', () => {
-      const best = B.data && B.data.setups && B.data.setups.candidates ? B.data.setups.candidates[0] : null;
-      if (!best) return global.App.toast('Analyse a market first', 'warn');
-      global.TV.copy(global.TV.planText(B.symbol, B.tf, best), 'Trade plan');
+      if (!copyCandidate) return global.App.toast(B.data ? 'No actionable plan — the bot says stand down' : 'Analyse a market first', 'warn');
+      global.TV.copy(global.TV.planText(B.symbol, B.tf, copyCandidate), 'Trade plan');
     });
     [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
     row.appendChild(winNote);
@@ -227,7 +232,7 @@
      * button will be blocked ... grayed out ... You physically can't press the trade
      * button." The nearest thing here is the control that hands you an order to place, so
      * when the chosen window is closed it is disabled rather than left to argue with. */
-    levelsBtn.disabled = !!(sp && sp.blocked_now);
+    levelsBtn.disabled = !!(sp && sp.blocked_now) || !!(B.data && !copyCandidate);
     const wrap = h('div', { class: 'card' });
     wrap.appendChild(row);
     wrap.appendChild(dl);

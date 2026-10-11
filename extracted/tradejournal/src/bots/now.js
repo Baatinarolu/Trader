@@ -158,6 +158,21 @@ function build(p = {}) {
       };
     }
     invalidate = 'This is not a bearish or bullish opinion — it is the absence of a qualifying setup. It stops applying when a new right candle forms at a level that matters.';
+  } else if (direction && allowed && allowed.ok === false) {
+    // M127 — the visible order must obey the same-side candidate's execution vetoes.
+    // `allowed` used to be computed and never read: a CRT plan could arm an order after
+    // the setup engine refused the session, phase, shift or RR. Unknown/missing setup
+    // data is not a refusal; only the explicit false is. The scenario remains in td.
+    action = 'NO TRADE';
+    const reasons = Array.isArray(allowed.no_trade) ? allowed.no_trade : [];
+    headline = `${symbol} ${tf}: no trade — ${reasons.join(' ') || allowed.action || 'the setup is not tradeable.'}`;
+    const zone = allowed.levels && allowed.levels.entry_zone;
+    if (zone && allowed.levels.entry_status === 'waiting') {
+      watch = { level: num(zone[direction > 0 ? 1 : 0]), kind: 'zone',
+        condition: 'wait for the retrace, then re-check every entry condition',
+        text: `Watch for the retrace to ${zone[0]} – ${zone[1]}; reaching it is a reason to re-check, not permission to enter.` };
+    }
+    invalidate = 'Nothing is armed. Re-run the analysis when the blocking condition changes.';
   } else if (direction && plan) {
     side = direction;
     action = direction > 0 ? 'BUY' : 'SELL';
@@ -236,7 +251,9 @@ function build(p = {}) {
 
   /* ------------------------------------------------- the other side ------- */
   let otherSide = null;
-  if (direction && otherDir) {
+  // A refused call has side=0: there is no permitted side to contrast with. Its
+  // scenarios stay in setups.candidates rather than implying a live opposite trade.
+  if (side && otherDir) {
     otherSide = {
       dir: -direction,
       side: otherDir.side,

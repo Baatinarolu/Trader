@@ -363,8 +363,31 @@ function buildSetups(analysis, ctx = {}) {
   /* M26 + M25: the window says WHEN, the phase says whether there is anything to trade
    * in it. Inside the chosen window the phase is read once, so consolidation is visible
    * there instead of being mistaken for a slow market. Gating on the phase is M3's
-   * timing rule and is deliberately not done here. */
-  const prefPhase = (winPref && winPref.restricted && !prefBlocked) ? marketPhase(analysis) : null;
+   * timing rule and applies separately below. */
+  /* M3 — Ep 5 keys the expected retrace to the BOS. Ep 2 reinforces the timing rule:
+   *   "your goal as a trader is to get in during the balance phase, so that you can capture
+   *    the imbalance. Your goal is not to get in after the imbalance, but rather before the
+   *    imbalance."
+   * with the failure mode he names in that same Ep 2 passage:
+   *   "The reason why they fail is because they tend to chase after price during an
+   *    expansion... It's because you are not trading price. You are just trading your ego."
+   * The bot already had an anti-chase rule, but it was keyed to DISTANCE FROM A ZONE
+   * (entry_status 'waiting'/'approaching', and "Chasing here breaks the model's edge"), and
+   * the two are not equivalent: price can be far from a zone and mid-expansion, or NEAR a
+   * zone and mid-expansion. The second case is what the zone rule cannot see, and it is the
+   * one this gate refuses. Keying it to the break-of-structure event is also exactly what
+   * the row asks for — "after a break of structure... expect price to start retracing" hangs
+   * the expected pullback off the BOS, not off how far price is from a level.
+   * The classifier is M25's marketPhase(), used as defined: one threshold, one source. Its
+   * RECENT = 5 bars is a classifier setting, NOT a number the course gives — he never counts
+   * bars — so it is recorded as a judgment call and measured, not defended as scripture.
+   * Computed once above the loop rather than per candidate: it depends only on the analysis,
+   * exactly like M10's standDown. */
+  const phaseInfo = marketPhase(analysis);
+  /* Ships ON. `chaseGuard: false` is the opt-out arm, so the two can be measured against
+   * each other without editing the engine — same pattern as useBreakers / standDownOnWall. */
+  const chaseGuard = ctx.chaseGuard !== false;
+  const prefPhase = (winPref && winPref.restricted && !prefBlocked) ? phaseInfo : null;
   /* M10 — computed ONCE here rather than per candidate: it depends only on the bar's
    * calendar and the caller's configuration, not on anything about an individual setup.
    * It was originally declared inside the scoring loop, which put it out of scope for the
@@ -802,6 +825,15 @@ function buildSetups(analysis, ctx = {}) {
     } else if (sess.in_killzone === false) {
       vetoes.push(`Outside the killzone — "if the setup appears before or after that window, I personally will not enter."${sess.best_time ? ` ${sess.best_time}` : ''}`);
     }
+    /* M3 — the anti-chase veto. It is placed AHEAD of M35's zone veto on purpose: when both
+     * are true, "the impulse is still running" is the sharper statement about timing, and
+     * M35's watch instruction is still appended by the action string, so nothing is lost. */
+    if (chaseGuard && phaseInfo.phase === 'expansion') {
+      const ago = phaseInfo.bars_since_break;
+      vetoes.push(`Chasing an expansion — a break of structure printed ${ago} bar${ago === 1 ? '' : 's'} ago `
+        + `and the impulse is still running, so the retrace is what to expect next. `
+        + `"Your goal is not to get in after the imbalance, but rather before the imbalance."`);
+    }
     // M35 — a cap at 66 left this tradeable as a B. The course stands it down instead:
     // "when price is hovering around here in the middle of nowhere, we do not go down to the
     // lower time frame." It stays visible with its action string so it can be alerted on.
@@ -810,7 +842,8 @@ function buildSetups(analysis, ctx = {}) {
     }
     const tradeable = vetoes.length === 0 && g.grade !== 'no-trade';
 
-    const phaseInfo = marketPhase(analysis);   // M25
+    // M25's phaseInfo now lives above the loop (M3 gates on it before the vetoes are
+    // assembled); only the per-candidate strong/weak read stays here.
     const swInfo = strongWeak(analysis);        // M21
 
     /* --------------------------------------------------------------- risk plan */
@@ -938,7 +971,11 @@ function buildSetups(analysis, ctx = {}) {
   candidates.sort((a, b) => b.score - a.score);
 
   /* --------------------------------------------------------------- top verdict */
-  let best = candidates[0] || null;
+  // M127 — grades rank ideas; only `ok` permits an action. The original verdict used
+  // grade alone and could print BUY above a candidate whose own action said "No trade".
+  const rawBest = candidates[0] || null;
+  const setupBest = candidates.find((c) => c.ok) || null;
+  let best = setupBest || rawBest;                  // keep a refused idea visible, not actionable
   const buy = candidates.find((c) => c.dir === 1);
   const sell = candidates.find((c) => c.dir === -1);
 
@@ -957,8 +994,7 @@ function buildSetups(analysis, ctx = {}) {
     const aligned = candidates.find((c) => c.dir === td.direction);
     if (aligned) best = aligned;                    // the higher timeframe chooses the side
   }
-  const rawBest = candidates[0] || null;
-  const setupAction = !rawBest || rawBest.grade === 'no-trade' ? null : (rawBest.dir > 0 ? 'BUY' : 'SELL');
+  const setupAction = setupBest ? (setupBest.dir > 0 ? 'BUY' : 'SELL') : null;
   const methodBlocked = !!(td && (td.blocked || (td.direction !== 0 && (!best || best.dir !== td.direction))));
 
   let verdict;
@@ -974,13 +1010,13 @@ function buildSetups(analysis, ctx = {}) {
       detail: `${why}${pendingStep(td)}`,
       next_trigger: [td.playbook && td.playbook.length ? td.playbook[0] : null, nextTriggerHint(analysis)].filter(Boolean),
       source: 'topdown-gate', method, setup_action: setupAction,
-      setup_dir: rawBest ? rawBest.dir : 0,
+      setup_dir: setupBest ? setupBest.dir : 0,
     };
-  } else if (!best || best.grade === 'no-trade') {
+  } else if (!best || !best.ok) {
     verdict = {
       action: 'NO TRADE', dir: 0, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
-      headline: 'No A-grade setup right now — the model says wait.',
-      detail: best ? best.why_not.slice(0, 4).join(' ') : 'Not enough data.',
+      headline: 'No tradeable setup right now — the model says wait.',
+      detail: best ? best.action : 'Not enough data.',
       next_trigger: nextTriggerHint(analysis),
       source: 'setup-model', method, setup_action: setupAction,
     };
@@ -1044,6 +1080,14 @@ function buildSetups(analysis, ctx = {}) {
         note: `Unknown window "${winPref.error}" — the restriction was NOT applied. Expected one of: `
           + Object.keys(SMC.WINDOW_BY_KEY).join(', ') + ', or "any".',
       } : null),
+      /* M3 — the timing state this analysis was graded in. The row's optional half asks for
+       * "BOS just printed, expect retrace" as a DISTINCT STATE; that is phase 'expansion' with
+       * its bars_since_break, so it is exposed rather than left inside a veto string. */
+      chase_guard: {
+        on: chaseGuard, phase: phaseInfo.phase, bars_since_break: phaseInfo.bars_since_break,
+        blocking: chaseGuard && phaseInfo.phase === 'expansion',
+        note: phaseInfo.note,
+      },
       news_blackout: blackout || null,
       min_rr: minRR,
     },
