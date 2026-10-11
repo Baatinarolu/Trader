@@ -285,10 +285,14 @@ router.get('/markets', requireAuth, (req, res) => {
       E.encodeEvidence(b.entry_evidence, model, b.entry_tf);
     }
     catch (e) { return res.status(400).json({ error: e.message }); }
+    if (b.stop_policy) {
+      try { require('../bots/stops').check(b.stop_policy, Number(b.stop), b.entry_tf); }
+      catch (e) { return res.status(400).json({ error: e.message }); }
+    }
     const out = await Bots.savePlan(req.user.id, {
       symbol: b.symbol, timeframe: b.timeframe, entry: b.entry, stop: b.stop,
       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
-      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy,
+      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy,
     });
     res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
   }));

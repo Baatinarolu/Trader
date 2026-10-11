@@ -191,6 +191,7 @@ function build(p = {}) {
       entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
       target_tf: lv.target_tf || target.source_tf || target.tf || null,
       target_kind: target.kind, target_policy: lv.target_policy || null,
+      stop_tf: lv.stop_tf, stop_kind: lv.stop_policy && lv.stop_policy.kind, stop_policy: lv.stop_policy || null,
       entry_model: allowed.entry_model, entry_tf: allowed.entry_tf, entry_evidence: allowed.entry_evidence,
       mode: td.countertrend ? 'countertrend-pullback' : 'named-entry',
       risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
@@ -211,6 +212,7 @@ function build(p = {}) {
       entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
       target_tf: lv.target_tf || target.source_tf || target.tf || null,
       target_kind: target.kind, target_policy: lv.target_policy || null,
+      stop_tf: lv.stop_tf, stop_kind: lv.stop_policy && lv.stop_policy.kind, stop_policy: lv.stop_policy || null,
       mode: 'countertrend-pullback', risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
       size_note: 'Counter-HTF pullback: at most half ordinary same-grade risk; the daily narrative stays intact.',
       rr_warning: null };
@@ -227,6 +229,7 @@ function build(p = {}) {
     order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the eligible entry zone',
       entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
       entry_tf: lv.entry_tf, target_tf: lv.target_tf, target_kind: target.kind, target_policy: lv.target_policy,
+      stop_tf: lv.stop_tf, stop_kind: lv.stop_policy && lv.stop_policy.kind, stop_policy: lv.stop_policy || null,
       mode: 'entry-aligned', risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
       size_note: Setup.methodRiskMult(td, direction) < 1
         ? 'Counter-HTF CRT rotation: at most half ordinary same-grade risk.'

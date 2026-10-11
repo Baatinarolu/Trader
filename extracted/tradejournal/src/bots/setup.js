@@ -32,6 +32,8 @@
 const I = require('../instruments');
 const Entry = require('./entry-models');
 const Targets = require('./targets');
+const Protected = require('./protected');
+const Stops = require('./stops');
 const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
 
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -653,10 +655,29 @@ function buildSetups(analysis, ctx = {}) {
     let levels = null;
     if (zone && (!useModel || entryAtr > 0)) {
       const entry = zone.entry;
-      const stopBase = long ? Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom) : Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top);
-      const buffer = entryAtr * 0.18;
-      const stop = long ? stopBase - buffer : stopBase + buffer;
-      const risk = Math.abs(entry - stop);
+      const protection = useModel ? model.protection : analysis && analysis.protected_levels;
+      const protectionClock = ctx.observedAt || (protection && protection.observed_at) || Date.now();
+      const currentProtection = Protected.forSweep(protection, stopSweep);
+      const shift = analysis && analysis.structure && analysis.structure.last_break;
+      const shiftSign = shift && (shift.dir === 'up' ? 1 : shift.dir === 'down' ? -1 : 0);
+      const causalZone = !!(currentProtection && shift && shiftSign === dir && stopSweep.t <= shift.t
+        && (zone.meta.structure_causes || []).some(c => c.shift && c.shift.confirmed === true
+          && c.shift.t === shift.t && c.displacement_t >= stopSweep.t && c.displacement_t <= shift.t));
+      // Bonus Sniper: a closed entry candle which sweeps/reclaims at the zone can
+      // itself be the current protected boundary; no future fractal is required.
+      const entryCandle = !!(currentProtection && protection.closed_through === currentProtection.available_at
+        && currentProtection.sweep_close >= zone.bottom && currentProtection.sweep_close <= zone.top);
+      const stopChoice = Stops.plan({ dir, entry, zone, atr: entryAtr, tf: entryTf,
+        report: protection, observedAt: protectionClock, currentSweep: stopSweep,
+        currentSweepTf: useModel ? model.entry_tf : counter && counter.confirmation ? counter.confirmation.tf : entryTf,
+        currentIsCausal: useModel || causalZone || entryCandle, policy: ctx.stopPolicy === 'legacy' ? 'legacy' : 'course' });
+      const stopBase = stopChoice.base, buffer = stopChoice.buffer;
+      const stop = stopChoice.raw_stop;
+      const risk = stop === null ? 0 : Math.abs(entry - stop);
+      const stopEvidence = ctx.stopPolicy === 'legacy' ? null : Stops.evidence(stopChoice);
+      const entryEvidence = useModel ? { ...Entry.evidence(model), ...(stopEvidence ? { stop_policy: stopEvidence } : {}) } : null;
+      if (ctx.stopPolicy !== 'legacy') add('stop_valid', 'Defined adverse stop at the selected invalidation boundary',
+        stopChoice.state === 'known', 0, stopChoice.reason);
       const ordinarySources = targetAlignment ? scopedTargets.sources.map((s) => s.analysis) : [analysis];
       const pools = counter || boundedCRT ? [] : ordinarySources.flatMap((a) =>
         targetPools(a, dir, entry, { magnets: targetMagnets }));
@@ -806,15 +827,20 @@ function buildSetups(analysis, ctx = {}) {
 
       levels = {
         target_policy: targetPolicy, target_tf: ladder[0] ? ladder[0].source_tf || ladder[0].tf || null : null,
-        entry_tf: entryTf, stop_tf: entryTf,
+        entry_tf: entryTf, stop_tf: ctx.stopPolicy === 'legacy' ? entryTf : stopChoice.source_tf,
+        stop_policy: stopEvidence,
         ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counterTargetKnown ? counterTargetTf : null } : {}),
         ...(useModel ? { entry_model: model.entry_model, entry_tf: model.entry_tf,
-          stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: Entry.evidence(model),
+          stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: entryEvidence,
           ...(boundedCRT ? { target_tf: boundedCRT.tf } : {}) } : {}),
         ...(preference ? { zone_preference: { rule: 'extreme_over_flip', fuel: preference.fuel } } : {}),
         dir, side, entry: r4(entry), entry_zone: [r4(zone.bottom), r4(zone.top)], entry_kind: zone.kind,
-        stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / entryAtr),
-        stop_reason: stopSweep && Math.abs(stopBase - stopSweep.extreme) < 1e-9
+        stop: stop === null ? null : r4(stop), risk: r4(risk), risk_atr: r2(risk / entryAtr),
+        stop_reason: ctx.stopPolicy !== 'legacy'
+          ? (stopChoice.state === 'known'
+            ? `${stopChoice.reason} Stop ${stopChoice.price}; base ${r4(stopBase)} + ${r4(buffer)} (${Stops.BUFFER_ATR} ${entryTf} ATR) buffer. Rule: ${stopChoice.rule}.`
+            : stopChoice.reason)
+          : stopSweep && Math.abs(stopBase - stopSweep.extreme) < 1e-9
           ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(entryAtr * 0.18)} buffer`
           // M47: a third kind now exists, so the two-way ternary would have called a flip
           // zone an "FVG" - the recurring trap of a string that describes a decision no
@@ -838,9 +864,12 @@ function buildSetups(analysis, ctx = {}) {
         wall: wallRisk ? { label: wallRisk.label, price: wallRisk.price, rr: wallRisk.rr } : null,
         entry_status: entryStatus, entry_note: entryNote,
         risk_warning: risk < entryAtr * 0.35 ? 'Stop is tighter than 0.35 ATR — normal noise can take you out. Consider using the sweep extreme instead.' : null,
-        invalidation: long
-          ? `A ${entryTf || 'entry-timeframe'} close below ${r4(Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom))} invalidates the idea.`
-          : `A ${entryTf || 'entry-timeframe'} close above ${r4(Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top))} invalidates the idea.`,
+        invalidation: ctx.stopPolicy !== 'legacy'
+          ? stopChoice.state !== 'known' ? 'No valid selected invalidation boundary — no executable trade.'
+            : `A ${stopChoice.source_tf || entryTf || 'entry-timeframe'} close ${long ? 'below' : 'above'} ${r4(stopBase)} (${stopChoice.kind}) invalidates the idea. The hard stop is buffered at ${stopChoice.price}.`
+          : long
+            ? `A ${entryTf || 'entry-timeframe'} close below ${r4(Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom))} invalidates the idea.`
+            : `A ${entryTf || 'entry-timeframe'} close above ${r4(Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top))} invalidates the idea.`,
       };
     } else {
       add('runway', 'Open runway to opposing liquidity', false, 14, 'No zone, so no defined risk — the model needs a level to trade against.');
@@ -922,6 +951,10 @@ function buildSetups(analysis, ctx = {}) {
         ? `Risk:reward ${Math.round(floorRR * 10000) / 10000}R (unrounded geometry) is below the ${minRR}R floor — passing on the trade.`
         : noTargetReason);
     }
+    if (levels && levels.stop_policy && levels.stop_policy.state !== 'known') {
+      const stopCheck = checks.find(c => c.key === 'stop_valid');
+      vetoes.push('No defined valid stop — ' + (stopCheck ? stopCheck.detail : 'selected invalidation is unavailable.'));
+    }
     if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
     if (blackout) vetoes.push('High-impact news inside the window.');
     // M8 — tested against the boolean, not truthiness: when analysis is the short-series
@@ -963,7 +996,7 @@ function buildSetups(analysis, ctx = {}) {
 
     /* --------------------------------------------------------------- risk plan */
     let risk = null;
-    if (levels) {
+    if (levels && levels.stop !== null) {
       const balance = Number(ctx.balance || 0);
       // M9: the fallback was 1 — double the guardrail default. `maxRiskPct` was listed in the
       // ctx docstring above and NEVER READ — the finding's own evidence was that
@@ -1050,7 +1083,7 @@ function buildSetups(analysis, ctx = {}) {
       ...(td && td.entry_setup ? { entry_model: useModel ? model.entry_model : 'none',
         entry_tf: levels ? levels.entry_tf : model ? model.entry_tf : null,
         entry_model_state: model ? model.state : 'not_permitted_direction',
-        entry_evidence: useModel ? Entry.evidence(model) : null } : {}),
+        entry_evidence: useModel ? (levels ? levels.entry_evidence : Entry.evidence(model)) : null } : {}),
       // M25: the market phase, so the trader (and any review) can tell an impulse they are
       // late for from a pullback they are early for. Reported, not enforced — turning it
       // into a gate is M3's timing rule and needs its own measurement.

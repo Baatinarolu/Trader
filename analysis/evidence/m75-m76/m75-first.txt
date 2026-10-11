@@ -1,0 +1,42 @@
+ ok   long: no CURRENT protected level => choose nearer zone, not a farther old protected peak
+ ok   long: legacy research arm retains the measured parent farther-stop geometry
+ ok   long: unchanged entry/target price, exact TF band and configured risk ceiling survive
+ ok   long: sizing actually uses the new published stop, not the old wider denominator
+ ok   long: an older protected boundary nearer than the zone wins the fallback
+ ok   long: CURRENT causal protected boundary overrides a nearer zone (no RR-driven tightening)
+ ok   long: current protected peak may also be the tighter valid stop; not always wider
+ ok   long: selected institutional price and source-pool provenance reach executable levels
+ ok   long: buffer is still exactly .18 actual entry-TF ATR for BOTH branches
+ ok   long: stop explanation/invalidation name the chosen base/rule/TF, not the former farther extreme
+ ok   long: far CURRENT protected boundary below RR floor refuses; no nearer-zone or farther-target rescue
+ FAIL long: wrong-side old protected base is rejected before comparing reward ratios
+ FAIL long: taken older boundary cannot be recycled as a valid stop
+ ok   long: taken CURRENT causal boundary refuses rather than switching invalidation to rescue the model
+ ok   long: HTF protection cannot be renamed entry-TF; unknown retains honest conservative geometry
+ ok   long: future protection snapshot cannot authorize a tighter stop
+ ok   long: unknown does not mean unprotected; no invented nearest/protected classification
+ ok   long: if every candidate base is wrong-side, no stop is invented with an ATR buffer
+ FAIL long: exact fallback-distance tie chooses the zone, not an arbitrary old swing
+ ok   short: no CURRENT protected level => choose nearer zone, not a farther old protected peak
+ ok   short: legacy research arm retains the measured parent farther-stop geometry
+ ok   short: unchanged entry/target price, exact TF band and configured risk ceiling survive
+ ok   short: sizing actually uses the new published stop, not the old wider denominator
+ ok   short: an older protected boundary nearer than the zone wins the fallback
+ ok   short: CURRENT causal protected boundary overrides a nearer zone (no RR-driven tightening)
+ ok   short: current protected peak may also be the tighter valid stop; not always wider
+ ok   short: selected institutional price and source-pool provenance reach executable levels
+ ok   short: buffer is still exactly .18 actual entry-TF ATR for BOTH branches
+ ok   short: stop explanation/invalidation name the chosen base/rule/TF, not the former farther extreme
+ ok   short: far CURRENT protected boundary below RR floor refuses; no nearer-zone or farther-target rescue
+ FAIL short: wrong-side old protected base is rejected before comparing reward ratios
+ FAIL short: taken older boundary cannot be recycled as a valid stop
+ ok   short: taken CURRENT causal boundary refuses rather than switching invalidation to rescue the model
+ ok   short: HTF protection cannot be renamed entry-TF; unknown retains honest conservative geometry
+ ok   short: future protection snapshot cannot authorize a tighter stop
+ ok   short: unknown does not mean unprotected; no invented nearest/protected classification
+ ok   short: if every candidate base is wrong-side, no stop is invented with an ATR buffer
+ FAIL short: exact fallback-distance tie chooses the zone, not an arbitrary old swing
+ ok   published zero-risk CURRENT stop refuses, rather than borrowing a farther zone/ATR
+ ok   ordinary unknown protection still respects existing trigger/session/risk rules, not a fake no-data success
+ ok   actual Setup propagates a known invalid protected stop to refusal and no risk plan
+M75 STOPS: 35 passed, 6 failed

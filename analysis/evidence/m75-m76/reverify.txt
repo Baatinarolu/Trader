@@ -1,0 +1,89 @@
+
+re-verification sweep of the APPLIED rows
+  engine      extracted/tradejournal/src/bots/{smc,setup}.js (real, unmodified paths)
+  sample      25 seeds × 1500 bars, window 300, stride 3
+              11475 analyses · 22950 candidates · 88 tradeable
+              148990 order blocks · 22357 breakers · 73694 break events
+
+— does the value survive to the emitted object? —
+  ok    M127 directional verdict sample is nonempty  88/11475 directional
+  ok    M127 every directional verdict selects a tradeable candidate  0 violations
+  ok    M127 no setup_action is advertised when every candidate is refused  0 violations
+  ok    M2  swing_range survives to structure output  10719/10719 carry high+low+width+width_pct
+  ok    M2  swing_range.width_pct discriminates  971 distinct widths (3.407, 5.1783, 7.2066, 0.427, …)
+  ok    M25 phase survives on every candidate  22950/22950
+  ok    M25 phase is not a constant classifier (§6)  values: pullback, expansion, balance — counts pullback=16560 expansion=804 balance=5586
+  ok    M25 phase carries a plain-language note  22950/22950
+  ok    M21 strong_weak survives on every candidate  22950/22950
+  ok    M21 every trending candidate is either labelled or the sanctioned stale branch  16668 labelled + 696 stale (M50) of 17364; 0 unexplained nulls
+  ok    M21 no labelled candidate puts weak on the wrong side of strong  16668/16668 geometrically consistent
+  ok    M21/M54 weak candidate survives; the actual nearest magnet leads  6438/6438 weak retained; 17148/17148 nearest selected
+  ok    M21 primary_target keeps kind through the spread  17148/17148
+  ok    M51 single-target trades emit no partial_at / break_even_after  17148/17148 single-target candidates clean
+  ok    M51 single-target runner is sized 100%, not 50%  17148/17148
+  ok    M51 multi-target trades DO emit partial_at  0/0
+  ok    M58 risk plan survives to output  17148/22950 candidates carry risk
+  ok    M58 grade_risk_multiplier matches GRADE_RISK_MULT[grade]  17148/17148
+  ok    M52 range_risk_multiplier is within (0,1] — it can only ever REDUCE risk  17148/17148
+  ok    M58 risk_pct === configured × grade × range multiplier (it is CONSUMED, not decorative)  17148/17148
+  ok    M58 the multiplier discriminates across the sample (§6)  values 0, 0.25, 0.5, 1
+  ok    M58 B and C are actually down-sized (the M95 compensating control)  4601/4601 B/C candidates sized below configured
+  ok    M52 the risk plan carries the range position it was sized from  16973/22950 candidates
+  ok    M52 range_risk_multiplier follows the depth curve, recomputed independently  16973/16973
+  ok    M52 zone label 'equilibrium' agrees with the 45–55 band to within reported precision  16973/16973
+  ok    M52 the equilibrium label is actually reachable (§6: not a dead branch)  1108/16973 candidates labelled equilibrium
+  ok    M52 the range multiplier discriminates across the sample (§6)  950 distinct values, min 0.5 max 1
+  ok    M52 a no-trade setup deploys nothing whatever the range position  12002/12002
+  ok    M52 risk_pct is monotone non-decreasing in the range multiplier within a grade  473/473 adjacent same-grade buckets ordered
+  ok    M52 at the SAME grade, a mid-range entry deploys STRICTLY less than one at the extreme  4/4 grades separate floor from full risk
+  ok    M9  the guardrail constants are the course's numbers  default 0.5% · guardrail 0.5% · max 1% · floor 0.25%
+  ok    M9  absent risk falls back to 0.5, not 1  undefined→0.5 null→0.5
+  ok    M9  above the guardrail needs the manual unlock  0.75 locked→0.5 unlocked→0.75
+  ok    M9  1% is the absolute ceiling even when unlocked (Ep 21)  50 unlocked→1
+  ok    M9  a clamp is explained, not silent  note on a clamp, null when honoured as asked
+  ok    M9  guarded: POST/PUT /accounts (stored unclamped)  routes through clampRiskPct
+  ok    M9  guarded: /tools/size + monte-carlo request params  routes through clampRiskPct
+  ok    M9  guarded: bots/index.js read path (main signal path)  routes through clampRiskPct
+  ok    M9  setup.js READS ctx.maxRiskPct (was docstring-only, never read)  riskPct=5 with maxRiskPct=1 → risk_pct_configured=1
+  ok    M9  inert when maxRiskPct is absent, so the baseline still reproduces  riskPct=5 with no maxRiskPct → 5 (unchanged; the harness passes none)
+  ok    M47 entry_kind stays inside the known set  kinds: order_block
+  ok    M47 stop_reason never names a zone kind other than the one used  17198/17198 consistent
+
+— is the value actually consumed by a decision? —
+  ok    M31 depth_in_range emitted on every order block  148990/148990
+  ok    M31 depth discriminates (§6)  101 distinct depth values
+  ok    M31 depth is CONSUMED — strength rises with depth  mean strength depth<=0.25 0.66 (n=73181) vs depth>=0.75 0.9 (n=35030)
+  ok    M42 swept_liquidity emitted on every order block  148990/148990
+  ok    M42 swept_liquidity shows BOTH values (§6: one value = broken classifier)  swept=14099 unswept=134891
+  ok    M42 the sweep is CONSUMED — swept zones score stronger  mean strength swept 0.9 vs unswept 0.73
+  ok    M32 has_fvg/fvg_i emitted on every order block  148990/148990
+  ok    M32 obRequiresFvg is a real gate, not a label  order blocks 67 (off) -> 39 (on); all surviving have has_fvg=true
+  ok    M48 failed_reaction/reaction_point/confirmed survive on every breaker  22357/22357
+  ok    M48 confirmed === failed_reaction && broke_structure (it is CONSUMED)  22357/22357
+  ok    M48 failed_reaction shows BOTH values (§6)  values true, false
+  ok    M24 every break is classified CHoCH or BOS  73694/73694
+  ok    M24 type shows BOTH values (§6)  counts BOS=70056 CHoCH=3638
+  ok    M24 broke_strong present on every break  73694/73694
+  ok    M24 broke_strong shows BOTH values (§6) — the up-direction asymmetry M119 fixed  counts true=29794 false=43900
+  ok    M24 CHoCH requires flip AND a strong level  3638/3638
+  ok    M23 mss can be false (it is no longer a synonym for CHoCH)  mss true=1023 false=72671
+  ok    M23 every MSS is a CHoCH (sweep + CHoCH, not sweep alone)  1023/1023
+
+— does the gate decide, and does the score only rank? (M7/M8/M35/M61/M95/M96/M97) —
+  ok    M95/M96 ok === (no vetoes && grade !== no-trade) on every candidate  22950/22950
+  ok    M61 no refused setup advertises itself as tradeable  22862/22862 refusals worded consistently
+  ok    M7  every sub-2R candidate is refused  3127/3127 refused
+  ok    M35 every waiting candidate is refused  14856/14856 refused
+  ok    M35 waiting candidates are still emitted, not dropped  14856 waiting candidates remain visible with their level
+  ok    M8  the killzone veto fires and is attributed  14900 candidates refused for the killzone
+  ok    M96 score still varies (left to rank, not to decide)  77 distinct scores
+
+————————————————————————————————————
+  note  M21 risk.at_targets drops `kind` (0/17148 retain it). Benign: it is a PnL view (role/price/rr/pnl) and the authoritative list levels.targets keeps kind. Recorded, not failed.
+  note  M51 target-count split: single=17148 multi=0 — the single target is the default as claimed.
+  note  M52 range multiplier distribution: 0.5×11665 0.5003×4 0.5007×4 0.501×3 0.5013×1 0.5017×1 0.5023×1 0.5027×2 0.5033×2 0.5037×4 0.504×1 0.5043×1 0.5047×2 0.505×1 0.5053×2 0.506×4 0.5067×3 0.5073×1 0.5077×2 0.508×2 0.509×2 0.5093×1 0.5097×2 0.51×1 0.5103×1 0.5113×2 0.512×3 0.5123×1 0.5133×3 0.514×1 0.5143×1 0.515×3 0.516×1 0.517×1 0.5173×1 0.5177×1 0.518×2 0.519×2 0.5193×1 0.521×3 0.5217×3 0.523×1 0.5233×1 0.524×1 0.5243×1 0.525×2 0.5257×1 0.527×1 0.5273×1 0.5277×1 0.528×2 0.5283×1 0.529×1 0.5297×1 0.53×1 0.5303×1 0.5317×1 0.5323×2 0.533×1 0.5333×1 0.5343×1 0.5347×1 0.535×2 0.5353×2 0.5357×2 0.536×1 0.5363×1 0.5367×4 0.537×2 0.5373×1 0.5377×3 0.5383×3 0.5387×1 0.539×1 0.5393×2 0.5397×1 0.5417×1 0.5423×3 0.5427×1 0.5433×1 0.5443×1 0.545×1 0.5453×1 0.546×3 0.5467×1 0.547×2 0.5473×1 0.5477×4 0.548×2 0.5483×1 0.5493×2 0.5507×1 0.551×1 0.5513×1 0.5517×2 0.552×2 0.5527×1 0.5537×2 0.554×1 0.5543×2 0.5547×1 0.555×1 0.5553×1 0.5557×1 0.556×1 0.5563×1 0.5567×2 0.557×1 0.5577×2 0.5593×4 0.5597×1 0.56×2 0.5603×1 0.5607×2 0.562×1 0.5623×1 0.5627×1 0.5633×1 0.5643×2 0.5647×1 0.565×1 0.5653×1 0.5657×1 0.566×1 0.5663×2 0.5667×2 0.567×2 0.5677×1 0.5683×2 0.569×1 0.5697×3 0.57×3 0.5703×3 0.5707×1 0.5713×4 0.5723×2 0.5727×2 0.573×2 0.5743×2 0.5747×3 0.5767×1 0.577×3 0.578×1 0.5783×1 0.5787×1 0.579×1 0.58×1 0.5803×1 0.5807×1 0.581×1 0.5813×1 0.5817×2 0.582×2 0.583×1 0.5833×2 0.584×3 0.5843×1 0.5847×1 0.585×1 0.5853×2 0.586×2 0.5863×1 0.5873×1 0.5877×3 0.5883×1 0.5887×2 0.5893×3 0.591×1 0.5913×3 0.5917×1 0.592×4 0.5923×1 0.5927×1 0.593×1 0.5933×2 0.5937×2 0.5947×2 0.595×1 0.5957×1 0.596×1 0.5963×1 0.5967×1 0.5977×1 0.598×1 0.5983×2 0.5987×1 0.5997×1 0.6003×1 0.601×1 0.6013×1 0.6017×2 0.602×1 0.6023×3 0.6027×2 0.603×2 0.6037×1 0.6043×4 0.606×1 0.6063×1 0.607×2 0.6077×1 0.6083×2 0.6087×1 0.6097×1 0.6103×1 0.6107×3 0.611×2 0.6117×4 0.612×3 0.6123×4 0.613×1 0.6137×2 0.6143×2 0.6147×1 0.6153×1 0.6157×1 0.616×3 0.6163×2 0.6177×1 0.618×1 0.619×1 0.6197×2 0.62×1 0.6207×2 0.6213×3 0.6217×1 0.622×1 0.6223×2 0.6227×3 0.623×2 0.6233×2 0.625×1 0.6257×1 0.6263×3 0.627×4 0.6277×1 0.628×1 0.6287×2 0.6293×1 0.6297×1 0.63×1 0.631×1 0.6313×2 0.6317×1 0.632×1 0.6323×1 0.6327×1 0.633×1 0.6337×3 0.634×1 0.6343×2 0.635×3 0.6357×1 0.636×1 0.6363×1 0.6367×1 0.637×1 0.6373×2 0.638×1 0.6387×2 0.639×1 0.6393×1 0.6397×1 0.6407×1 0.641×2 0.6413×1 0.642×2 0.6427×1 0.643×1 0.6433×2 0.644×1 0.6443×4 0.6447×3 0.645×1 0.6453×1 0.6463×1 0.6467×1 0.648×7 0.649×1 0.6493×1 0.65×1 0.6507×1 0.651×2 0.6513×1 0.6517×2 0.652×1 0.6523×2 0.6527×1 0.653×1 0.6533×3 0.6537×1 0.654×1 0.6543×2 0.6553×1 0.6557×1 0.656×2 0.6563×1 0.6567×2 0.6573×2 0.6583×1 0.659×1 0.6593×5 0.6597×2 0.66×3 0.6603×3 0.661×2 0.6613×1 0.6617×1 0.6627×4 0.663×3 0.664×1 0.6647×1 0.665×1 0.6653×1 0.6657×1 0.6663×1 0.6667×2 0.6677×1 0.668×2 0.6687×1 0.669×2 0.6693×1 0.6697×1 0.67×1 0.6707×1 0.671×3 0.6713×1 0.672×1 0.6723×2 0.6727×2 0.673×2 0.6753×1 0.6757×3 0.676×1 0.6763×3 0.6773×1 0.678×1 0.6783×1 0.6793×1 0.6797×1 0.6803×2 0.6807×2 0.6813×3 0.6817×2 0.682×3 0.6823×3 0.683×1 0.6833×1 0.684×3 0.6843×2 0.6847×2 0.6853×1 0.6857×1 0.686×1 0.6863×2 0.6867×1 0.687×2 0.6873×1 0.6877×1 0.688×2 0.6883×2 0.6887×1 0.689×1 0.6893×2 0.6897×3 0.69×1 0.6903×2 0.6913×1 0.6917×1 0.692×1 0.6923×3 0.6927×3 0.6937×2 0.694×3 0.695×2 0.6957×1 0.696×2 0.6963×2 0.6967×3 0.698×3 0.6983×1 0.699×1 0.6993×2 0.7003×2 0.7007×1 0.701×3 0.7013×1 0.7017×1 0.703×1 0.7037×1 0.704×2 0.7043×2 0.7047×1 0.7053×2 0.7057×1 0.7063×3 0.707×2 0.7073×1 0.7077×3 0.708×1 0.7083×1 0.7087×2 0.709×1 0.7093×1 0.7097×1 0.71×2 0.711×1 0.7113×2 0.712×2 0.7123×1 0.7133×2 0.7137×5 0.7143×1 0.7147×2 0.715×2 0.7153×1 0.716×1 0.7167×1 0.717×1 0.718×1 0.719×1 0.7193×1 0.7197×2 0.72×2 0.7203×3 0.7227×1 0.723×2 0.7233×2 0.7237×1 0.7243×1 0.7247×4 0.7253×2 0.726×2 0.7263×1 0.7267×1 0.7277×2 0.728×1 0.7283×1 0.7307×1 0.731×2 0.7313×2 0.732×2 0.733×3 0.734×2 0.7343×1 0.735×2 0.7357×1 0.736×1 0.7363×1 0.7367×2 0.737×2 0.7373×2 0.7377×1 0.7383×3 0.7387×4 0.739×3 0.7393×1 0.7397×1 0.74×2 0.7403×2 0.7407×1 0.741×3 0.7417×1 0.742×1 0.7423×1 0.7427×2 0.743×3 0.7433×1 0.7443×1 0.7447×3 0.7457×1 0.746×1 0.7467×2 0.747×1 0.7473×2 0.7477×1 0.7483×1 0.749×1 0.75×2 0.7503×2 0.7507×1 0.7513×2 0.7517×1 0.7527×1 0.7537×2 0.754×1 0.7543×1 0.7547×2 0.755×3 0.7553×2 0.7567×2 0.757×1 0.7573×2 0.758×1 0.7583×1 0.7587×1 0.759×1 0.7593×1 0.7603×1 0.7607×1 0.761×1 0.7613×2 0.7617×2 0.7623×1 0.7627×1 0.763×2 0.7637×4 0.7643×1 0.7647×2 0.765×1 0.766×1 0.7663×1 0.767×4 0.7673×3 0.7677×1 0.7683×1 0.7687×1 0.769×2 0.7693×3 0.7697×1 0.77×1 0.7707×2 0.7717×1 0.7723×1 0.7727×2 0.7733×1 0.7737×2 0.774×1 0.7747×2 0.775×1 0.7757×3 0.776×2 0.7767×3 0.777×3 0.7773×1 0.778×2 0.7783×3 0.7787×1 0.7793×2 0.78×1 0.7807×3 0.7813×4 0.7817×1 0.782×1 0.7827×1 0.783×3 0.7837×1 0.7847×1 0.785×3 0.7853×1 0.7867×1 0.788×1 0.7883×1 0.7887×3 0.789×1 0.7893×2 0.7897×1 0.7903×1 0.7907×1 0.791×1 0.7917×1 0.792×1 0.7923×1 0.7927×1 0.7933×1 0.7937×1 0.794×2 0.7947×1 0.7953×1 0.7957×2 0.796×3 0.7963×2 0.7967×1 0.797×1 0.7973×1 0.7977×2 0.798×1 0.7983×1 0.7987×1 0.799×1 0.7993×2 0.8×1 0.8003×1 0.8007×1 0.801×1 0.8023×1 0.8027×1 0.8037×2 0.8043×1 0.8047×1 0.8053×2 0.8057×2 0.806×1 0.8067×1 0.8077×4 0.808×1 0.8083×1 0.8087×1 0.809×1 0.8093×4 0.81×1 0.8103×1 0.8113×2 0.812×2 0.8123×1 0.813×1 0.8137×1 0.8143×1 0.8147×1 0.815×1 0.8153×1 0.816×2 0.8163×2 0.8167×2 0.8173×1 0.818×3 0.8183×2 0.8193×1 0.82×1 0.8203×2 0.8207×1 0.8213×3 0.822×2 0.8227×1 0.8237×2 0.824×3 0.8247×1 0.825×2 0.8253×1 0.826×1 0.8267×3 0.827×1 0.8277×1 0.828×2 0.8283×3 0.8287×3 0.829×1 0.8293×2 0.8297×2 0.8313×1 0.8323×2 0.8327×3 0.8343×1 0.835×2 0.8357×2 0.8363×1 0.8367×1 0.837×1 0.8373×1 0.8377×2 0.8387×1 0.839×1 0.8393×1 0.8397×3 0.8403×1 0.8407×1 0.841×2 0.8413×2 0.842×2 0.843×1 0.8437×2 0.8443×3 0.845×1 0.8467×1 0.8473×2 0.8483×1 0.8487×1 0.8493×1 0.85×1 0.851×2 0.852×1 0.8523×1 0.8533×3 0.8537×2 0.854×3 0.8547×1 0.855×3 0.8553×1 0.8557×1 0.856×1 0.8563×1 0.8567×1 0.857×1 0.8573×2 0.858×3 0.8587×1 0.859×2 0.8593×2 0.86×1 0.8603×1 0.8613×1 0.8633×1 0.8637×2 0.864×2 0.8643×1 0.865×2 0.8653×1 0.8657×1 0.866×1 0.8663×1 0.8667×2 0.867×1 0.8673×1 0.8677×1 0.868×1 0.8683×1 0.8687×1 0.869×2 0.8693×1 0.8697×2 0.8703×2 0.8707×1 0.871×1 0.8713×1 0.8727×1 0.873×1 0.8733×1 0.8737×3 0.874×2 0.8743×1 0.8747×1 0.875×1 0.8757×1 0.8767×1 0.877×1 0.878×1 0.8783×1 0.879×1 0.8793×1 0.88×1 0.8807×2 0.881×2 0.8817×2 0.8823×3 0.8827×1 0.8833×2 0.8837×2 0.8843×2 0.8853×4 0.886×1 0.8863×1 0.8867×1 0.887×1 0.8873×1 0.8883×1 0.8887×1 0.89×2 0.8903×3 0.8913×1 0.8917×1 0.8923×2 0.893×2 0.8933×1 0.8937×4 0.8943×2 0.895×1 0.8953×3 0.8957×1 0.896×1 0.8963×2 0.8967×1 0.897×3 0.8973×2 0.8983×1 0.8987×1 0.899×1 0.8993×2 0.9×3 0.9003×1 0.902×2 0.9027×1 0.903×1 0.9033×1 0.9037×1 0.9043×2 0.9047×1 0.905×1 0.906×1 0.907×1 0.9077×2 0.908×2 0.9083×1 0.909×3 0.9093×3 0.9097×2 0.9103×1 0.9107×1 0.911×1 0.912×2 0.9123×2 0.9133×1 0.9137×3 0.914×1 0.9143×1 0.9147×2 0.9153×4 0.916×3 0.9163×1 0.9167×1 0.9173×1 0.9177×2 0.918×1 0.9187×1 0.9193×2 0.921×1 0.9227×2 0.923×1 0.9233×2 0.9237×1 0.924×4 0.9243×3 0.9247×1 0.925×1 0.9253×1 0.9257×1 0.9267×1 0.9273×2 0.9277×2 0.929×1 0.9297×1 0.93×1 0.9307×1 0.932×4 0.9333×2 0.9337×2 0.934×2 0.9343×2 0.9347×2 0.9353×1 0.9357×1 0.936×1 0.9363×2 0.937×1 0.9383×1 0.9387×2 0.9393×1 0.9407×1 0.9417×1 0.9423×2 0.9427×3 0.9433×4 0.944×1 0.9443×5 0.945×3 0.9457×2 0.946×3 0.9463×1 0.9467×1 0.947×4 0.9473×2 0.9477×1 0.948×2 0.9483×5 0.95×1 0.9507×1 0.9513×1 0.9523×1 0.9527×2 0.953×2 0.9533×1 0.954×1 0.9547×3 0.9553×1 0.9557×1 0.956×1 0.9563×1 0.9567×1 0.957×3 0.9573×1 0.9583×1 0.959×1 0.9593×2 0.9607×2 0.961×1 0.9613×2 0.9617×1 0.962×1 0.9623×1 0.9627×1 0.963×1 0.9633×1 0.964×1 0.9643×1 0.9647×1 0.965×2 0.9653×2 0.9657×3 0.966×2 0.967×1 0.9673×3 0.9677×2 0.968×3 0.9683×3 0.97×1 0.9707×3 0.971×1 0.9713×1 0.9717×1 0.9727×2 0.9733×1 0.974×1 0.9747×1 0.975×2 0.9753×1 0.976×1 0.9763×1 0.9767×1 0.977×2 0.9773×1 0.978×1 0.9783×2 0.9787×2 0.979×1 0.9797×1 0.98×2 0.981×5 0.9817×2 0.982×1 0.9823×1 0.983×1 0.9843×1 0.9847×2 0.985×1 0.9853×2 0.9857×3 0.9867×2 0.987×1 0.9873×1 0.988×2 0.9883×5 0.9897×2 0.99×1 0.9903×1 0.9907×1 0.991×1 0.9923×3 0.9927×2 0.993×1 0.9937×2 0.994×1 0.9943×1 0.995×1 0.9953×1 0.9963×3 0.9967×1 0.997×4 0.9977×4 0.998×1 0.999×2 1×3765
+  note  M52 zone label distribution: discount=8536 equilibrium=1108 premium=7329
+  note  M47 entry_kind shows only 'order_block' in this sample. Explained, not a defect: M16 makes an order block mandatory so 'fvg' cannot win the POI gate, and 'flip_zone' needs --breakers, which M47 deliberately ships opt-in. Re-run the harness with --breakers to exercise flip_zone.
+  note  M32 stays opt-in per the §5 decision (default requireFvg=false, verified in findOrderBlocks' signature).
+
+RE-VERIFICATION SWEEP: 67 passed, 0 failed

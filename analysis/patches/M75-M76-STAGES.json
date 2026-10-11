@@ -1,0 +1,42 @@
+{
+  "base_commit": "9f629c15080ea73d481e1256c09f271b2aa831ec",
+  "patches": {
+    "m76-protected.patch": {
+      "files": 4,
+      "bytes": 15569,
+      "sha256": "4c15f3d0ea8b743c7eb8919c6fe77fa3dcd5afcef109a39d596af4e6500a0650",
+      "roundtrip_differences": 0
+    },
+    "m75-stop-policy.patch": {
+      "files": 7,
+      "bytes": 26833,
+      "sha256": "45008830024c1287f6e47d3ae3c26ef9573c6e37da76ed2bc81d5b743a3c8d35",
+      "roundtrip_differences": 0
+    },
+    "m75-m76-complete.patch": {
+      "files": 11,
+      "bytes": 42402,
+      "sha256": "1a37a9d0e9e190602cf2b4571ae21a31d7d0321f4b5d035b34ce29e65691c364",
+      "roundtrip_differences": 0
+    },
+    "applied-so-far.patch": {
+      "files": 38,
+      "bytes": 521991,
+      "sha256": "d2bba2c2137e75f352fe102d9bc8ded3dac27f879ecae89dfaf91a10fc028e5c",
+      "roundtrip_differences": 0
+    }
+  },
+  "stage_base": {
+    "m75-stop-policy.patch": "m76-protected.patch"
+  },
+  "fixed_zip": {
+    "source_files": 109,
+    "roundtrip_differences": 0
+  },
+  "notes": [
+    "M76 measured separately; all four profile outputs unchanged except runtime.",
+    "M75 complete stop/consumer stage measured separately; negative outcomes retained.",
+    "Source guards and original stage hashes are in analysis/evidence/m75-m76.",
+    "Fresh parent bare/real15 controls rerun; native control stdout reused from prior validated parent geometry."
+  ]
+}

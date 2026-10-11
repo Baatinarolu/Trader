@@ -1,0 +1,36 @@
+ FAIL high: a closed sweep/rejection creates one protected institutional boundary
+ FAIL high: provenance names the real TF/close/known prior pool, not a stronger swing label
+ FAIL high: only the sweeping swing is protected; an unswept/strong swing is not inferred
+ FAIL high: wick through later TAKES the old boundary even if it closes back inside
+ FAIL high: forming/future excursion cannot invalidate a closed protected boundary
+ FAIL high: several swept pool records at one physical peak cannot invent several highs/lows
+ FAIL high: closing THROUGH liquidity is a breakout, not protection
+ FAIL high: a stamped arbitrary extreme cannot override actual OHLC
+ FAIL high: future liquidity is explicitly unknown, never retrodated
+ FAIL high: missing prior-pool evidence remains unknown
+ FAIL high: an HTF pool cannot be relabelled as entry-TF protection
+ FAIL high: an unclosed sweep itself is not a protected high/low
+ FAIL high: scope rejects future snapshots and wrong physical TF
+ FAIL low: a closed sweep/rejection creates one protected institutional boundary
+ FAIL low: provenance names the real TF/close/known prior pool, not a stronger swing label
+ FAIL low: only the sweeping swing is protected; an unswept/strong swing is not inferred
+ FAIL low: wick through later TAKES the old boundary even if it closes back inside
+ FAIL low: forming/future excursion cannot invalidate a closed protected boundary
+ FAIL low: several swept pool records at one physical peak cannot invent several highs/lows
+ FAIL low: closing THROUGH liquidity is a breakout, not protection
+ FAIL low: a stamped arbitrary extreme cannot override actual OHLC
+ FAIL low: future liquidity is explicitly unknown, never retrodated
+ FAIL low: missing prior-pool evidence remains unknown
+ FAIL low: an HTF pool cannot be relabelled as entry-TF protection
+ FAIL low: an unclosed sweep itself is not a protected high/low
+ FAIL low: scope rejects future snapshots and wrong physical TF
+ FAIL short-series sentinel says protection is UNKNOWN, not a fabricated false/zero level
+ ok   actual SMC census runs 100 reads without stamped pools/sweeps/protection
+ FAIL actual OHLC discovers protected HIGHs and LOWs, not just unit tags — 0/0
+ FAIL actual detector carries both intact and physically taken historical boundaries — 0/0
+ ok   no detector source/physical-edge/availability errors
+ ok   forming/future perturbations leave the entire observed protected catalogue identical
+ ok   annotation stage changes ZERO old SMC fields versus 9f629c1
+ ok   annotation stage changes ZERO existing setup results/geometry/risk after removing only added facts
+{"reads":100,"highs":0,"lows":0,"intact":0,"taken":0,"source_errors":0,"legacy_differences":0,"setup_differences":0,"prefix_differences":0}
+M76 PROTECTED: 5 passed, 29 failed

@@ -1,6 +1,16 @@
 # Independent backtest harness
 
-## Current verification state (2026-10-11)
+## Current M76/M75 verification (2026-10-11)
+
+M76 annotation alone leaves all4 profiles unchanged. M75 current-protected-first /
+nearer-valid fallback with original buffer measures **bare36/19.4%/−0.2944R/PF0.61**,
+**real15 n9/22.2%/+0.2222R/PF1.40** versus parent30/−0.1568R and8/+0.2500R.
+Negative result retained; native outcomes0, no calibration/edge. Source clocks are
+explicit for protection, distinct from session clock. `stopPolicy:'legacy'` isolates
+the prior geometry. [Report](../M75-M76-PROTECTED-STOPS.md) and latest BASELINE section
+are authoritative; older numbers below are historical. Next M78 entry selector.
+
+## Prior verification state (2026-10-11)
 
 The original baseline below is **historical**, not the current server or performance evidence.
 M131 found HTF lookahead: the harness precomputed complete higher bars and exposed them at

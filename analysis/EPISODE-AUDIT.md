@@ -4,7 +4,17 @@
 each transcript returns — roughly the first quarter of each video. This ledger tracks a complete pass:
 every episode, every chunk, in playlist order (Ep 0 → 33, then bonuses, then the EdgeFlo tool episodes).
 
-## Current implementation follow-through — M54/M77, 2026-10-11
+## Current follow-through — M76/M75,2026-10-11
+
+Ledger132: **73 done/2 partial/57 todo/0 no-action**. Current causal protected
+high/low first; nearer valid older protection/zone fallback, same buffer. This
+corrects the old universal-nearer shorthand from the actual Ep20 17:48–19:35.
+M76 annotation34/0 and all four outputs unchanged; M75 stops41/0/consumers57/0.
+Negative measured bare−0.1568R→−0.2944R,real15+0.2500R→+0.2222R retained; native
+outcomes0. Scope/provenance/unknown policy/controls/limitations in
+[M76/M75 report](M75-M76-PROTECTED-STOPS.md). Next M78 ENTRY aggression.
+
+## Prior implementation follow-through — M54/M77, 2026-10-11
 
 **132 findings:71 done/2 partial/59 todo/0 no-action.** The two partial rows are
 **M30 and M103**; M125 remains todo, not a partial row. Read status in MISMATCHES

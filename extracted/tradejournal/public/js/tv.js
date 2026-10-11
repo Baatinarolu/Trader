@@ -127,7 +127,7 @@
       const targets = (lv.targets || []).map((t) => `${t.label || t.role || 'T'} ${Number(t.price).toFixed(4)}${t.source_tf || t.tf || lv.target_tf ? ' [' + (t.source_tf || t.tf || lv.target_tf) + ']' : ''}`).join(' → ');
       const model = plan.entry_model || lv.entry_model;
       const execution = plan.entry_tf || lv.entry_tf;
-      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
+      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'}${lv.stop_tf ? ' [' + lv.stop_tf + ']' : ''}${lv.stop_policy ? ' (' + lv.stop_policy.kind + '; ' + lv.stop_policy.rule + ')' : ''} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
     },
 
     /**

@@ -1,6 +1,78 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M54/M77 continuation state — 2026-10-11
+## Current M76/M75 continuation state — 2026-10-11
+
+- Fixed branch **arena/762c0295-trader**; parent/control **9f629c1**. M76/M75
+  complete in this milestone; read git for exact commit/push status.
+  Ledger **132:73 done/2 partial/57 todo/0 no-action**, exact eight-group partition.
+  Partial rows M30/M103; M125 remains todo. User CONTINUE, no repeated questions.
+- **Scope correction from original Ep20 17:48–19:35:** CURRENT protected high/low
+  first. Without one, nearer valid older protected boundary/entry-zone edge.
+  NOT a universal Math.max/min flip to tighten stops. Same0.18 entry-TF ATR buffer.
+- M76 closed physical sweep/reclaim + own observed BEFORE-sweep detector pool,
+  actual TF/close availability/lifecycle. Current/future pool may not masquerade
+  as old liquidity. Candidate sweep catalogue also uses closed observed view.
+  Later wick TAKES old boundary; unobserved future cannot invalidate. Strong/fractal
+  alone isn't protected. Unknown stays unknown. Inherited80-bar/top10 detection
+  bounds disclosed, no unlimited history or global M30/window fix claimed.
+- M75 shared stops.js validates adverse raw+published stop. Named causal sweep/fuel
+  or actual ordinary zone/shift association/closed sweeping entry candle owns
+  current protection; known invalid/taken causal boundary refuses, no farther
+  invalidation rescue. Else nearer valid old protection/zone, zone exact tie.
+  Unknown evidence explicitly keeps valid conservative old zone/sweep geometry.
+  stopPolicy:'legacy' isolates parent arm; no threshold/RR/target shrinking.
+- Candidate/Now/chart/scan/Copy/Save/sizing share chosen stop; source TF/kind/rule,
+  base/buffer, institution/pool snapshot and invalidation survive. Named evidence
+  and existing signal note persist provenance, no new column/backfill. Save-plan
+  bounded metadata/price/entryTF consistency checked, NOT claimed server OHLC replay.
+  Browser renders stop policy. Legacy live odds remain withheld. M68 causality,
+  M70 actual fuel, M33 narrative/key/one HTF target/half-risk and M54/M77 targets
+  plus all gates preserved. No named model borrows MTF ATR/protection.
+- Separate measurements: parent9f n30/23.3%/−0.1568R/PF0.78 bare,real15 n8/25%/
+  +0.2500R/PF1.40. M76 annotation-only ENTIRE four-profile stdout identical except
+  runtime. M75 complete n36/19.4%/−0.2944R/PF0.61 bare;real15 n9/22.2%/+0.2222R/PF1.40.
+  Deltas **−0.1376R bare/−0.0278R real**; negative retained, no optimization/edge.
+  Real dependent/n9<30,synthetic distorted, grade cuts thin. Fresh parent bare/real
+  rerun; prior validated parent native stdout reused (NOT new parent native run).
+  M75 native outputs equal M76 IN FULL except runtime:13750 reads/known1006/ready0/
+  outcomes0;real4761/known677/ready0/outcomes0. No model ranking/calibration.
+- Checks:M76 **34/0 vs5/29**,M75 **41/0 vs4/37** (same annotation-only control4/37),
+  consumers **57/0 vs41/16**.132 feature checks is separate from132 ledger findings.
+  Raw M76 census100 reads/58 high/67 low/52 intact/73 taken/0 source/legacy/prefix
+  errors. Raw M75census100 reads/121 nearer/38 unknown-conservative/1 current/
+  1 current-invalid,4 changed stops,1 undefined refused,0 executable wrong-side/
+  subfloor. No injected detector facts. Other unit/consumer fixtures explicitly
+  declare liquidity/zone/structure seams, physically coherent child/parent bars,
+  actual lower sweep validator/composer/auth/DB/JS; not full HTF market discovery.
+- M75 first35/6 was direct-fixture kind mismatch, fixed without selector change;
+  tiny rounding test strengthened to prove intact/rounding branch. Negatives kept.
+  Latest:M33 67/0,M68entry62/0,M70 30/0,M54 54/0,M77core87/0,consumers41/0,
+  M68detector16/0,M21 11/0,M26 49/0,reverify67/0,TD77/0,Now46/0,chart36/0,API121/0.
+  Matching botscurrent/parent204/2,**12 fills/0 mismatches**,same minimum20 floors.
+  Do not use older19-fill counts as current or lower floors.
+- Concurrent smoke19/22 (3 incomplete route renders)→serialized SAME script/source
+  22/22,0 style/console. No asserts changed. Both logs retained; Segments72-char
+  informational line/canvas seam remain. No chart pixel/pan/zoom proof.
+- Durable results/source guards **analysis/evidence/m75-m76/**; unchanged4 real
+  datasets provenance from previous INPUTS.json. Downloads/transcripts ignored.
+  Stage patches **M75-M76-STAGES.json**:M76 on9f,M75 delta onM76,complete on9f.
+  Cumulative pristine patch38 app files/521991 bytes,clean apply+reverse+byte0.
+  FixedZIP109 app source files/byte0, excludes actualenv/keys/.git/DBs/deps/data.
+  Rebuild with build-m75-m76-artifacts.py (historical M54 builder's guard is not
+  intended to rebuild changed current source). Geometry snapshots isolated.
+- Main preview3000 labelled offline synthetic/local SQLite/scheduler0, current DB
+  /tmp/m75-regressions.db. Matching clients blank remote credentials. Production
+  Turso/Yahoo/Vercel/auth/401/cron remain unvalidated; no credentials rotated/stored.
+- **NEXT M78: internal-structure aggressive/conservative ENTRY selection**, not
+  stop-buffer. Preserve current-protected priority/nearer-valid fallback/original
+  buffer, causal models/M70 fuel, M33 half-risk/target and nearest/no-RR-rescue.
+  Course30 comparison floor/M103 deliberately≥5 detector gate unchanged. Keep
+  every57 todo+2 partial visible; no invented70% goal.
+
+Everything below is historical; do not let old counts/scopes/branch instructions
+supersede the current state above. Do all work on the fixed session branch.
+
+## Prior M54/M77 continuation state — historical — 2026-10-11
 
 - Fixed branch **arena/762c0295-trader**, `/home/user/Trader`. M54/M77 complete in
   this milestone; read git for exact commit/push state. Control/base **c326651**.

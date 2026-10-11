@@ -471,7 +471,7 @@ index 8e16034..ed4e333 100644
      // the plot box is often laid out after the first paint; observe it
      if (global.ResizeObserver) {
 diff --git a/public/js/tv.js b/public/js/tv.js
-index 4ca4e5e..8ea7cc9 100644
+index 4ca4e5e..70c52c0 100644
 --- a/public/js/tv.js
 +++ b/public/js/tv.js
 @@ -124,8 +124,10 @@
@@ -483,7 +483,7 @@ index 4ca4e5e..8ea7cc9 100644
 +      const targets = (lv.targets || []).map((t) => `${t.label || t.role || 'T'} ${Number(t.price).toFixed(4)}${t.source_tf || t.tf || lv.target_tf ? ' [' + (t.source_tf || t.tf || lv.target_tf) + ']' : ''}`).join(' → ');
 +      const model = plan.entry_model || lv.entry_model;
 +      const execution = plan.entry_tf || lv.entry_tf;
-+      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
++      return `${plan.action} ${symbol} ${tf}${model && model !== 'none' ? ` | model ${model} (${execution || tf})` : ''} | entry ${lv.entry != null ? Number(lv.entry).toFixed(4) : '—'} | stop ${lv.stop != null ? Number(lv.stop).toFixed(4) : '—'}${lv.stop_tf ? ' [' + lv.stop_tf + ']' : ''}${lv.stop_policy ? ' (' + lv.stop_policy.kind + '; ' + lv.stop_policy.rule + ')' : ''} | ${targets}${lv.rr_final ? ' | ' + Number(lv.rr_final).toFixed(2) + 'R' : ''}`;
      },
  
      /**
@@ -517,7 +517,7 @@ index a3eb318..a5dc09b 100644
                <tbody>${rows.sort((a, b) => b.net_pnl - a.net_pnl).map((r) => `<tr><td>${U.esc(r.key)}</td><td class="num">${r.trades}</td><td class="num">${U.pct(r.win_rate, 0)}</td>
                  <td class="num ${U.cls(r.expectancy_r)}">${U.signed(r.expectancy_r, 2)}R</td><td class="num">${r.profit_factor === null ? '∞' : U.num(r.profit_factor, 2)}</td>
 diff --git a/public/js/views/bots.js b/public/js/views/bots.js
-index 2222ac3..0913bc0 100644
+index 2222ac3..e24327c 100644
 --- a/public/js/views/bots.js
 +++ b/public/js/views/bots.js
 @@ -13,6 +13,11 @@
@@ -686,7 +686,7 @@ index 2222ac3..0913bc0 100644
 +            symbol: d.symbol, timeframe: d.timeframe, entry: o.entry, stop: o.stop,
 +            targets: lv.targets.map((t) => ({ ...t })), note: `Entry-aligned CRT ${p.side}: ${lv.entry_tf} entry; ${lv.target_tf} ${lv.targets[0].kind} target. HTF ${td.layers.bias.tf} range is narrative only.`,
 +            entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence,
-+            grade: active.grade, score: active.score, target_policy: lv.target_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
++            grade: active.grade, score: active.score, target_policy: lv.target_policy, stop_policy: lv.stop_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
            });
 -          global.App.toast(r.saved ? 'CRT plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
 +          global.App.toast(r.saved ? 'Eligible plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
@@ -723,7 +723,15 @@ index 2222ac3..0913bc0 100644
        if (c.levels) {
          const L = c.levels;
          const rows = (L.targets || []).map((t) => `<tr><td>${esc(t.role)}</td><td>${esc(t.label)}</td><td class="mono">${fmt(t.price, 5)}</td><td class="mono">${t.rr}R</td></tr>`).join('');
-@@ -607,8 +677,8 @@
+@@ -577,6 +647,7 @@
+           </div>` }));
+         card.appendChild(h('div', { class: 'table-wrap', html: `<table class="table"><thead><tr><th>Leg</th><th>Where</th><th>Price</th><th>R:R</th></tr></thead><tbody>${rows}</tbody></table>` }));
+         if (L.management) card.appendChild(h('div', { class: 'muted bot-detail', text: 'Rules: ' + L.management.rule }));
++        if (L.stop_policy) card.appendChild(h('div', { class: 'muted bot-detail stop-policy', text: 'Stop / invalidation: ' + (L.stop_reason || L.stop_policy.rule) }));
+         if (L.risk_warning) card.appendChild(h('div', { class: 'bot-warn', text: 'Risk: ' + L.risk_warning }));
+         card.appendChild(h('div', { class: 'muted bot-detail', text: L.invalidation }));
+       }
+@@ -607,8 +678,8 @@
            direction: c.dir > 0 ? 'long' : 'short',
            entry: L.entry, stop: L.stop, target: L.targets[0] ? L.targets[0].price : null,
            size: c.risk ? c.risk.size : null, risk_amount: c.risk ? c.risk.actual_risk : null,
@@ -734,7 +742,7 @@ index 2222ac3..0913bc0 100644
            thesis: `${c.levels.entry_kind} retest after a liquidity sweep. ${c.levels.management ? c.levels.management.rule : ''}`.trim(),
            tags: 'bot,smc', adherence: 5,
          });
-@@ -636,7 +706,7 @@
+@@ -636,7 +707,7 @@
      }
  
      /* --- prediction teaser inside mechanic panel --- */
@@ -743,7 +751,7 @@ index 2222ac3..0913bc0 100644
        const p = h('div', { class: 'card' });
        p.appendChild(h('div', { class: 'card-head', html: `<strong>Odds</strong> <span class="muted">from the historical replay</span>` }));
        (d.prediction.summary || []).forEach((x) => p.appendChild(h('div', { class: 'bot-detail', text: '• ' + x })));
-@@ -677,7 +747,14 @@
+@@ -677,7 +748,14 @@
  
    function panelPredict(pane) {
      const p = B.predict || (B.data && B.data.prediction);
@@ -759,7 +767,7 @@ index 2222ac3..0913bc0 100644
      if (p.ok === false) { pane.appendChild(h('div', { class: 'card', text: 'Prediction unavailable: ' + (p.error || 'unknown error') })); return; }
  
      const strip = h('div', { class: 'card' });
-@@ -761,7 +838,7 @@
+@@ -761,7 +839,7 @@
       * ------------------------------------------------------------------ */
      const views = bt.frontier_views || {};
      const plain = bt.target_frontier || [];
@@ -768,7 +776,7 @@ index 2222ac3..0913bc0 100644
      const hc = h('div', { class: 'card' });
      hc.appendChild(h('div', { class: 'card-head', html: `<strong>Win rate is a dial, not a skill badge</strong> <span class="muted">measured on ${esc(p.symbol || (B.data && B.data.symbol) || '')} with its own costs</span>` }));
      hc.appendChild(h('div', { class: 'bot-detail', text: `Every row below exits the whole position at that target. Two questions are separated on purpose: how often price reached the target before the stop (the mechanical hit rate) and how often the trade actually finished in profit after costs. On this market the round-trip cost is ${bt.meta && bt.meta.cost_r_median != null ? bt.meta.cost_r_median + 'R' : '—'} per trade (${bt.meta && bt.meta.cost_bps != null ? bt.meta.cost_bps + ' bp of price' : '—'}${bt.meta && bt.meta.cost_source ? ', ' + esc(bt.meta.cost_source) : ''}) — so a target smaller than the cost cannot win, however often it is touched.` }));
-@@ -821,6 +898,13 @@
+@@ -821,6 +899,13 @@
      const grid = h('div', { class: 'bot-grid' });
      const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
  
@@ -782,7 +790,7 @@ index 2222ac3..0913bc0 100644
      /* live probabilities */
      const live = h('div', { class: 'card' });
      live.appendChild(h('div', { class: 'card-head', html: `<strong>Live setups</strong> <span class="muted">probability to reach the first target before the stop</span>` }));
-@@ -1094,13 +1178,15 @@
+@@ -1094,13 +1179,15 @@
        <td>#${g.id}</td><td><b>${esc(g.symbol)}</b> <span class="muted">${esc(g.timeframe)}</span></td>
        <td class="${g.dir > 0 ? 'pos' : 'neg'}">${esc(g.side.toUpperCase())}</td>
        <td>${esc(g.grade)} <span class="muted">${g.score}</span></td>
@@ -799,7 +807,7 @@ index 2222ac3..0913bc0 100644
      if ((st.by_grade || []).length) {
        pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Signal quality by grade</strong></div><div class="table-wrap"><table class="table"><thead><tr><th>Grade</th><th>Resolved</th><th>Win rate</th><th>Expectancy</th></tr></thead><tbody>${st.by_grade.map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.resolved}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('')}</tbody></table></div>` }));
      }
-@@ -1161,8 +1247,10 @@
+@@ -1161,8 +1248,10 @@
          const sym = B.symbol, tf = B.tf;
          const trim = B.trim || 0;
          Promise.all([
@@ -1792,15 +1800,16 @@ index 5aeb214..7b7911a 100644
      daily: state,
 diff --git a/src/bots/entry-models.js b/src/bots/entry-models.js
 new file mode 100644
-index 0000000..52a81fc
+index 0000000..9a4b07b
 --- /dev/null
 +++ b/src/bots/entry-models.js
-@@ -0,0 +1,188 @@
+@@ -0,0 +1,192 @@
 +'use strict';
 +/** Named entry composition (Ep 18). This module contains no IO/account state.
 + * M70's selection policy is shared by the legacy opt-in breaker selector and
 + * the two-model LTF composer (M68). Geometry, not strength, defines extreme.
 + */
++const Protected = require('./protected');
 +const number = (v) => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
 +function preferExtreme({ chosen, flipZones = [], orderBlocks = [], sweeps = [], dir, enabled = true }) {
 +  if (!enabled || !chosen || !chosen.zone) return null;
@@ -1876,6 +1885,7 @@ index 0000000..52a81fc
 +  if (!touch) return wait('waiting_poi', `Wait for midpoint mitigation of the ${medium.tf} POI before looking for a lower model.`);
 +  result.point_of_interest.mitigation_at = touch.t;
 +  const low = lower.smc, shift = low.structure && low.structure.last_break;
++  result.protection = Protected.scope(low.protected_levels, lower.tf, observedAt);
 +  const sb = shift && closed.find((b) => b.t === shift.t);
 +  const age = sb ? closed.length - 1 - closed.indexOf(sb) : null;
 +  if (!sb || sign(shift.dir) !== dir || number(shift.level) === null || age < 0 || age > maxShiftAge
@@ -1968,7 +1978,9 @@ index 0000000..52a81fc
 +    poi: model.point_of_interest, sweep: model.sweep, stop_sweep: model.stop_sweep || model.sweep, shift: model.shift,
 +    zone: model.zone ? { kind: model.zone.kind, bottom: model.zone.bottom, top: model.zone.top,
 +      entry: model.zone.entry, origin_t: model.zone.origin_t, formation_t: model.zone.formation_t } : null,
-+    mitigation_at: model.mitigation_at, preference: model.preference };
++    mitigation_at: model.mitigation_at, preference: model.preference,
++    protection: model.protection ? { state: model.protection.state, tf: model.protection.tf,
++      observed_at: model.protection.observed_at, current: Protected.forSweep(model.protection, model.stop_sweep || model.sweep) } : null };
 +}
 +module.exports.evidence = evidence;
 +
@@ -1985,10 +1997,10 @@ index 0000000..52a81fc
 +}
 +module.exports.encodeEvidence = encodeEvidence;
 diff --git a/src/bots/index.js b/src/bots/index.js
-index 0007b01..674df89 100644
+index 0007b01..78e7e2c 100644
 --- a/src/bots/index.js
 +++ b/src/bots/index.js
-@@ -16,17 +16,40 @@
+@@ -16,17 +16,41 @@
   *      so the bot's own hit rate is on the record (no vibes, no cherry-picking).
   */
  
@@ -2001,6 +2013,7 @@ index 0007b01..674df89 100644
  const SMC = require('./smc');
  const Setup = require('./setup');
 +const Entry = require('./entry-models');
++const Stops = require('./stops');
  const Now = require('./now');
  const Predict = require('./predict');
  const Cor = require('./correction');
@@ -2030,7 +2043,7 @@ index 0007b01..674df89 100644
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
  
-@@ -97,6 +120,130 @@ function specOf(symbol) {
+@@ -97,6 +121,130 @@ function specOf(symbol) {
  const floorRR = (v) => (Number(v) > 0 ? Number(v) : 1);   // the trader's minimum R:R
  const runRR = (v) => Math.max(2, floorRR(v));              // the setup model's 1:2 runway
  
@@ -2161,7 +2174,7 @@ index 0007b01..674df89 100644
  async function analyse(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const spec = specOf(sym);
-@@ -109,23 +256,32 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -109,23 +257,32 @@ async function analyse(symbol, tf = '15m', opts = {}) {
    const replay = trim > 0 || cut.asOf ? cut : null;
  
    const [momentum, news] = await Promise.all([
@@ -2200,7 +2213,7 @@ index 0007b01..674df89 100644
    });
  
    let prediction = null;
-@@ -137,13 +293,27 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -137,13 +294,27 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      }
    }
  
@@ -2230,7 +2243,7 @@ index 0007b01..674df89 100644
  
  
    // The method's own verdict, kept separate from the setup model's. Anything
-@@ -168,8 +338,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -168,8 +339,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      // build the *untrimmed* read as well, so a replay can say what happened after
      const L2 = Momentum.topdown.layersFor(tf);
      const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
@@ -2241,7 +2254,7 @@ index 0007b01..674df89 100644
      replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
    }
    const now = Now.build({
-@@ -189,7 +359,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -189,7 +360,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      method_verdict: methodVerdict,
      topdown: td,
      momentum: {
@@ -2257,7 +2270,7 @@ index 0007b01..674df89 100644
        alignment: momentum.alignment, mechanics: momentum.mechanics,
        narrative: momentum.narrative, conflicts: momentum.conflicts,
        htf: momentum.htf, quote: momentum.quote, series: momentum.series,
-@@ -213,6 +390,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -213,6 +391,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
        direction: prediction.direction, setups: prediction.setups, buy: prediction.buy, sell: prediction.sell,
        model: prediction.model, backtest: prediction.backtest, summary: prediction.summary,
        current: predRow || null, error: prediction.error || null,
@@ -2265,7 +2278,7 @@ index 0007b01..674df89 100644
      } : null,
      news,
      daily,
-@@ -227,8 +405,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -227,8 +406,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
    parts.push(`${sym} ${tf}: ${v.action}${v.grade && v.grade !== 'no-trade' ? ` (${v.grade}, ${v.score}/100)` : ''} — ${v.headline}`);
    if (td.headline) parts.push(`${td.status === 'confirmed' ? 'Method: confirmed' : 'Method: waiting'} — ${td.headline}`);
    if (td.playbook && td.playbook.length) parts.push(`Next: ${td.playbook[0]}`);
@@ -2276,7 +2289,7 @@ index 0007b01..674df89 100644
    if (news.blackout) parts.push(`NEWS BLACKOUT: ${news.blackout}`);
    if (daily && daily.status !== 'clear') parts.push(`Personal guardrail: ${daily.message}`);
    if (momentum.conflicts.length) parts.push(`Caution: ${momentum.conflicts.join(' ')}`);
-@@ -266,6 +444,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -266,6 +445,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
   * @param {string} tf
   * @param {{bars?:number, userId?:number, accountId?:number, minRR?:number, balance?:number, riskPct?:number}} opts
   */
@@ -2284,7 +2297,7 @@ index 0007b01..674df89 100644
  async function chart(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const bars = Math.min(Math.max(Number(opts.bars) || 400, 80), 1200);
-@@ -279,39 +458,45 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -279,39 +459,45 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // never disagree about the same market (they did once: the chart asked for 200
    // higher-timeframe candles and the method read a different range from them).
    const [entry, bias, triggerRaw] = await Promise.all([
@@ -2342,7 +2355,7 @@ index 0007b01..674df89 100644
      plan = {
        source: 'crt', dir: crt.dir, side: crt.side, method: td.method.name,
        entry: crt.safer.entry, stop: crt.safer.stop,
-@@ -325,9 +510,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -325,9 +511,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
        },
        note: `${crt.side} after the ${crt.sweep.level} sweep failed to hold · ${crt.target_note}`,
      };
@@ -2354,7 +2367,7 @@ index 0007b01..674df89 100644
        ...best.levels,
        entry_status: best.levels.entry_status,
      };
-@@ -349,7 +534,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -349,7 +535,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const stack = {
      bias: {
@@ -2363,7 +2376,7 @@ index 0007b01..674df89 100644
        structure: bias.smc.structure ? bias.smc.structure.trend : null,
        state: td.layers.bias.state,
        level: td.layers.bias.range ? { low: td.layers.bias.range.low, high: td.layers.bias.range.high, label: 'CRT range' } : null,
-@@ -387,17 +572,29 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -387,17 +573,29 @@ async function chart(symbol, tf = '15m', opts = {}) {
        last_price: entry.meta.last_price, warnings: entry.meta.warnings,
        sources: { bias: `${L.bias_tf} via ${bias.meta.provider}`, trigger: `${trig.tf} via ${trig.meta.provider}` },
      },
@@ -2396,7 +2409,7 @@ index 0007b01..674df89 100644
    const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
    const rows = [];
    let cursor = 0;
-@@ -406,12 +603,19 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -406,12 +604,19 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
        const sym = list[cursor++];
        try {
          const [momentum, series] = await Promise.all([
@@ -2419,7 +2432,7 @@ index 0007b01..674df89 100644
          });
          // one row per market: the side the method permits (a scan that lists both
          // a buy and a sell for the same symbol is not a scan, it is a coin toss)
-@@ -421,10 +625,17 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -421,10 +626,20 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
          rows.push({
            symbol: sym, timeframe: tf, ok: true,
            price: series.price, atr: series.atr,
@@ -2433,13 +2446,16 @@ index 0007b01..674df89 100644
            action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
 -          setup_side: best ? best.side : null,
 +          setup_side: best ? best.side : null, entry_model: best ? best.entry_model : null,
++          stop_tf: best && best.levels ? best.levels.stop_tf : null,
++          stop_kind: best && best.levels && best.levels.stop_policy ? best.levels.stop_policy.kind : null,
++          stop_rule: best && best.levels && best.levels.stop_policy ? best.levels.stop_policy.rule : null,
 +          target_tf: best && best.levels ? best.levels.target_tf : null,
 +          target_kind: best && best.levels && best.levels.targets[0] ? best.levels.targets[0].kind : null,
 +          entry_tf: best ? best.entry_tf : null, entry_evidence: best ? best.entry_evidence : null,
            entry_status: best && best.levels ? best.levels.entry_status : null,
            entry: best && best.levels ? best.levels.entry : null,
            stop: best && best.levels ? best.levels.stop : null,
-@@ -469,6 +680,7 @@ async function ensureSignalsTable() {
+@@ -469,6 +684,7 @@ async function ensureSignalsTable() {
      rr_primary REAL, rr_final REAL,
      mechanics REAL,
      sentiment TEXT,           -- the read-aloud headline at the time
@@ -2447,7 +2463,7 @@ index 0007b01..674df89 100644
      entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf
      mtf_tf TEXT,
      risk_atr REAL,
-@@ -486,7 +698,8 @@ async function ensureSignalsTable() {
+@@ -486,7 +702,8 @@ async function ensureSignalsTable() {
    const cols = await db.prepare('PRAGMA table_info(bot_signals)').all();
    const have = new Set((cols || []).map((c) => c.name));
    for (const [name, type] of [['entry_mode', 'TEXT'], ['mtf_tf', 'TEXT'], ['risk_atr', 'REAL'],
@@ -2457,16 +2473,17 @@ index 0007b01..674df89 100644
      if (!have.has(name)) await db.exec(`ALTER TABLE bot_signals ADD COLUMN ${name} ${type}`);
    }
  }
-@@ -505,6 +718,8 @@ async function savePlan(userId, p = {}) {
+@@ -505,6 +722,9 @@ async function savePlan(userId, p = {}) {
    if (!symbol || !Number.isFinite(entry) || !Number.isFinite(stop) || entry === stop) {
      return { saved: 0, reason: 'symbol, entry and stop (entry ≠ stop) are required' };
    }
 +  const model = Entry.normaliseName(p.entry_model);
++  if (p.stop_policy) Stops.check(p.stop_policy, stop, p.entry_tf);
 +  const evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
    const dir = stop < entry ? 1 : -1;
    const risk = Math.abs(entry - stop);
    const prices = (Array.isArray(p.targets) ? p.targets : [])
-@@ -514,14 +729,15 @@ async function savePlan(userId, p = {}) {
+@@ -514,14 +734,16 @@ async function savePlan(userId, p = {}) {
    const rr = (price) => (price == null ? null : Math.round((Math.abs(price - entry) / risk) * 100) / 100);
    const info = await db.prepare(`INSERT INTO bot_signals
      (user_id, symbol, timeframe, dir, side, grade, score, p_win, entry, stop, t1, t2, rr_primary, rr_final,
@@ -2478,14 +2495,16 @@ index 0007b01..674df89 100644
 -    p.grade || null, p.score == null ? null : Number(p.score), p.p_win == null ? null : Number(p.p_win),
 +    p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.target_policy || p.p_win == null ? null : Number(p.p_win),
      entry, stop, t1, t2, rr(t1), rr(t2),
-     p.mechanics == null ? null : Number(p.mechanics), p.note ? String(p.note).slice(0, 400) : null,
+-    p.mechanics == null ? null : Number(p.mechanics), p.note ? String(p.note).slice(0, 400) : null,
++    p.mechanics == null ? null : Number(p.mechanics),
++    p.stop_policy ? (Stops.note(p.stop_policy) + (p.note || '')).slice(0, 400) : p.note ? String(p.note).slice(0, 400) : null,
      p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
      Number.isFinite(Number(p.risk_atr)) ? Number(p.risk_atr) : null,
 +    model, p.entry_tf || null, evidence,
    );
    return { saved: 1, ids: [info.lastInsertRowid] };
  }
-@@ -530,22 +746,25 @@ async function savePlan(userId, p = {}) {
+@@ -530,22 +752,25 @@ async function savePlan(userId, p = {}) {
  async function saveSignals(userId, payload) {
    await ensureSignalsTable();
    const cands = (payload.setups && payload.setups.candidates ? payload.setups.candidates : [])
@@ -2516,18 +2535,18 @@ index 0007b01..674df89 100644
      const info = await ins.run(
        userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
        predRow ? predRow.p_win : null,
-@@ -553,8 +772,9 @@ async function saveSignals(userId, payload) {
+@@ -553,8 +778,9 @@ async function saveSignals(userId, payload) {
        L.targets.length > 1 ? L.targets[L.targets.length - 1].price : null,
        L.rr_primary, L.rr_final,
        payload.momentum ? payload.momentum.mechanics.score : null,
 -      payload.headline ? payload.headline.text.slice(0, 400) : null,
-+      L.target_policy ? (`Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
++      L.target_policy ? ((L.stop_policy ? Stops.note(L.stop_policy) : '') + `Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
        td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
 +      model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
      );
      out.push(info.lastInsertRowid);
      saved++;
-@@ -633,9 +853,13 @@ async function signalStats(userId) {
+@@ -633,9 +859,13 @@ async function signalStats(userId) {
    const resolved = all.filter((s) => ['win', 'loss', 'expired'].includes(s.status));
    const wins = resolved.filter((s) => s.status === 'win');
    const byGrade = {};
@@ -2541,7 +2560,7 @@ index 0007b01..674df89 100644
    }
    return {
      total: all.length,
-@@ -646,6 +870,8 @@ async function signalStats(userId) {
+@@ -646,6 +876,8 @@ async function signalStats(userId) {
      win_rate: resolved.length ? r2((wins.length / resolved.length) * 100) : null,
      total_r: r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0)),
      expectancy_r: resolved.length ? r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0) / resolved.length) : null,
@@ -2551,7 +2570,7 @@ index 0007b01..674df89 100644
    };
  }
 diff --git a/src/bots/momentum.js b/src/bots/momentum.js
-index 2e664e5..b6c1ef1 100644
+index 2e664e5..fa1b591 100644
 --- a/src/bots/momentum.js
 +++ b/src/bots/momentum.js
 @@ -66,6 +66,13 @@ async function series(symbol, tf, limit = 500, opts = {}) {
@@ -2568,16 +2587,20 @@ index 2e664e5..b6c1ef1 100644
    if (candles.length !== trimmedFrom) {
      // The meta must describe the candles the analysis actually used, or the chart
      // caption and the "read from" line would quote the live bar during a replay.
-@@ -76,7 +83,7 @@ async function series(symbol, tf, limit = 500, opts = {}) {
+@@ -74,9 +81,10 @@ async function series(symbol, tf, limit = 500, opts = {}) {
+       last_price: lastKept ? lastKept.c : null, replayed_from: trimmedFrom };
+   }
    const ind = Ind.snapshot(candles);
-   const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null });
+-  const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null });
++  const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null,
++    observedAt: opts.asOf || opts.observedAt || Date.now() });
    const last = candles[candles.length - 1];
 -  return { tf, candles, meta, ind, smc, price: last.c, atr: smc.atr || ind.atr || 0, bars: candles.length };
 +  return { tf, candles, meta, ind, smc, price: last ? last.c : null, atr: smc.atr || ind.atr || 0, bars: candles.length };
  }
  
  /* ══════════════════════════════════════════════════════ 1. the hierarchy ═══ */
-@@ -110,7 +117,7 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -110,7 +118,7 @@ function alignment(htf, mtf, ltf, td = null) {
        tf: mtf.tf, weight: 2, role: 'location', job: 'premium/discount · zone · gap',
        bias: indScore(mtf), trend: mtfTrend,
        decisive: mtfTrend !== 'ranging',
@@ -2586,7 +2609,7 @@ index 2e664e5..b6c1ef1 100644
      },
      {
        tf: ltf.tf, weight: 1, role: 'trigger', job: 'confirmation only',
-@@ -121,14 +128,18 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -121,14 +129,18 @@ function alignment(htf, mtf, ltf, td = null) {
    ];
  
    /* --- direction: higher timeframe first, then its CRT, then nothing ------ */
@@ -2607,7 +2630,7 @@ index 2e664e5..b6c1ef1 100644
      bias = crtDir;
      source = `CRT confirmed on ${htf.tf}`;
    } else if (structDir) {
-@@ -150,7 +161,9 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -150,7 +162,9 @@ function alignment(htf, mtf, ltf, td = null) {
    const ltfAgainst = bias !== 0 && ltfTrend !== 'ranging' && (ltfTrend === 'bullish' ? 1 : -1) === -bias;
    const conflict = !!(td && td.conflicts && td.conflicts.some((c) => c.blocks_trade));
  
@@ -2618,7 +2641,7 @@ index 2e664e5..b6c1ef1 100644
      ? `Higher timeframe first: ${htf.tf} structure reads ${htfTrend}${crtState ? ` and its CRT range is "${crtState}"` : ''} — with no decisive higher-timeframe read there is no direction to trade.${source.startsWith(`${htf.tf} ranging`) ? ' A lower-timeframe trend is not a substitute for the higher-timeframe bias.' : ''}`
      : `${htf.tf} decides direction (${bias > 0 ? 'long' : 'short'}) from ${source}. `
        + `${agree ? `All three layers line up: ${rows.map((r) => `${r.tf} ${r.trend}`).join(', ')}.` : ''}`
-@@ -160,9 +173,10 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -160,9 +174,10 @@ function alignment(htf, mtf, ltf, td = null) {
  
    return {
      rows, score, bias, agree, conflict, reason,
@@ -2631,7 +2654,7 @@ index 2e664e5..b6c1ef1 100644
      trends: { bias: htfTrend, location: mtfTrend, trigger: ltfTrend },
    };
  }
-@@ -174,7 +188,104 @@ function alignment(htf, mtf, ltf, td = null) {
+@@ -174,7 +189,104 @@ function alignment(htf, mtf, ltf, td = null) {
   * The first factor is the method itself, not an indicator average.
   * @param {object} p { htf, mtf, ltf, align, td }
   */
@@ -2737,7 +2760,7 @@ index 2e664e5..b6c1ef1 100644
    const smc = mtf.smc;
    const ind = mtf.ind;
    const sessions = smc.sessions || {};
-@@ -220,7 +331,14 @@ function mechanics({ htf, mtf, ltf, align, td = null }) {
+@@ -220,7 +332,14 @@ function mechanics({ htf, mtf, ltf, align, td = null }) {
      `${zone ? `Fresh ${zone.side} zone ${zone.bottom}–${zone.top} within ${zone.distance_atr} ATR. ` : 'No fresh zone near price. '}${pd ? `Price sits at ${pd.position_pct}% of the ${pd.range_low}–${pd.range_high} dealing range (${pd.zone}).` : ''}`);
  
    /* 6. session quality (6) */
@@ -2753,7 +2776,7 @@ index 2e664e5..b6c1ef1 100644
  
    /* 7. volatility regime (4) */
    const rank = ind.ind ? ind.ind.atr_rank : null;
-@@ -302,9 +420,20 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
+@@ -302,9 +421,20 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
      });
    }
    if (pd) {
@@ -2776,7 +2799,7 @@ index 2e664e5..b6c1ef1 100644
      });
    }
    if (td && td.steps) {
-@@ -319,7 +448,7 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
+@@ -319,7 +449,7 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
  
    /* ---- conflicts: sentences for the API, structured objects for the UI ---- */
    const detail = (td && td.conflicts ? td.conflicts.slice() : []);
@@ -2785,7 +2808,7 @@ index 2e664e5..b6c1ef1 100644
      detail.push({
        kind: 'indicators-against-bias',
        sides: `${mtf.tf} indicators read ${ind.score} against a ${align.bias > 0 ? 'long' : 'short'} bias`,
-@@ -355,7 +484,7 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
+@@ -355,7 +485,7 @@ function narrative({ symbol, mtf, htf, ltf, align, mech, td = null }) {
  
  /** The live CRT read, in the shape the API/UI already consume as `smc.crt`. */
  function crtView(td, tf) {
@@ -2794,7 +2817,7 @@ index 2e664e5..b6c1ef1 100644
    const L = td.layers.bias;
    const plan = L.plan;
    const price = td.price;
-@@ -370,12 +499,13 @@ function crtView(td, tf) {
+@@ -370,12 +500,13 @@ function crtView(td, tf) {
      position: price > L.range.high ? 'above range' : price < L.range.low ? 'below range' : 'inside range',
      state: L.state,
      setup: plan ? {
@@ -2810,7 +2833,7 @@ index 2e664e5..b6c1ef1 100644
      } : null,
      steps: (td.steps || []).filter((s) => s.n >= 2 && s.n <= 4).map((s) => `${s.done ? '' : '[waiting] '}${s.title}: ${s.text}`),
      topdown: { status: td.status, direction: td.direction, blocked: td.blocked, playbook: td.playbook, method: td.method.name, timeframe: tf },
-@@ -396,16 +526,17 @@ function regimeOf(htf) {
+@@ -396,16 +527,17 @@ function regimeOf(htf) {
  async function analyse(symbol, tf = '15m', opts = {}) {
    const L = TD.layersFor(tf);
    const cut = { trim: opts.trim || 0, asOf: opts.asOf || null };
@@ -2833,7 +2856,7 @@ index 2e664e5..b6c1ef1 100644
    const read = narrative({ symbol, mtf, htf, ltf, align, mech, td });
    mtf.smc.crt = crtView(td, tf);
  
-@@ -418,7 +549,9 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -418,7 +550,9 @@ async function analyse(symbol, tf = '15m', opts = {}) {
        method: td.method, layers: td.layers, steps: td.steps, checks: td.checks,
        score: td.score, grade: td.grade, status: td.status, direction: td.direction,
        headline: td.headline, playbook: td.playbook, blocked: td.blocked,
@@ -2844,7 +2867,7 @@ index 2e664e5..b6c1ef1 100644
        conflict_detail: td.conflicts, crt_plan: td.crt_plan, levels: td.levels,
        inputs: td.inputs,
      },
-@@ -451,4 +584,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -451,4 +585,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
  module.exports = {
    analyse, series, alignment, mechanics, narrative, crtView, regimeOf,
    MTF, htfOf, ltfOf, topdown: TD,
@@ -2853,7 +2876,7 @@ index 2e664e5..b6c1ef1 100644
 +  biasHysteresis, nextBiasInvalidation,
  };
 diff --git a/src/bots/now.js b/src/bots/now.js
-index 66e0bbb..365ec92 100644
+index 66e0bbb..d34a42a 100644
 --- a/src/bots/now.js
 +++ b/src/bots/now.js
 @@ -21,6 +21,8 @@
@@ -2937,7 +2960,7 @@ index 66e0bbb..365ec92 100644
        watch = {
          level: side ? bias.range.low : null, kind: 'level',
          condition: 'wait for a fresh right candle at the range edge, then a sweep that closes back inside',
-@@ -152,21 +166,91 @@ function build(p = {}) {
+@@ -152,21 +166,94 @@ function build(p = {}) {
        };
      }
      invalidate = 'This is not a bearish or bullish opinion — it is the absence of a qualifying setup. It stops applying when a new right candle forms at a level that matters.';
@@ -2966,6 +2989,7 @@ index 66e0bbb..365ec92 100644
 +      entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
 +      target_tf: lv.target_tf || target.source_tf || target.tf || null,
 +      target_kind: target.kind, target_policy: lv.target_policy || null,
++      stop_tf: lv.stop_tf, stop_kind: lv.stop_policy && lv.stop_policy.kind, stop_policy: lv.stop_policy || null,
 +      entry_model: allowed.entry_model, entry_tf: allowed.entry_tf, entry_evidence: allowed.entry_evidence,
 +      mode: td.countertrend ? 'countertrend-pullback' : 'named-entry',
 +      risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
@@ -2986,6 +3010,7 @@ index 66e0bbb..365ec92 100644
 +      entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
 +      target_tf: lv.target_tf || target.source_tf || target.tf || null,
 +      target_kind: target.kind, target_policy: lv.target_policy || null,
++      stop_tf: lv.stop_tf, stop_kind: lv.stop_policy && lv.stop_policy.kind, stop_policy: lv.stop_policy || null,
 +      mode: 'countertrend-pullback', risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
 +      size_note: 'Counter-HTF pullback: at most half ordinary same-grade risk; the daily narrative stays intact.',
 +      rr_warning: null };
@@ -3002,6 +3027,7 @@ index 66e0bbb..365ec92 100644
 +    order = { side: direction > 0 ? 'long' : 'short', type: 'limit at the eligible entry zone',
 +      entry: lv.entry, stop: lv.stop, target: target.price, rr: target.rr,
 +      entry_tf: lv.entry_tf, target_tf: lv.target_tf, target_kind: target.kind, target_policy: lv.target_policy,
++      stop_tf: lv.stop_tf, stop_kind: lv.stop_policy && lv.stop_policy.kind, stop_policy: lv.stop_policy || null,
 +      mode: 'entry-aligned', risk_pct: allowed.risk ? allowed.risk.risk_pct : null,
 +      size_note: Setup.methodRiskMult(td, direction) < 1
 +        ? 'Counter-HTF CRT rotation: at most half ordinary same-grade risk.'
@@ -3034,7 +3060,7 @@ index 66e0bbb..365ec92 100644
        // the trader asked for these to be shown rather than hidden — but never silently
        rr_warning: (Number(num(chosen.rr)) > 0 && Number(num(chosen.rr)) < minRR)
          ? `Below your ${minRR}R minimum — this pays ${num(chosen.rr)}R. The range is real; the reward does not pay for the risk. Treat it as a scenario, not an order.`
-@@ -230,7 +314,9 @@ function build(p = {}) {
+@@ -230,7 +317,9 @@ function build(p = {}) {
  
    /* ------------------------------------------------- the other side ------- */
    let otherSide = null;
@@ -3045,7 +3071,7 @@ index 66e0bbb..365ec92 100644
      otherSide = {
        dir: -direction,
        side: otherDir.side,
-@@ -306,6 +392,7 @@ function build(p = {}) {
+@@ -306,6 +395,7 @@ function build(p = {}) {
      },
      live: quote ? { price: num(quote.price), at: quote.at ? new Date(quote.at).toISOString() : null, provider: quote.provider || null, drift_atr: drift === null ? null : Number(drift.toFixed(2)) } : null,
      action, side, headline,
@@ -3053,7 +3079,7 @@ index 66e0bbb..365ec92 100644
      armed: !!order,
      order,
      watch,
-@@ -319,7 +406,7 @@ function build(p = {}) {
+@@ -319,7 +409,7 @@ function build(p = {}) {
      steps_done: doneSteps,
      steps_total: (td.steps || []).length,
      pending_step: pendingStep ? { n: pendingStep.n, title: pendingStep.title, text: pendingStep.text } : null,
@@ -3094,11 +3120,117 @@ index bacfca7..38ec2fa 100644
   * price often comes back to the same level — a "second chance" entry. This walks
   * the same candle series and reports, honestly, what taking that second tap did:
   * whether it happened, and whether re-risking 1R on it made money.
+diff --git a/src/bots/protected.js b/src/bots/protected.js
+new file mode 100644
+index 0000000..f43d8e2
+--- /dev/null
++++ b/src/bots/protected.js
+@@ -0,0 +1,100 @@
++'use strict';
++/** M76 — Ep20 16:42–19:35: a protected high/low SWEPT liquidity and rejected it.
++ * A strong/fractal swing alone is not protection. These are report-only facts;
++ * M75's stop selector is a separate consumer. No account state or IO here.
++ */
++const number = v => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
++const r4 = v => Math.round(v * 10000) / 10000;
++const TF_MS = Object.freeze({ '1m': 60000, '3m': 180000, '5m': 300000, '15m': 900000,
++  '30m': 1800000, '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000 });
++const samePrice = (a, b) => number(a) !== null && number(b) !== null && Math.abs(a - b) <= 1e-9;
++
++function unknown(tf, observedAt, reason) {
++  return { version: 'm76', state: 'unknown', tf: tf || null, observed_at: number(observedAt),
++    levels: [], rejected: [], reason };
++}
++
++/** poolBefore(s) must resolve a real matching liquidity pool from a CLOSED prefix
++ * ending BEFORE the sweep, not a present/future catalogue relabelled as old data.
++ * The caller supplies its existing detector. Missing provenance stays unknown.
++ */
++function discover(candles, sweeps, { tf, observedAt, poolBefore } = {}) {
++  const step = TF_MS[tf], clock = number(observedAt);
++  if (!step || clock === null || !Array.isArray(candles) || !candles.length)
++    return unknown(tf, clock, 'Closed physical timeframe data is unavailable.');
++  const closed = candles.filter(b => number(b.t) !== null && b.t + step <= clock);
++  if (!closed.length) return unknown(tf, clock, 'No observed closed candles.');
++  const out = { version: 'm76', state: 'known', tf, observed_at: clock,
++    closed_through: Math.max(...closed.map(b => b.t + step)), levels: [], rejected: [] };
++  const seen = new Map();
++  for (const s of sweeps || []) {
++    const reject = (reason, state = 'known') => out.rejected.push({ t: number(s && s.t),
++      dir: s && s.dir, extreme: number(s && s.extreme), reason, state });
++    if (!s || ![1, -1].includes(s.dir) || number(s.t) === null || number(s.level) === null
++        || number(s.extreme) === null) { reject('missing_sweep_evidence', 'unknown'); continue; }
++    const i = candles.findIndex(b => b.t === s.t), b = i >= 0 ? candles[i] : null;
++    if (!b || !closed.includes(b)) { reject('unobserved_sweep', 'unknown'); continue; }
++    const prev = i > 0 ? candles[i - 1] : null;
++    const values = [b.o, b.h, b.l, b.c];
++    const validBar = values.every(v => number(v) !== null) && b.h >= Math.max(b.o, b.c)
++      && b.l <= Math.min(b.o, b.c) && b.l > 0;
++    const high = s.dir === -1, extreme = high ? b.h : b.l;
++    const physical = validBar && prev && number(prev.c) !== null && prev.t + step <= b.t
++      && (s.i == null || s.i === i) && (s.type == null || s.type === (high ? 'BSL' : 'SSL'))
++      && samePrice(extreme, s.extreme) && (s.close == null || samePrice(b.c, s.close))
++      && (high ? prev.c < s.level && b.h > s.level && b.c < s.level
++        : prev.c > s.level && b.l < s.level && b.c > s.level);
++    if (!physical) { reject('not_a_closed_liquidity_rejection'); continue; }
++    const pool = typeof poolBefore === 'function' ? poolBefore(s) : null;
++    if (!pool || pool.tf !== tf || !samePrice(pool.price, s.level)
++        || number(pool.available_at) === null || pool.available_at > s.t
++        || pool.type !== (high ? 'BSL' : 'SSL')) {
++      reject('liquidity_not_proven_before_sweep', 'unknown'); continue;
++    }
++    const key = `${s.dir}:${s.t}:${extreme}`;
++    if (seen.has(key)) {
++      const p = seen.get(key);
++      if (!p.liquidity.some(x => x.kind === pool.kind && samePrice(x.price, pool.price))) p.liquidity.push({ ...pool });
++      continue;
++    }
++    // A wick through the institutional boundary TAKES it; a later close-back
++    // may create a new protected high/low, but cannot resurrect this old one.
++    const taken = closed.find(c => c.t > s.t && (high ? c.h > extreme : c.l < extreme));
++    const row = { id: `${tf}:${s.t}:${s.dir}`, tf, dir: s.dir, type: high ? 'high' : 'low',
++      label: high ? 'Protected high' : 'Protected low', price: r4(extreme), raw_price: extreme,
++      t: s.t, i, available_at: s.t + step, basis: 'closed_liquidity_rejection',
++      status: taken ? 'taken' : 'intact', invalidated_at: taken ? taken.t + step : null,
++      sweep_level: s.level, sweep_close: b.c, liquidity: [{ ...pool }] };
++    seen.set(key, row); out.levels.push(row);
++  }
++  out.levels.sort((a, b) => b.t - a.t || a.dir - b.dir);
++  return out;
++}
++
++/** Never borrow protection from a different TF or a future observation snapshot. */
++function scope(report, tf, observedAt) {
++  const clock = number(observedAt);
++  if (!report || report.version !== 'm76' || report.state !== 'known' || report.tf !== tf
++      || clock === null || number(report.observed_at) === null || report.observed_at > clock)
++    return unknown(tf, clock, 'Protection source is missing, mismatched or not observed.');
++  return { ...report, levels: (report.levels || []).filter(p => p.tf === tf && p.available_at <= clock),
++    rejected: (report.rejected || []).filter(p => p.t !== null && p.t <= clock) };
++}
++
++function forSweep(report, sweep) {
++  if (!report || report.state !== 'known' || !sweep) return null;
++  return (report.levels || []).find(p => p.t === sweep.t && p.dir === sweep.dir
++    && samePrice(p.raw_price, sweep.extreme)) || null;
++}
++
++function annotate(points, report) {
++  return (points || []).map(s => {
++    const p = (report.levels || []).find(p => p.t === s.t && p.type === s.type
++      && (samePrice(p.raw_price, s.price) || samePrice(p.price, s.price)));
++    return { ...s, protected: !!(p && p.status === 'intact'),
++      protection_state: p ? p.status : report.state === 'unknown' ? 'unknown' : 'not_proven',
++      protected_level: p ? { id: p.id, tf: p.tf, available_at: p.available_at,
++        invalidated_at: p.invalidated_at, sweep_level: p.sweep_level } : null };
++  });
++}
++module.exports = { discover, scope, forSweep, annotate, unknown, TF_MS, number, samePrice };
 diff --git a/src/bots/setup.js b/src/bots/setup.js
-index 138beb4..1551487 100644
+index 138beb4..bc370e1 100644
 --- a/src/bots/setup.js
 +++ b/src/bots/setup.js
-@@ -15,13 +15,24 @@
+@@ -15,13 +15,26 @@
   *    - exact entry / stop / targets with R:R per target
   *    - a position-size risk plan in the journal's own instrument maths
   *    - invalidation + management rules
@@ -3120,11 +3252,13 @@ index 138beb4..1551487 100644
  const I = require('../instruments');
 +const Entry = require('./entry-models');
 +const Targets = require('./targets');
++const Protected = require('./protected');
++const Stops = require('./stops');
 +const SWEEP_LOOKBACK = 25; // existing trigger age, shared with M33's LTF composition
  
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
-@@ -35,13 +46,255 @@ const GRADES = [
+@@ -35,13 +48,255 @@ const GRADES = [
    { min: -Infinity, grade: 'no-trade', label: 'Not an A+ setup — the edge is not there' },
  ];
  
@@ -3381,7 +3515,7 @@ index 138beb4..1551487 100644
    const pools = (analysis.liquidity && analysis.liquidity.pools) || [];
    const outward = pools
      .filter((p) => (dir > 0 ? p.price > entry : p.price < entry))
-@@ -49,6 +302,17 @@ function targetPools(analysis, dir, entry) {
+@@ -49,6 +304,17 @@ function targetPools(analysis, dir, entry) {
      .sort((a, b) => (dir > 0 ? a.price - b.price : b.price - a.price));
    const seen = new Set();
    const out = [];
@@ -3399,7 +3533,7 @@ index 138beb4..1551487 100644
    for (const p of outward) {
      const key = p.price.toFixed(5);
      if (seen.has(key)) continue;
-@@ -70,12 +334,149 @@ function targetPools(analysis, dir, entry) {
+@@ -70,12 +336,149 @@ function targetPools(analysis, dir, entry) {
   *                                    only that side can be armed.
   * @returns {{candidates:Array, verdict:object}}
   */
@@ -3549,7 +3683,7 @@ index 138beb4..1551487 100644
    const strike = sessions.quality != null ? sessions.quality : 0.5;
    const blackout = ctx.newsBlackout || null;
    const ind = ctx.indicators || null;
-@@ -83,47 +484,77 @@ function buildSetups(analysis, ctx = {}) {
+@@ -83,47 +486,77 @@ function buildSetups(analysis, ctx = {}) {
    const td = ctx.topdown || null;                   // the method gate
  
    const candidates = [];
@@ -3650,7 +3784,7 @@ index 138beb4..1551487 100644
  
      if (zone && zone.overlap) add('nested', 'Zone + imbalance overlap (confluence)', true, 8, 'The order block contains an unfilled FVG — two reasons for price to react at the same price.');
  
-@@ -135,10 +566,57 @@ function buildSetups(analysis, ctx = {}) {
+@@ -135,10 +568,57 @@ function buildSetups(analysis, ctx = {}) {
  
      /* ------------------------------------------------------------- 5. trend alignment */
      const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
@@ -3710,7 +3844,7 @@ index 138beb4..1551487 100644
      if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
  
      /* ------------------------------------------------------------- 6. higher-timeframe bias */
-@@ -155,12 +633,16 @@ function buildSetups(analysis, ctx = {}) {
+@@ -155,12 +635,16 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      /* ------------------------------------------------------- 8. session / killzone */
@@ -3729,7 +3863,7 @@ index 138beb4..1551487 100644
  
      /* ------------------------------------------------------------- 10. volatility */
      const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
-@@ -169,22 +651,49 @@ function buildSetups(analysis, ctx = {}) {
+@@ -169,22 +653,68 @@ function buildSetups(analysis, ctx = {}) {
  
      /* --------------------------------------------------------- 11. liquidity runway */
      let levels = null;
@@ -3738,13 +3872,34 @@ index 138beb4..1551487 100644
        const entry = zone.entry;
 -      const stopBase = long ? Math.min(zone.bottom, recentSweep ? recentSweep.extreme : zone.bottom) : Math.max(zone.top, recentSweep ? recentSweep.extreme : zone.top);
 -      const buffer = atr * 0.18;
-+      const stopBase = long ? Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom) : Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top);
-+      const buffer = entryAtr * 0.18;
-       const stop = long ? stopBase - buffer : stopBase + buffer;
-       const risk = Math.abs(entry - stop);
+-      const stop = long ? stopBase - buffer : stopBase + buffer;
+-      const risk = Math.abs(entry - stop);
 -      const pools = targetPools(analysis, dir, entry);
 -      const targets = [];
 -      for (const p of pools) {
++      const protection = useModel ? model.protection : analysis && analysis.protected_levels;
++      const protectionClock = ctx.observedAt || (protection && protection.observed_at) || Date.now();
++      const currentProtection = Protected.forSweep(protection, stopSweep);
++      const shift = analysis && analysis.structure && analysis.structure.last_break;
++      const shiftSign = shift && (shift.dir === 'up' ? 1 : shift.dir === 'down' ? -1 : 0);
++      const causalZone = !!(currentProtection && shift && shiftSign === dir && stopSweep.t <= shift.t
++        && (zone.meta.structure_causes || []).some(c => c.shift && c.shift.confirmed === true
++          && c.shift.t === shift.t && c.displacement_t >= stopSweep.t && c.displacement_t <= shift.t));
++      // Bonus Sniper: a closed entry candle which sweeps/reclaims at the zone can
++      // itself be the current protected boundary; no future fractal is required.
++      const entryCandle = !!(currentProtection && protection.closed_through === currentProtection.available_at
++        && currentProtection.sweep_close >= zone.bottom && currentProtection.sweep_close <= zone.top);
++      const stopChoice = Stops.plan({ dir, entry, zone, atr: entryAtr, tf: entryTf,
++        report: protection, observedAt: protectionClock, currentSweep: stopSweep,
++        currentSweepTf: useModel ? model.entry_tf : counter && counter.confirmation ? counter.confirmation.tf : entryTf,
++        currentIsCausal: useModel || causalZone || entryCandle, policy: ctx.stopPolicy === 'legacy' ? 'legacy' : 'course' });
++      const stopBase = stopChoice.base, buffer = stopChoice.buffer;
++      const stop = stopChoice.raw_stop;
++      const risk = stop === null ? 0 : Math.abs(entry - stop);
++      const stopEvidence = ctx.stopPolicy === 'legacy' ? null : Stops.evidence(stopChoice);
++      const entryEvidence = useModel ? { ...Entry.evidence(model), ...(stopEvidence ? { stop_policy: stopEvidence } : {}) } : null;
++      if (ctx.stopPolicy !== 'legacy') add('stop_valid', 'Defined adverse stop at the selected invalidation boundary',
++        stopChoice.state === 'known', 0, stopChoice.reason);
 +      const ordinarySources = targetAlignment ? scopedTargets.sources.map((s) => s.analysis) : [analysis];
 +      const pools = counter || boundedCRT ? [] : ordinarySources.flatMap((a) =>
 +        targetPools(a, dir, entry, { magnets: targetMagnets }));
@@ -3786,7 +3941,7 @@ index 138beb4..1551487 100644
          const extreme = long ? pd.range_high : pd.range_low;
          const reward = Math.abs(extreme - entry);
          if (reward > 0) {
-@@ -194,28 +703,60 @@ function buildSetups(analysis, ctx = {}) {
+@@ -194,28 +724,60 @@ function buildSetups(analysis, ctx = {}) {
            }
          }
        }
@@ -3864,7 +4019,7 @@ index 138beb4..1551487 100644
  
        // entry status: are we at the zone, or chasing?
        let entryStatus, entryNote;
-@@ -230,6 +771,26 @@ function buildSetups(analysis, ctx = {}) {
+@@ -230,6 +792,26 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
@@ -3891,7 +4046,7 @@ index 138beb4..1551487 100644
        // Distance still to travel to the zone we would enter at. An FVG-only read has
        // no order-block `reach` — measure to its near edge instead of dereferencing null.
        const zoneReach = bestOB ? bestOB.reach
-@@ -237,31 +798,49 @@ function buildSetups(analysis, ctx = {}) {
+@@ -237,31 +819,57 @@ function buildSetups(analysis, ctx = {}) {
            : 6;
        add('entry', 'Entry not chased (price at/near the zone)', entryStatus !== 'waiting' || zoneReach <= 2.5, 8, entryNote);
        add('management', 'Risk plan protects the trade at the first pool', rrFinal >= minRR, 0,
@@ -3904,10 +4059,11 @@ index 138beb4..1551487 100644
  
        levels = {
 +        target_policy: targetPolicy, target_tf: ladder[0] ? ladder[0].source_tf || ladder[0].tf || null : null,
-+        entry_tf: entryTf, stop_tf: entryTf,
++        entry_tf: entryTf, stop_tf: ctx.stopPolicy === 'legacy' ? entryTf : stopChoice.source_tf,
++        stop_policy: stopEvidence,
 +        ...(counter ? { execution_kind: 'countertrend-pullback', target_tf: counterTargetKnown ? counterTargetTf : null } : {}),
 +        ...(useModel ? { entry_model: model.entry_model, entry_tf: model.entry_tf,
-+          stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: Entry.evidence(model),
++          stop_tf: model.entry_tf, entry_model_state: model.state, entry_evidence: entryEvidence,
 +          ...(boundedCRT ? { target_tf: boundedCRT.tf } : {}) } : {}),
 +        ...(preference ? { zone_preference: { rule: 'extreme_over_flip', fuel: preference.fuel } } : {}),
          dir, side, entry: r4(entry), entry_zone: [r4(zone.bottom), r4(zone.top)], entry_kind: zone.kind,
@@ -3917,8 +4073,12 @@ index 138beb4..1551487 100644
 -          : `Beyond the ${zone.kind === 'order_block' ? 'order block' : 'FVG'} ${long ? 'low' : 'high'} ${r4(stopBase)} + ${r2(atr * 0.18)} buffer`,
 -        targets: ladder, primary_target: ladder[0] ? { ...ladder[0] } : null,
 -        rr_primary: rrPrimary, rr_final: rrFinal,
-+        stop: r4(stop), risk: r4(risk), risk_atr: r2(risk / entryAtr),
-+        stop_reason: stopSweep && Math.abs(stopBase - stopSweep.extreme) < 1e-9
++        stop: stop === null ? null : r4(stop), risk: r4(risk), risk_atr: r2(risk / entryAtr),
++        stop_reason: ctx.stopPolicy !== 'legacy'
++          ? (stopChoice.state === 'known'
++            ? `${stopChoice.reason} Stop ${stopChoice.price}; base ${r4(stopBase)} + ${r4(buffer)} (${Stops.BUFFER_ATR} ${entryTf} ATR) buffer. Rule: ${stopChoice.rule}.`
++            : stopChoice.reason)
++          : stopSweep && Math.abs(stopBase - stopSweep.extreme) < 1e-9
 +          ? `Beyond the sweep extreme (${r4(stopBase)}) + ${r2(entryAtr * 0.18)} buffer`
 +          // M47: a third kind now exists, so the two-way ternary would have called a flip
 +          // zone an "FVG" - the recurring trap of a string that describes a decision no
@@ -3945,16 +4105,20 @@ index 138beb4..1551487 100644
          wall: wallRisk ? { label: wallRisk.label, price: wallRisk.price, rr: wallRisk.rr } : null,
          entry_status: entryStatus, entry_note: entryNote,
 -        risk_warning: risk < atr * 0.35 ? 'Stop is tighter than 0.35 ATR — normal noise can take you out. Consider using the sweep extreme instead.' : null,
-+        risk_warning: risk < entryAtr * 0.35 ? 'Stop is tighter than 0.35 ATR — normal noise can take you out. Consider using the sweep extreme instead.' : null,
-         invalidation: long
+-        invalidation: long
 -          ? `A 15m close below ${r4(Math.min(zone.bottom, recentSweep ? recentSweep.extreme : zone.bottom))} invalidates the idea.`
 -          : `A 15m close above ${r4(Math.max(zone.top, recentSweep ? recentSweep.extreme : zone.top))} invalidates the idea.`,
-+          ? `A ${entryTf || 'entry-timeframe'} close below ${r4(Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom))} invalidates the idea.`
-+          : `A ${entryTf || 'entry-timeframe'} close above ${r4(Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top))} invalidates the idea.`,
++        risk_warning: risk < entryAtr * 0.35 ? 'Stop is tighter than 0.35 ATR — normal noise can take you out. Consider using the sweep extreme instead.' : null,
++        invalidation: ctx.stopPolicy !== 'legacy'
++          ? stopChoice.state !== 'known' ? 'No valid selected invalidation boundary — no executable trade.'
++            : `A ${stopChoice.source_tf || entryTf || 'entry-timeframe'} close ${long ? 'below' : 'above'} ${r4(stopBase)} (${stopChoice.kind}) invalidates the idea. The hard stop is buffered at ${stopChoice.price}.`
++          : long
++            ? `A ${entryTf || 'entry-timeframe'} close below ${r4(Math.min(zone.bottom, stopSweep ? stopSweep.extreme : zone.bottom))} invalidates the idea.`
++            : `A ${entryTf || 'entry-timeframe'} close above ${r4(Math.max(zone.top, stopSweep ? stopSweep.extreme : zone.top))} invalidates the idea.`,
        };
      } else {
        add('runway', 'Open runway to opposing liquidity', false, 14, 'No zone, so no defined risk — the model needs a level to trade against.');
-@@ -271,37 +850,183 @@ function buildSetups(analysis, ctx = {}) {
+@@ -271,37 +879,187 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -4033,6 +4197,10 @@ index 138beb4..1551487 100644
 +        ? `Risk:reward ${Math.round(floorRR * 10000) / 10000}R (unrounded geometry) is below the ${minRR}R floor — passing on the trade.`
 +        : noTargetReason);
 +    }
++    if (levels && levels.stop_policy && levels.stop_policy.state !== 'known') {
++      const stopCheck = checks.find(c => c.key === 'stop_valid');
++      vetoes.push('No defined valid stop — ' + (stopCheck ? stopCheck.detail : 'selected invalidation is unavailable.'));
++    }
 +    if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
 +    if (blackout) vetoes.push('High-impact news inside the window.');
 +    // M8 — tested against the boolean, not truthiness: when analysis is the short-series
@@ -4074,7 +4242,8 @@ index 138beb4..1551487 100644
 +
      /* --------------------------------------------------------------- risk plan */
      let risk = null;
-     if (levels) {
+-    if (levels) {
++    if (levels && levels.stop !== null) {
        const balance = Number(ctx.balance || 0);
 -      const riskPct = Number(ctx.riskPct || 1);
 +      // M9: the fallback was 1 — double the guardrail default. `maxRiskPct` was listed in the
@@ -4144,7 +4313,7 @@ index 138beb4..1551487 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +1036,59 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +1069,59 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -4163,7 +4332,7 @@ index 138beb4..1551487 100644
 +      ...(td && td.entry_setup ? { entry_model: useModel ? model.entry_model : 'none',
 +        entry_tf: levels ? levels.entry_tf : model ? model.entry_tf : null,
 +        entry_model_state: model ? model.state : 'not_permitted_direction',
-+        entry_evidence: useModel ? Entry.evidence(model) : null } : {}),
++        entry_evidence: useModel ? (levels ? levels.entry_evidence : Entry.evidence(model)) : null } : {}),
 +      // M25: the market phase, so the trader (and any review) can tell an impulse they are
 +      // late for from a pullback they are early for. Reported, not enforced — turning it
 +      // into a gate is M3's timing rule and needs its own measurement.
@@ -4210,7 +4379,7 @@ index 138beb4..1551487 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -331,7 +1097,11 @@ function buildSetups(analysis, ctx = {}) {
+@@ -331,7 +1130,11 @@ function buildSetups(analysis, ctx = {}) {
    candidates.sort((a, b) => b.score - a.score);
  
    /* --------------------------------------------------------------- top verdict */
@@ -4223,7 +4392,7 @@ index 138beb4..1551487 100644
    const buy = candidates.find((c) => c.dir === 1);
    const sell = candidates.find((c) => c.dir === -1);
  
-@@ -350,8 +1120,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -350,8 +1153,7 @@ function buildSetups(analysis, ctx = {}) {
      const aligned = candidates.find((c) => c.dir === td.direction);
      if (aligned) best = aligned;                    // the higher timeframe chooses the side
    }
@@ -4233,7 +4402,7 @@ index 138beb4..1551487 100644
    const methodBlocked = !!(td && (td.blocked || (td.direction !== 0 && (!best || best.dir !== td.direction))));
  
    let verdict;
-@@ -367,20 +1136,22 @@ function buildSetups(analysis, ctx = {}) {
+@@ -367,20 +1169,22 @@ function buildSetups(analysis, ctx = {}) {
        detail: `${why}${pendingStep(td)}`,
        next_trigger: [td.playbook && td.playbook.length ? td.playbook[0] : null, nextTriggerHint(analysis)].filter(Boolean),
        source: 'topdown-gate', method, setup_action: setupAction,
@@ -4261,7 +4430,7 @@ index 138beb4..1551487 100644
        : `${best.grade} ${best.side} setup`;
      const methodOk = !td ? null : (td.direction !== 0 && td.direction === best.dir);
      verdict = {
-@@ -399,7 +1170,52 @@ function buildSetups(analysis, ctx = {}) {
+@@ -399,7 +1203,52 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -4314,7 +4483,7 @@ index 138beb4..1551487 100644
        news_blackout: blackout || null,
        min_rr: minRR,
      },
-@@ -430,4 +1246,8 @@ function pendingStep(td) {
+@@ -430,4 +1279,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  
@@ -4325,10 +4494,10 @@ index 138beb4..1551487 100644
 +module.exports = { buildSetups, gradeFor, GRADES, GRADE_RISK_MULT, targetPools, strongWeak, marketPhase, rangeRiskMult, RANGE_RISK,
 +  standDownFor, M10_DEFAULT, GRADE_A_MIN, NO_TRADE_MAX, SWEEP_LOOKBACK, methodRiskMult, selectZone };
 diff --git a/src/bots/smc.js b/src/bots/smc.js
-index 2ccb576..15cb746 100644
+index 2ccb576..63f82f8 100644
 --- a/src/bots/smc.js
 +++ b/src/bots/smc.js
-@@ -17,6 +17,14 @@
+@@ -17,11 +17,20 @@
   *                 target the opposing liquidity pool — minimum 1:2
   *    8. filters   killzones, premium/discount, news blackout, CRT range play
   *
@@ -4343,7 +4512,13 @@ index 2ccb576..15cb746 100644
   *  Everything here is deterministic and side-effect free: same candles in, same
   *  analysis out. No opinions on size or money — that lives in setup.js.
   */
-@@ -35,6 +43,13 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+ 
+ const I = require('../indicators');
++const Protected = require('./protected');
+ 
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+ const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
+@@ -35,6 +44,13 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   * plateaus produce one point, not two).
   * @returns {Array<{i:number,t:number,price:number,type:'high'|'low',strength:number}>}
   */
@@ -4357,7 +4532,7 @@ index 2ccb576..15cb746 100644
  function findSwings(candles, strength = 2) {
    const out = [];
    const n = candles.length;
-@@ -63,6 +78,41 @@ function alternate(swings) {
+@@ -63,6 +79,41 @@ function alternate(swings) {
    return out;
  }
  
@@ -4399,7 +4574,7 @@ index 2ccb576..15cb746 100644
  /* ══════════════════════════════════════════════ 2. MARKET STRUCTURE / BOS */
  
  /**
-@@ -99,6 +149,15 @@ function marketStructure(candles, swings) {
+@@ -99,6 +150,15 @@ function marketStructure(candles, swings) {
    const events = [];
    const swingHighs = labels.filter((x) => x.type === 'high');
    const swingLows = labels.filter((x) => x.type === 'low');
@@ -4415,7 +4590,7 @@ index 2ccb576..15cb746 100644
    const scanBreaks = (list, dir) => {
      for (let k = 0; k < list.length; k++) {
        const s = list[k];
-@@ -106,15 +165,14 @@ function marketStructure(candles, swings) {
+@@ -106,15 +166,14 @@ function marketStructure(candles, swings) {
          const c = candles[i];
          const broke = dir === 'up' ? c.c > s.price : c.c < s.price;
          if (!broke) continue;
@@ -4436,7 +4611,7 @@ index 2ccb576..15cb746 100644
          });
          break; // one break per swing level
        }
-@@ -132,10 +190,32 @@ function marketStructure(candles, swings) {
+@@ -132,10 +191,32 @@ function marketStructure(candles, swings) {
      breaks.push(e);
    }
  
@@ -4472,7 +4647,7 @@ index 2ccb576..15cb746 100644
  
    const lastHigh = swingHighs[swingHighs.length - 1] || null;
    const lastLow = swingLows[swingLows.length - 1] || null;
-@@ -147,6 +227,17 @@ function marketStructure(candles, swings) {
+@@ -147,6 +228,17 @@ function marketStructure(candles, swings) {
      recent_labels: labels.slice(-6).map((x) => ({ label: x.label, price: r4(x.price), t: x.t, type: x.type })),
      last_swing_high: lastHigh ? { price: r4(lastHigh.price), t: lastHigh.t, i: lastHigh.i, label: lastHigh.label } : null,
      last_swing_low: lastLow ? { price: r4(lastLow.price), t: lastLow.t, i: lastLow.i, label: lastLow.label } : null,
@@ -4490,7 +4665,7 @@ index 2ccb576..15cb746 100644
    };
  }
  
-@@ -177,9 +268,30 @@ function findDisplacement(candles, atr, { minAtr = 1.2, minBody = 0.55 } = {}) {
+@@ -177,9 +269,30 @@ function findDisplacement(candles, atr, { minAtr = 1.2, minBody = 0.55 } = {}) {
   * Order blocks: the last opposite candle before a displacement leg.
   * Bundles supply (bearish OB) and demand (bullish OB) with freshness + confluence tags.
   */
@@ -4522,7 +4697,7 @@ index 2ccb576..15cb746 100644
    for (const d of displacement) {
      if (n - 1 - d.i > maxAge) continue;
      // walk back from the displacement bar to find the last opposite-colour candle
-@@ -197,27 +309,88 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
+@@ -197,27 +310,88 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
  
      // mitigation: how has price interacted with the zone SINCE the displacement leg?
      // (bars inside the leg itself are the move that created the zone, not a test)
@@ -4617,7 +4792,7 @@ index 2ccb576..15cb746 100644
        bars_ago: n - 1 - idx,
        distance_pct: r2(((dir > 0 ? top : bottom) - candles[n - 1].c) / candles[n - 1].c * 100),
        distance_atr: r2(Math.abs(((dir > 0 ? top : bottom) - candles[n - 1].c)) / (atr || 1)),
-@@ -225,14 +398,22 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
+@@ -225,14 +399,22 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
    }
    // best-first: strong, fresh, not breached, near price
    out.sort((a, b) => (b.strength - (b.breached ? 1 : 0)) - (a.strength - (a.breached ? 1 : 0)));
@@ -4645,7 +4820,7 @@ index 2ccb576..15cb746 100644
    }
    return dedup;
  }
-@@ -288,7 +469,7 @@ function findFvgs(candles, atr, { minAtr = 0.12, maxAge = 250, maxGaps = 14 } =
+@@ -288,7 +470,7 @@ function findFvgs(candles, atr, { minAtr = 0.12, maxAge = 250, maxGaps = 14 } =
   * Breaker blocks / flip zones: a zone that failed in its own direction and now acts
   * the other way. A demand OB that closes below becomes resistance (bearish breaker).
   */
@@ -4654,7 +4829,7 @@ index 2ccb576..15cb746 100644
    const out = [];
    const n = candles.length;
    for (const z of orderBlocks) {
-@@ -300,6 +481,30 @@ function findBreakers(orderBlocks, candles, atr) {
+@@ -300,6 +482,30 @@ function findBreakers(orderBlocks, candles, atr) {
        if (through) { brokeAt = i; break; }
      }
      if (brokeAt === null) continue;
@@ -4685,7 +4860,7 @@ index 2ccb576..15cb746 100644
      // retest since the break = confirmation the flip holds
      let retested = false;
      for (let i = brokeAt + 1; i < n; i++) {
-@@ -310,7 +515,20 @@ function findBreakers(orderBlocks, candles, atr) {
+@@ -310,7 +516,20 @@ function findBreakers(orderBlocks, candles, atr) {
        kind: 'breaker', dir: -z.dir, side: z.dir > 0 ? 'supply' : 'demand',
        top: z.top, bottom: z.bottom, mid: z.mid, i: brokeAt, t: candles[brokeAt].t,
        origin: { top: z.top, bottom: z.bottom, side: z.side, t: z.t }, retested,
@@ -4707,7 +4882,7 @@ index 2ccb576..15cb746 100644
        bars_ago: n - 1 - brokeAt, distance_atr: r2(Math.abs(((z.dir > 0 ? z.bottom : z.top) - candles[n - 1].c)) / (atr || 1)),
      });
    }
-@@ -349,7 +567,79 @@ function clusterLevels(swings, tol) {
+@@ -349,7 +568,79 @@ function clusterLevels(swings, tol) {
   *   BSL (buy-side liquidity, above price)  /  SSL (sell-side, below price)
   * Sources: equal highs/lows, prior day/week extremes, session extremes, old swing points.
   */
@@ -4788,7 +4963,7 @@ index 2ccb576..15cb746 100644
    const n = candles.length;
    if (!n) return { pools: [], equal_highs: [], equal_lows: [] };
    const price = candles[n - 1].c;
-@@ -399,31 +689,76 @@ function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPo
+@@ -399,31 +690,76 @@ function liquidity(candles, swings, atr, { tf = '15m', equalTolAtr = 0.18, maxPo
      push({ kind: 'PWH', type: 'BSL', price: prevWeek.h, t: prevWeek.t, label: 'Previous week high', strength: 1.0 });
      push({ kind: 'PWL', type: 'SSL', price: prevWeek.l, t: prevWeek.t, label: 'Previous week low', strength: 1.0 });
    }
@@ -4873,7 +5048,7 @@ index 2ccb576..15cb746 100644
      pdh: prevDay ? r4(prevDay.h) : null, pdl: prevDay ? r4(prevDay.l) : null,
      pwh: prevWeek ? r4(prevWeek.h) : null, pwl: prevWeek ? r4(prevWeek.l) : null,
      tolerance: r4(tol), price: r4(price),
-@@ -517,13 +852,23 @@ function premiumDiscount(candles, swings) {
+@@ -517,13 +853,23 @@ function premiumDiscount(candles, swings) {
    const span = rangeHigh - rangeLow;
    if (!span) return null;
    const pos = (last - rangeLow) / span; // 0 = range low, 1 = range high
@@ -4898,7 +5073,7 @@ index 2ccb576..15cb746 100644
      ote: ote || oteShort ? (ote ? 'long' : 'short') : null,
      ote_band: [r4(rangeLow + span * 0.62), r4(rangeLow + span * 0.79)],
      levels: {
-@@ -607,6 +952,9 @@ function crt(htfCandles, ltfCandles, atr) {
+@@ -607,6 +953,9 @@ function crt(htfCandles, ltfCandles, atr) {
  
  /* ═══════════════════════════════════════════════════════════ 9. KILLZONES */
  
@@ -4908,7 +5083,7 @@ index 2ccb576..15cb746 100644
  const SESSIONS = [
    { key: 'sydney', name: 'Sydney', start: 21, end: 6, quality: 0.3 },
    { key: 'tokyo', name: 'Tokyo / Asia', start: 0, end: 7, quality: 0.5 },
-@@ -614,62 +962,366 @@ const SESSIONS = [
+@@ -614,63 +963,402 @@ const SESSIONS = [
    { key: 'ny_am', name: 'New York AM', start: 12, end: 16, quality: 1.0 },
    { key: 'ny_pm', name: 'New York PM', start: 16, end: 21, quality: 0.6 },
  ];
@@ -5244,9 +5419,13 @@ index 2ccb576..15cb746 100644
 +  swingMode = 'bos', nested = true,
 +  // M32 stays OPT-IN by the same decision: it cuts trades 190 -> 18, and the headline A+
 +  // figure rested on three trades.
-+  obRequiresFvg = false, allSwings = false } = {}) {
++  obRequiresFvg = false, allSwings = false, observedAt = null } = {}) {
    const out = { ok: false, tf };
-   if (!candles || candles.length < 30) { out.note = 'Not enough candles for structure analysis (need 30+).'; return out; }
+-  if (!candles || candles.length < 30) { out.note = 'Not enough candles for structure analysis (need 30+).'; return out; }
++  if (!candles || candles.length < 30) {
++    out.protected_levels = Protected.unknown(tf, observedAt, 'Not enough candles for protection analysis.');
++    out.note = 'Not enough candles for structure analysis (need 30+).'; return out;
++  }
    const closed = candles.slice(0, -1);
    const atr = I.atr(closed.length > 20 ? closed : candles, 14) || 0;
  
@@ -5292,9 +5471,42 @@ index 2ccb576..15cb746 100644
 +  const breakers = findBreakers(orderBlocks, candles, atr, structure.breaks);
 +  const liq = liquidity(candles, majorSwings.length ? majorSwings : minorSwings, atr, { tf, allSwings });
    const sweeps = findSweeps(candles, liq.pools, atr);
++  // M76 is an annotation-only stage. Verify each candidate sweep against the
++  // detector's own CLOSED prefix BEFORE it; today's pool list may include levels
++  // which did not yet exist. Cache by prefix, not by pool label/strength.
++  const protectionClock = observedAt == null ? Date.now() : Number(observedAt);
++  const prefixPools = new Map(), step = Protected.TF_MS[tf];
++  const observed = step ? candles.filter(b => b.t + step <= protectionClock) : [];
++  // The candidate set itself must also be causal: a forming/future candle may
++  // not push an old closed sweep out of the detector's capped/ranked catalogue.
++  const observedMajor = observed.length === candles.length ? majorSwings : alternate(findSwings(observed, 5));
++  const observedRaw = observed.length === candles.length ? minorRaw : alternate(findSwings(observed, 2));
++  const observedMinor = observed.length === candles.length ? minorSwings
++    : swingMode === 'bos' ? bosSwings(observed, observedRaw) : observedRaw;
++  const observedAtr = observed.length === candles.length ? atr : I.atr(observed.slice(0, -1), 14) || 0;
++  const observedSweeps = observed.length === candles.length ? sweeps : findSweeps(observed,
++    liquidity(observed, observedMajor.length ? observedMajor : observedMinor, observedAtr, { tf, allSwings }).pools, observedAtr);
++  const protectedLevels = Protected.discover(observed, observedSweeps, { tf, observedAt: protectionClock,
++    poolBefore(s) {
++      let ps = prefixPools.get(s.t);
++      if (!ps) {
++        const past = observed.filter(b => b.t + step <= s.t);
++        const major = alternate(findSwings(past, 5)), raw = alternate(findSwings(past, 2));
++        const minor = swingMode === 'bos' ? bosSwings(past, raw) : raw;
++        const prefixAtr = I.atr(past, 14) || 0;
++        const pools = liquidity(past, major.length ? major : minor, prefixAtr, { tf, allSwings }).pools;
++        ps = pools.map(p => ({ kind: p.kind, type: p.type, price: p.price, tf,
++          source_t: p.t == null ? null : p.t, available_at: past.length ? past.at(-1).t + step : null,
++          basis: 'observed_prefix_liquidity' }));
++        prefixPools.set(s.t, ps);
++      }
++      const matching = ps.filter(p => p.type === s.type && Protected.samePrice(p.price, s.level));
++      return matching.find(p => p.kind === s.pool) || matching[0] || null;
++    } });
    const pd = premiumDiscount(candles, majorSwings.length ? majorSwings : minorSwings);
    const crtRes = htfCandles ? crt(htfCandles, candles, atr) : null;
-@@ -679,12 +1331,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+ 
+@@ -679,12 +1367,23 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
      const pool = liq.pools.find((p) => p.kind === s.pool && Math.abs(p.price - s.level) < 1e-9);
      if (pool) { pool.swept = true; pool.swept_t = s.t; }
    }
@@ -5324,20 +5536,40 @@ index 2ccb576..15cb746 100644
    }
    // inducement: a minor pool sitting between price and a major pool, on the way to it
    const big = liq.pools.filter((p) => p.strength >= 0.8 && !p.swept);
-@@ -705,7 +1368,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -705,21 +1404,38 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
    out.ok = true;
    out.price = r4(price);
    out.atr = r4(atr);
 -  out.swings = { minor: minorSwings.slice(-14), major: majorSwings.slice(-10) };
+-  out.structure = structure;
+-  out.htf_structure = htfStructure ? { trend: htfStructure.trend, last_break: htfStructure.last_break, recent_labels: htfStructure.recent_labels } : null;
 +  // M22: report the tier `structure` was actually built from, not the raw minor tier. Without
 +  // this the output would claim swings the internal read never saw whenever nested is on.
-+  out.swings = { minor: nestedSwings.slice(-14), major: majorSwings.slice(-10),
++  out.swings = { minor: Protected.annotate(nestedSwings.slice(-14), protectedLevels),
++    major: Protected.annotate(majorSwings.slice(-10), protectedLevels),
 +    nested: nested && nestedSwings !== minorSwings };
-   out.structure = structure;
-   out.htf_structure = htfStructure ? { trend: htfStructure.trend, last_break: htfStructure.last_break, recent_labels: htfStructure.recent_labels } : null;
++  out.structure = { ...structure, labels: Protected.annotate(structure.labels, protectedLevels),
++    recent_labels: Protected.annotate(structure.recent_labels, protectedLevels),
++    last_swing_high: structure.last_swing_high ? Protected.annotate([{ ...structure.last_swing_high, type: 'high' }], protectedLevels)[0] : null,
++    last_swing_low: structure.last_swing_low ? Protected.annotate([{ ...structure.last_swing_low, type: 'low' }], protectedLevels)[0] : null };
++  // Do not add type to the old last-swing contract just to annotate it.
++  for (const key of ['last_swing_high', 'last_swing_low']) if (out.structure[key]) delete out.structure[key].type;
++  out.htf_structure = htfStructure ? { trend: htfStructure.trend, last_break: htfStructure.last_break,
++    recent_labels: Protected.annotate(htfStructure.recent_labels, protectedLevels) } : null;
    out.displacement = displacement.slice(-8).reverse();
-@@ -716,10 +1382,10 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
-   out.sweeps = sweeps;
+   out.order_blocks = orderBlocks;
+   out.fvgs = fvgs;
+   out.breakers = breakers.slice(0, 6);
+   out.liquidity = liq;
+-  out.sweeps = sweeps;
++  out.protected_levels = protectedLevels;
++  out.sweeps = sweeps.map(s => {
++    const p = Protected.forSweep(protectedLevels, s);
++    const rejected = protectedLevels.rejected.find(r => r.t === s.t && r.dir === s.dir);
++    return { ...s, protected: !!(p && p.status === 'intact'),
++      protection_state: p ? p.status : rejected && rejected.state === 'unknown' ? 'unknown' : 'not_proven',
++      protected_level: p || null };
++  });
    out.premium_discount = pd;
    out.crt = crtRes;
 -  out.sessions = sessionState();
@@ -5349,7 +5581,7 @@ index 2ccb576..15cb746 100644
      order_blocks: orderBlocks.filter((z) => !z.breached).length, fvgs: fvgs.filter((g) => !g.filled).length,
      sweeps: sweeps.length, pools: liq.pools.length,
    };
-@@ -727,7 +1393,8 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
+@@ -727,7 +1443,8 @@ function analyse(candles, { tf = '15m', htfCandles = null } = {}) {
  }
  
  module.exports = {
@@ -5360,6 +5592,133 @@ index 2ccb576..15cb746 100644
 +  SESSIONS, SILVER_BULLETS, dayKey, weekKey, sessionAffinity, asiaRange,
 +  WINDOW_BY_KEY, WINDOW_KEYS, windowLabel, normalizeWindowPref, pairCountsFor, legsOf,
  };
+diff --git a/src/bots/stops.js b/src/bots/stops.js
+new file mode 100644
+index 0000000..95b052b
+--- /dev/null
++++ b/src/bots/stops.js
+@@ -0,0 +1,121 @@
++'use strict';
++/** M75 — Ep20 17:48–19:35. CURRENT protected high/low first; without one,
++ * compare the older intact protected boundary and zone, choose nearer VALID.
++ * This is not a universal Math.max/Math.min swap or an RR-optimisation rule.
++ */
++const Protected = require('./protected');
++const number = Protected.number, r4 = v => Math.round(v * 10000) / 10000;
++const BUFFER_ATR = .18; // Existing engineering buffer; course says "a few pips".
++
++function plan({ dir, entry, zone, atr, tf, report, observedAt, currentSweep,
++  currentSweepTf = tf, currentIsCausal = false, policy = 'course' } = {}) {
++  const buffer = number(atr) > 0 ? atr * BUFFER_ATR : null;
++  const baseZone = zone ? (dir > 0 ? number(zone.bottom) : number(zone.top)) : null;
++  const out = { state: 'invalid', rule: 'no_valid_invalidation', tf: tf || null,
++    source_tf: null, buffer_tf: tf || null, buffer_atr: BUFFER_ATR, buffer,
++    base: null, raw_stop: null, price: null, kind: null, protected_level: null,
++    candidates: [], rejected: [], reason: 'No valid stop/invalidation boundary.' };
++  if (![1, -1].includes(dir) || !(number(entry) > 0) || buffer === null) {
++    out.reason = 'Entry direction/price or entry-timeframe ATR is unavailable.'; return out;
++  }
++  function candidate(base, kind, sourceTf, p = null) {
++    const value = number(base);
++    const rawStop = value === null ? null : value - dir * buffer;
++    const price = rawStop === null ? null : r4(rawStop);
++    // Do not make a profitable-side "invalidation" valid by adding a huge buffer.
++    // Also validate published prices: rounding a stop onto entry is not defined risk.
++    const valid = value > 0 && dir * (value - entry) <= 0 && rawStop > 0
++      && dir * (rawStop - entry) < 0 && price > 0 && dir * (price - r4(entry)) < 0;
++    const c = { kind, tf: sourceTf || null, base: value, raw_stop: rawStop, price,
++      distance: rawStop === null ? null : Math.abs(entry - rawStop), valid,
++      protected_id: p ? p.id : null, origin_t: p ? p.t : null };
++    (valid ? out.candidates : out.rejected).push(c); return c;
++  }
++  const z = candidate(baseZone, zone && zone.kind || 'zone', tf);
++  function pick(c, rule, p = null, reason) {
++    if (!c || !c.valid) return out;
++    Object.assign(out, { state: 'known', rule, source_tf: c.tf, base: c.base,
++      raw_stop: c.raw_stop, price: c.price, kind: c.kind, protected_level: p,
++      reason: reason || `${c.kind} invalidation at ${r4(c.base)}; ${BUFFER_ATR} entry-TF ATR buffer beyond it.` });
++    return out;
++  }
++  const clock = number(observedAt) ?? (report && number(report.observed_at));
++  const scoped = Protected.scope(report, tf, clock);
++  const rawSweep = currentSweep && number(currentSweep.extreme);
++  const conservative = rule => {
++    const s = rawSweep === null || rawSweep === undefined ? null
++      : candidate(rawSweep, 'sweep_extreme', currentSweepTf);
++    const valid = [z, s].filter(c => c && c.valid).sort((a, b) => b.distance - a.distance);
++    return pick(valid[0], rule, null, rule === 'legacy_further'
++      ? 'Explicit pre-M75 research stop: farther zone/sweep boundary, original buffer.'
++      : 'Protection evidence is unknown; retain a valid conservative zone/sweep boundary, not an inferred protected level or a manufactured tighter stop.');
++  };
++  if (policy === 'legacy') return conservative('legacy_further');
++  if (scoped.state !== 'known') return conservative('protection_unknown_conservative');
++  const cur = currentSweepTf === tf ? Protected.forSweep(scoped, currentSweep) : null;
++  const unknownCurrent = currentSweep && (number(currentSweep.t) === null
++    || currentSweepTf !== tf || scoped.rejected.some(r => r.t === currentSweep.t
++      && r.dir === currentSweep.dir && r.state === 'unknown'));
++  if (unknownCurrent) return conservative('protection_unknown_conservative');
++  if (cur && currentIsCausal) {
++    if (cur.status === 'taken') {
++      out.rule = 'current_protected_taken'; out.reason = 'The current causal protected boundary has been taken; no farther-stop rescue.';
++      return out;
++    }
++    if (cur.status === 'intact') {
++      const c = candidate(cur.raw_price, cur.type === 'high' ? 'protected_high' : 'protected_low', cur.tf, cur);
++      if (!c.valid) {
++        out.rule = 'current_protected_invalid'; out.reason = 'The current protected boundary has no valid adverse/published stop; no substitute invalidation.';
++        return out;
++      }
++      return pick(c, 'current_protected', cur, 'Current causal protected ' + cur.type
++        + ' owns invalidation; do not replace it with a nearer zone merely for RR.');
++    }
++  }
++  // Older levels must be intact, adverse, already observed and on the REAL entry
++  // TF. Strong labels, arbitrary sweep extremes and higher-TF projections cannot
++  // enter this comparison. The zone wins an exact distance tie.
++  const byId = new Map();
++  for (const p of scoped.levels || []) {
++    if (p.status !== 'intact' || p.dir !== dir || !(number(p.raw_price) > 0)
++        || p.available_at > clock || p.tf !== tf) continue;
++    const c = candidate(p.raw_price, p.type === 'high' ? 'protected_high' : 'protected_low', p.tf, p);
++    byId.set(p.id, p);
++  }
++  const valid = out.candidates.slice().sort((a, b) => a.distance - b.distance
++    || (a.protected_id ? 1 : 0) - (b.protected_id ? 1 : 0));
++  const chosen = valid[0];
++  return pick(chosen, 'nearer_valid_fallback', chosen && chosen.protected_id ? byId.get(chosen.protected_id) : null,
++    'No current causal protected boundary: choose the nearer valid older protected level or entry-zone boundary; retain the original buffer.');
++}
++
++function evidence(p) {
++  if (!p) return null;
++  return { state: p.state, rule: p.rule, tf: p.tf, source_tf: p.source_tf,
++    buffer_tf: p.buffer_tf, buffer_atr: p.buffer_atr, buffer: p.buffer,
++    base: p.base, stop: p.price, kind: p.kind,
++    protected_level: p.protected_level ? { id: p.protected_level.id, tf: p.protected_level.tf,
++      type: p.protected_level.type, t: p.protected_level.t, raw_price: p.protected_level.raw_price,
++      available_at: p.protected_level.available_at, sweep_level: p.protected_level.sweep_level,
++      liquidity: p.protected_level.liquidity } : null,
++    candidates: p.candidates.map(c => ({ ...c })), rejected: p.rejected.map(c => ({ ...c })) };
++}
++module.exports = { plan, evidence, BUFFER_ATR };
++
++/** Client-supplied Save-plan metadata is a snapshot, not a server replay. Check
++ * bounded shape, price/TF consistency; never silently retain contradictory facts.
++ */
++function check(p, stop, entryTf) {
++  const rules = ['current_protected', 'nearer_valid_fallback', 'protection_unknown_conservative', 'legacy_further'];
++  if (!p || typeof p !== 'object' || Array.isArray(p) || p.state !== 'known'
++      || !rules.includes(p.rule) || !Protected.TF_MS[p.tf] || (entryTf && p.tf !== entryTf)
++      || !Protected.samePrice(p.stop, stop) || !(number(p.base) > 0) || !(number(p.buffer) > 0)
++      || p.buffer_atr !== BUFFER_ATR || JSON.stringify(p).length > 8000)
++    throw new Error('stop_policy must be a bounded known snapshot matching the displayed stop and entry TF');
++  return p;
++}
++function note(p) {
++  return `Stop ${p.source_tf || 'unknown TF'} ${p.kind || 'unknown'} at ${p.stop}; base ${p.base}, buffer ${p.buffer}; ${p.rule}. `;
++}
++module.exports.check = check;
++module.exports.note = note;
 diff --git a/src/bots/targets.js b/src/bots/targets.js
 new file mode 100644
 index 0000000..d0315c1
@@ -7297,7 +7656,7 @@ index 0bb768c..3e54492 100644
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
 diff --git a/src/routes/bots.js b/src/routes/bots.js
-index 2c6ff6c..89d46b8 100644
+index 2c6ff6c..a8a33f5 100644
 --- a/src/routes/bots.js
 +++ b/src/routes/bots.js
 @@ -28,6 +28,21 @@ function createBotsRouter({ requireAuth }) {
@@ -7364,7 +7723,7 @@ index 2c6ff6c..89d46b8 100644
      res.json(out);
    }));
  
-@@ -262,10 +280,15 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -262,10 +280,19 @@ router.get('/markets', requireAuth, (req, res) => {
     */
    router.post('/signals/save-plan', requireAuth, wrap(async (req, res) => {
      const b = req.body || {};
@@ -7373,11 +7732,15 @@ index 2c6ff6c..89d46b8 100644
 +      E.encodeEvidence(b.entry_evidence, model, b.entry_tf);
 +    }
 +    catch (e) { return res.status(400).json({ error: e.message }); }
++    if (b.stop_policy) {
++      try { require('../bots/stops').check(b.stop_policy, Number(b.stop), b.entry_tf); }
++      catch (e) { return res.status(400).json({ error: e.message }); }
++    }
      const out = await Bots.savePlan(req.user.id, {
        symbol: b.symbol, timeframe: b.timeframe, entry: b.entry, stop: b.stop,
        targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
 -      mechanics: b.mechanics, note: b.note, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr,
-+      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy,
++      mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy,
      });
      res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null });
    }));

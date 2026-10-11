@@ -1,6 +1,13 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
-## Current plan status — 2026-10-11
+## Current M76/M75 status — 2026-10-11
+
+**132:73 done/2 partial/57 todo/0 no-action.** Protected-level annotation and
+current-protected-first/nearer-valid fallback stop hierarchy measured separately;
+negative M75 results retained. [Report](M75-M76-PROTECTED-STOPS.md). Next **M78**,
+internal-structure aggressive/conservative ENTRY choice, not a buffer change.
+
+## Prior plan status — 2026-10-11
 
 Ledger **132 findings:71 done/2 partial/59 todo/0 no-action**; authoritative
 [MISMATCHES](MISMATCHES.md) and generated [PROGRESS](PROGRESS.md). M54/M77 real

@@ -24,6 +24,7 @@ const Momentum = require('./momentum');
 const SMC = require('./smc');
 const Setup = require('./setup');
 const Entry = require('./entry-models');
+const Stops = require('./stops');
 const Now = require('./now');
 const Predict = require('./predict');
 const Cor = require('./correction');
@@ -633,6 +634,9 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
           mechanics: momentum.mechanics.score, mechanics_grade: momentum.mechanics.grade,
           action: specs.verdict.action, grade: best ? best.grade : 'no-trade', score: best ? best.score : 0,
           setup_side: best ? best.side : null, entry_model: best ? best.entry_model : null,
+          stop_tf: best && best.levels ? best.levels.stop_tf : null,
+          stop_kind: best && best.levels && best.levels.stop_policy ? best.levels.stop_policy.kind : null,
+          stop_rule: best && best.levels && best.levels.stop_policy ? best.levels.stop_policy.rule : null,
           target_tf: best && best.levels ? best.levels.target_tf : null,
           target_kind: best && best.levels && best.levels.targets[0] ? best.levels.targets[0].kind : null,
           entry_tf: best ? best.entry_tf : null, entry_evidence: best ? best.entry_evidence : null,
@@ -719,6 +723,7 @@ async function savePlan(userId, p = {}) {
     return { saved: 0, reason: 'symbol, entry and stop (entry ≠ stop) are required' };
   }
   const model = Entry.normaliseName(p.entry_model);
+  if (p.stop_policy) Stops.check(p.stop_policy, stop, p.entry_tf);
   const evidence = Entry.encodeEvidence(p.entry_evidence, model, p.entry_tf);
   const dir = stop < entry ? 1 : -1;
   const risk = Math.abs(entry - stop);
@@ -734,7 +739,8 @@ async function savePlan(userId, p = {}) {
     userId, symbol, timeframe, dir, dir > 0 ? 'long' : 'short',
     p.grade || null, p.score == null ? null : Number(p.score), ['flip', 'market_shift'].includes(model) || p.target_policy || p.p_win == null ? null : Number(p.p_win),
     entry, stop, t1, t2, rr(t1), rr(t2),
-    p.mechanics == null ? null : Number(p.mechanics), p.note ? String(p.note).slice(0, 400) : null,
+    p.mechanics == null ? null : Number(p.mechanics),
+    p.stop_policy ? (Stops.note(p.stop_policy) + (p.note || '')).slice(0, 400) : p.note ? String(p.note).slice(0, 400) : null,
     p.entry_mode ? String(p.entry_mode) : null, p.mtf_tf ? String(p.mtf_tf) : null,
     Number.isFinite(Number(p.risk_atr)) ? Number(p.risk_atr) : null,
     model, p.entry_tf || null, evidence,
@@ -772,7 +778,7 @@ async function saveSignals(userId, payload) {
       L.targets.length > 1 ? L.targets[L.targets.length - 1].price : null,
       L.rr_primary, L.rr_final,
       payload.momentum ? payload.momentum.mechanics.score : null,
-      L.target_policy ? (`Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
+      L.target_policy ? ((L.stop_policy ? Stops.note(L.stop_policy) : '') + `Exit ${L.target_tf || 'unknown TF'} ${L.targets[0] ? L.targets[0].kind : 'unknown'}; ${L.target_policy.rule}. ` + (payload.headline ? payload.headline.text : '')).slice(0, 400) : payload.headline ? payload.headline.text.slice(0, 400) : null,
       td ? td.status : null, td ? (td.direction || 0) : null, td ? (td.blocked ? 1 : 0) : null,
       model, c.entry_tf || L.entry_tf || null, Entry.encodeEvidence(c.entry_evidence || L.entry_evidence, model, c.entry_tf || L.entry_tf),
     );

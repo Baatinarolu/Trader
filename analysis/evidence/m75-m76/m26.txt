@@ -1,0 +1,62 @@
+
+=== 1. The four windows are indexed once, from their own definition ===
+  ok   exactly his four windows are selectable
+  ok   every selectable window IS one of his bullets (nothing invented)
+  ok   the label restates the bullet's own hours rather than a copy of them
+  ok   sessionState().bullets carry the key through the map
+  ok   "london", "NY AM", "london close" and "asian" all resolve
+  ok   "any" is an explicit no-restriction, not an unknown value
+  ok   nothing supplied means nothing read
+  ok   a value that names no window is an ERROR, not a silent fallback
+
+=== 2. Restricted to one window, a setup in another is refused ===
+  ok   asia: allowed inside its own window
+  ok   asia: the label it reports is the window's own
+  ok   asia: refused when the trader chose london instead
+  ok   asia: the refusal names BOTH the chosen window and the one that is open
+  ok   asia: no restriction leaves the old behaviour untouched
+  ok   london: allowed inside its own window
+  ok   london: the label it reports is the window's own
+  ok   london: refused when the trader chose ny_am instead
+  ok   london: the refusal names BOTH the chosen window and the one that is open
+  ok   london: no restriction leaves the old behaviour untouched
+  ok   ny_am: allowed inside its own window
+  ok   ny_am: the label it reports is the window's own
+  ok   ny_am: refused when the trader chose london_close instead
+  ok   ny_am: the refusal names BOTH the chosen window and the one that is open
+  ok   ny_am: no restriction leaves the old behaviour untouched
+  ok   london_close: allowed inside its own window
+  ok   london_close: the label it reports is the window's own
+  ok   london_close: refused when the trader chose london instead
+  ok   london_close: the refusal names BOTH the chosen window and the one that is open
+  ok   london_close: no restriction leaves the old behaviour untouched
+  ok   dead zone: refused, and it says no window is open rather than naming one
+
+=== 3. M8/M40 precedence: the more specific refusal wins, and only once ===
+  ok   excluded pair in the chosen window: refused by affinity, not by the window rule
+  ok   ...and it is still reported as a setting that can never fire
+  ok   a pair the window DOES want has no conflict
+  ok   gold is not falsely conflicted: he placed it in no session, so every window is open to it
+  ok   no symbol (the scan path): pair_counts is null, not false
+
+=== 4. M25 composition: inside the chosen window the phase is read ===
+  ok   asia: inside the window the phase is reported
+  ok   asia: consolidation inside the window is said out loud, and only then
+  ok   asia: a blocked window has no phase to report (it is not open)
+  ok   london: inside the window the phase is reported
+  ok   london: consolidation inside the window is said out loud, and only then
+  ok   london: a blocked window has no phase to report (it is not open)
+  ok   ny_am: inside the window the phase is reported
+  ok   ny_am: consolidation inside the window is said out loud, and only then
+  ok   ny_am: a blocked window has no phase to report (it is not open)
+  ok   london_close: inside the window the phase is reported
+  ok   london_close: consolidation inside the window is said out loud, and only then
+  ok   london_close: a blocked window has no phase to report (it is not open)
+    phases seen: {"asia":"balance","london":"balance","ny_am":"balance","london_close":"balance"}
+
+=== 5. An unknown window is reported and NOT applied ===
+  ok   the payload carries the error and the list of real windows
+  ok   a typo does not turn into a restriction
+  ok   ...and it does not change the killzone veto either
+
+49 passed, 0 failed

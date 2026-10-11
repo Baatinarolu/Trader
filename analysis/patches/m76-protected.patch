@@ -1,0 +1,252 @@
+diff --git a/src/bots/entry-models.js b/src/bots/entry-models.js
+index 52a81fc..9a4b07b 100644
+--- a/src/bots/entry-models.js
++++ b/src/bots/entry-models.js
+@@ -3,6 +3,7 @@
+  * M70's selection policy is shared by the legacy opt-in breaker selector and
+  * the two-model LTF composer (M68). Geometry, not strength, defines extreme.
+  */
++const Protected = require('./protected');
+ const number = (v) => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
+ function preferExtreme({ chosen, flipZones = [], orderBlocks = [], sweeps = [], dir, enabled = true }) {
+   if (!enabled || !chosen || !chosen.zone) return null;
+@@ -78,6 +79,7 @@ function compose({ medium, lower, dir, poi, useBreakers = false, observedAt = Da
+   if (!touch) return wait('waiting_poi', `Wait for midpoint mitigation of the ${medium.tf} POI before looking for a lower model.`);
+   result.point_of_interest.mitigation_at = touch.t;
+   const low = lower.smc, shift = low.structure && low.structure.last_break;
++  result.protection = Protected.scope(low.protected_levels, lower.tf, observedAt);
+   const sb = shift && closed.find((b) => b.t === shift.t);
+   const age = sb ? closed.length - 1 - closed.indexOf(sb) : null;
+   if (!sb || sign(shift.dir) !== dir || number(shift.level) === null || age < 0 || age > maxShiftAge
+@@ -170,7 +172,9 @@ function evidence(model) {
+     poi: model.point_of_interest, sweep: model.sweep, stop_sweep: model.stop_sweep || model.sweep, shift: model.shift,
+     zone: model.zone ? { kind: model.zone.kind, bottom: model.zone.bottom, top: model.zone.top,
+       entry: model.zone.entry, origin_t: model.zone.origin_t, formation_t: model.zone.formation_t } : null,
+-    mitigation_at: model.mitigation_at, preference: model.preference };
++    mitigation_at: model.mitigation_at, preference: model.preference,
++    protection: model.protection ? { state: model.protection.state, tf: model.protection.tf,
++      observed_at: model.protection.observed_at, current: Protected.forSweep(model.protection, model.stop_sweep || model.sweep) } : null };
+ }
+ module.exports.evidence = evidence;
+ 
+diff --git a/src/bots/momentum.js b/src/bots/momentum.js
+index b6c1ef1..fa1b591 100644
+--- a/src/bots/momentum.js
++++ b/src/bots/momentum.js
+@@ -81,7 +81,8 @@ async function series(symbol, tf, limit = 500, opts = {}) {
+       last_price: lastKept ? lastKept.c : null, replayed_from: trimmedFrom };
+   }
+   const ind = Ind.snapshot(candles);
+-  const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null });
++  const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null,
++    observedAt: opts.asOf || opts.observedAt || Date.now() });
+   const last = candles[candles.length - 1];
+   return { tf, candles, meta, ind, smc, price: last ? last.c : null, atr: smc.atr || ind.atr || 0, bars: candles.length };
+ }
+diff --git a/src/bots/protected.js b/src/bots/protected.js
+new file mode 100644
+index 0000000..f43d8e2
+--- /dev/null
++++ b/src/bots/protected.js
+@@ -0,0 +1,100 @@
++'use strict';
++/** M76 — Ep20 16:42–19:35: a protected high/low SWEPT liquidity and rejected it.
++ * A strong/fractal swing alone is not protection. These are report-only facts;
++ * M75's stop selector is a separate consumer. No account state or IO here.
++ */
++const number = v => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
++const r4 = v => Math.round(v * 10000) / 10000;
++const TF_MS = Object.freeze({ '1m': 60000, '3m': 180000, '5m': 300000, '15m': 900000,
++  '30m': 1800000, '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000 });
++const samePrice = (a, b) => number(a) !== null && number(b) !== null && Math.abs(a - b) <= 1e-9;
++
++function unknown(tf, observedAt, reason) {
++  return { version: 'm76', state: 'unknown', tf: tf || null, observed_at: number(observedAt),
++    levels: [], rejected: [], reason };
++}
++
++/** poolBefore(s) must resolve a real matching liquidity pool from a CLOSED prefix
++ * ending BEFORE the sweep, not a present/future catalogue relabelled as old data.
++ * The caller supplies its existing detector. Missing provenance stays unknown.
++ */
++function discover(candles, sweeps, { tf, observedAt, poolBefore } = {}) {
++  const step = TF_MS[tf], clock = number(observedAt);
++  if (!step || clock === null || !Array.isArray(candles) || !candles.length)
++    return unknown(tf, clock, 'Closed physical timeframe data is unavailable.');
++  const closed = candles.filter(b => number(b.t) !== null && b.t + step <= clock);
++  if (!closed.length) return unknown(tf, clock, 'No observed closed candles.');
++  const out = { version: 'm76', state: 'known', tf, observed_at: clock,
++    closed_through: Math.max(...closed.map(b => b.t + step)), levels: [], rejected: [] };
++  const seen = new Map();
++  for (const s of sweeps || []) {
++    const reject = (reason, state = 'known') => out.rejected.push({ t: number(s && s.t),
++      dir: s && s.dir, extreme: number(s && s.extreme), reason, state });
++    if (!s || ![1, -1].includes(s.dir) || number(s.t) === null || number(s.level) === null
++        || number(s.extreme) === null) { reject('missing_sweep_evidence', 'unknown'); continue; }
++    const i = candles.findIndex(b => b.t === s.t), b = i >= 0 ? candles[i] : null;
++    if (!b || !closed.includes(b)) { reject('unobserved_sweep', 'unknown'); continue; }
++    const prev = i > 0 ? candles[i - 1] : null;
++    const values = [b.o, b.h, b.l, b.c];
++    const validBar = values.every(v => number(v) !== null) && b.h >= Math.max(b.o, b.c)
++      && b.l <= Math.min(b.o, b.c) && b.l > 0;
++    const high = s.dir === -1, extreme = high ? b.h : b.l;
++    const physical = validBar && prev && number(prev.c) !== null && prev.t + step <= b.t
++      && (s.i == null || s.i === i) && (s.type == null || s.type === (high ? 'BSL' : 'SSL'))
++      && samePrice(extreme, s.extreme) && (s.close == null || samePrice(b.c, s.close))
++      && (high ? prev.c < s.level && b.h > s.level && b.c < s.level
++        : prev.c > s.level && b.l < s.level && b.c > s.level);
++    if (!physical) { reject('not_a_closed_liquidity_rejection'); continue; }
++    const pool = typeof poolBefore === 'function' ? poolBefore(s) : null;
++    if (!pool || pool.tf !== tf || !samePrice(pool.price, s.level)
++        || number(pool.available_at) === null || pool.available_at > s.t
++        || pool.type !== (high ? 'BSL' : 'SSL')) {
++      reject('liquidity_not_proven_before_sweep', 'unknown'); continue;
++    }
++    const key = `${s.dir}:${s.t}:${extreme}`;
++    if (seen.has(key)) {
++      const p = seen.get(key);
++      if (!p.liquidity.some(x => x.kind === pool.kind && samePrice(x.price, pool.price))) p.liquidity.push({ ...pool });
++      continue;
++    }
++    // A wick through the institutional boundary TAKES it; a later close-back
++    // may create a new protected high/low, but cannot resurrect this old one.
++    const taken = closed.find(c => c.t > s.t && (high ? c.h > extreme : c.l < extreme));
++    const row = { id: `${tf}:${s.t}:${s.dir}`, tf, dir: s.dir, type: high ? 'high' : 'low',
++      label: high ? 'Protected high' : 'Protected low', price: r4(extreme), raw_price: extreme,
++      t: s.t, i, available_at: s.t + step, basis: 'closed_liquidity_rejection',
++      status: taken ? 'taken' : 'intact', invalidated_at: taken ? taken.t + step : null,
++      sweep_level: s.level, sweep_close: b.c, liquidity: [{ ...pool }] };
++    seen.set(key, row); out.levels.push(row);
++  }
++  out.levels.sort((a, b) => b.t - a.t || a.dir - b.dir);
++  return out;
++}
++
++/** Never borrow protection from a different TF or a future observation snapshot. */
++function scope(report, tf, observedAt) {
++  const clock = number(observedAt);
++  if (!report || report.version !== 'm76' || report.state !== 'known' || report.tf !== tf
++      || clock === null || number(report.observed_at) === null || report.observed_at > clock)
++    return unknown(tf, clock, 'Protection source is missing, mismatched or not observed.');
++  return { ...report, levels: (report.levels || []).filter(p => p.tf === tf && p.available_at <= clock),
++    rejected: (report.rejected || []).filter(p => p.t !== null && p.t <= clock) };
++}
++
++function forSweep(report, sweep) {
++  if (!report || report.state !== 'known' || !sweep) return null;
++  return (report.levels || []).find(p => p.t === sweep.t && p.dir === sweep.dir
++    && samePrice(p.raw_price, sweep.extreme)) || null;
++}
++
++function annotate(points, report) {
++  return (points || []).map(s => {
++    const p = (report.levels || []).find(p => p.t === s.t && p.type === s.type
++      && (samePrice(p.raw_price, s.price) || samePrice(p.price, s.price)));
++    return { ...s, protected: !!(p && p.status === 'intact'),
++      protection_state: p ? p.status : report.state === 'unknown' ? 'unknown' : 'not_proven',
++      protected_level: p ? { id: p.id, tf: p.tf, available_at: p.available_at,
++        invalidated_at: p.invalidated_at, sweep_level: p.sweep_level } : null };
++  });
++}
++module.exports = { discover, scope, forSweep, annotate, unknown, TF_MS, number, samePrice };
+diff --git a/src/bots/smc.js b/src/bots/smc.js
+index 15cb746..63f82f8 100644
+--- a/src/bots/smc.js
++++ b/src/bots/smc.js
+@@ -30,6 +30,7 @@
+  */
+ 
+ const I = require('../indicators');
++const Protected = require('./protected');
+ 
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+ const r4 = (v) => Math.round((Number(v) || 0) * 10000) / 10000;
+@@ -1280,9 +1281,12 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
+   swingMode = 'bos', nested = true,
+   // M32 stays OPT-IN by the same decision: it cuts trades 190 -> 18, and the headline A+
+   // figure rested on three trades.
+-  obRequiresFvg = false, allSwings = false } = {}) {
++  obRequiresFvg = false, allSwings = false, observedAt = null } = {}) {
+   const out = { ok: false, tf };
+-  if (!candles || candles.length < 30) { out.note = 'Not enough candles for structure analysis (need 30+).'; return out; }
++  if (!candles || candles.length < 30) {
++    out.protected_levels = Protected.unknown(tf, observedAt, 'Not enough candles for protection analysis.');
++    out.note = 'Not enough candles for structure analysis (need 30+).'; return out;
++  }
+   const closed = candles.slice(0, -1);
+   const atr = I.atr(closed.length > 20 ? closed : candles, 14) || 0;
+ 
+@@ -1323,6 +1327,38 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
+   const breakers = findBreakers(orderBlocks, candles, atr, structure.breaks);
+   const liq = liquidity(candles, majorSwings.length ? majorSwings : minorSwings, atr, { tf, allSwings });
+   const sweeps = findSweeps(candles, liq.pools, atr);
++  // M76 is an annotation-only stage. Verify each candidate sweep against the
++  // detector's own CLOSED prefix BEFORE it; today's pool list may include levels
++  // which did not yet exist. Cache by prefix, not by pool label/strength.
++  const protectionClock = observedAt == null ? Date.now() : Number(observedAt);
++  const prefixPools = new Map(), step = Protected.TF_MS[tf];
++  const observed = step ? candles.filter(b => b.t + step <= protectionClock) : [];
++  // The candidate set itself must also be causal: a forming/future candle may
++  // not push an old closed sweep out of the detector's capped/ranked catalogue.
++  const observedMajor = observed.length === candles.length ? majorSwings : alternate(findSwings(observed, 5));
++  const observedRaw = observed.length === candles.length ? minorRaw : alternate(findSwings(observed, 2));
++  const observedMinor = observed.length === candles.length ? minorSwings
++    : swingMode === 'bos' ? bosSwings(observed, observedRaw) : observedRaw;
++  const observedAtr = observed.length === candles.length ? atr : I.atr(observed.slice(0, -1), 14) || 0;
++  const observedSweeps = observed.length === candles.length ? sweeps : findSweeps(observed,
++    liquidity(observed, observedMajor.length ? observedMajor : observedMinor, observedAtr, { tf, allSwings }).pools, observedAtr);
++  const protectedLevels = Protected.discover(observed, observedSweeps, { tf, observedAt: protectionClock,
++    poolBefore(s) {
++      let ps = prefixPools.get(s.t);
++      if (!ps) {
++        const past = observed.filter(b => b.t + step <= s.t);
++        const major = alternate(findSwings(past, 5)), raw = alternate(findSwings(past, 2));
++        const minor = swingMode === 'bos' ? bosSwings(past, raw) : raw;
++        const prefixAtr = I.atr(past, 14) || 0;
++        const pools = liquidity(past, major.length ? major : minor, prefixAtr, { tf, allSwings }).pools;
++        ps = pools.map(p => ({ kind: p.kind, type: p.type, price: p.price, tf,
++          source_t: p.t == null ? null : p.t, available_at: past.length ? past.at(-1).t + step : null,
++          basis: 'observed_prefix_liquidity' }));
++        prefixPools.set(s.t, ps);
++      }
++      const matching = ps.filter(p => p.type === s.type && Protected.samePrice(p.price, s.level));
++      return matching.find(p => p.kind === s.pool) || matching[0] || null;
++    } });
+   const pd = premiumDiscount(candles, majorSwings.length ? majorSwings : minorSwings);
+   const crtRes = htfCandles ? crt(htfCandles, candles, atr) : null;
+ 
+@@ -1370,16 +1406,30 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
+   out.atr = r4(atr);
+   // M22: report the tier `structure` was actually built from, not the raw minor tier. Without
+   // this the output would claim swings the internal read never saw whenever nested is on.
+-  out.swings = { minor: nestedSwings.slice(-14), major: majorSwings.slice(-10),
++  out.swings = { minor: Protected.annotate(nestedSwings.slice(-14), protectedLevels),
++    major: Protected.annotate(majorSwings.slice(-10), protectedLevels),
+     nested: nested && nestedSwings !== minorSwings };
+-  out.structure = structure;
+-  out.htf_structure = htfStructure ? { trend: htfStructure.trend, last_break: htfStructure.last_break, recent_labels: htfStructure.recent_labels } : null;
++  out.structure = { ...structure, labels: Protected.annotate(structure.labels, protectedLevels),
++    recent_labels: Protected.annotate(structure.recent_labels, protectedLevels),
++    last_swing_high: structure.last_swing_high ? Protected.annotate([{ ...structure.last_swing_high, type: 'high' }], protectedLevels)[0] : null,
++    last_swing_low: structure.last_swing_low ? Protected.annotate([{ ...structure.last_swing_low, type: 'low' }], protectedLevels)[0] : null };
++  // Do not add type to the old last-swing contract just to annotate it.
++  for (const key of ['last_swing_high', 'last_swing_low']) if (out.structure[key]) delete out.structure[key].type;
++  out.htf_structure = htfStructure ? { trend: htfStructure.trend, last_break: htfStructure.last_break,
++    recent_labels: Protected.annotate(htfStructure.recent_labels, protectedLevels) } : null;
+   out.displacement = displacement.slice(-8).reverse();
+   out.order_blocks = orderBlocks;
+   out.fvgs = fvgs;
+   out.breakers = breakers.slice(0, 6);
+   out.liquidity = liq;
+-  out.sweeps = sweeps;
++  out.protected_levels = protectedLevels;
++  out.sweeps = sweeps.map(s => {
++    const p = Protected.forSweep(protectedLevels, s);
++    const rejected = protectedLevels.rejected.find(r => r.t === s.t && r.dir === s.dir);
++    return { ...s, protected: !!(p && p.status === 'intact'),
++      protection_state: p ? p.status : rejected && rejected.state === 'unknown' ? 'unknown' : 'not_proven',
++      protected_level: p || null };
++  });
+   out.premium_discount = pd;
+   out.crt = crtRes;
+   out.sessions = sessionState(now ? new Date(now) : new Date());

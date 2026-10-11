@@ -3,6 +3,7 @@
  * M70's selection policy is shared by the legacy opt-in breaker selector and
  * the two-model LTF composer (M68). Geometry, not strength, defines extreme.
  */
+const Protected = require('./protected');
 const number = (v) => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
 function preferExtreme({ chosen, flipZones = [], orderBlocks = [], sweeps = [], dir, enabled = true }) {
   if (!enabled || !chosen || !chosen.zone) return null;
@@ -78,6 +79,7 @@ function compose({ medium, lower, dir, poi, useBreakers = false, observedAt = Da
   if (!touch) return wait('waiting_poi', `Wait for midpoint mitigation of the ${medium.tf} POI before looking for a lower model.`);
   result.point_of_interest.mitigation_at = touch.t;
   const low = lower.smc, shift = low.structure && low.structure.last_break;
+  result.protection = Protected.scope(low.protected_levels, lower.tf, observedAt);
   const sb = shift && closed.find((b) => b.t === shift.t);
   const age = sb ? closed.length - 1 - closed.indexOf(sb) : null;
   if (!sb || sign(shift.dir) !== dir || number(shift.level) === null || age < 0 || age > maxShiftAge
@@ -170,7 +172,9 @@ function evidence(model) {
     poi: model.point_of_interest, sweep: model.sweep, stop_sweep: model.stop_sweep || model.sweep, shift: model.shift,
     zone: model.zone ? { kind: model.zone.kind, bottom: model.zone.bottom, top: model.zone.top,
       entry: model.zone.entry, origin_t: model.zone.origin_t, formation_t: model.zone.formation_t } : null,
-    mitigation_at: model.mitigation_at, preference: model.preference };
+    mitigation_at: model.mitigation_at, preference: model.preference,
+    protection: model.protection ? { state: model.protection.state, tf: model.protection.tf,
+      observed_at: model.protection.observed_at, current: Protected.forSweep(model.protection, model.stop_sweep || model.sweep) } : null };
 }
 module.exports.evidence = evidence;
 

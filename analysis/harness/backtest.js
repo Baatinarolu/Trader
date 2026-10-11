@@ -308,7 +308,7 @@ for (let wi = 0; wi < NWALK; wi++) {
     // scored 30.57-33.13 depending on the hour). The series starts 2024-01-01T00:00Z on 15m
     // bars, so advancing `now` with the bar walks the run through every killzone -- which is
     // also what makes the killzone veto measurable instead of all-or-nothing per run.
-    try { analysis = SMC.analyse(win, { tf: '15m', htfCandles: htf.length > 30 ? htf : null, now: AT_MS != null ? AT_MS : clockAt, swingMode: SWING, nested: NESTED, obRequiresFvg: OB_FVG, allSwings: ALL_SWINGS }); }
+    try { analysis = SMC.analyse(win, { tf: '15m', htfCandles: htf.length > 30 ? htf : null, now: AT_MS != null ? AT_MS : clockAt, swingMode: SWING, nested: NESTED, obRequiresFvg: OB_FVG, allSwings: ALL_SWINGS, observedAt: TOPDOWN ? clockAt : clockAt + 900000 }); }
     catch (e) { continue; }
     if (!analysis || !analysis.ok) continue;
 
@@ -321,9 +321,9 @@ for (let wi = 0; wi < NWALK; wi++) {
     let td = null, freshMethodBias = null;
     if (TOPDOWN) {
       const lowCandles = rawFive.filter((b) => b.t <= observedAt).slice(-400);
-      const high = pack('4h', htf, SMC.analyse(htf, { tf: '4h', now: clockAt }));
+      const high = pack('4h', htf, SMC.analyse(htf, { tf: '4h', now: clockAt, observedAt: clockAt }));
       const medium = pack('15m', win, analysis);
-      const low = pack('5m', lowCandles, SMC.analyse(lowCandles, { tf: '5m', now: clockAt }));
+      const low = pack('5m', lowCandles, SMC.analyse(lowCandles, { tf: '5m', now: clockAt, observedAt: clockAt }));
       td = TD.build({ symbol: signalSymbol, tf: '15m', series: medium,
         biasSeries: high, triggerSeries: low, opts: { counterTrend: COUNTER_TREND, chaseGuard: CHASE_GUARD, entryModels: ENTRY_MODELS, useBreakers: USE_BREAKERS, observedAt: clockAt } });
       freshMethodBias = MOM.alignment(high, medium, low, td).bias;

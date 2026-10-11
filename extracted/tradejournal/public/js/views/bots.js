@@ -375,7 +375,7 @@
             symbol: d.symbol, timeframe: d.timeframe, entry: o.entry, stop: o.stop,
             targets: lv.targets.map((t) => ({ ...t })), note: `Entry-aligned CRT ${p.side}: ${lv.entry_tf} entry; ${lv.target_tf} ${lv.targets[0].kind} target. HTF ${td.layers.bias.tf} range is narrative only.`,
             entry_model: active.entry_model, entry_tf: active.entry_tf, entry_evidence: active.entry_evidence,
-            grade: active.grade, score: active.score, target_policy: lv.target_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
+            grade: active.grade, score: active.score, target_policy: lv.target_policy, stop_policy: lv.stop_policy, risk_atr: lv.risk_atr, entry_mode: 'crt', mtf_tf: d.timeframe,
           });
           global.App.toast(r.saved ? 'Eligible plan saved to the signal ledger' : 'Plan not saved', r.saved ? 'ok' : 'warn');
         } catch (e) { global.App.toast(e.message, 'err'); }
@@ -647,6 +647,7 @@
           </div>` }));
         card.appendChild(h('div', { class: 'table-wrap', html: `<table class="table"><thead><tr><th>Leg</th><th>Where</th><th>Price</th><th>R:R</th></tr></thead><tbody>${rows}</tbody></table>` }));
         if (L.management) card.appendChild(h('div', { class: 'muted bot-detail', text: 'Rules: ' + L.management.rule }));
+        if (L.stop_policy) card.appendChild(h('div', { class: 'muted bot-detail stop-policy', text: 'Stop / invalidation: ' + (L.stop_reason || L.stop_policy.rule) }));
         if (L.risk_warning) card.appendChild(h('div', { class: 'bot-warn', text: 'Risk: ' + L.risk_warning }));
         card.appendChild(h('div', { class: 'muted bot-detail', text: L.invalidation }));
       }

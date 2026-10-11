@@ -81,7 +81,8 @@ async function series(symbol, tf, limit = 500, opts = {}) {
       last_price: lastKept ? lastKept.c : null, replayed_from: trimmedFrom };
   }
   const ind = Ind.snapshot(candles);
-  const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null });
+  const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null,
+    observedAt: opts.asOf || opts.observedAt || Date.now() });
   const last = candles[candles.length - 1];
   return { tf, candles, meta, ind, smc, price: last ? last.c : null, atr: smc.atr || ind.atr || 0, bars: candles.length };
 }

@@ -1,0 +1,42 @@
+ FAIL long: no CURRENT protected level => choose nearer zone, not a farther old protected peak
+ ok   long: legacy research arm retains the measured parent farther-stop geometry
+ ok   long: unchanged entry/target price, exact TF band and configured risk ceiling survive
+ FAIL long: sizing actually uses the new published stop, not the old wider denominator
+ FAIL long: an older protected boundary nearer than the zone wins the fallback
+ FAIL long: CURRENT causal protected boundary overrides a nearer zone (no RR-driven tightening)
+ FAIL long: current protected peak may also be the tighter valid stop; not always wider
+ FAIL long: selected institutional price and source-pool provenance reach executable levels
+ FAIL long: buffer is still exactly .18 actual entry-TF ATR for BOTH branches
+ FAIL long: stop explanation/invalidation name the chosen base/rule/TF, not the former farther extreme
+ FAIL long: far CURRENT protected boundary below RR floor refuses; no nearer-zone or farther-target rescue
+ FAIL long: missing stop selector wrong-side
+ FAIL long: missing stop selector taken older
+ FAIL long: missing stop selector taken current
+ FAIL long: missing stop selector wrong TF
+ FAIL long: missing stop selector future
+ FAIL long: missing stop selector unknown
+ FAIL long: missing stop selector no valid
+ FAIL long: missing stop selector tie
+ FAIL short: no CURRENT protected level => choose nearer zone, not a farther old protected peak
+ ok   short: legacy research arm retains the measured parent farther-stop geometry
+ ok   short: unchanged entry/target price, exact TF band and configured risk ceiling survive
+ FAIL short: sizing actually uses the new published stop, not the old wider denominator
+ FAIL short: an older protected boundary nearer than the zone wins the fallback
+ FAIL short: CURRENT causal protected boundary overrides a nearer zone (no RR-driven tightening)
+ FAIL short: current protected peak may also be the tighter valid stop; not always wider
+ FAIL short: selected institutional price and source-pool provenance reach executable levels
+ FAIL short: buffer is still exactly .18 actual entry-TF ATR for BOTH branches
+ FAIL short: stop explanation/invalidation name the chosen base/rule/TF, not the former farther extreme
+ FAIL short: far CURRENT protected boundary below RR floor refuses; no nearer-zone or farther-target rescue
+ FAIL short: missing stop selector wrong-side
+ FAIL short: missing stop selector taken older
+ FAIL short: missing stop selector taken current
+ FAIL short: missing stop selector wrong TF
+ FAIL short: missing stop selector future
+ FAIL short: missing stop selector unknown
+ FAIL short: missing stop selector no valid
+ FAIL short: missing stop selector tie
+ FAIL published zero-risk CURRENT stop cannot be checked by parent
+ FAIL ordinary unknown protection still respects existing trigger/session/risk rules, not a fake no-data success
+ FAIL actual Setup propagates a known invalid protected stop to refusal and no risk plan
+M75 STOPS: 4 passed, 37 failed
