@@ -1,0 +1,253 @@
+Bot API test → http://127.0.0.1:3109
+
+── auth + discovery ──────────────────────────────────────────
+  ✓ server healthy
+  ✓ throwaway workspace created for this test run (no sign-in wall)
+  ✓ /bots/markets responds
+  ✓ instrument list (70)
+  ✓ timeframes listed
+  ✓ session/killzone state present
+  ✓ five sessions defined
+  ✓ four killzone windows
+  ✓ Asia killzone is pair-scoped to AUD/NZD/JPY
+
+── candles ───────────────────────────────────────────────────
+  ✓ XAUUSD 15m candles (300)
+  ✓ no malformed bars
+  ✓ bars sorted oldest → newest
+  ✓ provider offline-synthetic, last 2525.98
+  ✓ crypto deep history via offline-synthetic (500 bars)
+
+── full analysis (momentum + smc + setups) ───────────────────
+  ✓ /bots/analyse ok in 1154ms
+  ✓ mechanics score 50.08
+  ✓ narrative lines (10)
+  ✓ structure trend: bearish
+  ✓ killzone filter in payload
+  ✓ two directional candidates
+  ✓ verdict: NO TRADE (A)
+  ✓ levels: entry 2530.05 stop 2531.6222 rr 6.36R → 6.36R
+  ✓ target ladder has R:R on every leg
+  ✓ stop and target are on the correct sides of the entry
+  ✓ management rule (partial + break-even + runner)
+  ✓ account wired for sizing ($10000)
+  ✓ plain-language headline produced
+  ✓ news blackout filter ran
+  ✓ position size plan: 0.19 units, risk $29.87
+
+── top-down method (the video procedure, via the API) ────────
+  ✓ /bots/topdown ok in 620ms
+  ✓ method named: CRT top-down (Market Mechanics)
+  ✓ timeframe stack stated: 4h bias → 15m location → 5m trigger
+  ✓ five steps, each with its state and its sentence
+  ✓ three layers, each with its job
+  ✓ CRT state on the bias timeframe: no-sweep
+  ✓ conflicts carry the rule that settles them (1)
+  ✓ every timeframe conflict quotes the hierarchy rule
+  ✓ status: waiting
+  ✓ the payload says whether the method blocks the trade
+  ✓ gated verdict attached: NO TRADE (topdown-gate)
+  ✓ when the method blocks, the verdict is NO TRADE
+  ✓ the top-down payload is clean JSON
+
+── desk chart payload ────────────────────────────────────────
+  ✓ /bots/chart ok in 485ms
+  ✓ candles for the chart (400)
+  ✓ chart bars are well formed
+  ✓ overlay data present (structure, range, liquidity)
+  ✓ liquidity pools mapped (10)
+  ✓ the plan drawn on the chart is complete when it exists
+  ✓ plan source: null
+  ✓ no plan is drawn while the method blocks the trade
+  ✓ the three-timeframe stack is included for the mini charts
+  ✓ stack timeframes differ (4h / 15m / 5m)
+  ✓ data source stated per layer: 4h via offline-synthetic
+  ✓ the chart carries the gated verdict too (no second opinion)
+  ✓ both payloads fetched for the agreement check
+  ✓ analyse and chart agree on the method for the same market
+  ✓ the level window is pinned, so more history cannot change the read (120 bars)
+
+── the now call — one answer, dated ──────────────────────────
+  ✓ the analysis carries a `now` block
+  ✓ one action from a closed set: NO TRADE
+  ✓ the call is stated as a sentence
+  ✓ the call names the bar it was made on
+  ✓ waiting has a clock: Asia killzone opens 2026-10-12 00:00 UTC
+  ✓ the read states its freshness: fresh
+  ✓ armed and an order are the same thing (no phantom levels)
+  ✓ when armed, entry / stop / target are all numbers
+  ✓ the stop is not the entry
+  ✓ the other side is the opposite of the permitted one
+  ✓ the other side never carries levels
+  ✓ guards (news window, personal rules) travel with the call
+  ✓ the chart payload carries the same kind of call (NO TRADE)
+  ✓ on the same bar, chart and analysis give the same answer (2026-10-11T00:00:00.000Z → NO TRADE)
+
+── bar replay — the read as of an earlier close ──────────────
+  ✓ /bots/chart accepts trim=40
+  ✓ the replayed chart ends on an older bar (2026-10-10T07:00:00.000Z < 2026-10-11T00:00:00.000Z)
+  ✓ the payload states the replay window
+  ✓ and the now call says it is a replay
+  ✓ freshness reads "replay" (replay)
+  ✓ the same replay window is deterministic (same last candle)
+  ✓ the analysis endpoint accepts trim too
+  ✓ the replay reports what the market did in the next 40 bars
+  ✓ the replay narrates then vs now: "As of that bar the read was "waiting". Since then the market moved -20…"
+  ✓ analysis and chart replay the same instant
+  ✓ an absurd replay window is clamped, not obeyed (400)
+
+── chart drawings — the trader's own work, stored server-side 
+  ✓ PUT stores three drawings (3)
+  ✓ GET returns them
+  ✓ kinds survive the round trip in order
+  ✓ points survive as {t,p}
+  ✓ drawings are per market and per timeframe (15m is empty)
+  ✓ PUT replaces the set rather than appending
+  ✓ an unknown tool is coerced, not stored raw (trend)
+  ✓ a point list is capped (8)
+  ✓ DELETE clears the market
+  ✓ drawings need a session (401)
+
+── prediction (backtest + calibration) ───────────────────────
+  ✓ /bots/predict ok in 2041ms
+  ✓ every live setup carries the two measured gate flags (stop ≥ 0.6 ATR, target ≥ 3R)
+  ✓ live setups report their stop distance in ATR
+  ✓ resolved setups: 42 (no_fill 196)
+  ✓ managed expectancy -1.88R
+  ✓ per-grade outcome table
+  ✓ P(up) 90.58% over 138 samples
+  ✓ model n=42 acc=100%
+  ✓ setup probabilities in range (0.74, 0)
+  ✓ summary explains the numbers
+  ✓ backtest trade table (10 rows)
+  ✓ setups evaluated: 91
+  ✓ out-of-sample skipped (sample under 60)
+
+── exit frontier (win rate vs reward, ≥ +0.5R bar) ───────────
+  ✓ frontier rows: 19
+  ✓ flat-target rows measured (13)
+  ✓ break-even win rate uses the market's own measured cost: (1+cost)/(1+target)
+  ✓ every flat row reports the cost it was charged (e.g. flat_1 costs 0.151R)
+  ✓ clean-win rate never exceeds the plain win rate (and 0 below +0.5R targets)
+  ✓ verdict present: 70 % bar not met on this market
+  ✓ verdict explains itself in plain words
+  ✓ management profiles still reported (video plan included)
+  ✓ playlist-refinement filter row exists (OTE retrace + MACD agreement)
+  ✓ playlist + 50-EMA filter row exists
+  ✓ gate sets exposed (core 6, all 12)
+
+── per-instrument costs (spread + slippage + commission in bp of price) 
+  ✓ cost model in use: instrument (0.75 bp of price, source instrument)
+  ✓ median round-trip cost on this market: 0.144R per trade
+  ✓ cost=flat still reproduces the old 0.05R model for A/B comparison
+  ✓ tight-stop FX pays more than gold: EURUSD 0.154R vs XAUUSD 0.144R
+
+── win rate vs expectancy — the dial, per market ─────────────
+  ✓ per-market target frontier rows: 7
+  ✓ each row carries hit rate, net win rate, expectancy and the break-even it needs
+  ✓ no exit at or below 0.5R can clear +0.5R net once costs are charged
+  ✓ filtered frontier views exposed (all, refined, strict, cost_floor, full)
+  ✓ presets offered with provenance: video, winrate, edge
+  ✓ default frontier view is declared: all
+  ✓ the measured default view carries a real sample (n=3)
+  ✓ measured-rule book loaded (generated 2026-10-06T11:59:50.255Z)
+  ✓ the two gates that survived the sweep are scored alongside the playlist gates
+  ✓ entry-depth variant runs (mode=deep, filled 39)
+  ✓ second-chance block present (29 re-taps of 30 stopped trades)
+  ✓ second-chance verdict explains itself
+  ✓ displacement-leg-only mode runs (filled 16 of 152 setups)
+  ✓ leg-only filter is a subset (16 ≤ 38)
+  ✓ OTE entry mode runs (filled 16)
+  ✓ live setups carry the OTE refinement (1 of 2)
+  ✓ OTE band is an ordered price range (2512.605–2513.62)
+  ✓ OTE suggestion carries a usable risk
+
+── simulator parity (independent exit engines) ───────────────
+  ✓ 20 trades: exit-sweep flat-1R matches profile-engine full_1R (0 mismatches)
+  ✗ filled sample for parity: 20 trades
+
+── scan ──────────────────────────────────────────────────────
+  ✓ /bots/scan ok in 2072ms
+  ✓ scanned 4 markets (0 errors)
+  ✓ rows ranked by setup quality
+  ✓ every row has a price and a direction read
+
+── signal tracking ───────────────────────────────────────────
+  ✓ /signals/save → saved 0
+  ✓ signal list (0)
+  ✓ a refused analysis reports zero eligible signals with its reason
+  ✓ no signal is fabricated for a refused analysis
+  ✓ /signals/resolve checked 0 signals
+  ✓ stats: 0 tracked, 0 resolved
+
+── seed the test workspace (never the human one) ─────────────
+  ✓ seeded 120 closed trades in the test workspace
+
+── correctional bot ──────────────────────────────────────────
+  ✓ /bots/correction ok in 55ms
+  ✓ analysed 120 closed trades
+  ✓ mistakes detected: 6
+  ✓ every mistake carries severity + a fix
+  ✓ all mistakes quantified (6/6)
+  ✓ behavior score 43 (Undisciplined)
+  ✓ guardrails: 0.5% risk, 3 trades/day, cooldown 30min
+  ✓ daily guardrail state: clear — No personal stop. 3 entries remain under the preselected 3-e
+  ✓ grade backfill ran (0 trades updated)
+  ✓ grade table filled (1 grades)
+  ✓ /bots/guardrails returns live state
+  ✓ /bots/feedback/9 → grade Unreviewed (null)
+  ✓ feedback explains itself (5 reasons, 4 notes)
+  ✓ grade backfill is idempotent (0 trades updated on the second run)
+
+── tradingview integration ───────────────────────────────────
+  ✓ symbol mapping NAS100 → NASDAQ:NDX
+  ✓ chart deep link built
+  ✓ widget config for GER40 (XETR:DAX)
+  ✓ timeframe 4h → interval 240
+  ✓ ticker tape config
+  ✓ webhook token issued
+  ✓ webhook url includes the token
+  ✓ webhook options exposed
+  ✓ plain-text alert parsed (GOLD → XAUUSD)
+  ✓ side + price extracted from text
+  ✓ bot graded the alert (NO TRADE A, bot says stand down)
+  ✓ plan carried entry + stop
+  ✓ alert response is clean JSON
+  ✓ qualified ticker normalised (BTCUSDT.P → BTCUSDT)
+  ✓ interval code mapped (240 → 4h)
+  ✓ agreement matches the verdict (NO TRADE → bot says stand down, expected bot says stand down)
+  ✓ wrong token → 401
+  ✓ alerts stored and listed (2)
+  ✓ stored alert keeps the bot verdict
+  ✓ stored alert timestamped
+  ✓ token rotation issues a new secret
+  ✓ rotated-away token rejected
+  ✓ alert history clears (2 removed)
+  ✓ bot endpoints still require a workspace session (created automatically by the app)
+
+── refined entry execution ───────────────────────────────────
+  ✓ refinePlan re-anchors entry and risk on the confirmation price
+  ✓ refinePlan reports risk in ATR
+  ✓ target R:R is recomputed from the new entry
+  ✓ the headline R:R skips targets closer than 0.9R and takes the first viable one
+  ✓ a confirmation that leaves no target ≥ 0.9R reports no headline R:R
+  ✓ a zero-width stop yields no plan
+  ✓ the HTF→LTF map is intact
+  ✓ a refined plan can be saved to signals
+  ✓ the saved plan keeps its entry mode and confirming timeframe
+  ✓ saved R:R comes from the refined entry, not the HTF plan
+  ✓ entry = stop is refused with a reason
+  ✓ the backtest reports how many setups it refused for a sub-noise stop
+  ✓ no surviving sample risks less than a quarter ATR (sample table)
+
+── error handling ────────────────────────────────────────────
+  ✓ missing symbol → 400
+  ✓ invalid session → 401
+  ✓ unknown symbol handled (200)
+  ✓ throwaway workspace removed after the run (127 rows)
+
+================================================================
+BOT API: 205 passed, 1 failed
+
+Failures:
+  - filled sample for parity: 20 trades

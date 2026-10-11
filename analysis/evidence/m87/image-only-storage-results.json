@@ -1,0 +1,196 @@
+{
+  "app": "/tmp/m87-image-stage/app",
+  "pass": 8,
+  "fail": 25,
+  "results": [
+    {
+      "label": "GET gives3 missing slots with explicit questions, never guesses legacy/entry TF",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/trades/1/screenshots</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "legacy single screenshot remains visibly UNASSIGNED, original unchanged",
+      "passed": false
+    },
+    {
+      "label": "owned role roundtrip htf",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/htf</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "owned role roundtrip mtf",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/mtf</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "owned role roundtrip ltf",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/ltf</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "3 stored explicitly tagged distinct raster references, not course/broker verification",
+      "passed": false
+    },
+    {
+      "label": "EVERY original financial/trade/grade/core/guard field unchanged by uploads",
+      "passed": true
+    },
+    {
+      "label": "photos never complete core writing or change retrospective execution grade",
+      "passed": true
+    },
+    {
+      "label": "same current-slot retry idempotent, not fake fresh capture time",
+      "passed": false
+    },
+    {
+      "label": "attachment changes never refund caps/loss writing/preparation/first admissions",
+      "passed": true
+    },
+    {
+      "label": "bad shape/spoofing400,no mutation [\"timeframe\",\"image\",\"source\"]",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/mtf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "bad shape/spoofing400,no mutation [\"timeframe\",\"image\",\"recorded_at\"]",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/mtf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "bad shape/spoofing400,no mutation [\"timeframe\",\"image\",\"context_json\"]",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/mtf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "bad shape/spoofing400,no mutation [\"timeframe\",\"image\"]",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/mtf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "bad shape/spoofing400,no mutation [\"timeframe\",\"image\"]",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/mtf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "bad shape/spoofing400,no mutation [\"timeframe\",\"image\",\"note\"]",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/mtf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "bad shape/spoofing400,no mutation [\"timeframe\",\"image\",\"revision\"]",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/mtf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "unknown role400 cannot silently become HTF",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/daily</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "foreign owner GET404 no image leakage",
+      "passed": true
+    },
+    {
+      "label": "foreign owner PUT404",
+      "passed": true
+    },
+    {
+      "label": "foreign owner DELETE404",
+      "passed": true
+    },
+    {
+      "label": "real auth401 retained",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/trades/1/screenshots</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "noncanonical trade ID404, not alias",
+      "passed": true
+    },
+    {
+      "label": "unseen financial edit gives409 without rewriting original attachment",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/htf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "earlier visuals retained but labelled PRIOR saved context after financial correction",
+      "passed": false
+    },
+    {
+      "label": "explicit current-context reattach uses new server record time, never capture-time proof",
+      "passed": false
+    },
+    {
+      "label": "unrelated note edit preserves current visual attachment revision/time",
+      "passed": false
+    },
+    {
+      "label": "concurrent same-slot replacement409,no silent last-write overwrite",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/htf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "real write failure503 atomically preserves old role/other attachments",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/screenshots/mtf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "explicit one-role delete preserves siblings and unassigned legacy",
+      "passed": false
+    },
+    {
+      "label": "already-executed open/record-only reality can attach live human chart context, not permission",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/2/screenshots/ltf</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "truthful close legal independent of media input/unknown screenshot set",
+      "passed": true
+    },
+    {
+      "label": "truthful trade deletion cascades only its media, no orphan/other user loss",
+      "passed": false
+    }
+  ],
+  "scope": "M87 owned screenshot storage/API: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

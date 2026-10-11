@@ -1,5 +1,27 @@
 # Personal guardrails, recording and reasoned exceptions
 
+## M87 visual journal scope (2026-10-11)
+
+HTF/MTF/LTF optional human chart refs have owned separate saved-record APIs,
+explicit frames and revisions. Images never grant entry, complete core writing
+or routine, determine execution/setup grades or change risk sizing. No cap,
+loss-writing/cooldown, streak, first-admission/on-time or technical-veto refunds
+from image updates/deletion/import. Financial truth/close remains legal even if
+the optional evidence store is missing; stored prior image/context/time survives
+financial correction with a warning, not a fake fresh recording.
+
+Attachment/import time NOT capture time, labels NOT verified chart/broker/live
+emotion facts. Imported refs explicitly historical/unverified; source/capture
+claims/owned revisions not replayed. Missing/corrupt stored metadata unavailable,
+not assumed skipped or complete; reused images/equivalent frames flagged rather
+than3 independent views. Unsafe legacy remains stored/unassigned but is not
+rendered/copied into portable backups; server never fetches external image URLs.
+
+M88/M89/M106/M111/M112 remain TODO, M108 PARTIAL. Exact132=90done/3partial/39TODO;
+course floor30, deliberate M103 n>=5, B/C tradeability, checklist/entry weights,
+stops/targets/geometry/RR/default risk/factors untouched. No70% edge, provider,
+broker, actual meditation/human or production claims. See report in delivery ZIP.
+
 These rules govern **this app's prospective trade/plan actions**. There is no broker
 connection: an app admission is not a broker order, reusable permission or proof
 that manually entered levels currently match the market.

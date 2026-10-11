@@ -14,6 +14,7 @@ const J = require('../journaling');
 const RR = require('../routine-records');
 const Routine = require('../routine');
 const Execution = require('../execution-review');
+const Screenshots = require('../screenshots');
 const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t)});
 const O = require('../options');
 const Exp = require('../exposure');
@@ -399,6 +400,18 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
   }
   res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
 });
+
+// M87 optional owned visual evidence is independent from financial truth,
+// mandatory writing and permission. Never infer legacy role or capture time.
+const media=fn=>async(req,res)=>{
+  try {
+    if(!/^[1-9]\d*$/.test(req.params.id))return res.status(404).json({error:'Trade not found'});
+    res.json(await fn(req));
+  }catch(e){if(e.code==='screenshot_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Screenshot evidence could not be read/recorded. Existing financial truth is unchanged.'});}
+};
+router.get('/trades/:id/screenshots',requireAuth,media(req=>Screenshots.read(req.user.id,Number(req.params.id))));
+router.put('/trades/:id/screenshots/:role',requireAuth,media(req=>Screenshots.change(req.user.id,Number(req.params.id),req.params.role,req.body)));
+router.delete('/trades/:id/screenshots/:role',requireAuth,media(req=>Screenshots.change(req.user.id,Number(req.params.id),req.params.role,req.body,{remove:true})));
 
 // Optional post-close HUMAN execution review is separate from financial CRUD
 // and mandatory core/loss writing. It cannot backfill pre-entry setup grades.
@@ -1119,15 +1132,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
 }));
 
 /* ------------------------------------------------------- import / export */
-router.get('/export/csv', requireAuth, async (req, res) => {
+const backup=fn=>async(req,res)=>{try{await fn(req,res);}catch{return res.status(503).json({error:'Screenshot-enabled backup unavailable; existing financial truth unchanged.'});}};
+router.get('/export/csv', requireAuth, backup(async (req, res) => {
   const tz = (await settingsOf(req)).timezone;
   const f = tradeFilters(req);
   const { where, params, order } = T.listQuery(f);
-  const rows = (await db.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({ ...params, user_id: req.user.id })).map((t) => P.decorate(t, tz));
+  const rows = (await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({...params,user_id:req.user.id}));})).map(t=>({...P.decorate(t,tz),screenshot_views_json:JSON.stringify(t.screenshots)}));
   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
     'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
-    'thesis', 'lesson', 'execution_notes', 'notes'];
+    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json'];
   const esc = (v) => {
     const s = v === null || v === undefined ? '' : String(v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -1136,9 +1150,9 @@ router.get('/export/csv', requireAuth, async (req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="trades-${new Date().toISOString().slice(0, 10)}.csv"`);
   res.send(csv);
-});
+}));
 
-router.get('/export/json', requireAuth, async (req, res) => {
+router.get('/export/json', requireAuth, backup(async (req, res) => {
   const userId = req.user.id;
   const data = {
     exported_at: new Date().toISOString(), version: 1,
@@ -1146,7 +1160,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
     strategies: (await db.prepare('SELECT * FROM strategies WHERE user_id=?').all(userId)).map(parseStrategy),
     instruments: await db.prepare('SELECT * FROM instruments WHERE user_id=?').all(userId),
-    trades: await db.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId),
+    trades: await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId));}),
     journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
     goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
     watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
@@ -1154,7 +1168,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Content-Disposition', `attachment; filename="tradejournal-backup-${new Date().toISOString().slice(0, 10)}.json"`);
   res.send(JSON.stringify(data, null, 2));
-});
+}));
 
 /** Import from CSV — auto-detects the usual broker column names. */
 router.post('/import/csv', requireAuth, async (req, res) => {
@@ -1179,10 +1193,12 @@ router.post('/import/csv', requireAuth, async (req, res) => {
     entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
     tags: findCol(['tags', 'tag', 'labels']),
     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
+    screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
   };
   if (map.symbol < 0) return res.status(400).json({ error: 'Could not find a symbol/ticker column in the CSV.' });
   const accountId = num(req.body.account_id, 0) || (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
+  if(!Number.isSafeInteger(accountId)||!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Owned destination account not found.'});
   const instruments = await instrumentMap(req.user.id);
   const tz = (await settingsOf(req)).timezone;
   let inserted = 0, skipped = 0;
@@ -1227,17 +1243,27 @@ router.post('/import/csv', requireAuth, async (req, res) => {
             if (trade.risk_amount > 0) trade.r_multiple = Math.round((net / trade.risk_amount) * 10000) / 10000;
           }
         }
-        collected.push(trade);
+        const media=Screenshots.parsePortable(map.screenshot_views_json>-1?r[map.screenshot_views_json]:undefined,{json:true});
+        trade.screenshot_url=Screenshots.legacyImport(map.screenshot_url>-1?r[map.screenshot_url]:undefined,media);
+        collected.push({trade,media});
         inserted++;
       } catch (e) { skipped++; if (errors.length < 5) errors.push(`Row ${i + 1}: ${e.message}`); }
     }
   }
-  if (collected.length) await db.batch(T.batchStatements(req.user.id, collected));
+  let media_imported=0;try{if(collected.length)media_imported=await importTradesWithMedia(req.user.id,collected);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
   res.json({
-    ok: true, inserted, skipped, errors,
+    ok: true, inserted, skipped, errors, media_imported, ...mediaFeedback(collected),
     detected: Object.fromEntries(Object.entries(map).map(([k, v]) => [k, v > -1 ? header[v] : null])),
   });
 });
+
+// Actual transaction insert IDs (never raw backup IDs), with optional media
+// warnings separate from financial parsing. Storage failure rolls back together.
+function mediaFeedback(collected){return {media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+async function importTradesWithMedia(userId,collected,extras=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);}
+  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);return n;
+});}
 
 function parseCsv(text) {
   const rows = [];
@@ -1262,10 +1288,11 @@ router.post('/import/json', requireAuth, async (req, res) => {
   const data = req.body && req.body.data ? req.body.data : req.body;
   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
   const userId = req.user.id;
-  const accountMap = {};
+  const accountMap = Object.create(null);
   const instruments = await instrumentMap(userId);
   const tz = (await settingsOf(req)).timezone;
-  let inserted = 0;
+  let inserted = 0,media_imported=0;
+  const collected = [];
   try {
     // reads happen before the write batch (libSQL never interleaves them)
     const myAccounts = await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId);
@@ -1275,7 +1302,6 @@ router.post('/import/json', requireAuth, async (req, res) => {
       accountMap[a.id] = match ? match.id : (def ? def.id : null);
     }
     const existingStrategies = new Set((await db.prepare('SELECT name FROM strategies WHERE user_id=?').all(userId)).map((r) => r.name));
-    const collected = [];
     const stmts = [];
     for (const t of data.trades) {
       const spec = instruments[String(t.symbol).toUpperCase()] || null;
@@ -1284,7 +1310,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
       trade.entry_permission = 'record_only';
       trade.guardrail_snapshot = null;
       if (!trade.account_id) continue;
-      collected.push(trade);
+      const media=Screenshots.parsePortable(t.screenshots);
+      trade.screenshot_url=Screenshots.legacyImport(t.screenshot_url,media);
+      collected.push({trade,media});
       inserted++;
     }
     for (const s of (data.strategies || [])) {
@@ -1305,9 +1333,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
       });
     }
-    await db.batch([...T.batchStatements(userId, collected), ...stmts]);
+    try{media_imported=await importTradesWithMedia(userId,collected,stmts);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
-  res.json({ ok: true, inserted });
+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
 });
 
 /* ---------------------------------------------------------------- settings */
@@ -1344,7 +1372,7 @@ router.put('/settings', requireAuth, async (req, res) => {
 router.post('/demo/seed', requireAuth, async (req, res) => {
   const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
   const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
-  res.json({ ok: true, inserted });
+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
 });
 
 /**

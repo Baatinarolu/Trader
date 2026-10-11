@@ -1,0 +1,27 @@
+FAIL actual json backup missing media store returns503 JSON, not unhandled/hung success {"status":500,"text":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>LibsqlError: SQLITE_ERROR: no such table: trade_screenshots<br> &nbsp; &nbsp;at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)<br> &nbsp; &nbsp;at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)<br> &nbsp; &nbsp;at Sqlite3Transaction.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:449:16)<br> &nbsp; &nbsp;at Object.all (/tmp/m87-portable-stage/app/src/db.js:105:49)<br> &nbsp; &nbsp;at rowsFor (/tmp/m87-portable-stage/app/src/screenshots.js:98:107)<br> &nbsp; &nbsp;at Object.portableRowsOn (/tmp/m87-portable-stage/app/src/screenshots.js:126:102)<br> &nbsp; &nbsp;at /tmp/m87-portable-stage/app/src/routes/api.js:1162:91<br> &nbsp; &nbsp;at process.processTicksAndRejections (node:internal/process/task_queues:103:5)<br> &nbsp; &nbsp;at async Object.tx (/tmp/m87-portable-stage/app/src/db.js:91:17)<br> &nbsp; &nbsp;at async /tmp/m87-portable-stage/app/src/routes/api.js:1162:13</pre>\n</body>\n</html>\n","abort":null,"rejected":[]}
+LibsqlError: SQLITE_ERROR: no such table: trade_screenshots
+    at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)
+    at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)
+    at Sqlite3Transaction.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:449:16)
+    at Object.all (/tmp/m87-portable-stage/app/src/db.js:105:49)
+    at rowsFor (/tmp/m87-portable-stage/app/src/screenshots.js:98:107)
+    at Object.portableRowsOn (/tmp/m87-portable-stage/app/src/screenshots.js:126:102)
+    at /tmp/m87-portable-stage/app/src/routes/api.js:1162:91
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Object.tx (/tmp/m87-portable-stage/app/src/db.js:91:17)
+    at async /tmp/m87-portable-stage/app/src/routes/api.js:1162:13
+FAIL actual csv backup missing media store returns503 JSON, not unhandled/hung success {"status":500,"text":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>LibsqlError: SQLITE_ERROR: no such table: trade_screenshots<br> &nbsp; &nbsp;at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)<br> &nbsp; &nbsp;at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)<br> &nbsp; &nbsp;at Sqlite3Transaction.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:449:16)<br> &nbsp; &nbsp;at Object.all (/tmp/m87-portable-stage/app/src/db.js:105:49)<br> &nbsp; &nbsp;at rowsFor (/tmp/m87-portable-stage/app/src/screenshots.js:98:107)<br> &nbsp; &nbsp;at Object.portableRowsOn (/tmp/m87-portable-stage/app/src/screenshots.js:126:102)<br> &nbsp; &nbsp;at /tmp/m87-portable-stage/app/src/routes/api.js:1139:95<br> &nbsp; &nbsp;at process.processTicksAndRejections (node:internal/process/task_queues:103:5)<br> &nbsp; &nbsp;at async Object.tx (/tmp/m87-portable-stage/app/src/db.js:91:17)<br> &nbsp; &nbsp;at async /tmp/m87-portable-stage/app/src/routes/api.js:1139:17</pre>\n</body>\n</html>\n","abort":null,"rejected":[]}
+ok missing evidence backup does not erase or alter financial/grade/core rows
+ok actual owned export routes no unhandled promise rejection
+M87 screenshot-enabled backup storage outage: 2 passed, 2 failed
+LibsqlError: SQLITE_ERROR: no such table: trade_screenshots
+    at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)
+    at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)
+    at Sqlite3Transaction.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:449:16)
+    at Object.all (/tmp/m87-portable-stage/app/src/db.js:105:49)
+    at rowsFor (/tmp/m87-portable-stage/app/src/screenshots.js:98:107)
+    at Object.portableRowsOn (/tmp/m87-portable-stage/app/src/screenshots.js:126:102)
+    at /tmp/m87-portable-stage/app/src/routes/api.js:1139:95
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Object.tx (/tmp/m87-portable-stage/app/src/db.js:91:17)
+    at async /tmp/m87-portable-stage/app/src/routes/api.js:1139:17

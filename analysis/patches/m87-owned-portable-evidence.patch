@@ -1,0 +1,190 @@
+diff --git a/public/js/views/screenshots.js b/public/js/views/screenshots.js
+index a4dd6cb..9735403 100644
+--- a/public/js/views/screenshots.js
++++ b/public/js/views/screenshots.js
+@@ -48,7 +48,7 @@
+             <label class="field"><span>Or upload a static PNG / JPEG / WebP (1.5 MB maximum)</span><input type="file" data-screenshot-file accept="image/png,image/jpeg,image/webp" /></label>
+             <label class="field"><span>Your optional visual-context note</span><textarea data-screenshot-note maxlength="2000">${U.esc(slot.note||'')}</textarea></label><div data-screenshot-preview></div>`;
+           const el=k=>node.querySelector(`[data-screenshot-${k}]`),metadata=el('metadata');
+-          metadata.textContent=slot.state==='stored'?`${slot.source.startsWith('imported_')?'Imported historical evidence; provenance/capture unverified. Received':'Human reference recorded'} ${slot.recorded_at}. Source: ${slot.source}. Recording time is not original capture time.${slot.original_recorded_at?' Historical timestamp declared '+slot.original_recorded_at+' (unverified).':''}${slot.matches_current_trade?' Current saved-record context.':' Prior saved context; original image/time retained after correction, not current verification.'}${slot.kind==='external_link'?' External content unverified and may change.':''}`:slot.state==='unavailable'?'Stored metadata unavailable; no known view credited. Explicit removal/repair possible.':'Missing: no original view is invented.';
++          metadata.textContent=slot.state==='stored'?`${slot.source.startsWith('imported_')?'Imported historical evidence; provenance/capture unverified. Received':'Human reference recorded'} ${slot.recorded_at}. Source: ${slot.source}. Recording time is not original capture time.${slot.original_recorded_at?' Historical timestamp declared '+slot.original_recorded_at+' (unverified).':''}${slot.matches_current_trade===true?' Current saved-record financial context (not capture verification).':slot.matches_current_trade===null?' Original historical context unavailable; not inferred from imported finance.':' Prior saved context; original image/time retained after correction, not current verification.'}${slot.kind==='external_link'?' External content unverified and may change.':''}`:slot.state==='unavailable'?'Stored metadata unavailable; no known view credited. Explicit removal/repair possible.':'Missing: no original view is invented.';
+           if(slot.matches_current_trade===false&&slot.recorded_context)metadata.appendChild(U.h('div',{text:`Prior saved context: entry ${slot.recorded_context.entry??'unknown'}, stop ${slot.recorded_context.stop??'unknown'}, exit ${slot.recorded_context.exit??'unknown'}.`}));
+           if(slot.image)node.appendChild(imageButton(slot.image,'View saved '+r.toUpperCase()+' reference'));
+           const preview=()=>{const box=el('preview');box.replaceChildren(U.h('div',{class:'tiny muted',text:'Selection is unsaved; only Save records a labelled reference.'}));if(/^data:image\/(png|jpeg|webp);base64,/.test(s.image)){const img=U.h('img',{src:s.image,alt:'Unsaved '+r.toUpperCase()+' selection',style:'max-height:180px;max-width:100%'});box.appendChild(img);}};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index d39b9e3..31894a7 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -1136,11 +1136,11 @@ router.get('/export/csv', requireAuth, async (req, res) => {
+   const tz = (await settingsOf(req)).timezone;
+   const f = tradeFilters(req);
+   const { where, params, order } = T.listQuery(f);
+-  const rows = (await db.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({ ...params, user_id: req.user.id })).map((t) => P.decorate(t, tz));
++  const rows = (await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({...params,user_id:req.user.id}));})).map(t=>({...P.decorate(t,tz),screenshot_views_json:JSON.stringify(t.screenshots)}));
+   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
+     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
+     'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
+-    'thesis', 'lesson', 'execution_notes', 'notes'];
++    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json'];
+   const esc = (v) => {
+     const s = v === null || v === undefined ? '' : String(v);
+     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+@@ -1159,7 +1159,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
+     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
+     strategies: (await db.prepare('SELECT * FROM strategies WHERE user_id=?').all(userId)).map(parseStrategy),
+     instruments: await db.prepare('SELECT * FROM instruments WHERE user_id=?').all(userId),
+-    trades: await db.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId),
++    trades: await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId));}),
+     journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
+     goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
+     watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
+@@ -1192,10 +1192,12 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+     entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
+     tags: findCol(['tags', 'tag', 'labels']),
+     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
++    screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
+     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
+   };
+   if (map.symbol < 0) return res.status(400).json({ error: 'Could not find a symbol/ticker column in the CSV.' });
+   const accountId = num(req.body.account_id, 0) || (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
++  if(!Number.isSafeInteger(accountId)||!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Owned destination account not found.'});
+   const instruments = await instrumentMap(req.user.id);
+   const tz = (await settingsOf(req)).timezone;
+   let inserted = 0, skipped = 0;
+@@ -1240,18 +1242,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+             if (trade.risk_amount > 0) trade.r_multiple = Math.round((net / trade.risk_amount) * 10000) / 10000;
+           }
+         }
+-        collected.push(trade);
++        const media=Screenshots.parsePortable(map.screenshot_views_json>-1?r[map.screenshot_views_json]:undefined,{json:true});
++        trade.screenshot_url=Screenshots.legacyImport(map.screenshot_url>-1?r[map.screenshot_url]:undefined,media);
++        collected.push({trade,media});
+         inserted++;
+       } catch (e) { skipped++; if (errors.length < 5) errors.push(`Row ${i + 1}: ${e.message}`); }
+     }
+   }
+-  if (collected.length) await db.batch(T.batchStatements(req.user.id, collected));
++  let media_imported=0;try{if(collected.length)media_imported=await importTradesWithMedia(req.user.id,collected);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+   res.json({
+-    ok: true, inserted, skipped, errors,
++    ok: true, inserted, skipped, errors, media_imported, ...mediaFeedback(collected),
+     detected: Object.fromEntries(Object.entries(map).map(([k, v]) => [k, v > -1 ? header[v] : null])),
+   });
+ });
+ 
++// Actual transaction insert IDs (never raw backup IDs), with optional media
++// warnings separate from financial parsing. Storage failure rolls back together.
++function mediaFeedback(collected){return {media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
++async function importTradesWithMedia(userId,collected,extras=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);}
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);return n;
++});}
++
+ function parseCsv(text) {
+   const rows = [];
+   let row = [], field = '', inQuotes = false;
+@@ -1275,10 +1287,11 @@ router.post('/import/json', requireAuth, async (req, res) => {
+   const data = req.body && req.body.data ? req.body.data : req.body;
+   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
+   const userId = req.user.id;
+-  const accountMap = {};
++  const accountMap = Object.create(null);
+   const instruments = await instrumentMap(userId);
+   const tz = (await settingsOf(req)).timezone;
+-  let inserted = 0;
++  let inserted = 0,media_imported=0;
++  const collected = [];
+   try {
+     // reads happen before the write batch (libSQL never interleaves them)
+     const myAccounts = await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId);
+@@ -1288,7 +1301,6 @@ router.post('/import/json', requireAuth, async (req, res) => {
+       accountMap[a.id] = match ? match.id : (def ? def.id : null);
+     }
+     const existingStrategies = new Set((await db.prepare('SELECT name FROM strategies WHERE user_id=?').all(userId)).map((r) => r.name));
+-    const collected = [];
+     const stmts = [];
+     for (const t of data.trades) {
+       const spec = instruments[String(t.symbol).toUpperCase()] || null;
+@@ -1297,7 +1309,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+       trade.entry_permission = 'record_only';
+       trade.guardrail_snapshot = null;
+       if (!trade.account_id) continue;
+-      collected.push(trade);
++      const media=Screenshots.parsePortable(t.screenshots);
++      trade.screenshot_url=Screenshots.legacyImport(t.screenshot_url,media);
++      collected.push({trade,media});
+       inserted++;
+     }
+     for (const s of (data.strategies || [])) {
+@@ -1318,9 +1332,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
+       });
+     }
+-    await db.batch([...T.batchStatements(userId, collected), ...stmts]);
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
+-  res.json({ ok: true, inserted });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
+ });
+ 
+ /* ---------------------------------------------------------------- settings */
+@@ -1357,7 +1371,7 @@ router.put('/settings', requireAuth, async (req, res) => {
+ router.post('/demo/seed', requireAuth, async (req, res) => {
+   const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
+   const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
+-  res.json({ ok: true, inserted });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
+ });
+ 
+ /**
+diff --git a/src/screenshots.js b/src/screenshots.js
+index 447fe7b..0bf180f 100644
+--- a/src/screenshots.js
++++ b/src/screenshots.js
+@@ -82,7 +82,8 @@ function slotInfo(t,r,slot,nowMs=Date.now()){
+     if(slot.trade_id!==t.id||slot.role!==r||!['upload','external_link','imported_upload','imported_external_link'].includes(slot.source)||slot.source.replace('imported_','')!==data.kind
+       ||at===null||at>nowMs||slot.reference_sha256!==data.reference_sha256||!snap||Array.isArray(snap)||snap.id!==t.id||snap.user_id!==t.user_id||Object.keys(snap).length!==CONTEXT.length||CONTEXT.some(k=>!Object.hasOwn(snap,k))||hash(slot.context_json)!==slot.context_hash
+       ||slot.original_recorded_at!==null&&stamp(slot.original_recorded_at)===null)throw invalid('Stored screenshot metadata is unavailable.',503);
+-    return {...base,...data,state:'stored',source:slot.source,recorded_at:slot.recorded_at,original_recorded_at:slot.original_recorded_at,recorded_context:snap,matches_current_trade:slot.context_hash===contextHash(t),capture_time_verified:false,chart_verified:false};
++    const unknownImport=slot.source.startsWith('imported_')&&CONTEXT.filter(k=>!['id','user_id','account_id'].includes(k)).every(k=>snap[k]===null);
++    return {...base,...data,state:'stored',source:slot.source,recorded_at:slot.recorded_at,original_recorded_at:slot.original_recorded_at,recorded_context:unknownImport?null:snap,matches_current_trade:unknownImport?null:slot.context_hash===contextHash(t),capture_time_verified:false,chart_verified:false};
+   }catch{return {...base,state:'unavailable',note:'Stored image/metadata unavailable. Not counted as a known timeframe view; repair or explicitly remove.'};}
+ }
+ function view(t,rows,nowMs=Date.now()){
+@@ -112,4 +113,35 @@ async function change(userId,id,r,body,{remove=false}={}){
+     return view(t,await rowsFor(store,id));
+   });
+ }
+-module.exports={ROLES,QUESTIONS,MAX_BYTES,MAX_PIXELS,fields,image,timeframe,role,hash,invalid,CONTEXT,context,contextHash,revision,view,read,change,owned,rowsFor,stamp};
++// Portable media is untrusted historical declaration, never a replay of owned
++// API revisions/source clocks, live capture, grades or admission records.
++const PORTABLE_CONTEXT=CONTEXT.filter(k=>!['id','user_id','account_id'].includes(k));
++function portable(t,rows){
++  const v=view(t,rows),roles={};for(const r of ROLES){const slot=v.slots[r];if(slot.state!=='stored')continue;
++    roles[r]={timeframe:slot.timeframe,image:slot.image,note:slot.note,declared_recorded_at:slot.original_recorded_at||slot.recorded_at,
++      ...(slot.recorded_context?{declared_context:Object.fromEntries(PORTABLE_CONTEXT.map(k=>[k,slot.recorded_context[k]]))}:{})};
++  }
++  return {...t,screenshot_url:v.legacy.display_image||'',...(v.legacy.image&&!v.legacy.display_image?{screenshot_legacy_unavailable:true}:{}),screenshots:{version:1,roles,unavailable_roles:ROLES.filter(r=>v.slots[r].state==='unavailable')}};
++}
++async function portableRowsOn(store,rows){const out=[];for(const t of rows)out.push(portable(t,await rowsFor(store,t.id)));return out;}
++function parsePortable(raw,{json=false}={}){
++  const result={items:[],warnings:[],skipped:0};if(raw===undefined||raw===null||raw==='')return result;
++  if(json){try{raw=JSON.parse(raw);}catch{result.warnings.push('Invalid optional screenshot JSON; financial truth retained without images.');return result;}}
++  if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.version!==1||!raw.roles||typeof raw.roles!=='object'||Array.isArray(raw.roles)||Object.keys(raw.roles).length>20){result.warnings.push('Unsupported optional screenshot set; no roles/timeframes inferred.');return result;}
++  for(const key of Object.keys(raw.roles))if(!ROLES.includes(key)){result.skipped++;result.warnings.push('Unknown screenshot role skipped.');}
++  for(const r of ROLES){if(!Object.hasOwn(raw.roles,r))continue;const value=raw.roles[r];try{
++      if(!value||typeof value!=='object'||Array.isArray(value))throw invalid('Invalid role declaration.');
++      const data=fields({timeframe:value.timeframe,image:value.image,...(value.note===undefined?{}:{note:value.note})});let original=null,declaredContext=null;
++      if(value.declared_recorded_at!=null){const at=stamp(value.declared_recorded_at);if(at!==null&&at<=Date.now())original=value.declared_recorded_at;else result.warnings.push(r.toUpperCase()+': invalid/future historical recording timestamp dropped (unverified).');}
++      if(value.declared_context!==undefined){const c=value.declared_context;if(c&&typeof c==='object'&&!Array.isArray(c)&&Object.keys(c).length===PORTABLE_CONTEXT.length&&PORTABLE_CONTEXT.every(k=>Object.hasOwn(c,k)&&(c[k]===null||typeof c[k]==='number'&&Number.isFinite(c[k])||typeof c[k]==='string'&&c[k].length<=2000))){declaredContext=Object.fromEntries(PORTABLE_CONTEXT.map(k=>[k,c[k]]));}else result.warnings.push(r.toUpperCase()+': unavailable historical context, not guessed from financial import.');}
++      result.items.push({role:r,...data,original_recorded_at:original,declared_context:declaredContext});
++    }catch{result.skipped++;result.warnings.push(r.toUpperCase()+': unsafe/malformed optional reference/frame/note skipped; financial truth retained.');}}
++  return result;
++}
++function legacyImport(value,media){if(value===undefined||value===null||value==='')return '';try{return image(value).image;}catch{media.warnings.push('Unsafe/unsupported optional legacy screenshot skipped; never assigned a role.');return '';}}
++async function insertPortableOn(store,t,media){for(const item of media.items){const snap={...context(t),...(item.declared_context||Object.fromEntries(PORTABLE_CONTEXT.map(k=>[k,null]))),id:t.id,user_id:t.user_id,account_id:t.account_id},encoded=JSON.stringify(snap);
++    await store.prepare('INSERT INTO trade_screenshots(trade_id,role,timeframe,image,note,source,recorded_at,original_recorded_at,reference_sha256,context_json,context_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
++      .run(t.id,item.role,item.timeframe,item.image,item.note,'imported_'+item.kind,new Date().toISOString(),item.original_recorded_at,item.reference_sha256,encoded,hash(encoded));
++  }return media.items.length;
++}
++module.exports={ROLES,QUESTIONS,MAX_BYTES,MAX_PIXELS,fields,image,timeframe,role,hash,invalid,CONTEXT,context,contextHash,revision,view,read,change,owned,rowsFor,stamp,portable,portableRowsOn,parsePortable,legacyImport,insertPortableOn};

@@ -1,0 +1,178 @@
+{
+  "app": "/tmp/m87-portable-stage/app",
+  "pass": 17,
+  "fail": 18,
+  "results": [
+    {
+      "label": "actual offline encoded1x1 jpeg structurally accepted, not chart/pixel decoding proof",
+      "passed": true
+    },
+    {
+      "label": "actual offline encoded1x1 webp structurally accepted, not chart/pixel decoding proof",
+      "passed": true
+    },
+    {
+      "label": "incompatible PNG RGB1bit header rejected even CRC repaired",
+      "passed": false
+    },
+    {
+      "label": "APNG control chunk rejected, cannot pretend a static screenshot",
+      "passed": false
+    },
+    {
+      "label": "unsupported PNG critical chunk rejected, not fabricated decoder support",
+      "passed": false
+    },
+    {
+      "label": "unsupported JPEG precision rejected, still no entropy/pixel verification",
+      "passed": false
+    },
+    {
+      "label": "JPEG zero frame components rejected even valid signature",
+      "passed": false
+    },
+    {
+      "label": "JPEG zero scan components rejected, not accepted SOF alone",
+      "passed": false
+    },
+    {
+      "label": "WebP interframe header rejected for standalone static reference",
+      "passed": false
+    },
+    {
+      "label": "recognisable credential query refused ?token",
+      "passed": false
+    },
+    {
+      "label": "recognisable credential query refused ?API_KEY",
+      "passed": false
+    },
+    {
+      "label": "recognisable credential query refused ?access_token",
+      "passed": false
+    },
+    {
+      "label": "recognisable credential query refused ?X-Amz-Signature",
+      "passed": false
+    },
+    {
+      "label": "recognisable credential query refused ?credential",
+      "passed": false
+    },
+    {
+      "label": "recognisable credential query refused ?password",
+      "passed": false
+    },
+    {
+      "label": "same remote resource canonical fingerprint ignores URI fragment/case/defaultport",
+      "passed": false
+    },
+    {
+      "label": "3 distinct raster refs with reused equivalent frames NOT called3 independent timeframe views",
+      "passed": false,
+      "detail": {
+        "tagged": 3,
+        "current": 3,
+        "distinct_references": 3,
+        "unavailable": 0,
+        "state": "three_tagged_views",
+        "broker_verified": false,
+        "capture_time_verified": false,
+        "note": "Stored human-labelled chart references, not verified chart/timeframe content, broker execution or whole-course journal completion. Legacy unassigned image excluded; duplicate references do not establish3 independent views."
+      }
+    },
+    {
+      "label": "same URL with harmless presentation aliases counts2 references not3",
+      "passed": false,
+      "detail": {
+        "tagged": 3,
+        "current": 3,
+        "distinct_references": 3,
+        "unavailable": 0,
+        "state": "three_tagged_views",
+        "broker_verified": false,
+        "capture_time_verified": false,
+        "note": "Stored human-labelled chart references, not verified chart/timeframe content, broker execution or whole-course journal completion. Legacy unassigned image excluded; duplicate references do not establish3 independent views."
+      }
+    },
+    {
+      "label": "stored unknown source unavailable/uncredited, never fabricated current/captured view",
+      "passed": true
+    },
+    {
+      "label": "corrupt unknown source omitted with unavailable role marker in portable export",
+      "passed": true
+    },
+    {
+      "label": "stored malformed clock unavailable/uncredited, never fabricated current/captured view",
+      "passed": true
+    },
+    {
+      "label": "corrupt malformed clock omitted with unavailable role marker in portable export",
+      "passed": true
+    },
+    {
+      "label": "stored future server clock unavailable/uncredited, never fabricated current/captured view",
+      "passed": true
+    },
+    {
+      "label": "corrupt future server clock omitted with unavailable role marker in portable export",
+      "passed": true
+    },
+    {
+      "label": "stored mismatched reference digest unavailable/uncredited, never fabricated current/captured view",
+      "passed": true
+    },
+    {
+      "label": "corrupt mismatched reference digest omitted with unavailable role marker in portable export",
+      "passed": true
+    },
+    {
+      "label": "stored mismatched context digest unavailable/uncredited, never fabricated current/captured view",
+      "passed": true
+    },
+    {
+      "label": "corrupt mismatched context digest omitted with unavailable role marker in portable export",
+      "passed": true
+    },
+    {
+      "label": "stored corrupt context JSON unavailable/uncredited, never fabricated current/captured view",
+      "passed": true
+    },
+    {
+      "label": "corrupt corrupt context JSON omitted with unavailable role marker in portable export",
+      "passed": true
+    },
+    {
+      "label": "stored spoofed context types unavailable/uncredited, never fabricated current/captured view",
+      "passed": false,
+      "detail": {
+        "tagged": 3,
+        "current": 2,
+        "distinct_references": 3,
+        "unavailable": 0,
+        "state": "three_tagged_views",
+        "broker_verified": false,
+        "capture_time_verified": false,
+        "note": "Stored human-labelled chart references, not verified chart/timeframe content, broker execution or whole-course journal completion. Legacy unassigned image excluded; duplicate references do not establish3 independent views."
+      }
+    },
+    {
+      "label": "corrupt spoofed context types omitted with unavailable role marker in portable export",
+      "passed": false
+    },
+    {
+      "label": "all stored-media uncertainty tests preserve ALL financial/grade/core fields",
+      "passed": true
+    },
+    {
+      "label": "actual missing evidence store yields503 unknown, not fabricated EMPTY known slots",
+      "passed": true
+    },
+    {
+      "label": "truthful close persists despite real optional screenshot-table outage",
+      "passed": true
+    }
+  ],
+  "scope": "M87 media uncertainty/reuse hardening: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

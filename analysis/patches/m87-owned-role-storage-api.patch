@@ -1,0 +1,112 @@
+diff --git a/src/db.js b/src/db.js
+index b2c37ab..27188d6 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -240,6 +240,20 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     resolved_at TEXT
+   );
++CREATE TABLE IF NOT EXISTS trade_screenshots (
++    trade_id INTEGER NOT NULL REFERENCES trades(id) ON DELETE CASCADE,
++    role TEXT NOT NULL CHECK(role IN ('htf','mtf','ltf')),
++    timeframe TEXT NOT NULL,
++    image TEXT NOT NULL,
++    note TEXT NOT NULL DEFAULT '',
++    source TEXT NOT NULL,
++    recorded_at TEXT NOT NULL,
++    original_recorded_at TEXT,
++    reference_sha256 TEXT NOT NULL,
++    context_json TEXT NOT NULL,
++    context_hash TEXT NOT NULL,
++    PRIMARY KEY(trade_id,role)
++  );
+ CREATE TABLE IF NOT EXISTS goals (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 20a189f..d39b9e3 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -14,6 +14,7 @@ const J = require('../journaling');
+ const RR = require('../routine-records');
+ const Routine = require('../routine');
+ const Execution = require('../execution-review');
++const Screenshots = require('../screenshots');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+@@ -400,6 +401,18 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
+ });
+ 
++// M87 optional owned visual evidence is independent from financial truth,
++// mandatory writing and permission. Never infer legacy role or capture time.
++const media=fn=>async(req,res)=>{
++  try {
++    if(!/^[1-9]\d*$/.test(req.params.id))return res.status(404).json({error:'Trade not found'});
++    res.json(await fn(req));
++  }catch(e){if(e.code==='screenshot_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Screenshot evidence could not be read/recorded. Existing financial truth is unchanged.'});}
++};
++router.get('/trades/:id/screenshots',requireAuth,media(req=>Screenshots.read(req.user.id,Number(req.params.id))));
++router.put('/trades/:id/screenshots/:role',requireAuth,media(req=>Screenshots.change(req.user.id,Number(req.params.id),req.params.role,req.body)));
++router.delete('/trades/:id/screenshots/:role',requireAuth,media(req=>Screenshots.change(req.user.id,Number(req.params.id),req.params.role,req.body,{remove:true})));
++
+ // Optional post-close HUMAN execution review is separate from financial CRUD
+ // and mandatory core/loss writing. It cannot backfill pre-entry setup grades.
+ router.post('/trades/:id/execution-review',requireAuth,async(req,res)=>{
+diff --git a/src/screenshots.js b/src/screenshots.js
+index 2f5fdea..3cf3848 100644
+--- a/src/screenshots.js
++++ b/src/screenshots.js
+@@ -66,4 +66,50 @@ function fields(body){
+   const tf=timeframe(body.timeframe),note=body.note===undefined?'':body.note;if(typeof note!=='string'||note.length>2000)throw invalid('Screenshot note must be plain text, at most2000 characters.');
+   return {...image(body.image),timeframe:tf,note:note.trim()};
+ }
+-module.exports={ROLES,QUESTIONS,MAX_BYTES,MAX_PIXELS,fields,image,timeframe,role,hash,invalid};
++// Snapshot describes the SAVED record at attachment, not authenticated chart
++// pixels or actual capture time. Later financial correction keeps earlier media.
++const CONTEXT=['id','user_id','account_id','symbol','direction','status','opened_at','closed_at','entry','exit','stop','target','size','fees','entry_model','entry_tf','strategy_id','strategy_version'];
++const context=t=>Object.fromEntries(CONTEXT.map(k=>[k,t[k]??null]));
++const contextHash=t=>hash(JSON.stringify(context(t)));
++const stamp=v=>{if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v))return null;const d=new Date(v);return Number.isFinite(d.getTime())&&d.toISOString()===v?d.getTime():null;};
++const ROW_KEYS=['trade_id','role','timeframe','image','note','source','recorded_at','original_recorded_at','reference_sha256','context_json','context_hash'];
++function revision(t,r,slot){return hash(JSON.stringify(['screenshot-v1',r,context(t),slot?ROW_KEYS.map(k=>[k,slot[k]??null]):null]));}
++function slotInfo(t,r,slot,nowMs=Date.now()){
++  const base={role:r,question:QUESTIONS[r],revision:revision(t,r,slot),state:'missing',image:null,timeframe:null,note:'',recorded_at:null,source:null,original_recorded_at:null,matches_current_trade:null,capture_time_verified:false,chart_verified:false};
++  if(!slot)return base;
++  try{
++    const data=fields({timeframe:slot.timeframe,image:slot.image,note:slot.note}),at=stamp(slot.recorded_at),snap=JSON.parse(slot.context_json);
++    if(slot.trade_id!==t.id||slot.role!==r||!['upload','external_link','imported_upload','imported_external_link'].includes(slot.source)||slot.source.replace('imported_','')!==data.kind
++      ||at===null||at>nowMs||slot.reference_sha256!==data.reference_sha256||!snap||Array.isArray(snap)||snap.id!==t.id||snap.user_id!==t.user_id||Object.keys(snap).length!==CONTEXT.length||CONTEXT.some(k=>!Object.hasOwn(snap,k))||hash(slot.context_json)!==slot.context_hash
++      ||slot.original_recorded_at!==null&&stamp(slot.original_recorded_at)===null)throw invalid('Stored screenshot metadata is unavailable.',503);
++    return {...base,...data,state:'stored',source:slot.source,recorded_at:slot.recorded_at,original_recorded_at:slot.original_recorded_at,recorded_context:snap,matches_current_trade:slot.context_hash===contextHash(t),capture_time_verified:false,chart_verified:false};
++  }catch{return {...base,state:'unavailable',note:'Stored image/metadata unavailable. Not counted as a known timeframe view; repair or explicitly remove.'};}
++}
++function view(t,rows,nowMs=Date.now()){
++  const slots=Object.fromEntries(ROLES.map(r=>[r,slotInfo(t,r,rows.find(s=>s.role===r),nowMs)])),known=Object.values(slots).filter(s=>s.state==='stored');
++  const distinct=new Set(known.map(s=>s.reference_sha256)).size,legacyImage=typeof t.screenshot_url==='string'?t.screenshot_url:'';let safeLegacy=null;try{safeLegacy=image(legacyImage).image;}catch{}
++  return {trade_id:t.id,account_id:t.account_id,slots,summary:{tagged:known.length,current:known.filter(s=>s.matches_current_trade).length,distinct_references:distinct,unavailable:Object.values(slots).filter(s=>s.state==='unavailable').length,
++    state:known.length===3&&distinct===3?'three_tagged_views':known.length?'partial':'empty',broker_verified:false,capture_time_verified:false,
++    note:'Stored human-labelled chart references, not verified chart/timeframe content, broker execution or whole-course journal completion. Legacy unassigned image excluded; duplicate references do not establish3 independent views.'},
++    legacy:{image:legacyImage,display_image:safeLegacy,assigned_role:null,note:'Original unlabelled screenshot preserved. No role/timeframe is inferred from entry TF, timeframes, profit or filename.'}};
++}
++async function owned(store,userId,id){if(!Number.isSafeInteger(id)||id<=0)throw invalid('Trade not found',404);const t=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);if(!t)throw invalid('Trade not found',404);return t;}
++const rowsFor=(store,id)=>store.prepare('SELECT * FROM trade_screenshots WHERE trade_id=? ORDER BY role').all(id);
++async function read(userId,id){const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id);return view(t,await rowsFor(store,id));});}
++function wire(body,remove=false){
++  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!(remove?['revision']:['revision','timeframe','image','note']).includes(k))||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision))throw invalid('Read the current saved trade/slot first and provide its revision with only timeframe,image and optional note.');
++  if(remove)return null;const {revision:_,...payload}=body;return fields(payload);
++}
++async function change(userId,id,r,body,{remove=false}={}){
++  const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id);role(r);const data=wire(body,remove),rows=await rowsFor(store,id),old=rows.find(s=>s.role===r);
++    if(body.revision!==revision(t,r,old))throw invalid('Saved trade or screenshot changed after display. Reload before replacing/removing this role.',409);
++    if(remove){if(old)await store.prepare('DELETE FROM trade_screenshots WHERE trade_id=? AND role=?').run(id,r);}
++    else if(!old||old.image!==data.image||old.timeframe!==data.timeframe||old.note!==data.note||old.context_hash!==contextHash(t)||slotInfo(t,r,old).state!=='stored'){
++      await store.prepare(`INSERT INTO trade_screenshots(trade_id,role,timeframe,image,note,source,recorded_at,original_recorded_at,reference_sha256,context_json,context_hash)
++        VALUES (?,?,?,?,?,?,?,NULL,?,?,?) ON CONFLICT(trade_id,role) DO UPDATE SET timeframe=excluded.timeframe,image=excluded.image,note=excluded.note,source=excluded.source,recorded_at=excluded.recorded_at,original_recorded_at=NULL,reference_sha256=excluded.reference_sha256,context_json=excluded.context_json,context_hash=excluded.context_hash`)
++        .run(id,r,data.timeframe,data.image,data.note,data.kind,new Date().toISOString(),data.reference_sha256,JSON.stringify(context(t)),contextHash(t));
++    }
++    return view(t,await rowsFor(store,id));
++  });
++}
++module.exports={ROLES,QUESTIONS,MAX_BYTES,MAX_PIXELS,fields,image,timeframe,role,hash,invalid,CONTEXT,context,contextHash,revision,view,read,change,owned,rowsFor,stamp};

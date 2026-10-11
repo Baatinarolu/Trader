@@ -1,0 +1,247 @@
+diff --git a/public/index.html b/public/index.html
+index 3b7f3d9..fe0cc08 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
++<script src="/js/views/screenshots.js?v={{V}}"></script>
+ <script src="/js/views/dashboard.js?v={{V}}"></script>
+ <script src="/js/views/bots.js?v={{V}}"></script>
+ <script src="/js/views/trades.js?v={{V}}"></script>
+diff --git a/public/js/api.js b/public/js/api.js
+index 7145c1e..4a26c26 100644
+--- a/public/js/api.js
++++ b/public/js/api.js
+@@ -41,7 +41,7 @@
+     get: (p, params) => req(p + qs(params)),
+     post: (p, body) => req(p, { method: 'POST', body: body || {} }),
+     put: (p, body) => req(p, { method: 'PUT', body: body || {} }),
+-    del: (p) => req(p, { method: 'DELETE' }),
++    del: (p, body) => req(p, { method: 'DELETE', ...(body === undefined ? {} : { body }) }),
+     async login(email, password) { const d = await req('/auth/login', { method: 'POST', body: { email, password } }); if (d.token) { token = d.token; LS.set('tj_token', token); } return d; },
+     async register(payload) { const d = await req('/auth/register', { method: 'POST', body: payload }); if (d.token) { token = d.token; LS.set('tj_token', token); } return d; },
+     /** Connect this browser to a workspace — the app has no sign-in wall. */
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 5d76f80..4d81940 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -165,10 +165,11 @@
+       <label class="field"><span>Lessons</span><textarea id="j-lessons">${U.esc(e.lessons)}</textarea></label>
+       <label class="field"><span>Tomorrow</span><textarea id="j-tomorrow">${U.esc(e.tomorrow)}</textarea></label>
+       <label class="field"><span>Screen time (minutes)</span><input id="j-screen" type="number" value="${e.screen_time_minutes ?? ''}" /></label>
+-      ${trades.length ? `<div class="sep"></div><h3>Trades this day</h3><table><thead><tr><th>Time</th><th>Symbol</th><th>R</th><th>P&L</th><th>Core journal</th><th>Note</th></tr></thead><tbody>
++      ${trades.length ? `<div class="sep"></div><h3>Trades this day</h3><table><thead><tr><th>Time</th><th>Symbol</th><th>R</th><th>P&L</th><th>Core journal</th><th>Visual evidence</th><th>Note</th></tr></thead><tbody>
+         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
++        <td class="tiny"><button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+@@ -178,6 +179,7 @@
+       selection.innerHTML=`<span>Daily routine completion — explicit self-report (never workflow permission)</span><select id="j-pre-market"><option value="" ${flag===null?'selected':''}>Unknown / not recorded</option><option value="true" ${flag===true?'selected':''}>Completed — my self-report</option><option value="false" ${flag===false?'selected':''}>Not completed — my self-report</option></select><div class="field-note">Current account only, separate from the shared daily note and actual ordered/timed workflow. Unrelated note edits preserve this flag/source/time. Retrospective self-report cannot rewrite first-entry/on-time evidence.</div>`;
+       U.$('#j-pre-market',selection).addEventListener('change',()=>{routineDirty=true;});body.prepend(selection);
+     }
++    body.querySelectorAll('[data-day-screenshots]').forEach(b=>b.addEventListener('click',()=>Views.screenshots?Views.screenshots.open(Number(b.dataset.dayScreenshots)):global.App.toast('Visual evidence UI unavailable.','err')));
+     body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
+     if(Views.lossWritingCard)body.appendChild(Views.lossWritingCard({pending:(day.loss_reflections||[]).filter(r=>r.completed_at===null),pending_count:(day.loss_reflections||[]).filter(r=>r.completed_at===null).length}));
+     body.appendChild(Views.guardrailHistory(day.guardrail_events || []));
+diff --git a/public/js/views/screenshots.js b/public/js/views/screenshots.js
+new file mode 100644
+index 0000000..a4dd6cb
+--- /dev/null
++++ b/public/js/views/screenshots.js
+@@ -0,0 +1,80 @@
++/* M87 — optional HUMAN-labelled HTF/MTF/LTF visual evidence of SAVED trades.
++ * Recording time is not capture time. No automatic external image request. */
++(function(global){
++  'use strict';
++  const Views=global.Views=global.Views||{},U=global.U;let opened=0;
++  const roles=['htf','mtf','ltf'],questions={htf:'Why this initial bias / trend direction? What structure and key levels?',mtf:'Why this location? Supply/demand or flip zone; where was available liquidity?',ltf:'What actual entry trigger and confirmation?'};
++  const context=()=>({account:global.Store.accountId,user:global.Store.user?.id,token:global.API.getToken()}),same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id&&c.token===global.API.getToken();
++  function imageButton(image,label){
++    const box=U.h('div'),button=U.h('button',{class:'btn xs ghost',type:'button',text:label});box.appendChild(button);
++    button.addEventListener('click',()=>{
++      if(typeof image!=='string')return;
++      if(image.startsWith('https://')){const a=U.h('a',{href:image,target:'_blank',rel:'noopener noreferrer nofollow',referrerpolicy:'no-referrer',text:'Open external reference — unverified, may have changed'});box.replaceChildren(a);return;}
++      if(!/^data:image\/(png|jpeg|webp);base64,/.test(image))return;
++      const img=U.h('img',{src:image,alt:label,referrerpolicy:'no-referrer',style:'max-width:100%;max-height:320px;border:1px solid var(--border);border-radius:8px'});img.addEventListener('error',()=>box.replaceChildren(U.h('span',{class:'tiny warn',text:'Image cannot be displayed. Stored metadata alone does not verify decodable chart content.'})));box.replaceChildren(img);
++    });return box;
++  }
++  const P=Views.screenshots={
++    card(trade){
++      const node=U.h('div',{class:'card',style:'margin-top:12px'});
++      node.innerHTML='<h3>HTF / MTF / LTF visual evidence</h3><div class="field-note">Optional, independently labelled chart references. Save financial edits first; this reviews the saved record, not this form\'s unsaved changes. It does not complete core writing or change execution grades / entry permission.</div>';
++      if(trade?.id)node.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{screenshotsOpen:String(trade.id)},text:'Review saved chart evidence',onclick:()=>P.open(Number(trade.id))}));
++      else node.appendChild(U.h('div',{class:'tiny muted',dataset:{screenshotsNeedsSave:'true'},text:'Save the trade with its truthful financial record first, then attach optional HTF / MTF / LTF evidence. No timeframe defaults or image requirement.'}));return node;
++    },
++    async open(id){
++      const before=context(),serial=++opened;let view;
++      try{view=await global.API.get('/trades/'+id+'/screenshots');}catch(e){return global.App.toast(e.message||'Visual evidence unavailable','err');}
++      if(!same(before)||serial!==opened||before.account!=null&&Number(before.account)!==view.account_id)return global.App.toast('Workspace/account changed or this saved record is outside the selected account; reopen there.','err');
++      const body=U.h('div'),states=new Map();let alive=true,busy=false,stale=false,generation=0;
++      const valid=()=>alive&&serial===opened&&same(before)&&body.isConnected;
++      function guard(){if(!valid()){global.App.toast('Workspace/account changed or editor closed; reopen the current saved record.','err');return false;}return !busy;}
++      function cancel(state){state.version++;state.pending=false;try{state.reader?.abort();}catch{}state.reader=null;}
++      function disable(){for(const s of states.values()){for(const el of s.node.querySelectorAll('input,textarea,button'))el.disabled=busy; s.save.disabled=busy||stale||s.pending;s.remove.disabled=busy||stale||s.slot.state==='missing';}const reload=body.querySelector('[data-screenshots-reload]');if(reload)reload.disabled=busy;}
++      function draw(){
++        generation++;for(const s of states.values())cancel(s);states.clear();const t=view.saved_record||{};
++        body.replaceChildren(U.h('p',{class:'small',text:`Saved trade #${view.trade_id} ${t.symbol||''} · account #${view.account_id}. Saved entry ${t.entry??'unknown'}, stop ${t.stop??'unknown'}, exit ${t.exit??'unknown'} (${t.status||'unknown'}).`}),U.h('p',{class:'field-note',text:'Save financial edits first. Three separate human-labelled views help revisit your original visual thought process. Optional images do not complete core writing/routine, change execution grades, resize risk or grant entry permission. Server recording time is not original capture time. This is not broker, chart-content or actual timeframe verification. Save one role at a time; reload/save clears other unsaved selections.'}));
++        const sum=view.summary||{};body.appendChild(U.h('div',{class:'small',dataset:{screenshotsSummary:'true'},text:`${sum.tagged??'unknown'} / 3 labelled references · ${sum.current??'unknown'} match current saved context · ${sum.distinct_references??'unknown'} distinct references (not proof of independent charts).${sum.distinct_references<sum.tagged?' Duplicate reference: do not pretend these establish3 independent views.':''}`}));
++        body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{screenshotsReload:'true'},text:'Reload saved evidence (discard unsaved selections)',onclick:async()=>{
++          if(!guard())return;busy=true;generation++;for(const s of states.values())cancel(s);disable();
++          try{const out=await global.API.get('/trades/'+id+'/screenshots');if(!valid())return;view=out;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message||'Evidence reload unavailable','err');}finally{busy=false;if(valid())disable();}
++        }}));
++        const legacy=U.h('div',{class:'card',style:'margin-top:12px'});legacy.appendChild(U.h('h4',{text:'Unassigned legacy screenshot'}));legacy.appendChild(U.h('div',{class:'tiny muted',text:view.legacy?.image?'Original reference preserved, excluded from all3 roles; no timeframe/bias/location/trigger guessed from entry TF or file.':'No legacy reference recorded.'}));if(view.legacy?.display_image)legacy.appendChild(imageButton(view.legacy.display_image,'View preserved unassigned image'));else if(view.legacy?.image)legacy.appendChild(U.h('div',{class:'tiny warn',text:'Original reference preserved but not rendered: unsupported/unsafe/over-budget media. Financial reality is unaffected.'}));body.appendChild(legacy);
++        for(const r of roles){
++          const slot=view.slots[r],node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{screenshotRole:r}}),localGeneration=generation;
++          const s={node,slot,version:0,pending:false,reader:null,image:slot.image||''};states.set(r,s);
++          node.innerHTML=`<h4>${r.toUpperCase()} — ${U.esc(slot.timeframe||'timeframe not recorded')}</h4><p class="small">${U.esc(questions[r])}</p><div class="tiny muted" data-screenshot-metadata></div>
++            <label class="field"><span>Your explicit timeframe (e.g.1d,4h,15m; M means months)</span><input data-screenshot-timeframe maxlength="7" value="${U.esc(slot.timeframe||'')}" placeholder="Choose — no default" /></label>
++            <label class="field"><span>External HTTPS image reference (unverified, no automatic load)</span><input data-screenshot-link value="${U.esc(slot.kind==='external_link'?slot.image:'')}" placeholder="https://charts.example/your-chart.png" /></label>
++            <label class="field"><span>Or upload a static PNG / JPEG / WebP (1.5 MB maximum)</span><input type="file" data-screenshot-file accept="image/png,image/jpeg,image/webp" /></label>
++            <label class="field"><span>Your optional visual-context note</span><textarea data-screenshot-note maxlength="2000">${U.esc(slot.note||'')}</textarea></label><div data-screenshot-preview></div>`;
++          const el=k=>node.querySelector(`[data-screenshot-${k}]`),metadata=el('metadata');
++          metadata.textContent=slot.state==='stored'?`${slot.source.startsWith('imported_')?'Imported historical evidence; provenance/capture unverified. Received':'Human reference recorded'} ${slot.recorded_at}. Source: ${slot.source}. Recording time is not original capture time.${slot.original_recorded_at?' Historical timestamp declared '+slot.original_recorded_at+' (unverified).':''}${slot.matches_current_trade?' Current saved-record context.':' Prior saved context; original image/time retained after correction, not current verification.'}${slot.kind==='external_link'?' External content unverified and may change.':''}`:slot.state==='unavailable'?'Stored metadata unavailable; no known view credited. Explicit removal/repair possible.':'Missing: no original view is invented.';
++          if(slot.matches_current_trade===false&&slot.recorded_context)metadata.appendChild(U.h('div',{text:`Prior saved context: entry ${slot.recorded_context.entry??'unknown'}, stop ${slot.recorded_context.stop??'unknown'}, exit ${slot.recorded_context.exit??'unknown'}.`}));
++          if(slot.image)node.appendChild(imageButton(slot.image,'View saved '+r.toUpperCase()+' reference'));
++          const preview=()=>{const box=el('preview');box.replaceChildren(U.h('div',{class:'tiny muted',text:'Selection is unsaved; only Save records a labelled reference.'}));if(/^data:image\/(png|jpeg|webp);base64,/.test(s.image)){const img=U.h('img',{src:s.image,alt:'Unsaved '+r.toUpperCase()+' selection',style:'max-height:180px;max-width:100%'});box.appendChild(img);}};
++          el('link').addEventListener('input',()=>{cancel(s);s.image=el('link').value.trim();el('file').value='';el('preview').replaceChildren(U.h('span',{class:'tiny muted',text:'External selection unsaved, not loaded or verified.'}));disable();});
++          el('file').addEventListener('change',()=>{
++            if(!guard())return;cancel(s);const f=el('file').files[0];if(!f){disable();return;}
++            if(!['image/png','image/jpeg','image/webp'].includes(f.type)){global.App.toast('Use a static PNG, JPEG or WebP; no active/vector/animated upload.','err');disable();return;}
++            if(f.size>1500000){global.App.toast('Image exceeds1.5 MB. Compress locally before selecting.','err');disable();return;}
++            s.pending=true;const version=s.version,reader=s.reader=new global.FileReader();disable();
++            reader.onload=()=>{if(!valid()||localGeneration!==generation||version!==s.version)return;s.pending=false;s.reader=null;const value=String(reader.result);if(!/^data:image\/(png|jpeg|webp);base64,/.test(value)){global.App.toast('Raster selection unavailable.','err');disable();return;}s.image=value;el('link').value='';preview();disable();};
++            reader.onerror=()=>{if(!valid()||localGeneration!==generation||version!==s.version)return;s.pending=false;s.reader=null;global.App.toast('File could not be read; no screenshot recorded.','err');disable();};reader.readAsDataURL(f);
++          });
++          s.save=U.h('button',{class:'btn sm primary',type:'button',dataset:{screenshotSave:'true'},text:'Save '+r.toUpperCase()+' view',onclick:()=>write(false)});s.remove=U.h('button',{class:'btn sm ghost danger',type:'button',dataset:{screenshotRemove:'true'},text:'Remove saved '+r.toUpperCase()+' view',onclick:()=>write(true)});
++          const clear=U.h('button',{class:'btn sm ghost',type:'button',dataset:{screenshotClear:'true'},text:'Clear unsaved selection (not saved image)',onclick:()=>{if(!guard())return;cancel(s);s.image='';el('link').value='';el('file').value='';el('preview').replaceChildren(U.h('span',{class:'tiny muted',text:'Selection cleared, saved reference unchanged. Select image before saving.'}));disable();}});node.appendChild(U.h('div',{class:'row wrap gap-8'},s.save,clear,s.remove));body.appendChild(node);
++          async function write(remove){
++            if(!guard()||stale||s.pending)return;
++            const frame=el('timeframe').value.trim();if(!remove&&(!/^[1-9]\d{0,2}[mhdwM]$/.test(frame)||!s.image)){global.App.toast('Choose an explicit canonical timeframe and upload/image HTTPS reference first.','err');return;}
++            busy=true;disable();
++            try{const out=remove?await global.API.del('/trades/'+id+'/screenshots/'+r,{revision:slot.revision}):await global.API.put('/trades/'+id+'/screenshots/'+r,{timeframe:frame,image:s.image,note:el('note').value,revision:slot.revision});if(!valid())return;view=out;draw();global.App.toast(remove?'Saved role removed; other roles/legacy/financial truth unchanged.':'Labelled reference recorded; unsaved selections cleared. Recording time is not original capture time.','ok');}
++            catch(e){if(valid()){if(e.status===409)stale=true;global.App.toast(e.message||'Visual evidence could not be recorded','err');}}
++            finally{busy=false;if(valid())disable();}
++          }
++        }
++        disable();
++      }
++      draw();return global.App.modal({title:'Saved HTF / MTF / LTF visual evidence',body,wide:true,actions:[{label:'Close — unsaved selections not recorded',ghost:true}],onClose:()=>{alive=false;generation++;for(const s of states.values())cancel(s);}});
++    },
++  };
++})(window);
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index c06d71c..30987d8 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -25,6 +25,7 @@
+       <label class="field"><span>3. What would you do differently / repeat?</span><textarea id="jr-different" maxlength="2000">${U.esc(trade.lesson||'')}</textarea></label>
+       <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
+     if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
++    if(!capture&&Views.screenshots)body.appendChild(Views.screenshots.card(trade));
+     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
+     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
+       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
+@@ -160,7 +161,7 @@
+             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
+             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
+               ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', '']].map(([k, l]) =>
++              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', '']].map(([k, l]) =>
+               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
+           </tr></thead>
+           <tbody>
+@@ -183,6 +184,7 @@
+             <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
+             <td class="tiny"><span data-execution-state>${U.esc(Views.execution?Views.execution.state(t.execution_review):'Unreviewed')}</span>${t.status==='closed'?` <button class="btn xs ghost" data-execution="${t.id}">Execution</button>`:''}</td>
+             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
++            <td class="tiny"><button class="btn xs ghost" data-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
+           </tr>`).join('')}
+           </tbody>
+@@ -195,6 +197,7 @@
+       }));
+       U.$$('[data-execution]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.execution)Views.execution.open(Number(b.dataset.execution));else global.App.toast('Execution review UI unavailable; no grade inferred.','err');}));
+       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
++      U.$$('[data-screenshots]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.screenshots)Views.screenshots.open(Number(b.dataset.screenshots));else global.App.toast('Visual evidence UI unavailable; nothing is inferred.','err');}));
+       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
+       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
+         if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution]')) return;
+@@ -310,15 +313,7 @@
+         <label class="field span4"><span>Thesis — why did you take this trade?</span><textarea id="tf-thesis" placeholder="Context, level, catalyst, what would invalidate it…">${U.esc(t.thesis || '')}</textarea></label>
+         <label class="field span2"><span>Execution notes</span><textarea id="tf-notes" placeholder="Management decisions, partials, how you felt during…">${U.esc(t.execution_notes || '')}</textarea></label>
+         <label class="field span2"><span>Lesson / review</span><textarea id="tf-lesson" placeholder="What will you repeat or never do again?">${U.esc(t.lesson || '')}</textarea></label>
+-        <label class="field span4"><span>Chart screenshot <span class="muted tiny">(paste an image URL, or upload the chart you were looking at — entry, management and exit shots are worth more than any note)</span></span>
+-          <div class="row" style="gap:8px;align-items:flex-start">
+-            <input id="tf-shot" value="${U.esc(t.screenshot_url && !t.screenshot_url.startsWith('data:') ? t.screenshot_url : '')}" placeholder="https://…" />
+-            <label class="btn sm ghost" style="cursor:pointer;flex:none">Upload…<input type="file" id="tf-shot-file" accept="image/*" hidden /></label>
+-            <button class="btn sm ghost" type="button" id="tf-shot-clear" style="flex:none">Clear</button>
+-          </div>
+-          <div id="tf-shot-preview" style="margin-top:8px">${t.screenshot_url ? `<img src="${U.esc(t.screenshot_url)}" alt="chart" style="max-height:180px;max-width:100%;border:1px solid var(--border);border-radius:8px" />` : ''}</div>
+-          <div class="field-note">Uploads are stored with the trade (keep them under ~1&nbsp;MB — the journal is a single local file).</div>
+-        </label>
++
+       </div>
+       <div class="sep"></div>
+       <div class="row-between"><h3 style="margin:0">Pre-trade checklist</h3><label class="tiny muted row" style="gap:6px"><input type="checkbox" id="tf-apply-checklist" /> use playbook checklist</label></div>
+@@ -395,26 +390,6 @@
+     });
+     g('strategy').addEventListener('change', () => { if (applyChk.checked) { const s = Store.strategyById(g('strategy').value); renderChecklist(s && s.checklist && s.checklist.length ? s.checklist : (Store.user.default_checklist || [])); } });
+ 
+-    /* screenshot upload → data URL stored on the trade */
+-    let shotData = t.screenshot_url && t.screenshot_url.startsWith('data:') ? t.screenshot_url : '';
+-    const shotFile = U.$('#tf-shot-file', node);
+-    if (shotFile) shotFile.addEventListener('change', () => {
+-      const f = shotFile.files[0];
+-      if (!f) return;
+-      if (f.size > 1.5e6) { toast('Image is larger than 1.5 MB — please compress it first.', 'err'); return; }
+-      const reader = new FileReader();
+-      reader.onload = () => {
+-        shotData = String(reader.result);
+-        U.$('#tf-shot-preview', node).innerHTML = `<img src="${shotData}" alt="chart" style="max-height:180px;max-width:100%;border:1px solid var(--border);border-radius:8px" />`;
+-        toast('Chart attached', 'ok');
+-      };
+-      reader.readAsDataURL(f);
+-    });
+-    const shotClear = U.$('#tf-shot-clear', node);
+-    if (shotClear) shotClear.addEventListener('click', () => {
+-      shotData = ''; U.$('#tf-shot', node).value = ''; U.$('#tf-shot-preview', node).innerHTML = ''; if (shotFile) shotFile.value = '';
+-    });
+-
+     updateSpec(); calc();
+ 
+     function collect() {
+@@ -442,7 +417,7 @@
+         confidence: g('confidence').value, adherence: g('adherence').value,
+         mistakes: g('mistakes').value, tags: g('tags').value,
+         thesis: g('thesis').value, execution_notes: g('notes').value, lesson: g('lesson').value,
+-        screenshot_url: shotData || g('shot').value,
++        screenshot_url: t.screenshot_url || '', // Preserve unassigned legacy; role evidence is a separate saved-record API.
+         rule_checks: U.$$('[data-chk]', chkWrap).map((c, i) => ({ label: c.parentElement.textContent.trim(), passed: c.checked })),
+       };
+       if(requiresAdmission() && !body.emotion_before.trim())throw new Error('Name your emotional state before a prospective entry. Already-executed/historical truth can remain incomplete.');
+@@ -518,6 +493,7 @@
+     U.$('#tf-guardrail-refresh',node).addEventListener('click',refreshGuard);
+     refreshGuard();
+     if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
++    if(Views.screenshots)node.appendChild(Views.screenshots.card(t));
+     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
+   };
+ 
+diff --git a/src/screenshots.js b/src/screenshots.js
+index 3cf3848..447fe7b 100644
+--- a/src/screenshots.js
++++ b/src/screenshots.js
+@@ -88,7 +88,7 @@ function slotInfo(t,r,slot,nowMs=Date.now()){
+ function view(t,rows,nowMs=Date.now()){
+   const slots=Object.fromEntries(ROLES.map(r=>[r,slotInfo(t,r,rows.find(s=>s.role===r),nowMs)])),known=Object.values(slots).filter(s=>s.state==='stored');
+   const distinct=new Set(known.map(s=>s.reference_sha256)).size,legacyImage=typeof t.screenshot_url==='string'?t.screenshot_url:'';let safeLegacy=null;try{safeLegacy=image(legacyImage).image;}catch{}
+-  return {trade_id:t.id,account_id:t.account_id,slots,summary:{tagged:known.length,current:known.filter(s=>s.matches_current_trade).length,distinct_references:distinct,unavailable:Object.values(slots).filter(s=>s.state==='unavailable').length,
++  return {trade_id:t.id,account_id:t.account_id,saved_record:context(t),slots,summary:{tagged:known.length,current:known.filter(s=>s.matches_current_trade).length,distinct_references:distinct,unavailable:Object.values(slots).filter(s=>s.state==='unavailable').length,
+     state:known.length===3&&distinct===3?'three_tagged_views':known.length?'partial':'empty',broker_verified:false,capture_time_verified:false,
+     note:'Stored human-labelled chart references, not verified chart/timeframe content, broker execution or whole-course journal completion. Legacy unassigned image excluded; duplicate references do not establish3 independent views.'},
+     legacy:{image:legacyImage,display_image:safeLegacy,assigned_role:null,note:'Original unlabelled screenshot preserved. No role/timeframe is inferred from entry TF, timeframes, profit or filename.'}};

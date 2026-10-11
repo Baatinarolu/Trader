@@ -1,0 +1,836 @@
+diff --git a/README.md b/README.md
+index 6522a7a..9bead1c 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,50 @@
+ # TradeJournal Pro
+ 
++## M87 — saved HTF / MTF / LTF chart references (2026-10-11)
++
++Use **Visual evidence** in the trade log, saved-trade form, core-writing dialog
++or day review. Save truthful finance first; then select three explicit human
++timeframes and answer bias/structure/levels (HTF), location/liquidity (MTF) and
++entry trigger/confirmation (LTF). Upload static PNG/JPEG/WebP or record a public
++HTTPS link. No fixed4h/15m/5m defaults. Save one role at a time; save/reload clears
++other unsaved selections. Clear-selection does not remove the saved image.
++
++Legacy `screenshot_url` stays unassigned; never silently copied. A financial
++correction retains older images and their saved context/time, with a prior-context
++warning. PUT/remove requires the displayed current revision; stale screens409,
++media-store failures503. Optional visuals do not complete mandatory writing,
++score execution, reset preparation/loss/caps, resize risk or grant entry.
++
++**Recording time is not original capture time.** Labels/references are not
++verified chart pixels/timeframes or broker facts. Uploaded structure/bounds/CRC
++checks are not full image decoding/legibility. External content is never fetched
++by the server or automatically loaded in this editor; explicit viewing can
++contact the remote site and content may have changed. Duplicate references and
++equivalent/reused timeframes are flagged, not called independent chart views.
++Recognisable credentialed/signed links and active/unsupported media are rejected.
++App budgets:1.5MB decoded per upload,24MP,16,000px dimension; canonical frames
++`m/h/d/w/M` (months use uppercase M). No market/broker/actual-capture verification.
++
++JSON backup and CSV `screenshot_views_json`/`screenshot_url` carry owned optional
++visual evidence. Restore creates new owned trade IDs, forces historical **imported,
++unverified** source and new server receiving time; valid declared historical
++time/context remain unverified, missing context remains unknown. Unsafe optional
++media is omitted with explicit warnings while finance still imports. Real storage
++failures roll back the request's financial/media mapping together. Old backups
++remain compatible. Repeat restore duplicates historical trades; not an upsert.
++Settings file selection limit20MB, backend JSON body25MB; never silently clip CSV.
++For bigger backups split into smaller requests/account/date CSV slices. No
++automatic large-backup batching or proof backfill.
++
++Measured M87:226/0 across9 actual pure/auth/SQL/DOM probes; literal clocks and tiny
++raster protocol fixtures, not real chart screenshots. Prior execution260/0 and
++routine321/0; exact ledger132=90done/3partial/39TODO. M88/M89 remain open. Prepared
++parent/current native Bots205/1 both (20 synthetic parity fills,0 mismatches;
++inherited>20 sample floor), negatives kept rather than padded. Whole-app smoke
++22/22 conditional DOM views,0 style/console,8 canvas limits, observed exit0; not
++pixels. Source/core thresholds/geometry/RR/default risk unchanged. Full audit:
++`analysis/M87-TIMEFRAME-SCREENSHOTS.md` in the delivery ZIP.
++
+ A **multi-asset trading journal, analytics engine, behavioural coach, SMC bot desk and TradingView-integrated
+ pre-trade assistant**. No subscription, no broker login, no sign-in wall — a Node server, one libSQL database
+ (a local file by default), and the whole thing deployable free to Vercel + Turso.
+diff --git a/docs/API.md b/docs/API.md
+index f63a6aa..edea497 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -1,5 +1,55 @@
+ # REST API reference
+ 
++## M87 optional owned visual evidence
++
++- `GET /api/trades/:id/screenshots`: canonical positive integer owned ID; three
++  slots/questions/revisions and same-snapshot saved financial context. Empty
++  is known missing; storage outage503 is unknown, not empty. Legacy unassigned.
++- `PUT /api/trades/:id/screenshots/:role`: role exactly `htf|mtf|ltf`; body
++  `{revision,timeframe,image,note?}` only. Required displayed64-hex revision binds
++  saved finance and current role attachment. No owner/source/client clock/score
++  fields. Note plain text<=2000; timeframe explicit canonical `1..1440m`,
++  `1..48h`, `1..365d`, `1..52w`, `1..12M` (M months), without padding/defaults.
++  Static PNG/JPEG/WebP canonical base64 upload1,500,000 decoded bytes/24MP/16,000
++  dimension, or HTTPS hostname without userinfo/IP/local targets/recognisable
++  credential query names. Structural checks NOT full decode/chart verification;
++  no backend link fetch/DNS/content/publicness verification. Identical current
++  retry preserves original recording time.
++- `DELETE /api/trades/:id/screenshots/:role`: body `{revision}` only; independently
++  clear one role, never legacy/siblings/financial history. Trade deletion cascades
++  its child rows. Browser `API.del(path,body?)` preserves old bodyless callers.
++- Auth401; absent/foreign/noncanonical ID404; bad shape/role/frame/image400;
++  changed saved record/role409; storage read/write failure503. Real transaction
++  rollback, no partial new source/time/hash or financial-row update.
++
++`recorded_at` is server attachment/import receiving time, NOT actual screenshot
++capture. `matches_current_trade` concerns listed saved financial fields, NOT
++broker/chart verification; null means original imported context unknown. Truth
++correction preserves earlier image/time but flags prior context. Duplicate
++resource refs (URI aliases canonicalised for fingerprint only), equivalent
++frames (`60m==1h`, etc) and corrupt stored metadata explicitly labelled; no
++3-independent-view or whole-course completeness proof.
++
++JSON trade `screenshots={version:1,roles:{htf:{timeframe,image,note,
++declared_recorded_at?,declared_context?},...},unavailable_roles:[...]}`. CSV adds
++`screenshot_views_json` and
++`screenshot_url` legacy. Safe known refs only; unsupported/corrupt roles marked
++unavailable, unsafe legacy omitted without rewriting stored original. Context
++excludes original owner/trade/account IDs; restore uses actual transaction
++insert IDs and owned destination, never raw backup IDs. `source` always
++`imported_upload|imported_external_link`; client source/revision/verified flags
++ignored. Receiving time new, declared historical time/context unverified; invalid
++future time dropped; unknown context not inferred from imported finance.
++`media_imported`, `media_skipped`, bounded `media_warnings` returned alongside
++financial inserted/skipped counts. Invalid optional media warns/skips without
++vetoing finance; real storage failure503 rolls back request together. Existing
++API25MB body budget unchanged (Settings files20MB); split larger backups. No
++upsert/idempotent financial restore or broker/core/routine/permission replay.
++
++Screenshot-aware JSON/CSV export failure returns safe JSON503, not an HTML SQL
++stack. Visual endpoints/imports are independent of required writing, execution
++grades, risk/caps/preparation and prospective admission. Protected core unchanged.
++
+ Base URL: `http://localhost:3000/api`
+ Auth: session cookie (`tj_session`) **or** an `x-session: <token>` header. There is **no sign-in wall**:
+ `POST /auth/local` hands the caller a workspace (reusing the database's existing one locally, minting a
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index 526d0c8..b7ef885 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -1,5 +1,27 @@
+ # Personal guardrails, recording and reasoned exceptions
+ 
++## M87 visual journal scope (2026-10-11)
++
++HTF/MTF/LTF optional human chart refs have owned separate saved-record APIs,
++explicit frames and revisions. Images never grant entry, complete core writing
++or routine, determine execution/setup grades or change risk sizing. No cap,
++loss-writing/cooldown, streak, first-admission/on-time or technical-veto refunds
++from image updates/deletion/import. Financial truth/close remains legal even if
++the optional evidence store is missing; stored prior image/context/time survives
++financial correction with a warning, not a fake fresh recording.
++
++Attachment/import time NOT capture time, labels NOT verified chart/broker/live
++emotion facts. Imported refs explicitly historical/unverified; source/capture
++claims/owned revisions not replayed. Missing/corrupt stored metadata unavailable,
++not assumed skipped or complete; reused images/equivalent frames flagged rather
++than3 independent views. Unsafe legacy remains stored/unassigned but is not
++rendered/copied into portable backups; server never fetches external image URLs.
++
++M88/M89/M106/M111/M112 remain TODO, M108 PARTIAL. Exact132=90done/3partial/39TODO;
++course floor30, deliberate M103 n>=5, B/C tradeability, checklist/entry weights,
++stops/targets/geometry/RR/default risk/factors untouched. No70% edge, provider,
++broker, actual meditation/human or production claims. See report in delivery ZIP.
++
+ These rules govern **this app's prospective trade/plan actions**. There is no broker
+ connection: an app admission is not a broker order, reusable permission or proof
+ that manually entered levels currently match the market.
+diff --git a/public/index.html b/public/index.html
+index 3b7f3d9..fe0cc08 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
++<script src="/js/views/screenshots.js?v={{V}}"></script>
+ <script src="/js/views/dashboard.js?v={{V}}"></script>
+ <script src="/js/views/bots.js?v={{V}}"></script>
+ <script src="/js/views/trades.js?v={{V}}"></script>
+diff --git a/public/js/api.js b/public/js/api.js
+index 7145c1e..4a26c26 100644
+--- a/public/js/api.js
++++ b/public/js/api.js
+@@ -41,7 +41,7 @@
+     get: (p, params) => req(p + qs(params)),
+     post: (p, body) => req(p, { method: 'POST', body: body || {} }),
+     put: (p, body) => req(p, { method: 'PUT', body: body || {} }),
+-    del: (p) => req(p, { method: 'DELETE' }),
++    del: (p, body) => req(p, { method: 'DELETE', ...(body === undefined ? {} : { body }) }),
+     async login(email, password) { const d = await req('/auth/login', { method: 'POST', body: { email, password } }); if (d.token) { token = d.token; LS.set('tj_token', token); } return d; },
+     async register(payload) { const d = await req('/auth/register', { method: 'POST', body: payload }); if (d.token) { token = d.token; LS.set('tj_token', token); } return d; },
+     /** Connect this browser to a workspace — the app has no sign-in wall. */
+diff --git a/public/js/app.js b/public/js/app.js
+index 2c26329..acd85a8 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -387,10 +387,11 @@
+             const out = U.$('#imp-out', body);
+             out.textContent = 'Importing…';
+             try {
+-              const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value });
+-              out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`;
++              const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value, account_id: Store.accountId });
++              out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`+(Views.screenshots?Views.screenshots.importResult(d):'');
+               Store.invalidate();
+-              setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
++              if(!d.media_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
++              else this.toast('Financial import recorded; review optional media omissions below before closing.','ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           },
+         }],
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 5d76f80..4d81940 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -165,10 +165,11 @@
+       <label class="field"><span>Lessons</span><textarea id="j-lessons">${U.esc(e.lessons)}</textarea></label>
+       <label class="field"><span>Tomorrow</span><textarea id="j-tomorrow">${U.esc(e.tomorrow)}</textarea></label>
+       <label class="field"><span>Screen time (minutes)</span><input id="j-screen" type="number" value="${e.screen_time_minutes ?? ''}" /></label>
+-      ${trades.length ? `<div class="sep"></div><h3>Trades this day</h3><table><thead><tr><th>Time</th><th>Symbol</th><th>R</th><th>P&L</th><th>Core journal</th><th>Note</th></tr></thead><tbody>
++      ${trades.length ? `<div class="sep"></div><h3>Trades this day</h3><table><thead><tr><th>Time</th><th>Symbol</th><th>R</th><th>P&L</th><th>Core journal</th><th>Visual evidence</th><th>Note</th></tr></thead><tbody>
+         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
++        <td class="tiny"><button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+@@ -178,6 +179,7 @@
+       selection.innerHTML=`<span>Daily routine completion — explicit self-report (never workflow permission)</span><select id="j-pre-market"><option value="" ${flag===null?'selected':''}>Unknown / not recorded</option><option value="true" ${flag===true?'selected':''}>Completed — my self-report</option><option value="false" ${flag===false?'selected':''}>Not completed — my self-report</option></select><div class="field-note">Current account only, separate from the shared daily note and actual ordered/timed workflow. Unrelated note edits preserve this flag/source/time. Retrospective self-report cannot rewrite first-entry/on-time evidence.</div>`;
+       U.$('#j-pre-market',selection).addEventListener('change',()=>{routineDirty=true;});body.prepend(selection);
+     }
++    body.querySelectorAll('[data-day-screenshots]').forEach(b=>b.addEventListener('click',()=>Views.screenshots?Views.screenshots.open(Number(b.dataset.dayScreenshots)):global.App.toast('Visual evidence UI unavailable.','err')));
+     body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
+     if(Views.lossWritingCard)body.appendChild(Views.lossWritingCard({pending:(day.loss_reflections||[]).filter(r=>r.completed_at===null),pending_count:(day.loss_reflections||[]).filter(r=>r.completed_at===null).length}));
+     body.appendChild(Views.guardrailHistory(day.guardrail_events || []));
+diff --git a/public/js/views/screenshots.js b/public/js/views/screenshots.js
+new file mode 100644
+index 0000000..061ffe4
+--- /dev/null
++++ b/public/js/views/screenshots.js
+@@ -0,0 +1,81 @@
++/* M87 — optional HUMAN-labelled HTF/MTF/LTF visual evidence of SAVED trades.
++ * Recording time is not capture time. No automatic external image request. */
++(function(global){
++  'use strict';
++  const Views=global.Views=global.Views||{},U=global.U;let opened=0;
++  const roles=['htf','mtf','ltf'],questions={htf:'Why this initial bias / trend direction? What structure and key levels?',mtf:'Why this location? Supply/demand or flip zone; where was available liquidity?',ltf:'What actual entry trigger and confirmation?'};
++  const context=()=>({account:global.Store.accountId,user:global.Store.user?.id,token:global.API.getToken()}),same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id&&c.token===global.API.getToken();
++  function imageButton(image,label){
++    const box=U.h('div'),button=U.h('button',{class:'btn xs ghost',type:'button',text:label});box.appendChild(button);
++    button.addEventListener('click',()=>{
++      if(typeof image!=='string')return;
++      if(/^https:\/\//i.test(image)){const a=U.h('a',{href:image,target:'_blank',rel:'noopener noreferrer nofollow',referrerpolicy:'no-referrer',text:'Open external reference — unverified, may have changed'});box.replaceChildren(a);return;}
++      if(!/^data:image\/(png|jpeg|webp);base64,/.test(image))return;
++      const img=U.h('img',{src:image,alt:label,referrerpolicy:'no-referrer',style:'max-width:100%;max-height:320px;border:1px solid var(--border);border-radius:8px'});img.addEventListener('error',()=>box.replaceChildren(U.h('span',{class:'tiny warn',text:'Image cannot be displayed. Stored metadata alone does not verify decodable chart content.'})));box.replaceChildren(img);
++    });return box;
++  }
++  const P=Views.screenshots={
++    importResult(result){return `<div class="field-note"><b>Optional visual evidence:</b> ${U.esc(result.media_imported??'unavailable')} references received with imported/unverified provenance; ${U.esc(result.media_skipped??'unavailable')} skipped. Receiving time is not original capture time; legacy stays unassigned.</div>${result.media_warnings?.length?'<ul class="tiny warn">'+result.media_warnings.map(w=>'<li>'+U.esc(w)+'</li>').join('')+'</ul>':''}`;},
++    card(trade){
++      const node=U.h('div',{class:'card',style:'margin-top:12px'});
++      node.innerHTML='<h3>HTF / MTF / LTF visual evidence</h3><div class="field-note">Optional, independently labelled chart references. Save financial edits first; this reviews the saved record, not this form\'s unsaved changes. It does not complete core writing or change execution grades / entry permission.</div>';
++      if(trade?.id)node.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{screenshotsOpen:String(trade.id)},text:'Review saved chart evidence',onclick:()=>P.open(Number(trade.id))}));
++      else node.appendChild(U.h('div',{class:'tiny muted',dataset:{screenshotsNeedsSave:'true'},text:'Save the trade with its truthful financial record first, then attach optional HTF / MTF / LTF evidence. No timeframe defaults or image requirement.'}));return node;
++    },
++    async open(id){
++      const before=context(),serial=++opened;let view;
++      try{view=await global.API.get('/trades/'+id+'/screenshots');}catch(e){return global.App.toast(e.message||'Visual evidence unavailable','err');}
++      if(!same(before)||serial!==opened||before.account!=null&&Number(before.account)!==view.account_id)return global.App.toast('Workspace/account changed or this saved record is outside the selected account; reopen there.','err');
++      const body=U.h('div'),states=new Map();let alive=true,busy=false,stale=false,generation=0;
++      const valid=()=>alive&&serial===opened&&same(before)&&body.isConnected;
++      function guard(){if(!valid()){global.App.toast('Workspace/account changed or editor closed; reopen the current saved record.','err');return false;}return !busy;}
++      function cancel(state){state.version++;state.pending=false;try{state.reader?.abort();}catch{}state.reader=null;}
++      function disable(){for(const s of states.values()){for(const el of s.node.querySelectorAll('input,textarea,button'))el.disabled=busy; s.save.disabled=busy||stale||s.pending;s.remove.disabled=busy||stale||s.slot.state==='missing';}const reload=body.querySelector('[data-screenshots-reload]');if(reload)reload.disabled=busy;}
++      function draw(){
++        generation++;for(const s of states.values())cancel(s);states.clear();const t=view.saved_record||{};
++        body.replaceChildren(U.h('p',{class:'small',text:`Saved trade #${view.trade_id} ${t.symbol||''} · account #${view.account_id}. Saved entry ${t.entry??'unknown'}, stop ${t.stop??'unknown'}, exit ${t.exit??'unknown'} (${t.status||'unknown'}).`}),U.h('p',{class:'field-note',text:'Save financial edits first. Three separate human-labelled views help revisit your original visual thought process. Optional images do not complete core writing/routine, change execution grades, resize risk or grant entry permission. Server recording time is not original capture time. This is not broker, chart-content or actual timeframe verification. Save one role at a time; reload/save clears other unsaved selections.'}));
++        const sum=view.summary||{};body.appendChild(U.h('div',{class:'small',dataset:{screenshotsSummary:'true'},text:`${sum.tagged??'unknown'} / 3 labelled references · ${sum.current??'unknown'} match current saved context · ${sum.distinct_references??'unknown'} distinct references (not proof of independent charts) · ${sum.distinct_timeframes??'unknown'} distinct declared timeframes.${sum.reused_timeframes?.length?' Reused timeframe: equal explicit frames do not establish3 separate timeframe views.':''}${sum.distinct_references<sum.tagged?' Duplicate reference: do not pretend these establish3 independent views.':''}`}));
++        body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{screenshotsReload:'true'},text:'Reload saved evidence (discard unsaved selections)',onclick:async()=>{
++          if(!guard())return;busy=true;generation++;for(const s of states.values())cancel(s);disable();
++          try{const out=await global.API.get('/trades/'+id+'/screenshots');if(!valid())return;view=out;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message||'Evidence reload unavailable','err');}finally{busy=false;if(valid())disable();}
++        }}));
++        const legacy=U.h('div',{class:'card',style:'margin-top:12px'});legacy.appendChild(U.h('h4',{text:'Unassigned legacy screenshot'}));legacy.appendChild(U.h('div',{class:'tiny muted',text:view.legacy?.image?'Original reference preserved, excluded from all3 roles; no timeframe/bias/location/trigger guessed from entry TF or file.':'No legacy reference recorded.'}));if(view.legacy?.display_image)legacy.appendChild(imageButton(view.legacy.display_image,'View preserved unassigned image'));else if(view.legacy?.image)legacy.appendChild(U.h('div',{class:'tiny warn',text:'Original reference preserved but not rendered: unsupported/unsafe/over-budget media. Financial reality is unaffected.'}));body.appendChild(legacy);
++        for(const r of roles){
++          const slot=view.slots[r],node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{screenshotRole:r}}),localGeneration=generation;
++          const s={node,slot,version:0,pending:false,reader:null,image:slot.image||''};states.set(r,s);
++          node.innerHTML=`<h4>${r.toUpperCase()} — ${U.esc(slot.timeframe||'timeframe not recorded')}</h4><p class="small">${U.esc(questions[r])}</p><div class="tiny muted" data-screenshot-metadata></div>
++            <label class="field"><span>Your explicit timeframe (e.g.1d,4h,15m; M means months)</span><input data-screenshot-timeframe maxlength="7" value="${U.esc(slot.timeframe||'')}" placeholder="Choose — no default" /></label>
++            <label class="field"><span>External HTTPS image reference (unverified, no automatic load)</span><input data-screenshot-link value="${U.esc(slot.kind==='external_link'?slot.image:'')}" placeholder="https://charts.example/your-chart.png" /></label>
++            <label class="field"><span>Or upload a static PNG / JPEG / WebP (1.5 MB maximum)</span><input type="file" data-screenshot-file accept="image/png,image/jpeg,image/webp" /></label>
++            <label class="field"><span>Your optional visual-context note</span><textarea data-screenshot-note maxlength="2000">${U.esc(slot.note||'')}</textarea></label><div data-screenshot-preview></div>`;
++          const el=k=>node.querySelector(`[data-screenshot-${k}]`),metadata=el('metadata');
++          metadata.textContent=slot.state==='stored'?`${slot.source.startsWith('imported_')?'Imported historical evidence; provenance/capture unverified. Received':'Human reference recorded'} ${slot.recorded_at}. Source: ${slot.source}. Recording time is not original capture time.${slot.original_recorded_at?' Historical timestamp declared '+slot.original_recorded_at+' (unverified).':''}${slot.matches_current_trade===true?' Current saved-record financial context (not capture verification).':slot.matches_current_trade===null?' Original historical context unavailable; not inferred from imported finance.':' Prior saved context; original image/time retained after correction, not current verification.'}${slot.kind==='external_link'?' External content unverified and may change.':''}`:slot.state==='unavailable'?'Stored metadata unavailable; no known view credited. Explicit removal/repair possible.':'Missing: no original view is invented.';
++          if(slot.matches_current_trade===false&&slot.recorded_context)metadata.appendChild(U.h('div',{text:`Prior saved context: entry ${slot.recorded_context.entry??'unknown'}, stop ${slot.recorded_context.stop??'unknown'}, exit ${slot.recorded_context.exit??'unknown'}.`}));
++          if(slot.image)node.appendChild(imageButton(slot.image,'View saved '+r.toUpperCase()+' reference'));
++          const preview=()=>{const box=el('preview');box.replaceChildren(U.h('div',{class:'tiny muted',text:'Selection is unsaved; only Save records a labelled reference.'}));if(/^data:image\/(png|jpeg|webp);base64,/.test(s.image)){const img=U.h('img',{src:s.image,alt:'Unsaved '+r.toUpperCase()+' selection',style:'max-height:180px;max-width:100%'});box.appendChild(img);}};
++          el('link').addEventListener('input',()=>{cancel(s);s.image=el('link').value.trim();el('file').value='';el('preview').replaceChildren(U.h('span',{class:'tiny muted',text:'External selection unsaved, not loaded or verified.'}));disable();});
++          el('file').addEventListener('change',()=>{
++            if(!guard())return;cancel(s);const f=el('file').files[0];if(!f){disable();return;}
++            if(!['image/png','image/jpeg','image/webp'].includes(f.type)){global.App.toast('Use a static PNG, JPEG or WebP; no active/vector/animated upload.','err');disable();return;}
++            if(f.size>1500000){global.App.toast('Image exceeds1.5 MB. Compress locally before selecting.','err');disable();return;}
++            s.pending=true;const version=s.version,reader=s.reader=new global.FileReader();disable();
++            reader.onload=()=>{if(!valid()||localGeneration!==generation||version!==s.version)return;s.pending=false;s.reader=null;const value=String(reader.result);if(!/^data:image\/(png|jpeg|webp);base64,/.test(value)){global.App.toast('Raster selection unavailable.','err');disable();return;}s.image=value;el('link').value='';preview();disable();};
++            reader.onerror=()=>{if(!valid()||localGeneration!==generation||version!==s.version)return;s.pending=false;s.reader=null;global.App.toast('File could not be read; no screenshot recorded.','err');disable();};reader.readAsDataURL(f);
++          });
++          s.save=U.h('button',{class:'btn sm primary',type:'button',dataset:{screenshotSave:'true'},text:'Save '+r.toUpperCase()+' view',onclick:()=>write(false)});s.remove=U.h('button',{class:'btn sm ghost danger',type:'button',dataset:{screenshotRemove:'true'},text:'Remove saved '+r.toUpperCase()+' view',onclick:()=>write(true)});
++          const clear=U.h('button',{class:'btn sm ghost',type:'button',dataset:{screenshotClear:'true'},text:'Clear unsaved selection (not saved image)',onclick:()=>{if(!guard())return;cancel(s);s.image='';el('link').value='';el('file').value='';el('preview').replaceChildren(U.h('span',{class:'tiny muted',text:'Selection cleared, saved reference unchanged. Select image before saving.'}));disable();}});node.appendChild(U.h('div',{class:'row wrap gap-8'},s.save,clear,s.remove));body.appendChild(node);
++          async function write(remove){
++            if(!guard()||stale||s.pending)return;
++            const frame=el('timeframe').value.trim();if(!remove&&(!/^[1-9]\d{0,3}[mhdwM]$/.test(frame)||!s.image)){global.App.toast('Choose an explicit canonical timeframe and upload/image HTTPS reference first.','err');return;}
++            busy=true;disable();
++            try{const out=remove?await global.API.del('/trades/'+id+'/screenshots/'+r,{revision:slot.revision}):await global.API.put('/trades/'+id+'/screenshots/'+r,{timeframe:frame,image:s.image,note:el('note').value,revision:slot.revision});if(!valid())return;view=out;draw();global.App.toast(remove?'Saved role removed; other roles/legacy/financial truth unchanged.':'Labelled reference recorded; unsaved selections cleared. Recording time is not original capture time.','ok');}
++            catch(e){if(valid()){if(e.status===409)stale=true;global.App.toast(e.message||'Visual evidence could not be recorded','err');}}
++            finally{busy=false;if(valid())disable();}
++          }
++        }
++        disable();
++      }
++      draw();return global.App.modal({title:'Saved HTF / MTF / LTF visual evidence',body,wide:true,actions:[{label:'Close — unsaved selections not recorded',ghost:true}],onClose:()=>{alive=false;generation++;for(const s of states.values())cancel(s);}});
++    },
++  };
++})(window);
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index 18856dc..bd89c58 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -113,7 +113,7 @@
+           const w = U.h('div', { class: 'grid g2' });
+           w.innerHTML = `
+             <div class="card"><div class="card-head"><h3>Import trades</h3></div>
+-              <p class="small muted-2">Paste a CSV export from your broker or platform. Column names are auto-detected (symbol/ticker, side/type, size/qty/volume, entry/open price, exit/close price, stop, target, dates, fees, P&L).</p>
++              <p class="small muted-2">Paste a CSV export from your broker/platform or this app. Optional HTF / MTF / LTF references return as imported, unverified evidence; server receiving time is not original capture time. File selection limit20 MB; never silently truncated. Column names are auto-detected (symbol/ticker, side/type, size/qty/volume, entry/open price, exit/close price, stop, target, dates, fees, P&L).</p>
+               <label class="field"><span>Import into account</span><select id="im-account">${Store.accounts.map((a) => `<option value="${a.id}">${U.esc(a.name)}</option>`).join('')}</select></label>
+               <label class="field"><span>Paste CSV</span><textarea id="im-csv" style="min-height:150px" placeholder="symbol,direction,size,entry,exit,fees,opened_at,closed_at&#10;EURUSD,long,1.5,1.0850,1.0925,7,2026-09-01 09:15,2026-09-01 12:40"></textarea></label>
+               <div class="row" style="gap:8px"><button class="btn primary sm" id="im-run">Import</button>
+@@ -139,37 +139,46 @@
+               </div>
+               <div id="ex-out" class="field-note"></div>
+             </div>`;
++          const mediaContext={account:Store.accountId,user:Store.user?.id,token:API.getToken()};let csvRead=0,jsonRead=0;
++          const currentMediaPane=()=>w.isConnected&&mediaContext.account===Store.accountId&&mediaContext.user===Store.user?.id&&mediaContext.token===API.getToken();
++          const readAllowed=f=>{if(!currentMediaPane()){global.App.toast('Workspace/account changed; reopen the data pane.','err');return false;}if(f.size>20000000){global.App.toast('File exceeds20 MB; use a smaller backup/account/date slice. Nothing truncated or imported.','err');return false;}return true;};
+           U.$('#im-run', w).addEventListener('click', async () => {
++            if(!currentMediaPane())return global.App.toast('Workspace/account changed; reopen the data pane before importing.','err');
+             const csv = U.$('#im-csv', w).value;
+             const out = U.$('#im-out', w);
+             out.textContent = 'Importing…';
+             try {
+               const d = await API.post('/import/csv', { csv, account_id: U.$('#im-account', w).value });
+-              out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`;
++              if(!currentMediaPane())return;
++              out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
+               Store.invalidate(); global.App.toast('Import complete', 'ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           });
+           const file = U.$('#im-file', w);
+           file.addEventListener('change', () => {
+-            const f = file.files[0]; if (!f) return;
++            const f = file.files[0]; if (!f||!readAllowed(f)) return;const attempt=++csvRead;
+             const r = new FileReader();
+-            r.onload = () => { U.$('#im-csv', w).value = String(r.result).slice(0, 4e6); };
++            r.onload = () => { if(currentMediaPane()&&attempt===csvRead)U.$('#im-csv', w).value = String(r.result); };
++            r.onerror=()=>{if(currentMediaPane()&&attempt===csvRead)global.App.toast('File could not be read; no import performed.','err');};
+             r.readAsText(f);
+           });
+           U.$('#ex-csv', w).addEventListener('click', async () => { try { await API.download('/export/csv', 'trades.csv'); } catch { global.App.toast('Export failed', 'err'); } });
+           U.$('#ex-json', w).addEventListener('click', async () => { try { await API.download('/export/json', 'tradejournal-backup.json'); } catch { global.App.toast('Export failed', 'err'); } });
+           const jf = U.$('#im-json', w);
+           jf.addEventListener('change', () => {
+-            const f = jf.files[0]; if (!f) return;
++            const f = jf.files[0]; if (!f||!readAllowed(f)) return;const attempt=++jsonRead;
+             const r = new FileReader();
+             r.onload = async () => {
++              if(!currentMediaPane()||attempt!==jsonRead)return;
+               try {
+                 const data = JSON.parse(String(r.result));
+                 const d = await API.post('/import/json', { data });
+-                U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`;
+-                await Store.reloadAll(); global.App.toast('Backup restored', 'ok'); global.App.refresh();
+-              } catch (e) { U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
++                if(!currentMediaPane()||attempt!==jsonRead)return;
++                U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
++                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length?'Financial restore recorded; review optional media omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length)global.App.refresh();
++              } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+             };
++            r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
+             r.readAsText(f);
+           });
+           U.$('#reseed', w).addEventListener('click', async () => {
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index c06d71c..30987d8 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -25,6 +25,7 @@
+       <label class="field"><span>3. What would you do differently / repeat?</span><textarea id="jr-different" maxlength="2000">${U.esc(trade.lesson||'')}</textarea></label>
+       <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
+     if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
++    if(!capture&&Views.screenshots)body.appendChild(Views.screenshots.card(trade));
+     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
+     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
+       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
+@@ -160,7 +161,7 @@
+             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
+             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
+               ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', '']].map(([k, l]) =>
++              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', '']].map(([k, l]) =>
+               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
+           </tr></thead>
+           <tbody>
+@@ -183,6 +184,7 @@
+             <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
+             <td class="tiny"><span data-execution-state>${U.esc(Views.execution?Views.execution.state(t.execution_review):'Unreviewed')}</span>${t.status==='closed'?` <button class="btn xs ghost" data-execution="${t.id}">Execution</button>`:''}</td>
+             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
++            <td class="tiny"><button class="btn xs ghost" data-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
+           </tr>`).join('')}
+           </tbody>
+@@ -195,6 +197,7 @@
+       }));
+       U.$$('[data-execution]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.execution)Views.execution.open(Number(b.dataset.execution));else global.App.toast('Execution review UI unavailable; no grade inferred.','err');}));
+       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
++      U.$$('[data-screenshots]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.screenshots)Views.screenshots.open(Number(b.dataset.screenshots));else global.App.toast('Visual evidence UI unavailable; nothing is inferred.','err');}));
+       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
+       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
+         if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution]')) return;
+@@ -310,15 +313,7 @@
+         <label class="field span4"><span>Thesis — why did you take this trade?</span><textarea id="tf-thesis" placeholder="Context, level, catalyst, what would invalidate it…">${U.esc(t.thesis || '')}</textarea></label>
+         <label class="field span2"><span>Execution notes</span><textarea id="tf-notes" placeholder="Management decisions, partials, how you felt during…">${U.esc(t.execution_notes || '')}</textarea></label>
+         <label class="field span2"><span>Lesson / review</span><textarea id="tf-lesson" placeholder="What will you repeat or never do again?">${U.esc(t.lesson || '')}</textarea></label>
+-        <label class="field span4"><span>Chart screenshot <span class="muted tiny">(paste an image URL, or upload the chart you were looking at — entry, management and exit shots are worth more than any note)</span></span>
+-          <div class="row" style="gap:8px;align-items:flex-start">
+-            <input id="tf-shot" value="${U.esc(t.screenshot_url && !t.screenshot_url.startsWith('data:') ? t.screenshot_url : '')}" placeholder="https://…" />
+-            <label class="btn sm ghost" style="cursor:pointer;flex:none">Upload…<input type="file" id="tf-shot-file" accept="image/*" hidden /></label>
+-            <button class="btn sm ghost" type="button" id="tf-shot-clear" style="flex:none">Clear</button>
+-          </div>
+-          <div id="tf-shot-preview" style="margin-top:8px">${t.screenshot_url ? `<img src="${U.esc(t.screenshot_url)}" alt="chart" style="max-height:180px;max-width:100%;border:1px solid var(--border);border-radius:8px" />` : ''}</div>
+-          <div class="field-note">Uploads are stored with the trade (keep them under ~1&nbsp;MB — the journal is a single local file).</div>
+-        </label>
++
+       </div>
+       <div class="sep"></div>
+       <div class="row-between"><h3 style="margin:0">Pre-trade checklist</h3><label class="tiny muted row" style="gap:6px"><input type="checkbox" id="tf-apply-checklist" /> use playbook checklist</label></div>
+@@ -395,26 +390,6 @@
+     });
+     g('strategy').addEventListener('change', () => { if (applyChk.checked) { const s = Store.strategyById(g('strategy').value); renderChecklist(s && s.checklist && s.checklist.length ? s.checklist : (Store.user.default_checklist || [])); } });
+ 
+-    /* screenshot upload → data URL stored on the trade */
+-    let shotData = t.screenshot_url && t.screenshot_url.startsWith('data:') ? t.screenshot_url : '';
+-    const shotFile = U.$('#tf-shot-file', node);
+-    if (shotFile) shotFile.addEventListener('change', () => {
+-      const f = shotFile.files[0];
+-      if (!f) return;
+-      if (f.size > 1.5e6) { toast('Image is larger than 1.5 MB — please compress it first.', 'err'); return; }
+-      const reader = new FileReader();
+-      reader.onload = () => {
+-        shotData = String(reader.result);
+-        U.$('#tf-shot-preview', node).innerHTML = `<img src="${shotData}" alt="chart" style="max-height:180px;max-width:100%;border:1px solid var(--border);border-radius:8px" />`;
+-        toast('Chart attached', 'ok');
+-      };
+-      reader.readAsDataURL(f);
+-    });
+-    const shotClear = U.$('#tf-shot-clear', node);
+-    if (shotClear) shotClear.addEventListener('click', () => {
+-      shotData = ''; U.$('#tf-shot', node).value = ''; U.$('#tf-shot-preview', node).innerHTML = ''; if (shotFile) shotFile.value = '';
+-    });
+-
+     updateSpec(); calc();
+ 
+     function collect() {
+@@ -442,7 +417,7 @@
+         confidence: g('confidence').value, adherence: g('adherence').value,
+         mistakes: g('mistakes').value, tags: g('tags').value,
+         thesis: g('thesis').value, execution_notes: g('notes').value, lesson: g('lesson').value,
+-        screenshot_url: shotData || g('shot').value,
++        screenshot_url: t.screenshot_url || '', // Preserve unassigned legacy; role evidence is a separate saved-record API.
+         rule_checks: U.$$('[data-chk]', chkWrap).map((c, i) => ({ label: c.parentElement.textContent.trim(), passed: c.checked })),
+       };
+       if(requiresAdmission() && !body.emotion_before.trim())throw new Error('Name your emotional state before a prospective entry. Already-executed/historical truth can remain incomplete.');
+@@ -518,6 +493,7 @@
+     U.$('#tf-guardrail-refresh',node).addEventListener('click',refreshGuard);
+     refreshGuard();
+     if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
++    if(Views.screenshots)node.appendChild(Views.screenshots.card(t));
+     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
+   };
+ 
+diff --git a/src/db.js b/src/db.js
+index b2c37ab..27188d6 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -240,6 +240,20 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     resolved_at TEXT
+   );
++CREATE TABLE IF NOT EXISTS trade_screenshots (
++    trade_id INTEGER NOT NULL REFERENCES trades(id) ON DELETE CASCADE,
++    role TEXT NOT NULL CHECK(role IN ('htf','mtf','ltf')),
++    timeframe TEXT NOT NULL,
++    image TEXT NOT NULL,
++    note TEXT NOT NULL DEFAULT '',
++    source TEXT NOT NULL,
++    recorded_at TEXT NOT NULL,
++    original_recorded_at TEXT,
++    reference_sha256 TEXT NOT NULL,
++    context_json TEXT NOT NULL,
++    context_hash TEXT NOT NULL,
++    PRIMARY KEY(trade_id,role)
++  );
+ CREATE TABLE IF NOT EXISTS goals (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 20a189f..644cce1 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -14,6 +14,7 @@ const J = require('../journaling');
+ const RR = require('../routine-records');
+ const Routine = require('../routine');
+ const Execution = require('../execution-review');
++const Screenshots = require('../screenshots');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+@@ -400,6 +401,18 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
+ });
+ 
++// M87 optional owned visual evidence is independent from financial truth,
++// mandatory writing and permission. Never infer legacy role or capture time.
++const media=fn=>async(req,res)=>{
++  try {
++    if(!/^[1-9]\d*$/.test(req.params.id))return res.status(404).json({error:'Trade not found'});
++    res.json(await fn(req));
++  }catch(e){if(e.code==='screenshot_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Screenshot evidence could not be read/recorded. Existing financial truth is unchanged.'});}
++};
++router.get('/trades/:id/screenshots',requireAuth,media(req=>Screenshots.read(req.user.id,Number(req.params.id))));
++router.put('/trades/:id/screenshots/:role',requireAuth,media(req=>Screenshots.change(req.user.id,Number(req.params.id),req.params.role,req.body)));
++router.delete('/trades/:id/screenshots/:role',requireAuth,media(req=>Screenshots.change(req.user.id,Number(req.params.id),req.params.role,req.body,{remove:true})));
++
+ // Optional post-close HUMAN execution review is separate from financial CRUD
+ // and mandatory core/loss writing. It cannot backfill pre-entry setup grades.
+ router.post('/trades/:id/execution-review',requireAuth,async(req,res)=>{
+@@ -1119,15 +1132,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
+ }));
+ 
+ /* ------------------------------------------------------- import / export */
+-router.get('/export/csv', requireAuth, async (req, res) => {
++const backup=fn=>async(req,res)=>{try{await fn(req,res);}catch{return res.status(503).json({error:'Screenshot-enabled backup unavailable; existing financial truth unchanged.'});}};
++router.get('/export/csv', requireAuth, backup(async (req, res) => {
+   const tz = (await settingsOf(req)).timezone;
+   const f = tradeFilters(req);
+   const { where, params, order } = T.listQuery(f);
+-  const rows = (await db.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({ ...params, user_id: req.user.id })).map((t) => P.decorate(t, tz));
++  const rows = (await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({...params,user_id:req.user.id}));})).map(t=>({...P.decorate(t,tz),screenshot_views_json:JSON.stringify(t.screenshots)}));
+   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
+     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
+     'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
+-    'thesis', 'lesson', 'execution_notes', 'notes'];
++    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json'];
+   const esc = (v) => {
+     const s = v === null || v === undefined ? '' : String(v);
+     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+@@ -1136,9 +1150,9 @@ router.get('/export/csv', requireAuth, async (req, res) => {
+   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+   res.setHeader('Content-Disposition', `attachment; filename="trades-${new Date().toISOString().slice(0, 10)}.csv"`);
+   res.send(csv);
+-});
++}));
+ 
+-router.get('/export/json', requireAuth, async (req, res) => {
++router.get('/export/json', requireAuth, backup(async (req, res) => {
+   const userId = req.user.id;
+   const data = {
+     exported_at: new Date().toISOString(), version: 1,
+@@ -1146,7 +1160,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
+     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
+     strategies: (await db.prepare('SELECT * FROM strategies WHERE user_id=?').all(userId)).map(parseStrategy),
+     instruments: await db.prepare('SELECT * FROM instruments WHERE user_id=?').all(userId),
+-    trades: await db.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId),
++    trades: await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId));}),
+     journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
+     goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
+     watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
+@@ -1154,7 +1168,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
+   res.setHeader('Content-Type', 'application/json');
+   res.setHeader('Content-Disposition', `attachment; filename="tradejournal-backup-${new Date().toISOString().slice(0, 10)}.json"`);
+   res.send(JSON.stringify(data, null, 2));
+-});
++}));
+ 
+ /** Import from CSV — auto-detects the usual broker column names. */
+ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -1179,10 +1193,12 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+     entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
+     tags: findCol(['tags', 'tag', 'labels']),
+     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
++    screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
+     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
+   };
+   if (map.symbol < 0) return res.status(400).json({ error: 'Could not find a symbol/ticker column in the CSV.' });
+   const accountId = num(req.body.account_id, 0) || (await db.prepare('SELECT id FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
++  if(!Number.isSafeInteger(accountId)||!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id))return res.status(404).json({error:'Owned destination account not found.'});
+   const instruments = await instrumentMap(req.user.id);
+   const tz = (await settingsOf(req)).timezone;
+   let inserted = 0, skipped = 0;
+@@ -1227,18 +1243,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+             if (trade.risk_amount > 0) trade.r_multiple = Math.round((net / trade.risk_amount) * 10000) / 10000;
+           }
+         }
+-        collected.push(trade);
++        const media=Screenshots.parsePortable(map.screenshot_views_json>-1?r[map.screenshot_views_json]:undefined,{json:true});
++        trade.screenshot_url=Screenshots.legacyImport(map.screenshot_url>-1?r[map.screenshot_url]:undefined,media);
++        collected.push({trade,media});
+         inserted++;
+       } catch (e) { skipped++; if (errors.length < 5) errors.push(`Row ${i + 1}: ${e.message}`); }
+     }
+   }
+-  if (collected.length) await db.batch(T.batchStatements(req.user.id, collected));
++  let media_imported=0;try{if(collected.length)media_imported=await importTradesWithMedia(req.user.id,collected);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+   res.json({
+-    ok: true, inserted, skipped, errors,
++    ok: true, inserted, skipped, errors, media_imported, ...mediaFeedback(collected),
+     detected: Object.fromEntries(Object.entries(map).map(([k, v]) => [k, v > -1 ? header[v] : null])),
+   });
+ });
+ 
++// Actual transaction insert IDs (never raw backup IDs), with optional media
++// warnings separate from financial parsing. Storage failure rolls back together.
++function mediaFeedback(collected){return {media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
++async function importTradesWithMedia(userId,collected,extras=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);}
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);return n;
++});}
++
+ function parseCsv(text) {
+   const rows = [];
+   let row = [], field = '', inQuotes = false;
+@@ -1262,10 +1288,11 @@ router.post('/import/json', requireAuth, async (req, res) => {
+   const data = req.body && req.body.data ? req.body.data : req.body;
+   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
+   const userId = req.user.id;
+-  const accountMap = {};
++  const accountMap = Object.create(null);
+   const instruments = await instrumentMap(userId);
+   const tz = (await settingsOf(req)).timezone;
+-  let inserted = 0;
++  let inserted = 0,media_imported=0;
++  const collected = [];
+   try {
+     // reads happen before the write batch (libSQL never interleaves them)
+     const myAccounts = await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId);
+@@ -1275,7 +1302,6 @@ router.post('/import/json', requireAuth, async (req, res) => {
+       accountMap[a.id] = match ? match.id : (def ? def.id : null);
+     }
+     const existingStrategies = new Set((await db.prepare('SELECT name FROM strategies WHERE user_id=?').all(userId)).map((r) => r.name));
+-    const collected = [];
+     const stmts = [];
+     for (const t of data.trades) {
+       const spec = instruments[String(t.symbol).toUpperCase()] || null;
+@@ -1284,7 +1310,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+       trade.entry_permission = 'record_only';
+       trade.guardrail_snapshot = null;
+       if (!trade.account_id) continue;
+-      collected.push(trade);
++      const media=Screenshots.parsePortable(t.screenshots);
++      trade.screenshot_url=Screenshots.legacyImport(t.screenshot_url,media);
++      collected.push({trade,media});
+       inserted++;
+     }
+     for (const s of (data.strategies || [])) {
+@@ -1305,9 +1333,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
+       });
+     }
+-    await db.batch([...T.batchStatements(userId, collected), ...stmts]);
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
+-  res.json({ ok: true, inserted });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
+ });
+ 
+ /* ---------------------------------------------------------------- settings */
+@@ -1344,7 +1372,7 @@ router.put('/settings', requireAuth, async (req, res) => {
+ router.post('/demo/seed', requireAuth, async (req, res) => {
+   const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
+   const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
+-  res.json({ ok: true, inserted });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
+ });
+ 
+ /**
+diff --git a/src/screenshots.js b/src/screenshots.js
+new file mode 100644
+index 0000000..332d159
+--- /dev/null
++++ b/src/screenshots.js
+@@ -0,0 +1,157 @@
++'use strict';
++/** M87 human visual journal evidence. Explicit HTF/MTF/LTF roles/timeframes,
++ * never provider/broker/compliance/capture-time verification or a risk input. */
++const crypto=require('crypto'),net=require('net');
++const ROLES=Object.freeze(['htf','mtf','ltf']);
++const QUESTIONS=Object.freeze({htf:'Why this trend direction? What was the initial bias, structure and key levels?',mtf:'Why this location? Which supply/demand or flip zone and available liquidity?',ltf:'What was your entry trigger and confirmation?'});
++const MAX_BYTES=1500000,MAX_PIXELS=24000000;
++const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
++function invalid(message,status=400){const e=new Error(message);e.code='screenshot_invalid';e.status=status;return e;}
++function role(value){if(!ROLES.includes(value))throw invalid('Choose exactly htf, mtf or ltf.');return value;}
++function timeframe(value){
++  if(typeof value!=='string'||!/^([1-9]\d{0,3})(m|h|d|w|M)$/.test(value))throw invalid('Choose an explicit canonical timeframe such as 15m,4h,1d,1w or1M. No role/frame is inferred.');
++  const [,n,u]=value.match(/^([1-9]\d{0,3})(m|h|d|w|M)$/),caps={m:1440,h:48,d:365,w:52,M:12};
++  if(Number(n)>caps[u])throw invalid('Timeframe is outside the supported explicit-label range.');return value;
++}
++function dimensions(width,height){if(!width||!height||width>16000||height>16000||width*height>MAX_PIXELS)throw invalid('Raster dimensions unavailable or exceed the24MP app budget.');return {width,height};}
++function crc(b){let v=0xffffffff;for(const n of b){v^=n;for(let i=0;i<8;i++)v=(v>>>1)^((v&1)?0xedb88320:0);}return (v^0xffffffff)>>>0;}
++function raster(b,mime){
++  if(mime==='png'){
++    if(b.length<57||!b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))throw invalid('PNG signature/structure is unavailable.');
++    let pos=8,size=null,data=false,end=false,palette=false,colour=null;
++    while(pos<b.length){if(pos+12>b.length)throw invalid('Truncated PNG chunk.');const n=b.readUInt32BE(pos),name=b.toString('ascii',pos+4,pos+8);if(!/^[A-Za-z]{4}$/.test(name)||pos+12+n>b.length)throw invalid('Invalid PNG chunk bounds.');
++      const payload=b.subarray(pos+8,pos+8+n);if(crc(b.subarray(pos+4,pos+8+n))!==b.readUInt32BE(pos+8+n))throw invalid('PNG chunk checksum failed.');
++      if(['acTL','fcTL','fdAT'].includes(name))throw invalid('Use a static PNG screenshot, not animation.');
++      if(name[0]===name[0].toUpperCase()&&!['IHDR','PLTE','IDAT','IEND'].includes(name))throw invalid('Unsupported PNG critical chunk.');
++      if(pos===8&&name!=='IHDR')throw invalid('PNG dimensions must be first.');
++      if(name==='IHDR'){if(size||n!==13)throw invalid('Invalid PNG header.');size=dimensions(payload.readUInt32BE(0),payload.readUInt32BE(4));colour=payload[9];if(!({0:[1,2,4,8,16],2:[8,16],3:[1,2,4,8],4:[8,16],6:[8,16]}[colour]||[]).includes(payload[8])||payload[10]||payload[11]||payload[12]>1)throw invalid('Unsupported PNG coding.');}
++      if(name==='PLTE'){if(palette||data||!n||n%3||n>768)throw invalid('Invalid PNG palette.');palette=true;}
++      if(name==='IDAT'&&n){if(colour===3&&!palette)throw invalid('Indexed PNG lacks palette.');data=true;}pos+=n+12;
++      if(name==='IEND'){if(n||pos!==b.length)throw invalid('Invalid PNG ending.');end=true;break;}
++    }
++    if(!size||!data||!end)throw invalid('PNG lacks dimensions/data/ending.');return size;
++  }
++  if(mime==='jpeg'){
++    if(b.length<16||b[0]!==255||b[1]!==216||b[b.length-2]!==255||b[b.length-1]!==217)throw invalid('JPEG signature/ending unavailable.');
++    let pos=2,size=null,components=null;
++    while(pos<b.length-2){if(b[pos++]!==255)throw invalid('Invalid JPEG marker.');while(b[pos]===255)pos++;const marker=b[pos++];if(pos+2>b.length)throw invalid('Truncated JPEG marker.');const n=b.readUInt16BE(pos);if(n<2||pos+n>b.length)throw invalid('Invalid JPEG segment.');
++      if([192,193,194].includes(marker)){if(size||n<8||b[pos+2]!==8||![1,3,4].includes(b[pos+7])||n!==8+3*b[pos+7])throw invalid('Invalid/unsupported JPEG frame.');components=new Set();for(let i=0;i<b[pos+7];i++){const p=pos+8+3*i;if(components.has(b[p])||!(b[p+1]>>4)||(b[p+1]>>4)>4||!(b[p+1]&15)||(b[p+1]&15)>4||b[p+2]>3)throw invalid('Invalid JPEG component.');components.add(b[p]);}size=dimensions(b.readUInt16BE(pos+5),b.readUInt16BE(pos+3));}
++      if(marker===218){if(!size||n<8||!b[pos+2]||b[pos+2]>components.size||n!==6+2*b[pos+2]||pos+n>=b.length-2)throw invalid('JPEG lacks valid dimensions/scan.');for(let i=0;i<b[pos+2];i++){const p=pos+3+2*i;if(!components.has(b[p])||(b[p+1]>>4)>3||(b[p+1]&15)>3)throw invalid('Invalid JPEG scan component.');}return size;}pos+=n;
++    }throw invalid('JPEG lacks a supported frame/scan.');
++  }
++  if(mime==='webp'){
++    if(b.length<26||b.toString('ascii',0,4)!=='RIFF'||b.toString('ascii',8,12)!=='WEBP'||b.readUInt32LE(4)!==b.length-8)throw invalid('WebP container unavailable.');
++    let pos=12,size=null,data=false;
++    while(pos<b.length){if(pos+8>b.length)throw invalid('Truncated WebP chunk.');const name=b.toString('ascii',pos,pos+4),n=b.readUInt32LE(pos+4),p=b.subarray(pos+8,pos+8+n);if(pos+8+n+(n%2)>b.length)throw invalid('Invalid WebP chunk bounds.');
++      if(['ANIM','ANMF'].includes(name))throw invalid('Use a static chart raster, not an animation.');
++      if(name==='VP8X'){if(n!==10||p[0]&0xc3||p[1]||p[2]||p[3])throw invalid('Invalid/animated WebP header.');size=dimensions(p.readUIntLE(4,3)+1,p.readUIntLE(7,3)+1);}
++      if(name==='VP8 '){if(n<10||p[0]&1||((p[0]>>>1)&7)>3||!(p[0]&16)||p.toString('hex',3,6)!=='9d012a')throw invalid('Invalid WebP frame.');const s=dimensions(p.readUInt16LE(6)&16383,p.readUInt16LE(8)&16383);if(size&&(size.width!==s.width||size.height!==s.height))throw invalid('WebP dimensions contradict frame.');size=s;data=true;}
++      if(name==='VP8L'){if(n<6||p[0]!==47||p.readUInt32LE(1)>>>29)throw invalid('Invalid WebP lossless frame.');const v=p.readUInt32LE(1),s=dimensions((v&16383)+1,((v>>>14)&16383)+1);if(size&&(size.width!==s.width||size.height!==s.height))throw invalid('WebP dimensions contradict frame.');size=s;data=true;}
++      pos+=8+n+(n%2);
++    }if(!size||!data)throw invalid('WebP lacks dimensions/frame.');return size;
++  }throw invalid('Use PNG,JPEG or static WebP.');
++}
++function image(value){
++  if(typeof value!=='string'||!value)throw invalid('Provide a raster upload or an external HTTPS image link.');
++  if(value.startsWith('data:')){
++    if(value.length>Math.ceil(MAX_BYTES/3)*4+64)throw invalid('Image exceeds the1.5MB decoded app budget.');
++    const m=value.match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/);if(!m)throw invalid('Only canonical base64 PNG,JPEG,WebP uploads are accepted.');
++    const b=Buffer.from(m[2],'base64');if(!b.length||b.length>MAX_BYTES||b.toString('base64')!==m[2])throw invalid('Invalid/oversized base64 image.');
++    return {image:value,kind:'upload',...raster(b,m[1]),bytes:b.length,reference_sha256:hash(value),structural_raster_check:true,chart_verified:false};
++  }
++  if(value.length>4000||/[\s\x00-\x1f\x7f]/.test(value))throw invalid('External image link is invalid/oversized.');
++  let u;try{u=new URL(value);}catch{throw invalid('A full external HTTPS image URL is required.');}
++  const host=u.hostname.toLowerCase();if(u.protocol!=='https:'||u.username||u.password||!host.includes('.')||net.isIP(host.replace(/^\[|\]$/g,''))||/(^|\.)(localhost|local|internal)$/.test(host))throw invalid('Use an external HTTPS hostname without credentials/local/IP targets.');
++  if([...u.searchParams.keys()].some(k=>/(^|[-_])(token|auth|authorization|api[-_]?key|password|secret|signature|sig|credential)s?($|[-_])/i.test(k)))throw invalid('Do not store credentialed/signed image URLs; upload a local raster instead.');
++  u.hash='';
++  return {image:value,kind:'external_link',width:null,height:null,bytes:null,reference_sha256:hash(u.toString()),structural_raster_check:false,chart_verified:false};
++}
++function fields(body){
++  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['timeframe','image','note'].includes(k)))throw invalid('Provide only timeframe,image and optional plain-text note.');
++  const tf=timeframe(body.timeframe),note=body.note===undefined?'':body.note;if(typeof note!=='string'||note.length>2000)throw invalid('Screenshot note must be plain text, at most2000 characters.');
++  return {...image(body.image),timeframe:tf,note:note.trim()};
++}
++// Snapshot describes the SAVED record at attachment, not authenticated chart
++// pixels or actual capture time. Later financial correction keeps earlier media.
++const CONTEXT=['id','user_id','account_id','symbol','direction','status','opened_at','closed_at','entry','exit','stop','target','size','fees','entry_model','entry_tf','strategy_id','strategy_version'];
++const context=t=>Object.fromEntries(CONTEXT.map(k=>[k,t[k]??null]));
++const contextHash=t=>hash(JSON.stringify(context(t)));
++const NUMERIC_CONTEXT=['id','user_id','account_id','entry','exit','stop','target','size','fees','strategy_id','strategy_version'];
++const validContext=c=>!!c&&typeof c==='object'&&!Array.isArray(c)&&Object.keys(c).length===CONTEXT.length&&CONTEXT.every(k=>Object.hasOwn(c,k)&&(c[k]===null||(NUMERIC_CONTEXT.includes(k)?typeof c[k]==='number'&&Number.isFinite(c[k]):typeof c[k]==='string'&&c[k].length<=2000)));
++const frameKey=tf=>{const [,n,u]=tf.match(/^([1-9]\d{0,3})(m|h|d|w|M)$/);return u==='M'?n+'M':String(Number(n)*({m:60,h:3600,d:86400,w:604800}[u]));};
++const stamp=v=>{if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v))return null;const d=new Date(v);return Number.isFinite(d.getTime())&&d.toISOString()===v?d.getTime():null;};
++const ROW_KEYS=['trade_id','role','timeframe','image','note','source','recorded_at','original_recorded_at','reference_sha256','context_json','context_hash'];
++function revision(t,r,slot){return hash(JSON.stringify(['screenshot-v1',r,context(t),slot?ROW_KEYS.map(k=>[k,slot[k]??null]):null]));}
++function slotInfo(t,r,slot,nowMs=Date.now()){
++  const base={role:r,question:QUESTIONS[r],revision:revision(t,r,slot),state:'missing',image:null,timeframe:null,note:'',recorded_at:null,source:null,original_recorded_at:null,matches_current_trade:null,capture_time_verified:false,chart_verified:false};
++  if(!slot)return base;
++  try{
++    const data=fields({timeframe:slot.timeframe,image:slot.image,note:slot.note}),at=stamp(slot.recorded_at),snap=JSON.parse(slot.context_json);
++    if(slot.trade_id!==t.id||slot.role!==r||!['upload','external_link','imported_upload','imported_external_link'].includes(slot.source)||slot.source.replace('imported_','')!==data.kind
++      ||at===null||at>nowMs||slot.reference_sha256!==data.reference_sha256||!validContext(snap)||snap.id!==t.id||snap.user_id!==t.user_id||hash(slot.context_json)!==slot.context_hash
++      ||slot.original_recorded_at!==null&&stamp(slot.original_recorded_at)===null)throw invalid('Stored screenshot metadata is unavailable.',503);
++    const unknownImport=slot.source.startsWith('imported_')&&CONTEXT.filter(k=>!['id','user_id','account_id'].includes(k)).every(k=>snap[k]===null);
++    return {...base,...data,state:'stored',source:slot.source,recorded_at:slot.recorded_at,original_recorded_at:slot.original_recorded_at,recorded_context:unknownImport?null:snap,matches_current_trade:unknownImport?null:slot.context_hash===contextHash(t),capture_time_verified:false,chart_verified:false};
++  }catch{return {...base,state:'unavailable',note:'Stored image/metadata unavailable. Not counted as a known timeframe view; repair or explicitly remove.'};}
++}
++function view(t,rows,nowMs=Date.now()){
++  const slots=Object.fromEntries(ROLES.map(r=>[r,slotInfo(t,r,rows.find(s=>s.role===r),nowMs)])),known=Object.values(slots).filter(s=>s.state==='stored');
++  const frameGroups=new Map();for(const slot of known){const k=frameKey(slot.timeframe);if(!frameGroups.has(k))frameGroups.set(k,[]);frameGroups.get(k).push({role:slot.role,timeframe:slot.timeframe});}
++  const reused=[...frameGroups.values()].filter(g=>g.length>1);
++  const distinct=new Set(known.map(s=>s.reference_sha256)).size,legacyImage=typeof t.screenshot_url==='string'?t.screenshot_url:'';let safeLegacy=null;try{safeLegacy=image(legacyImage).image;}catch{}
++  return {trade_id:t.id,account_id:t.account_id,saved_record:context(t),slots,summary:{tagged:known.length,current:known.filter(s=>s.matches_current_trade).length,distinct_references:distinct,distinct_timeframes:frameGroups.size,reused_timeframes:reused,unavailable:Object.values(slots).filter(s=>s.state==='unavailable').length,
++    state:known.length===3&&distinct===3&&frameGroups.size===3?'three_tagged_views':known.length?'partial':'empty',broker_verified:false,capture_time_verified:false,
++    note:'Stored human-labelled chart references, not verified chart/timeframe content, broker execution or whole-course journal completion. Legacy unassigned image excluded; duplicate references do not establish3 independent views.'},
++    legacy:{image:legacyImage,display_image:safeLegacy,assigned_role:null,note:'Original unlabelled screenshot preserved. No role/timeframe is inferred from entry TF, timeframes, profit or filename.'}};
++}
++async function owned(store,userId,id){if(!Number.isSafeInteger(id)||id<=0)throw invalid('Trade not found',404);const t=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);if(!t)throw invalid('Trade not found',404);return t;}
++const rowsFor=(store,id)=>store.prepare('SELECT * FROM trade_screenshots WHERE trade_id=? ORDER BY role').all(id);
++async function read(userId,id){const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id);return view(t,await rowsFor(store,id));});}
++function wire(body,remove=false){
++  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!(remove?['revision']:['revision','timeframe','image','note']).includes(k))||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision))throw invalid('Read the current saved trade/slot first and provide its revision with only timeframe,image and optional note.');
++  if(remove)return null;const {revision:_,...payload}=body;return fields(payload);
++}
++async function change(userId,id,r,body,{remove=false}={}){
++  const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id);role(r);const data=wire(body,remove),rows=await rowsFor(store,id),old=rows.find(s=>s.role===r);
++    if(body.revision!==revision(t,r,old))throw invalid('Saved trade or screenshot changed after display. Reload before replacing/removing this role.',409);
++    if(remove){if(old)await store.prepare('DELETE FROM trade_screenshots WHERE trade_id=? AND role=?').run(id,r);}
++    else if(!old||old.image!==data.image||old.timeframe!==data.timeframe||old.note!==data.note||old.context_hash!==contextHash(t)||slotInfo(t,r,old).state!=='stored'){
++      await store.prepare(`INSERT INTO trade_screenshots(trade_id,role,timeframe,image,note,source,recorded_at,original_recorded_at,reference_sha256,context_json,context_hash)
++        VALUES (?,?,?,?,?,?,?,NULL,?,?,?) ON CONFLICT(trade_id,role) DO UPDATE SET timeframe=excluded.timeframe,image=excluded.image,note=excluded.note,source=excluded.source,recorded_at=excluded.recorded_at,original_recorded_at=NULL,reference_sha256=excluded.reference_sha256,context_json=excluded.context_json,context_hash=excluded.context_hash`)
++        .run(id,r,data.timeframe,data.image,data.note,data.kind,new Date().toISOString(),data.reference_sha256,JSON.stringify(context(t)),contextHash(t));
++    }
++    return view(t,await rowsFor(store,id));
++  });
++}
++// Portable media is untrusted historical declaration, never a replay of owned
++// API revisions/source clocks, live capture, grades or admission records.
++const PORTABLE_CONTEXT=CONTEXT.filter(k=>!['id','user_id','account_id'].includes(k));
++function portable(t,rows){
++  const v=view(t,rows),roles={};for(const r of ROLES){const slot=v.slots[r];if(slot.state!=='stored')continue;
++    roles[r]={timeframe:slot.timeframe,image:slot.image,note:slot.note,declared_recorded_at:slot.original_recorded_at||slot.recorded_at,
++      ...(slot.recorded_context?{declared_context:Object.fromEntries(PORTABLE_CONTEXT.map(k=>[k,slot.recorded_context[k]]))}:{})};
++  }
++  return {...t,screenshot_url:v.legacy.display_image||'',...(v.legacy.image&&!v.legacy.display_image?{screenshot_legacy_unavailable:true}:{}),screenshots:{version:1,roles,unavailable_roles:ROLES.filter(r=>v.slots[r].state==='unavailable')}};
++}
++async function portableRowsOn(store,rows){const out=[];for(const t of rows)out.push(portable(t,await rowsFor(store,t.id)));return out;}
++function parsePortable(raw,{json=false}={}){
++  const result={items:[],warnings:[],skipped:0};if(raw===undefined||raw===null||raw==='')return result;
++  if(json){try{raw=JSON.parse(raw);}catch{result.warnings.push('Invalid optional screenshot JSON; financial truth retained without images.');return result;}}
++  if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.version!==1||!raw.roles||typeof raw.roles!=='object'||Array.isArray(raw.roles)||Object.keys(raw.roles).length>20){result.warnings.push('Unsupported optional screenshot set; no roles/timeframes inferred.');return result;}
++  for(const key of Object.keys(raw.roles))if(!ROLES.includes(key)){result.skipped++;result.warnings.push('Unknown screenshot role skipped.');}
++  for(const r of ROLES){if(!Object.hasOwn(raw.roles,r))continue;const value=raw.roles[r];try{
++      if(!value||typeof value!=='object'||Array.isArray(value))throw invalid('Invalid role declaration.');
++      const data=fields({timeframe:value.timeframe,image:value.image,...(value.note===undefined?{}:{note:value.note})});let original=null,declaredContext=null;
++      if(value.declared_recorded_at!=null){const at=stamp(value.declared_recorded_at);if(at!==null&&at<=Date.now())original=value.declared_recorded_at;else result.warnings.push(r.toUpperCase()+': invalid/future historical recording timestamp dropped (unverified).');}
++      if(value.declared_context!==undefined){const c=value.declared_context;if(c&&typeof c==='object'&&!Array.isArray(c)&&Object.keys(c).length===PORTABLE_CONTEXT.length&&PORTABLE_CONTEXT.every(k=>Object.hasOwn(c,k)&&(c[k]===null||(NUMERIC_CONTEXT.includes(k)?typeof c[k]==='number'&&Number.isFinite(c[k]):typeof c[k]==='string'&&c[k].length<=2000)))){declaredContext=Object.fromEntries(PORTABLE_CONTEXT.map(k=>[k,c[k]]));}else result.warnings.push(r.toUpperCase()+': unavailable historical context, not guessed from financial import.');}
++      result.items.push({role:r,...data,original_recorded_at:original,declared_context:declaredContext});
++    }catch{result.skipped++;result.warnings.push(r.toUpperCase()+': unsafe/malformed optional reference/frame/note skipped; financial truth retained.');}}
++  return result;
++}
++function legacyImport(value,media){if(value===undefined||value===null||value==='')return '';try{return image(value).image;}catch{media.warnings.push('Unsafe/unsupported optional legacy screenshot skipped; never assigned a role.');return '';}}
++async function insertPortableOn(store,t,media){for(const item of media.items){const snap={...context(t),...(item.declared_context||Object.fromEntries(PORTABLE_CONTEXT.map(k=>[k,null]))),id:t.id,user_id:t.user_id,account_id:t.account_id},encoded=JSON.stringify(snap);
++    await store.prepare('INSERT INTO trade_screenshots(trade_id,role,timeframe,image,note,source,recorded_at,original_recorded_at,reference_sha256,context_json,context_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
++      .run(t.id,item.role,item.timeframe,item.image,item.note,'imported_'+item.kind,new Date().toISOString(),item.original_recorded_at,item.reference_sha256,encoded,hash(encoded));
++  }return media.items.length;
++}
++module.exports={ROLES,QUESTIONS,MAX_BYTES,MAX_PIXELS,fields,image,timeframe,role,hash,invalid,CONTEXT,context,contextHash,revision,view,read,change,owned,rowsFor,stamp,portable,portableRowsOn,parsePortable,legacyImport,insertPortableOn};

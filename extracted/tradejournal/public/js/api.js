@@ -41,7 +41,7 @@
     get: (p, params) => req(p + qs(params)),
     post: (p, body) => req(p, { method: 'POST', body: body || {} }),
     put: (p, body) => req(p, { method: 'PUT', body: body || {} }),
-    del: (p) => req(p, { method: 'DELETE' }),
+    del: (p, body) => req(p, { method: 'DELETE', ...(body === undefined ? {} : { body }) }),
     async login(email, password) { const d = await req('/auth/login', { method: 'POST', body: { email, password } }); if (d.token) { token = d.token; LS.set('tj_token', token); } return d; },
     async register(payload) { const d = await req('/auth/register', { method: 'POST', body: payload }); if (d.token) { token = d.token; LS.set('tj_token', token); } return d; },
     /** Connect this browser to a workspace — the app has no sign-in wall. */

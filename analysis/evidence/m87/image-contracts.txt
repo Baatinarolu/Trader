@@ -1,0 +1,53 @@
+ok three roles with the actual bias/location/trigger questions
+ok tiny valid raster upload structurally accepted, not chart/broker verified
+ok timeframe is explicitly chosen, never assigned from role: 1m
+ok timeframe is explicitly chosen, never assigned from role: 15m
+ok timeframe is explicitly chosen, never assigned from role: 4h
+ok timeframe is explicitly chosen, never assigned from role: 1d
+ok timeframe is explicitly chosen, never assigned from role: 1w
+ok timeframe is explicitly chosen, never assigned from role: 1M
+ok timeframe is explicitly chosen, never assigned from role: 2h
+ok timeframe is explicitly chosen, never assigned from role: 45m
+ok missing/malformed/noncanonical frame400 undefined
+ok missing/malformed/noncanonical frame400 null
+ok missing/malformed/noncanonical frame400 ""
+ok missing/malformed/noncanonical frame400 "  "
+ok missing/malformed/noncanonical frame400 "1D"
+ok missing/malformed/noncanonical frame400 "forever"
+ok missing/malformed/noncanonical frame400 0
+ok missing/malformed/noncanonical frame400 []
+ok missing/malformed/noncanonical frame400 {}
+ok missing/malformed/noncanonical frame400 true
+ok invalid/unsafe/nonimage400 
+ok invalid/unsafe/nonimage400 null
+ok invalid/unsafe/nonimage400 0
+ok invalid/unsafe/nonimage400 
+ok invalid/unsafe/nonimage400 [object Object]
+ok invalid/unsafe/nonimage400 javascript:alert(1)
+ok invalid/unsafe/nonimage400 data:text/html;base64,PHNjcmlwdD4=
+ok invalid/unsafe/nonimage400 data:image/svg+xml;base64,PHN2Zz4=
+ok invalid/unsafe/nonimage400 data:image/gif;base64,R0lGODlh
+ok invalid/unsafe/nonimage400 data:image/png;base64,AAAA
+ok invalid/unsafe/nonimage400 data:image/png;base64,iVBORw0KGgo=
+ok invalid/unsafe/nonimage400 data:image/jpeg;base64,/9j/2Q==
+ok invalid/unsafe/nonimage400 data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1P
+ok local/credential/control/protocol URL refused without fetching "http://images.example.com/a.png"
+ok local/credential/control/protocol URL refused without fetching "//images.example.com/a.png"
+ok local/credential/control/protocol URL refused without fetching "https://user:pass@images.example.com/a.png"
+ok local/credential/control/protocol URL refused without fetching "https://localhost/a.png"
+ok local/credential/control/protocol URL refused without fetching "https://127.0.0.1/a.png"
+ok local/credential/control/protocol URL refused without fetching "https://[::1]/a.png"
+ok local/credential/control/protocol URL refused without fetching "https://2130706433/a.png"
+ok local/credential/control/protocol URL refused without fetching "https://chart.internal/a.png"
+ok local/credential/control/protocol URL refused without fetching "https://images.example.com/\na.png"
+ok local/credential/control/protocol URL refused without fetching "file:///a.png"
+ok external HTTPS is an unverified link, not verified raster/broker data
+ok strict note/extra-field validation400 ["timeframe","image","note"]
+ok strict note/extra-field validation400 ["timeframe","image","note"]
+ok strict note/extra-field validation400 ["timeframe","image","recorded_at"]
+ok strict note/extra-field validation400 ["timeframe","image","source"]
+ok strict note/extra-field validation400 ["timeframe","image","role"]
+ok PNG corrupted chunk CRC cannot masquerade as an image
+ok server enforces1.5MB decoded app budget independent of client
+ok pure normalisation never mutates input and does not invent a capture time
+M87 image/role/frame contracts: 52 passed, 0 failed

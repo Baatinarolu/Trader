@@ -1,5 +1,50 @@
 # TradeJournal Pro
 
+## M87 — saved HTF / MTF / LTF chart references (2026-10-11)
+
+Use **Visual evidence** in the trade log, saved-trade form, core-writing dialog
+or day review. Save truthful finance first; then select three explicit human
+timeframes and answer bias/structure/levels (HTF), location/liquidity (MTF) and
+entry trigger/confirmation (LTF). Upload static PNG/JPEG/WebP or record a public
+HTTPS link. No fixed4h/15m/5m defaults. Save one role at a time; save/reload clears
+other unsaved selections. Clear-selection does not remove the saved image.
+
+Legacy `screenshot_url` stays unassigned; never silently copied. A financial
+correction retains older images and their saved context/time, with a prior-context
+warning. PUT/remove requires the displayed current revision; stale screens409,
+media-store failures503. Optional visuals do not complete mandatory writing,
+score execution, reset preparation/loss/caps, resize risk or grant entry.
+
+**Recording time is not original capture time.** Labels/references are not
+verified chart pixels/timeframes or broker facts. Uploaded structure/bounds/CRC
+checks are not full image decoding/legibility. External content is never fetched
+by the server or automatically loaded in this editor; explicit viewing can
+contact the remote site and content may have changed. Duplicate references and
+equivalent/reused timeframes are flagged, not called independent chart views.
+Recognisable credentialed/signed links and active/unsupported media are rejected.
+App budgets:1.5MB decoded per upload,24MP,16,000px dimension; canonical frames
+`m/h/d/w/M` (months use uppercase M). No market/broker/actual-capture verification.
+
+JSON backup and CSV `screenshot_views_json`/`screenshot_url` carry owned optional
+visual evidence. Restore creates new owned trade IDs, forces historical **imported,
+unverified** source and new server receiving time; valid declared historical
+time/context remain unverified, missing context remains unknown. Unsafe optional
+media is omitted with explicit warnings while finance still imports. Real storage
+failures roll back the request's financial/media mapping together. Old backups
+remain compatible. Repeat restore duplicates historical trades; not an upsert.
+Settings file selection limit20MB, backend JSON body25MB; never silently clip CSV.
+For bigger backups split into smaller requests/account/date CSV slices. No
+automatic large-backup batching or proof backfill.
+
+Measured M87:226/0 across9 actual pure/auth/SQL/DOM probes; literal clocks and tiny
+raster protocol fixtures, not real chart screenshots. Prior execution260/0 and
+routine321/0; exact ledger132=90done/3partial/39TODO. M88/M89 remain open. Prepared
+parent/current native Bots205/1 both (20 synthetic parity fills,0 mismatches;
+inherited>20 sample floor), negatives kept rather than padded. Whole-app smoke
+22/22 conditional DOM views,0 style/console,8 canvas limits, observed exit0; not
+pixels. Source/core thresholds/geometry/RR/default risk unchanged. Full audit:
+`analysis/M87-TIMEFRAME-SCREENSHOTS.md` in the delivery ZIP.
+
 A **multi-asset trading journal, analytics engine, behavioural coach, SMC bot desk and TradingView-integrated
 pre-trade assistant**. No subscription, no broker login, no sign-in wall — a Node server, one libSQL database
 (a local file by default), and the whole thing deployable free to Vercel + Turso.

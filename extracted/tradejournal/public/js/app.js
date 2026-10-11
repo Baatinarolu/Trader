@@ -387,10 +387,11 @@
             const out = U.$('#imp-out', body);
             out.textContent = 'Importing…';
             try {
-              const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value });
-              out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`;
+              const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value, account_id: Store.accountId });
+              out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`+(Views.screenshots?Views.screenshots.importResult(d):'');
               Store.invalidate();
-              setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
+              if(!d.media_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
+              else this.toast('Financial import recorded; review optional media omissions below before closing.','ok');
             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
           },
         }],

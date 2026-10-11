@@ -1,0 +1,260 @@
+diff --git a/public/js/app.js b/public/js/app.js
+index 2c26329..acd85a8 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -387,10 +387,11 @@
+             const out = U.$('#imp-out', body);
+             out.textContent = 'Importing…';
+             try {
+-              const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value });
+-              out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`;
++              const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value, account_id: Store.accountId });
++              out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`+(Views.screenshots?Views.screenshots.importResult(d):'');
+               Store.invalidate();
+-              setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
++              if(!d.media_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
++              else this.toast('Financial import recorded; review optional media omissions below before closing.','ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           },
+         }],
+diff --git a/public/js/views/screenshots.js b/public/js/views/screenshots.js
+index 9735403..061ffe4 100644
+--- a/public/js/views/screenshots.js
++++ b/public/js/views/screenshots.js
+@@ -9,12 +9,13 @@
+     const box=U.h('div'),button=U.h('button',{class:'btn xs ghost',type:'button',text:label});box.appendChild(button);
+     button.addEventListener('click',()=>{
+       if(typeof image!=='string')return;
+-      if(image.startsWith('https://')){const a=U.h('a',{href:image,target:'_blank',rel:'noopener noreferrer nofollow',referrerpolicy:'no-referrer',text:'Open external reference — unverified, may have changed'});box.replaceChildren(a);return;}
++      if(/^https:\/\//i.test(image)){const a=U.h('a',{href:image,target:'_blank',rel:'noopener noreferrer nofollow',referrerpolicy:'no-referrer',text:'Open external reference — unverified, may have changed'});box.replaceChildren(a);return;}
+       if(!/^data:image\/(png|jpeg|webp);base64,/.test(image))return;
+       const img=U.h('img',{src:image,alt:label,referrerpolicy:'no-referrer',style:'max-width:100%;max-height:320px;border:1px solid var(--border);border-radius:8px'});img.addEventListener('error',()=>box.replaceChildren(U.h('span',{class:'tiny warn',text:'Image cannot be displayed. Stored metadata alone does not verify decodable chart content.'})));box.replaceChildren(img);
+     });return box;
+   }
+   const P=Views.screenshots={
++    importResult(result){return `<div class="field-note"><b>Optional visual evidence:</b> ${U.esc(result.media_imported??'unavailable')} references received with imported/unverified provenance; ${U.esc(result.media_skipped??'unavailable')} skipped. Receiving time is not original capture time; legacy stays unassigned.</div>${result.media_warnings?.length?'<ul class="tiny warn">'+result.media_warnings.map(w=>'<li>'+U.esc(w)+'</li>').join('')+'</ul>':''}`;},
+     card(trade){
+       const node=U.h('div',{class:'card',style:'margin-top:12px'});
+       node.innerHTML='<h3>HTF / MTF / LTF visual evidence</h3><div class="field-note">Optional, independently labelled chart references. Save financial edits first; this reviews the saved record, not this form\'s unsaved changes. It does not complete core writing or change execution grades / entry permission.</div>';
+@@ -33,7 +34,7 @@
+       function draw(){
+         generation++;for(const s of states.values())cancel(s);states.clear();const t=view.saved_record||{};
+         body.replaceChildren(U.h('p',{class:'small',text:`Saved trade #${view.trade_id} ${t.symbol||''} · account #${view.account_id}. Saved entry ${t.entry??'unknown'}, stop ${t.stop??'unknown'}, exit ${t.exit??'unknown'} (${t.status||'unknown'}).`}),U.h('p',{class:'field-note',text:'Save financial edits first. Three separate human-labelled views help revisit your original visual thought process. Optional images do not complete core writing/routine, change execution grades, resize risk or grant entry permission. Server recording time is not original capture time. This is not broker, chart-content or actual timeframe verification. Save one role at a time; reload/save clears other unsaved selections.'}));
+-        const sum=view.summary||{};body.appendChild(U.h('div',{class:'small',dataset:{screenshotsSummary:'true'},text:`${sum.tagged??'unknown'} / 3 labelled references · ${sum.current??'unknown'} match current saved context · ${sum.distinct_references??'unknown'} distinct references (not proof of independent charts).${sum.distinct_references<sum.tagged?' Duplicate reference: do not pretend these establish3 independent views.':''}`}));
++        const sum=view.summary||{};body.appendChild(U.h('div',{class:'small',dataset:{screenshotsSummary:'true'},text:`${sum.tagged??'unknown'} / 3 labelled references · ${sum.current??'unknown'} match current saved context · ${sum.distinct_references??'unknown'} distinct references (not proof of independent charts) · ${sum.distinct_timeframes??'unknown'} distinct declared timeframes.${sum.reused_timeframes?.length?' Reused timeframe: equal explicit frames do not establish3 separate timeframe views.':''}${sum.distinct_references<sum.tagged?' Duplicate reference: do not pretend these establish3 independent views.':''}`}));
+         body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{screenshotsReload:'true'},text:'Reload saved evidence (discard unsaved selections)',onclick:async()=>{
+           if(!guard())return;busy=true;generation++;for(const s of states.values())cancel(s);disable();
+           try{const out=await global.API.get('/trades/'+id+'/screenshots');if(!valid())return;view=out;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message||'Evidence reload unavailable','err');}finally{busy=false;if(valid())disable();}
+@@ -65,7 +66,7 @@
+           const clear=U.h('button',{class:'btn sm ghost',type:'button',dataset:{screenshotClear:'true'},text:'Clear unsaved selection (not saved image)',onclick:()=>{if(!guard())return;cancel(s);s.image='';el('link').value='';el('file').value='';el('preview').replaceChildren(U.h('span',{class:'tiny muted',text:'Selection cleared, saved reference unchanged. Select image before saving.'}));disable();}});node.appendChild(U.h('div',{class:'row wrap gap-8'},s.save,clear,s.remove));body.appendChild(node);
+           async function write(remove){
+             if(!guard()||stale||s.pending)return;
+-            const frame=el('timeframe').value.trim();if(!remove&&(!/^[1-9]\d{0,2}[mhdwM]$/.test(frame)||!s.image)){global.App.toast('Choose an explicit canonical timeframe and upload/image HTTPS reference first.','err');return;}
++            const frame=el('timeframe').value.trim();if(!remove&&(!/^[1-9]\d{0,3}[mhdwM]$/.test(frame)||!s.image)){global.App.toast('Choose an explicit canonical timeframe and upload/image HTTPS reference first.','err');return;}
+             busy=true;disable();
+             try{const out=remove?await global.API.del('/trades/'+id+'/screenshots/'+r,{revision:slot.revision}):await global.API.put('/trades/'+id+'/screenshots/'+r,{timeframe:frame,image:s.image,note:el('note').value,revision:slot.revision});if(!valid())return;view=out;draw();global.App.toast(remove?'Saved role removed; other roles/legacy/financial truth unchanged.':'Labelled reference recorded; unsaved selections cleared. Recording time is not original capture time.','ok');}
+             catch(e){if(valid()){if(e.status===409)stale=true;global.App.toast(e.message||'Visual evidence could not be recorded','err');}}
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index 18856dc..bd89c58 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -113,7 +113,7 @@
+           const w = U.h('div', { class: 'grid g2' });
+           w.innerHTML = `
+             <div class="card"><div class="card-head"><h3>Import trades</h3></div>
+-              <p class="small muted-2">Paste a CSV export from your broker or platform. Column names are auto-detected (symbol/ticker, side/type, size/qty/volume, entry/open price, exit/close price, stop, target, dates, fees, P&L).</p>
++              <p class="small muted-2">Paste a CSV export from your broker/platform or this app. Optional HTF / MTF / LTF references return as imported, unverified evidence; server receiving time is not original capture time. File selection limit20 MB; never silently truncated. Column names are auto-detected (symbol/ticker, side/type, size/qty/volume, entry/open price, exit/close price, stop, target, dates, fees, P&L).</p>
+               <label class="field"><span>Import into account</span><select id="im-account">${Store.accounts.map((a) => `<option value="${a.id}">${U.esc(a.name)}</option>`).join('')}</select></label>
+               <label class="field"><span>Paste CSV</span><textarea id="im-csv" style="min-height:150px" placeholder="symbol,direction,size,entry,exit,fees,opened_at,closed_at&#10;EURUSD,long,1.5,1.0850,1.0925,7,2026-09-01 09:15,2026-09-01 12:40"></textarea></label>
+               <div class="row" style="gap:8px"><button class="btn primary sm" id="im-run">Import</button>
+@@ -139,37 +139,46 @@
+               </div>
+               <div id="ex-out" class="field-note"></div>
+             </div>`;
++          const mediaContext={account:Store.accountId,user:Store.user?.id,token:API.getToken()};let csvRead=0,jsonRead=0;
++          const currentMediaPane=()=>w.isConnected&&mediaContext.account===Store.accountId&&mediaContext.user===Store.user?.id&&mediaContext.token===API.getToken();
++          const readAllowed=f=>{if(!currentMediaPane()){global.App.toast('Workspace/account changed; reopen the data pane.','err');return false;}if(f.size>20000000){global.App.toast('File exceeds20 MB; use a smaller backup/account/date slice. Nothing truncated or imported.','err');return false;}return true;};
+           U.$('#im-run', w).addEventListener('click', async () => {
++            if(!currentMediaPane())return global.App.toast('Workspace/account changed; reopen the data pane before importing.','err');
+             const csv = U.$('#im-csv', w).value;
+             const out = U.$('#im-out', w);
+             out.textContent = 'Importing…';
+             try {
+               const d = await API.post('/import/csv', { csv, account_id: U.$('#im-account', w).value });
+-              out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`;
++              if(!currentMediaPane())return;
++              out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
+               Store.invalidate(); global.App.toast('Import complete', 'ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           });
+           const file = U.$('#im-file', w);
+           file.addEventListener('change', () => {
+-            const f = file.files[0]; if (!f) return;
++            const f = file.files[0]; if (!f||!readAllowed(f)) return;const attempt=++csvRead;
+             const r = new FileReader();
+-            r.onload = () => { U.$('#im-csv', w).value = String(r.result).slice(0, 4e6); };
++            r.onload = () => { if(currentMediaPane()&&attempt===csvRead)U.$('#im-csv', w).value = String(r.result); };
++            r.onerror=()=>{if(currentMediaPane()&&attempt===csvRead)global.App.toast('File could not be read; no import performed.','err');};
+             r.readAsText(f);
+           });
+           U.$('#ex-csv', w).addEventListener('click', async () => { try { await API.download('/export/csv', 'trades.csv'); } catch { global.App.toast('Export failed', 'err'); } });
+           U.$('#ex-json', w).addEventListener('click', async () => { try { await API.download('/export/json', 'tradejournal-backup.json'); } catch { global.App.toast('Export failed', 'err'); } });
+           const jf = U.$('#im-json', w);
+           jf.addEventListener('change', () => {
+-            const f = jf.files[0]; if (!f) return;
++            const f = jf.files[0]; if (!f||!readAllowed(f)) return;const attempt=++jsonRead;
+             const r = new FileReader();
+             r.onload = async () => {
++              if(!currentMediaPane()||attempt!==jsonRead)return;
+               try {
+                 const data = JSON.parse(String(r.result));
+                 const d = await API.post('/import/json', { data });
+-                U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`;
+-                await Store.reloadAll(); global.App.toast('Backup restored', 'ok'); global.App.refresh();
+-              } catch (e) { U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
++                if(!currentMediaPane()||attempt!==jsonRead)return;
++                U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
++                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length?'Financial restore recorded; review optional media omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length)global.App.refresh();
++              } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+             };
++            r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
+             r.readAsText(f);
+           });
+           U.$('#reseed', w).addEventListener('click', async () => {
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 31894a7..644cce1 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -1132,7 +1132,8 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
+ }));
+ 
+ /* ------------------------------------------------------- import / export */
+-router.get('/export/csv', requireAuth, async (req, res) => {
++const backup=fn=>async(req,res)=>{try{await fn(req,res);}catch{return res.status(503).json({error:'Screenshot-enabled backup unavailable; existing financial truth unchanged.'});}};
++router.get('/export/csv', requireAuth, backup(async (req, res) => {
+   const tz = (await settingsOf(req)).timezone;
+   const f = tradeFilters(req);
+   const { where, params, order } = T.listQuery(f);
+@@ -1149,9 +1150,9 @@ router.get('/export/csv', requireAuth, async (req, res) => {
+   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+   res.setHeader('Content-Disposition', `attachment; filename="trades-${new Date().toISOString().slice(0, 10)}.csv"`);
+   res.send(csv);
+-});
++}));
+ 
+-router.get('/export/json', requireAuth, async (req, res) => {
++router.get('/export/json', requireAuth, backup(async (req, res) => {
+   const userId = req.user.id;
+   const data = {
+     exported_at: new Date().toISOString(), version: 1,
+@@ -1167,7 +1168,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
+   res.setHeader('Content-Type', 'application/json');
+   res.setHeader('Content-Disposition', `attachment; filename="tradejournal-backup-${new Date().toISOString().slice(0, 10)}.json"`);
+   res.send(JSON.stringify(data, null, 2));
+-});
++}));
+ 
+ /** Import from CSV — auto-detects the usual broker column names. */
+ router.post('/import/csv', requireAuth, async (req, res) => {
+diff --git a/src/screenshots.js b/src/screenshots.js
+index 0bf180f..332d159 100644
+--- a/src/screenshots.js
++++ b/src/screenshots.js
+@@ -18,22 +18,25 @@ function crc(b){let v=0xffffffff;for(const n of b){v^=n;for(let i=0;i<8;i++)v=(v
+ function raster(b,mime){
+   if(mime==='png'){
+     if(b.length<57||!b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))throw invalid('PNG signature/structure is unavailable.');
+-    let pos=8,size=null,data=false,end=false;
++    let pos=8,size=null,data=false,end=false,palette=false,colour=null;
+     while(pos<b.length){if(pos+12>b.length)throw invalid('Truncated PNG chunk.');const n=b.readUInt32BE(pos),name=b.toString('ascii',pos+4,pos+8);if(!/^[A-Za-z]{4}$/.test(name)||pos+12+n>b.length)throw invalid('Invalid PNG chunk bounds.');
+       const payload=b.subarray(pos+8,pos+8+n);if(crc(b.subarray(pos+4,pos+8+n))!==b.readUInt32BE(pos+8+n))throw invalid('PNG chunk checksum failed.');
++      if(['acTL','fcTL','fdAT'].includes(name))throw invalid('Use a static PNG screenshot, not animation.');
++      if(name[0]===name[0].toUpperCase()&&!['IHDR','PLTE','IDAT','IEND'].includes(name))throw invalid('Unsupported PNG critical chunk.');
+       if(pos===8&&name!=='IHDR')throw invalid('PNG dimensions must be first.');
+-      if(name==='IHDR'){if(size||n!==13)throw invalid('Invalid PNG header.');size=dimensions(payload.readUInt32BE(0),payload.readUInt32BE(4));if(![0,2,3,4,6].includes(payload[9])||![1,2,4,8,16].includes(payload[8])||payload[10]||payload[11]||payload[12]>1)throw invalid('Unsupported PNG coding.');}
+-      if(name==='IDAT'&&n)data=true;pos+=n+12;
++      if(name==='IHDR'){if(size||n!==13)throw invalid('Invalid PNG header.');size=dimensions(payload.readUInt32BE(0),payload.readUInt32BE(4));colour=payload[9];if(!({0:[1,2,4,8,16],2:[8,16],3:[1,2,4,8],4:[8,16],6:[8,16]}[colour]||[]).includes(payload[8])||payload[10]||payload[11]||payload[12]>1)throw invalid('Unsupported PNG coding.');}
++      if(name==='PLTE'){if(palette||data||!n||n%3||n>768)throw invalid('Invalid PNG palette.');palette=true;}
++      if(name==='IDAT'&&n){if(colour===3&&!palette)throw invalid('Indexed PNG lacks palette.');data=true;}pos+=n+12;
+       if(name==='IEND'){if(n||pos!==b.length)throw invalid('Invalid PNG ending.');end=true;break;}
+     }
+     if(!size||!data||!end)throw invalid('PNG lacks dimensions/data/ending.');return size;
+   }
+   if(mime==='jpeg'){
+     if(b.length<16||b[0]!==255||b[1]!==216||b[b.length-2]!==255||b[b.length-1]!==217)throw invalid('JPEG signature/ending unavailable.');
+-    let pos=2,size=null;
++    let pos=2,size=null,components=null;
+     while(pos<b.length-2){if(b[pos++]!==255)throw invalid('Invalid JPEG marker.');while(b[pos]===255)pos++;const marker=b[pos++];if(pos+2>b.length)throw invalid('Truncated JPEG marker.');const n=b.readUInt16BE(pos);if(n<2||pos+n>b.length)throw invalid('Invalid JPEG segment.');
+-      if([192,193,194].includes(marker)){if(n<8)throw invalid('Invalid JPEG dimensions.');size=dimensions(b.readUInt16BE(pos+5),b.readUInt16BE(pos+3));}
+-      if(marker===218){if(!size||pos+n>=b.length-2)throw invalid('JPEG lacks dimensions/scan.');return size;}pos+=n;
++      if([192,193,194].includes(marker)){if(size||n<8||b[pos+2]!==8||![1,3,4].includes(b[pos+7])||n!==8+3*b[pos+7])throw invalid('Invalid/unsupported JPEG frame.');components=new Set();for(let i=0;i<b[pos+7];i++){const p=pos+8+3*i;if(components.has(b[p])||!(b[p+1]>>4)||(b[p+1]>>4)>4||!(b[p+1]&15)||(b[p+1]&15)>4||b[p+2]>3)throw invalid('Invalid JPEG component.');components.add(b[p]);}size=dimensions(b.readUInt16BE(pos+5),b.readUInt16BE(pos+3));}
++      if(marker===218){if(!size||n<8||!b[pos+2]||b[pos+2]>components.size||n!==6+2*b[pos+2]||pos+n>=b.length-2)throw invalid('JPEG lacks valid dimensions/scan.');for(let i=0;i<b[pos+2];i++){const p=pos+3+2*i;if(!components.has(b[p])||(b[p+1]>>4)>3||(b[p+1]&15)>3)throw invalid('Invalid JPEG scan component.');}return size;}pos+=n;
+     }throw invalid('JPEG lacks a supported frame/scan.');
+   }
+   if(mime==='webp'){
+@@ -41,9 +44,9 @@ function raster(b,mime){
+     let pos=12,size=null,data=false;
+     while(pos<b.length){if(pos+8>b.length)throw invalid('Truncated WebP chunk.');const name=b.toString('ascii',pos,pos+4),n=b.readUInt32LE(pos+4),p=b.subarray(pos+8,pos+8+n);if(pos+8+n+(n%2)>b.length)throw invalid('Invalid WebP chunk bounds.');
+       if(['ANIM','ANMF'].includes(name))throw invalid('Use a static chart raster, not an animation.');
+-      if(name==='VP8X'){if(n!==10||p[0]&2)throw invalid('Invalid/animated WebP header.');size=dimensions(p.readUIntLE(4,3)+1,p.readUIntLE(7,3)+1);}
+-      if(name==='VP8 '){if(n<10||p.toString('hex',3,6)!=='9d012a')throw invalid('Invalid WebP frame.');const s=dimensions(p.readUInt16LE(6)&16383,p.readUInt16LE(8)&16383);if(size&&(size.width!==s.width||size.height!==s.height))throw invalid('WebP dimensions contradict frame.');size=s;data=true;}
+-      if(name==='VP8L'){if(n<6||p[0]!==47)throw invalid('Invalid WebP lossless frame.');const v=p.readUInt32LE(1),s=dimensions((v&16383)+1,((v>>>14)&16383)+1);if(size&&(size.width!==s.width||size.height!==s.height))throw invalid('WebP dimensions contradict frame.');size=s;data=true;}
++      if(name==='VP8X'){if(n!==10||p[0]&0xc3||p[1]||p[2]||p[3])throw invalid('Invalid/animated WebP header.');size=dimensions(p.readUIntLE(4,3)+1,p.readUIntLE(7,3)+1);}
++      if(name==='VP8 '){if(n<10||p[0]&1||((p[0]>>>1)&7)>3||!(p[0]&16)||p.toString('hex',3,6)!=='9d012a')throw invalid('Invalid WebP frame.');const s=dimensions(p.readUInt16LE(6)&16383,p.readUInt16LE(8)&16383);if(size&&(size.width!==s.width||size.height!==s.height))throw invalid('WebP dimensions contradict frame.');size=s;data=true;}
++      if(name==='VP8L'){if(n<6||p[0]!==47||p.readUInt32LE(1)>>>29)throw invalid('Invalid WebP lossless frame.');const v=p.readUInt32LE(1),s=dimensions((v&16383)+1,((v>>>14)&16383)+1);if(size&&(size.width!==s.width||size.height!==s.height))throw invalid('WebP dimensions contradict frame.');size=s;data=true;}
+       pos+=8+n+(n%2);
+     }if(!size||!data)throw invalid('WebP lacks dimensions/frame.');return size;
+   }throw invalid('Use PNG,JPEG or static WebP.');
+@@ -59,7 +62,9 @@ function image(value){
+   if(value.length>4000||/[\s\x00-\x1f\x7f]/.test(value))throw invalid('External image link is invalid/oversized.');
+   let u;try{u=new URL(value);}catch{throw invalid('A full external HTTPS image URL is required.');}
+   const host=u.hostname.toLowerCase();if(u.protocol!=='https:'||u.username||u.password||!host.includes('.')||net.isIP(host.replace(/^\[|\]$/g,''))||/(^|\.)(localhost|local|internal)$/.test(host))throw invalid('Use an external HTTPS hostname without credentials/local/IP targets.');
+-  return {image:value,kind:'external_link',width:null,height:null,bytes:null,reference_sha256:hash(value),structural_raster_check:false,chart_verified:false};
++  if([...u.searchParams.keys()].some(k=>/(^|[-_])(token|auth|authorization|api[-_]?key|password|secret|signature|sig|credential)s?($|[-_])/i.test(k)))throw invalid('Do not store credentialed/signed image URLs; upload a local raster instead.');
++  u.hash='';
++  return {image:value,kind:'external_link',width:null,height:null,bytes:null,reference_sha256:hash(u.toString()),structural_raster_check:false,chart_verified:false};
+ }
+ function fields(body){
+   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['timeframe','image','note'].includes(k)))throw invalid('Provide only timeframe,image and optional plain-text note.');
+@@ -71,6 +76,9 @@ function fields(body){
+ const CONTEXT=['id','user_id','account_id','symbol','direction','status','opened_at','closed_at','entry','exit','stop','target','size','fees','entry_model','entry_tf','strategy_id','strategy_version'];
+ const context=t=>Object.fromEntries(CONTEXT.map(k=>[k,t[k]??null]));
+ const contextHash=t=>hash(JSON.stringify(context(t)));
++const NUMERIC_CONTEXT=['id','user_id','account_id','entry','exit','stop','target','size','fees','strategy_id','strategy_version'];
++const validContext=c=>!!c&&typeof c==='object'&&!Array.isArray(c)&&Object.keys(c).length===CONTEXT.length&&CONTEXT.every(k=>Object.hasOwn(c,k)&&(c[k]===null||(NUMERIC_CONTEXT.includes(k)?typeof c[k]==='number'&&Number.isFinite(c[k]):typeof c[k]==='string'&&c[k].length<=2000)));
++const frameKey=tf=>{const [,n,u]=tf.match(/^([1-9]\d{0,3})(m|h|d|w|M)$/);return u==='M'?n+'M':String(Number(n)*({m:60,h:3600,d:86400,w:604800}[u]));};
+ const stamp=v=>{if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v))return null;const d=new Date(v);return Number.isFinite(d.getTime())&&d.toISOString()===v?d.getTime():null;};
+ const ROW_KEYS=['trade_id','role','timeframe','image','note','source','recorded_at','original_recorded_at','reference_sha256','context_json','context_hash'];
+ function revision(t,r,slot){return hash(JSON.stringify(['screenshot-v1',r,context(t),slot?ROW_KEYS.map(k=>[k,slot[k]??null]):null]));}
+@@ -80,7 +88,7 @@ function slotInfo(t,r,slot,nowMs=Date.now()){
+   try{
+     const data=fields({timeframe:slot.timeframe,image:slot.image,note:slot.note}),at=stamp(slot.recorded_at),snap=JSON.parse(slot.context_json);
+     if(slot.trade_id!==t.id||slot.role!==r||!['upload','external_link','imported_upload','imported_external_link'].includes(slot.source)||slot.source.replace('imported_','')!==data.kind
+-      ||at===null||at>nowMs||slot.reference_sha256!==data.reference_sha256||!snap||Array.isArray(snap)||snap.id!==t.id||snap.user_id!==t.user_id||Object.keys(snap).length!==CONTEXT.length||CONTEXT.some(k=>!Object.hasOwn(snap,k))||hash(slot.context_json)!==slot.context_hash
++      ||at===null||at>nowMs||slot.reference_sha256!==data.reference_sha256||!validContext(snap)||snap.id!==t.id||snap.user_id!==t.user_id||hash(slot.context_json)!==slot.context_hash
+       ||slot.original_recorded_at!==null&&stamp(slot.original_recorded_at)===null)throw invalid('Stored screenshot metadata is unavailable.',503);
+     const unknownImport=slot.source.startsWith('imported_')&&CONTEXT.filter(k=>!['id','user_id','account_id'].includes(k)).every(k=>snap[k]===null);
+     return {...base,...data,state:'stored',source:slot.source,recorded_at:slot.recorded_at,original_recorded_at:slot.original_recorded_at,recorded_context:unknownImport?null:snap,matches_current_trade:unknownImport?null:slot.context_hash===contextHash(t),capture_time_verified:false,chart_verified:false};
+@@ -88,9 +96,11 @@ function slotInfo(t,r,slot,nowMs=Date.now()){
+ }
+ function view(t,rows,nowMs=Date.now()){
+   const slots=Object.fromEntries(ROLES.map(r=>[r,slotInfo(t,r,rows.find(s=>s.role===r),nowMs)])),known=Object.values(slots).filter(s=>s.state==='stored');
++  const frameGroups=new Map();for(const slot of known){const k=frameKey(slot.timeframe);if(!frameGroups.has(k))frameGroups.set(k,[]);frameGroups.get(k).push({role:slot.role,timeframe:slot.timeframe});}
++  const reused=[...frameGroups.values()].filter(g=>g.length>1);
+   const distinct=new Set(known.map(s=>s.reference_sha256)).size,legacyImage=typeof t.screenshot_url==='string'?t.screenshot_url:'';let safeLegacy=null;try{safeLegacy=image(legacyImage).image;}catch{}
+-  return {trade_id:t.id,account_id:t.account_id,saved_record:context(t),slots,summary:{tagged:known.length,current:known.filter(s=>s.matches_current_trade).length,distinct_references:distinct,unavailable:Object.values(slots).filter(s=>s.state==='unavailable').length,
+-    state:known.length===3&&distinct===3?'three_tagged_views':known.length?'partial':'empty',broker_verified:false,capture_time_verified:false,
++  return {trade_id:t.id,account_id:t.account_id,saved_record:context(t),slots,summary:{tagged:known.length,current:known.filter(s=>s.matches_current_trade).length,distinct_references:distinct,distinct_timeframes:frameGroups.size,reused_timeframes:reused,unavailable:Object.values(slots).filter(s=>s.state==='unavailable').length,
++    state:known.length===3&&distinct===3&&frameGroups.size===3?'three_tagged_views':known.length?'partial':'empty',broker_verified:false,capture_time_verified:false,
+     note:'Stored human-labelled chart references, not verified chart/timeframe content, broker execution or whole-course journal completion. Legacy unassigned image excluded; duplicate references do not establish3 independent views.'},
+     legacy:{image:legacyImage,display_image:safeLegacy,assigned_role:null,note:'Original unlabelled screenshot preserved. No role/timeframe is inferred from entry TF, timeframes, profit or filename.'}};
+ }
+@@ -133,7 +143,7 @@ function parsePortable(raw,{json=false}={}){
+       if(!value||typeof value!=='object'||Array.isArray(value))throw invalid('Invalid role declaration.');
+       const data=fields({timeframe:value.timeframe,image:value.image,...(value.note===undefined?{}:{note:value.note})});let original=null,declaredContext=null;
+       if(value.declared_recorded_at!=null){const at=stamp(value.declared_recorded_at);if(at!==null&&at<=Date.now())original=value.declared_recorded_at;else result.warnings.push(r.toUpperCase()+': invalid/future historical recording timestamp dropped (unverified).');}
+-      if(value.declared_context!==undefined){const c=value.declared_context;if(c&&typeof c==='object'&&!Array.isArray(c)&&Object.keys(c).length===PORTABLE_CONTEXT.length&&PORTABLE_CONTEXT.every(k=>Object.hasOwn(c,k)&&(c[k]===null||typeof c[k]==='number'&&Number.isFinite(c[k])||typeof c[k]==='string'&&c[k].length<=2000))){declaredContext=Object.fromEntries(PORTABLE_CONTEXT.map(k=>[k,c[k]]));}else result.warnings.push(r.toUpperCase()+': unavailable historical context, not guessed from financial import.');}
++      if(value.declared_context!==undefined){const c=value.declared_context;if(c&&typeof c==='object'&&!Array.isArray(c)&&Object.keys(c).length===PORTABLE_CONTEXT.length&&PORTABLE_CONTEXT.every(k=>Object.hasOwn(c,k)&&(c[k]===null||(NUMERIC_CONTEXT.includes(k)?typeof c[k]==='number'&&Number.isFinite(c[k]):typeof c[k]==='string'&&c[k].length<=2000)))){declaredContext=Object.fromEntries(PORTABLE_CONTEXT.map(k=>[k,c[k]]));}else result.warnings.push(r.toUpperCase()+': unavailable historical context, not guessed from financial import.');}
+       result.items.push({role:r,...data,original_recorded_at:original,declared_context:declaredContext});
+     }catch{result.skipped++;result.warnings.push(r.toUpperCase()+': unsafe/malformed optional reference/frame/note skipped; financial truth retained.');}}
+   return result;

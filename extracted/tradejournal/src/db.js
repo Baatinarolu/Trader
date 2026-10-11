@@ -240,6 +240,20 @@ CREATE TABLE IF NOT EXISTS bot_signals (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     resolved_at TEXT
   );
+CREATE TABLE IF NOT EXISTS trade_screenshots (
+    trade_id INTEGER NOT NULL REFERENCES trades(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK(role IN ('htf','mtf','ltf')),
+    timeframe TEXT NOT NULL,
+    image TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL,
+    recorded_at TEXT NOT NULL,
+    original_recorded_at TEXT,
+    reference_sha256 TEXT NOT NULL,
+    context_json TEXT NOT NULL,
+    context_hash TEXT NOT NULL,
+    PRIMARY KEY(trade_id,role)
+  );
 CREATE TABLE IF NOT EXISTS goals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

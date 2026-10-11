@@ -1,0 +1,25 @@
+ok negative migration control is actual751 parent with no routine fields
+ok additive upgrade preserves every original accounts field
+ok additive upgrade preserves every original trades field
+ok additive upgrade preserves every original journal_entries field
+ok legacy routine hour/timezone nullable, default60/Ep17 not inferred hour
+ok legacy daily note remains unknown/no fabricated self-report timestamp
+ok original guardrail_day_caps unchanged byte-for-byte during upgrade
+ok original guardrail_day_state unchanged byte-for-byte during upgrade
+ok original guardrail_entry_admissions unchanged byte-for-byte during upgrade
+ok original guardrail_events unchanged byte-for-byte during upgrade
+ok original session_time_markers unchanged byte-for-byte during upgrade
+ok original guardrail_reflections unchanged byte-for-byte during upgrade
+ok migration alone creates zero historical workflow/step/check-in/daily/admission facts
+ok repeated fresh-process migration byte-idempotent across all14 tables
+ok first new check requires own schedule plus independently retained old cap
+ok separate running restart retains original cycle/start and10min active
+ok paused2-hour restart does not add gap minutes
+ok restart and config edits cannot reset active schedule/order/check snapshots
+ok actual resumed process completes15m active/four human checks
+ok late restarted completion explicitly not on-time preparation
+ok separate completed restart retains all routine/capture bytes
+ok routine timer/steps do not create or rewrite old admission snapshots/manual marker/reflection completion
+ok truthful deletion+completed routine never refunds old observed entry/cap
+ok saved old expiry then adopts future selected timezone/order with fresh0steps/timer
+M64 routine migration/restarts: 24 passed, 0 failed

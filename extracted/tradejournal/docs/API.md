@@ -1,5 +1,55 @@
 # REST API reference
 
+## M87 optional owned visual evidence
+
+- `GET /api/trades/:id/screenshots`: canonical positive integer owned ID; three
+  slots/questions/revisions and same-snapshot saved financial context. Empty
+  is known missing; storage outage503 is unknown, not empty. Legacy unassigned.
+- `PUT /api/trades/:id/screenshots/:role`: role exactly `htf|mtf|ltf`; body
+  `{revision,timeframe,image,note?}` only. Required displayed64-hex revision binds
+  saved finance and current role attachment. No owner/source/client clock/score
+  fields. Note plain text<=2000; timeframe explicit canonical `1..1440m`,
+  `1..48h`, `1..365d`, `1..52w`, `1..12M` (M months), without padding/defaults.
+  Static PNG/JPEG/WebP canonical base64 upload1,500,000 decoded bytes/24MP/16,000
+  dimension, or HTTPS hostname without userinfo/IP/local targets/recognisable
+  credential query names. Structural checks NOT full decode/chart verification;
+  no backend link fetch/DNS/content/publicness verification. Identical current
+  retry preserves original recording time.
+- `DELETE /api/trades/:id/screenshots/:role`: body `{revision}` only; independently
+  clear one role, never legacy/siblings/financial history. Trade deletion cascades
+  its child rows. Browser `API.del(path,body?)` preserves old bodyless callers.
+- Auth401; absent/foreign/noncanonical ID404; bad shape/role/frame/image400;
+  changed saved record/role409; storage read/write failure503. Real transaction
+  rollback, no partial new source/time/hash or financial-row update.
+
+`recorded_at` is server attachment/import receiving time, NOT actual screenshot
+capture. `matches_current_trade` concerns listed saved financial fields, NOT
+broker/chart verification; null means original imported context unknown. Truth
+correction preserves earlier image/time but flags prior context. Duplicate
+resource refs (URI aliases canonicalised for fingerprint only), equivalent
+frames (`60m==1h`, etc) and corrupt stored metadata explicitly labelled; no
+3-independent-view or whole-course completeness proof.
+
+JSON trade `screenshots={version:1,roles:{htf:{timeframe,image,note,
+declared_recorded_at?,declared_context?},...},unavailable_roles:[...]}`. CSV adds
+`screenshot_views_json` and
+`screenshot_url` legacy. Safe known refs only; unsupported/corrupt roles marked
+unavailable, unsafe legacy omitted without rewriting stored original. Context
+excludes original owner/trade/account IDs; restore uses actual transaction
+insert IDs and owned destination, never raw backup IDs. `source` always
+`imported_upload|imported_external_link`; client source/revision/verified flags
+ignored. Receiving time new, declared historical time/context unverified; invalid
+future time dropped; unknown context not inferred from imported finance.
+`media_imported`, `media_skipped`, bounded `media_warnings` returned alongside
+financial inserted/skipped counts. Invalid optional media warns/skips without
+vetoing finance; real storage failure503 rolls back request together. Existing
+API25MB body budget unchanged (Settings files20MB); split larger backups. No
+upsert/idempotent financial restore or broker/core/routine/permission replay.
+
+Screenshot-aware JSON/CSV export failure returns safe JSON503, not an HTML SQL
+stack. Visual endpoints/imports are independent of required writing, execution
+grades, risk/caps/preparation and prospective admission. Protected core unchanged.
+
 Base URL: `http://localhost:3000/api`
 Auth: session cookie (`tj_session`) **or** an `x-session: <token>` header. There is **no sign-in wall**:
 `POST /auth/local` hands the caller a workspace (reusing the database's existing one locally, minting a

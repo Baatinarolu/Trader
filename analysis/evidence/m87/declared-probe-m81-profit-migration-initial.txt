@@ -1,0 +1,61 @@
+DECLARED M64 prerequisite isolation: routine held fulfilled, new first-entry routine capture not exercised. NOT full current policy proof. Original runs/negatives retained.
+DECLARED legacy guard-rule prerequisite isolation: writing fulfilled / explicit synthetic Neutral / new UI prompt fulfilled / additive table names. Original negatives kept; not M85 integrated-policy proof.
+DECLARED M64 prerequisite isolation: routine held fulfilled, new first-entry routine capture not exercised. NOT full current policy proof. Original runs/negatives retained.
+node:internal/modules/cjs/loader:1433
+  throw err;
+  ^
+
+Error: Cannot find module '/tmp/m81-parent/app/src/db'
+Require stack:
+- /home/user/Trader/[eval]
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1216:25)
+    at Module._load (/home/user/Trader/analysis/m64-legacy-prerequisite.js:11:63)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.require (node:internal/modules/cjs/loader:1527:12)
+    at require (node:internal/modules/helpers:147:16)
+    at [eval]:1:159
+    at runScriptInThisContext (node:internal/vm:209:10) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/home/user/Trader/[eval]' ]
+}
+
+Node.js v22.22.3
+Error: Command failed: /usr/local/bin/node -e const RealDate=Date;global.Date=class extends RealDate{constructor(...a){super(...(a.length?a:[1791702000000]));}static now(){return 1791702000000;}};const D=require("/tmp/m81-parent/app/src/db"),C=require("/tmp/m81-parent/app/src/bots/correction");(async()=>{await D.ready;const u=await D.createUser({email:'migration@test.local',name:'Legacy',password:'test-only'});const b=(await D.db.prepare("INSERT INTO accounts(user_id,name,starting_balance,current_balance,max_trades_day) VALUES (?,'Legacy second',10000,10000,5)").run(u.userId)).lastInsertRowid;for(const a of [u.accountId,b]){await D.db.prepare("INSERT INTO trades(user_id,account_id,symbol,status,opened_at,closed_at,entry,exit,size,net_pnl,notes) VALUES (?,?,'LEGACY','closed',?,?,100,101,100,100,'Original journal reality')").run(u.userId,a,new Date(1791720000000-86400000).toISOString(),new Date(1791702000000-3600000).toISOString());await C.dailyState(u.userId,{accountId:a,entryTf:'5m',forEntry:true});}await D.db.prepare('UPDATE accounts SET max_trades_day=5 WHERE id=?').run(u.accountId);console.log(JSON.stringify({user:u,second:b,columns:await D.db.prepare('PRAGMA table_info(accounts)').all(),accounts:await D.db.prepare('SELECT * FROM accounts').all(),trades:await D.db.prepare('SELECT * FROM trades').all(),caps:await D.db.prepare('SELECT * FROM guardrail_day_caps').all(),states:await D.db.prepare('SELECT * FROM guardrail_day_state').all(),events:await D.db.prepare('SELECT * FROM guardrail_events').all(),admissions:await D.db.prepare('SELECT * FROM guardrail_entry_admissions').all()}));})();
+DECLARED M64 prerequisite isolation: routine held fulfilled, new first-entry routine capture not exercised. NOT full current policy proof. Original runs/negatives retained.
+node:internal/modules/cjs/loader:1433
+  throw err;
+  ^
+
+Error: Cannot find module '/tmp/m81-parent/app/src/db'
+Require stack:
+- /home/user/Trader/[eval]
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1216:25)
+    at Module._load (/home/user/Trader/analysis/m64-legacy-prerequisite.js:11:63)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.require (node:internal/modules/cjs/loader:1527:12)
+    at require (node:internal/modules/helpers:147:16)
+    at [eval]:1:159
+    at runScriptInThisContext (node:internal/vm:209:10) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/home/user/Trader/[eval]' ]
+}
+
+Node.js v22.22.3
+
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at /home/user/Trader/analysis/probe-m81-profit-migration.js:14:29
+    at Object.<anonymous> (/home/user/Trader/analysis/probe-m81-profit-migration.js:31:468)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object.<anonymous> (/home/user/Trader/analysis/legacy-guard-fixture-runner.js:44:109)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+M81 profit migration: 0 passed, 1 failed

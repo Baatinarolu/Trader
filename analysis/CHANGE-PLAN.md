@@ -1,6 +1,44 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
-## Current M86/M92 execution follow-through — 2026-10-11
+## Current M87 — three-timeframe visual evidence — 2026-10-11
+
+**132:90 done /3 partial /39 TODO /0 no-action**, exact eight groups. M87 is
+optional human-labelled HTF bias /MTF location-liquidity /LTF trigger evidence,
+explicit user-chosen frames, additive owned child storage and actual saved-record
+three-slot UI. Legacy image preserved **unassigned**. Required displayed revision,
+server recording time (NOT capture time), prior-context retention after financial
+correction; images never complete core writing, grade execution or grant entry.
+Owned JSON/CSV roundtrip uses actual new IDs and **imported/unverified** provenance,
+not replayed workflow/capture proof. Bad optional media warns without vetoing
+financial truth; unsafe credentials/active media rejected, corrupt metadata
+unavailable, repeated references/equivalent frames flagged rather than pretending
+three independent views. Settings no silent4MB clip; explicit20MB file selection
+and unchanged25MB API body limits. Server never fetches remote image links.
+
+**226/0 across9 M87 actual/no-prerequisite-adapter probes**, plus unchanged
+execution260/0 and actual routine321/0. RAW597/155/one90s timeout retained;
+DECLARED isolated828/0 is not integrated preparation proof. Offline178/0,
+DECLARED market325/0; live-provider70/1 and6 nonzero/5 summaryless retained.
+Prepared original d5/current native API121/0 each, Bots**205/1 each**: same20
+synthetic parity fills/0 mismatches but inherited sample floor requires>20.
+No padding/target/model change. Raw native APIexit2/no summary,Bots201/5.
+Original smoke**22/22** conditional DOM views/0 style-console/8 canvas limits,
+**observed exit0**, not pixels. Earlier M86 counts stay historical.
+
+Six independent stages, combined d5 and pristine-ZIP forward/reverse byte equality
+are guarded by `build-m87-screenshot-artifacts.py`; source121 files and no private
+env/DB/dependencies. Exact hashes/counts in `patches/M87-SCREENSHOT-STAGES.json`
+and excluded `evidence/m87/archive-sha256.json`. [Full report](M87-TIMEFRAME-SCREENSHOTS.md).
+
+**Next M88, then M89.** Partials M30/M103/M108; M106/M111/M112 remain open.
+Course floor30, deliberate M103 n>=5, B/C tradeability, all entry/checklist weights,
+geometry/stops/targets/RR/default risk/factors unchanged. No70% win-rate, broker,
+provider, actual human/meditation, causal, production or pixel proof. Older
+owned-strategy routine UI freshness remains **UNMEASURED**. Current preview3000
+uses new temporary `/tmp/m87-preview.db`, unadapted synthetic offline/blank remote
+vars/schedulerOFF; old ephemeral preview DB unavailable, not preserved-user proof.
+
+## Previous M86/M92 execution follow-through — 2026-10-11
 
 **132:89 done /3 partial /40 todo /0 no-action**, exact eight groups. M86 is
 execution-based journal grading, **NOT loss drill**; M92 is separately staged

@@ -1,0 +1,76 @@
+FAIL three roles with the actual bias/location/trigger questions undefined
+FAIL tiny valid raster upload structurally accepted, not chart/broker verified undefined
+FAIL timeframe is explicitly chosen, never assigned from role: 1m undefined
+FAIL timeframe is explicitly chosen, never assigned from role: 15m undefined
+FAIL timeframe is explicitly chosen, never assigned from role: 4h undefined
+FAIL timeframe is explicitly chosen, never assigned from role: 1d undefined
+FAIL timeframe is explicitly chosen, never assigned from role: 1w undefined
+FAIL timeframe is explicitly chosen, never assigned from role: 1M undefined
+FAIL timeframe is explicitly chosen, never assigned from role: 2h undefined
+FAIL timeframe is explicitly chosen, never assigned from role: 45m undefined
+FAIL missing/malformed/noncanonical frame400 undefined undefined
+FAIL missing/malformed/noncanonical frame400 null undefined
+FAIL missing/malformed/noncanonical frame400 "" undefined
+FAIL missing/malformed/noncanonical frame400 "  " undefined
+FAIL missing/malformed/noncanonical frame400 "1D" undefined
+FAIL missing/malformed/noncanonical frame400 "forever" undefined
+FAIL missing/malformed/noncanonical frame400 0 undefined
+FAIL missing/malformed/noncanonical frame400 [] undefined
+FAIL missing/malformed/noncanonical frame400 {} undefined
+FAIL missing/malformed/noncanonical frame400 true undefined
+FAIL invalid/unsafe/nonimage400  undefined
+FAIL invalid/unsafe/nonimage400 null undefined
+FAIL invalid/unsafe/nonimage400 0 undefined
+FAIL invalid/unsafe/nonimage400  undefined
+FAIL invalid/unsafe/nonimage400 [object Object] undefined
+FAIL invalid/unsafe/nonimage400 javascript:alert(1) undefined
+FAIL invalid/unsafe/nonimage400 data:text/html;base64,PHNjcmlwdD4= undefined
+FAIL invalid/unsafe/nonimage400 data:image/svg+xml;base64,PHN2Zz4= undefined
+FAIL invalid/unsafe/nonimage400 data:image/gif;base64,R0lGODlh undefined
+FAIL invalid/unsafe/nonimage400 data:image/png;base64,AAAA undefined
+FAIL invalid/unsafe/nonimage400 data:image/png;base64,iVBORw0KGgo= undefined
+FAIL invalid/unsafe/nonimage400 data:image/jpeg;base64,/9j/2Q== undefined
+FAIL invalid/unsafe/nonimage400 data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1P undefined
+FAIL local/credential/control/protocol URL refused without fetching "http://images.example.com/a.png" undefined
+FAIL local/credential/control/protocol URL refused without fetching "//images.example.com/a.png" undefined
+FAIL local/credential/control/protocol URL refused without fetching "https://user:pass@images.example.com/a.png" undefined
+FAIL local/credential/control/protocol URL refused without fetching "https://localhost/a.png" undefined
+FAIL local/credential/control/protocol URL refused without fetching "https://127.0.0.1/a.png" undefined
+FAIL local/credential/control/protocol URL refused without fetching "https://[::1]/a.png" undefined
+FAIL local/credential/control/protocol URL refused without fetching "https://2130706433/a.png" undefined
+FAIL local/credential/control/protocol URL refused without fetching "https://chart.internal/a.png" undefined
+FAIL local/credential/control/protocol URL refused without fetching "https://images.example.com/\na.png" undefined
+FAIL local/credential/control/protocol URL refused without fetching "file:///a.png" undefined
+FAIL external HTTPS is an unverified link, not verified raster/broker data undefined
+FAIL strict note/extra-field validation400 ["timeframe","image","note"] undefined
+FAIL strict note/extra-field validation400 ["timeframe","image","note"] undefined
+FAIL strict note/extra-field validation400 ["timeframe","image","recorded_at"] undefined
+FAIL strict note/extra-field validation400 ["timeframe","image","source"] undefined
+FAIL strict note/extra-field validation400 ["timeframe","image","role"] undefined
+FAIL PNG corrupted chunk CRC cannot masquerade as an image undefined
+FAIL server enforces1.5MB decoded app budget independent of client undefined
+FAIL pure normalisation never mutates input and does not invent a capture time undefined
+M87 image/role/frame contracts: 0 passed, 52 failed
+/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:297
+                        throw new api_1.LibsqlBatchError(e.message, i, e.code, e.extendedCode, e.rawCode, e.cause instanceof Error ? e.cause : undefined);
+                              ^
+
+LibsqlBatchError: SQLITE_READONLY: SQLITE_READONLY: attempt to write a readonly database
+    at Sqlite3Client.batch (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:297:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'SQLITE_READONLY',
+  extendedCode: 'SQLITE_READONLY_DBMOVED',
+  rawCode: 1032,
+  statementIndex: 0,
+  [cause]: SqliteError: attempt to write a readonly database
+      at convertError (/home/user/Trader/extracted/tradejournal/node_modules/libsql/index.js:59:12)
+      at Statement.run (/home/user/Trader/extracted/tradejournal/node_modules/libsql/index.js:335:13)
+      at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:574:34)
+      at Sqlite3Client.batch (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:290:37)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    code: 'SQLITE_READONLY_DBMOVED',
+    rawCode: 1032
+  }
+}
+
+Node.js v22.22.3

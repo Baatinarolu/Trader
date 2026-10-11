@@ -1,0 +1,1719 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "passed": 43,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "reject out-of-order chart acknowledgment409",
+      "ok": true,
+      "detail": {
+        "status": 409,
+        "data": {
+          "error": "Complete the current routine step in your selected order.",
+          "code": "routine_input_invalid"
+        }
+      }
+    },
+    {
+      "name": "Ep17 cannot skip calendar/plan/charts to start meditation",
+      "ok": true,
+      "detail": {
+        "status": 409,
+        "data": {
+          "error": "Complete the current routine step before meditation.",
+          "code": "routine_input_invalid"
+        }
+      }
+    },
+    {
+      "name": "calendar reviewed requires literal Boolean true: string",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "calendar reviewed requires literal Boolean true: one",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "calendar reviewed requires literal Boolean true: null",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "calendar reviewed requires literal Boolean true: missing",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "cannot spoof machine/live provider news review",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "ack calendar stores explicit human source/time",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "not_started",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 0,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 1,
+              "step": "calendar",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            }
+          ],
+          "check_in_attempts": [],
+          "next_step": "plan",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "not_started",
+            "elapsed_ms": 0,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-11T13:00:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "completed step snapshot cannot be rewritten",
+      "ok": true,
+      "detail": 409
+    },
+    {
+      "name": "foreign plan snapshot404",
+      "ok": true,
+      "detail": 404
+    },
+    {
+      "name": "own plan step snapshots exact stored plan, not client override",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "not_started",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 0,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 1,
+              "step": "calendar",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "plan",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "own_strategy_snapshot",
+                "snapshot": {
+                  "id": 8,
+                  "user_id": 1,
+                  "name": "Own plan",
+                  "description": "",
+                  "market_conditions": "",
+                  "timeframes": "",
+                  "entry_rules": "[]",
+                  "exit_rules": "[]",
+                  "checklist": "[]",
+                  "risk_rules": "{\"risk\":0.5,\"notes\":\"Wait, do not chase\"}",
+                  "target_r_multiple": 2,
+                  "colour": "#4f8cff",
+                  "active": 1,
+                  "created_at": "2026-10-11 23:10:49",
+                  "version": null
+                }
+              }
+            }
+          ],
+          "check_in_attempts": [],
+          "next_step": "charts",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "not_started",
+            "elapsed_ms": 0,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-11T13:00:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "later plan edit cannot retrospectively change reviewed snapshot",
+      "ok": true
+    },
+    {
+      "name": "reject incomplete or coercive chart human report daily_bias",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "reject incomplete or coercive chart human report alert_status",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "reject incomplete or coercive chart human report alert_note",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "reject incomplete or coercive chart human report reviewed",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "human chart bias/alert report stored without order-authority claim",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "not_started",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 0,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 1,
+              "step": "calendar",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "plan",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "own_strategy_snapshot",
+                "snapshot": {
+                  "id": 8,
+                  "user_id": 1,
+                  "name": "Own plan",
+                  "description": "",
+                  "market_conditions": "",
+                  "timeframes": "",
+                  "entry_rules": "[]",
+                  "exit_rules": "[]",
+                  "checklist": "[]",
+                  "risk_rules": "{\"risk\":0.5,\"notes\":\"Wait, do not chase\"}",
+                  "target_r_multiple": 2,
+                  "colour": "#4f8cff",
+                  "active": 1,
+                  "created_at": "2026-10-11 23:10:49",
+                  "version": null
+                }
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "charts",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "daily_bias": "neutral",
+                "htf_range": "Reviewed daily range, no directional advantage",
+                "alert_status": "not_applicable",
+                "alert_note": "No relevant key zone for an alert in my review",
+                "source": "human_chart_review"
+              }
+            }
+          ],
+          "check_in_attempts": [],
+          "next_step": "meditation",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "not_started",
+            "elapsed_ms": 0,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-11T13:00:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "reject client-supplied elapsed/start completion proof400",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "server starts actual next meditation step at own clock",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "running",
+            "meditation_started_at": "2026-10-11T13:00:00.000Z",
+            "meditation_elapsed_ms": 0,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 1,
+              "step": "calendar",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "plan",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "own_strategy_snapshot",
+                "snapshot": {
+                  "id": 8,
+                  "user_id": 1,
+                  "name": "Own plan",
+                  "description": "",
+                  "market_conditions": "",
+                  "timeframes": "",
+                  "entry_rules": "[]",
+                  "exit_rules": "[]",
+                  "checklist": "[]",
+                  "risk_rules": "{\"risk\":0.5,\"notes\":\"Wait, do not chase\"}",
+                  "target_r_multiple": 2,
+                  "colour": "#4f8cff",
+                  "active": 1,
+                  "created_at": "2026-10-11 23:10:49",
+                  "version": null
+                }
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "charts",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "daily_bias": "neutral",
+                "htf_range": "Reviewed daily range, no directional advantage",
+                "alert_status": "not_applicable",
+                "alert_note": "No relevant key zone for an alert in my review",
+                "source": "human_chart_review"
+              }
+            }
+          ],
+          "check_in_attempts": [],
+          "next_step": "meditation",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "running",
+            "elapsed_ms": 0,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-11T13:00:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "pause retains10m server elapsed",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "paused",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 600000,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 1,
+              "step": "calendar",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "plan",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "own_strategy_snapshot",
+                "snapshot": {
+                  "id": 8,
+                  "user_id": 1,
+                  "name": "Own plan",
+                  "description": "",
+                  "market_conditions": "",
+                  "timeframes": "",
+                  "entry_rules": "[]",
+                  "exit_rules": "[]",
+                  "checklist": "[]",
+                  "risk_rules": "{\"risk\":0.5,\"notes\":\"Wait, do not chase\"}",
+                  "target_r_multiple": 2,
+                  "colour": "#4f8cff",
+                  "active": 1,
+                  "created_at": "2026-10-11 23:10:49",
+                  "version": null
+                }
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "charts",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "daily_bias": "neutral",
+                "htf_range": "Reviewed daily range, no directional advantage",
+                "alert_status": "not_applicable",
+                "alert_note": "No relevant key zone for an alert in my review",
+                "source": "human_chart_review"
+              }
+            }
+          ],
+          "check_in_attempts": [],
+          "next_step": "meditation",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "paused",
+            "elapsed_ms": 600000,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-11T13:10:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "two-hour paused gap cannot count toward meditation",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "paused",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 600000,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 1,
+              "step": "calendar",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "plan",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "own_strategy_snapshot",
+                "snapshot": {
+                  "id": 8,
+                  "user_id": 1,
+                  "name": "Own plan",
+                  "description": "",
+                  "market_conditions": "",
+                  "timeframes": "",
+                  "entry_rules": "[]",
+                  "exit_rules": "[]",
+                  "checklist": "[]",
+                  "risk_rules": "{\"risk\":0.5,\"notes\":\"Wait, do not chase\"}",
+                  "target_r_multiple": 2,
+                  "colour": "#4f8cff",
+                  "active": 1,
+                  "created_at": "2026-10-11 23:10:49",
+                  "version": null
+                }
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "charts",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "daily_bias": "neutral",
+                "htf_range": "Reviewed daily range, no directional advantage",
+                "alert_status": "not_applicable",
+                "alert_note": "No relevant key zone for an alert in my review",
+                "source": "human_chart_review"
+              }
+            }
+          ],
+          "check_in_attempts": [],
+          "next_step": "meditation",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "paused",
+            "elapsed_ms": 600000,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-11T15:10:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "cannot complete paused timer with only10m409",
+      "ok": true,
+      "detail": 409
+    },
+    {
+      "name": "resume uses server clock, not client clock",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "running",
+            "meditation_started_at": "2026-10-11T15:10:00.000Z",
+            "meditation_elapsed_ms": 600000,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 1,
+              "step": "calendar",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "plan",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "own_strategy_snapshot",
+                "snapshot": {
+                  "id": 8,
+                  "user_id": 1,
+                  "name": "Own plan",
+                  "description": "",
+                  "market_conditions": "",
+                  "timeframes": "",
+                  "entry_rules": "[]",
+                  "exit_rules": "[]",
+                  "checklist": "[]",
+                  "risk_rules": "{\"risk\":0.5,\"notes\":\"Wait, do not chase\"}",
+                  "target_r_multiple": 2,
+                  "colour": "#4f8cff",
+                  "active": 1,
+                  "created_at": "2026-10-11 23:10:49",
+                  "version": null
+                }
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "charts",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "daily_bias": "neutral",
+                "htf_range": "Reviewed daily range, no directional advantage",
+                "alert_status": "not_applicable",
+                "alert_note": "No relevant key zone for an alert in my review",
+                "source": "human_chart_review"
+              }
+            }
+          ],
+          "check_in_attempts": [],
+          "next_step": "meditation",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "running",
+            "elapsed_ms": 600000,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-11T15:10:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "14m59.999 active remains incomplete409",
+      "ok": true,
+      "detail": 409
+    },
+    {
+      "name": "inclusive15m active completes timer, still requires four checks",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "completed",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 900000,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 1,
+              "step": "calendar",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "plan",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "own_strategy_snapshot",
+                "snapshot": {
+                  "id": 8,
+                  "user_id": 1,
+                  "name": "Own plan",
+                  "description": "",
+                  "market_conditions": "",
+                  "timeframes": "",
+                  "entry_rules": "[]",
+                  "exit_rules": "[]",
+                  "checklist": "[]",
+                  "risk_rules": "{\"risk\":0.5,\"notes\":\"Wait, do not chase\"}",
+                  "target_r_multiple": 2,
+                  "colour": "#4f8cff",
+                  "active": 1,
+                  "created_at": "2026-10-11 23:10:49",
+                  "version": null
+                }
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "charts",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "daily_bias": "neutral",
+                "htf_range": "Reviewed daily range, no directional advantage",
+                "alert_status": "not_applicable",
+                "alert_note": "No relevant key zone for an alert in my review",
+                "source": "human_chart_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "meditation",
+              "completed_at": "2026-10-11T15:15:00.000Z",
+              "payload": {
+                "source": "server_running_time",
+                "minimum_ms": 900000,
+                "elapsed_ms": 900000,
+                "actual_meditation_verified": false
+              }
+            }
+          ],
+          "check_in_attempts": [],
+          "next_step": "check_in",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "completed",
+            "elapsed_ms": 900000,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-11T15:15:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "strict Boolean readiness calm",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "strict Boolean readiness clear",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "strict Boolean readiness following_plan",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "strict Boolean readiness would_take_if_up_big",
+      "ok": true,
+      "detail": 400
+    },
+    {
+      "name": "false morning answer retained but cannot complete",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "completed",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 900000,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 1,
+              "step": "calendar",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "plan",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "own_strategy_snapshot",
+                "snapshot": {
+                  "id": 8,
+                  "user_id": 1,
+                  "name": "Own plan",
+                  "description": "",
+                  "market_conditions": "",
+                  "timeframes": "",
+                  "entry_rules": "[]",
+                  "exit_rules": "[]",
+                  "checklist": "[]",
+                  "risk_rules": "{\"risk\":0.5,\"notes\":\"Wait, do not chase\"}",
+                  "target_r_multiple": 2,
+                  "colour": "#4f8cff",
+                  "active": 1,
+                  "created_at": "2026-10-11 23:10:49",
+                  "version": null
+                }
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "charts",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "daily_bias": "neutral",
+                "htf_range": "Reviewed daily range, no directional advantage",
+                "alert_status": "not_applicable",
+                "alert_note": "No relevant key zone for an alert in my review",
+                "source": "human_chart_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "meditation",
+              "completed_at": "2026-10-11T15:15:00.000Z",
+              "payload": {
+                "source": "server_running_time",
+                "minimum_ms": 900000,
+                "elapsed_ms": 900000,
+                "actual_meditation_verified": false
+              }
+            }
+          ],
+          "check_in_attempts": [
+            {
+              "id": 1,
+              "cycle_id": 1,
+              "captured_at": "2026-10-11T15:15:00.000Z",
+              "passed": 0,
+              "answers": {
+                "calm": false,
+                "clear": true,
+                "following_plan": true,
+                "would_take_if_up_big": true
+              }
+            }
+          ],
+          "next_step": "check_in",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "completed",
+            "elapsed_ms": 900000,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-11T15:15:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "all four literal true finishes actual current workflow",
+      "ok": true,
+      "detail": {
+        "account_id": 1,
+        "state": "complete",
+        "complete": true,
+        "cycle": {
+          "id": 1,
+          "user_id": 1,
+          "account_id": 1,
+          "cycle_date": "2026-10-11",
+          "rule_date": "2026-10-11",
+          "timezone": "Africa/Lagos",
+          "window_start": "15:00",
+          "lead_minutes": 60,
+          "step_order": "ep17",
+          "reset_at": "2026-10-11T13:00:00.000Z",
+          "window_at": "2026-10-11T14:00:00.000Z",
+          "expires_at": "2026-10-12T13:00:00.000Z",
+          "selected_at": "2026-10-11T13:00:00.000Z",
+          "meditation_state": "completed",
+          "meditation_started_at": null,
+          "meditation_elapsed_ms": 900000,
+          "completed_at": "2026-10-11T15:15:00.000Z",
+          "completed_before_window": 0,
+          "first_action_at": null,
+          "dst_policy": "earlier fold / shift forward gap"
+        },
+        "order": [
+          "calendar",
+          "plan",
+          "charts",
+          "meditation",
+          "check_in"
+        ],
+        "steps": [
+          {
+            "cycle_id": 1,
+            "step": "calendar",
+            "completed_at": "2026-10-11T13:00:00.000Z",
+            "payload": {
+              "reviewed": true,
+              "method": "manual_external",
+              "summary": "Reviewed external calendar at source, no machine news clearance",
+              "source": "human_calendar_review"
+            }
+          },
+          {
+            "cycle_id": 1,
+            "step": "plan",
+            "completed_at": "2026-10-11T13:00:00.000Z",
+            "payload": {
+              "reviewed": true,
+              "source": "own_strategy_snapshot",
+              "snapshot": {
+                "id": 8,
+                "user_id": 1,
+                "name": "Own plan",
+                "description": "",
+                "market_conditions": "",
+                "timeframes": "",
+                "entry_rules": "[]",
+                "exit_rules": "[]",
+                "checklist": "[]",
+                "risk_rules": "{\"risk\":0.5,\"notes\":\"Wait, do not chase\"}",
+                "target_r_multiple": 2,
+                "colour": "#4f8cff",
+                "active": 1,
+                "created_at": "2026-10-11 23:10:49",
+                "version": null
+              }
+            }
+          },
+          {
+            "cycle_id": 1,
+            "step": "charts",
+            "completed_at": "2026-10-11T13:00:00.000Z",
+            "payload": {
+              "reviewed": true,
+              "daily_bias": "neutral",
+              "htf_range": "Reviewed daily range, no directional advantage",
+              "alert_status": "not_applicable",
+              "alert_note": "No relevant key zone for an alert in my review",
+              "source": "human_chart_review"
+            }
+          },
+          {
+            "cycle_id": 1,
+            "step": "meditation",
+            "completed_at": "2026-10-11T15:15:00.000Z",
+            "payload": {
+              "source": "server_running_time",
+              "minimum_ms": 900000,
+              "elapsed_ms": 900000,
+              "actual_meditation_verified": false
+            }
+          },
+          {
+            "cycle_id": 1,
+            "step": "check_in",
+            "completed_at": "2026-10-11T15:15:00.000Z",
+            "payload": {
+              "source": "human_morning_check_in",
+              "answers": {
+                "calm": true,
+                "clear": true,
+                "following_plan": true,
+                "would_take_if_up_big": true
+              }
+            }
+          }
+        ],
+        "check_in_attempts": [
+          {
+            "id": 1,
+            "cycle_id": 1,
+            "captured_at": "2026-10-11T15:15:00.000Z",
+            "passed": 0,
+            "answers": {
+              "calm": false,
+              "clear": true,
+              "following_plan": true,
+              "would_take_if_up_big": true
+            }
+          },
+          {
+            "id": 2,
+            "cycle_id": 1,
+            "captured_at": "2026-10-11T15:15:00.000Z",
+            "passed": 1,
+            "answers": {
+              "calm": true,
+              "clear": true,
+              "following_plan": true,
+              "would_take_if_up_big": true
+            }
+          }
+        ],
+        "next_step": null,
+        "meditation": {
+          "minimum_ms": 900000,
+          "state": "completed",
+          "elapsed_ms": 900000,
+          "actual_meditation_verified": false
+        },
+        "evaluated_at": "2026-10-11T15:15:00.000Z",
+        "message": "Current routine steps acknowledged; this is preparation, not reusable entry/mental/news permission.",
+        "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+      }
+    },
+    {
+      "name": "late completion recorded as late, never on-time preparation",
+      "ok": true,
+      "detail": {
+        "id": 1,
+        "user_id": 1,
+        "account_id": 1,
+        "cycle_date": "2026-10-11",
+        "rule_date": "2026-10-11",
+        "timezone": "Africa/Lagos",
+        "window_start": "15:00",
+        "lead_minutes": 60,
+        "step_order": "ep17",
+        "reset_at": "2026-10-11T13:00:00.000Z",
+        "window_at": "2026-10-11T14:00:00.000Z",
+        "expires_at": "2026-10-12T13:00:00.000Z",
+        "selected_at": "2026-10-11T13:00:00.000Z",
+        "meditation_state": "completed",
+        "meditation_started_at": null,
+        "meditation_elapsed_ms": 900000,
+        "completed_at": "2026-10-11T15:15:00.000Z",
+        "completed_before_window": 0,
+        "first_action_at": null,
+        "dst_policy": "earlier fold / shift forward gap"
+      }
+    },
+    {
+      "name": "repeat completion idempotent, no new completion time",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 1,
+          "state": "complete",
+          "complete": true,
+          "cycle": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "cycle_date": "2026-10-11",
+            "rule_date": "2026-10-11",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 60,
+            "step_order": "ep17",
+            "reset_at": "2026-10-11T13:00:00.000Z",
+            "window_at": "2026-10-11T14:00:00.000Z",
+            "expires_at": "2026-10-12T13:00:00.000Z",
+            "selected_at": "2026-10-11T13:00:00.000Z",
+            "meditation_state": "completed",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 900000,
+            "completed_at": "2026-10-11T15:15:00.000Z",
+            "completed_before_window": 0,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "calendar",
+            "plan",
+            "charts",
+            "meditation",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 1,
+              "step": "calendar",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "plan",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "own_strategy_snapshot",
+                "snapshot": {
+                  "id": 8,
+                  "user_id": 1,
+                  "name": "Own plan",
+                  "description": "",
+                  "market_conditions": "",
+                  "timeframes": "",
+                  "entry_rules": "[]",
+                  "exit_rules": "[]",
+                  "checklist": "[]",
+                  "risk_rules": "{\"risk\":0.5,\"notes\":\"Wait, do not chase\"}",
+                  "target_r_multiple": 2,
+                  "colour": "#4f8cff",
+                  "active": 1,
+                  "created_at": "2026-10-11 23:10:49",
+                  "version": null
+                }
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "charts",
+              "completed_at": "2026-10-11T13:00:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "daily_bias": "neutral",
+                "htf_range": "Reviewed daily range, no directional advantage",
+                "alert_status": "not_applicable",
+                "alert_note": "No relevant key zone for an alert in my review",
+                "source": "human_chart_review"
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "meditation",
+              "completed_at": "2026-10-11T15:15:00.000Z",
+              "payload": {
+                "source": "server_running_time",
+                "minimum_ms": 900000,
+                "elapsed_ms": 900000,
+                "actual_meditation_verified": false
+              }
+            },
+            {
+              "cycle_id": 1,
+              "step": "check_in",
+              "completed_at": "2026-10-11T15:15:00.000Z",
+              "payload": {
+                "source": "human_morning_check_in",
+                "answers": {
+                  "calm": true,
+                  "clear": true,
+                  "following_plan": true,
+                  "would_take_if_up_big": true
+                }
+              }
+            }
+          ],
+          "check_in_attempts": [
+            {
+              "id": 1,
+              "cycle_id": 1,
+              "captured_at": "2026-10-11T15:15:00.000Z",
+              "passed": 0,
+              "answers": {
+                "calm": false,
+                "clear": true,
+                "following_plan": true,
+                "would_take_if_up_big": true
+              }
+            },
+            {
+              "id": 2,
+              "cycle_id": 1,
+              "captured_at": "2026-10-11T15:15:00.000Z",
+              "passed": 1,
+              "answers": {
+                "calm": true,
+                "clear": true,
+                "following_plan": true,
+                "would_take_if_up_big": true
+              }
+            }
+          ],
+          "next_step": null,
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "completed",
+            "elapsed_ms": 900000,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-11T15:15:00.000Z",
+          "message": "Current routine steps acknowledged; this is preparation, not reusable entry/mental/news permission.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "foreign cycle/account mutation404",
+      "ok": true,
+      "detail": 404
+    },
+    {
+      "name": "step mutation auth401",
+      "ok": true,
+      "detail": 401
+    },
+    {
+      "name": "cannot submit arbitrary or prior cycle409",
+      "ok": true,
+      "detail": 409
+    },
+    {
+      "name": "meditation-first prevents calendar bypass409",
+      "ok": true,
+      "detail": 409
+    },
+    {
+      "name": "variant meditation completes first, not whole routine",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 3,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 2,
+            "user_id": 1,
+            "account_id": 3,
+            "cycle_date": "2026-10-12",
+            "rule_date": "2026-10-12",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 120,
+            "step_order": "meditation_first",
+            "reset_at": "2026-10-12T12:00:00.000Z",
+            "window_at": "2026-10-12T14:00:00.000Z",
+            "expires_at": "2026-10-13T12:00:00.000Z",
+            "selected_at": "2026-10-12T12:00:00.000Z",
+            "meditation_state": "completed",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 900000,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "meditation",
+            "calendar",
+            "plan",
+            "charts",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 2,
+              "step": "meditation",
+              "completed_at": "2026-10-12T12:15:00.000Z",
+              "payload": {
+                "source": "server_running_time",
+                "minimum_ms": 900000,
+                "elapsed_ms": 900000,
+                "actual_meditation_verified": false
+              }
+            }
+          ],
+          "check_in_attempts": [],
+          "next_step": "calendar",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "completed",
+            "elapsed_ms": 900000,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-12T12:15:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "explicit manual own plan allowed and labelled self-reported snapshot",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 3,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 2,
+            "user_id": 1,
+            "account_id": 3,
+            "cycle_date": "2026-10-12",
+            "rule_date": "2026-10-12",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 120,
+            "step_order": "meditation_first",
+            "reset_at": "2026-10-12T12:00:00.000Z",
+            "window_at": "2026-10-12T14:00:00.000Z",
+            "expires_at": "2026-10-13T12:00:00.000Z",
+            "selected_at": "2026-10-12T12:00:00.000Z",
+            "meditation_state": "completed",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 900000,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "meditation",
+            "calendar",
+            "plan",
+            "charts",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 2,
+              "step": "meditation",
+              "completed_at": "2026-10-12T12:15:00.000Z",
+              "payload": {
+                "source": "server_running_time",
+                "minimum_ms": 900000,
+                "elapsed_ms": 900000,
+                "actual_meditation_verified": false
+              }
+            },
+            {
+              "cycle_id": 2,
+              "step": "calendar",
+              "completed_at": "2026-10-12T12:15:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 2,
+              "step": "plan",
+              "completed_at": "2026-10-12T12:15:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "manual_plan_text",
+                "plan_text": "My owned manual plan: wait for valid model, fixed risk, no chasing"
+              }
+            }
+          ],
+          "check_in_attempts": [],
+          "next_step": "charts",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "completed",
+            "elapsed_ms": 900000,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-12T12:15:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "on-time variant complete preserves chosen sequence/context",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 3,
+          "state": "complete",
+          "complete": true,
+          "cycle": {
+            "id": 2,
+            "user_id": 1,
+            "account_id": 3,
+            "cycle_date": "2026-10-12",
+            "rule_date": "2026-10-12",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 120,
+            "step_order": "meditation_first",
+            "reset_at": "2026-10-12T12:00:00.000Z",
+            "window_at": "2026-10-12T14:00:00.000Z",
+            "expires_at": "2026-10-13T12:00:00.000Z",
+            "selected_at": "2026-10-12T12:00:00.000Z",
+            "meditation_state": "completed",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 900000,
+            "completed_at": "2026-10-12T12:15:00.000Z",
+            "completed_before_window": 1,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "meditation",
+            "calendar",
+            "plan",
+            "charts",
+            "check_in"
+          ],
+          "steps": [
+            {
+              "cycle_id": 2,
+              "step": "meditation",
+              "completed_at": "2026-10-12T12:15:00.000Z",
+              "payload": {
+                "source": "server_running_time",
+                "minimum_ms": 900000,
+                "elapsed_ms": 900000,
+                "actual_meditation_verified": false
+              }
+            },
+            {
+              "cycle_id": 2,
+              "step": "calendar",
+              "completed_at": "2026-10-12T12:15:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "method": "manual_external",
+                "summary": "Reviewed external calendar at source, no machine news clearance",
+                "source": "human_calendar_review"
+              }
+            },
+            {
+              "cycle_id": 2,
+              "step": "plan",
+              "completed_at": "2026-10-12T12:15:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "source": "manual_plan_text",
+                "plan_text": "My owned manual plan: wait for valid model, fixed risk, no chasing"
+              }
+            },
+            {
+              "cycle_id": 2,
+              "step": "charts",
+              "completed_at": "2026-10-12T12:15:00.000Z",
+              "payload": {
+                "reviewed": true,
+                "daily_bias": "neutral",
+                "htf_range": "Reviewed daily range, no directional advantage",
+                "alert_status": "not_applicable",
+                "alert_note": "No relevant key zone for an alert in my review",
+                "source": "human_chart_review"
+              }
+            },
+            {
+              "cycle_id": 2,
+              "step": "check_in",
+              "completed_at": "2026-10-12T12:15:00.000Z",
+              "payload": {
+                "source": "human_morning_check_in",
+                "answers": {
+                  "calm": true,
+                  "clear": true,
+                  "following_plan": true,
+                  "would_take_if_up_big": true
+                }
+              }
+            }
+          ],
+          "check_in_attempts": [
+            {
+              "id": 3,
+              "cycle_id": 2,
+              "captured_at": "2026-10-12T12:15:00.000Z",
+              "passed": 1,
+              "answers": {
+                "calm": true,
+                "clear": true,
+                "following_plan": true,
+                "would_take_if_up_big": true
+              }
+            }
+          ],
+          "next_step": null,
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "completed",
+            "elapsed_ms": 900000,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-12T12:15:00.000Z",
+          "message": "Current routine steps acknowledged; this is preparation, not reusable entry/mental/news permission.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "next reset actually removes current-cycle step/timer completion",
+      "ok": true,
+      "detail": {
+        "routine": {
+          "account_id": 3,
+          "state": "pending",
+          "complete": false,
+          "cycle": {
+            "id": 3,
+            "user_id": 1,
+            "account_id": 3,
+            "cycle_date": "2026-10-13",
+            "rule_date": "2026-10-13",
+            "timezone": "Africa/Lagos",
+            "window_start": "15:00",
+            "lead_minutes": 120,
+            "step_order": "meditation_first",
+            "reset_at": "2026-10-13T12:00:00.000Z",
+            "window_at": "2026-10-13T14:00:00.000Z",
+            "expires_at": "2026-10-14T12:00:00.000Z",
+            "selected_at": "2026-10-13T12:00:00.000Z",
+            "meditation_state": "not_started",
+            "meditation_started_at": null,
+            "meditation_elapsed_ms": 0,
+            "completed_at": null,
+            "completed_before_window": null,
+            "first_action_at": null,
+            "dst_policy": "earlier fold / shift forward gap"
+          },
+          "order": [
+            "meditation",
+            "calendar",
+            "plan",
+            "charts",
+            "check_in"
+          ],
+          "steps": [],
+          "check_in_attempts": [],
+          "next_step": "meditation",
+          "meditation": {
+            "minimum_ms": 900000,
+            "state": "not_started",
+            "elapsed_ms": 0,
+            "actual_meditation_verified": false
+          },
+          "evaluated_at": "2026-10-13T12:00:00.000Z",
+          "message": "Complete your pre-market routine before execution. The banner persists until every selected step and morning check-in is acknowledged.",
+          "scope": "Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof"
+        }
+      }
+    },
+    {
+      "name": "stale completed cycle not reusable after reset409",
+      "ok": true,
+      "detail": 409
+    },
+    {
+      "name": "routine reads/steps do not reset or fabricate mechanical day policy/admissions",
+      "ok": true,
+      "detail": []
+    }
+  ]
+}

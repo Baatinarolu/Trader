@@ -25,6 +25,7 @@
       <label class="field"><span>3. What would you do differently / repeat?</span><textarea id="jr-different" maxlength="2000">${U.esc(trade.lesson||'')}</textarea></label>
       <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
     if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
+    if(!capture&&Views.screenshots)body.appendChild(Views.screenshots.card(trade));
     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
@@ -160,7 +161,7 @@
             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
               ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', '']].map(([k, l]) =>
+              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', '']].map(([k, l]) =>
               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
           </tr></thead>
           <tbody>
@@ -183,6 +184,7 @@
             <td class="tiny mistake-line nowrap" title="${U.esc(t.mistakes)}">${U.esc((t.mistakes || '').slice(0, 26))}</td>
             <td class="tiny"><span data-execution-state>${U.esc(Views.execution?Views.execution.state(t.execution_review):'Unreviewed')}</span>${t.status==='closed'?` <button class="btn xs ghost" data-execution="${t.id}">Execution</button>`:''}</td>
             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
+            <td class="tiny"><button class="btn xs ghost" data-screenshots="${t.id}">HTF / MTF / LTF</button></td>
             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
           </tr>`).join('')}
           </tbody>
@@ -195,6 +197,7 @@
       }));
       U.$$('[data-execution]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.execution)Views.execution.open(Number(b.dataset.execution));else global.App.toast('Execution review UI unavailable; no grade inferred.','err');}));
       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
+      U.$$('[data-screenshots]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.screenshots)Views.screenshots.open(Number(b.dataset.screenshots));else global.App.toast('Visual evidence UI unavailable; nothing is inferred.','err');}));
       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
         if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution]')) return;
@@ -310,15 +313,7 @@
         <label class="field span4"><span>Thesis — why did you take this trade?</span><textarea id="tf-thesis" placeholder="Context, level, catalyst, what would invalidate it…">${U.esc(t.thesis || '')}</textarea></label>
         <label class="field span2"><span>Execution notes</span><textarea id="tf-notes" placeholder="Management decisions, partials, how you felt during…">${U.esc(t.execution_notes || '')}</textarea></label>
         <label class="field span2"><span>Lesson / review</span><textarea id="tf-lesson" placeholder="What will you repeat or never do again?">${U.esc(t.lesson || '')}</textarea></label>
-        <label class="field span4"><span>Chart screenshot <span class="muted tiny">(paste an image URL, or upload the chart you were looking at — entry, management and exit shots are worth more than any note)</span></span>
-          <div class="row" style="gap:8px;align-items:flex-start">
-            <input id="tf-shot" value="${U.esc(t.screenshot_url && !t.screenshot_url.startsWith('data:') ? t.screenshot_url : '')}" placeholder="https://…" />
-            <label class="btn sm ghost" style="cursor:pointer;flex:none">Upload…<input type="file" id="tf-shot-file" accept="image/*" hidden /></label>
-            <button class="btn sm ghost" type="button" id="tf-shot-clear" style="flex:none">Clear</button>
-          </div>
-          <div id="tf-shot-preview" style="margin-top:8px">${t.screenshot_url ? `<img src="${U.esc(t.screenshot_url)}" alt="chart" style="max-height:180px;max-width:100%;border:1px solid var(--border);border-radius:8px" />` : ''}</div>
-          <div class="field-note">Uploads are stored with the trade (keep them under ~1&nbsp;MB — the journal is a single local file).</div>
-        </label>
+
       </div>
       <div class="sep"></div>
       <div class="row-between"><h3 style="margin:0">Pre-trade checklist</h3><label class="tiny muted row" style="gap:6px"><input type="checkbox" id="tf-apply-checklist" /> use playbook checklist</label></div>
@@ -395,26 +390,6 @@
     });
     g('strategy').addEventListener('change', () => { if (applyChk.checked) { const s = Store.strategyById(g('strategy').value); renderChecklist(s && s.checklist && s.checklist.length ? s.checklist : (Store.user.default_checklist || [])); } });
 
-    /* screenshot upload → data URL stored on the trade */
-    let shotData = t.screenshot_url && t.screenshot_url.startsWith('data:') ? t.screenshot_url : '';
-    const shotFile = U.$('#tf-shot-file', node);
-    if (shotFile) shotFile.addEventListener('change', () => {
-      const f = shotFile.files[0];
-      if (!f) return;
-      if (f.size > 1.5e6) { toast('Image is larger than 1.5 MB — please compress it first.', 'err'); return; }
-      const reader = new FileReader();
-      reader.onload = () => {
-        shotData = String(reader.result);
-        U.$('#tf-shot-preview', node).innerHTML = `<img src="${shotData}" alt="chart" style="max-height:180px;max-width:100%;border:1px solid var(--border);border-radius:8px" />`;
-        toast('Chart attached', 'ok');
-      };
-      reader.readAsDataURL(f);
-    });
-    const shotClear = U.$('#tf-shot-clear', node);
-    if (shotClear) shotClear.addEventListener('click', () => {
-      shotData = ''; U.$('#tf-shot', node).value = ''; U.$('#tf-shot-preview', node).innerHTML = ''; if (shotFile) shotFile.value = '';
-    });
-
     updateSpec(); calc();
 
     function collect() {
@@ -442,7 +417,7 @@
         confidence: g('confidence').value, adherence: g('adherence').value,
         mistakes: g('mistakes').value, tags: g('tags').value,
         thesis: g('thesis').value, execution_notes: g('notes').value, lesson: g('lesson').value,
-        screenshot_url: shotData || g('shot').value,
+        screenshot_url: t.screenshot_url || '', // Preserve unassigned legacy; role evidence is a separate saved-record API.
         rule_checks: U.$$('[data-chk]', chkWrap).map((c, i) => ({ label: c.parentElement.textContent.trim(), passed: c.checked })),
       };
       if(requiresAdmission() && !body.emotion_before.trim())throw new Error('Name your emotional state before a prospective entry. Already-executed/historical truth can remain incomplete.');
@@ -518,6 +493,7 @@
     U.$('#tf-guardrail-refresh',node).addEventListener('click',refreshGuard);
     refreshGuard();
     if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
+    if(Views.screenshots)node.appendChild(Views.screenshots.card(t));
     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
   };
 

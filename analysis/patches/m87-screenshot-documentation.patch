@@ -1,0 +1,147 @@
+diff --git a/README.md b/README.md
+index 6522a7a..9bead1c 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,50 @@
+ # TradeJournal Pro
+ 
++## M87 — saved HTF / MTF / LTF chart references (2026-10-11)
++
++Use **Visual evidence** in the trade log, saved-trade form, core-writing dialog
++or day review. Save truthful finance first; then select three explicit human
++timeframes and answer bias/structure/levels (HTF), location/liquidity (MTF) and
++entry trigger/confirmation (LTF). Upload static PNG/JPEG/WebP or record a public
++HTTPS link. No fixed4h/15m/5m defaults. Save one role at a time; save/reload clears
++other unsaved selections. Clear-selection does not remove the saved image.
++
++Legacy `screenshot_url` stays unassigned; never silently copied. A financial
++correction retains older images and their saved context/time, with a prior-context
++warning. PUT/remove requires the displayed current revision; stale screens409,
++media-store failures503. Optional visuals do not complete mandatory writing,
++score execution, reset preparation/loss/caps, resize risk or grant entry.
++
++**Recording time is not original capture time.** Labels/references are not
++verified chart pixels/timeframes or broker facts. Uploaded structure/bounds/CRC
++checks are not full image decoding/legibility. External content is never fetched
++by the server or automatically loaded in this editor; explicit viewing can
++contact the remote site and content may have changed. Duplicate references and
++equivalent/reused timeframes are flagged, not called independent chart views.
++Recognisable credentialed/signed links and active/unsupported media are rejected.
++App budgets:1.5MB decoded per upload,24MP,16,000px dimension; canonical frames
++`m/h/d/w/M` (months use uppercase M). No market/broker/actual-capture verification.
++
++JSON backup and CSV `screenshot_views_json`/`screenshot_url` carry owned optional
++visual evidence. Restore creates new owned trade IDs, forces historical **imported,
++unverified** source and new server receiving time; valid declared historical
++time/context remain unverified, missing context remains unknown. Unsafe optional
++media is omitted with explicit warnings while finance still imports. Real storage
++failures roll back the request's financial/media mapping together. Old backups
++remain compatible. Repeat restore duplicates historical trades; not an upsert.
++Settings file selection limit20MB, backend JSON body25MB; never silently clip CSV.
++For bigger backups split into smaller requests/account/date CSV slices. No
++automatic large-backup batching or proof backfill.
++
++Measured M87:226/0 across9 actual pure/auth/SQL/DOM probes; literal clocks and tiny
++raster protocol fixtures, not real chart screenshots. Prior execution260/0 and
++routine321/0; exact ledger132=90done/3partial/39TODO. M88/M89 remain open. Prepared
++parent/current native Bots205/1 both (20 synthetic parity fills,0 mismatches;
++inherited>20 sample floor), negatives kept rather than padded. Whole-app smoke
++22/22 conditional DOM views,0 style/console,8 canvas limits, observed exit0; not
++pixels. Source/core thresholds/geometry/RR/default risk unchanged. Full audit:
++`analysis/M87-TIMEFRAME-SCREENSHOTS.md` in the delivery ZIP.
++
+ A **multi-asset trading journal, analytics engine, behavioural coach, SMC bot desk and TradingView-integrated
+ pre-trade assistant**. No subscription, no broker login, no sign-in wall — a Node server, one libSQL database
+ (a local file by default), and the whole thing deployable free to Vercel + Turso.
+diff --git a/docs/API.md b/docs/API.md
+index f63a6aa..edea497 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -1,5 +1,55 @@
+ # REST API reference
+ 
++## M87 optional owned visual evidence
++
++- `GET /api/trades/:id/screenshots`: canonical positive integer owned ID; three
++  slots/questions/revisions and same-snapshot saved financial context. Empty
++  is known missing; storage outage503 is unknown, not empty. Legacy unassigned.
++- `PUT /api/trades/:id/screenshots/:role`: role exactly `htf|mtf|ltf`; body
++  `{revision,timeframe,image,note?}` only. Required displayed64-hex revision binds
++  saved finance and current role attachment. No owner/source/client clock/score
++  fields. Note plain text<=2000; timeframe explicit canonical `1..1440m`,
++  `1..48h`, `1..365d`, `1..52w`, `1..12M` (M months), without padding/defaults.
++  Static PNG/JPEG/WebP canonical base64 upload1,500,000 decoded bytes/24MP/16,000
++  dimension, or HTTPS hostname without userinfo/IP/local targets/recognisable
++  credential query names. Structural checks NOT full decode/chart verification;
++  no backend link fetch/DNS/content/publicness verification. Identical current
++  retry preserves original recording time.
++- `DELETE /api/trades/:id/screenshots/:role`: body `{revision}` only; independently
++  clear one role, never legacy/siblings/financial history. Trade deletion cascades
++  its child rows. Browser `API.del(path,body?)` preserves old bodyless callers.
++- Auth401; absent/foreign/noncanonical ID404; bad shape/role/frame/image400;
++  changed saved record/role409; storage read/write failure503. Real transaction
++  rollback, no partial new source/time/hash or financial-row update.
++
++`recorded_at` is server attachment/import receiving time, NOT actual screenshot
++capture. `matches_current_trade` concerns listed saved financial fields, NOT
++broker/chart verification; null means original imported context unknown. Truth
++correction preserves earlier image/time but flags prior context. Duplicate
++resource refs (URI aliases canonicalised for fingerprint only), equivalent
++frames (`60m==1h`, etc) and corrupt stored metadata explicitly labelled; no
++3-independent-view or whole-course completeness proof.
++
++JSON trade `screenshots={version:1,roles:{htf:{timeframe,image,note,
++declared_recorded_at?,declared_context?},...},unavailable_roles:[...]}`. CSV adds
++`screenshot_views_json` and
++`screenshot_url` legacy. Safe known refs only; unsupported/corrupt roles marked
++unavailable, unsafe legacy omitted without rewriting stored original. Context
++excludes original owner/trade/account IDs; restore uses actual transaction
++insert IDs and owned destination, never raw backup IDs. `source` always
++`imported_upload|imported_external_link`; client source/revision/verified flags
++ignored. Receiving time new, declared historical time/context unverified; invalid
++future time dropped; unknown context not inferred from imported finance.
++`media_imported`, `media_skipped`, bounded `media_warnings` returned alongside
++financial inserted/skipped counts. Invalid optional media warns/skips without
++vetoing finance; real storage failure503 rolls back request together. Existing
++API25MB body budget unchanged (Settings files20MB); split larger backups. No
++upsert/idempotent financial restore or broker/core/routine/permission replay.
++
++Screenshot-aware JSON/CSV export failure returns safe JSON503, not an HTML SQL
++stack. Visual endpoints/imports are independent of required writing, execution
++grades, risk/caps/preparation and prospective admission. Protected core unchanged.
++
+ Base URL: `http://localhost:3000/api`
+ Auth: session cookie (`tj_session`) **or** an `x-session: <token>` header. There is **no sign-in wall**:
+ `POST /auth/local` hands the caller a workspace (reusing the database's existing one locally, minting a
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index 526d0c8..b7ef885 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -1,5 +1,27 @@
+ # Personal guardrails, recording and reasoned exceptions
+ 
++## M87 visual journal scope (2026-10-11)
++
++HTF/MTF/LTF optional human chart refs have owned separate saved-record APIs,
++explicit frames and revisions. Images never grant entry, complete core writing
++or routine, determine execution/setup grades or change risk sizing. No cap,
++loss-writing/cooldown, streak, first-admission/on-time or technical-veto refunds
++from image updates/deletion/import. Financial truth/close remains legal even if
++the optional evidence store is missing; stored prior image/context/time survives
++financial correction with a warning, not a fake fresh recording.
++
++Attachment/import time NOT capture time, labels NOT verified chart/broker/live
++emotion facts. Imported refs explicitly historical/unverified; source/capture
++claims/owned revisions not replayed. Missing/corrupt stored metadata unavailable,
++not assumed skipped or complete; reused images/equivalent frames flagged rather
++than3 independent views. Unsafe legacy remains stored/unassigned but is not
++rendered/copied into portable backups; server never fetches external image URLs.
++
++M88/M89/M106/M111/M112 remain TODO, M108 PARTIAL. Exact132=90done/3partial/39TODO;
++course floor30, deliberate M103 n>=5, B/C tradeability, checklist/entry weights,
++stops/targets/geometry/RR/default risk/factors untouched. No70% edge, provider,
++broker, actual meditation/human or production claims. See report in delivery ZIP.
++
+ These rules govern **this app's prospective trade/plan actions**. There is no broker
+ connection: an app admission is not a broker order, reusable permission or proof
+ that manually entered levels currently match the market.

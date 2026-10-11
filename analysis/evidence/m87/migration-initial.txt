@@ -1,0 +1,17 @@
+Error: Migration child 1: LibsqlError: SQLITE_CONSTRAINT: NOT NULL constraint failed: trades.account_id
+    at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)
+    at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)
+    at Sqlite3Client.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:268:20)
+
+
+    at child (/home/user/Trader/analysis/probe-m87-actual-parent-migration.js:7:400)
+    at /home/user/Trader/analysis/probe-m87-actual-parent-migration.js:8:62
+    at Object.<anonymous> (/home/user/Trader/analysis/probe-m87-actual-parent-migration.js:14:620)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+M87 actual-parent screenshot migration: 0 passed, 1 failed

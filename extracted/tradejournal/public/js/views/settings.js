@@ -113,7 +113,7 @@
           const w = U.h('div', { class: 'grid g2' });
           w.innerHTML = `
             <div class="card"><div class="card-head"><h3>Import trades</h3></div>
-              <p class="small muted-2">Paste a CSV export from your broker or platform. Column names are auto-detected (symbol/ticker, side/type, size/qty/volume, entry/open price, exit/close price, stop, target, dates, fees, P&L).</p>
+              <p class="small muted-2">Paste a CSV export from your broker/platform or this app. Optional HTF / MTF / LTF references return as imported, unverified evidence; server receiving time is not original capture time. File selection limit20 MB; never silently truncated. Column names are auto-detected (symbol/ticker, side/type, size/qty/volume, entry/open price, exit/close price, stop, target, dates, fees, P&L).</p>
               <label class="field"><span>Import into account</span><select id="im-account">${Store.accounts.map((a) => `<option value="${a.id}">${U.esc(a.name)}</option>`).join('')}</select></label>
               <label class="field"><span>Paste CSV</span><textarea id="im-csv" style="min-height:150px" placeholder="symbol,direction,size,entry,exit,fees,opened_at,closed_at&#10;EURUSD,long,1.5,1.0850,1.0925,7,2026-09-01 09:15,2026-09-01 12:40"></textarea></label>
               <div class="row" style="gap:8px"><button class="btn primary sm" id="im-run">Import</button>
@@ -139,37 +139,46 @@
               </div>
               <div id="ex-out" class="field-note"></div>
             </div>`;
+          const mediaContext={account:Store.accountId,user:Store.user?.id,token:API.getToken()};let csvRead=0,jsonRead=0;
+          const currentMediaPane=()=>w.isConnected&&mediaContext.account===Store.accountId&&mediaContext.user===Store.user?.id&&mediaContext.token===API.getToken();
+          const readAllowed=f=>{if(!currentMediaPane()){global.App.toast('Workspace/account changed; reopen the data pane.','err');return false;}if(f.size>20000000){global.App.toast('File exceeds20 MB; use a smaller backup/account/date slice. Nothing truncated or imported.','err');return false;}return true;};
           U.$('#im-run', w).addEventListener('click', async () => {
+            if(!currentMediaPane())return global.App.toast('Workspace/account changed; reopen the data pane before importing.','err');
             const csv = U.$('#im-csv', w).value;
             const out = U.$('#im-out', w);
             out.textContent = 'Importing…';
             try {
               const d = await API.post('/import/csv', { csv, account_id: U.$('#im-account', w).value });
-              out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`;
+              if(!currentMediaPane())return;
+              out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
               Store.invalidate(); global.App.toast('Import complete', 'ok');
             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
           });
           const file = U.$('#im-file', w);
           file.addEventListener('change', () => {
-            const f = file.files[0]; if (!f) return;
+            const f = file.files[0]; if (!f||!readAllowed(f)) return;const attempt=++csvRead;
             const r = new FileReader();
-            r.onload = () => { U.$('#im-csv', w).value = String(r.result).slice(0, 4e6); };
+            r.onload = () => { if(currentMediaPane()&&attempt===csvRead)U.$('#im-csv', w).value = String(r.result); };
+            r.onerror=()=>{if(currentMediaPane()&&attempt===csvRead)global.App.toast('File could not be read; no import performed.','err');};
             r.readAsText(f);
           });
           U.$('#ex-csv', w).addEventListener('click', async () => { try { await API.download('/export/csv', 'trades.csv'); } catch { global.App.toast('Export failed', 'err'); } });
           U.$('#ex-json', w).addEventListener('click', async () => { try { await API.download('/export/json', 'tradejournal-backup.json'); } catch { global.App.toast('Export failed', 'err'); } });
           const jf = U.$('#im-json', w);
           jf.addEventListener('change', () => {
-            const f = jf.files[0]; if (!f) return;
+            const f = jf.files[0]; if (!f||!readAllowed(f)) return;const attempt=++jsonRead;
             const r = new FileReader();
             r.onload = async () => {
+              if(!currentMediaPane()||attempt!==jsonRead)return;
               try {
                 const data = JSON.parse(String(r.result));
                 const d = await API.post('/import/json', { data });
-                U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`;
-                await Store.reloadAll(); global.App.toast('Backup restored', 'ok'); global.App.refresh();
-              } catch (e) { U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+                if(!currentMediaPane()||attempt!==jsonRead)return;
+                U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
+                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length?'Financial restore recorded; review optional media omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length)global.App.refresh();
+              } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
             };
+            r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
             r.readAsText(f);
           });
           U.$('#reseed', w).addEventListener('click', async () => {
