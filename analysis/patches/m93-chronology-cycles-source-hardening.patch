@@ -1,0 +1,43 @@
+diff --git a/src/behavior-days.js b/src/behavior-days.js
+index 87411c8..e4a34b5 100644
+--- a/src/behavior-days.js
++++ b/src/behavior-days.js
+@@ -2,7 +2,7 @@
+ /** M93 read-only daily reported-process tally. Explicit APP rubric, not broker
+  * truth, course numeric weights, legacy pattern-score rewrite or authority. */
+ const Process=require('./process-outcomes'),Execution=require('./execution-review'),Journal=require('./journaling');
+-const VERSION='daily-process-v1',MIN_SCORE=5,MIN_TIER=30,WEIGHTS={high:12,medium:6,low:3};
++const VERSION='daily-process-v1',MIN_SCORE=5,MIN_TIER=30,WEIGHTS=Object.freeze({high:12,medium:6,low:3});
+ const BASIS='Current owned UTC recorded ENTRY/rule-day actions, retained app admissions and current retrospective execution/core acknowledgements. Not broker, mental state, statistical edge or permission.';
+ const finite=n=>typeof n==='number'&&Number.isFinite(n),id=n=>Number.isSafeInteger(n)&&n>0,utc=ms=>new Date(ms).toISOString().slice(0,10);
+ function invalid(message,status=400){return Object.assign(new Error(message),{code:'behavior_day_invalid',status});}
+@@ -16,13 +16,14 @@ function legacyWindow(trades){
+ function evaluate({userId,accounts=[],trades=[],admissions=[],events=[],from=null,to=null,nowMs=Date.now()}={}){
+  if(!id(userId))throw invalid('Owned daily review required.');if(from!=null)dateKey(from);if(to!=null)dateKey(to);if(from&&to&&from>to)throw invalid('UTC date range is reversed.');
+  const owned=accounts.filter(a=>a.user_id===userId&&id(a.id)),ids=new Set(owned.map(a=>a.id)),all=trades.filter(t=>t.user_id===userId&&ids.has(t.account_id)),process=Process.evaluate({userId,accounts:owned,trades:[],admissions,events,nowMs}),days=new Map(),unassigned=new Map(),unassignedEvidence=new Map(),rowsByCycle=new Map();
+- const get=(account,date)=>{const key=account+':'+date;if(!days.has(key))days.set(key,{account_id:account,date,current_trades:0,closed_trades:0,open_trades:0,reviewed_trades:0,admission_known:0,execution_known:0,core_known:0,unknown_trades:0,orphaned_actions:0,evidence_unavailable:0,unassigned_trades:0,known_penalty_points:0,score:null,tier:null,tier_basis:null,state:'unreviewed',incidents:[],context_counts:{},basis:BASIS,_rows:[],_incidents:new Map()});return days.get(key);};
++ for(const a of owned){const q=Process.evaluate({userId,accounts:[a],trades:[],admissions,events,nowMs});unassignedEvidence.set(a.id,q.coverage.unassigned_evidence);}
++ const get=(account,date)=>{const key=account+':'+date;if(!days.has(key))days.set(key,{account_id:account,date,current_trades:0,closed_trades:0,open_trades:0,reviewed_trades:0,admission_known:0,execution_known:0,core_known:0,unknown_trades:0,orphaned_actions:0,evidence_unavailable:0,unassigned_trades:0,chronology_unknown:0,ambiguous_cycles:0,known_penalty_points:0,score:null,tier:null,tier_basis:null,state:'unreviewed',incidents:[],context_counts:{},basis:BASIS,_rows:[],_incidents:new Map()});return days.get(key);};
+  const add=(d,key,points,source,detail,tradeId,at)=>{if(!points)return;let incident=d._incidents.get(key);if(!incident){incident={action_key:key,trade_id:tradeId,at,points,sources:[],details:[]};d._incidents.set(key,incident);}incident.points=Math.max(incident.points,points);if(!incident.sources.includes(source))incident.sources.push(source);if(!incident.details.includes(detail))incident.details.push(detail);};
+- for(const t of all){const at=clock(t.opened_at,nowMs);if(at===null){unassigned.set(t.account_id,(unassigned.get(t.account_id)||0)+1);continue;}const d=get(t.account_id,utc(at));d._rows.push(t);const key=t.account_id+':'+t.id+':'+t.opened_at;rowsByCycle.set(key,t);}
++ for(const t of all){const at=clock(t.opened_at,nowMs);if(at===null){unassigned.set(t.account_id,(unassigned.get(t.account_id)||0)+1);continue;}const d=get(t.account_id,utc(at));d._rows.push(t);const key=t.account_id+':'+t.id+':'+t.opened_at;if(rowsByCycle.has(key)){d.ambiguous_cycles++;d.evidence_unavailable++;}rowsByCycle.set(key,t);}
+  // Validate each actual admission with M91's same pure source contract; no DTO
+  // permission or legacy/imported raw trade snapshot substitutes for a child fact.
+  const captures=new Map();
+- for(const a of admissions){if(a.user_id!==userId||!ids.has(a.account_id))continue;let date;try{date=dateKey(a.rule_date);}catch{unassignedEvidence.set(a.account_id,(unassignedEvidence.get(a.account_id)||0)+1);continue;}const d=get(a.account_id,date),r=Process.evaluate({userId,accounts:owned,trades:[],admissions:[a],events:[],nowMs}),p=r.days.find(p=>p.account_id===a.account_id&&p.date===date);if(!p||p.evidence_unavailable||p.admitted_entries+p.exception_entries!==1){d.evidence_unavailable++;continue;}const key=a.account_id+':'+a.trade_id+':'+a.admitted_at;if(!captures.has(key))captures.set(key,[]);captures.get(key).push(a);if(!rowsByCycle.has(key))d.orphaned_actions++;}
++ for(const a of admissions){if(a.user_id!==userId||!ids.has(a.account_id))continue;let date;try{date=dateKey(a.rule_date);}catch{continue;}const d=get(a.account_id,date),r=Process.evaluate({userId,accounts:owned,trades:[],admissions:[a],events:[],nowMs}),p=r.days.find(p=>p.account_id===a.account_id&&p.date===date);if(!p||p.evidence_unavailable||p.admitted_entries+p.exception_entries!==1){d.evidence_unavailable++;continue;}const key=a.account_id+':'+a.trade_id+':'+a.admitted_at;if(!captures.has(key))captures.set(key,[]);captures.get(key).push(a);if(!rowsByCycle.has(key))d.orphaned_actions++;}
+  for(const p of process.days){const d=get(p.account_id,p.date);d.context_counts=p.context_counts;
+   // M90-only older trade events can establish an actual exception/cycle, not a
+   // fabricated ordinary admission. Admission+event duplicates already linked.
+@@ -31,8 +32,9 @@ function evaluate({userId,accounts=[],trades=[],admissions=[],events=[],from=nul
+  }
+  for(const d of days.values()){
+   d.unassigned_trades=unassigned.get(d.account_id)||0;d.evidence_unavailable+=unassignedEvidence.get(d.account_id)||0;
+-  for(const t of d._rows){d.current_trades++;const key=t.account_id+':'+t.id+':'+t.opened_at,entryKnown=captures.get(key)?.length===1;if(entryKnown)d.admission_known++;
+-   const x=Execution.review(t,{nowMs}),j=Journal.info(t,nowMs),close=clock(t.closed_at,nowMs),ack=Process.clock(t.journal_reviewed_at,{canonical:true,now:nowMs}),coreKnown=j.complete&&close!==null&&ack!==null&&ack>=close,execKnown=x.state==='reviewed';
++  for(const t of d._rows){d.current_trades++;const key=t.account_id+':'+t.id+':'+t.opened_at,entryKnown=captures.get(key)?.length===1;if((captures.get(key)?.length||0)>1){d.ambiguous_cycles++;d.evidence_unavailable++;}if(entryKnown)d.admission_known++;
++   const x=Execution.review(t,{nowMs}),j=Journal.info(t,nowMs),close=clock(t.closed_at,nowMs),ack=Process.clock(t.journal_reviewed_at,{canonical:true,now:nowMs}),entry=clock(t.opened_at,nowMs),chronologyKnown=t.status==='closed'&&close!==null&&entry!==null&&close>=entry,coreKnown=j.complete&&chronologyKnown&&ack!==null&&ack>=close,execKnown=x.state==='reviewed'&&chronologyKnown;
++   if(t.status==='closed'&&!chronologyKnown)d.chronology_unknown++;
+    if(t.status==='closed')d.closed_trades++;else d.open_trades++;if(execKnown)d.execution_known++;if(coreKnown)d.core_known++;
+    const a=x.evidence?.adherence,stop=x.evidence?.stop_honoured;if(a!==null&&a!==undefined&&a<5)add(d,key,a<=2?12:a===3?6:3,'execution_review',`Current explicit adherence ${a}/5; APP tally weight, not P&L.`,t.id,t.opened_at);if(stop===false)add(d,key,12,'execution_review','Current explicit stop-not-honoured self-report.',t.id,t.opened_at);
+    if(coreKnown&&t.mistakes_none===0)add(d,key,6,'core_review','Current explicitly declared mistake: '+t.mistakes,t.id,t.opened_at);

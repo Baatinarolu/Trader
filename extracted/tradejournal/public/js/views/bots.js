@@ -26,6 +26,9 @@
     drawings: [],
   };
 
+  let correctionSerial=0;
+  const correctionContext=()=>({user:Store.user?.id,account:Store.accountId||null,token:API.getToken()}),sameCorrection=c=>!!c&&c.user===Store.user?.id&&c.account===(Store.accountId||null)&&c.token===API.getToken();
+
   /** bar length per timeframe — used to decide when a read has gone stale */
   const TF_MS = {
     '1m': 60e3, '3m': 180e3, '5m': 300e3, '15m': 900e3, '30m': 1800e3,
@@ -1135,12 +1138,13 @@
     const top = h('div', { class: 'card' });
     const summary = h('div', { style: 'flex:1;min-width:260px' });
     summary.appendChild(h('div', { html: `<b style="font-size:1.1rem">${esc(c.behavior_grade)}</b> <span class="muted">— ${c.sample.trades} closed trades analysed (${esc(c.sample.from || '')} → ${esc(c.sample.to || '')})</span>` }));
-    summary.appendChild(h('div', { class: 'muted bot-detail', text: `Behaviour score ${c.behavior_score}/100. Each mistake below costs 3–12 points; fixes earn them back.` }));
+    summary.appendChild(h('div', { class: 'muted bot-detail', text: `Legacy window pattern tally ${c.behavior_score}/100 (3–12 points per detected pattern). Includes old outcome-based patterns; not a daily execution certificate, clean-day proof or the daily trend average.` }));
     if (c.top_fix) summary.appendChild(h('div', { class: 'bot-warn', text: `Top priority: ${c.top_fix.title} — ${c.top_fix.fix}` }));
     top.appendChild(h('div', { class: 'row gap-16 wrap', style: 'align-items:center' },
-      h('div', { html: global.U.gauge(c.behavior_score, { label: 'behaviour', max: 100 }) }),
+      h('div', { html: global.U.gauge(c.behavior_score, { label: 'window pattern', max: 100 }) }),
       summary));
     pane.appendChild(top);
+    if(Views.behaviorDays)pane.appendChild(Views.behaviorDays.card(c.behavior_days));
 
     const g = c.guardrails.guardrails || {};
     const gr = h('div', { class: 'card' });
@@ -1240,6 +1244,7 @@
     title: 'Bots',
     render(root) {
       const accountKey=Store.accountId || null;
+      if(B.correctionContext&&!sameCorrection(B.correctionContext)){correctionSerial++;B.correction=null;B.correctionContext=null;B.error='';if(B.busy==='correct')B.busy='';}
       if (B.accountKey!==undefined && B.accountKey!==accountKey) {B.data=null;B.chart=null;B.scan=null;B.correction=null;B.error='';B.busy='';}
       B.accountKey=accountKey;
       root.innerHTML = '';                       // replace the shell's skeleton placeholder
@@ -1307,9 +1312,10 @@
           .then((r) => { B.scan = r; B.busy = ''; global.App.refresh(); })
           .catch((e) => { B.error = 'Scan failed: ' + e.message; B.busy = ''; global.App.refresh(); });
       } else if (B.busy === 'correct') {
+        const scope=correctionContext(),serial=++correctionSerial;B.correctionContext=scope;
         API.get('/bots/correction', {account_id:Store.accountId || null})
-          .then((c) => { B.correction = c; B.busy = ''; global.App.refresh(); })
-          .catch((e) => { B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+          .then((c) => { if(!sameCorrection(scope)||serial!==correctionSerial)return;B.correction = c; B.busy = ''; global.App.refresh(); })
+          .catch((e) => { if(!sameCorrection(scope)||serial!==correctionSerial)return;B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
       } else if (B.busy === 'backtest') {
         // handled inline below (predict tab)
       } else if (B.tab === 'predict' && B.data && !B.backtestTrades) {

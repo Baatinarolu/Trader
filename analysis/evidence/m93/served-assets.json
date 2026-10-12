@@ -1,0 +1,49 @@
+{
+  "source_manifest": "release-source.json",
+  "assets": [
+    {
+      "path": "public/index.html",
+      "http": 200,
+      "server_transform": "Exact existing build-ID replacement",
+      "expected_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/behavior-days.js",
+      "http": 200,
+      "sha256": "e5cb58ebbb2d897c426da5dc70ef3a4ea66bc53d3a618e3475cbd9e1d2b66acb",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/bots.js",
+      "http": 200,
+      "sha256": "7ccac9e5c48980f6c3584b8e3333065ec3d4060a52f866d239f811ab5b129392",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/journal.js",
+      "http": 200,
+      "sha256": "21f265092fa571917f791e9552189447733d123e1ce3d773fc075ce714bece45",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/analytics.js",
+      "http": 200,
+      "sha256": "b2cfeb48a6c19dda78220cb38a36121993c10eb8b7dc62bd3064a8cc5bb664ae",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/coach.js",
+      "http": 200,
+      "sha256": "1ca619b3ce269f4ba2265b5038a769b7ec5367fbc26b0a3ffd457a3c3a21ed41",
+      "local_byte_differences": 0
+    }
+  ],
+  "preview": {
+    "port": 3000,
+    "database": "/tmp/m93-preview.db",
+    "synthetic": true,
+    "remote": false,
+    "scheduler": false
+  },
+  "scope": "Restarted latest backend + actual final served script bytes/exact existing HTML build transform, NOT pixel/live/user preservation/production."
+}

@@ -739,5 +739,68 @@ expectancy denominators, execution/behaviour grades, sizing/risk/permission/caps
 routine/admission/loss-writing clocks. No causal psychological reinforcement,
 prediction/edge/probability/70% claim. Existing plain financial/history imports
 remain legal; root/trade snapshots can't replay retained server proof. No new
-verified guard-history portability in this pass. M93 daily behaviour score remains
-separate TODO; M106/M111/M112 still open, M108 partial.
+verified guard-history portability in this pass. M93 adds a separate daily APP tally without rewriting this M91/window/financial
+annotation; M106/M111/M112 still open, M108 partial.
+
+
+## M93 — current reported-process daily APP index
+
+`GET /behavior-days?account_id=&from=&to=` authenticated, read-only: optional
+canonical positive OWNED account (omitted means separate own account series),
+valid UTC `YYYY-MM-DD` range, malformed400/foreign404/read fault503. No client
+scores/admissions/ownership accepted. Inspector reads actual accounts/trades/M90
+admissions/events in one transaction; zero new schema/table/column/persisted score.
+
+Returns `{report:{state,timezone:'UTC',date_basis,account_ids,from,to,rubric_version,
+minimum_closed_for_score:1,minimum_for_tier:30,app_weights,days,trend,coverage,
+window_pattern,broker_verified:false,basis,scope}}`. Version `daily-process-v1`.
+Dates are current recorded UTC ENTRY days + retained original rule days; not
+financial close day/local broker sessions. Fully retrospective current close
+reviews can update earlier dates. Exact captured current cycle required; orphaned/
+prior/deleted/reopened/clock-changed captures cannot become full current coverage.
+
+Each day exposes current/closed/open/reviewed trades, admission_known,
+execution_known,core_known,unknown_trades,orphaned_actions,evidence_unavailable,
+unassigned_trades,chronology_unknown,ambiguous_cycles,known_penalty_points,score,
+tier/tier_basis,state,incidents/context_counts/basis. Incidents carry action key,
+trade ID, original time, points, sources/details. Current M86 and M85 hash/clock/
+review contracts reused; execution and core acknowledgements must cover the current
+owned row, chronology valid and close known. Missing/stale/legacy/future/pre-close/
+ambiguous/undatable data =>score null, never100/0 by absence. Known explicit issues
+remain visible under incomplete evidence. Imported reviews without actual entry
+capture do not create score authority. No broker/mental truth implied.
+
+APP rubric: one action's MAX of stop exception12, explicit stop-not-honoured12,
+current adherence1–2→12/3→6/4→3/5→0, current declared core mistake6. Do NOT sum
+duplicate sources/issue categories for the same action. Explicit review weight,
+not course formula or automatic verdict of broker misconduct. Score=max(0,100−
+known penalties) ONLY for complete current day coverage with at least1 closed
+action; empty/unknown stays null, and a valid scored0 is different. No trade quota
+or inducement to hit5/30. Tier labels withheld below30, even at raw100;30+ still
+not adaptive/statistical edge or permission. No profit/R/size/model/entry quality/
+emotion/excursion/stop-movement point inputs. Equal acknowledged process can
+produce equal day score on green/red/flat outcomes. Finance edits may stale hashes;
+that is review freshness, not a profit-based penalty.
+
+Trend is per-account/date nullable points; missing scores leave gaps, no zero
+coercion/interpolation or cross-account average. `window_pattern` is a separately
+labelled compatibility tally using the ORIGINAL recurring detector/12-6-3 weights,
+notice gate5/tier30; original M103 gate deliberately unchanged. It includes old
+outcome-based detector severities and is not daily execution truth or the average
+of new scores. Original `/bots/correction` fields/sample/overall/behavior_score/
+behavior_grade/mistakes/guardrails/daily/backfill remain unchanged; `behavior_days`
+is appended. Its existing legacy gauge now says window pattern, not daily certainty.
+
+Optional `behavior_days` on Analytics/Coach/briefing/journal/index/day/correction
+returns unavailable/null coverage on fault without vetoing existing financial
+reporting or certifying process. Date bounds apply to ENTRY/rule days; symbol/tag/
+strategy/model filters do not remove a day's actions just to improve its score.
+Existing finance/close-day metrics keep their own original filters. Actual shared
+UI on all readers shows basis/points/minima/coverage/known evidence and own-account
+day links, with escaped text/token/account/late/superseded correction cache guards.
+
+No core writing/execution/setup grade/backfill update, broker order, cap/loss/
+routine/admission refund, new permission or risk/sizing/geometry/RR adjustment.
+No score-bearing portability/proof replay; historical imports stay legal/unknown.
+No market prediction/causal-dollar/psychological certainty/70% proof. M99 next;
+M103/M108 partial, M106/M111/M112 still open.

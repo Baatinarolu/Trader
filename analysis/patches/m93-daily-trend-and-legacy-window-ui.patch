@@ -1,0 +1,104 @@
+diff --git a/public/index.html b/public/index.html
+index f4672a7..e54cf69 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
++<script src="/js/views/behavior-days.js?v={{V}}"></script>
+ <script src="/js/views/process-outcomes.js?v={{V}}"></script>
+ <script src="/js/views/emotions.js?v={{V}}"></script>
+ <script src="/js/views/confluences.js?v={{V}}"></script>
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index 6d9a1a2..7b0d6c9 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -18,6 +18,7 @@
+       const TABS = [['core', 'Core statistics'], ['timing', 'Timing & sessions'], ['execution', 'Execution quality'], ['risk', 'Risk & drawdown'], ['segments', 'Segments']];
+       let active = 'core';
+       TABS.forEach(([id, label]) => tabs.appendChild(U.h('button', { class: active === id ? 'active' : '', text: label, onclick: () => { active = id; U.$$('button', tabs).forEach((b, i) => b.classList.toggle('active', TABS[i][0] === id)); U.clear(panes); panes.appendChild(PANES[id]()); } })));
++      if(Views.behaviorDays)root.appendChild(Views.behaviorDays.card(an.behavior_days));
+       if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(an.process_review));
+       root.appendChild(tabs); root.appendChild(panes);
+ 
+diff --git a/public/js/views/behavior-days.js b/public/js/views/behavior-days.js
+new file mode 100644
+index 0000000..dd3c028
+--- /dev/null
++++ b/public/js/views/behavior-days.js
+@@ -0,0 +1,22 @@
++/* M93 daily reported-process tally/trend, not legacy window score or authority. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U,finite=n=>typeof n==='number'&&Number.isFinite(n),context=()=>({user:global.Store.user?.id,account:global.Store.accountId,token:global.API.getToken()}),same=c=>!!c&&c.user===global.Store.user?.id&&c.account===global.Store.accountId&&c.token===global.API.getToken();
++ Views.behaviorDays={context,same,
++  card(report){const node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{behaviorDays:'true'}}),expected=context();node.appendChild(U.h('h3',{text:'Daily reported process — UTC ENTRY/rule day'}));node.appendChild(U.h('p',{class:'field-note',text:'Daily APP tally, not broker/mental-state truth, statistical edge, entry permission, sizing, setup/execution grade or core completion. Financial close-day outcomes and overnight trade returns stay separate. Current retrospective reviews can update an earlier entry day; missing/late/stale/prior evidence is not zero or clean100.'}));
++   if(report?.state!=='available'||!report.coverage){node.appendChild(U.h('p',{class:'sticky-note warn',text:'Daily behavior evidence unavailable. Retry/review; no day score, clean state or legacy-window substitution inferred.'}));return node;}
++   const c=report.coverage;node.appendChild(U.h('p',{class:'small',text:`APP ${report.rubric_version}:100 minus one per-action MAX12/6/3 (not every source). Complete admission/current execution/core coverage +${report.minimum_closed_for_score} closed actions for raw score; below${report.minimum_for_tier} tier withheld. Numeric weights/minima are app policies, not course quotations. ${c.scored_days} scored / ${c.account_days} account-days; ${c.unscored_days} unscored; ${c.known_incidents} known incidents; ${c.unassigned_trades} unassigned entries, ${c.unassigned_evidence} undatable facts.`}));node.appendChild(U.h('p',{class:'tiny muted',text:report.basis||'Owned recorded entry/rule days, current retrospective self-reviews; not broker.'}));
++   const legacy=report.window_pattern;node.appendChild(U.h('p',{class:'small',dataset:{behaviorWindow:'true'},text:`Legacy window pattern tally: ${finite(legacy?.behavior_score)?legacy.behavior_score+' / 100':'Unavailable'} · ${legacy?.behavior_grade||'Unavailable'}. Existing detector/running tally, includes old outcome-based pattern severities; not a daily execution certificate, not the daily trend average or evidence of a clean day.`}));
++   const trend=U.h('div',{dataset:{behaviorTrend:'true'}}),values=report.trend||[],accounts=[...new Set(values.map(v=>v.account_id))];
++   if(values.length){const w=650,h=145,pad=25;let svg='<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Daily reported process trend, missing evidence leaves gaps"><line x1="25" x2="625" y1="110" y2="110" stroke="currentColor" opacity=".2"/><text x="2" y="18" font-size="10">100</text><text x="8" y="114" font-size="10">0</text>';
++    for(const account of accounts){const rows=values.filter(r=>r.account_id===account).sort((a,b)=>String(a.date).localeCompare(String(b.date)));let previous=null;rows.forEach((r,i)=>{const x=rows.length===1?w/2:pad+i*(w-pad*2)/(rows.length-1),valid=finite(r.score)&&r.score>=0&&r.score<=100,y=110-(valid?r.score:0)*.95;if(!valid){previous=null;return;}if(previous)svg+='<line data-behavior-line="'+U.esc(account)+'" x1="'+previous.x+'" y1="'+previous.y+'" x2="'+x+'" y2="'+y+'" stroke="currentColor" opacity=".4"/>';svg+='<circle data-behavior-point="'+U.esc(account+':'+r.date)+'" cx="'+x+'" cy="'+y+'" r="3" fill="currentColor"><title>'+U.esc('#'+account+' '+r.date+' · '+r.score)+'</title></circle>';previous={x,y};});}
++    trend.innerHTML=svg+'</svg>';node.appendChild(trend);node.appendChild(U.h('p',{class:'tiny muted',text:'Separate account series; missing daily scores leave gaps, not zeros or interpolation. Do not use this reported-process trend as market prediction.'}));
++   }
++   if(!report.days?.length){node.appendChild(U.h('p',{class:'muted',text:'No dated actions in this scope; not a scored/compliant day.'}));return node;}
++   for(const d of report.days){const section=U.h('section',{class:'card',style:'margin-top:10px',dataset:{behaviorCase:d.account_id+':'+d.date}});section.appendChild(U.h('h4',{text:`${d.date} UTC entry/rule day · account #${d.account_id} · ${finite(d.score)?d.score+' / 100':'Unavailable'} · ${d.tier||'Tier withheld (<30 or incomplete)'}`}));section.appendChild(U.h('p',{class:'small',text:`${d.state} · ${d.reviewed_trades??0} / ${d.current_trades??0} fully reviewed current actions; ${d.closed_trades??0} closed, ${d.open_trades??0} open · admission ${d.admission_known??0}, execution ${d.execution_known??0}, core ${d.core_known??0} known · ${d.unknown_trades??0} unknown, ${d.orphaned_actions??0} prior/deleted actions, ${d.evidence_unavailable??0} unavailable facts. Known penalty points ${d.known_penalty_points??0}, not a final score when evidence incomplete.`}));
++    for(const i of d.incidents||[]){section.appendChild(U.h('p',{class:'small',text:`Action #${i.trade_id} · ${i.at} · ${i.points} APP points max · ${i.sources.join(' + ')}`}));for(const detail of i.details||[])section.appendChild(U.h('p',{class:'tiny',text:detail}));}
++    section.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{behaviorDay:d.date},text:'Review UTC day (money remains close-day)',onclick:()=>{if(!same(expected))return global.App.toast('Workspace/account/session changed; reopen this daily report.','err');if(Number(global.Store.accountId)!==d.account_id)return global.App.toast('Select the original owned account before reviewing its day.','warn');return Views.openProcessDay?Views.openProcessDay(d.date,d.account_id):global.App.toast('Day review unavailable.','err');}}));node.appendChild(section);
++   }
++   return node;
++  }
++ };
++})(window);
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 540c469..a356876 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -1135,12 +1135,13 @@
+     const top = h('div', { class: 'card' });
+     const summary = h('div', { style: 'flex:1;min-width:260px' });
+     summary.appendChild(h('div', { html: `<b style="font-size:1.1rem">${esc(c.behavior_grade)}</b> <span class="muted">— ${c.sample.trades} closed trades analysed (${esc(c.sample.from || '')} → ${esc(c.sample.to || '')})</span>` }));
+-    summary.appendChild(h('div', { class: 'muted bot-detail', text: `Behaviour score ${c.behavior_score}/100. Each mistake below costs 3–12 points; fixes earn them back.` }));
++    summary.appendChild(h('div', { class: 'muted bot-detail', text: `Legacy window pattern tally ${c.behavior_score}/100 (3–12 points per detected pattern). Includes old outcome-based patterns; not a daily execution certificate, clean-day proof or the daily trend average.` }));
+     if (c.top_fix) summary.appendChild(h('div', { class: 'bot-warn', text: `Top priority: ${c.top_fix.title} — ${c.top_fix.fix}` }));
+     top.appendChild(h('div', { class: 'row gap-16 wrap', style: 'align-items:center' },
+-      h('div', { html: global.U.gauge(c.behavior_score, { label: 'behaviour', max: 100 }) }),
++      h('div', { html: global.U.gauge(c.behavior_score, { label: 'window pattern', max: 100 }) }),
+       summary));
+     pane.appendChild(top);
++    if(Views.behaviorDays)pane.appendChild(Views.behaviorDays.card(c.behavior_days));
+ 
+     const g = c.guardrails.guardrails || {};
+     const gr = h('div', { class: 'card' });
+diff --git a/public/js/views/coach.js b/public/js/views/coach.js
+index 6b54781..35b8128 100644
+--- a/public/js/views/coach.js
++++ b/public/js/views/coach.js
+@@ -38,6 +38,7 @@
+         </div>
+       </div>`;
+       root.appendChild(banner);
++      if(Views.behaviorDays)root.appendChild(Views.behaviorDays.card(data.behavior_days));
+       if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(data.process_review));
+ 
+       const split = U.h('div', { class: 'grid g-2-1', style: 'margin-top:14px' });
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 470b0ef..c7fd1ac 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -19,6 +19,7 @@
+           <div><h2 style="margin:0">Daily reviews</h2><div class="muted small">${entries.entries.length} entries — the habit that turns a log into a system.</div></div>
+           <button class="btn primary" id="j-new">+ Today's review</button></div>`;
+       listCol.appendChild(head);
++      if(Views.behaviorDays)listCol.appendChild(Views.behaviorDays.card(entries.behavior_days));
+       if(Views.processOutcomes)listCol.appendChild(Views.processOutcomes.card(entries.process_review));
+       const list = U.h('div', { class: 'card' });
+       if (!entries.entries.length) {
+@@ -176,6 +177,7 @@
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+         <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    if(Views.behaviorDays)body.prepend(Views.behaviorDays.card(day.behavior_days));
+     if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;

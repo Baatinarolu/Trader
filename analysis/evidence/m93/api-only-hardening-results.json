@@ -1,0 +1,164 @@
+{
+  "app": "/tmp/m93-api-stage/app",
+  "pass": 9,
+  "fail": 5,
+  "results": [
+    {
+      "label": "undatable OWN M90 event cannot silently permit complete100 day",
+      "passed": false,
+      "detail": {
+        "account_days": 1,
+        "scored_days": 0,
+        "unscored_days": 1,
+        "known_incidents": 0,
+        "unassigned_trades": 0,
+        "unassigned_evidence": 0
+      }
+    },
+    {
+      "label": "foreign malformed event cannot poison owned daily index",
+      "passed": true
+    },
+    {
+      "label": "close before actual app entry/current opened clock makes chronology unavailable",
+      "passed": false,
+      "detail": {
+        "account_id": 1,
+        "date": "2026-10-12",
+        "current_trades": 5,
+        "closed_trades": 5,
+        "open_trades": 0,
+        "reviewed_trades": 5,
+        "admission_known": 5,
+        "execution_known": 5,
+        "core_known": 5,
+        "unknown_trades": 0,
+        "orphaned_actions": 0,
+        "evidence_unavailable": 0,
+        "unassigned_trades": 0,
+        "known_penalty_points": 0,
+        "score": 100,
+        "tier": null,
+        "tier_basis": null,
+        "state": "scored",
+        "incidents": [],
+        "context_counts": {
+          "observed_stop": 0,
+          "blocked_attempt": 0,
+          "research_exception": 0,
+          "recording_observation": 0
+        },
+        "basis": "Current owned UTC recorded ENTRY/rule-day actions, retained app admissions and current retrospective execution/core acknowledgements. Not broker, mental state, statistical edge or permission."
+      }
+    },
+    {
+      "label": "pre-close core clock cannot count as completed daily review",
+      "passed": true
+    },
+    {
+      "label": "multiple admissions claiming same current cycle not counted as fully known, explicit conflict",
+      "passed": false,
+      "detail": {
+        "account_id": 1,
+        "date": "2026-10-12",
+        "current_trades": 5,
+        "closed_trades": 5,
+        "open_trades": 0,
+        "reviewed_trades": 4,
+        "admission_known": 4,
+        "execution_known": 5,
+        "core_known": 5,
+        "unknown_trades": 1,
+        "orphaned_actions": 0,
+        "evidence_unavailable": 0,
+        "unassigned_trades": 0,
+        "known_penalty_points": 0,
+        "score": null,
+        "tier": null,
+        "tier_basis": null,
+        "state": "incomplete_evidence",
+        "incidents": [],
+        "context_counts": {
+          "observed_stop": 0,
+          "blocked_attempt": 0,
+          "research_exception": 0,
+          "recording_observation": 0
+        },
+        "basis": "Current owned UTC recorded ENTRY/rule-day actions, retained app admissions and current retrospective execution/core acknowledgements. Not broker, mental state, statistical edge or permission."
+      }
+    },
+    {
+      "label": "duplicate current record identity cannot fabricate sixth reviewed sample or cleaner score",
+      "passed": false,
+      "detail": {
+        "account_id": 1,
+        "date": "2026-10-12",
+        "current_trades": 6,
+        "closed_trades": 6,
+        "open_trades": 0,
+        "reviewed_trades": 6,
+        "admission_known": 6,
+        "execution_known": 6,
+        "core_known": 6,
+        "unknown_trades": 0,
+        "orphaned_actions": 0,
+        "evidence_unavailable": 0,
+        "unassigned_trades": 0,
+        "known_penalty_points": 0,
+        "score": 100,
+        "tier": null,
+        "tier_basis": null,
+        "state": "scored",
+        "incidents": [],
+        "context_counts": {
+          "observed_stop": 0,
+          "blocked_attempt": 0,
+          "research_exception": 0,
+          "recording_observation": 0
+        },
+        "basis": "Current owned UTC recorded ENTRY/rule-day actions, retained app admissions and current retrospective execution/core acknowledgements. Not broker, mental state, statistical edge or permission."
+      }
+    },
+    {
+      "label": "undatable own entry record held unassigned, not guessed into date or clean100",
+      "passed": true
+    },
+    {
+      "label": "requested day with no actions remains EMPTY, no null date100 row",
+      "passed": true
+    },
+    {
+      "label": "exported shared APP rubric cannot be mutated by a later reader/import",
+      "passed": false,
+      "detail": {
+        "score": 88,
+        "weights": {
+          "high": 12,
+          "medium": 6,
+          "low": 3
+        }
+      }
+    },
+    {
+      "label": "known explicit issue retained under incomplete execution, no artificialfinal88",
+      "passed": true
+    },
+    {
+      "label": "input records never modified by diagnosis or scoring",
+      "passed": true
+    },
+    {
+      "label": "same valid current acknowledged process stays100 on losses",
+      "passed": true
+    },
+    {
+      "label": "entry quality/target geometry never affects daily points",
+      "passed": true
+    },
+    {
+      "label": "rubric version/floors/not adaptive policy exposed consistently",
+      "passed": true
+    }
+  ],
+  "scope": "M93 chronology/coverage/cycle/read rubric hardening: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

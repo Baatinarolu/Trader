@@ -1,0 +1,48 @@
+diff --git a/public/js/views/behavior-days.js b/public/js/views/behavior-days.js
+index dd3c028..db1a3d2 100644
+--- a/public/js/views/behavior-days.js
++++ b/public/js/views/behavior-days.js
+@@ -4,7 +4,7 @@
+  Views.behaviorDays={context,same,
+   card(report){const node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{behaviorDays:'true'}}),expected=context();node.appendChild(U.h('h3',{text:'Daily reported process — UTC ENTRY/rule day'}));node.appendChild(U.h('p',{class:'field-note',text:'Daily APP tally, not broker/mental-state truth, statistical edge, entry permission, sizing, setup/execution grade or core completion. Financial close-day outcomes and overnight trade returns stay separate. Current retrospective reviews can update an earlier entry day; missing/late/stale/prior evidence is not zero or clean100.'}));
+    if(report?.state!=='available'||!report.coverage){node.appendChild(U.h('p',{class:'sticky-note warn',text:'Daily behavior evidence unavailable. Retry/review; no day score, clean state or legacy-window substitution inferred.'}));return node;}
+-   const c=report.coverage;node.appendChild(U.h('p',{class:'small',text:`APP ${report.rubric_version}:100 minus one per-action MAX12/6/3 (not every source). Complete admission/current execution/core coverage +${report.minimum_closed_for_score} closed actions for raw score; below${report.minimum_for_tier} tier withheld. Numeric weights/minima are app policies, not course quotations. ${c.scored_days} scored / ${c.account_days} account-days; ${c.unscored_days} unscored; ${c.known_incidents} known incidents; ${c.unassigned_trades} unassigned entries, ${c.unassigned_evidence} undatable facts.`}));node.appendChild(U.h('p',{class:'tiny muted',text:report.basis||'Owned recorded entry/rule days, current retrospective self-reviews; not broker.'}));
++   const c=report.coverage;node.appendChild(U.h('p',{class:'small',text:'Current account '+(report.account_ids||[]).map(id=>'#'+id).join(' / ')+' · daily ownership scope, separate account series.'}));node.appendChild(U.h('p',{class:'small',text:`APP ${report.rubric_version}:100 minus one per-action MAX12/6/3 (not every source). Complete admission/current execution/core coverage +${report.minimum_closed_for_score} closed actions for raw score; below${report.minimum_for_tier} tier withheld. Numeric weights/minima are app policies, not course quotations. ${c.scored_days} scored / ${c.account_days} account-days; ${c.unscored_days} unscored; ${c.known_incidents} known incidents; ${c.unassigned_trades} unassigned entries, ${c.unassigned_evidence} undatable facts.`}));node.appendChild(U.h('p',{class:'tiny muted',text:report.basis||'Owned recorded entry/rule days, current retrospective self-reviews; not broker.'}));
+    const legacy=report.window_pattern;node.appendChild(U.h('p',{class:'small',dataset:{behaviorWindow:'true'},text:`Legacy window pattern tally: ${finite(legacy?.behavior_score)?legacy.behavior_score+' / 100':'Unavailable'} · ${legacy?.behavior_grade||'Unavailable'}. Existing detector/running tally, includes old outcome-based pattern severities; not a daily execution certificate, not the daily trend average or evidence of a clean day.`}));
+    const trend=U.h('div',{dataset:{behaviorTrend:'true'}}),values=report.trend||[],accounts=[...new Set(values.map(v=>v.account_id))];
+    if(values.length){const w=650,h=145,pad=25;let svg='<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Daily reported process trend, missing evidence leaves gaps"><line x1="25" x2="625" y1="110" y2="110" stroke="currentColor" opacity=".2"/><text x="2" y="18" font-size="10">100</text><text x="8" y="114" font-size="10">0</text>';
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index a356876..dbc40a4 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -26,6 +26,9 @@
+     drawings: [],
+   };
+ 
++  let correctionSerial=0;
++  const correctionContext=()=>({user:Store.user?.id,account:Store.accountId||null,token:API.getToken()}),sameCorrection=c=>!!c&&c.user===Store.user?.id&&c.account===(Store.accountId||null)&&c.token===API.getToken();
++
+   /** bar length per timeframe — used to decide when a read has gone stale */
+   const TF_MS = {
+     '1m': 60e3, '3m': 180e3, '5m': 300e3, '15m': 900e3, '30m': 1800e3,
+@@ -1241,6 +1244,7 @@
+     title: 'Bots',
+     render(root) {
+       const accountKey=Store.accountId || null;
++      if(B.correctionContext&&!sameCorrection(B.correctionContext)){correctionSerial++;B.correction=null;B.correctionContext=null;B.error='';if(B.busy==='correct')B.busy='';}
+       if (B.accountKey!==undefined && B.accountKey!==accountKey) {B.data=null;B.chart=null;B.scan=null;B.correction=null;B.error='';B.busy='';}
+       B.accountKey=accountKey;
+       root.innerHTML = '';                       // replace the shell's skeleton placeholder
+@@ -1308,9 +1312,10 @@
+           .then((r) => { B.scan = r; B.busy = ''; global.App.refresh(); })
+           .catch((e) => { B.error = 'Scan failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'correct') {
++        const scope=correctionContext(),serial=++correctionSerial;B.correctionContext=scope;
+         API.get('/bots/correction', {account_id:Store.accountId || null})
+-          .then((c) => { B.correction = c; B.busy = ''; global.App.refresh(); })
+-          .catch((e) => { B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
++          .then((c) => { if(!sameCorrection(scope)||serial!==correctionSerial)return;B.correction = c; B.busy = ''; global.App.refresh(); })
++          .catch((e) => { if(!sameCorrection(scope)||serial!==correctionSerial)return;B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'backtest') {
+         // handled inline below (predict tab)
+       } else if (B.tab === 'predict' && B.data && !B.backtestTrades) {

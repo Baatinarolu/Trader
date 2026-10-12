@@ -1,0 +1,122 @@
+{
+  "app": "/tmp/m93-freshness-stage/app",
+  "pass": 2,
+  "fail": 4,
+  "results": [
+    {
+      "label": "fully known1 actions can review raw100 WITHOUT30-tier or overtrading quota",
+      "passed": false,
+      "detail": {
+        "account_id": 1,
+        "date": "2026-10-12",
+        "current_trades": 1,
+        "closed_trades": 1,
+        "open_trades": 0,
+        "reviewed_trades": 1,
+        "admission_known": 1,
+        "execution_known": 1,
+        "core_known": 1,
+        "unknown_trades": 0,
+        "orphaned_actions": 0,
+        "evidence_unavailable": 0,
+        "unassigned_trades": 0,
+        "chronology_unknown": 0,
+        "ambiguous_cycles": 0,
+        "known_penalty_points": 0,
+        "score": null,
+        "tier": null,
+        "tier_basis": null,
+        "state": "insufficient_daily_sample",
+        "incidents": [],
+        "context_counts": {
+          "observed_stop": 0,
+          "blocked_attempt": 0,
+          "research_exception": 0,
+          "recording_observation": 0
+        },
+        "basis": "Current owned UTC recorded ENTRY/rule-day actions, retained app admissions and current retrospective execution/core acknowledgements. Not broker, mental state, statistical edge or permission."
+      }
+    },
+    {
+      "label": "fully known3 actions can review raw100 WITHOUT30-tier or overtrading quota",
+      "passed": false,
+      "detail": {
+        "account_id": 1,
+        "date": "2026-10-12",
+        "current_trades": 3,
+        "closed_trades": 3,
+        "open_trades": 0,
+        "reviewed_trades": 3,
+        "admission_known": 3,
+        "execution_known": 3,
+        "core_known": 3,
+        "unknown_trades": 0,
+        "orphaned_actions": 0,
+        "evidence_unavailable": 0,
+        "unassigned_trades": 0,
+        "chronology_unknown": 0,
+        "ambiguous_cycles": 0,
+        "known_penalty_points": 0,
+        "score": null,
+        "tier": null,
+        "tier_basis": null,
+        "state": "insufficient_daily_sample",
+        "incidents": [],
+        "context_counts": {
+          "observed_stop": 0,
+          "blocked_attempt": 0,
+          "research_exception": 0,
+          "recording_observation": 0
+        },
+        "basis": "Current owned UTC recorded ENTRY/rule-day actions, retained app admissions and current retrospective execution/core acknowledgements. Not broker, mental state, statistical edge or permission."
+      }
+    },
+    {
+      "label": "fully known4 actions can review raw100 WITHOUT30-tier or overtrading quota",
+      "passed": false,
+      "detail": {
+        "account_id": 1,
+        "date": "2026-10-12",
+        "current_trades": 4,
+        "closed_trades": 4,
+        "open_trades": 0,
+        "reviewed_trades": 4,
+        "admission_known": 4,
+        "execution_known": 4,
+        "core_known": 4,
+        "unknown_trades": 0,
+        "orphaned_actions": 0,
+        "evidence_unavailable": 0,
+        "unassigned_trades": 0,
+        "chronology_unknown": 0,
+        "ambiguous_cycles": 0,
+        "known_penalty_points": 0,
+        "score": null,
+        "tier": null,
+        "tier_basis": null,
+        "state": "insufficient_daily_sample",
+        "incidents": [],
+        "context_counts": {
+          "observed_stop": 0,
+          "blocked_attempt": 0,
+          "research_exception": 0,
+          "recording_observation": 0
+        },
+        "basis": "Current owned UTC recorded ENTRY/rule-day actions, retained app admissions and current retrospective execution/core acknowledgements. Not broker, mental state, statistical edge or permission."
+      }
+    },
+    {
+      "label": "one explicit known poor self-review raw88, NOT statistical trader classification",
+      "passed": false
+    },
+    {
+      "label": "sparse unknown review remains NULL not score or clean100",
+      "passed": true
+    },
+    {
+      "label": "unchanged legacy recurring detector5/tier30 still exact—even old rawwindow100",
+      "passed": true
+    }
+  ],
+  "scope": "M93 descriptive complete small-day not overtrading quota: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

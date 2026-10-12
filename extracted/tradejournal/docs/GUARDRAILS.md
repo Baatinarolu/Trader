@@ -446,7 +446,39 @@ account not automatically selected. Optional process store outage never certifie
 clean or rejects truthful financial reporting. Imports cannot replay proof through
 DTOs; no guard-history backup expansion or sealed/admin-proof vault claimed.
 
-Current132=93 done/3 partial/36TODO. M93 per-day behaviour score next; M30/M103/M108
+Current132=93 done/3 partial/36TODO. M93 is separately implemented as an APP daily tally (not a rewrite of M91/legacy scores); M30/M103/M108
 partial, M106/M111/M112 TODO. Course floor30, deliberate M103n>=5/B-C tradeability
 unchanged. No broker/provider/actual-human/meditation/pixels/production/edge/70%
 validation implied by this app review annotation.
+
+
+## M93 — daily APP display is NEVER a trade quota or permission
+
+Current owned UTC ENTRY/rule-day process, not close-day money/broker sessions.
+Actual current entry-cycle capture and complete current execution/core review
+required for a final raw tally. Missing/stale/import-without-admission/open/prior/
+deleted/ambiguous/undatable/future/pre-close evidence withheld; no absence→100/0,
+no reranking from a profitable outcome. Known explicit incidents remain visible.
+Financial correction can stale acknowledgement; original saved guard action stays.
+
+Fully known ONE-action day may be reviewed—**never force trades to hit5 or30**.
+Old recurring detector still5, old window tier30 and score unchanged. New raw daily
+APP index is not a statistical grade; daily tier below30 withheld.30+ is still no
+edge/permission proof. Original legacy gauge/text explicitly window pattern, not
+a clean-day certificate or daily trend average. Missing trend points leave gaps.
+
+APP weights, not quoted course law: one action MAX12/6/3 across valid sources,
+exception/explicit stop violation/adherence/current declared mistake. Duplicate
+admission/events and multiple reports not separate costs. No P&L/R/RR/model/grade/
+size/emotion/excursion/stop-movement points, causal dollars or psychological/broker
+truth. Display-only self-reported process, not a verified misconduct decision.
+
+No schema/persisted score/import authority. No automatic writing/execution/core
+completion, setup/backfill grade overwrite, caps/routine/loss-clock/admission
+refund, permission/entry/strategy/model/weight/risk/factor/stop/target/RR change.
+Actual UI token/account/superseded correction reply/cache/error guards. Unavailable
+evidence never vetoes truthful finance or silently certifies clean process.
+
+Current132=94 done/3 partial/35TODO; M99 next. M30/M103/M108 partial; M106/M111/M112
+TODO. Course30 and deliberate old detectorM103n>=5/B-C tradeability untouched.
+No broker/provider/mental/actual-human/meditation/pixel/production/edge/70% claim.

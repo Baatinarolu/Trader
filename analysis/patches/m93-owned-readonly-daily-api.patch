@@ -1,0 +1,99 @@
+diff --git a/src/behavior-days.js b/src/behavior-days.js
+index 7e36369..87411c8 100644
+--- a/src/behavior-days.js
++++ b/src/behavior-days.js
+@@ -45,4 +45,12 @@ function evaluate({userId,accounts=[],trades=[],admissions=[],events=[],from=nul
+  const list=[...days.values()].filter(d=>(!from||d.date>=from)&&(!to||d.date<=to)).sort((a,b)=>b.date.localeCompare(a.date)||a.account_id-b.account_id),coverage={account_days:list.length,scored_days:list.filter(d=>d.score!==null).length,unscored_days:list.filter(d=>d.score===null).length,known_incidents:list.reduce((n,d)=>n+d.incidents.length,0),unassigned_trades:[...unassigned.values()].reduce((a,b)=>a+b,0),unassigned_evidence:[...unassignedEvidence.values()].reduce((a,b)=>a+b,0)},selected=all.filter(t=>{const at=clock(t.opened_at,nowMs);return at!==null&&(!from||utc(at)>=from)&&(!to||utc(at)<=to);});
+  return {state:'available',timezone:'UTC',date_basis:'current_recorded_entry_and_original_rule_day',account_ids:[...ids],from,to,rubric_version:VERSION,minimum_closed_for_score:MIN_SCORE,minimum_for_tier:MIN_TIER,app_weights:WEIGHTS,days:list,trend:list.map(d=>({account_id:d.account_id,date:d.date,score:d.score,state:d.state})),coverage,window_pattern:legacyWindow(selected),broker_verified:false,basis:BASIS,scope:'Daily reported-process APP index:100 minus per-action MAX12/6/3, complete current admission/execution/core coverage and at least5 closed records. Missing evidence NULL, not clean100/zero. Tier below30 withheld. Not window-score replacement, M106 state gate, actual psychology/broker proof or permission/sizing/strategy/grade/core completion.'};
+ }
+-module.exports={VERSION,MIN_SCORE,MIN_TIER,WEIGHTS,BASIS,invalid,dateKey,evaluate,legacyWindow};
++
++
++function unavailable(){return {state:'unavailable',days:[],trend:[],coverage:null,window_pattern:null,rubric_version:VERSION,timezone:'UTC',broker_verified:false,basis:BASIS,scope:'Daily evidence unavailable—not0/clean/complete. Existing financial/window/execution fields unchanged.'};}
++async function inspect(userId,{accountId=null,from=null,to=null,store=null}={}){
++ if(from!=null)dateKey(from);if(to!=null)dateKey(to);if(from&&to&&from>to)throw invalid('UTC date range is reversed.');if(accountId!=null&&(!['string','number'].includes(typeof accountId)||typeof accountId==='string'&&!/^[1-9]\d*$/.test(accountId)||!id(Number(accountId))))throw invalid('Account not found.',404);
++ const {db}=require('./db'),read=async store=>{const accounts=await store.prepare('SELECT * FROM accounts WHERE user_id=?'+(accountId==null?'':' AND id=?')).all(...(accountId==null?[userId]:[userId,Number(accountId)]));if(accountId!=null&&!accounts.length)throw invalid('Account not found.',404);const trades=await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at,id').all(userId),admissions=await store.prepare('SELECT * FROM guardrail_entry_admissions WHERE user_id=? ORDER BY id').all(userId),events=await store.prepare('SELECT * FROM guardrail_events WHERE user_id=? ORDER BY id').all(userId);return evaluate({userId,accounts,trades,admissions,events,from,to,nowMs:Date.now()});};return store?read(store):db.tx(async tx=>read(db.transactionStore(tx)));
++}
++async function optional(userId,options){try{return await inspect(userId,options);}catch{return unavailable();}}
++module.exports={VERSION,MIN_SCORE,MIN_TIER,WEIGHTS,BASIS,invalid,dateKey,evaluate,legacyWindow,inspect,optional,unavailable};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index b053695..fefb415 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -18,6 +18,7 @@ const Screenshots = require('../screenshots');
+ const Confluences = require('../confluences');
+ const Emotions = require('../emotions');
+ const ProcessOutcomes = require('../process-outcomes');
++const BehaviorDays = require('../behavior-days');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+@@ -545,6 +546,11 @@ function complianceOver(map, ids) {
+   };
+ }
+ 
++router.get('/behavior-days',requireAuth,async(req,res)=>{
++  try{res.json({report:await BehaviorDays.inspect(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})});}
++  catch(e){if(e.code==='behavior_day_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Daily behavior evidence unavailable, not clean or scored.'});}
++});
++
+ router.get('/process-outcomes',requireAuth,async(req,res)=>{
+   try{res.json({review:await ProcessOutcomes.inspect(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})});}
+   catch(e){if(e.code==='process_outcome_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Process history unavailable; not a clean-process certificate.'});}
+@@ -571,6 +577,7 @@ router.get('/analytics', requireAuth, async (req, res) => {
+   Object.assign(analytics, complianceOver(await complianceByTrade(req.user.id), closed.map((t) => t.id)));
+   analytics.account = acc;
+   analytics.open_positions = decorated.filter((t) => t.status === 'open');
++  analytics.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
+   analytics.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
+   res.json(analytics);
+ });
+@@ -608,7 +615,9 @@ router.get('/coach', requireAuth, async (req, res) => {
+     .map((t) => P.decorate(t, tz));
+   const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
+     || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
+-  res.json(ProcessOutcomes.withCoach(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }),await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})));
++  const data=ProcessOutcomes.withCoach(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }),await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null}));
++  data.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
++  res.json(data);
+ });
+ 
+ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+@@ -626,6 +635,7 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+   const capPolicy = await Guards.dailyCap(db, req.user.id, acc);
+   const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
+   briefing.risk_plan.trade_cap_policy = capPolicy;
++  briefing.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
+   briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
+   // Briefing amounts are advice, NOT permission. Use the same close-day UTC
+   // state as entry admission for the optional profit display/retained latch.
+@@ -657,7 +667,7 @@ router.get('/journal', requireAuth, async (req, res) => {
+   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
+   if(req.query.account_id && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(Number(req.query.account_id),req.user.id))return res.status(404).json({error:'Account not found'});
+   const journalRows=await db.prepare('SELECT * FROM trades WHERE user_id=?'+(req.query.account_id?' AND account_id=?':'')).all(...(req.query.account_id?[req.user.id,Number(req.query.account_id)]:[req.user.id]));
+-  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC',process_review:await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null}) });
++  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC',behavior_days:await BehaviorDays.optional(req.user.id,{accountId:req.query.account_id??null}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null}) });
+ });
+ router.get('/routine',requireAuth,async(req,res)=>{
+   try{res.json({routine:await Routine.current(req.user.id,{accountId:req.query.account_id})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine state could not be verified.'});}
+@@ -690,7 +700,7 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
+   const accountId=account.id;
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
+-  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index c4c9d6f..2c998eb 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -232,6 +232,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       days: Math.min(Math.max(num(req.query.days, 365), 7), 2000),
+       backfill: req.query.backfill === '1',
+     });
++    out.behavior_days=await require('../behavior-days').optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
+     res.json({ ok: true, ...out });
+   }));
+ 

@@ -1,6 +1,49 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M91 — profitable days with recorded guardrail exceptions — 2026-10-12
+## Current M93 — daily reported-process review — 2026-10-12
+
+**132:94 done /3 partial /35 TODO /0 no-action**, exact eight groups. Read-only
+per-owned-account UTC ENTRY/rule-day APP tally, current valid core/execution review
+and exact captured entry-cycle coverage. Missing/stale/open/prior/deleted/ambiguous/
+unassigned evidence =>NULL, known issues still visible, never clean100/zero.
+Per-action MAX12/6/3 (self-report/known stop exception), not duplicated per source;
+no P&L/R/model/grade/size/emotion/excursion input, no authority/core completion.
+
+**Scope correction:** direct fully known1–4 trade day can be reviewed; no quota to
+force more trades. APP raw tally from1, tier below30 withheld. Original recurring
+pattern detector **5**/window tier30/legacy score unchanged. Initial extra daily
+minimum5 measured then corrected separately. Daily trend separate from labelled
+legacy window pattern tally, gap NULL not zero interpolation or daily average.
+Actual day/index/Analytics/Coach/whole Bots Corrections UI, escaped evidence and
+owner/token/account/superseded/cache/error guards; zero schema/persisted scores.
+
+**Final M93 115/0 across7 probes**, actual127-parent zero-schema/restarts11/0.
+Original M91 process108/0, M89 emotion170/0, M88 reasons160/0, execution260/0,
+routine321/0; M87 screenshots223/3 old migration-shape negatives retained.
+RAW596/156 +90s timeout; DECLARED824/4. One extra original account-forwarding UI
+fixture lacks real API.getToken; keep negative, don't weaken token guards/rewrite
+old assertions. Offline178/0, declared market325/0, live70/1 with6 nonzero/5 summaryless.
+Prepared native parent/current API121/0/Bots206/0 each,24 synthetic fills/0 mismatch;
+RAW APIexit2/Bots202/4. Original smoke21/21,0 style/console,8 canvas limits,exit0;
+exact exits/fills in manifest, not broker/pixels/human/production/market improvement.
+
+Six separately frozen runtime stages+docs, actual797/pristine forward/reverse byte
+proofs, deterministic **129-source** ZIP: `build-m93-behavior-artifacts.py`,
+`patches/M93-BEHAVIOR-STAGES.json`, excluded archive SHA companion.
+[Full report](M93-DAILY-BEHAVIOR-REVIEW.md). Main preview3000 temporary synthetic
+`/tmp/m93-preview.db`, offline/schedulerOFF/blank remotes, not preserved real data.
+
+**Next M99 — periodic review cadence.** M106/M111/M112 stillTODO; M30/M103/M108
+partial. All132 IDs/eight groups retained. Session remains **arena/762c0295-trader**;
+older branches/counts/next steps below are historical, never current instructions.
+
+### Current remaining IDs — no omissions
+
+Partials **M30,M103,M108**. TODO35: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M62,M65,M66,M67,M72,M73,M74,M99,M100,M101,M104,M105,M106,M107,M109,M110,M111,M112,M115,M117,M125**.
+PROGRESS is the exact132/eight-group partition. Older ID lists below are milestone
+snapshots, not current remaining work.
+
+## Historical M91 — profitable days with recorded guardrail exceptions — 2026-10-12
 
 **132:93 done /3 partial /36 TODO /0 no-action**, exact eight groups. Read-only
 M90 actual traded-exception + whole owned UTC account-day outcome review. A reached

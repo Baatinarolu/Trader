@@ -1,0 +1,83 @@
+
+Testing http://127.0.0.1:3128
+────────────────────────────────────────────────────────────────────────
+ ✓ POST /auth/register → 200
+ ✓ registration returns a session token
+ ✓ GET /bootstrap → 200
+ ✓ new user gets a default account
+ ✓ new user gets the starter playbook
+ ✓ instrument library loaded
+ ✓ POST /trades → 200
+ ✓ trade created with computed risk
+ ✓ MFE derived from mfe_price
+ ✓ MAE derived from mae_price (negative)
+ ✓ planned R computed from target/stop
+ ✓ session auto-assigned
+ ✓ POST /trades/1/close → 200
+ ✓ close computes gross P&L (200 pts × 2 contracts)
+ ✓ close computes net P&L after fees
+ ✓ close computes R-multiple
+ ✓ status flipped to closed
+ ✓ PUT /trades/1 → 200
+ ✓ update persists adherence + tags
+ ✓ POST /trades → 200
+ ✓ ES: risk = 8 pts × 3 contracts × $50 = $1,200
+ ✓ ES: short profit = 16 pts × 3 × $50 = $2,400 net of fees
+ ✓ POST /trades → 200
+ ✓ BTC: risk = 2500 × 0.5 = $1,250
+ ✓ BTC: (5,000 × 0.5 − $30 fees) ÷ $1,250 = 1.976R
+ ✓ POST /trades → 200
+ ✓ EURUSD: 30 pips risk on 0.5 lots = $150
+ ✓ GET /analytics → 200
+ ✓ analytics returns kpis
+ ✓ analytics returns per-trade points for charts
+ ✓ equity curve starts from starting balance
+ ✓ GET /coach → 200
+ ✓ coach runs on a tiny sample
+ ✓ GET /briefing → 200
+ ✓ briefing produces a risk plan
+ ✓ POST /tools/size → 200
+ ✓ size tool flags risk too small for 1 ES contract ($612.50 needed vs $375 allowed)
+ ✓ POST /tools/size → 200
+ ✓ size tool: $750 risk ÷ 12.25 pts ÷ $50 = 1 ES contract
+ ✓ size tool returns R:R and break-even win rate
+ ✓ POST /tools/expectancy → 200
+ ✓ expectancy tool: 45% at 2:1 = +0.35R
+ ✓ POST /import/csv → 200
+ ✓ CSV import inserted 3 trades
+ ✓ CSV import detected a symbol column
+ ✓ GET /trades?limit=500 → 200
+ ✓ imported XAUUSD short 2652.30 → 2644.10 is a +$328 win with correct direction
+ ✓ CSV export returns a header + rows
+ ✓ JSON backup contains trades + strategies
+ ✓ POST /journal → 200
+ ✓ GET /journal/2026-10-06 → 200
+ ✓ journal upsert + read back
+ ✓ POST /goals → 200
+ ✓ GET /goals → 200
+ ✓ goal created with live progress
+ ✓ POST /watchlist → 200
+ ✓ GET /watchlist → 200
+ ✓ watchlist upsert is case-insensitive on symbol
+ ✓ PUT /settings → 200
+ ✓ settings persist
+ ✓ POST /accounts → 200
+ ✓ GET /accounts → 200
+ ✓ second account created with stats
+ ✓ POST /instruments → 200
+ ✓ GET /instruments → 200
+ ✓ custom instrument added
+ ✓ GET /trades → 401
+ ✓ trades require auth (401)
+ ✓ GET /analytics → 401
+ ✓ forged token rejected
+ ✓ POST /trades → 400
+ ✓ trade without entry price rejected (400)
+ ✓ GET /market/news?limit=10 → 200
+ ✓ news endpoint responds
+ ✓ GET /market/quotes?symbols=EURUSD,BTCUSDT → 200
+ ✓ quotes endpoint responds
+ ✓ POST /trades/bulk-delete → 200
+ ✓ bulk delete works
+────────────────────────────────────────────────────────────────────────
+121 passed, 0 failed

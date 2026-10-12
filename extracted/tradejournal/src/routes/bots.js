@@ -232,6 +232,7 @@ router.get('/markets', requireAuth, (req, res) => {
       days: Math.min(Math.max(num(req.query.days, 365), 7), 2000),
       backfill: req.query.backfill === '1',
     });
+    out.behavior_days=await require('../behavior-days').optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
     res.json({ ok: true, ...out });
   }));
 

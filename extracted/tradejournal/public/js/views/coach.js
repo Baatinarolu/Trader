@@ -38,6 +38,7 @@
         </div>
       </div>`;
       root.appendChild(banner);
+      if(Views.behaviorDays)root.appendChild(Views.behaviorDays.card(data.behavior_days));
       if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(data.process_review));
 
       const split = U.h('div', { class: 'grid g-2-1', style: 'margin-top:14px' });

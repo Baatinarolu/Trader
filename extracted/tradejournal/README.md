@@ -1,5 +1,43 @@
 # TradeJournal Pro
 
+## M93 — daily reported process, not the old window tally (2026-10-12)
+
+**Day review, Journal index, Analytics, Coach and Bots → Corrections** now show
+separate daily APP tallies and an account-separated trend. Process dates are UTC
+**ENTRY/rule days**; finance/day best-worst remain their own close-day basis.
+Current retrospective reviews can update an older entry day. Unknown points leave
+trend gaps—not0 or a straight line through missing data.
+
+A final raw tally requires each action's current captured entry cycle, explicit
+execution acknowledgement and complete core/mistake-or-none review. Open, stale,
+legacy/import-without-admission, prior/deleted/orphaned, ambiguous/undatable or
+unavailable evidence remains **unscored**, with known incidents still shown.
+No flags/no data is not clean100. One fully known action can be reviewed: **do not
+force more trades to unlock a score or tier**. Daily tier below30 stays withheld.
+
+APP points (not course quotations):100 minus per-action **MAX12/6/3**, not points
+for every duplicate source: personal-stop trade exception12; explicit stop breach12;
+current adherence1/2→12,3→6,4→3,5→0; current named core mistake6. Equal acknowledged
+process gets the same raw tally on winning/losing trades. P&L/R/size/model/setup
+quality/emotion/excursions/stop movement award no points; financial corrections
+can honestly stale acknowledgements and require a fresh review.
+
+The unchanged old gauge is labelled **Legacy window pattern tally**: its detector
+still requires5 and its grade floor30 remains, with the same fields/weights. It can
+still show raw100 below enough evidence; that is not the new day score or a clean
+certificate. Numeric weights/minima are app display policy, not broker/mental-state,
+statistical edge, trade quota, permission, sizing, grade change or core completion.
+
+Read-only `GET /behavior-days` has owned account/date scope and explicit unavailable
+on storage faults. No new schema, persisted score, score-bearing import or proof
+backfill; current records never replay a child admission through client metadata.
+See [docs/API.md](docs/API.md) / [docs/GUARDRAILS.md](docs/GUARDRAILS.md).
+
+Measured **M93 115/0 across7**, actual-parent zero-schema/restart11/0. Ledger
+**132=94 done/3 partial/35TODO**. M99 periodic review cadence is next; M103/M108
+remain partial and M106/M111/M112 open. Old negative/raw/provider/mock/canvas results
+kept separately—not an all-green production/broker/human/pixel/70% claim.
+
 ## M91 — positive money is not a clean-process certificate (2026-10-12)
 
 **Day review, Journal index, Analytics and Coach** now separate financial outcomes
@@ -29,8 +67,8 @@ No new schema/columns or persisted flag, no new guard-history backup transport.
 See [docs/API.md](docs/API.md) / [docs/GUARDRAILS.md](docs/GUARDRAILS.md).
 
 Measured **M91 108/0 across6**, actual-parent migration/restart11/0; original M89
-170/0, M88 reasons160/0, execution260/0, routine321/0. Ledger **132=93 done/3 partial/36TODO**.
-M93 daily behaviour score is next; M106/M111/M112 remain open, M108 partial. Older
+170/0, M88 reasons160/0, execution260/0, routine321/0. Historical M91 ledger **132=93 done/3 partial/36TODO** (current counts above).
+M93 was next at that delivery (now separately applied); M106/M111/M112 remain open, M108 partial. Older
 negative/provider/RAW/DECLARED/native/conditional-DOM results retained, not a claim
 of production, broker, actual human/meditation, pixels or a70% win rate.
 

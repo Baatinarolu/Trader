@@ -1,0 +1,459 @@
+diff --git a/README.md b/README.md
+index 94b15af..3946403 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,43 @@
+ # TradeJournal Pro
+ 
++## M93 — daily reported process, not the old window tally (2026-10-12)
++
++**Day review, Journal index, Analytics, Coach and Bots → Corrections** now show
++separate daily APP tallies and an account-separated trend. Process dates are UTC
++**ENTRY/rule days**; finance/day best-worst remain their own close-day basis.
++Current retrospective reviews can update an older entry day. Unknown points leave
++trend gaps—not0 or a straight line through missing data.
++
++A final raw tally requires each action's current captured entry cycle, explicit
++execution acknowledgement and complete core/mistake-or-none review. Open, stale,
++legacy/import-without-admission, prior/deleted/orphaned, ambiguous/undatable or
++unavailable evidence remains **unscored**, with known incidents still shown.
++No flags/no data is not clean100. One fully known action can be reviewed: **do not
++force more trades to unlock a score or tier**. Daily tier below30 stays withheld.
++
++APP points (not course quotations):100 minus per-action **MAX12/6/3**, not points
++for every duplicate source: personal-stop trade exception12; explicit stop breach12;
++current adherence1/2→12,3→6,4→3,5→0; current named core mistake6. Equal acknowledged
++process gets the same raw tally on winning/losing trades. P&L/R/size/model/setup
++quality/emotion/excursions/stop movement award no points; financial corrections
++can honestly stale acknowledgements and require a fresh review.
++
++The unchanged old gauge is labelled **Legacy window pattern tally**: its detector
++still requires5 and its grade floor30 remains, with the same fields/weights. It can
++still show raw100 below enough evidence; that is not the new day score or a clean
++certificate. Numeric weights/minima are app display policy, not broker/mental-state,
++statistical edge, trade quota, permission, sizing, grade change or core completion.
++
++Read-only `GET /behavior-days` has owned account/date scope and explicit unavailable
++on storage faults. No new schema, persisted score, score-bearing import or proof
++backfill; current records never replay a child admission through client metadata.
++See [docs/API.md](docs/API.md) / [docs/GUARDRAILS.md](docs/GUARDRAILS.md).
++
++Measured **M93 115/0 across7**, actual-parent zero-schema/restart11/0. Ledger
++**132=94 done/3 partial/35TODO**. M99 periodic review cadence is next; M103/M108
++remain partial and M106/M111/M112 open. Old negative/raw/provider/mock/canvas results
++kept separately—not an all-green production/broker/human/pixel/70% claim.
++
+ ## M91 — positive money is not a clean-process certificate (2026-10-12)
+ 
+ **Day review, Journal index, Analytics and Coach** now separate financial outcomes
+@@ -29,8 +67,8 @@ No new schema/columns or persisted flag, no new guard-history backup transport.
+ See [docs/API.md](docs/API.md) / [docs/GUARDRAILS.md](docs/GUARDRAILS.md).
+ 
+ Measured **M91 108/0 across6**, actual-parent migration/restart11/0; original M89
+-170/0, M88 reasons160/0, execution260/0, routine321/0. Ledger **132=93 done/3 partial/36TODO**.
+-M93 daily behaviour score is next; M106/M111/M112 remain open, M108 partial. Older
++170/0, M88 reasons160/0, execution260/0, routine321/0. Historical M91 ledger **132=93 done/3 partial/36TODO** (current counts above).
++M93 was next at that delivery (now separately applied); M106/M111/M112 remain open, M108 partial. Older
+ negative/provider/RAW/DECLARED/native/conditional-DOM results retained, not a claim
+ of production, broker, actual human/meditation, pixels or a70% win rate.
+ 
+diff --git a/docs/API.md b/docs/API.md
+index 3fe8cbd..90d59f6 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -739,5 +739,68 @@ expectancy denominators, execution/behaviour grades, sizing/risk/permission/caps
+ routine/admission/loss-writing clocks. No causal psychological reinforcement,
+ prediction/edge/probability/70% claim. Existing plain financial/history imports
+ remain legal; root/trade snapshots can't replay retained server proof. No new
+-verified guard-history portability in this pass. M93 daily behaviour score remains
+-separate TODO; M106/M111/M112 still open, M108 partial.
++verified guard-history portability in this pass. M93 adds a separate daily APP tally without rewriting this M91/window/financial
++annotation; M106/M111/M112 still open, M108 partial.
++
++
++## M93 — current reported-process daily APP index
++
++`GET /behavior-days?account_id=&from=&to=` authenticated, read-only: optional
++canonical positive OWNED account (omitted means separate own account series),
++valid UTC `YYYY-MM-DD` range, malformed400/foreign404/read fault503. No client
++scores/admissions/ownership accepted. Inspector reads actual accounts/trades/M90
++admissions/events in one transaction; zero new schema/table/column/persisted score.
++
++Returns `{report:{state,timezone:'UTC',date_basis,account_ids,from,to,rubric_version,
++minimum_closed_for_score:1,minimum_for_tier:30,app_weights,days,trend,coverage,
++window_pattern,broker_verified:false,basis,scope}}`. Version `daily-process-v1`.
++Dates are current recorded UTC ENTRY days + retained original rule days; not
++financial close day/local broker sessions. Fully retrospective current close
++reviews can update earlier dates. Exact captured current cycle required; orphaned/
++prior/deleted/reopened/clock-changed captures cannot become full current coverage.
++
++Each day exposes current/closed/open/reviewed trades, admission_known,
++execution_known,core_known,unknown_trades,orphaned_actions,evidence_unavailable,
++unassigned_trades,chronology_unknown,ambiguous_cycles,known_penalty_points,score,
++tier/tier_basis,state,incidents/context_counts/basis. Incidents carry action key,
++trade ID, original time, points, sources/details. Current M86 and M85 hash/clock/
++review contracts reused; execution and core acknowledgements must cover the current
++owned row, chronology valid and close known. Missing/stale/legacy/future/pre-close/
++ambiguous/undatable data =>score null, never100/0 by absence. Known explicit issues
++remain visible under incomplete evidence. Imported reviews without actual entry
++capture do not create score authority. No broker/mental truth implied.
++
++APP rubric: one action's MAX of stop exception12, explicit stop-not-honoured12,
++current adherence1–2→12/3→6/4→3/5→0, current declared core mistake6. Do NOT sum
++duplicate sources/issue categories for the same action. Explicit review weight,
++not course formula or automatic verdict of broker misconduct. Score=max(0,100−
++known penalties) ONLY for complete current day coverage with at least1 closed
++action; empty/unknown stays null, and a valid scored0 is different. No trade quota
++or inducement to hit5/30. Tier labels withheld below30, even at raw100;30+ still
++not adaptive/statistical edge or permission. No profit/R/size/model/entry quality/
++emotion/excursion/stop-movement point inputs. Equal acknowledged process can
++produce equal day score on green/red/flat outcomes. Finance edits may stale hashes;
++that is review freshness, not a profit-based penalty.
++
++Trend is per-account/date nullable points; missing scores leave gaps, no zero
++coercion/interpolation or cross-account average. `window_pattern` is a separately
++labelled compatibility tally using the ORIGINAL recurring detector/12-6-3 weights,
++notice gate5/tier30; original M103 gate deliberately unchanged. It includes old
++outcome-based detector severities and is not daily execution truth or the average
++of new scores. Original `/bots/correction` fields/sample/overall/behavior_score/
++behavior_grade/mistakes/guardrails/daily/backfill remain unchanged; `behavior_days`
++is appended. Its existing legacy gauge now says window pattern, not daily certainty.
++
++Optional `behavior_days` on Analytics/Coach/briefing/journal/index/day/correction
++returns unavailable/null coverage on fault without vetoing existing financial
++reporting or certifying process. Date bounds apply to ENTRY/rule days; symbol/tag/
++strategy/model filters do not remove a day's actions just to improve its score.
++Existing finance/close-day metrics keep their own original filters. Actual shared
++UI on all readers shows basis/points/minima/coverage/known evidence and own-account
++day links, with escaped text/token/account/late/superseded correction cache guards.
++
++No core writing/execution/setup grade/backfill update, broker order, cap/loss/
++routine/admission refund, new permission or risk/sizing/geometry/RR adjustment.
++No score-bearing portability/proof replay; historical imports stay legal/unknown.
++No market prediction/causal-dollar/psychological certainty/70% proof. M99 next;
++M103/M108 partial, M106/M111/M112 still open.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index 8759da0..f16c19c 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -446,7 +446,39 @@ account not automatically selected. Optional process store outage never certifie
+ clean or rejects truthful financial reporting. Imports cannot replay proof through
+ DTOs; no guard-history backup expansion or sealed/admin-proof vault claimed.
+ 
+-Current132=93 done/3 partial/36TODO. M93 per-day behaviour score next; M30/M103/M108
++Current132=93 done/3 partial/36TODO. M93 is separately implemented as an APP daily tally (not a rewrite of M91/legacy scores); M30/M103/M108
+ partial, M106/M111/M112 TODO. Course floor30, deliberate M103n>=5/B-C tradeability
+ unchanged. No broker/provider/actual-human/meditation/pixels/production/edge/70%
+ validation implied by this app review annotation.
++
++
++## M93 — daily APP display is NEVER a trade quota or permission
++
++Current owned UTC ENTRY/rule-day process, not close-day money/broker sessions.
++Actual current entry-cycle capture and complete current execution/core review
++required for a final raw tally. Missing/stale/import-without-admission/open/prior/
++deleted/ambiguous/undatable/future/pre-close evidence withheld; no absence→100/0,
++no reranking from a profitable outcome. Known explicit incidents remain visible.
++Financial correction can stale acknowledgement; original saved guard action stays.
++
++Fully known ONE-action day may be reviewed—**never force trades to hit5 or30**.
++Old recurring detector still5, old window tier30 and score unchanged. New raw daily
++APP index is not a statistical grade; daily tier below30 withheld.30+ is still no
++edge/permission proof. Original legacy gauge/text explicitly window pattern, not
++a clean-day certificate or daily trend average. Missing trend points leave gaps.
++
++APP weights, not quoted course law: one action MAX12/6/3 across valid sources,
++exception/explicit stop violation/adherence/current declared mistake. Duplicate
++admission/events and multiple reports not separate costs. No P&L/R/RR/model/grade/
++size/emotion/excursion/stop-movement points, causal dollars or psychological/broker
++truth. Display-only self-reported process, not a verified misconduct decision.
++
++No schema/persisted score/import authority. No automatic writing/execution/core
++completion, setup/backfill grade overwrite, caps/routine/loss-clock/admission
++refund, permission/entry/strategy/model/weight/risk/factor/stop/target/RR change.
++Actual UI token/account/superseded correction reply/cache/error guards. Unavailable
++evidence never vetoes truthful finance or silently certifies clean process.
++
++Current132=94 done/3 partial/35TODO; M99 next. M30/M103/M108 partial; M106/M111/M112
++TODO. Course30 and deliberate old detectorM103n>=5/B-C tradeability untouched.
++No broker/provider/mental/actual-human/meditation/pixel/production/edge/70% claim.
+diff --git a/public/index.html b/public/index.html
+index f4672a7..e54cf69 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
++<script src="/js/views/behavior-days.js?v={{V}}"></script>
+ <script src="/js/views/process-outcomes.js?v={{V}}"></script>
+ <script src="/js/views/emotions.js?v={{V}}"></script>
+ <script src="/js/views/confluences.js?v={{V}}"></script>
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index 6d9a1a2..7b0d6c9 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -18,6 +18,7 @@
+       const TABS = [['core', 'Core statistics'], ['timing', 'Timing & sessions'], ['execution', 'Execution quality'], ['risk', 'Risk & drawdown'], ['segments', 'Segments']];
+       let active = 'core';
+       TABS.forEach(([id, label]) => tabs.appendChild(U.h('button', { class: active === id ? 'active' : '', text: label, onclick: () => { active = id; U.$$('button', tabs).forEach((b, i) => b.classList.toggle('active', TABS[i][0] === id)); U.clear(panes); panes.appendChild(PANES[id]()); } })));
++      if(Views.behaviorDays)root.appendChild(Views.behaviorDays.card(an.behavior_days));
+       if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(an.process_review));
+       root.appendChild(tabs); root.appendChild(panes);
+ 
+diff --git a/public/js/views/behavior-days.js b/public/js/views/behavior-days.js
+new file mode 100644
+index 0000000..ad154de
+--- /dev/null
++++ b/public/js/views/behavior-days.js
+@@ -0,0 +1,22 @@
++/* M93 daily reported-process tally/trend, not legacy window score or authority. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U,finite=n=>typeof n==='number'&&Number.isFinite(n),context=()=>({user:global.Store.user?.id,account:global.Store.accountId,token:global.API.getToken()}),same=c=>!!c&&c.user===global.Store.user?.id&&c.account===global.Store.accountId&&c.token===global.API.getToken();
++ Views.behaviorDays={context,same,
++  card(report){const node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{behaviorDays:'true'}}),expected=context();node.appendChild(U.h('h3',{text:'Daily reported process — UTC ENTRY/rule day'}));node.appendChild(U.h('p',{class:'field-note',text:'Daily APP tally, not broker/mental-state truth, statistical edge, entry permission, sizing, setup/execution grade or core completion. Financial close-day outcomes and overnight trade returns stay separate. Current retrospective reviews can update an earlier entry day; missing/late/stale/prior evidence is not zero or clean100.'}));
++   if(report?.state!=='available'||!report.coverage){node.appendChild(U.h('p',{class:'sticky-note warn',text:'Daily behavior evidence unavailable. Retry/review; no day score, clean state or legacy-window substitution inferred.'}));return node;}
++   const c=report.coverage;node.appendChild(U.h('p',{class:'small',text:'Current account '+(report.account_ids||[]).map(id=>'#'+id).join(' / ')+' · daily ownership scope, separate account series.'}));node.appendChild(U.h('p',{class:'small',text:`APP ${report.rubric_version}:100 minus one per-action MAX12/6/3 (not every source). Complete admission/current execution/core coverage +${report.minimum_closed_for_score} closed actions for raw score; below${report.minimum_for_tier} tier withheld. Numeric weights/minima are app policies, not course quotations. No overtrading quota: one fully known day action is reviewable; do not add trades to unlock a score or tier. ${c.scored_days} scored / ${c.account_days} account-days; ${c.unscored_days} unscored; ${c.known_incidents} known incidents; ${c.unassigned_trades} unassigned entries, ${c.unassigned_evidence} undatable facts.`}));node.appendChild(U.h('p',{class:'tiny muted',text:report.basis||'Owned recorded entry/rule days, current retrospective self-reviews; not broker.'}));
++   const legacy=report.window_pattern;node.appendChild(U.h('p',{class:'small',dataset:{behaviorWindow:'true'},text:`Legacy window pattern tally: ${finite(legacy?.behavior_score)?legacy.behavior_score+' / 100':'Unavailable'} · ${legacy?.behavior_grade||'Unavailable'}. Existing detector/running tally, includes old outcome-based pattern severities; not a daily execution certificate, not the daily trend average or evidence of a clean day.`}));
++   const trend=U.h('div',{dataset:{behaviorTrend:'true'}}),values=report.trend||[],accounts=[...new Set(values.map(v=>v.account_id))];
++   if(values.length){const w=650,h=145,pad=25;let svg='<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Daily reported process trend, missing evidence leaves gaps"><line x1="25" x2="625" y1="110" y2="110" stroke="currentColor" opacity=".2"/><text x="2" y="18" font-size="10">100</text><text x="8" y="114" font-size="10">0</text>';
++    for(const account of accounts){const rows=values.filter(r=>r.account_id===account).sort((a,b)=>String(a.date).localeCompare(String(b.date)));let previous=null;rows.forEach((r,i)=>{const x=rows.length===1?w/2:pad+i*(w-pad*2)/(rows.length-1),valid=finite(r.score)&&r.score>=0&&r.score<=100,y=110-(valid?r.score:0)*.95;if(!valid){previous=null;return;}if(previous)svg+='<line data-behavior-line="'+U.esc(account)+'" x1="'+previous.x+'" y1="'+previous.y+'" x2="'+x+'" y2="'+y+'" stroke="currentColor" opacity=".4"/>';svg+='<circle data-behavior-point="'+U.esc(account+':'+r.date)+'" cx="'+x+'" cy="'+y+'" r="3" fill="currentColor"><title>'+U.esc('#'+account+' '+r.date+' · '+r.score)+'</title></circle>';previous={x,y};});}
++    trend.innerHTML=svg+'</svg>';node.appendChild(trend);node.appendChild(U.h('p',{class:'tiny muted',text:'Separate account series; missing daily scores leave gaps, not zeros or interpolation. Do not use this reported-process trend as market prediction.'}));
++   }
++   if(!report.days?.length){node.appendChild(U.h('p',{class:'muted',text:'No dated actions in this scope; not a scored/compliant day.'}));return node;}
++   for(const d of report.days){const section=U.h('section',{class:'card',style:'margin-top:10px',dataset:{behaviorCase:d.account_id+':'+d.date}});section.appendChild(U.h('h4',{text:`${d.date} UTC entry/rule day · account #${d.account_id} · ${finite(d.score)?d.score+' / 100':'Unavailable'} · ${d.tier||'Tier withheld (<30 or incomplete)'}`}));section.appendChild(U.h('p',{class:'small',text:`${d.state} · ${d.reviewed_trades??0} / ${d.current_trades??0} fully reviewed current actions; ${d.closed_trades??0} closed, ${d.open_trades??0} open · admission ${d.admission_known??0}, execution ${d.execution_known??0}, core ${d.core_known??0} known · ${d.unknown_trades??0} unknown, ${d.orphaned_actions??0} prior/deleted actions, ${d.evidence_unavailable??0} unavailable facts. Known penalty points ${d.known_penalty_points??0}, not a final score when evidence incomplete.`}));
++    for(const i of d.incidents||[]){section.appendChild(U.h('p',{class:'small',text:`Action #${i.trade_id} · ${i.at} · ${i.points} APP points max · ${i.sources.join(' + ')}`}));for(const detail of i.details||[])section.appendChild(U.h('p',{class:'tiny',text:detail}));}
++    section.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{behaviorDay:d.date},text:'Review UTC day (money remains close-day)',onclick:()=>{if(!same(expected))return global.App.toast('Workspace/account/session changed; reopen this daily report.','err');if(Number(global.Store.accountId)!==d.account_id)return global.App.toast('Select the original owned account before reviewing its day.','warn');return Views.openProcessDay?Views.openProcessDay(d.date,d.account_id):global.App.toast('Day review unavailable.','err');}}));node.appendChild(section);
++   }
++   return node;
++  }
++ };
++})(window);
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 540c469..dbc40a4 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -26,6 +26,9 @@
+     drawings: [],
+   };
+ 
++  let correctionSerial=0;
++  const correctionContext=()=>({user:Store.user?.id,account:Store.accountId||null,token:API.getToken()}),sameCorrection=c=>!!c&&c.user===Store.user?.id&&c.account===(Store.accountId||null)&&c.token===API.getToken();
++
+   /** bar length per timeframe — used to decide when a read has gone stale */
+   const TF_MS = {
+     '1m': 60e3, '3m': 180e3, '5m': 300e3, '15m': 900e3, '30m': 1800e3,
+@@ -1135,12 +1138,13 @@
+     const top = h('div', { class: 'card' });
+     const summary = h('div', { style: 'flex:1;min-width:260px' });
+     summary.appendChild(h('div', { html: `<b style="font-size:1.1rem">${esc(c.behavior_grade)}</b> <span class="muted">— ${c.sample.trades} closed trades analysed (${esc(c.sample.from || '')} → ${esc(c.sample.to || '')})</span>` }));
+-    summary.appendChild(h('div', { class: 'muted bot-detail', text: `Behaviour score ${c.behavior_score}/100. Each mistake below costs 3–12 points; fixes earn them back.` }));
++    summary.appendChild(h('div', { class: 'muted bot-detail', text: `Legacy window pattern tally ${c.behavior_score}/100 (3–12 points per detected pattern). Includes old outcome-based patterns; not a daily execution certificate, clean-day proof or the daily trend average.` }));
+     if (c.top_fix) summary.appendChild(h('div', { class: 'bot-warn', text: `Top priority: ${c.top_fix.title} — ${c.top_fix.fix}` }));
+     top.appendChild(h('div', { class: 'row gap-16 wrap', style: 'align-items:center' },
+-      h('div', { html: global.U.gauge(c.behavior_score, { label: 'behaviour', max: 100 }) }),
++      h('div', { html: global.U.gauge(c.behavior_score, { label: 'window pattern', max: 100 }) }),
+       summary));
+     pane.appendChild(top);
++    if(Views.behaviorDays)pane.appendChild(Views.behaviorDays.card(c.behavior_days));
+ 
+     const g = c.guardrails.guardrails || {};
+     const gr = h('div', { class: 'card' });
+@@ -1240,6 +1244,7 @@
+     title: 'Bots',
+     render(root) {
+       const accountKey=Store.accountId || null;
++      if(B.correctionContext&&!sameCorrection(B.correctionContext)){correctionSerial++;B.correction=null;B.correctionContext=null;B.error='';if(B.busy==='correct')B.busy='';}
+       if (B.accountKey!==undefined && B.accountKey!==accountKey) {B.data=null;B.chart=null;B.scan=null;B.correction=null;B.error='';B.busy='';}
+       B.accountKey=accountKey;
+       root.innerHTML = '';                       // replace the shell's skeleton placeholder
+@@ -1307,9 +1312,10 @@
+           .then((r) => { B.scan = r; B.busy = ''; global.App.refresh(); })
+           .catch((e) => { B.error = 'Scan failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'correct') {
++        const scope=correctionContext(),serial=++correctionSerial;B.correctionContext=scope;
+         API.get('/bots/correction', {account_id:Store.accountId || null})
+-          .then((c) => { B.correction = c; B.busy = ''; global.App.refresh(); })
+-          .catch((e) => { B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
++          .then((c) => { if(!sameCorrection(scope)||serial!==correctionSerial)return;B.correction = c; B.busy = ''; global.App.refresh(); })
++          .catch((e) => { if(!sameCorrection(scope)||serial!==correctionSerial)return;B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
+       } else if (B.busy === 'backtest') {
+         // handled inline below (predict tab)
+       } else if (B.tab === 'predict' && B.data && !B.backtestTrades) {
+diff --git a/public/js/views/coach.js b/public/js/views/coach.js
+index 6b54781..35b8128 100644
+--- a/public/js/views/coach.js
++++ b/public/js/views/coach.js
+@@ -38,6 +38,7 @@
+         </div>
+       </div>`;
+       root.appendChild(banner);
++      if(Views.behaviorDays)root.appendChild(Views.behaviorDays.card(data.behavior_days));
+       if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(data.process_review));
+ 
+       const split = U.h('div', { class: 'grid g-2-1', style: 'margin-top:14px' });
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 470b0ef..c7fd1ac 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -19,6 +19,7 @@
+           <div><h2 style="margin:0">Daily reviews</h2><div class="muted small">${entries.entries.length} entries — the habit that turns a log into a system.</div></div>
+           <button class="btn primary" id="j-new">+ Today's review</button></div>`;
+       listCol.appendChild(head);
++      if(Views.behaviorDays)listCol.appendChild(Views.behaviorDays.card(entries.behavior_days));
+       if(Views.processOutcomes)listCol.appendChild(Views.processOutcomes.card(entries.process_review));
+       const list = U.h('div', { class: 'card' });
+       if (!entries.entries.length) {
+@@ -176,6 +177,7 @@
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+         <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    if(Views.behaviorDays)body.prepend(Views.behaviorDays.card(day.behavior_days));
+     if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+diff --git a/src/behavior-days.js b/src/behavior-days.js
+new file mode 100644
+index 0000000..d49e295
+--- /dev/null
++++ b/src/behavior-days.js
+@@ -0,0 +1,58 @@
++'use strict';
++/** M93 read-only daily reported-process tally. Explicit APP rubric, not broker
++ * truth, course numeric weights, legacy pattern-score rewrite or authority. */
++const Process=require('./process-outcomes'),Execution=require('./execution-review'),Journal=require('./journaling');
++const VERSION='daily-process-v1',MIN_SCORE=1,MIN_TIER=30,WEIGHTS=Object.freeze({high:12,medium:6,low:3});
++const BASIS='Current owned UTC recorded ENTRY/rule-day actions, retained app admissions and current retrospective execution/core acknowledgements. Not broker, mental state, statistical edge or permission.';
++const finite=n=>typeof n==='number'&&Number.isFinite(n),id=n=>Number.isSafeInteger(n)&&n>0,utc=ms=>new Date(ms).toISOString().slice(0,10);
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'behavior_day_invalid',status});}
++function dateKey(s){try{return Process.dateKey(s);}catch{throw invalid('Select a valid UTC calendar date.');}}
++const clock=(s,now)=>Process.clock(s,{now});
++const tier=n=>n>=85?'Disciplined':n>=70?'Solid':n>=55?'Leaking':n>=40?'Undisciplined':'Critical';
++function legacyWindow(trades){
++ const C=require('./bots/correction'),rows=trades.filter(t=>t.status==='closed'&&t.exit!=null),mistakes=C.detectMistakes(rows),penalties=mistakes.reduce((n,m)=>n+(WEIGHTS[m.severity]||0),0),score=Math.max(0,Math.min(100,100-penalties));
++ return {basis:'legacy_window_pattern_tally_not_daily_execution',behavior_score:score,behavior_grade:rows.length>=MIN_TIER?tier(score):'Insufficient sample',behavior_sample_sufficient:rows.length>=MIN_TIER,detector_minimum:5,tier_minimum:30,sample_trades:rows.length,mistakes,scope:'Existing window detector/weights/gates unchanged. Includes old outcome-based recurring pattern severities; raw100 below evidence floor is NOT a clean-day or execution certificate. Not a daily average or capital permission.'};
++}
++function evaluate({userId,accounts=[],trades=[],admissions=[],events=[],from=null,to=null,nowMs=Date.now()}={}){
++ if(!id(userId))throw invalid('Owned daily review required.');if(from!=null)dateKey(from);if(to!=null)dateKey(to);if(from&&to&&from>to)throw invalid('UTC date range is reversed.');
++ const owned=accounts.filter(a=>a.user_id===userId&&id(a.id)),ids=new Set(owned.map(a=>a.id)),all=trades.filter(t=>t.user_id===userId&&ids.has(t.account_id)),process=Process.evaluate({userId,accounts:owned,trades:[],admissions,events,nowMs}),days=new Map(),unassigned=new Map(),unassignedEvidence=new Map(),rowsByCycle=new Map();
++ for(const a of owned){const q=Process.evaluate({userId,accounts:[a],trades:[],admissions,events,nowMs});unassignedEvidence.set(a.id,q.coverage.unassigned_evidence);}
++ const get=(account,date)=>{const key=account+':'+date;if(!days.has(key))days.set(key,{account_id:account,date,current_trades:0,closed_trades:0,open_trades:0,reviewed_trades:0,admission_known:0,execution_known:0,core_known:0,unknown_trades:0,orphaned_actions:0,evidence_unavailable:0,unassigned_trades:0,chronology_unknown:0,ambiguous_cycles:0,known_penalty_points:0,score:null,tier:null,tier_basis:null,state:'unreviewed',incidents:[],context_counts:{},basis:BASIS,_rows:[],_incidents:new Map()});return days.get(key);};
++ const add=(d,key,points,source,detail,tradeId,at)=>{if(!points)return;let incident=d._incidents.get(key);if(!incident){incident={action_key:key,trade_id:tradeId,at,points,sources:[],details:[]};d._incidents.set(key,incident);}incident.points=Math.max(incident.points,points);if(!incident.sources.includes(source))incident.sources.push(source);if(!incident.details.includes(detail))incident.details.push(detail);};
++ for(const t of all){const at=clock(t.opened_at,nowMs);if(at===null){unassigned.set(t.account_id,(unassigned.get(t.account_id)||0)+1);continue;}const d=get(t.account_id,utc(at));d._rows.push(t);const key=t.account_id+':'+t.id+':'+t.opened_at;if(rowsByCycle.has(key)){d.ambiguous_cycles++;d.evidence_unavailable++;}rowsByCycle.set(key,t);}
++ // Validate each actual admission with M91's same pure source contract; no DTO
++ // permission or legacy/imported raw trade snapshot substitutes for a child fact.
++ const captures=new Map();
++ for(const a of admissions){if(a.user_id!==userId||!ids.has(a.account_id))continue;let date;try{date=dateKey(a.rule_date);}catch{continue;}const d=get(a.account_id,date),r=Process.evaluate({userId,accounts:owned,trades:[],admissions:[a],events:[],nowMs}),p=r.days.find(p=>p.account_id===a.account_id&&p.date===date);if(!p||p.evidence_unavailable||p.admitted_entries+p.exception_entries!==1){d.evidence_unavailable++;continue;}const key=a.account_id+':'+a.trade_id+':'+a.admitted_at;if(!captures.has(key))captures.set(key,[]);captures.get(key).push(a);if(!rowsByCycle.has(key))d.orphaned_actions++;}
++ for(const p of process.days){const d=get(p.account_id,p.date);d.context_counts=p.context_counts;
++  // M90-only older trade events can establish an actual exception/cycle, not a
++  // fabricated ordinary admission. Admission+event duplicates already linked.
++  for(const e of p.exceptions){const key=e.account_id+':'+e.trade_id+':'+e.at;if(!captures.has(key)&&e.sources.includes('event')){captures.set(key,[{event_only:true}]);if(!rowsByCycle.has(key))d.orphaned_actions++;}add(d,key,12,'guardrail_exception','Recorded one-action personal-stop exception; needs review, not verified broker misconduct.',e.trade_id,e.at);}
++  d.evidence_unavailable=Math.max(d.evidence_unavailable,p.evidence_unavailable);
++ }
++ for(const d of days.values()){
++  d.unassigned_trades=unassigned.get(d.account_id)||0;d.evidence_unavailable+=unassignedEvidence.get(d.account_id)||0;
++  for(const t of d._rows){d.current_trades++;const key=t.account_id+':'+t.id+':'+t.opened_at,entryKnown=captures.get(key)?.length===1;if((captures.get(key)?.length||0)>1){d.ambiguous_cycles++;d.evidence_unavailable++;}if(entryKnown)d.admission_known++;
++   const x=Execution.review(t,{nowMs}),j=Journal.info(t,nowMs),close=clock(t.closed_at,nowMs),ack=Process.clock(t.journal_reviewed_at,{canonical:true,now:nowMs}),entry=clock(t.opened_at,nowMs),chronologyKnown=t.status==='closed'&&close!==null&&entry!==null&&close>=entry,coreKnown=j.complete&&chronologyKnown&&ack!==null&&ack>=close,execKnown=x.state==='reviewed'&&chronologyKnown;
++   if(t.status==='closed'&&!chronologyKnown)d.chronology_unknown++;
++   if(t.status==='closed')d.closed_trades++;else d.open_trades++;if(execKnown)d.execution_known++;if(coreKnown)d.core_known++;
++   const a=x.evidence?.adherence,stop=x.evidence?.stop_honoured;if(a!==null&&a!==undefined&&a<5)add(d,key,a<=2?12:a===3?6:3,'execution_review',`Current explicit adherence ${a}/5; APP tally weight, not P&L.`,t.id,t.opened_at);if(stop===false)add(d,key,12,'execution_review','Current explicit stop-not-honoured self-report.',t.id,t.opened_at);
++   if(coreKnown&&t.mistakes_none===0)add(d,key,6,'core_review','Current explicitly declared mistake: '+t.mistakes,t.id,t.opened_at);
++   if(t.status==='closed'&&entryKnown&&execKnown&&coreKnown)d.reviewed_trades++;else d.unknown_trades++;
++  }
++  d.incidents=[...d._incidents.values()];d.known_penalty_points=d.incidents.reduce((n,i)=>n+i.points,0);const complete=d.current_trades>0&&d.closed_trades===d.current_trades&&d.reviewed_trades===d.current_trades&&d.orphaned_actions===0&&d.evidence_unavailable===0&&d.unassigned_trades===0;
++  if(complete&&d.closed_trades>=MIN_SCORE){d.state='scored';d.score=Math.max(0,100-d.known_penalty_points);if(d.closed_trades>=MIN_TIER){d.tier=tier(d.score);d.tier_basis='app_daily_report_tally_not_edge';}}
++  else d.state=!d.current_trades&&!d.orphaned_actions?'observations_only':complete?'insufficient_daily_sample':'incomplete_evidence';delete d._rows;delete d._incidents;
++ }
++ const list=[...days.values()].filter(d=>(!from||d.date>=from)&&(!to||d.date<=to)).sort((a,b)=>b.date.localeCompare(a.date)||a.account_id-b.account_id),coverage={account_days:list.length,scored_days:list.filter(d=>d.score!==null).length,unscored_days:list.filter(d=>d.score===null).length,known_incidents:list.reduce((n,d)=>n+d.incidents.length,0),unassigned_trades:[...unassigned.values()].reduce((a,b)=>a+b,0),unassigned_evidence:[...unassignedEvidence.values()].reduce((a,b)=>a+b,0)},selected=all.filter(t=>{const at=clock(t.opened_at,nowMs);return at!==null&&(!from||utc(at)>=from)&&(!to||utc(at)<=to);});
++ return {state:'available',timezone:'UTC',date_basis:'current_recorded_entry_and_original_rule_day',account_ids:[...ids],from,to,rubric_version:VERSION,minimum_closed_for_score:MIN_SCORE,minimum_for_tier:MIN_TIER,app_weights:WEIGHTS,days:list,trend:list.map(d=>({account_id:d.account_id,date:d.date,score:d.score,state:d.state})),coverage,window_pattern:legacyWindow(selected),broker_verified:false,basis:BASIS,scope:'Daily reported-process APP index:100 minus per-action MAX12/6/3, complete current admission/execution/core coverage and at least1 closed record. Missing evidence NULL, not clean100/zero. Tier below30 withheld. Not window-score replacement, M106 state gate, actual psychology/broker proof or permission/sizing/strategy/grade/core completion.'};
++}
++
++
++function unavailable(){return {state:'unavailable',days:[],trend:[],coverage:null,window_pattern:null,rubric_version:VERSION,timezone:'UTC',broker_verified:false,basis:BASIS,scope:'Daily evidence unavailable—not0/clean/complete. Existing financial/window/execution fields unchanged.'};}
++async function inspect(userId,{accountId=null,from=null,to=null,store=null}={}){
++ if(from!=null)dateKey(from);if(to!=null)dateKey(to);if(from&&to&&from>to)throw invalid('UTC date range is reversed.');if(accountId!=null&&(!['string','number'].includes(typeof accountId)||typeof accountId==='string'&&!/^[1-9]\d*$/.test(accountId)||!id(Number(accountId))))throw invalid('Account not found.',404);
++ const {db}=require('./db'),read=async store=>{const accounts=await store.prepare('SELECT * FROM accounts WHERE user_id=?'+(accountId==null?'':' AND id=?')).all(...(accountId==null?[userId]:[userId,Number(accountId)]));if(accountId!=null&&!accounts.length)throw invalid('Account not found.',404);const trades=await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at,id').all(userId),admissions=await store.prepare('SELECT * FROM guardrail_entry_admissions WHERE user_id=? ORDER BY id').all(userId),events=await store.prepare('SELECT * FROM guardrail_events WHERE user_id=? ORDER BY id').all(userId);return evaluate({userId,accounts,trades,admissions,events,from,to,nowMs:Date.now()});};return store?read(store):db.tx(async tx=>read(db.transactionStore(tx)));
++}
++async function optional(userId,options){try{return await inspect(userId,options);}catch{return unavailable();}}
++module.exports={VERSION,MIN_SCORE,MIN_TIER,WEIGHTS,BASIS,invalid,dateKey,evaluate,legacyWindow,inspect,optional,unavailable};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index b053695..fefb415 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -18,6 +18,7 @@ const Screenshots = require('../screenshots');
+ const Confluences = require('../confluences');
+ const Emotions = require('../emotions');
+ const ProcessOutcomes = require('../process-outcomes');
++const BehaviorDays = require('../behavior-days');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+@@ -545,6 +546,11 @@ function complianceOver(map, ids) {
+   };
+ }
+ 
++router.get('/behavior-days',requireAuth,async(req,res)=>{
++  try{res.json({report:await BehaviorDays.inspect(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})});}
++  catch(e){if(e.code==='behavior_day_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Daily behavior evidence unavailable, not clean or scored.'});}
++});
++
+ router.get('/process-outcomes',requireAuth,async(req,res)=>{
+   try{res.json({review:await ProcessOutcomes.inspect(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})});}
+   catch(e){if(e.code==='process_outcome_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Process history unavailable; not a clean-process certificate.'});}
+@@ -571,6 +577,7 @@ router.get('/analytics', requireAuth, async (req, res) => {
+   Object.assign(analytics, complianceOver(await complianceByTrade(req.user.id), closed.map((t) => t.id)));
+   analytics.account = acc;
+   analytics.open_positions = decorated.filter((t) => t.status === 'open');
++  analytics.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
+   analytics.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
+   res.json(analytics);
+ });
+@@ -608,7 +615,9 @@ router.get('/coach', requireAuth, async (req, res) => {
+     .map((t) => P.decorate(t, tz));
+   const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
+     || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
+-  res.json(ProcessOutcomes.withCoach(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }),await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})));
++  const data=ProcessOutcomes.withCoach(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }),await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null}));
++  data.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
++  res.json(data);
+ });
+ 
+ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+@@ -626,6 +635,7 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+   const capPolicy = await Guards.dailyCap(db, req.user.id, acc);
+   const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
+   briefing.risk_plan.trade_cap_policy = capPolicy;
++  briefing.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
+   briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
+   // Briefing amounts are advice, NOT permission. Use the same close-day UTC
+   // state as entry admission for the optional profit display/retained latch.
+@@ -657,7 +667,7 @@ router.get('/journal', requireAuth, async (req, res) => {
+   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
+   if(req.query.account_id && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(Number(req.query.account_id),req.user.id))return res.status(404).json({error:'Account not found'});
+   const journalRows=await db.prepare('SELECT * FROM trades WHERE user_id=?'+(req.query.account_id?' AND account_id=?':'')).all(...(req.query.account_id?[req.user.id,Number(req.query.account_id)]:[req.user.id]));
+-  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC',process_review:await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null}) });
++  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC',behavior_days:await BehaviorDays.optional(req.user.id,{accountId:req.query.account_id??null}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null}) });
+ });
+ router.get('/routine',requireAuth,async(req,res)=>{
+   try{res.json({routine:await Routine.current(req.user.id,{accountId:req.query.account_id})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine state could not be verified.'});}
+@@ -690,7 +700,7 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
+   const accountId=account.id;
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
+-  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index c4c9d6f..2c998eb 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -232,6 +232,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       days: Math.min(Math.max(num(req.query.days, 365), 7), 2000),
+       backfill: req.query.backfill === '1',
+     });
++    out.behavior_days=await require('../behavior-days').optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
+     res.json({ ok: true, ...out });
+   }));
+ 
