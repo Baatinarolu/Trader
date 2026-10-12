@@ -1,0 +1,149 @@
+{
+  "app": "/tmp/m99-ui-stage/app",
+  "pass": 1,
+  "fail": 13,
+  "results": [
+    {
+      "label": "actual full JSON backup carries standalone period record/answers/focus/snapshot",
+      "passed": false
+    },
+    {
+      "label": "destination IDs/user/account/source/newreceipt forced, original completed proof NOT replayed",
+      "passed": false
+    },
+    {
+      "label": "original declared completion clock remains unverified historic, not fresh review",
+      "passed": false
+    },
+    {
+      "label": "snapshot/answers/chosen focus retained, not recalc against destination finance",
+      "passed": false
+    },
+    {
+      "label": "source owner cannot read destination-owned restored artifact404",
+      "passed": true
+    },
+    {
+      "label": "re-restore appends history without clobber priorfocus, original historicclock retained",
+      "passed": false
+    },
+    {
+      "label": "malformed optional artifact warns, finance remains legal false",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "emotion_warnings": [],
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "malformed optional artifact warns, finance remains legal {\"version\":1,\"records\":\"bad\"}",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "emotion_warnings": [],
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "malformed optional artifact warns, finance remains legal {\"version\":1,\"records\":[{\"kind\":\"month\",\"period_st",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "emotion_warnings": [],
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "malformed optional artifact warns, finance remains legal {\"version\":1,\"records\":[{},{},{},{},{},{},{},{},{}",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "emotion_warnings": [],
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "future original declared clock omittedwithwarning, not receivingtime/broker proof",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 0,
+          "media_imported": 0,
+          "emotion_warnings": [],
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "real artifact-store503 atomically rolls back finance/artifact import mapping",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "emotion_warnings": [],
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "optional missing review store cannot prevent financial backup; explicitunavailable marker",
+      "passed": false,
+      "detail": 200
+    },
+    {
+      "label": "unavailable priorbackup marker restoreswarning, never inventedknownemptyreviews",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 0,
+          "media_imported": 0,
+          "emotion_warnings": [],
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    }
+  ],
+  "scope": "M99/M101 full JSON artifact backup and forced historical restore: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

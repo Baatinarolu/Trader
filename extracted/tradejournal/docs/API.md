@@ -804,3 +804,88 @@ routine/admission refund, new permission or risk/sizing/geometry/RR adjustment.
 No score-bearing portability/proof replay; historical imports stay legal/unknown.
 No market prediction/causal-dollar/psychological certainty/70% proof. M99 next;
 M103/M108 partial, M106/M111/M112 still open.
+
+
+## M99/M101 — owned periodic review artifacts
+
+Additive `period_reviews` immutable revision series per user/original account key/
+kind/start; no trade columns or old completion backfill. Sources human_review or
+imported_unverified, statuses draft/completed/imported, versioned template/answers/
+focus/follow-up/metrics/context/server receipt/amendment. User deletion cascades;
+account deletion SET NULL retains historical original key/snapshot, never another
+account's authority. DB UPDATE trigger preserves facts except that FK nullification.
+No cryptographic/database-administrator tamper-proof claim.
+
+- `GET /reviews?account_id=` lists stored series, latest revision +history count.
+  Omit account to list own series, including orphaned historical copies.
+- `GET /reviews/template?account_id=&kind=&date=` resolves a date within the
+  chosen period to its canonical start and returns the saved/current view.
+- `GET /reviews/:kind/:start?account_id=` requires canonical owned positive
+  account ID +start. `week/month/quarter/year`, UTC Monday/calendar buckets, end
+  exclusive, adjacent previous start. APP policy, not course timezone/broker hours.
+  A future not-started period is not an observed review window.
+- `GET /reviews/by-id/:id` owned immutable readonly historical revision, including
+  orphaned original account; missing/foreign/noncanonical404.
+- `POST /reviews/:kind/:start?account_id=` saves draft.
+- `POST /reviews/:kind/:start/complete?account_id=` completes answer artifact.
+- `POST /reviews/:kind/:start/amend?account_id=` deliberately appends completed
+  correction, required amendment reason. Draft cannot overwrite a completion.
+
+POST only `{revision,answers,focus,follow_up?,amend_reason?}`. Displayed revision
+includes latest stored revision, full current owned account financial/rule/check/
+strategy context and exact adjacent prior completed commitment. No caller metrics,
+clocks/source/user/permission/ownership authority. Unknown answer keys/types reject;
+completed template answers nonblank, one nonblank single-line chosen focus. Explicit
+unknown/not enough evidence is legitimate text; no NLP singularity guarantee.
+Missing current focus isn't automaticnone. Strict400/404, stale/context409 requires
+reload, actual store503 artifact-only rollback. Identical retry idempotent preserves
+receipt; amendment creates new immutable receipt/history, not update-in-place.
+
+Reply `{account_id,period,template,latest,history,preview,context_matches,revision,
+previous_focus,previous_focus_changed_since_saved}`. Stored `metrics` remain frozen;
+preview is CURRENT server data. Original and amended receipts/rules/focus survive
+financial correction. `period_finished:false` means early in-progress review;
+completed means answered record, not elapsed full period or strategy validation.
+
+Template question basis explicitly saved Ep26/27 or annual APP-guided scope.
+Weekly/monthly contain reflection, not strategy-apply; quarterly document hypothesis/
+next90-day baseline, yearly document reassessment. Review never writes strategy,
+version, goal, financial metric/denominator/grade/core/routine/permission/caps/risk.
+Existing lawful versioned strategy corrections remain possible; M104/M105 not closed.
+
+M101: adjacent prior completed immutable revision displayed with focus, source,
+ID/version/receipt. When present, complete/amend must include
+`follow_up:{previous_review_id,acted_on_focus:true|false|null,reflection:string}`.
+No missing/coerced answer→yes/false. Exact prior ID required409 on mismatch; saved
+answer retains original focus/text/clock/version and present self-report receipt.
+A later prior amendment cannot rewrite it; changed-reference warning shown.
+Imported prior commitments explicitly unverified. No broker/action fulfilment proof.
+
+Snapshot finance: full owned account exactly-closed UTC CLOSE-day interval,
+known-net win denominator, unknown/unassigned/future-clock coverage, nullable whole
+net/expectancy/R/drawdown, known subtotal. No unknown→0/infinity or floating money.
+Current reported execution ranks/ties separate from entry grade/money extrema;
+checkbox compliance coverage labelled self-report. M91/M93 reports labelled ENTRY/
+rule-day rather than attributing overnight P&L to entry. Owned saved strategy-version
+copies/notes retained; missing versions retain current unversioned definitions,
+not invented original-entry v1. Floor30 count annotation, never edge or capital
+permission. M100 missed/verified-impulse metrics unavailable, not guessed signals.
+
+Full `/export/json` field `period_reviews:{version:1,records:[...]}`; standalone
+periods aren't trade-row CSV. `/import/json` optional history validated/append-only
+under destination-owned account mapping and new IDs/revisions, forced status imported,
+source imported_unverified/new receiving time. Original source/status/clock/snapshot/
+focus/follow-up declarations in historical, no replayed completion/acted/strategy
+ownership proof. Invalid/future original clock omitted with warning. Subsequent
+export/restore retains original declaration rather than calling receipt old capture.
+Bad optional history warns/omits while truthful finance imports. Real history-store
+failure atomically rolls back the financial/artifact request. Missing history store
+permits financial backup with unavailable marker; restore warns, not knownempty.
+Warnings remain visible in Settings without refresh/dismissal on warning-bearing
+success. Repeat restore appends declarations, not automatic upsert/dedupe.
+
+APP budgets (not course rules):4000chars/question,300single-line focus,1000amendment,
+2000focus reflection,10000account rows per snapshot,500portable revisions/1MBdeclared
+snapshot.20MBselected-file/25MBbody limits unchanged, no silent clipping. Review
+artifacts never complete required trade/loss writing, grade/resize risk or prove
+human/mental/meditation/broker/provider/pixels/production/causal edge/70% wins.

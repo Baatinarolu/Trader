@@ -18,6 +18,7 @@
       head.innerHTML = `<div class="row-between">
           <div><h2 style="margin:0">Daily reviews</h2><div class="muted small">${entries.entries.length} entries — the habit that turns a log into a system.</div></div>
           <button class="btn primary" id="j-new">+ Today's review</button></div>`;
+      if(Views.periodReviews)head.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{periodReviews:'true'},text:'Weekly / monthly / quarterly / annual reviews',onclick:()=>Views.periodReviews.manager()}));
       listCol.appendChild(head);
       if(Views.behaviorDays)listCol.appendChild(Views.behaviorDays.card(entries.behavior_days));
       if(Views.processOutcomes)listCol.appendChild(Views.processOutcomes.card(entries.process_review));

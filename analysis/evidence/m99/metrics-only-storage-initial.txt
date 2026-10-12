@@ -1,0 +1,17 @@
+FAIL actual own canonical template/period/current preview endpoint exists "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/reviews/month/2026-09-01</pre>\n</body>\n</html>\n"
+FAIL blank optional draft persists as DRAFT, not completed/defaultfocus {"status":404,"data":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01</pre>\n</body>\n</html>\n"}
+FAIL completion refuses missing template answers, draft remains intact400 {"status":404,"data":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/complete</pre>\n</body>\n</html>\n"}
+FAIL actual completion appends captured metrics/answers/chosen focus/serverclock {"status":404,"data":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/complete</pre>\n</body>\n</html>\n"}
+FAIL snapshot known denominator1/below30 and explicitno missed setup inference undefined
+FAIL old draft retained independently, not overwritten by complete undefined
+ok reviews never mutate finance/grades/evidence/clocks/core flags
+ok review reading/writing never refunds caps/routine/admissions/loss queues
+FAIL frozen saved metrics retain +10 despite current correction -10, visibly priorsnapshot "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/reviews/month/2026-09-01</pre>\n</body>\n</html>\n"
+FAIL unseen financial/context change409, not silentnew snapshot {"status":404,"data":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/amend</pre>\n</body>\n</html>\n"}
+FAIL completed review cannot be silently overwritten by draft save409 {"status":404,"data":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01</pre>\n</body>\n</html>\n"}
+FAIL explicit amendment appends new completed receipt, old answer/focus/baseline survives {"status":404,"data":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/amend</pre>\n</body>\n</html>\n"}
+TypeError: Cannot read properties of undefined (reading '1')
+    at /home/user/Trader/analysis/probe-m99-storage.js:6:1278
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async finish (/home/user/Trader/analysis/m99-test-support.js:9:50)
+M99 owned periodic artifact API/immutable snapshots/CAS: 2 passed, 11 failed

@@ -1,0 +1,28 @@
+ok nullable journal routine flag exists without invented legacy completion
+ok omitted flag remains explicitly unknownNULL rather than false/true
+ok strict explicit daily flag roundtrip true
+ok strict explicit daily flag roundtrip false
+ok strict explicit daily flag roundtrip null
+ok invalid flag type400/no journal mutation "true"
+ok invalid flag type400/no journal mutation "false"
+ok invalid flag type400/no journal mutation 1
+ok invalid flag type400/no journal mutation 0
+ok invalid flag type400/no journal mutation []
+ok invalid flag type400/no journal mutation {}
+ok invalid flag type400/no journal mutation "yes"
+ok unrelated notebook update preserves flag/source/server capture clock
+ok manual daily value labels source and is never reusable routine permission
+ok invalid date is local400, not normalized into another day
+ok manual future completion cannot fabricate actual prior preparation
+ok foreign account cannot persist misattributed daily flag404
+ok foreign account cannot inspect daily records404
+ok routine records require real authentication401
+ok independent per-account flags survive existing one-notebook-per-user/day constraint
+ok descriptive daily outcome buckets use actual whole-day realised sum, not per-trade weighting
+ok unknown routine days are separate, not fabricated as skipped
+ok missing net P&L is unavailable, not an invented zero observation
+ok open floating values and other accounts cannot inflate routine association
+ok small sample remains descriptive/no causal or automatic sizing/permission claim
+ok actual UTC day review exposes routine fact/source beside core journal stats
+ok actual notebook index includes per-account routine records for review
+M14/M94 routine records: 27 passed, 0 failed

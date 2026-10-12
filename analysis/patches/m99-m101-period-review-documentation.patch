@@ -1,0 +1,195 @@
+diff --git a/README.md b/README.md
+index 3946403..caafed9 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,51 @@
+ # TradeJournal Pro
+ 
++## M99/M101 — periodic reviews and one committed focus (2026-10-12)
++
++Open **Journal → Weekly / monthly / quarterly / annual reviews**. Select a cadence
++and a date inside its UTC calendar period. Weeks start Monday—APP policy, not a
++broker calendar. Each template asks different questions: weekly process feedback,
++monthly lesson/barrier/pride, quarterly documented hypothesis/strategy baseline,
++annual reassessment. Annual detailed prompts are **APP-guided**, not invented
++course quotations. Existing daily notebook/core writing remains separate.
++
++Start a draft, answer honestly (including unknown/not enough evidence), and choose
++**one** focus. Completing answers freezes a server metrics/strategy-baseline receipt,
++not the whole calendar period, profitable edge or permission to change a plan.
++An in-progress period stays labelled early. Below30: don't tweak the system;30+
++still doesn't prove causality/prediction. No weekly/monthly plan-apply or automatic
++annual-goal/risk rewrite. M104's actual1–3-change enforcement remains open.
++
++The exact adjacent prior completed focus/version/receipt is shown. Explicitly
++choose **yes / no / unknown** for whether you acted on it, with your own reflection;
++this is self-report, not execution proof. Prior amendments cannot move the old
++answer's goalposts. Saved text/history/snapshot stay intact. Use deliberate
++**amendment** to append a correction; stale409 retains input until reload,503
++never claims saved. User/account/token/closed/superseded callbacks guarded.
++
++Known closed-outcome denominators and unavailable net/R/drawdown/clock coverage
++are explicit; open/other-account records excluded. Execution best/worst is process,
++not biggest profit. Saved numbers don't silently recalculate after finance changes.
++M100 missed setups/verified impulse counts remain unavailable, not guessed signals.
++Quarterly saved owned strategy versions/current unversioned definitions preserve
++what was actually available, not original entry rules or new strategy authority.
++
++Full JSON backup carries `period_reviews`; trade CSV does **not** carry standalone
++period artifacts. Restore appends destination-owned imported/unverified history,
++new IDs/receiving clock, original declarations retained but no replayed completion/
++acted/plan proof. Malformed optional history warns while finance remains legal;
++actual storage failure rolls back that import. Missing history store still permits
++financial backup with explicit omission marker. Settings warnings stay visible.
++App budgets:4000chars/answer,300 single-line focus,1000amend reason,2000focus reflection,
++10000account records/snapshot,500portable revisions/1MBdeclared snapshot each. Existing
++20MBselected-file/25MBbody limits; no silent clipping or automatic dedupe.
++
++**M99/M101 final160/0 across9**, actual129-parent migration/restart15/0. Ledger
++**132=96 done/3 partial/33TODO**. Original schema-assumption negatives kept; full
++report `analysis/M99-M101-PERIODIC-REVIEWS.md` in delivery. Next M100. M104/M105/
++M106/M111/M112 open, M30/M103/M108 partial. No changed financial/risk/grade rules,
++70% win-rate, broker/human/mental/meditation/pixel/production/market-edge promise.
++
+ ## M93 — daily reported process, not the old window tally (2026-10-12)
+ 
+ **Day review, Journal index, Analytics, Coach and Bots → Corrections** now show
+diff --git a/docs/API.md b/docs/API.md
+index 90d59f6..f02e3ff 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -804,3 +804,88 @@ routine/admission refund, new permission or risk/sizing/geometry/RR adjustment.
+ No score-bearing portability/proof replay; historical imports stay legal/unknown.
+ No market prediction/causal-dollar/psychological certainty/70% proof. M99 next;
+ M103/M108 partial, M106/M111/M112 still open.
++
++
++## M99/M101 — owned periodic review artifacts
++
++Additive `period_reviews` immutable revision series per user/original account key/
++kind/start; no trade columns or old completion backfill. Sources human_review or
++imported_unverified, statuses draft/completed/imported, versioned template/answers/
++focus/follow-up/metrics/context/server receipt/amendment. User deletion cascades;
++account deletion SET NULL retains historical original key/snapshot, never another
++account's authority. DB UPDATE trigger preserves facts except that FK nullification.
++No cryptographic/database-administrator tamper-proof claim.
++
++- `GET /reviews?account_id=` lists stored series, latest revision +history count.
++  Omit account to list own series, including orphaned historical copies.
++- `GET /reviews/template?account_id=&kind=&date=` resolves a date within the
++  chosen period to its canonical start and returns the saved/current view.
++- `GET /reviews/:kind/:start?account_id=` requires canonical owned positive
++  account ID +start. `week/month/quarter/year`, UTC Monday/calendar buckets, end
++  exclusive, adjacent previous start. APP policy, not course timezone/broker hours.
++  A future not-started period is not an observed review window.
++- `GET /reviews/by-id/:id` owned immutable readonly historical revision, including
++  orphaned original account; missing/foreign/noncanonical404.
++- `POST /reviews/:kind/:start?account_id=` saves draft.
++- `POST /reviews/:kind/:start/complete?account_id=` completes answer artifact.
++- `POST /reviews/:kind/:start/amend?account_id=` deliberately appends completed
++  correction, required amendment reason. Draft cannot overwrite a completion.
++
++POST only `{revision,answers,focus,follow_up?,amend_reason?}`. Displayed revision
++includes latest stored revision, full current owned account financial/rule/check/
++strategy context and exact adjacent prior completed commitment. No caller metrics,
++clocks/source/user/permission/ownership authority. Unknown answer keys/types reject;
++completed template answers nonblank, one nonblank single-line chosen focus. Explicit
++unknown/not enough evidence is legitimate text; no NLP singularity guarantee.
++Missing current focus isn't automaticnone. Strict400/404, stale/context409 requires
++reload, actual store503 artifact-only rollback. Identical retry idempotent preserves
++receipt; amendment creates new immutable receipt/history, not update-in-place.
++
++Reply `{account_id,period,template,latest,history,preview,context_matches,revision,
++previous_focus,previous_focus_changed_since_saved}`. Stored `metrics` remain frozen;
++preview is CURRENT server data. Original and amended receipts/rules/focus survive
++financial correction. `period_finished:false` means early in-progress review;
++completed means answered record, not elapsed full period or strategy validation.
++
++Template question basis explicitly saved Ep26/27 or annual APP-guided scope.
++Weekly/monthly contain reflection, not strategy-apply; quarterly document hypothesis/
++next90-day baseline, yearly document reassessment. Review never writes strategy,
++version, goal, financial metric/denominator/grade/core/routine/permission/caps/risk.
++Existing lawful versioned strategy corrections remain possible; M104/M105 not closed.
++
++M101: adjacent prior completed immutable revision displayed with focus, source,
++ID/version/receipt. When present, complete/amend must include
++`follow_up:{previous_review_id,acted_on_focus:true|false|null,reflection:string}`.
++No missing/coerced answer→yes/false. Exact prior ID required409 on mismatch; saved
++answer retains original focus/text/clock/version and present self-report receipt.
++A later prior amendment cannot rewrite it; changed-reference warning shown.
++Imported prior commitments explicitly unverified. No broker/action fulfilment proof.
++
++Snapshot finance: full owned account exactly-closed UTC CLOSE-day interval,
++known-net win denominator, unknown/unassigned/future-clock coverage, nullable whole
++net/expectancy/R/drawdown, known subtotal. No unknown→0/infinity or floating money.
++Current reported execution ranks/ties separate from entry grade/money extrema;
++checkbox compliance coverage labelled self-report. M91/M93 reports labelled ENTRY/
++rule-day rather than attributing overnight P&L to entry. Owned saved strategy-version
++copies/notes retained; missing versions retain current unversioned definitions,
++not invented original-entry v1. Floor30 count annotation, never edge or capital
++permission. M100 missed/verified-impulse metrics unavailable, not guessed signals.
++
++Full `/export/json` field `period_reviews:{version:1,records:[...]}`; standalone
++periods aren't trade-row CSV. `/import/json` optional history validated/append-only
++under destination-owned account mapping and new IDs/revisions, forced status imported,
++source imported_unverified/new receiving time. Original source/status/clock/snapshot/
++focus/follow-up declarations in historical, no replayed completion/acted/strategy
++ownership proof. Invalid/future original clock omitted with warning. Subsequent
++export/restore retains original declaration rather than calling receipt old capture.
++Bad optional history warns/omits while truthful finance imports. Real history-store
++failure atomically rolls back the financial/artifact request. Missing history store
++permits financial backup with unavailable marker; restore warns, not knownempty.
++Warnings remain visible in Settings without refresh/dismissal on warning-bearing
++success. Repeat restore appends declarations, not automatic upsert/dedupe.
++
++APP budgets (not course rules):4000chars/question,300single-line focus,1000amendment,
++2000focus reflection,10000account rows per snapshot,500portable revisions/1MBdeclared
++snapshot.20MBselected-file/25MBbody limits unchanged, no silent clipping. Review
++artifacts never complete required trade/loss writing, grade/resize risk or prove
++human/mental/meditation/broker/provider/pixels/production/causal edge/70% wins.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index f16c19c..d7350e4 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -482,3 +482,41 @@ evidence never vetoes truthful finance or silently certifies clean process.
+ Current132=94 done/3 partial/35TODO; M99 next. M30/M103/M108 partial; M106/M111/M112
+ TODO. Course30 and deliberate old detectorM103n>=5/B-C tradeability untouched.
+ No broker/provider/mental/actual-human/meditation/pixel/production/edge/70% claim.
++
++
++## M99/M101 — review documents/commitments are not execution permission
++
++UTC/Monday APP week/month/quarter/year templates guide cadence. Saved revisions
++retain server metrics and strategy baselines, answers and chosen next-period focus;
++completion means acknowledged answers, not full elapsed period/market/strategy
++validation. Annual detailed prompts APP-guided from saved scope, not invented
++course quotations. Weekly/monthly no plan-apply; quarterly document a hypothesis,
++annual document reassessment. No new global veto on lawful owned strategy correction,
++no automatic goal/risk rewrite, no M1041–3-change/M105 identity closure.
++
++Unknown net/R/clock/coverage not0 or clean100. Finance CLOSE day distinct from M91/
++M93 ENTRY/rule days; execution rank separate from stored setup grade/P&L. Missing
++M100 missed/impulse evidence unavailable, not unused signals/hypothetical winners.
++Course floor30/M103n>=5/B-C tradeability and all existing engine weights, grade,
++default risk/factors/geometry/stops/targets/RR/caps/routine/loss/core policy unchanged.
++
++One persisted chosen focus, exact adjacent previous immutable ID/version/text/
++receipt, explicit yes/no/null present self-report. No defaultacted/failure from
++absence. Prior amendments do not move old response's goalposts; unseen change409,
++reload required. Completed review not overwritten by draft; explicit amendment
++appends history. Review/acted receipt not broker execution or original mental-state
++proof. User/account/token/superseded/closed/error callbacks guarded;503 neverclaims
++saved; original snapshot/context retained after corrections/account deletion.
++
++JSON restore receives destination ownership/new IDs/imported-unverified source/
++receiving clock, original declarations retained not replayed workflow/permission.
++Optional malformed data warns while finance stays legal; actual store outage rolls
++back that import, not earlier finance. Missing history permits financial backup with
++explicit unavailable marker. Settings warning success not silently refreshedaway.
++APP budgets4000answer/300focus/1000amend/2000focus-reflection,10000snapshot accountrows,
++500portable revisions/1MBdeclared snapshot and unchanged20MBfile/25MBbody limits,
++no silent clipping. No sealed database-admin-proof vault or automaticdedupe.
++
++Current132=96done/3partial/33TODO. Next M100; M104/M105/M106/M111/M112 TODO,
++M30/M103/M108 partial. No70% win-rate, causal/predictive edge, live provider,
++actual broker/human/mental/meditation/pixel/production validation implied.

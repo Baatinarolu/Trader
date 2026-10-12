@@ -1,0 +1,117 @@
+diff --git a/src/db.js b/src/db.js
+index 4bda2d2..53d2da3 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -283,6 +283,30 @@ CREATE TABLE IF NOT EXISTS trade_screenshots (
+     context_hash TEXT NOT NULL,
+     PRIMARY KEY(trade_id,role)
+   );
++-- M99 owned periodic review revisions. App receipts and frozen data, not entry proof.
++CREATE TABLE IF NOT EXISTS period_reviews (
++  id INTEGER PRIMARY KEY AUTOINCREMENT,
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
++  account_key INTEGER NOT NULL,
++  period_kind TEXT NOT NULL CHECK(period_kind IN ('week','month','quarter','year')),
++  period_start TEXT NOT NULL,
++  period_end TEXT NOT NULL,
++  version INTEGER NOT NULL,
++  template_version INTEGER NOT NULL,
++  status TEXT NOT NULL CHECK(status IN ('draft','completed','imported')),
++  answers_json TEXT NOT NULL,
++  focus TEXT,
++  followup_json TEXT,
++  metrics_json TEXT NOT NULL,
++  context_hash TEXT NOT NULL,
++  source TEXT NOT NULL,
++  recorded_at TEXT NOT NULL,
++  amendment TEXT,
++  historical_json TEXT,
++  UNIQUE(user_id,account_key,period_kind,period_start,version)
++);
++CREATE INDEX IF NOT EXISTS idx_period_reviews_owner ON period_reviews(user_id,account_key,period_kind,period_start,id);
+ CREATE TABLE IF NOT EXISTS goals (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -700,6 +724,8 @@ async function migrate() {
+     await add(table, 'entry_evidence', 'TEXT');
+   }
+ 
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS period_reviews_immutable BEFORE UPDATE ON period_reviews WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.period_kind IS OLD.period_kind AND NEW.period_start IS OLD.period_start AND NEW.period_end IS OLD.period_end AND NEW.version IS OLD.version AND NEW.template_version IS OLD.template_version AND NEW.status IS OLD.status AND NEW.answers_json IS OLD.answers_json AND NEW.focus IS OLD.focus AND NEW.followup_json IS OLD.followup_json AND NEW.metrics_json IS OLD.metrics_json AND NEW.context_hash IS OLD.context_hash AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.amendment IS OLD.amendment AND NEW.historical_json IS OLD.historical_json) BEGIN SELECT RAISE(ABORT,'Periodic review revisions are immutable'); END`).run();
++
+   /* M102 backfill. Every strategy that has no version history gets an immutable v1
+    * snapshot of the rule set it currently holds, and every trade already linked to it is
+    * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in
+diff --git a/src/period-reviews.js b/src/period-reviews.js
+index 98f6578..40f84fe 100644
+--- a/src/period-reviews.js
++++ b/src/period-reviews.js
+@@ -22,7 +22,7 @@ function input(kind,body,{complete=false}={}){
+  if(complete&&allowed.some(k=>!answers[k]))throw invalid('Answer each template question honestly (including unknown/not enough evidence), then choose one focus.');
+  let focus=body.focus??null;if(focus!==null&&(typeof focus!=='string'||focus.length>300||/[\x00-\x1f\x7f]/.test(focus)))throw invalid('Choose one single-line focus up to300 characters, not a list.');focus=focus?.trim()||null;if(complete&&!focus)throw invalid('Choose one focus for the next period.');
+  let amendment=null;if(body.amend_reason!==undefined){if(typeof body.amend_reason!=='string'||!body.amend_reason.trim()||body.amend_reason.length>1000)throw invalid('Name why this explicit amendment is needed.');amendment=body.amend_reason.trim();}
+- return {answers,focus,amendment};
++ return {answers:Object.fromEntries(allowed.filter(k=>answers[k]).map(k=>[k,answers[k]])),focus,amendment};
+ }
+ const hash=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+ 
+@@ -35,4 +35,32 @@ function financial(rows,account,range,{nowMs=Date.now()}={}){
+  const avgR=group=>group.length&&group.every(validR)?round(group.reduce((n,t)=>n+t.r_multiple,0)/group.length,4):null;
+  return {basis:'Current OWNED account recorded closed financial outcomes, UTC CLOSE-day whole calendar range; self-reported journal, not broker/causal/predictive proof.',date_basis:'utc_close_day',closed_trades:n,trade_ids:selected.map(t=>t.id),known_net_count:known.length,unknown_net_count:n-known.length,unassigned_closed:unassigned.length,unassigned_trade_ids:unassigned,wins:wins.length,losses:losses.length,breakeven:known.length-wins.length-losses.length,win_rate:known.length?round(wins.length*100/known.length):null,win_rate_denominator:known.length,known_net_subtotal:round(sum),net:whole?round(sum):null,expectancy:whole&&n?round(sum/n,4):null,known_r_count:rs.length,total_r:allR?round(rSum,4):null,mean_r:allR&&n?round(rSum/n,4):null,average_win_r:avgR(wins),average_loss_r:avgR(losses),max_drawdown_amount:dd,max_drawdown_pct:ddPct,entry_setup_counts:{a_or_a_plus:selected.filter(t=>['A','A+'].includes(t.setup_grade)).length,unknown:selected.filter(t=>!['A+','A','B','C','D'].includes(t.setup_grade)).length},missed_value_setups:null,impulse_trade_count:null,unavailable_metrics_basis:'M100 missed-value reconciliation remains unimplemented. Legacy tags/emotion are not counted as verified impulse/inaction. Missing finance/R/clocks are not zero.',sample_floor:30,sample_ready:n>=30,causal_edge_verified:false,broker_verified:false};
+ }
+-module.exports={VERSION,PERIOD_BASIS,templates,invalid,dateKey,period,canonical,input,hash,financial};
++
++
++const id=n=>Number.isSafeInteger(n)&&n>0;
++async function owned(store,userId,accountId){if(!['number','string'].includes(typeof accountId)||typeof accountId==='string'&&!/^[1-9]\d*$/.test(accountId)||!id(Number(accountId)))throw invalid('Account not found.',404);const a=await store.prepare('SELECT * FROM accounts WHERE user_id=? AND id=?').get(userId,Number(accountId));if(!a)throw invalid('Account not found.',404);return a;}
++function publicRow(row){if(!row)return null;try{const range=canonical(row.period_kind,row.period_start),metrics=JSON.parse(row.metrics_json),answers=JSON.parse(row.answers_json);if(row.period_end!==range.end||row.template_version!==VERSION||!id(row.version)||!['human_review','imported_unverified'].includes(row.source)||!['draft','completed','imported'].includes(row.status)||!metrics||typeof answers!=='object'||Array.isArray(answers))throw invalid('Unavailable saved review.');return {id:row.id,account_id:row.account_id,account_key:row.account_key,kind:row.period_kind,period_start:row.period_start,period_end:row.period_end,version:row.version,template_version:row.template_version,status:row.status,answers,focus:row.focus,follow_up:row.followup_json?JSON.parse(row.followup_json):null,metrics,context_hash:row.context_hash,source:row.source,recorded_at:row.recorded_at,amendment:row.amendment,historical:row.historical_json?JSON.parse(row.historical_json):null,broker_verified:false};}catch{return {id:row.id,account_id:row.account_id,account_key:row.account_key,kind:row.period_kind,period_start:row.period_start,version:row.version,status:'unavailable',source:'unavailable',broker_verified:false};}}
++async function snapshotOn(store,userId,a,range){
++ const rows=await store.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY id').all(userId,a.id);if(rows.length>10000)throw invalid('Periodic snapshot APP budget10000 account records exceeded; no silent clipped baseline.',503);
++ const money=financial(rows,a,range),ids=new Set(money.trade_ids),selected=rows.filter(t=>ids.has(t.id)),checks=await store.prepare('SELECT r.* FROM rule_checks r JOIN trades t ON t.id=r.trade_id WHERE t.user_id=? AND t.account_id=? ORDER BY r.id').all(userId,a.id),versions=await store.prepare('SELECT v.* FROM strategy_versions v JOIN strategies s ON s.id=v.strategy_id WHERE s.user_id=? ORDER BY v.id').all(userId),strategies=await store.prepare('SELECT * FROM strategies WHERE user_id=? ORDER BY id').all(userId),admissions=await store.prepare('SELECT * FROM guardrail_entry_admissions WHERE user_id=? AND account_id=? ORDER BY id').all(userId,a.id),events=await store.prepare('SELECT * FROM guardrail_events WHERE user_id=? AND account_id=? ORDER BY id').all(userId,a.id);
++ const rules=checks.filter(r=>ids.has(r.trade_id)),byTrade=new Map();for(const r of rules){if(!byTrade.has(r.trade_id))byTrade.set(r.trade_id,[]);byTrade.get(r.trade_id).push(r);}const knownChecks=[...byTrade.values()].filter(list=>list.every(r=>[0,1].includes(r.passed))),rate=list=>list.filter(r=>r.passed===1).length*100/list.length;
++ const baseline=versions.map(v=>({...v,closed_trades:selected.filter(t=>t.strategy_id===v.strategy_id&&t.strategy_version===v.version).length,source:'owned_saved_strategy_version_not_broker_or_causal_proof'}));
++ const execution=require('./execution-review').summary(selected,{accountId:a.id,timezone:'UTC'}),process=await require('./process-outcomes').optional(userId,{accountId:a.id,from:range.start,to:range.last_day,store}),behavior=await require('./behavior-days').optional(userId,{accountId:a.id,from:range.start,to:range.last_day,store});
++ const data={version:VERSION,period:range,account:{id:a.id,name:a.name,currency:a.currency,starting_balance:a.starting_balance},financial:money,execution,process_review:process,behavior_review:behavior,checklist_compliance:{known_trades:knownChecks.length,unreviewed_trades:selected.length-knownChecks.length,percent:knownChecks.length?round(knownChecks.reduce((n,r)=>n+rate(r),0)/knownChecks.length):null,basis:'Current declared checkbox compliance; absent checks not automatic plan adherence.'},strategy_baselines:baseline,strategy_version_unavailable:selected.filter(t=>!versions.some(v=>v.strategy_id===t.strategy_id&&v.version===t.strategy_version)).length,policy:{sample_floor:30,sample_ready:money.sample_ready,period_finished:range.end<=new Date().toISOString().slice(0,10),plan_applied:false,permission_granted:false,grade_or_core_completed:false,basis:'Review completion is an artifact acknowledgement, not full elapsed period, edge, strategy-change permission or execution proof.'}};
++ const context=hash([a,range,rows,checks,versions,strategies,admissions,events,money,data.policy.period_finished]);return {data,context};
++}
++async function rowsOn(store,userId,account,range){return store.prepare('SELECT * FROM period_reviews WHERE user_id=? AND account_key=? AND period_kind=? AND period_start=? ORDER BY version').all(userId,account,range.kind,range.start);}
++async function viewOn(store,userId,accountId,kind,start){const a=await owned(store,userId,accountId),range=canonical(kind,start);if(range.start>new Date().toISOString().slice(0,10))throw invalid('A future period is not an observed review window.');const snap=await snapshotOn(store,userId,a,range),rows=await rowsOn(store,userId,a.id,range),last=rows.at(-1);return {account_id:a.id,period:range,template:templates[kind],latest:publicRow(last),history:rows.map(publicRow),preview:snap.data,context_matches:last?last.context_hash===snap.context:null,revision:hash([userId,a.id,range,last||null,snap.context]),_context:snap.context};}
++function cleanView(v){const {_context,...out}=v;return out;}
++async function read(userId,accountId,kind,start){const {db}=require('./db');return db.tx(async tx=>cleanView(await viewOn(db.transactionStore(tx),userId,accountId,kind,start)));}
++async function save(userId,accountId,kind,start,body,mode='draft'){
++ if(!['draft','complete','amend'].includes(mode))throw invalid('Unknown review action.');const fields=input(kind,body,{complete:mode!=='draft'});if(mode==='amend'&&!fields.amendment||mode!=='amend'&&fields.amendment)throw invalid('Use a deliberate amendment reason only on the amendment action.');
++ const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),v=await viewOn(store,userId,accountId,kind,start),last=v.latest,status=mode==='draft'?'draft':'completed';
++  if(body.revision!==v.revision)throw invalid('Review, financial/strategy context or selected period changed. Explicitly reload before saving.',409);if(mode==='draft'&&last?.status==='completed')throw invalid('Completed artifacts are retained. Use an explicit amendment, not overwrite/draft.',409);if(mode==='amend'&&last?.status!=='completed')throw invalid('Amend an existing completed artifact explicitly.',409);
++  const result=await store.prepare('INSERT INTO period_reviews(user_id,account_id,account_key,period_kind,period_start,period_end,version,template_version,status,answers_json,focus,followup_json,metrics_json,context_hash,source,recorded_at,amendment) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(userId,v.account_id,v.account_id,kind,start,v.period.end,(last?.version||0)+1,VERSION,status,JSON.stringify(fields.answers),fields.focus,null,JSON.stringify(v.preview),v._context,'human_review',new Date().toISOString(),fields.amendment);
++  return cleanView(await viewOn(store,userId,accountId,kind,start));
++ });
++}
++async function list(userId,accountId=null){const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx);if(accountId!=null)await owned(store,userId,accountId);const rows=await store.prepare('SELECT * FROM period_reviews WHERE user_id=?'+(accountId==null?'':' AND account_key=?')+' ORDER BY id').all(...(accountId==null?[userId]:[userId,Number(accountId)])),map=new Map();for(const r of rows){const key=r.account_key+':'+r.period_kind+':'+r.period_start;if(!map.has(key))map.set(key,[]);map.get(key).push(r);}return {reviews:[...map.values()].map(rows=>({account_key:rows[0].account_key,kind:rows[0].period_kind,period_start:rows[0].period_start,latest:publicRow(rows.at(-1)),history_count:rows.length})),basis:PERIOD_BASIS};});}
++async function byId(userId,reviewId){if(!id(reviewId))throw invalid('Review not found.',404);const {db}=require('./db'),row=await db.prepare('SELECT * FROM period_reviews WHERE user_id=? AND id=?').get(userId,reviewId);if(!row)throw invalid('Review not found.',404);return {review:publicRow(row),readonly:true};}
++module.exports={VERSION,PERIOD_BASIS,templates,invalid,dateKey,period,canonical,input,hash,financial,owned,publicRow,snapshotOn,read,save,list,byId};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index fefb415..871c49e 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -17,6 +17,7 @@ const Execution = require('../execution-review');
+ const Screenshots = require('../screenshots');
+ const Confluences = require('../confluences');
+ const Emotions = require('../emotions');
++const PeriodReviews = require('../period-reviews');
+ const ProcessOutcomes = require('../process-outcomes');
+ const BehaviorDays = require('../behavior-days');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
+@@ -662,6 +663,13 @@ for(const action of ['start','end'])router.post('/session-time/'+action,requireA
+ });
+ 
+ /* ----------------------------------------------------------------- journal */
++const reviewRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='period_review_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Periodic review unavailable; financial/core/permission state unchanged.'});}};
++router.get('/reviews',requireAuth,reviewRoute(req=>PeriodReviews.list(req.user.id,req.query.account_id??null)));
++router.get('/reviews/by-id/:id',requireAuth,reviewRoute(req=>{if(!/^[1-9]\d*$/.test(req.params.id))throw PeriodReviews.invalid('Review not found.',404);return PeriodReviews.byId(req.user.id,Number(req.params.id));}));
++router.get('/reviews/:kind/:start',requireAuth,reviewRoute(req=>PeriodReviews.read(req.user.id,req.query.account_id,req.params.kind,req.params.start)));
++router.post('/reviews/:kind/:start',requireAuth,reviewRoute(req=>PeriodReviews.save(req.user.id,req.query.account_id,req.params.kind,req.params.start,req.body,'draft')));
++for(const action of ['complete','amend'])router.post('/reviews/:kind/:start/'+action,requireAuth,reviewRoute(req=>PeriodReviews.save(req.user.id,req.query.account_id,req.params.kind,req.params.start,req.body,action)));
++
+ router.get('/journal', requireAuth, async (req, res) => {
+   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
+   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);

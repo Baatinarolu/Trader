@@ -1,0 +1,20 @@
+diff --git a/src/period-reviews.js b/src/period-reviews.js
+index cddca64..98f6578 100644
+--- a/src/period-reviews.js
++++ b/src/period-reviews.js
+@@ -25,4 +25,14 @@ function input(kind,body,{complete=false}={}){
+  return {answers,focus,amendment};
+ }
+ const hash=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+-module.exports={VERSION,PERIOD_BASIS,templates,invalid,dateKey,period,canonical,input,hash};
++
++
++const finite=n=>typeof n==='number'&&Number.isFinite(n),round=(n,d=2)=>finite(n)?Number(n.toFixed(d)):null;
++function financial(rows,account,range,{nowMs=Date.now()}={}){
++ const Clock=require('./process-outcomes').clock,selected=[],unassigned=[];for(const t of rows){if(t.user_id!==account.user_id||t.account_id!==account.id||t.status!=='closed')continue;const at=Clock(t.closed_at,{now:nowMs});if(at===null){unassigned.push(t.id);continue;}const day=new Date(at).toISOString().slice(0,10);if(day>=range.start&&day<range.end)selected.push({...t,_closed_ms:at});}
++ selected.sort((a,b)=>a._closed_ms-b._closed_ms||a.id-b.id);const n=selected.length,known=selected.filter(t=>finite(t.net_pnl)),validR=t=>finite(t.net_pnl)&&finite(t.r_multiple)&&finite(t.risk_amount)&&t.risk_amount>0&&Math.abs(t.net_pnl-t.risk_amount*t.r_multiple)<=Math.max(.02,t.risk_amount*.0001),rs=selected.filter(validR),wins=known.filter(t=>t.net_pnl>0),losses=known.filter(t=>t.net_pnl<0),sum=known.reduce((a,t)=>a+t.net_pnl,0),rSum=rs.reduce((a,t)=>a+t.r_multiple,0),whole=known.length===n&&unassigned.length===0,allR=rs.length===n&&unassigned.length===0;let dd=null,ddPct=null;
++ if(whole){let equity=finite(account.starting_balance)?account.starting_balance:0,peak=equity,max=0,pct=0,valid=true;for(const t of selected){equity+=t.net_pnl;if(!finite(equity)){valid=false;break;}peak=Math.max(peak,equity);max=Math.max(max,peak-equity);if(peak>0)pct=Math.max(pct,(peak-equity)*100/peak);}if(valid){dd=round(max);ddPct=finite(account.starting_balance)&&account.starting_balance>0?round(pct,4):null;}}
++ const avgR=group=>group.length&&group.every(validR)?round(group.reduce((n,t)=>n+t.r_multiple,0)/group.length,4):null;
++ return {basis:'Current OWNED account recorded closed financial outcomes, UTC CLOSE-day whole calendar range; self-reported journal, not broker/causal/predictive proof.',date_basis:'utc_close_day',closed_trades:n,trade_ids:selected.map(t=>t.id),known_net_count:known.length,unknown_net_count:n-known.length,unassigned_closed:unassigned.length,unassigned_trade_ids:unassigned,wins:wins.length,losses:losses.length,breakeven:known.length-wins.length-losses.length,win_rate:known.length?round(wins.length*100/known.length):null,win_rate_denominator:known.length,known_net_subtotal:round(sum),net:whole?round(sum):null,expectancy:whole&&n?round(sum/n,4):null,known_r_count:rs.length,total_r:allR?round(rSum,4):null,mean_r:allR&&n?round(rSum/n,4):null,average_win_r:avgR(wins),average_loss_r:avgR(losses),max_drawdown_amount:dd,max_drawdown_pct:ddPct,entry_setup_counts:{a_or_a_plus:selected.filter(t=>['A','A+'].includes(t.setup_grade)).length,unknown:selected.filter(t=>!['A+','A','B','C','D'].includes(t.setup_grade)).length},missed_value_setups:null,impulse_trade_count:null,unavailable_metrics_basis:'M100 missed-value reconciliation remains unimplemented. Legacy tags/emotion are not counted as verified impulse/inaction. Missing finance/R/clocks are not zero.',sample_floor:30,sample_ready:n>=30,causal_edge_verified:false,broker_verified:false};
++}
++module.exports={VERSION,PERIOD_BASIS,templates,invalid,dateKey,period,canonical,input,hash,financial};

@@ -1,0 +1,25 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 3,
+  "fail": 1,
+  "results": [
+    {
+      "label": "actual HTML loads period editor before Journal readers",
+      "passed": true
+    },
+    {
+      "label": "actual Journal has periodic review cadence entry, DAILY core/notebook unchanged",
+      "passed": true
+    },
+    {
+      "label": "actual manager exposes all4cadences and actual persisted priorperiod",
+      "passed": true
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "Cannot read properties of undefined (reading 'includes')"
+    }
+  ],
+  "scope": "M99/M101 actual Journal periodic templates/editor/follow-up UI: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

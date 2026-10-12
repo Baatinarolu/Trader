@@ -482,3 +482,41 @@ evidence never vetoes truthful finance or silently certifies clean process.
 Current132=94 done/3 partial/35TODO; M99 next. M30/M103/M108 partial; M106/M111/M112
 TODO. Course30 and deliberate old detectorM103n>=5/B-C tradeability untouched.
 No broker/provider/mental/actual-human/meditation/pixel/production/edge/70% claim.
+
+
+## M99/M101 — review documents/commitments are not execution permission
+
+UTC/Monday APP week/month/quarter/year templates guide cadence. Saved revisions
+retain server metrics and strategy baselines, answers and chosen next-period focus;
+completion means acknowledged answers, not full elapsed period/market/strategy
+validation. Annual detailed prompts APP-guided from saved scope, not invented
+course quotations. Weekly/monthly no plan-apply; quarterly document a hypothesis,
+annual document reassessment. No new global veto on lawful owned strategy correction,
+no automatic goal/risk rewrite, no M1041–3-change/M105 identity closure.
+
+Unknown net/R/clock/coverage not0 or clean100. Finance CLOSE day distinct from M91/
+M93 ENTRY/rule days; execution rank separate from stored setup grade/P&L. Missing
+M100 missed/impulse evidence unavailable, not unused signals/hypothetical winners.
+Course floor30/M103n>=5/B-C tradeability and all existing engine weights, grade,
+default risk/factors/geometry/stops/targets/RR/caps/routine/loss/core policy unchanged.
+
+One persisted chosen focus, exact adjacent previous immutable ID/version/text/
+receipt, explicit yes/no/null present self-report. No defaultacted/failure from
+absence. Prior amendments do not move old response's goalposts; unseen change409,
+reload required. Completed review not overwritten by draft; explicit amendment
+appends history. Review/acted receipt not broker execution or original mental-state
+proof. User/account/token/superseded/closed/error callbacks guarded;503 neverclaims
+saved; original snapshot/context retained after corrections/account deletion.
+
+JSON restore receives destination ownership/new IDs/imported-unverified source/
+receiving clock, original declarations retained not replayed workflow/permission.
+Optional malformed data warns while finance stays legal; actual store outage rolls
+back that import, not earlier finance. Missing history permits financial backup with
+explicit unavailable marker. Settings warning success not silently refreshedaway.
+APP budgets4000answer/300focus/1000amend/2000focus-reflection,10000snapshot accountrows,
+500portable revisions/1MBdeclared snapshot and unchanged20MBfile/25MBbody limits,
+no silent clipping. No sealed database-admin-proof vault or automaticdedupe.
+
+Current132=96done/3partial/33TODO. Next M100; M104/M105/M106/M111/M112 TODO,
+M30/M103/M108 partial. No70% win-rate, causal/predictive edge, live provider,
+actual broker/human/mental/meditation/pixel/production validation implied.

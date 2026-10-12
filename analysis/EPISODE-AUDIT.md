@@ -1,6 +1,50 @@
 # Full-playlist episode audit — running ledger
 
-## Current M93 — daily reported-process review — 2026-10-12
+## Current M99/M101 — periodic artifacts and chosen-focus follow-up — 2026-10-12
+
+**132:96 done /3 partial /33 TODO /0 no-action**, exact eight groups. Distinct
+weekly review/monthly reflection/quarterly documented refinement/annual reassessment,
+owned account/calendar period artifacts with immutable draft/completed/amended
+revisions, frozen server financial/process/strategy baselines and original receipts.
+Annual exact prompts APP-guided, not invented quotation; UTC/Monday buckets APP
+policy, not broker hours. Unknown denominators/clocks/net/R not0, original execution
+best/worst separate from setup grade/money. Floor30 unchanged, no plan/goal/permission
+apply from a review; current-period completion is early answered record, not elapsedperiod.
+
+**M101 separately measured:** chosen one focus + exact adjacent completed commitment
+ID/version/text/receipt, explicit yes/no/null self-report. No automatic acted/failure
+from missing history. Prior amendment triggers409 and preserves the original answered
+commitment; no moving goalposts. Actual Journal cadence manager/templates/editor,
+readonly saved snapshot/history, deliberate amendments, actor/account/token/serial/
+stale/fault guards. JSON historical restore forced own destination/new receiving
+receipt/imported-unverified status, no replayed completion/acted/strategy proof;
+optional bad history warns while finance persists, real store failure atomicrollback.
+Settings warnings visible/no auto-refresh; missing history store doesn't deny financebackup.
+
+**Final160/0 across9 probes**, actual129-parent additive migration15/0. Original
+M93 113/2 and M91 106/2: two unchanged zero-schema/all-table migration assumptions
+each now fail on legitimate review objects; retained. Other M93/M91 probes104/0/
+97/0; actual129-parent proves all original columns/facts unchanged. M89 emotion170/0,
+M88 reasons160/0, execution260/0, routine321/0; M87 screenshots223/3 old negatives.
+RAW596/156+90s timeout vsDECLARED824/4; old missing-getToken/browser-day negatives
+kept. Offline178/0, declared market325/0, live70/1 with6nonzero/5summaryless.
+Prepared actual-parent/current native API121/0/Bots206/0 each,24 syntheticfills/0
+mismatches; rawAPIexit2/no summary/Bots202/4. Smoke21/21 conditional DOM,0style/
+console,8canvaslimits,observedexit0. Exact original conditional DOM smoke and
+actual exits/canvas limits in `evidence/m99/smoke-exit.json`, not pixel/broker proof.
+
+Seven measured runtime stages+docs, actual32f/pristine forward/reverse byteproofs,
+deterministic **131-source** ZIP: `build-m99-review-artifacts.py`,
+`patches/M99-REVIEW-STAGES.json`, excluded archive SHA companion.
+[Full report](M99-M101-PERIODIC-REVIEWS.md). Preview3000: temporary synthetic
+`/tmp/m99-preview.db`, offline/schedulerOFF/blank remotes, no real-user preservation.
+
+**Next M100 — missed-value setup evidence**, not inferred unused signals/hypotheticaledge.
+M104/M105/M106/M111/M112 remainTODO, M30/M103/M108 partial. All132IDs/eightgroups
+retained. Session remains **arena/762c0295-trader**; older branches/counts/next steps
+below are historical, never instructions to switch/push elsewhere.
+
+## Historical M93 — daily reported-process review — 2026-10-12
 
 **132:94 done /3 partial /35 TODO /0 no-action**, exact eight groups. Read-only
 per-owned-account UTC ENTRY/rule-day APP tally, current valid core/execution review

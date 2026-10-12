@@ -1,0 +1,172 @@
+{
+  "app": "/tmp/m99-metrics-stage/app",
+  "pass": 5,
+  "fail": 22,
+  "results": [
+    {
+      "label": "actual own canonical template/period/current preview endpoint exists",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/reviews/month/2026-09-01</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "blank optional draft persists as DRAFT, not completed/defaultfocus",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "completion refuses missing template answers, draft remains intact400",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/complete</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "actual completion appends captured metrics/answers/chosen focus/serverclock",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/complete</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "snapshot known denominator1/below30 and explicitno missed setup inference",
+      "passed": false
+    },
+    {
+      "label": "old draft retained independently, not overwritten by complete",
+      "passed": false
+    },
+    {
+      "label": "reviews never mutate finance/grades/evidence/clocks/core flags",
+      "passed": true
+    },
+    {
+      "label": "review reading/writing never refunds caps/routine/admissions/loss queues",
+      "passed": true
+    },
+    {
+      "label": "frozen saved metrics retain +10 despite current correction -10, visibly priorsnapshot",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/reviews/month/2026-09-01</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "unseen financial/context change409, not silentnew snapshot",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/amend</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "completed review cannot be silently overwritten by draft save409",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "explicit amendment appends new completed receipt, old answer/focus/baseline survives",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/amend</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "original completed record clock and frozen context still byteidentical",
+      "passed": false
+    },
+    {
+      "label": "strict saved review rejects caller source400",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/amend</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved review rejects caller recorded_at400",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/amend</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved review rejects caller metrics400",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/amend</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved review rejects caller user_id400",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/amend</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved review rejects caller permission400",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/amend</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "foreign account cannot read review or focus404",
+      "passed": true
+    },
+    {
+      "label": "real auth required401",
+      "passed": false
+    },
+    {
+      "label": "noncanonical weekstart rejected400, not silently createTuesdayperiod",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/reviews/week/2026-09-02</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "noncanonical account alias404",
+      "passed": true
+    },
+    {
+      "label": "SQL UPDATE original review facts disallowed, not only API convention",
+      "passed": false
+    },
+    {
+      "label": "stored revisioned periods discoverable list, not recomputedrecommendation",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/reviews</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "quarter preview differenttemplate and ownedstrategy-version baseline preserved",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/reviews/quarter/2026-07-01</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "quarter review NEVER edits strategy rules/versions or risk settings",
+      "passed": true
+    },
+    {
+      "label": "real review-store503 rolls back artifact only, earlier truthful finance survives",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/reviews/month/2026-09-01/amend</pre>\n</body>\n</html>\n"
+      }
+    }
+  ],
+  "scope": "M99 owned periodic artifact API/immutable snapshots/CAS: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

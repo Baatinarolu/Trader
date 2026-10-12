@@ -1,0 +1,10 @@
+ok real parent schema lacks newly introduced admission provenance
+ok additive migration preserves every original legacy trade field
+ok legacy snapshots/reasons/permissions stay NULL, never reconstructed
+ok existing account receives the explicit default cap of three
+FAIL fresh schema contains cap, immutable history and separate mechanical state/admissions [{"name":"guardrail_day_caps"},{"name":"guardrail_day_state"},{"name":"guardrail_entry_admissions"},{"name":"guardrail_events"},{"name":"guardrail_reflections"}]
+ok migration fabricates no historical event or entry permission
+ok second boot is byte-equivalent/idempotent for legacy data
+ok current observation counts the one legacy entry without inventing admission
+FAIL day-start equity includes the actual older closed P&L, unchanged by migration {"trades":1,"closed":0,"realised":0,"r_sum":0,"avg_r":0,"loss_streak":0,"balance":10050,"loss_limit":301.5,"balance_basis":"day-start realised journal equity"}
+M79 migration: 7 passed, 2 failed

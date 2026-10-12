@@ -283,6 +283,30 @@ CREATE TABLE IF NOT EXISTS trade_screenshots (
     context_hash TEXT NOT NULL,
     PRIMARY KEY(trade_id,role)
   );
+-- M99 owned periodic review revisions. App receipts and frozen data, not entry proof.
+CREATE TABLE IF NOT EXISTS period_reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+  account_key INTEGER NOT NULL,
+  period_kind TEXT NOT NULL CHECK(period_kind IN ('week','month','quarter','year')),
+  period_start TEXT NOT NULL,
+  period_end TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  template_version INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('draft','completed','imported')),
+  answers_json TEXT NOT NULL,
+  focus TEXT,
+  followup_json TEXT,
+  metrics_json TEXT NOT NULL,
+  context_hash TEXT NOT NULL,
+  source TEXT NOT NULL,
+  recorded_at TEXT NOT NULL,
+  amendment TEXT,
+  historical_json TEXT,
+  UNIQUE(user_id,account_key,period_kind,period_start,version)
+);
+CREATE INDEX IF NOT EXISTS idx_period_reviews_owner ON period_reviews(user_id,account_key,period_kind,period_start,id);
 CREATE TABLE IF NOT EXISTS goals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -699,6 +723,8 @@ async function migrate() {
     await add(table, 'entry_tf', 'TEXT');
     await add(table, 'entry_evidence', 'TEXT');
   }
+
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS period_reviews_immutable BEFORE UPDATE ON period_reviews WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.period_kind IS OLD.period_kind AND NEW.period_start IS OLD.period_start AND NEW.period_end IS OLD.period_end AND NEW.version IS OLD.version AND NEW.template_version IS OLD.template_version AND NEW.status IS OLD.status AND NEW.answers_json IS OLD.answers_json AND NEW.focus IS OLD.focus AND NEW.followup_json IS OLD.followup_json AND NEW.metrics_json IS OLD.metrics_json AND NEW.context_hash IS OLD.context_hash AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.amendment IS OLD.amendment AND NEW.historical_json IS OLD.historical_json) BEGIN SELECT RAISE(ABORT,'Periodic review revisions are immutable'); END`).run();
 
   /* M102 backfill. Every strategy that has no version history gets an immutable v1
    * snapshot of the rule set it currently holds, and every trade already linked to it is

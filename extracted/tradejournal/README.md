@@ -1,5 +1,51 @@
 # TradeJournal Pro
 
+## M99/M101 — periodic reviews and one committed focus (2026-10-12)
+
+Open **Journal → Weekly / monthly / quarterly / annual reviews**. Select a cadence
+and a date inside its UTC calendar period. Weeks start Monday—APP policy, not a
+broker calendar. Each template asks different questions: weekly process feedback,
+monthly lesson/barrier/pride, quarterly documented hypothesis/strategy baseline,
+annual reassessment. Annual detailed prompts are **APP-guided**, not invented
+course quotations. Existing daily notebook/core writing remains separate.
+
+Start a draft, answer honestly (including unknown/not enough evidence), and choose
+**one** focus. Completing answers freezes a server metrics/strategy-baseline receipt,
+not the whole calendar period, profitable edge or permission to change a plan.
+An in-progress period stays labelled early. Below30: don't tweak the system;30+
+still doesn't prove causality/prediction. No weekly/monthly plan-apply or automatic
+annual-goal/risk rewrite. M104's actual1–3-change enforcement remains open.
+
+The exact adjacent prior completed focus/version/receipt is shown. Explicitly
+choose **yes / no / unknown** for whether you acted on it, with your own reflection;
+this is self-report, not execution proof. Prior amendments cannot move the old
+answer's goalposts. Saved text/history/snapshot stay intact. Use deliberate
+**amendment** to append a correction; stale409 retains input until reload,503
+never claims saved. User/account/token/closed/superseded callbacks guarded.
+
+Known closed-outcome denominators and unavailable net/R/drawdown/clock coverage
+are explicit; open/other-account records excluded. Execution best/worst is process,
+not biggest profit. Saved numbers don't silently recalculate after finance changes.
+M100 missed setups/verified impulse counts remain unavailable, not guessed signals.
+Quarterly saved owned strategy versions/current unversioned definitions preserve
+what was actually available, not original entry rules or new strategy authority.
+
+Full JSON backup carries `period_reviews`; trade CSV does **not** carry standalone
+period artifacts. Restore appends destination-owned imported/unverified history,
+new IDs/receiving clock, original declarations retained but no replayed completion/
+acted/plan proof. Malformed optional history warns while finance remains legal;
+actual storage failure rolls back that import. Missing history store still permits
+financial backup with explicit omission marker. Settings warnings stay visible.
+App budgets:4000chars/answer,300 single-line focus,1000amend reason,2000focus reflection,
+10000account records/snapshot,500portable revisions/1MBdeclared snapshot each. Existing
+20MBselected-file/25MBbody limits; no silent clipping or automatic dedupe.
+
+**M99/M101 final160/0 across9**, actual129-parent migration/restart15/0. Ledger
+**132=96 done/3 partial/33TODO**. Original schema-assumption negatives kept; full
+report `analysis/M99-M101-PERIODIC-REVIEWS.md` in delivery. Next M100. M104/M105/
+M106/M111/M112 open, M30/M103/M108 partial. No changed financial/risk/grade rules,
+70% win-rate, broker/human/mental/meditation/pixel/production/market-edge promise.
+
 ## M93 — daily reported process, not the old window tally (2026-10-12)
 
 **Day review, Journal index, Analytics, Coach and Bots → Corrections** now show

@@ -1,0 +1,37 @@
+{
+  "source_manifest": "release-source.json",
+  "assets": [
+    {
+      "path": "public/index.html",
+      "http": 200,
+      "server_transform": "Exact existing {{V}} to per-boot build ID",
+      "expected_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/period-reviews.js",
+      "http": 200,
+      "sha256": "f647830288a2afe01b3f38f5d5bad10fe1a2154b254efb8a54b5769c6e6b9f07",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/journal.js",
+      "http": 200,
+      "sha256": "a3de12bca1e8cc9cfdf9d9ba9620d65bc8067f8bdc2bfd85171a83cd11295b97",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/settings.js",
+      "http": 200,
+      "sha256": "042afa5785c0f08051492cf40d3a4a8afbaf6423d1438bcc2e34722e3416e669",
+      "local_byte_differences": 0
+    }
+  ],
+  "preview": {
+    "port": 3000,
+    "database": "/tmp/m99-preview.db",
+    "remote": false,
+    "synthetic": true,
+    "scheduler": false
+  },
+  "scope": "Actually served current code bytes; HTML exact existing build-ID transform, not pixels/production/user preservation."
+}

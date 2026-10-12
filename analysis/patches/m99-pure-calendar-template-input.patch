@@ -1,0 +1,34 @@
+diff --git a/src/period-reviews.js b/src/period-reviews.js
+new file mode 100644
+index 0000000..cddca64
+--- /dev/null
++++ b/src/period-reviews.js
+@@ -0,0 +1,28 @@
++'use strict';
++/** M99/M101 owned periodic artifacts, not trading/strategy/score authority. */
++const crypto=require('crypto');
++const PERIOD_BASIS='APP calendar policy: UTC; Monday-start weeks, calendar months/quarters/years. Not trader/broker hours or a course-mandated timezone.';
++const VERSION=1;
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'period_review_invalid',status});}
++function dateKey(s){if(typeof s!=='string'||!/^\d{4}-\d\d-\d\d$/.test(s)||Number(s.slice(0,4))<100||Number(s.slice(0,4))>9998||!Number.isFinite(Date.parse(s))||new Date(s).toISOString().slice(0,10)!==s)throw invalid('Select a valid UTC calendar date.');return s;}
++const iso=d=>d.toISOString().slice(0,10);
++function period(kind,date){dateKey(date);if(!Object.hasOwn(templates,kind))throw invalid('Choose week, month, quarter or year.');const d=new Date(date+'T00:00:00.000Z');if(kind==='week')d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);else if(kind==='month')d.setUTCDate(1);else if(kind==='quarter'){d.setUTCDate(1);d.setUTCMonth(Math.floor(d.getUTCMonth()/3)*3);}else{d.setUTCMonth(0,1);}const start=iso(d),end=new Date(d),previous=new Date(d);if(kind==='week'){end.setUTCDate(end.getUTCDate()+7);previous.setUTCDate(previous.getUTCDate()-7);}else if(kind==='year'){end.setUTCFullYear(end.getUTCFullYear()+1);previous.setUTCFullYear(previous.getUTCFullYear()-1);}else{const months=kind==='quarter'?3:1;end.setUTCMonth(end.getUTCMonth()+months);previous.setUTCMonth(previous.getUTCMonth()-months);}return {kind,start,end:iso(end),last_day:iso(new Date(end.getTime()-86400000)),previous_start:iso(previous),basis:PERIOD_BASIS};}
++function canonical(kind,start){const p=period(kind,start);if(p.start!==start)throw invalid('Use the displayed canonical period start.');return p;}
++const question=(id,label)=>({id,label});
++const templates={
++ week:{title:'Weekly review',question_basis:'saved_ep26_weekly_scope',policy:'No plan changes from a weekly review. Record process feedback and one next-week focus; metrics do not prove an edge.',questions:[question('worked_and_why','What went well, and specifically why?'),question('prevention_plan','What mistakes/weak points appeared, and what is the prevention plan?'),question('best_worst_pattern','What process pattern appears in the best and worst trades?')]},
++ month:{title:'Monthly reflection',question_basis:'saved_ep26_monthly_scope',policy:'No plan changes or annual-goal reassessment from a monthly reflection. Reflect on the longer pattern and one next-month focus.',questions:[question('hardest_lesson','What one trading lesson hit hardest this month?'),question('mental_barrier','What mental barrier appeared most, and what is the plan to address it?'),question('proud_process_or_results','What are you proud of—process or results—and why?')]},
++ quarter:{title:'Quarterly refinement review',question_basis:'saved_ep26_ep27_quarterly_scope',policy:'Only document a refinement hypothesis here; no strategy/risk/guardrail setting is applied. Below30 closed trades do not tweak the system;30+ is not causal/predictive proof. Existing strategy versions are preserved as the baseline for next quarter.',questions:[question('leverage_actions','Which repeatable actions mattered most? Treat 80/20 as a review question, not causal attribution.'),question('market_setup','What was the best market/setup, and what recorded evidence supports it?'),question('mistake_patterns','What repeating mistake patterns should be eliminated? Do not invent a causal dollar/R cost.'),question('process_upgrades','What execution/discipline upgrade mattered, and which guardrails helped?'),question('refinement_hypothesis','What testable refinement hypothesis and next-quarter process theme will you document? Below the sample floor, record a data-gathering plan instead of changing rules.')]},
++ year:{title:'Annual reassessment',question_basis:'app_guided_from_saved_annual_scope',policy:'Deep yearly reflection and documented goal reassessment, not an automatic goal/strategy rewrite. Exact annual prompts are APP-guided; the saved excerpt does not supply a full quoted template.',questions:[question('recurring_patterns','What patterns repeated across the year?'),question('process_growth','What changed in your process and responsibilities?'),question('goals_reassessment','Which goals should be reassessed, and what is under your control?'),question('year_lessons','What evidence and lessons will guide the next year?')]}
++};
++for(const t of Object.values(templates))Object.assign(t,{version:VERSION,focus_count:1,broker_verified:false,period_basis:PERIOD_BASIS});
++function input(kind,body,{complete=false}={}){
++ if(!Object.hasOwn(templates,kind)||!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['revision','answers','focus','amend_reason'].includes(k))||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision)||!body.answers||typeof body.answers!=='object'||Array.isArray(body.answers))throw invalid('Use displayed revision and this template answers/focus only.');
++ const allowed=templates[kind].questions.map(q=>q.id),answers={};for(const k of Object.keys(body.answers)){const value=body.answers[k];if(!allowed.includes(k)||typeof value!=='string'||value.length>4000||/[\x00\x08\x0b\x0c\x7f]/.test(value))throw invalid('Invalid template answer '+k+'.');if(value.trim())answers[k]=value.trim();}
++ if(complete&&allowed.some(k=>!answers[k]))throw invalid('Answer each template question honestly (including unknown/not enough evidence), then choose one focus.');
++ let focus=body.focus??null;if(focus!==null&&(typeof focus!=='string'||focus.length>300||/[\x00-\x1f\x7f]/.test(focus)))throw invalid('Choose one single-line focus up to300 characters, not a list.');focus=focus?.trim()||null;if(complete&&!focus)throw invalid('Choose one focus for the next period.');
++ let amendment=null;if(body.amend_reason!==undefined){if(typeof body.amend_reason!=='string'||!body.amend_reason.trim()||body.amend_reason.length>1000)throw invalid('Name why this explicit amendment is needed.');amendment=body.amend_reason.trim();}
++ return {answers,focus,amendment};
++}
++const hash=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
++module.exports={VERSION,PERIOD_BASIS,templates,invalid,dateKey,period,canonical,input,hash};
