@@ -1,0 +1,125 @@
+diff --git a/public/index.html b/public/index.html
+index b390e0b..8c1efda 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -25,6 +25,7 @@
+ <script src="/js/api.js?v={{V}}"></script>
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
++<script src="/js/views/rule-changes.js?v={{V}}"></script>
+ <script src="/js/views/period-reviews.js?v={{V}}"></script>
+ <script src="/js/views/opportunities.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
+diff --git a/public/js/views/playbook.js b/public/js/views/playbook.js
+index 8ff1135..2ca46a7 100644
+--- a/public/js/views/playbook.js
++++ b/public/js/views/playbook.js
+@@ -6,14 +6,16 @@
+   Views.playbook = {
+     title: 'Playbook',
+     async render(root) {
+-      const data = await API.get('/strategies');
++      const context=Views.ruleChanges?.ctx();
++      const [data,discipline]=await Promise.all([API.get('/strategies'),API.get('/strategy-changes').catch(()=>({report:{state:'unavailable'}}))]);
++      if(Views.ruleChanges&&!Views.ruleChanges.same(context))return;
+       const stats = data.stats || {};
+       root.innerHTML = '';
+ 
+       const head = U.h('div', { class: 'row-between', style: 'margin-bottom:14px;flex-wrap:wrap;gap:10px' });
+       head.innerHTML = `<div><h2 style="margin:0">Your playbook</h2><div class="muted small">Written rules are the only thing that separates a system from an opinion. Each card shows what the market has actually paid you for that setup.</div></div>
+         <button class="btn primary" id="pb-new">+ New setup</button>`;
+-      root.appendChild(head);
++      root.appendChild(head);if(Views.ruleChanges)root.appendChild(Views.ruleChanges.card(discipline.report));
+ 
+       const grid = U.h('div', { class: 'grid g3' });
+       root.appendChild(grid);
+@@ -44,7 +46,7 @@
+           ${s.risk_rules ? `<div class="tiny" style="margin-top:5px"><b style="color:var(--amber)">Risk</b> <span class="muted-2">${U.esc(s.risk_rules)}</span></div>` : ''}
+           <div class="row" style="gap:6px;margin-top:12px">
+             <button class="btn xs" data-check="${s.id}">Run checklist</button>
+-            <button class="btn xs ghost" data-edit="${s.id}">Edit</button>
++            <button class="btn xs ghost" data-edit="${s.id}">Edit</button><button class="btn xs ghost" data-rule-history="${s.id}">Rule-change history</button>
+             <button class="btn xs ghost" data-log="${s.id}">Log a trade</button>
+             <button class="btn xs ghost danger" data-del="${s.id}" style="margin-left:auto">Delete</button>
+           </div>`;
+@@ -53,6 +55,7 @@
+ 
+       grid.addEventListener('click', async (e) => {
+         const b = e.target.closest('button'); if (!b) return;
++        if(b.dataset.ruleHistory)return Views.ruleChanges?Views.ruleChanges.open(Number(b.dataset.ruleHistory)):global.App.toast('Rule history unavailable.','err');
+         if (b.dataset.edit) return strategyDialog(data.strategies.find((s) => s.id === Number(b.dataset.edit)), root);
+         if (b.dataset.log) { const s = data.strategies.find((x) => x.id === Number(b.dataset.log)); return global.App.openTrade(null, { strategy_id: s.id }); }
+         if (b.dataset.check) { const s = data.strategies.find((x) => x.id === Number(b.dataset.check)); return checklistRunner(s); }
+@@ -67,7 +70,10 @@
+     },
+   };
+ 
+-  function strategyDialog(s, root) {
++  async function strategyDialog(s, root) {
++    const R=Views.ruleChanges,context=R?.ctx(),number=R?.nextSerial();let discipline;
++    if(s&&R){try{discipline=await API.get('/strategies/'+s.id+'/change-discipline');if(!R.same(context)||!R.current(number))return;s=discipline.strategy;}catch(e){if(R.same(context)&&R.current(number))global.App.toast(e.message,'err');return;}}
++    let alive=true,stale=false;
+     const isNew = !s;
+     const v = s || { name: '', description: '', market_conditions: '', timeframes: '', entry_rules: [], exit_rules: [], checklist: [], risk_rules: '', target_r_multiple: 2, colour: '#4f8cff', active: 1 };
+     const body = U.h('div');
+@@ -85,7 +91,8 @@
+       <label class="field"><span>Status</span><select id="s-active"><option value="1" ${v.active ? 'selected' : ''}>Active</option><option value="0" ${!v.active ? 'selected' : ''}>Paused</option></select></label>
+     </div>`;
+     const lines = (id) => U.$('#' + id, body).value.split('\n').map((x) => x.trim()).filter(Boolean);
+-    global.App.modal({
++    let editor;editor=global.App.modal({
++      onClose:()=>{alive=false;},
+       title: isNew ? 'New setup' : 'Edit setup',
+       body,
+       actions: [
+@@ -105,15 +112,19 @@
+               active: U.$('#s-active', body).value === '1',
+             };
+             if (!payload.name) return global.App.toast('Give the setup a name.', 'err');
++            if(R&&(!alive||!R.same(context)||!R.current(number)||!body.isConnected))return global.App.toast('Workspace/account/session/editor changed; reopen the current rules.','err');
++            if(stale)return global.App.toast('Reload current strategy/history before editing.','err');
+             try {
++              if(!isNew&&R){const preview=await API.post('/strategies/'+s.id+'/change-preview',{revision:discipline.revision,changes:payload});if(!alive||!R.same(context)||!R.current(number)||!body.isConnected)return;global.App.modal({title:'Review proposed rule deltas',body:R.preview(preview),wide:true,actions:[{label:'Cancel — no rules changed',ghost:true},{label:'Save shown configuration (advice retained)',primary:true,onClick:async confirmClose=>{if(!alive||!R.same(context)||!R.current(number)||!body.isConnected)return;const current={...payload,name:U.$('#s-name',body).value.trim(),description:U.$('#s-desc',body).value,market_conditions:U.$('#s-cond',body).value,timeframes:U.$('#s-tf',body).value,entry_rules:lines('s-entry'),exit_rules:lines('s-exit'),checklist:lines('s-check'),risk_rules:U.$('#s-risk',body).value,target_r_multiple:U.$('#s-target',body).value,colour:U.$('#s-colour',body).value,active:U.$('#s-active',body).value==='1'};if(JSON.stringify(current)!==JSON.stringify(payload))return global.App.toast('Draft changed after preview; cancel and preview the new fields.','err');try{const result=await API.put('/strategies/'+s.id,{...payload,strategy_revision:preview.revision});if(!alive||!R.same(context)||!R.current(number)||!body.isConnected)return;confirmClose();close();await Store.reloadAll();if(!R.same(context))return;global.App.toast('Strategy/version/change recorded; no trade, risk or grade permission implied.','ok');global.App.refresh();global.App.modal({title:'Saved configuration — quarter advice',body:R.card(result.quarter_rule_changes),wide:true,actions:[{label:'Close advice',ghost:true}]});}catch(err){if(alive&&R.same(context)&&R.current(number)){stale=err.status===409;global.App.toast(err.message,'err');confirmClose();}}}}]});return;}
+               if (isNew) await API.post('/strategies', payload); else await API.put('/strategies/' + s.id, payload);
+               await Store.reloadAll();
+               close(); global.App.toast('Playbook updated', 'ok'); global.App.refresh();
+-            } catch (err) { global.App.toast(err.message, 'err'); }
++            } catch (err) { if(!R||alive&&R.same(context)&&R.current(number)){stale=err.status===409;global.App.toast(err.message, 'err');} }
+           },
+         },
+       ],
+     });
++    if(!isNew&&R)body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{strategyReload:'true'},text:'Reload current rules/history (discard unsaved draft)',onclick:()=>{if(!alive||!R.same(context)||!R.current(number))return;editor.close();return strategyDialog(s,root);}}));
+   }
+ 
+   function checklistRunner(s) {
+diff --git a/public/js/views/rule-changes.js b/public/js/views/rule-changes.js
+new file mode 100644
+index 0000000..c31a0ff
+--- /dev/null
++++ b/public/js/views/rule-changes.js
+@@ -0,0 +1,11 @@
++/* M104 recorded APP units, not independent causal variables or authority. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U;let serial=0;
++ const ctx=()=>({user:global.Store.user?.id,account:global.Store.accountId,token:global.API.getToken()}),same=c=>c.user===global.Store.user?.id&&c.account===global.Store.accountId&&c.token===global.API.getToken(),finite=n=>typeof n==='number'&&Number.isFinite(n);
++ const P=Views.ruleChanges={ctx,same,nextSerial:()=>++serial,current:n=>n===serial,
++  card(report){const node=U.h('section',{class:'card',style:'margin-top:12px',dataset:{ruleChangeGuidance:'true'}});node.appendChild(U.h('h3',{text:'Quarterly rule-change discipline — all owned strategies'}));node.appendChild(U.h('p',{class:'field-note',text:'APP edit units, not verified independent causal variables. UTC calendar quarter across all owned strategies. One change recommended, three maximum guidance; warnings do not block/clamp a trade, grade or risk setting. Cosmetic names/colours/pause excluded. Each saved change/reversal counts; absence is not a historical untouched-plan certificate.'}));const total=finite(report?.total_units)?String(report.total_units):'Unavailable';node.appendChild(U.h('p',{class:'small',text:`Quarter ${report?.quarter?.start||'unavailable'} to ${report?.quarter?.end||'unavailable'} (UTC, end exclusive) · full count ${total} · known recorded minimum ${finite(report?.known_units)?report.known_units:'Unavailable'}. ${report?.state==='unavailable'?'History incomplete; not certified within three.':''}`}));node.appendChild(U.h('p',{class:'sticky-note warn',text:report?.warning||'Unavailable rule history; not certified zero/within three.'}));for(const c of report?.changes||[]){const body=U.h('details');body.appendChild(U.h('summary',{text:`${c.strategy_name||'Historical setup'} · v${c.from_version} → v${c.to_version} · ${c.delta.units} units · ${c.recorded_at} · ${c.source}${c.orphaned?' · strategy removed, count retained':''}`}));body.appendChild(P.delta(c.delta));node.appendChild(body);}return node;},
++  delta(d){const node=U.h('section',{class:'small'});if(!d||d.units===null)node.appendChild(U.h('p',{text:'Proposed edit units unavailable; no zero/within-budget inference.'}));for(const change of d?.changes||[]){node.appendChild(U.h('p',{text:`${change.field}: ${change.units} APP unit${change.units===1?'':'s'}` }));if(change.removed?.length)node.appendChild(U.h('p',{text:'Removed: '+change.removed.join(' · ')}));if(change.added?.length)node.appendChild(U.h('p',{text:'Added: '+change.added.join(' · ')}));if(change.reordered)node.appendChild(U.h('p',{text:'Order changed (one APP unit, no added/removed rule text).'}));if(change.before!==undefined)node.appendChild(U.h('p',{text:'Before: '+change.before+' · after: '+change.after}));}if(d?.units===0)node.appendChild(U.h('p',{text:'0 proposed APP units: no recorded rule-line/scalar change. Existing quarter history is still separate.'}));return node;},
++  preview(view){const p=view.preview,node=U.h('div',{dataset:{ruleChangePreview:'true'}});node.appendChild(U.h('h3',{text:`${p.proposed.units??'Unavailable'} proposed APP edit units`}));node.appendChild(U.h('p',{class:'field-note',text:p.proposed.basis}));node.appendChild(P.delta(p.proposed));node.appendChild(U.h('p',{class:'sticky-note warn',text:p.warning}));node.appendChild(P.card(p.current));node.appendChild(U.h('p',{class:'small',text:'Preview is readonly. No trade, grade, risk, rule or version changed yet. Continuing records the shown configuration, not proof of a successful experiment.'}));return node;},
++  async open(id){const context=ctx(),number=++serial;try{const v=await global.API.get('/strategies/'+id+'/change-discipline');if(!same(context)||number!==serial)return;return global.App.modal({title:'Recorded rule-change history',body:P.card(v.report),wide:true,actions:[{label:'Close — no configuration applied',ghost:true}]});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');}}
++ };
++})(window);
+diff --git a/src/routes/api.js b/src/routes/api.js
+index f85af54..693cb09 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -778,7 +778,7 @@ function strategyValues(cur,b){return {
+  risk_rules:b.risk_rules!==undefined?b.risk_rules:cur.risk_rules,target_r_multiple:b.target_r_multiple!==undefined?num(b.target_r_multiple,2):cur.target_r_multiple,
+  colour:b.colour||cur.colour,active:b.active===undefined?cur.active:(b.active?1:0)};}
+ router.post('/strategies',requireAuth,async(req,res)=>{const b=req.body||{};if(!b.name)return res.status(400).json({error:'Name is required'});try{const out=await db.tx(async tx=>{const store=db.transactionStore(tx),fields={name:b.name,description:b.description||'',market_conditions:b.market_conditions||'',timeframes:b.timeframes||'',entry_rules:JSON.stringify(b.entry_rules||[]),exit_rules:JSON.stringify(b.exit_rules||[]),checklist:JSON.stringify(b.checklist||[]),risk_rules:b.risk_rules||'',target_r_multiple:num(b.target_r_multiple,2),colour:b.colour||'#4f8cff',active:b.active===false?0:1};const r=await store.prepare('INSERT INTO strategies(user_id,name,description,market_conditions,timeframes,entry_rules,exit_rules,checklist,risk_rules,target_r_multiple,colour,active) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(req.user.id,fields.name,fields.description,fields.market_conditions,fields.timeframes,fields.entry_rules,fields.exit_rules,fields.checklist,fields.risk_rules,fields.target_r_multiple,fields.colour,fields.active),id=r.lastInsertRowid,version=await snapshotStrategyVersion(id,fields,'Strategy created.',store);return {ok:true,version,strategy:parseStrategy(await store.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id,req.user.id))};});res.json(out);}catch{res.status(503).json({error:'Strategy/version creation could not be recorded; no unsnapshotted setup committed.'});}});
+-const strategyChangeRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='rule_change_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Rule-change guidance unavailable; original finance/risk/permission state unchanged.'});}};
++const strategyChangeRoute=fn=>async(req,res)=>{try{const out=await fn(req);if(out.strategy)out.strategy=parseStrategy(out.strategy);res.json(out);}catch(e){if(e.code==='rule_change_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Rule-change guidance unavailable; original finance/risk/permission state unchanged.'});}};
+ function strategyKey(value){if(typeof value!=='string'||!(/^[1-9]\d*$/.test(value))||!Number.isSafeInteger(Number(value)))throw RuleChanges.invalid('Strategy not found.',404);return Number(value);}
+ router.get('/strategy-changes',requireAuth,strategyChangeRoute(req=>RuleChanges.inspect(req.user.id,null,req.query.quarter_start??null)));
+ router.get('/strategies/:id/change-discipline',requireAuth,strategyChangeRoute(req=>RuleChanges.inspect(req.user.id,strategyKey(req.params.id),req.query.quarter_start??null)));

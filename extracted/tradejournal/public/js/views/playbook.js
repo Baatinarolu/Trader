@@ -1,19 +1,20 @@
 /* views/playbook.js — strategies, entry/exit rules, checklist runner, edge per setup */
 (function (global) {
   'use strict';
-  const Views = global.Views = global.Views || {};
+  const Views = global.Views = global.Views || {};let renderEpoch=0;
 
   Views.playbook = {
     title: 'Playbook',
     async render(root) {
-      const data = await API.get('/strategies');
+      const epoch=++renderEpoch,context=Views.ruleChanges?.ctx();let result;try{result=await Promise.all([API.get('/strategies'),API.get('/strategy-changes').catch(()=>({report:{state:'unavailable'}}))]);}catch(e){if(epoch!==renderEpoch||Views.ruleChanges&&!Views.ruleChanges.same(context))return;throw e;}const [data,discipline]=result;
+      if(epoch!==renderEpoch||Views.ruleChanges&&!Views.ruleChanges.same(context))return;
       const stats = data.stats || {};
       root.innerHTML = '';
 
       const head = U.h('div', { class: 'row-between', style: 'margin-bottom:14px;flex-wrap:wrap;gap:10px' });
       head.innerHTML = `<div><h2 style="margin:0">Your playbook</h2><div class="muted small">Written rules are the only thing that separates a system from an opinion. Each card shows what the market has actually paid you for that setup.</div></div>
         <button class="btn primary" id="pb-new">+ New setup</button>`;
-      root.appendChild(head);
+      root.appendChild(head);if(Views.ruleChanges)root.appendChild(Views.ruleChanges.card(discipline.report,discipline.archives));
 
       const grid = U.h('div', { class: 'grid g3' });
       root.appendChild(grid);
@@ -44,7 +45,7 @@
           ${s.risk_rules ? `<div class="tiny" style="margin-top:5px"><b style="color:var(--amber)">Risk</b> <span class="muted-2">${U.esc(s.risk_rules)}</span></div>` : ''}
           <div class="row" style="gap:6px;margin-top:12px">
             <button class="btn xs" data-check="${s.id}">Run checklist</button>
-            <button class="btn xs ghost" data-edit="${s.id}">Edit</button>
+            <button class="btn xs ghost" data-edit="${s.id}">Edit</button><button class="btn xs ghost" data-rule-history="${s.id}">Rule-change history</button>
             <button class="btn xs ghost" data-log="${s.id}">Log a trade</button>
             <button class="btn xs ghost danger" data-del="${s.id}" style="margin-left:auto">Delete</button>
           </div>`;
@@ -53,6 +54,7 @@
 
       grid.addEventListener('click', async (e) => {
         const b = e.target.closest('button'); if (!b) return;
+        if(b.dataset.ruleHistory)return Views.ruleChanges?Views.ruleChanges.open(Number(b.dataset.ruleHistory)):global.App.toast('Rule history unavailable.','err');
         if (b.dataset.edit) return strategyDialog(data.strategies.find((s) => s.id === Number(b.dataset.edit)), root);
         if (b.dataset.log) { const s = data.strategies.find((x) => x.id === Number(b.dataset.log)); return global.App.openTrade(null, { strategy_id: s.id }); }
         if (b.dataset.check) { const s = data.strategies.find((x) => x.id === Number(b.dataset.check)); return checklistRunner(s); }
@@ -67,7 +69,10 @@
     },
   };
 
-  function strategyDialog(s, root) {
+  async function strategyDialog(s, root) {
+    const R=Views.ruleChanges,context=R?.ctx(),number=R?.nextSerial();let discipline;
+    if(s&&R){try{discipline=await API.get('/strategies/'+s.id+'/change-discipline');if(!R.same(context)||!R.current(number))return;s=discipline.strategy;}catch(e){if(R.same(context)&&R.current(number))global.App.toast(e.message,'err');return;}}
+    let alive=true,stale=false;
     const isNew = !s;
     const v = s || { name: '', description: '', market_conditions: '', timeframes: '', entry_rules: [], exit_rules: [], checklist: [], risk_rules: '', target_r_multiple: 2, colour: '#4f8cff', active: 1 };
     const body = U.h('div');
@@ -85,7 +90,8 @@
       <label class="field"><span>Status</span><select id="s-active"><option value="1" ${v.active ? 'selected' : ''}>Active</option><option value="0" ${!v.active ? 'selected' : ''}>Paused</option></select></label>
     </div>`;
     const lines = (id) => U.$('#' + id, body).value.split('\n').map((x) => x.trim()).filter(Boolean);
-    global.App.modal({
+    let editor;editor=global.App.modal({
+      onClose:()=>{alive=false;},
       title: isNew ? 'New setup' : 'Edit setup',
       body,
       actions: [
@@ -105,15 +111,19 @@
               active: U.$('#s-active', body).value === '1',
             };
             if (!payload.name) return global.App.toast('Give the setup a name.', 'err');
+            if(R&&(!alive||!R.same(context)||!R.current(number)||!body.isConnected))return global.App.toast('Workspace/account/session/editor changed; reopen the current rules.','err');
+            if(stale)return global.App.toast('Reload current strategy/history before editing.','err');
             try {
+              if(!isNew&&R){const preview=await API.post('/strategies/'+s.id+'/change-preview',{revision:discipline.revision,changes:payload});if(!alive||!R.same(context)||!R.current(number)||!body.isConnected)return;global.App.modal({title:'Review proposed rule deltas',body:R.preview(preview),wide:true,actions:[{label:'Cancel — no rules changed',ghost:true},{label:'Save shown configuration (advice retained)',primary:true,onClick:async confirmClose=>{if(!alive||!R.same(context)||!R.current(number)||!body.isConnected)return;const current={...payload,name:U.$('#s-name',body).value.trim(),description:U.$('#s-desc',body).value,market_conditions:U.$('#s-cond',body).value,timeframes:U.$('#s-tf',body).value,entry_rules:lines('s-entry'),exit_rules:lines('s-exit'),checklist:lines('s-check'),risk_rules:U.$('#s-risk',body).value,target_r_multiple:U.$('#s-target',body).value,colour:U.$('#s-colour',body).value,active:U.$('#s-active',body).value==='1'};if(JSON.stringify(current)!==JSON.stringify(payload))return global.App.toast('Draft changed after preview; cancel and preview the new fields.','err');try{const result=await API.put('/strategies/'+s.id,{...payload,strategy_revision:preview.revision});if(!alive||!R.same(context)||!R.current(number)||!body.isConnected)return;confirmClose();close();await Store.reloadAll();if(!R.same(context))return;global.App.toast('Strategy/version/change recorded; no trade, risk or grade permission implied.','ok');global.App.refresh();global.App.modal({title:'Saved configuration — quarter advice',body:R.card(result.quarter_rule_changes),wide:true,actions:[{label:'Close advice',ghost:true}]});}catch(err){if(alive&&R.same(context)&&R.current(number)){stale=err.status===409;global.App.toast(err.message,'err');confirmClose();}}}}]});return;}
               if (isNew) await API.post('/strategies', payload); else await API.put('/strategies/' + s.id, payload);
               await Store.reloadAll();
               close(); global.App.toast('Playbook updated', 'ok'); global.App.refresh();
-            } catch (err) { global.App.toast(err.message, 'err'); }
+            } catch (err) { if(!R||alive&&R.same(context)&&R.current(number)){stale=err.status===409;global.App.toast(err.message, 'err');} }
           },
         },
       ],
     });
+    if(!isNew&&R)body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{strategyReload:'true'},text:'Reload current rules/history (discard unsaved draft)',onclick:()=>{if(!alive||!R.same(context)||!R.current(number))return;editor.close();return strategyDialog(s,root);}}));
   }
 
   function checklistRunner(s) {

@@ -1,0 +1,22 @@
+diff --git a/public/js/views/playbook.js b/public/js/views/playbook.js
+index 2ca46a7..3bb33e3 100644
+--- a/public/js/views/playbook.js
++++ b/public/js/views/playbook.js
+@@ -1,14 +1,13 @@
+ /* views/playbook.js — strategies, entry/exit rules, checklist runner, edge per setup */
+ (function (global) {
+   'use strict';
+-  const Views = global.Views = global.Views || {};
++  const Views = global.Views = global.Views || {};let renderEpoch=0;
+ 
+   Views.playbook = {
+     title: 'Playbook',
+     async render(root) {
+-      const context=Views.ruleChanges?.ctx();
+-      const [data,discipline]=await Promise.all([API.get('/strategies'),API.get('/strategy-changes').catch(()=>({report:{state:'unavailable'}}))]);
+-      if(Views.ruleChanges&&!Views.ruleChanges.same(context))return;
++      const epoch=++renderEpoch,context=Views.ruleChanges?.ctx();let result;try{result=await Promise.all([API.get('/strategies'),API.get('/strategy-changes').catch(()=>({report:{state:'unavailable'}}))]);}catch(e){if(epoch!==renderEpoch||Views.ruleChanges&&!Views.ruleChanges.same(context))return;throw e;}const [data,discipline]=result;
++      if(epoch!==renderEpoch||Views.ruleChanges&&!Views.ruleChanges.same(context))return;
+       const stats = data.stats || {};
+       root.innerHTML = '';
+ 

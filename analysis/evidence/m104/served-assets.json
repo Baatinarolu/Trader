@@ -1,0 +1,43 @@
+{
+  "source_manifest": "release-source.json",
+  "assets": [
+    {
+      "path": "public/index.html",
+      "http": 200,
+      "server_transform": "Exact existing {{V}} to per-boot build-ID",
+      "expected_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/rule-changes.js",
+      "http": 200,
+      "sha256": "977b90263dbeb087e7f1958c9eecd76d7a2e301365fbf1b502f71e09523dc721",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/playbook.js",
+      "http": 200,
+      "sha256": "6c9835872d27d1959e7da386cce7e04216e2435cbb13a4224ebd5c390eed4da4",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/period-reviews.js",
+      "http": 200,
+      "sha256": "2a9b68b65ececf8a4b47edf71b0c9e6c72e3ddab97e0cac1c776c7bb64e70d99",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/settings.js",
+      "http": 200,
+      "sha256": "6e450ae040b5d3ff2d9c0618c49035c143da2a5afd738e5bcf7f885138580824",
+      "local_byte_differences": 0
+    }
+  ],
+  "preview": {
+    "port": 3000,
+    "database": "/tmp/m104-preview.db",
+    "remote": false,
+    "synthetic": true,
+    "scheduler": false
+  },
+  "scope": "Actual current served source bytes, exact existing build-ID transform; not pixels/production/real-user preservation."
+}

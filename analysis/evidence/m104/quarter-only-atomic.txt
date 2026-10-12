@@ -1,0 +1,18 @@
+ok actual baselinecreationstill ownedversion1
+FAIL version-store failure rollsback currentrule UPDATE, no halfsaved experiment {"status":500,"data":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>LibsqlError: SQLITE_CONSTRAINT: declared actual version-write failure<br> &nbsp; &nbsp;at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)<br> &nbsp; &nbsp;at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)<br> &nbsp; &nbsp;at Sqlite3Client.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:268:20)<br> &nbsp; &nbsp;at process.processTicksAndRejections (node:internal/process/task_queues:103:5)</pre>\n</body>\n</html>\n"}
+ok version-store failure leaves previous immutable version/tradeattribution intact
+LibsqlError: SQLITE_CONSTRAINT: declared actual version-write failure
+    at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)
+    at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)
+    at Sqlite3Client.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:268:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+FAIL new-strategy failedv1 snapshot leaves NO unsnapshotted orphanstrategy {"status":500,"data":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>LibsqlError: SQLITE_CONSTRAINT: declared actual version-write failure<br> &nbsp; &nbsp;at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)<br> &nbsp; &nbsp;at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)<br> &nbsp; &nbsp;at Sqlite3Client.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:268:20)<br> &nbsp; &nbsp;at process.processTicksAndRejections (node:internal/process/task_queues:103:5)</pre>\n</body>\n</html>\n"}
+LibsqlError: SQLITE_CONSTRAINT: declared actual version-write failure
+    at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)
+    at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)
+    at Sqlite3Client.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:268:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+ok actual successful legacy editstill M102version2/firstchanged_field contract
+ok cosmetic/pause no bump, user selectedrules/target2 untouched
+ok first snapshot remains original2rule definition after actualedit
+M104 actual strategy/version atomicity without rule/risk retune: 5 passed, 2 failed

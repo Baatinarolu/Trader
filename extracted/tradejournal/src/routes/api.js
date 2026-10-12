@@ -18,6 +18,7 @@ const Screenshots = require('../screenshots');
 const Confluences = require('../confluences');
 const Emotions = require('../emotions');
 const PeriodReviews = require('../period-reviews');
+const RuleChanges = require('../rule-changes');
 const Opportunities = require('../opportunities');
 const ProcessOutcomes = require('../process-outcomes');
 const BehaviorDays = require('../behavior-days');
@@ -770,70 +771,21 @@ router.get('/strategies', requireAuth, async (req, res) => {
   }
   res.json({ strategies, stats });
 });
-router.post('/strategies', requireAuth, async (req, res) => {
-  const b = req.body || {};
-  if (!b.name) return res.status(400).json({ error: 'Name is required' });
-  const info = await db.prepare(`INSERT INTO strategies (user_id,name,description,market_conditions,timeframes,entry_rules,exit_rules,checklist,risk_rules,target_r_multiple,colour,active)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-    req.user.id, b.name, b.description || '', b.market_conditions || '', b.timeframes || '',
-    JSON.stringify(b.entry_rules || []), JSON.stringify(b.exit_rules || []), JSON.stringify(b.checklist || []),
-    b.risk_rules || '', num(b.target_r_multiple, 2), b.colour || '#4f8cff', b.active === false ? 0 : 1);
-  // M102: a new strategy is version 1 of itself from the moment it exists, so there is
-  // never a window in which trades can be taken against an unversioned rule set.
-  const v1 = await snapshotStrategyVersion(info.lastInsertRowid, {
-    name: b.name, description: b.description || '', market_conditions: b.market_conditions || '',
-    timeframes: b.timeframes || '', entry_rules: JSON.stringify(b.entry_rules || []),
-    exit_rules: JSON.stringify(b.exit_rules || []), checklist: JSON.stringify(b.checklist || []),
-    risk_rules: b.risk_rules || '', target_r_multiple: num(b.target_r_multiple, 2),
-  }, 'Strategy created.');
-  res.json({ ok: true, version: v1, strategy: parseStrategy(await db.prepare('SELECT * FROM strategies WHERE id=?').get(info.lastInsertRowid)) });
-});
-router.put('/strategies/:id', requireAuth, async (req, res) => {
-  const b = req.body || {};
-  const id = Number(req.params.id);
-  const cur = await db.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id, req.user.id);
-  if (!cur) return res.status(404).json({ error: 'Strategy not found' });
-  /* M102 — this UPDATE used to overwrite the rule set in place, which is why Ep 27's
-   * "you will never ever truly know what worked" applied: the strategy whose expectancy
-   * you were reading had silently been a different strategy for part of the sample.
-   * The row is still updated (it remains the CURRENT rule set, and every existing reader
-   * depends on that), but the values are computed first so they can be compared, and a
-   * change to a RULE-BEARING field appends an immutable version instead of vanishing.
-   * A rename or a recolour deliberately does NOT bump: that would fragment the history of
-   * a strategy the trader never actually changed. */
-  const next = {
-    name: b.name !== undefined ? b.name : cur.name,
-    description: b.description !== undefined ? b.description : cur.description,
-    market_conditions: b.market_conditions !== undefined ? b.market_conditions : cur.market_conditions,
-    timeframes: b.timeframes !== undefined ? b.timeframes : cur.timeframes,
-    entry_rules: JSON.stringify(b.entry_rules || JSON.parse(cur.entry_rules || '[]')),
-    exit_rules: JSON.stringify(b.exit_rules || JSON.parse(cur.exit_rules || '[]')),
-    checklist: JSON.stringify(b.checklist || JSON.parse(cur.checklist || '[]')),
-    risk_rules: b.risk_rules !== undefined ? b.risk_rules : cur.risk_rules,
-    target_r_multiple: b.target_r_multiple !== undefined ? num(b.target_r_multiple, 2) : cur.target_r_multiple,
-    colour: b.colour || cur.colour,
-    active: b.active === undefined ? cur.active : (b.active ? 1 : 0),
-  };
-  await db.prepare(`UPDATE strategies SET name=@name, description=@description, market_conditions=@market_conditions, timeframes=@timeframes,
-    entry_rules=@entry_rules, exit_rules=@exit_rules, checklist=@checklist, risk_rules=@risk_rules, target_r_multiple=@target_r_multiple,
-    colour=@colour, active=@active WHERE id=@id AND user_id=@user_id`).run({ id, user_id: req.user.id, ...next });
-
-  const changedField = strategyRulesChanged(cur, next);
-  let version = await currentStrategyVersion(id);
-  if (changedField) {
-    const prevVersion = version;
-    version = await snapshotStrategyVersion(id, next,
-      `Rule changed: ${changedField}. Trades from here on are attributed to v${prevVersion + 1}; trades already logged keep the version they were taken under.`);
-  } else if (!version) {
-    // A strategy that predates versioning and somehow has no snapshot yet - the backfill
-    // covers this, but do not rely on it having run.
-    version = await snapshotStrategyVersion(id, next, 'First snapshot recorded for a pre-existing strategy.');
-  }
-  res.json({
-    ok: true, version, new_version: !!changedField, changed_field: changedField,
-    strategy: parseStrategy(await db.prepare('SELECT * FROM strategies WHERE id=?').get(id)),
-  });
-});
+function strategyValues(cur,b){return {
+ name:b.name!==undefined?b.name:cur.name,description:b.description!==undefined?b.description:cur.description,
+ market_conditions:b.market_conditions!==undefined?b.market_conditions:cur.market_conditions,timeframes:b.timeframes!==undefined?b.timeframes:cur.timeframes,
+ entry_rules:JSON.stringify(b.entry_rules||JSON.parse(cur.entry_rules||'[]')),exit_rules:JSON.stringify(b.exit_rules||JSON.parse(cur.exit_rules||'[]')),checklist:JSON.stringify(b.checklist||JSON.parse(cur.checklist||'[]')),
+ risk_rules:b.risk_rules!==undefined?b.risk_rules:cur.risk_rules,target_r_multiple:b.target_r_multiple!==undefined?num(b.target_r_multiple,2):cur.target_r_multiple,
+ colour:b.colour||cur.colour,active:b.active===undefined?cur.active:(b.active?1:0)};}
+router.post('/strategies',requireAuth,async(req,res)=>{const b=req.body||{};if(!b.name)return res.status(400).json({error:'Name is required'});try{const out=await db.tx(async tx=>{const store=db.transactionStore(tx),fields={name:b.name,description:b.description||'',market_conditions:b.market_conditions||'',timeframes:b.timeframes||'',entry_rules:JSON.stringify(b.entry_rules||[]),exit_rules:JSON.stringify(b.exit_rules||[]),checklist:JSON.stringify(b.checklist||[]),risk_rules:b.risk_rules||'',target_r_multiple:num(b.target_r_multiple,2),colour:b.colour||'#4f8cff',active:b.active===false?0:1};const r=await store.prepare('INSERT INTO strategies(user_id,name,description,market_conditions,timeframes,entry_rules,exit_rules,checklist,risk_rules,target_r_multiple,colour,active) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(req.user.id,fields.name,fields.description,fields.market_conditions,fields.timeframes,fields.entry_rules,fields.exit_rules,fields.checklist,fields.risk_rules,fields.target_r_multiple,fields.colour,fields.active),id=r.lastInsertRowid,version=await snapshotStrategyVersion(id,fields,'Strategy created.',store);return {ok:true,version,strategy:parseStrategy(await store.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id,req.user.id))};});res.json(out);}catch{res.status(503).json({error:'Strategy/version creation could not be recorded; no unsnapshotted setup committed.'});}});
+const strategyChangeRoute=fn=>async(req,res)=>{try{const out=await fn(req);if(out.strategy)out.strategy=parseStrategy(out.strategy);res.json(out);}catch(e){if(e.code==='rule_change_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Rule-change guidance unavailable; original finance/risk/permission state unchanged.'});}};
+function strategyKey(value){if(typeof value!=='string'||!(/^[1-9]\d*$/.test(value))||!Number.isSafeInteger(Number(value)))throw RuleChanges.invalid('Strategy not found.',404);return Number(value);}
+router.get('/strategy-changes',requireAuth,strategyChangeRoute(req=>RuleChanges.inspect(req.user.id,null,req.query.quarter_start??null)));
+router.get('/strategies/:id/change-discipline',requireAuth,strategyChangeRoute(req=>RuleChanges.inspect(req.user.id,strategyKey(req.params.id),req.query.quarter_start??null)));
+router.post('/strategies/:id/change-preview',requireAuth,strategyChangeRoute(async req=>{const b=req.body;if(!b||typeof b!=='object'||Array.isArray(b)||Object.keys(b).some(k=>!['revision','changes'].includes(k))||!b.changes||typeof b.changes!=='object'||Array.isArray(b.changes)||typeof b.revision!=='string'||!/^[a-f0-9]{64}$/.test(b.revision))throw RuleChanges.invalid('Use the displayed revision and proposed fields only.');if(Object.keys(b.changes).some(k=>!['name','description','market_conditions','timeframes','entry_rules','exit_rules','checklist','risk_rules','target_r_multiple','colour','active'].includes(k)))throw RuleChanges.invalid('Propose only saved strategy fields, not clocks/owner/permission authority.');const view=await RuleChanges.inspect(req.user.id,strategyKey(req.params.id));if(view.revision!==b.revision)throw RuleChanges.invalid('Strategy or owned quarter history changed; explicitly reload.',409);const next=strategyValues(view.strategy,b.changes);return {...view,preview:RuleChanges.proposal(view.report,RuleChanges.diff(view.strategy,next))};}));
+router.put('/strategies/:id',requireAuth,async(req,res)=>{const b=req.body||{};let id;try{id=strategyKey(req.params.id);}catch(e){return res.status(e.status).json({error:e.message,code:e.code});}try{const out=await db.tx(async tx=>{const store=db.transactionStore(tx),cur=await store.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id,req.user.id);if(!cur)return null;if(b.strategy_revision!==undefined){if(typeof b.strategy_revision!=='string'||!/^[a-f0-9]{64}$/.test(b.strategy_revision))throw RuleChanges.invalid('Use the displayed strategy revision.');const seen=await RuleChanges.inspectOn(store,req.user.id,id);if(seen.revision!==b.strategy_revision)throw RuleChanges.invalid('Strategy or global owned quarter history changed. Reload before editing.',409);}const next=strategyValues(cur,b),changedField=strategyRulesChanged(cur,next);let version=await currentStrategyVersion(id,store);if(!version)version=await snapshotStrategyVersion(id,cur,'First pre-edit snapshot of current unversioned strategy; not reconstructed original entry rules.',store);
+ await store.prepare(`UPDATE strategies SET name=@name,description=@description,market_conditions=@market_conditions,timeframes=@timeframes,
+ entry_rules=@entry_rules,exit_rules=@exit_rules,checklist=@checklist,risk_rules=@risk_rules,target_r_multiple=@target_r_multiple,colour=@colour,active=@active WHERE id=@id AND user_id=@user_id`).run({id,user_id:req.user.id,...next});let delta=RuleChanges.diff(cur,next);if(changedField){const old=version;version=await snapshotStrategyVersion(id,next,`Rule changed: ${changedField}. Trades from here on are attributed to v${old+1}; trades already logged keep the version they were taken under.`,store);delta=await RuleChanges.recordOn(store,req.user.id,id,cur,next,old,version);}const guidance=await RuleChanges.optionalOn(store,req.user.id,id);return {ok:true,version,new_version:!!changedField,changed_field:changedField,changed_fields:delta.fields,rule_delta:delta,revision_checked:b.strategy_revision!==undefined,quarter_rule_changes:guidance.report,strategy:parseStrategy(await store.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id,req.user.id))};});if(!out)return res.status(404).json({error:'Strategy not found'});res.json(out);}catch(e){if(e.code==='rule_change_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Strategy/version/change edit not recorded; current rules and original facts unchanged.'});}});
 /* M102 — the version history has to be READABLE or the table is write-only and the fix is
  * half a fix: a trader who cannot see that their strategy changed in March cannot interpret
  * their own expectancy. Newest first, with the note that says WHY each version exists and
@@ -1216,6 +1168,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
     exported_at: new Date().toISOString(), version: 1,
     confluence_labels:(await Confluences.vocabulary(userId)).labels,
     period_reviews:await PeriodReviews.exportOwned(userId),
+    strategy_rule_changes:await RuleChanges.exportOwned(userId),
     opportunity_history:await Opportunities.exportOwned(userId),
     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
@@ -1321,9 +1274,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
 // Actual transaction insert IDs (never raw backup IDs), with optional media
 // warnings separate from financial parsing. Storage failure rolls back together.
 function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
-async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
   for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);return n;
+  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);return n;
 });}
 
 function parseCsv(text) {
@@ -1349,6 +1302,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
   const data = req.body && req.body.data ? req.body.data : req.body;
   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
   const userId = req.user.id;
+  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes);
   const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
   const accountMap = Object.create(null);
   const instruments = await instrumentMap(userId);
@@ -1395,9 +1349,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
       });
     }
-    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,opportunity_warnings:opportunities.warnings });
+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,opportunity_warnings:opportunities.warnings });
 });
 
 /* ---------------------------------------------------------------- settings */

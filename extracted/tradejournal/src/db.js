@@ -353,6 +353,28 @@ CREATE TABLE IF NOT EXISTS opportunity_trade_links (
  trade_hash TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_opportunity_links_cycle ON opportunity_trade_links(user_id,trade_key,opened_at,id);
+-- M104 fresh versioned edit facts survive strategy deletion, not broker truth.
+CREATE TABLE IF NOT EXISTS strategy_rule_changes (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ strategy_id INTEGER REFERENCES strategies(id) ON DELETE SET NULL,
+ strategy_key INTEGER NOT NULL,
+ strategy_name TEXT NOT NULL,
+ from_version INTEGER NOT NULL,
+ to_version INTEGER NOT NULL,
+ before_json TEXT NOT NULL,
+ after_json TEXT NOT NULL,
+ delta_json TEXT NOT NULL,
+ units INTEGER,
+ quarter_start TEXT NOT NULL,
+ recorded_at TEXT NOT NULL,
+ rubric_version TEXT NOT NULL,
+ source TEXT NOT NULL,
+ context_hash TEXT NOT NULL,
+ historical_json TEXT,
+ UNIQUE(user_id,strategy_key,to_version,source)
+);
+CREATE INDEX IF NOT EXISTS idx_strategy_rule_changes_owner ON strategy_rule_changes(user_id,quarter_start,id);
 CREATE TABLE IF NOT EXISTS goals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -775,6 +797,8 @@ async function migrate() {
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_decisions_immutable BEFORE UPDATE ON opportunity_decisions BEGIN SELECT RAISE(ABORT,'Opportunity decision versions are immutable'); END`).run();
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_capture_immutable BEFORE UPDATE ON signal_opportunities WHEN NOT (NEW.user_id IS OLD.user_id AND NEW.id IS OLD.id AND NEW.signal_key IS OLD.signal_key AND NEW.record_key IS OLD.record_key AND NEW.account_key IS OLD.account_key AND NEW.source IS OLD.source AND NEW.observed_at IS OLD.observed_at AND NEW.signal_snapshot IS OLD.signal_snapshot AND NEW.signal_hash IS OLD.signal_hash AND NEW.personal_json IS OLD.personal_json AND NEW.historical_json IS OLD.historical_json AND (NEW.account_id IS OLD.account_id OR NEW.account_id IS NULL AND NOT EXISTS(SELECT 1 FROM accounts WHERE id=OLD.account_id)) AND (NEW.signal_id IS OLD.signal_id OR NEW.signal_id IS NULL AND NOT EXISTS(SELECT 1 FROM bot_signals WHERE id=OLD.signal_id))) BEGIN SELECT RAISE(ABORT,'Opportunity capture facts are immutable'); END`).run();
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_links_immutable BEFORE UPDATE ON opportunity_trade_links WHEN NOT (NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.opportunity_id IS OLD.opportunity_id AND NEW.trade_key IS OLD.trade_key AND NEW.opened_at IS OLD.opened_at AND NEW.action IS OLD.action AND NEW.source IS OLD.source AND NEW.note IS OLD.note AND NEW.recorded_at IS OLD.recorded_at AND NEW.trade_snapshot IS OLD.trade_snapshot AND NEW.trade_hash IS OLD.trade_hash AND NEW.trade_id IS NULL AND NOT EXISTS(SELECT 1 FROM trades WHERE id=OLD.trade_id)) BEGIN SELECT RAISE(ABORT,'Opportunity link facts are immutable'); END`).run();
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS strategy_rule_changes_immutable BEFORE UPDATE ON strategy_rule_changes WHEN NOT (NEW.strategy_id IS NULL AND OLD.strategy_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM strategies WHERE id=OLD.strategy_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.strategy_key IS OLD.strategy_key AND NEW.strategy_name IS OLD.strategy_name AND NEW.from_version IS OLD.from_version AND NEW.to_version IS OLD.to_version AND NEW.before_json IS OLD.before_json AND NEW.after_json IS OLD.after_json AND NEW.delta_json IS OLD.delta_json AND NEW.units IS OLD.units AND NEW.quarter_start IS OLD.quarter_start AND NEW.recorded_at IS OLD.recorded_at AND NEW.rubric_version IS OLD.rubric_version AND NEW.source IS OLD.source AND NEW.context_hash IS OLD.context_hash AND NEW.historical_json IS OLD.historical_json) BEGIN SELECT RAISE(ABORT,'Recorded strategy rule change facts immutable'); END`).run();
+
   /* M102 backfill. Every strategy that has no version history gets an immutable v1
    * snapshot of the rule set it currently holds, and every trade already linked to it is
    * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in
@@ -816,8 +840,8 @@ const STRATEGY_RULE_FIELDS = ['description', 'market_conditions', 'timeframes', 
  * @param {number} strategyId
  * @returns {Promise<number>}
  */
-async function currentStrategyVersion(strategyId) {
-  const r = await db.prepare('SELECT MAX(version) AS v FROM strategy_versions WHERE strategy_id=?').get(strategyId);
+async function currentStrategyVersion(strategyId,store=db) {
+  const r = await store.prepare('SELECT MAX(version) AS v FROM strategy_versions WHERE strategy_id=?').get(strategyId);
   return r && Number.isFinite(r.v) && r.v !== null ? Number(r.v) : 0;
 }
 
@@ -829,16 +853,16 @@ async function currentStrategyVersion(strategyId) {
  * @param {string} [note]  why this version exists, shown next to the diff in the UI
  * @returns {Promise<number>} the version number just written
  */
-async function snapshotStrategyVersion(strategyId, fields, note = '') {
-  const next = (await currentStrategyVersion(strategyId)) + 1;
-  await db.prepare(`INSERT INTO strategy_versions
-    (strategy_id, version, name, description, market_conditions, timeframes, entry_rules, exit_rules, checklist, risk_rules, target_r_multiple, note)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+async function snapshotStrategyVersion(strategyId, fields, note = '',store=db,at=new Date().toISOString()) {
+  const next = (await currentStrategyVersion(strategyId,store)) + 1;
+  await store.prepare(`INSERT INTO strategy_versions
+    (strategy_id, version, name, description, market_conditions, timeframes, entry_rules, exit_rules, checklist, risk_rules, target_r_multiple, note,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     strategyId, next, fields.name || '', fields.description || '', fields.market_conditions || '',
     fields.timeframes || '', fields.entry_rules || '[]', fields.exit_rules || '[]',
     fields.checklist || '[]', fields.risk_rules || '',
     Number.isFinite(Number(fields.target_r_multiple)) ? Number(fields.target_r_multiple) : 2,
-    String(note || ''));
+    String(note || ''),at);
   return next;
 }
 

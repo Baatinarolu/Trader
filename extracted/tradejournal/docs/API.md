@@ -976,3 +976,73 @@ APP budgets:notecap2000,500portable captures/50decisions-links each/250KBrecord;
 20MBselected-file/25MBbody unchanged, no silent clipping/automaticdedupe. Independently
 bounded inherited M99 `/demo/seed` response repaired to `{ok,inserted}` after actual
 sample seeding; no sample data/grade/risk policy change or extra audit closure.
+
+
+## M104 — readonly quarter guidance and tracked rule edits
+
+`GET /strategy-changes?quarter_start=` own global quarter report/current revision
++imported readonly archives. Omit quarter_start for server current UTC calendar
+quarter; supplied start must be canonical. `GET /strategies/:id/change-discipline`
+adds own CURRENT setup/version; canonical owned positive ID404 otherwise. All owned
+setups counted globally, per-setup details not separate limits. Actual snapshot
+read, not model/broker/causal independent-variable proof.
+
+`POST /strategies/:id/change-preview` only `{revision,changes}`. Supported changes:
+name/description/market_conditions/timeframes/entry_rules/exit_rules/checklist/
+risk_rules/target_r_multiple/colour/active. No user/clock/source/permission authority.
+Readonly; fresh displayed SHA includes current own setups/version history/change
+facts/quarter. Missing/invalid400, stale409, missing/foreign404, read outage503.
+Reply current discipline view +preview named diff/proposed/current/total_if_saved/
+known_minimum_if_saved/above_three/warning; unknown fullcountNULL, not zero/clean.
+
+Existing `PUT /strategies/:id` accepts optional `strategy_revision`; actual UI always
+supplies it. When present, malformed400 or unseen own-global context409, no write.
+Legacy direct PUT remains legal (`revision_checked:false`) and returns quarteradvice.
+Original M102 `version/new_version/changed_field` contract retained; added
+changed_fields (all), rule_delta, quarter_rule_changes. No three-unit hard veto,
+capital/technical gate or risk/target clamp. Creation+v1 and update+newversion+
+change fact atomic; actual failure503 rolls back all three, not earlier finance.
+Current unversioned pre-edit baseline saved before change, not restored historical
+entry rules or attribution backfill. Fresh version created_at canonical server ISO;
+legacy SQL clocks still understood with explicit coverage.
+
+APP rubric rule-edit-v1: normalised exact lines (NFC/trim/collapsed whitespace, no
+semantic/case aliases), list/multiline max(removed,added), pure reorder1, scalar1.
+All eight original rule-bearing fields checked. Cosmetic name/colour/pause excluded.
+Formatting/numeric-equivalent unit0 may still bump raw M102 version. Every saved
+edit/reversal counts globally across own setups in UTC next-version write quarter,
+not one unit per entire array or firstchangedfield. One recommended/three maximum
+course guidance, counting policy APP not true independent causal-variable proof.
+
+Additive strategy_rule_changes retains original key/name, before/after definitions,
+from/to versions, delta/rubric/hash, actual server clock/quarter/source. Owner FK
+cascade; setup FK SET NULL retains past fact on deletion, so deletion doesn't refund
+new recorded units. UPDATE facts immutable except FK nullification. No original
+trade/signal columns or backfill; imported/legacy DTO proof not accepted. Not a
+cryptographically sealed/database-admin-proof ledger. Existing old surviving
+version deltas compared once, prior baseline can be olderquarter; fresh event pair
+not double-counted. Missing/gapped/corrupt/future/duplicate source unavailable,
+known recorded lower bound separate. Deleted pre-install versions unavailable,
+absence not untouched-plan certificate or quarter-compliance proof.
+
+M99 quarterly new metrics snapshots include quarter_rule_changes and revision;
+saved old baseline/receipts immutable, live preview may differ. Nonquarter artifacts
+have null. Review completion never applies rule/risk/goal or grants entry.
+
+Full JSON backup strategy_rule_changes:{version:1,entries:[...]}. Restore readonly
+own imported_unverified archive, no live setup association/strategy/action/budget
+credit; receiving time new, original version/key/definitions/units/source/clock
+unverified in history. No native strategy/actual edit minted by archive replay.
+Re-export/restore keeps original declared clock/source, not receiving-capture replay.
+Optional bad/future/budget history warns with rule_change_warnings while truthful
+finance remains legal. Actual optional store failure atomically rolls back that
+import; missing store export finance still available with unavailable marker.
+Actual Playbook archive/Settings escaped warning-bearing success stays visible;
+no auto-refresh/dismissal hiding omission. Repeated restore appends declarations,
+not automatic dedupe. No authoritative rule budget in trade CSV.
+
+APP input budgets500lines/5000chars each,10000versions/events,500portable records/
+256KBdefinition pair; existing20MBfile/25MBrequest limits, no silent clipping. No
+score/core/routine/cap/loss/admission/financial-winner/trade-grade/weights/risk/factor/
+geometry/stop/target/RR mutation. Floor30/M103n>=5/B-C unchanged. No causal/predictive
+edge/70%/broker/provider/human/mental/meditation/pixel/production proof. M105 next.

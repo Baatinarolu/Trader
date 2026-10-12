@@ -1,0 +1,293 @@
+{
+  "app": "/tmp/m104-atomic-fixed-stage/app",
+  "pass": 4,
+  "fail": 15,
+  "results": [
+    {
+      "label": "actual own discipline view exists with currentversion/revision/quarter",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/strategies/7/change-discipline</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "actual preview names4 proposedruleunits/above3 without strategyupdate",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/strategies/7/change-preview</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "actual save advicewarnsabove3 but stays legal/nottechnicalorcapital veto",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "version": 2,
+          "new_version": true,
+          "changed_field": "entry_rules",
+          "strategy": {
+            "id": 7,
+            "user_id": 1,
+            "name": "DECLARED experiment A",
+            "description": "",
+            "market_conditions": "",
+            "timeframes": "",
+            "entry_rules": [
+              "Sweep",
+              "New1",
+              "New2",
+              "New3",
+              "New4"
+            ],
+            "exit_rules": [
+              "First target"
+            ],
+            "checklist": [
+              "Read plan"
+            ],
+            "risk_rules": "Fixed risk",
+            "target_r_multiple": 2,
+            "colour": "#4f8cff",
+            "active": 1,
+            "created_at": "2026-10-12 16:19:47"
+          }
+        }
+      }
+    },
+    {
+      "label": "actual save recordsall deltafields and units, not just firstchanged",
+      "passed": false,
+      "detail": {
+        "ok": true,
+        "version": 2,
+        "new_version": true,
+        "changed_field": "entry_rules",
+        "strategy": {
+          "id": 7,
+          "user_id": 1,
+          "name": "DECLARED experiment A",
+          "description": "",
+          "market_conditions": "",
+          "timeframes": "",
+          "entry_rules": [
+            "Sweep",
+            "New1",
+            "New2",
+            "New3",
+            "New4"
+          ],
+          "exit_rules": [
+            "First target"
+          ],
+          "checklist": [
+            "Read plan"
+          ],
+          "risk_rules": "Fixed risk",
+          "target_r_multiple": 2,
+          "colour": "#4f8cff",
+          "active": 1,
+          "created_at": "2026-10-12 16:19:47"
+        }
+      }
+    },
+    {
+      "label": "owned append-only server fact has originalbefore/after/version/UTCclock",
+      "passed": false,
+      "detail": null
+    },
+    {
+      "label": "original strategy version1 body still immutable/equivalent",
+      "passed": true
+    },
+    {
+      "label": "cosmeticpause/rename no newversion or editunits, previousguidance still4",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "version": 2,
+          "new_version": false,
+          "changed_field": null,
+          "strategy": {
+            "id": 7,
+            "user_id": 1,
+            "name": "Renamed experiment",
+            "description": "",
+            "market_conditions": "",
+            "timeframes": "",
+            "entry_rules": [
+              "Sweep",
+              "New1",
+              "New2",
+              "New3",
+              "New4"
+            ],
+            "exit_rules": [
+              "First target"
+            ],
+            "checklist": [
+              "Read plan"
+            ],
+            "risk_rules": "Fixed risk",
+            "target_r_multiple": 2,
+            "colour": "#112233",
+            "active": 0,
+            "created_at": "2026-10-12 16:19:47"
+          }
+        }
+      }
+    },
+    {
+      "label": "M104 reads/edits never alters financial tradeversion/model/grade/risk or accountcontrols",
+      "passed": true
+    },
+    {
+      "label": "legacy directPUT no newrevision stayslegal but actualresponse includeswarning/count",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "version": 2,
+          "new_version": true,
+          "changed_field": "risk_rules",
+          "strategy": {
+            "id": 8,
+            "user_id": 1,
+            "name": "DECLARED experiment B",
+            "description": "",
+            "market_conditions": "",
+            "timeframes": "",
+            "entry_rules": [
+              "Sweep",
+              "Shift"
+            ],
+            "exit_rules": [
+              "First target"
+            ],
+            "checklist": [
+              "Read plan"
+            ],
+            "risk_rules": "New fixed risk condition",
+            "target_r_multiple": 2,
+            "colour": "#4f8cff",
+            "active": 1,
+            "created_at": "2026-10-12 16:19:47"
+          }
+        }
+      }
+    },
+    {
+      "label": "quarterbudgetglobal ownstrategies, not evadeby another setup",
+      "passed": false
+    },
+    {
+      "label": "foreign owner cannot readrules/deltas/reasons404",
+      "passed": true
+    },
+    {
+      "label": "real auth required401",
+      "passed": false
+    },
+    {
+      "label": "noncanonicalID alias404",
+      "passed": true
+    },
+    {
+      "label": "strict previewno caller authority400",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/strategies/7/change-preview</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "globalquarter/strategycontext changedunseen ->409, no silentoverwrite",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "version": 3,
+          "new_version": true,
+          "changed_field": "entry_rules",
+          "strategy": {
+            "id": 7,
+            "user_id": 1,
+            "name": "Renamed experiment",
+            "description": "",
+            "market_conditions": "",
+            "timeframes": "",
+            "entry_rules": [
+              "Stale hiddenoverwrite"
+            ],
+            "exit_rules": [
+              "First target"
+            ],
+            "checklist": [
+              "Read plan"
+            ],
+            "risk_rules": "Fixed risk",
+            "target_r_multiple": 2,
+            "colour": "#112233",
+            "active": 0,
+            "created_at": "2026-10-12 16:19:47"
+          }
+        }
+      }
+    },
+    {
+      "label": "reversionis another controlled savededit, not resetquota or relabeloldtrade",
+      "passed": false
+    },
+    {
+      "label": "deliberate strategydeletion cannoterasecaptured quarterlycounts/oldname/rules",
+      "passed": false
+    },
+    {
+      "label": "SQL originalcaptured changefact UPDATE immutable",
+      "passed": false
+    },
+    {
+      "label": "actual change-store503 rollsback CURRENT rules+new version/fact together",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "version": 4,
+          "new_version": true,
+          "changed_field": "entry_rules",
+          "strategy": {
+            "id": 8,
+            "user_id": 1,
+            "name": "DECLARED experiment B",
+            "description": "",
+            "market_conditions": "",
+            "timeframes": "H1",
+            "entry_rules": [
+              "Cannotbeunsnapshotted"
+            ],
+            "exit_rules": [
+              "First target"
+            ],
+            "checklist": [
+              "Read plan"
+            ],
+            "risk_rules": "New fixed risk condition",
+            "target_r_multiple": 2,
+            "colour": "#4f8cff",
+            "active": 1,
+            "created_at": "2026-10-12 16:19:47"
+          }
+        }
+      }
+    }
+  ],
+  "scope": "M104 actual owned discipline/atomic counter/CAS APIs: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

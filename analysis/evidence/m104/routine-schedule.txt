@@ -1,0 +1,31 @@
+ok legacy/default account does not fabricate a local trading-window hour
+ok no selected schedule is explicit setup_required, never falsely completed
+ok bad config400/no write {"routine_window_start":"25:00"}
+ok bad config400/no write {"routine_window_start":"9:3"}
+ok bad config400/no write {"routine_window_start":true}
+ok bad config400/no write {"routine_timezone":"Bad/Zone"}
+ok bad config400/no write {"routine_timezone":[]}
+ok bad config400/no write {"routine_lead_minutes":0}
+ok bad config400/no write {"routine_lead_minutes":181}
+ok bad config400/no write {"routine_lead_minutes":1.5}
+ok bad config400/no write {"routine_lead_minutes":true}
+ok bad config400/no write {"routine_order":"made_up"}
+ok account selects valid HH:MM/IANA/default-hour/order roundtrip
+ok unrelated rename retains all selected routine fields
+ok before local reset current cycle is previous local window, not tomorrow early pass
+ok inclusive14:00Lagos reset creates fresh15:00Lagos/14:00UTC window cycle
+ok full Ep17 step order is explicit calendar/plan/charts/meditation/check-in
+ok new cycle has no invented step confirmations or completion time
+ok same active cycle freezes original schedule/order despite timezone/hour edits
+ok clearing future window cannot erase active pending cycle
+ok next scheduled reset does not carry previous-cycle completion/checks
+ok another owner cannot read routine404
+ok another owner cannot edit routine configuration404
+ok routine inspection requires real auth401
+ok reset-before-midnight correctly identifies upcoming window localdate
+ok IANA DST summer preserves selected09:30local/16:30UTC
+ok IANA standard time changes UTC, not selected09:30local
+ok ambiguous DST fold uses explicitly disclosed earlier occurrence
+ok nonexistent DST clock shifts forward by gap, disclosed not silent fake time
+ok explicit bonus variant has meditation first and chosen45-minute lead
+M64 routine schedule: 30 passed, 0 failed

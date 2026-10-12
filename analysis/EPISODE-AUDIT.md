@@ -1,6 +1,45 @@
 # Full-playlist episode audit — running ledger
 
-## Current M100 — explicit missed-value opportunity review — 2026-10-12
+## Current M104 — recorded quarterly rule-change discipline — 2026-10-12
+
+**132:98 done /3 partial /31 TODO /0 no-action**, exact eight groups. Full named
+APP edit-unit delta across all8 M102fields: paired rule-line add/remove replacements,
+reorder1/scalar1, cosmetic names/colour/pause excluded; not verified independent
+causal variables. Own-global UTC quarter acrosssetups, each savededit/reversion,
+one recommended/three maximum GUIDANCE/warnabove3, no technical/capital/grade/risk
+veto. Unknown history/clock/defs/gaps explicit, never0/withinbudget certificate.
+
+Actual strategy/current-version/fresh-change fact atomicwrites; inherited partial
+UPDATE/unsnapshottedcreation on snapshotfailure measured5/2→7/0 and repaired without
+extra finding closure. Before/after/source/rubric/serverclock captured, independent
+of deletion/refund; legacy surviving-version fallback linkedonce, priorbaseline kept.
+Strict own GET/preview/CAS, stale409, actual503rollback; legacy directPUT remains
+legal andadvice-returning. Actual Playbook fresh editor/readonlycomparison/acknowledged
+warning/history, wholeactor/account/token/serial/context/faultguards. New quarterly
+review snapshotfreezes counters/baselines, old artifacts not recalculated. JSON own
+receiving/imported-unverified archive, no strategy/action/budget proof replay; warnings
+visible/financelegal, real importfailure atomic, missinghistory financialbackup marker.
+
+**Final153/0 across11 probes**, actual133-parent additive/restarts14/0. M100144/1,
+M99/M101159/1, M93113/2, M91106/2, M87223/3 unchanged shape negatives retained;
+only4new ruleobjects and old63tradecols/alloriginalfacts exact. Emotion170/0,
+reasons160/0, execution260/0, routine321/0. RAW596/156+90s timeout vsDECLARED824/4;
+inherited mock/date failures kept. Offline178/0, declared market325/0, live70/1
+with6nonzero/5summaryless. Prepared actual-parent/current API121/0/Bots206/0 each,
+24syntheticfills/0mismatch. RawAPIexit2/no summary/Bots202/4. Smoke21/21conditional
+DOM,0style/console,8canvaslimits,observedexit0. Exact conditional served-source smoke/exits/canvaslimits in `evidence/m104/smoke-exit.json`, not pixels.
+
+Ten measured runtime stages+docs, actual837/pristine forward/reverse byteproofs,
+deterministic **135-source** ZIP: `build-m104-rule-change-artifacts.py`,
+`patches/M104-RULE-CHANGE-STAGES.json`, excluded archive SHA companion.
+[Full report](M104-QUARTERLY-RULE-CHANGE-DISCIPLINE.md). Preview3000 temporary
+synthetic `/tmp/m104-preview.db`, offline/schedulerOFF/blank remotes, not realdata.
+
+**Next M105 — identity statement/quarter theme**, separate scope. M106/M111/M112
+stillTODO; M30/M103/M108 partial; all132 IDs/eightgroups retained. Session fixed to
+**arena/762c0295-trader**. Earlier counts/branches/nextsteps below are historical.
+
+## Historical M100 — explicit missed-value opportunity review — 2026-10-12
 
 **132:97 done /3 partial /32 TODO /0 no-action**, exact eight groups. Additive
 owned saved-signal capture, revisioned decisions and explicit journal link/retract

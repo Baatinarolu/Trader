@@ -1,0 +1,11 @@
+FAIL actual baselinecreationstill ownedversion1 undefined
+ok version-store failure rollsback currentrule UPDATE, no halfsaved experiment
+ok version-store failure leaves previous immutable version/tradeattribution intact
+ok new-strategy failedv1 snapshot leaves NO unsnapshotted orphanstrategy
+FAIL actual successful legacy editstill M102version2/firstchanged_field contract {"status":503,"data":{"error":"Strategy/version edit could not be recorded; current rules and original versions unchanged."}}
+FAIL cosmetic/pause no bump, user selectedrules/target2 untouched {"status":503,"data":{"error":"Strategy/version edit could not be recorded; current rules and original versions unchanged."}}
+TypeError: Cannot read properties of undefined (reading 'entry_rules')
+    at /home/user/Trader/analysis/probe-m104-atomic.js:3:2656
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async finish (/home/user/Trader/analysis/m104-test-support.js:9:50)
+M104 actual strategy/version atomicity without rule/risk retune: 3 passed, 4 failed

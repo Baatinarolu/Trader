@@ -1,0 +1,49 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 3,
+  "fail": 4,
+  "results": [
+    {
+      "label": "actual baselinecreationstill ownedversion1",
+      "passed": false
+    },
+    {
+      "label": "version-store failure rollsback currentrule UPDATE, no halfsaved experiment",
+      "passed": true
+    },
+    {
+      "label": "version-store failure leaves previous immutable version/tradeattribution intact",
+      "passed": true
+    },
+    {
+      "label": "new-strategy failedv1 snapshot leaves NO unsnapshotted orphanstrategy",
+      "passed": true
+    },
+    {
+      "label": "actual successful legacy editstill M102version2/firstchanged_field contract",
+      "passed": false,
+      "detail": {
+        "status": 503,
+        "data": {
+          "error": "Strategy/version edit could not be recorded; current rules and original versions unchanged."
+        }
+      }
+    },
+    {
+      "label": "cosmetic/pause no bump, user selectedrules/target2 untouched",
+      "passed": false,
+      "detail": {
+        "status": 503,
+        "data": {
+          "error": "Strategy/version edit could not be recorded; current rules and original versions unchanged."
+        }
+      }
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "Cannot read properties of undefined (reading 'entry_rules')"
+    }
+  ],
+  "scope": "M104 actual strategy/version atomicity without rule/risk retune: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

@@ -315,12 +315,50 @@ index 0000000..bd0e991
 +no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
 +Those four are what distinguish a working deploy from one that merely builds.
 diff --git a/README.md b/README.md
-index df9ae3c..8382124 100644
+index df9ae3c..2960aa4 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,5 +1,289 @@
+@@ -1,5 +1,327 @@
  # TradeJournal Pro
  
++## M104 — named quarterly rule-change discipline (2026-10-12)
++
++**Playbook** now shows UTC quarterly guidance across **all owned setups**. Editing a
++setup reads fresh rules, previews each named delta, and asks you to review/continue
++with the shown configuration. Saved advice/history remains visible. One change is
++recommended, three maximum guidance; this is **advisory**, not a new technical,
++capital, grade or trade veto. Existing direct API edits remain legal and return advice.
++
++Counts are deterministic **APP edit units, not verified independent causal variables**:
++paired rule-line additions/removals use max count, pure reorder1/scalar1, all eight
++M102 rule fields inspected. Names/colour/pause excluded. Each saved edit/reversion
++counts; another setup or deleting it cannot erase fresh tracked history. Unknown/
++corrupt/missing/future/gapped history remains unavailable with a known minimum,
++not a certified0/within-budget quarter. Deleted pre-install versions aren't recoverable.
++
++Current setup/version/change fact save atomically, so a failed snapshot/history write
++cannot leave half-applied rules or an unsnapshotted setup. Optional displayed revision
++protects actual UI edits;409 retains draft/reload,503 never claims saved. An unversioned
++current setup gets a pre-edit baseline, not invented original entry rules. Existing
++trade attributions/financial numbers/grades/risk/weights/targets/RR stay unchanged.
++
++New quarterly review snapshots retain their original rule-change guidance/baseline;
++later edits don't rewrite the saved document. No review applies a plan. JSON backup
++carries rule history; restore is readonly own **imported/unverified** declaration with
++new receiving clock, not an actual strategy/action/quarter-budget replay. Archive
++and Settings warnings visible; bad optional history warns while finance imports,
++actual storage failure atomic, missing history still permits finance backup marker.
++
++APP budgets500lines/5000chars,10000history records,500portable declarations/256KB
++before-after pair; existing20MBfile/25MBbody limits, no silent clipping. One/three
++course guidance doesn't prove causal attribution, an edge or70% wins. Floor30,
++M103n>=5 and B/C tradeability unchanged. M105 identity/quarter theme remains next.
++
++**M104153/0 across11**, actual133-parent migration14/0. Ledger
++**132=98 done/3 partial/31TODO**. Older schema/raw/provider/mock negatives retained;
++no broker/human/mental/meditation/pixel/production validation claim. Full report
++`analysis/M104-QUARTERLY-RULE-CHANGE-DISCIPLINE.md` in delivery ZIP.
++
 +## M100 — saved opportunities are not automatically missed trades (2026-10-12)
 +
 +**Bots → Signals → Review value/decision** records your explicit own-plan value
@@ -608,7 +646,7 @@ index df9ae3c..8382124 100644
  A **multi-asset trading journal, analytics engine, behavioural coach, SMC bot desk and TradingView-integrated
  pre-trade assistant**. No subscription, no broker login, no sign-in wall — a Node server, one libSQL database
  (a local file by default), and the whole thing deployable free to Vercel + Turso.
-@@ -11,6 +295,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -11,6 +333,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  
  ---
  
@@ -647,7 +685,7 @@ index df9ae3c..8382124 100644
  ## What it does
  
  | Area | What you get |
-@@ -18,8 +334,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -18,8 +372,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  | **Journal** | 40+ fields per trade — thesis, execution notes, emotions, confidence, rule-adherence score, mistake tags, screenshots, MAE/MFE, planned R, **scale-out legs** (closes at the pct-weighted price). Works for FX, futures, stocks, ETFs, crypto, index CFDs and options. |
  | **Analytics** | Expectancy ($ and R), win rate, profit factor, payoff, SQN, Sharpe, Sortino, Calmar, recovery factor, Kelly, max drawdown, streaks, R-distribution, MAE/MFE capture efficiency, time-of-day and weekday grids, hold-time buckets, 10+ segment tables. |
  | **Coach** | 20+ deterministic behavioural tests on your own rows — losing setups, bad hours, revenge entries, post-loss trading, overtrading days, size creep, early exits, tight stops, cost of each mistake tag — each with the numbers, the dollar impact and one concrete action. |
@@ -658,7 +696,7 @@ index df9ae3c..8382124 100644
  | **Data** | CSV import with automatic column detection, CSV export, full JSON backup & restore, multi-account (including prop-firm drawdown rules), instrument library. |
  | **Options** | Black-Scholes calculator (price, delta/gamma/theta/vega, break-even, ITM/OTM), premium-based position sizing, and a plan that warns instead of printing a fake R:R when your target premium is below the entry. 7 option presets (100× multiplier). *IV is yours to type — there is no options feed.* |
  | **Prop challenge** | Named challenge shapes (5 %/10 %, 6 %/6 %, instant…) applied to an account, then a live tracker over 4 checks — daily loss, max drawdown, profit target, consistency — with progress %. |
-@@ -263,6 +579,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
+@@ -263,6 +617,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
  
  Guides: [docs/BOTS.md](docs/BOTS.md) · [docs/PLAYLIST-CURRICULUM.md](docs/PLAYLIST-CURRICULUM.md)
  
@@ -707,7 +745,7 @@ index df9ae3c..8382124 100644
  
  * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.
 diff --git a/docs/API.md b/docs/API.md
-index 4475db3..a72d984 100644
+index 4475db3..2fd05a2 100644
 --- a/docs/API.md
 +++ b/docs/API.md
 @@ -1,5 +1,55 @@
@@ -766,7 +804,7 @@ index 4475db3..a72d984 100644
  Base URL: `http://localhost:3000/api`
  Auth: session cookie (`tj_session`) **or** an `x-session: <token>` header. There is **no sign-in wall**:
  `POST /auth/local` hands the caller a workspace (reusing the database's existing one locally, minting a
-@@ -383,3 +433,546 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
+@@ -383,3 +433,616 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
  | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
  | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
  | `DELETE /api/chart/drawings?symbol=…&tf=…` | clears that market |
@@ -1313,12 +1351,82 @@ index 4475db3..a72d984 100644
 +20MBselected-file/25MBbody unchanged, no silent clipping/automaticdedupe. Independently
 +bounded inherited M99 `/demo/seed` response repaired to `{ok,inserted}` after actual
 +sample seeding; no sample data/grade/risk policy change or extra audit closure.
++
++
++## M104 — readonly quarter guidance and tracked rule edits
++
++`GET /strategy-changes?quarter_start=` own global quarter report/current revision
+++imported readonly archives. Omit quarter_start for server current UTC calendar
++quarter; supplied start must be canonical. `GET /strategies/:id/change-discipline`
++adds own CURRENT setup/version; canonical owned positive ID404 otherwise. All owned
++setups counted globally, per-setup details not separate limits. Actual snapshot
++read, not model/broker/causal independent-variable proof.
++
++`POST /strategies/:id/change-preview` only `{revision,changes}`. Supported changes:
++name/description/market_conditions/timeframes/entry_rules/exit_rules/checklist/
++risk_rules/target_r_multiple/colour/active. No user/clock/source/permission authority.
++Readonly; fresh displayed SHA includes current own setups/version history/change
++facts/quarter. Missing/invalid400, stale409, missing/foreign404, read outage503.
++Reply current discipline view +preview named diff/proposed/current/total_if_saved/
++known_minimum_if_saved/above_three/warning; unknown fullcountNULL, not zero/clean.
++
++Existing `PUT /strategies/:id` accepts optional `strategy_revision`; actual UI always
++supplies it. When present, malformed400 or unseen own-global context409, no write.
++Legacy direct PUT remains legal (`revision_checked:false`) and returns quarteradvice.
++Original M102 `version/new_version/changed_field` contract retained; added
++changed_fields (all), rule_delta, quarter_rule_changes. No three-unit hard veto,
++capital/technical gate or risk/target clamp. Creation+v1 and update+newversion+
++change fact atomic; actual failure503 rolls back all three, not earlier finance.
++Current unversioned pre-edit baseline saved before change, not restored historical
++entry rules or attribution backfill. Fresh version created_at canonical server ISO;
++legacy SQL clocks still understood with explicit coverage.
++
++APP rubric rule-edit-v1: normalised exact lines (NFC/trim/collapsed whitespace, no
++semantic/case aliases), list/multiline max(removed,added), pure reorder1, scalar1.
++All eight original rule-bearing fields checked. Cosmetic name/colour/pause excluded.
++Formatting/numeric-equivalent unit0 may still bump raw M102 version. Every saved
++edit/reversal counts globally across own setups in UTC next-version write quarter,
++not one unit per entire array or firstchangedfield. One recommended/three maximum
++course guidance, counting policy APP not true independent causal-variable proof.
++
++Additive strategy_rule_changes retains original key/name, before/after definitions,
++from/to versions, delta/rubric/hash, actual server clock/quarter/source. Owner FK
++cascade; setup FK SET NULL retains past fact on deletion, so deletion doesn't refund
++new recorded units. UPDATE facts immutable except FK nullification. No original
++trade/signal columns or backfill; imported/legacy DTO proof not accepted. Not a
++cryptographically sealed/database-admin-proof ledger. Existing old surviving
++version deltas compared once, prior baseline can be olderquarter; fresh event pair
++not double-counted. Missing/gapped/corrupt/future/duplicate source unavailable,
++known recorded lower bound separate. Deleted pre-install versions unavailable,
++absence not untouched-plan certificate or quarter-compliance proof.
++
++M99 quarterly new metrics snapshots include quarter_rule_changes and revision;
++saved old baseline/receipts immutable, live preview may differ. Nonquarter artifacts
++have null. Review completion never applies rule/risk/goal or grants entry.
++
++Full JSON backup strategy_rule_changes:{version:1,entries:[...]}. Restore readonly
++own imported_unverified archive, no live setup association/strategy/action/budget
++credit; receiving time new, original version/key/definitions/units/source/clock
++unverified in history. No native strategy/actual edit minted by archive replay.
++Re-export/restore keeps original declared clock/source, not receiving-capture replay.
++Optional bad/future/budget history warns with rule_change_warnings while truthful
++finance remains legal. Actual optional store failure atomically rolls back that
++import; missing store export finance still available with unavailable marker.
++Actual Playbook archive/Settings escaped warning-bearing success stays visible;
++no auto-refresh/dismissal hiding omission. Repeated restore appends declarations,
++not automatic dedupe. No authoritative rule budget in trade CSV.
++
++APP input budgets500lines/5000chars each,10000versions/events,500portable records/
++256KBdefinition pair; existing20MBfile/25MBrequest limits, no silent clipping. No
++score/core/routine/cap/loss/admission/financial-winner/trade-grade/weights/risk/factor/
++geometry/stop/target/RR mutation. Floor30/M103n>=5/B-C unchanged. No causal/predictive
++edge/70%/broker/provider/human/mental/meditation/pixel/production proof. M105 next.
 diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
 new file mode 100644
-index 0000000..93ce443
+index 0000000..cae737d
 --- /dev/null
 +++ b/docs/GUARDRAILS.md
-@@ -0,0 +1,563 @@
+@@ -0,0 +1,597 @@
 +# Personal guardrails, recording and reasoned exceptions
 +
 +## M87 visual journal scope (2026-10-11)
@@ -1882,6 +1990,40 @@ index 0000000..93ce443
 +Current132=97done/3partial/32TODO. Next M104, M105/M106/M111/M112open;
 +M30/M103/M108partial. Coursefloor30/M103n>=5/B-Ctradeability unchanged. No70%,
 +causal/predictive/broker/provider/human/mental/meditation/pixel/production validation.
++
++
++## M104 — quarterly change advice, never trading/risk permission
++
++One change recommended/three maximum per quarter from saved Ep27, implemented as
++named APP edit-unit count/advice—not a new technical/capital/grade/action veto.
++Paired rule-line replacements/max add-remove, reorder1/scalar1 across all eight
++M102 rule fields; exact normalised text, not verified independent causal variables
++or an NLP judge. Cosmetic name/colour/pause excluded; raw formatting may retain
++M102 version bump with0 APP unit. Every saved edit/reversal across own setups;
++UTC calendar quarter of next-version write. Deleted fresh setup can't refund units.
++Legacy erased histories cannot be reconstructed; missing/corrupt/future/gapped/
++ambiguous coverage unavailable, known lower bound explicit, not certified zero/clean.
++
++Setup creation+v1 and current edit+newversion+captured before/after fact atomic.
++Real failure doesn't leave half-applied rules/unsnapshotted setup. Fresh optional
++revision/CAS used by actual UI, stale409 retains draft/reload,503 no saved claim.
++Legacy direct API edits still legal/advice-returning. Pre-edit current unversioned
++baseline not original entry-rule backfill. Original trades/attribution remain intact.
++No budget admission state, grading, core/loss-writing/routine/cap/timer/risk/factor/
++geometry/stop/target/RR change. Course floor30/M103n>=5/B-C untouched.
++
++Actual Playbook named preview/acknowledged save/advice/history, actor/account/token/
++serial/closed/superseded/fault guards, text escaped. New M99 quarter snapshots freeze
++counter/baseline; later edits don't rewrite them. Review never applies a strategy.
++Imported JSON history readonly owned receiving/unverified original declarations,
++no live strategy/action/budget replay. Archives/warnings visible, malformed optional
++history finance-legal, real import failure atomic, missing-history finance backup
++marker. APP limits500lines/5000chars,10000history,500portable/256KBpair +existing
++20MBfile/25MBbody, no silent clipping/dedupe. No sealed database-owner-proof vault.
++
++Current132=98done/3partial/31TODO, nextM105. M106/M111/M112 open; M30/M103/M108
++partial. No causal attribution, win-rate/edge/70%, actual broker/provider/mental/
++human/meditation/pixel/production validation from this descriptive discipline.
 diff --git a/public/css/app.css b/public/css/app.css
 index 34cc0ff..877c80b 100644
 --- a/public/css/app.css
@@ -1922,13 +2064,14 @@ index 34cc0ff..877c80b 100644
 +.routine-report{margin-top:14px}.routine-report th{white-space:normal}
 +@media(max-width:700px){.routine-banner{position:relative;top:auto;align-items:flex-start;padding:10px;flex-wrap:wrap}.routine-schedule .form-grid{grid-template-columns:1fr!important}}
 diff --git a/public/index.html b/public/index.html
-index 7ed122b..b390e0b 100644
+index 7ed122b..8c1efda 100644
 --- a/public/index.html
 +++ b/public/index.html
-@@ -25,6 +25,14 @@
+@@ -25,6 +25,15 @@
  <script src="/js/api.js?v={{V}}"></script>
  <script src="/js/store.js?v={{V}}"></script>
  <script src="/js/tv.js?v={{V}}"></script>
++<script src="/js/views/rule-changes.js?v={{V}}"></script>
 +<script src="/js/views/period-reviews.js?v={{V}}"></script>
 +<script src="/js/views/opportunities.js?v={{V}}"></script>
 +<script src="/js/views/execution.js?v={{V}}"></script>
@@ -1940,7 +2083,7 @@ index 7ed122b..b390e0b 100644
  <script src="/js/views/dashboard.js?v={{V}}"></script>
  <script src="/js/views/bots.js?v={{V}}"></script>
  <script src="/js/views/trades.js?v={{V}}"></script>
-@@ -36,6 +44,7 @@
+@@ -36,6 +45,7 @@
  <script src="/js/views/risk.js?v={{V}}"></script>
  <script src="/js/views/market.js?v={{V}}"></script>
  <script src="/js/views/settings.js?v={{V}}"></script>
@@ -3364,10 +3507,10 @@ index 0000000..0ffc199
 +})(window);
 diff --git a/public/js/views/period-reviews.js b/public/js/views/period-reviews.js
 new file mode 100644
-index 0000000..d75d981
+index 0000000..4a28cc8
 --- /dev/null
 +++ b/public/js/views/period-reviews.js
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,21 @@
 +/* M99/M101 periodic artifacts + committed focus, not trading authority. */
 +(function(global){
 + 'use strict';const Views=global.Views=global.Views||{},U=global.U;let serial=0;
@@ -3377,6 +3520,7 @@ index 0000000..d75d981
 +  async open(kind,start){const context=ctx(),number=++serial,url='/reviews/'+encodeURIComponent(kind)+'/'+encodeURIComponent(start);let view;try{view=await global.API.get(url,{account_id:context.account});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');return;}if(!same(context)||number!==serial||view.account_id!==Number(context.account))return;const body=U.h('div');let alive=true,busy=false,stale=false,amending=false,modal;const valid=()=>alive&&same(context)&&number===serial&&body.isConnected;
 +   function draw(){body.replaceChildren();const last=view.latest,locked=last?.status==='completed'&&!amending,data=last?.metrics||view.preview,f=data?.financial||{};body.appendChild(U.h('p',{class:'small',text:`${view.template.title} · account #${view.account_id} · ${view.period.start} inclusive to ${view.period.end} exclusive · ${last?last.status+' revision '+last.version:'Unsaved draft'}. ${view.period.basis}`}));body.appendChild(U.h('p',{class:'field-note',text:view.template.policy+' Review completion is not trading permission, evidence of human/broker execution or core/day journal completion. No weekly/monthly plan-apply or automatic annual goal rewrite.'}));body.appendChild(U.h('p',{class:'tiny muted',text:'Question basis: '+view.template.question_basis+(kind==='year'?' · APP-guided annual prompts; not a full quoted course template.':'')}));body.appendChild(U.h('p',{class:'small',text:`${last?'Saved snapshot':'Live preview'}: Known outcomes ${f.known_net_count??'unknown'} / ${f.closed_trades??'unknown'} · Net ${finite(f.net)?U.moneySign(f.net):'Unavailable'} · Win % ${finite(f.win_rate)?U.pct(f.win_rate,1):'Unavailable'} · Mean R ${finite(f.mean_r)?U.R(f.mean_r):'Unavailable'} · ${f.sample_ready?'30+ recorded; not edge proof':'Below30; do not tweak the system'}. Financial snapshot alone does not certify missed/impulse setups; opportunity evidence is separate below.`}));if(Views.opportunities)body.appendChild(Views.opportunities.summary(data?.opportunity_review));
 +    if(last)body.appendChild(U.h('p',{class:'tiny',text:`Saved source ${last.source} · server receipt ${last.recorded_at||'unavailable'} · first and amended revisions retained; receipt is not original entry-time proof.`}));if(view.context_matches===false)body.appendChild(U.h('p',{class:'sticky-note warn',text:'Saved financial/strategy context is prior. Original snapshot retained; current live preview differs. Explicitly reload/amend, never overwrite the original baseline.'}));if(!view.preview.policy.period_finished)body.appendChild(U.h('p',{class:'sticky-note warn',text:'Calendar period still in progress: a completed answer record is an early review, not a fully elapsed period.'}));
++    if(kind==='quarter'&&Views.ruleChanges){body.appendChild(Views.ruleChanges.card(data.quarter_rule_changes?.report));body.appendChild(U.h('p',{class:'field-note',text:'This quarter discipline is the saved baseline when shown under Saved snapshot. Later rule edits do not rewrite its counters/definitions. No plan, trade or risk permission is applied by a review.'}));}
 +    for(const q of view.template.questions){const el=U.h('textarea',{maxlength:4000,dataset:{periodAnswer:q.id},value:last?.answers?.[q.id]||''});el.setAttribute('data-period-answer-'+q.id,'true');el.value=last?.answers?.[q.id]||'';el.disabled=locked;body.appendChild(U.h('label',{class:'field'},U.h('span',{text:q.label}),el));}
 +    const focus=U.h('input',{type:'text',maxlength:300,dataset:{periodFocus:'true'},value:last?.focus||'',disabled:locked});body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'One chosen focus for the next period (no automatic recommendation)'}),focus));const previous=view.previous_focus;if(previous){body.appendChild(U.h('p',{class:'small',text:`Prior adjacent ${kind} focus #${previous.review_id} revision ${previous.version}: ${previous.focus} · ${previous.source} · original server receipt ${previous.recorded_at}. This is a commitment record, not proof you acted.`}));const select=U.h('select',{dataset:{periodActed:'true'},disabled:locked});for(const [value,label]of [['missing','Choose explicitly'],['yes','Yes — my self-report'],['no','No — my self-report'],['unknown','Unknown / not recorded']])select.appendChild(U.h('option',{value,text:label}));const follow=last?.follow_up;if(follow?.previous_review_id===previous.review_id)select.value=follow.acted_on_focus===null?'unknown':follow.acted_on_focus?'yes':'no';const reflection=U.h('textarea',{maxlength:2000,dataset:{periodFollowReflection:'true'},value:follow?.reflection||'',disabled:locked});reflection.value=follow?.reflection||'';body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Did you act on that exact prior focus?'}),select));body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Your evidence/reflection, not a completion claim'}),reflection));if(view.previous_focus_changed_since_saved)body.appendChild(U.h('p',{class:'sticky-note warn',text:'The current prior-period commitment changed after this saved answer. The earlier follow-up still references the original focus/version; deliberately review before amending.'}));}else body.appendChild(U.h('p',{class:'muted small',text:'No adjacent completed prior focus recorded. Do not infer acted/failed from missing history.'}));
 +    const send=mode=>async()=>{if(!valid()||busy)return;const answers={};for(const q of view.template.questions)answers[q.id]=body.querySelector('[data-period-answer-'+q.id+']').value;const payload={revision:view.revision,answers,focus:focus.value.trim()||null};if(previous){const value=body.querySelector('[data-period-acted]').value;if(value!=='missing')payload.follow_up={previous_review_id:previous.review_id,acted_on_focus:value==='unknown'?null:value==='yes',reflection:body.querySelector('[data-period-follow-reflection]').value};}if(mode==='amend')payload.amend_reason=body.querySelector('[data-period-amend-reason]').value;busy=true;disable();try{const result=await global.API.post(url+(mode==='draft'?'':'/'+mode)+'?account_id='+context.account,payload);if(!valid())return;view=result;stale=false;amending=false;draw();global.Store.invalidate();global.App.toast('Periodic artifact recorded; finance/core/strategy/permission unchanged.','ok');}catch(e){if(valid()){stale=e.status===409;global.App.toast(e.message,'err');}}finally{busy=false;if(valid())disable();}};
@@ -3388,6 +3532,94 @@ index 0000000..d75d981
 +  }
 + };
 +})(window);
+diff --git a/public/js/views/playbook.js b/public/js/views/playbook.js
+index 8ff1135..471c8c8 100644
+--- a/public/js/views/playbook.js
++++ b/public/js/views/playbook.js
+@@ -1,19 +1,20 @@
+ /* views/playbook.js — strategies, entry/exit rules, checklist runner, edge per setup */
+ (function (global) {
+   'use strict';
+-  const Views = global.Views = global.Views || {};
++  const Views = global.Views = global.Views || {};let renderEpoch=0;
+ 
+   Views.playbook = {
+     title: 'Playbook',
+     async render(root) {
+-      const data = await API.get('/strategies');
++      const epoch=++renderEpoch,context=Views.ruleChanges?.ctx();let result;try{result=await Promise.all([API.get('/strategies'),API.get('/strategy-changes').catch(()=>({report:{state:'unavailable'}}))]);}catch(e){if(epoch!==renderEpoch||Views.ruleChanges&&!Views.ruleChanges.same(context))return;throw e;}const [data,discipline]=result;
++      if(epoch!==renderEpoch||Views.ruleChanges&&!Views.ruleChanges.same(context))return;
+       const stats = data.stats || {};
+       root.innerHTML = '';
+ 
+       const head = U.h('div', { class: 'row-between', style: 'margin-bottom:14px;flex-wrap:wrap;gap:10px' });
+       head.innerHTML = `<div><h2 style="margin:0">Your playbook</h2><div class="muted small">Written rules are the only thing that separates a system from an opinion. Each card shows what the market has actually paid you for that setup.</div></div>
+         <button class="btn primary" id="pb-new">+ New setup</button>`;
+-      root.appendChild(head);
++      root.appendChild(head);if(Views.ruleChanges)root.appendChild(Views.ruleChanges.card(discipline.report,discipline.archives));
+ 
+       const grid = U.h('div', { class: 'grid g3' });
+       root.appendChild(grid);
+@@ -44,7 +45,7 @@
+           ${s.risk_rules ? `<div class="tiny" style="margin-top:5px"><b style="color:var(--amber)">Risk</b> <span class="muted-2">${U.esc(s.risk_rules)}</span></div>` : ''}
+           <div class="row" style="gap:6px;margin-top:12px">
+             <button class="btn xs" data-check="${s.id}">Run checklist</button>
+-            <button class="btn xs ghost" data-edit="${s.id}">Edit</button>
++            <button class="btn xs ghost" data-edit="${s.id}">Edit</button><button class="btn xs ghost" data-rule-history="${s.id}">Rule-change history</button>
+             <button class="btn xs ghost" data-log="${s.id}">Log a trade</button>
+             <button class="btn xs ghost danger" data-del="${s.id}" style="margin-left:auto">Delete</button>
+           </div>`;
+@@ -53,6 +54,7 @@
+ 
+       grid.addEventListener('click', async (e) => {
+         const b = e.target.closest('button'); if (!b) return;
++        if(b.dataset.ruleHistory)return Views.ruleChanges?Views.ruleChanges.open(Number(b.dataset.ruleHistory)):global.App.toast('Rule history unavailable.','err');
+         if (b.dataset.edit) return strategyDialog(data.strategies.find((s) => s.id === Number(b.dataset.edit)), root);
+         if (b.dataset.log) { const s = data.strategies.find((x) => x.id === Number(b.dataset.log)); return global.App.openTrade(null, { strategy_id: s.id }); }
+         if (b.dataset.check) { const s = data.strategies.find((x) => x.id === Number(b.dataset.check)); return checklistRunner(s); }
+@@ -67,7 +69,10 @@
+     },
+   };
+ 
+-  function strategyDialog(s, root) {
++  async function strategyDialog(s, root) {
++    const R=Views.ruleChanges,context=R?.ctx(),number=R?.nextSerial();let discipline;
++    if(s&&R){try{discipline=await API.get('/strategies/'+s.id+'/change-discipline');if(!R.same(context)||!R.current(number))return;s=discipline.strategy;}catch(e){if(R.same(context)&&R.current(number))global.App.toast(e.message,'err');return;}}
++    let alive=true,stale=false;
+     const isNew = !s;
+     const v = s || { name: '', description: '', market_conditions: '', timeframes: '', entry_rules: [], exit_rules: [], checklist: [], risk_rules: '', target_r_multiple: 2, colour: '#4f8cff', active: 1 };
+     const body = U.h('div');
+@@ -85,7 +90,8 @@
+       <label class="field"><span>Status</span><select id="s-active"><option value="1" ${v.active ? 'selected' : ''}>Active</option><option value="0" ${!v.active ? 'selected' : ''}>Paused</option></select></label>
+     </div>`;
+     const lines = (id) => U.$('#' + id, body).value.split('\n').map((x) => x.trim()).filter(Boolean);
+-    global.App.modal({
++    let editor;editor=global.App.modal({
++      onClose:()=>{alive=false;},
+       title: isNew ? 'New setup' : 'Edit setup',
+       body,
+       actions: [
+@@ -105,15 +111,19 @@
+               active: U.$('#s-active', body).value === '1',
+             };
+             if (!payload.name) return global.App.toast('Give the setup a name.', 'err');
++            if(R&&(!alive||!R.same(context)||!R.current(number)||!body.isConnected))return global.App.toast('Workspace/account/session/editor changed; reopen the current rules.','err');
++            if(stale)return global.App.toast('Reload current strategy/history before editing.','err');
+             try {
++              if(!isNew&&R){const preview=await API.post('/strategies/'+s.id+'/change-preview',{revision:discipline.revision,changes:payload});if(!alive||!R.same(context)||!R.current(number)||!body.isConnected)return;global.App.modal({title:'Review proposed rule deltas',body:R.preview(preview),wide:true,actions:[{label:'Cancel — no rules changed',ghost:true},{label:'Save shown configuration (advice retained)',primary:true,onClick:async confirmClose=>{if(!alive||!R.same(context)||!R.current(number)||!body.isConnected)return;const current={...payload,name:U.$('#s-name',body).value.trim(),description:U.$('#s-desc',body).value,market_conditions:U.$('#s-cond',body).value,timeframes:U.$('#s-tf',body).value,entry_rules:lines('s-entry'),exit_rules:lines('s-exit'),checklist:lines('s-check'),risk_rules:U.$('#s-risk',body).value,target_r_multiple:U.$('#s-target',body).value,colour:U.$('#s-colour',body).value,active:U.$('#s-active',body).value==='1'};if(JSON.stringify(current)!==JSON.stringify(payload))return global.App.toast('Draft changed after preview; cancel and preview the new fields.','err');try{const result=await API.put('/strategies/'+s.id,{...payload,strategy_revision:preview.revision});if(!alive||!R.same(context)||!R.current(number)||!body.isConnected)return;confirmClose();close();await Store.reloadAll();if(!R.same(context))return;global.App.toast('Strategy/version/change recorded; no trade, risk or grade permission implied.','ok');global.App.refresh();global.App.modal({title:'Saved configuration — quarter advice',body:R.card(result.quarter_rule_changes),wide:true,actions:[{label:'Close advice',ghost:true}]});}catch(err){if(alive&&R.same(context)&&R.current(number)){stale=err.status===409;global.App.toast(err.message,'err');confirmClose();}}}}]});return;}
+               if (isNew) await API.post('/strategies', payload); else await API.put('/strategies/' + s.id, payload);
+               await Store.reloadAll();
+               close(); global.App.toast('Playbook updated', 'ok'); global.App.refresh();
+-            } catch (err) { global.App.toast(err.message, 'err'); }
++            } catch (err) { if(!R||alive&&R.same(context)&&R.current(number)){stale=err.status===409;global.App.toast(err.message, 'err');} }
+           },
+         },
+       ],
+     });
++    if(!isNew&&R)body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{strategyReload:'true'},text:'Reload current rules/history (discard unsaved draft)',onclick:()=>{if(!alive||!R.same(context)||!R.current(number))return;editor.close();return strategyDialog(s,root);}}));
+   }
+ 
+   function checklistRunner(s) {
 diff --git a/public/js/views/process-outcomes.js b/public/js/views/process-outcomes.js
 new file mode 100644
 index 0000000..426719f
@@ -3544,6 +3776,23 @@ index 0000000..615aef0
 +    },
 +  };
 +})(window);
+diff --git a/public/js/views/rule-changes.js b/public/js/views/rule-changes.js
+new file mode 100644
+index 0000000..0eb3ff1
+--- /dev/null
++++ b/public/js/views/rule-changes.js
+@@ -0,0 +1,11 @@
++/* M104 recorded APP units, not independent causal variables or authority. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U;let serial=0;
++ const ctx=()=>({user:global.Store.user?.id,account:global.Store.accountId,token:global.API.getToken()}),same=c=>c.user===global.Store.user?.id&&c.account===global.Store.accountId&&c.token===global.API.getToken(),finite=n=>typeof n==='number'&&Number.isFinite(n);
++ const P=Views.ruleChanges={ctx,same,feedback(out){if(!out.rule_change_warnings?.length)return null;return U.h('section',{class:'sticky-note warn'},U.h('strong',{text:'Optional rule-change history'}),...out.rule_change_warnings.map(text=>U.h('p',{class:'tiny',text})));},nextSerial:()=>++serial,current:n=>n===serial,
++  card(report,archives=[]){const node=U.h('section',{class:'card',style:'margin-top:12px',dataset:{ruleChangeGuidance:'true'}});node.appendChild(U.h('h3',{text:'Quarterly rule-change discipline — all owned strategies'}));node.appendChild(U.h('p',{class:'field-note',text:'APP edit units, not verified independent causal variables. UTC calendar quarter across all owned strategies. One change recommended, three maximum guidance; warnings do not block/clamp a trade, grade or risk setting. Cosmetic names/colours/pause excluded. Each saved change/reversal counts; absence is not a historical untouched-plan certificate.'}));const total=finite(report?.total_units)?String(report.total_units):'Unavailable';node.appendChild(U.h('p',{class:'small',text:`Quarter ${report?.quarter?.start||'unavailable'} to ${report?.quarter?.end||'unavailable'} (UTC, end exclusive) · full count ${total} · known recorded minimum ${finite(report?.known_units)?report.known_units:'Unavailable'}. ${report?.state==='unavailable'?'History incomplete; not certified within three.':''}`}));node.appendChild(U.h('p',{class:'sticky-note warn',text:report?.warning||'Unavailable rule history; not certified zero/within three.'}));for(const c of report?.changes||[]){const body=U.h('details');body.appendChild(U.h('summary',{text:`${c.strategy_name||'Historical setup'} · v${c.from_version} → v${c.to_version} · ${c.delta.units} units · ${c.recorded_at} · ${c.source}${c.orphaned?' · strategy removed, count retained':''}`}));body.appendChild(P.delta(c.delta));node.appendChild(body);}if(archives.length){const a=U.h('details',{dataset:{ruleChangeArchives:'true'}});a.appendChild(U.h('summary',{text:'Imported unverified rule history — not counted in active quarter guidance'}));for(const r of archives)a.appendChild(U.h('pre',{class:'tiny',text:JSON.stringify({source:r.source,receiving_clock:r.received_at,unverified_original:r.historical,before:r.before,after:r.after,broker_verified:false},null,2)}));node.appendChild(a);}return node;},
++  delta(d){const node=U.h('section',{class:'small'});if(!d||d.units===null)node.appendChild(U.h('p',{text:'Proposed edit units unavailable; no zero/within-budget inference.'}));for(const change of d?.changes||[]){node.appendChild(U.h('p',{text:`${change.field}: ${change.units} APP unit${change.units===1?'':'s'}` }));if(change.removed?.length)node.appendChild(U.h('p',{text:'Removed: '+change.removed.join(' · ')}));if(change.added?.length)node.appendChild(U.h('p',{text:'Added: '+change.added.join(' · ')}));if(change.reordered)node.appendChild(U.h('p',{text:'Order changed (one APP unit, no added/removed rule text).'}));if(change.before!==undefined)node.appendChild(U.h('p',{text:'Before: '+change.before+' · after: '+change.after}));}if(d?.units===0)node.appendChild(U.h('p',{text:'0 proposed APP units: no recorded rule-line/scalar change. Existing quarter history is still separate.'}));return node;},
++  preview(view){const p=view.preview,node=U.h('div',{dataset:{ruleChangePreview:'true'}});node.appendChild(U.h('h3',{text:`${p.proposed.units??'Unavailable'} proposed APP edit units`}));node.appendChild(U.h('p',{class:'field-note',text:p.proposed.basis}));node.appendChild(P.delta(p.proposed));node.appendChild(U.h('p',{class:'sticky-note warn',text:p.warning}));node.appendChild(P.card(p.current));node.appendChild(U.h('p',{class:'small',text:'Preview is readonly. No trade, grade, risk, rule or version changed yet. Continuing records the shown configuration, not proof of a successful experiment.'}));return node;},
++  async open(id){const context=ctx(),number=++serial;try{const v=await global.API.get('/strategies/'+id+'/change-discipline');if(!same(context)||number!==serial)return;return global.App.modal({title:'Recorded rule-change history',body:P.card(v.report,v.archives),wide:true,actions:[{label:'Close — no configuration applied',ghost:true}]});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');}}
++ };
++})(window);
 diff --git a/public/js/views/screenshots.js b/public/js/views/screenshots.js
 new file mode 100644
 index 0000000..061ffe4
@@ -3632,7 +3881,7 @@ index 0000000..061ffe4
 +  };
 +})(window);
 diff --git a/public/js/views/settings.js b/public/js/views/settings.js
-index b72afdb..8b3e0c2 100644
+index b72afdb..b0b3750 100644
 --- a/public/js/views/settings.js
 +++ b/public/js/views/settings.js
 @@ -31,6 +31,8 @@
@@ -3671,8 +3920,8 @@ index b72afdb..8b3e0c2 100644
 -              Store.invalidate(); global.App.toast('Import complete', 'ok');
 +              if(!currentMediaPane())return;
 +              out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
-+              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
-+              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
++              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
              } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
            });
            const file = U.$('#im-file', w);
@@ -3702,8 +3951,8 @@ index b72afdb..8b3e0c2 100644
 -              } catch (e) { U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
 +                if(!currentMediaPane()||attempt!==jsonRead)return;
 +                U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
-+                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
-+                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length&&!d.review_warnings?.length&&!d.opportunity_warnings?.length)global.App.refresh();
++                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
++                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length&&!d.review_warnings?.length&&!d.opportunity_warnings?.length&&!d.rule_change_warnings?.length)global.App.refresh();
 +              } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
              };
 +            r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
@@ -11226,7 +11475,7 @@ index 0000000..5d2e9d9
 +}
 +module.exports={key,labels,invalid,info,optional,owned,recordOn,attachOn,read,change,vocabulary,portableVocabulary,vocabularyOn,aggregate};
 diff --git a/src/db.js b/src/db.js
-index 7e2fd68..59f34b4 100644
+index 7e2fd68..06f948a 100644
 --- a/src/db.js
 +++ b/src/db.js
 @@ -97,12 +97,26 @@ async function tx(fn) {
@@ -11358,7 +11607,7 @@ index 7e2fd68..59f34b4 100644
      entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf  (how this plan was anchored)
      mtf_tf TEXT,              -- the lower timeframe that confirmed an mtf plan
      risk_atr REAL,            -- stop distance in ATR at plan time
-@@ -148,6 +240,119 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+@@ -148,6 +240,141 @@ CREATE TABLE IF NOT EXISTS bot_signals (
      created_at TEXT NOT NULL DEFAULT (datetime('now')),
      resolved_at TEXT
    );
@@ -11475,10 +11724,32 @@ index 7e2fd68..59f34b4 100644
 + trade_hash TEXT NOT NULL
 +);
 +CREATE INDEX IF NOT EXISTS idx_opportunity_links_cycle ON opportunity_trade_links(user_id,trade_key,opened_at,id);
++-- M104 fresh versioned edit facts survive strategy deletion, not broker truth.
++CREATE TABLE IF NOT EXISTS strategy_rule_changes (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ strategy_id INTEGER REFERENCES strategies(id) ON DELETE SET NULL,
++ strategy_key INTEGER NOT NULL,
++ strategy_name TEXT NOT NULL,
++ from_version INTEGER NOT NULL,
++ to_version INTEGER NOT NULL,
++ before_json TEXT NOT NULL,
++ after_json TEXT NOT NULL,
++ delta_json TEXT NOT NULL,
++ units INTEGER,
++ quarter_start TEXT NOT NULL,
++ recorded_at TEXT NOT NULL,
++ rubric_version TEXT NOT NULL,
++ source TEXT NOT NULL,
++ context_hash TEXT NOT NULL,
++ historical_json TEXT,
++ UNIQUE(user_id,strategy_key,to_version,source)
++);
++CREATE INDEX IF NOT EXISTS idx_strategy_rule_changes_owner ON strategy_rule_changes(user_id,quarter_start,id);
  CREATE TABLE IF NOT EXISTS goals (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -173,6 +378,102 @@ CREATE TABLE IF NOT EXISTS instruments (
+@@ -173,6 +400,102 @@ CREATE TABLE IF NOT EXISTS instruments (
    unit TEXT DEFAULT 'units',
    UNIQUE(user_id, symbol)
  );
@@ -11581,7 +11852,7 @@ index 7e2fd68..59f34b4 100644
  CREATE TABLE IF NOT EXISTS journal_entries (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -186,7 +487,17 @@ CREATE TABLE IF NOT EXISTS journal_entries (
+@@ -186,7 +509,17 @@ CREATE TABLE IF NOT EXISTS journal_entries (
    review TEXT DEFAULT '',
    lessons TEXT DEFAULT '',
    tomorrow TEXT DEFAULT '',
@@ -11599,7 +11870,7 @@ index 7e2fd68..59f34b4 100644
    created_at TEXT NOT NULL DEFAULT (datetime('now')),
    UNIQUE(user_id, entry_date)
  );
-@@ -232,6 +543,33 @@ CREATE TABLE IF NOT EXISTS strategies (
+@@ -232,6 +565,33 @@ CREATE TABLE IF NOT EXISTS strategies (
    active INTEGER DEFAULT 1,
    created_at TEXT NOT NULL DEFAULT (datetime('now'))
  );
@@ -11633,7 +11904,7 @@ index 7e2fd68..59f34b4 100644
  CREATE TABLE IF NOT EXISTS trades (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -256,18 +594,28 @@ CREATE TABLE IF NOT EXISTS trades (
+@@ -256,18 +616,28 @@ CREATE TABLE IF NOT EXISTS trades (
    mae_r REAL,                                 -- worst excursion in R (negative number)
    mfe_r REAL,                                 -- best excursion in R (positive number)
    stop_moved INTEGER DEFAULT 0,
@@ -11663,7 +11934,7 @@ index 7e2fd68..59f34b4 100644
    tags TEXT DEFAULT '',                       -- comma separated
    thesis TEXT DEFAULT '',
    lesson TEXT DEFAULT '',
-@@ -369,11 +717,207 @@ async function migrate() {
+@@ -369,11 +739,209 @@ async function migrate() {
      if (!(cols || []).some((c) => c.name === col)) await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
    };
    await add('trades', 'legs', 'TEXT');
@@ -11725,6 +11996,8 @@ index 7e2fd68..59f34b4 100644
 +  await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_decisions_immutable BEFORE UPDATE ON opportunity_decisions BEGIN SELECT RAISE(ABORT,'Opportunity decision versions are immutable'); END`).run();
 +  await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_capture_immutable BEFORE UPDATE ON signal_opportunities WHEN NOT (NEW.user_id IS OLD.user_id AND NEW.id IS OLD.id AND NEW.signal_key IS OLD.signal_key AND NEW.record_key IS OLD.record_key AND NEW.account_key IS OLD.account_key AND NEW.source IS OLD.source AND NEW.observed_at IS OLD.observed_at AND NEW.signal_snapshot IS OLD.signal_snapshot AND NEW.signal_hash IS OLD.signal_hash AND NEW.personal_json IS OLD.personal_json AND NEW.historical_json IS OLD.historical_json AND (NEW.account_id IS OLD.account_id OR NEW.account_id IS NULL AND NOT EXISTS(SELECT 1 FROM accounts WHERE id=OLD.account_id)) AND (NEW.signal_id IS OLD.signal_id OR NEW.signal_id IS NULL AND NOT EXISTS(SELECT 1 FROM bot_signals WHERE id=OLD.signal_id))) BEGIN SELECT RAISE(ABORT,'Opportunity capture facts are immutable'); END`).run();
 +  await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_links_immutable BEFORE UPDATE ON opportunity_trade_links WHEN NOT (NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.opportunity_id IS OLD.opportunity_id AND NEW.trade_key IS OLD.trade_key AND NEW.opened_at IS OLD.opened_at AND NEW.action IS OLD.action AND NEW.source IS OLD.source AND NEW.note IS OLD.note AND NEW.recorded_at IS OLD.recorded_at AND NEW.trade_snapshot IS OLD.trade_snapshot AND NEW.trade_hash IS OLD.trade_hash AND NEW.trade_id IS NULL AND NOT EXISTS(SELECT 1 FROM trades WHERE id=OLD.trade_id)) BEGIN SELECT RAISE(ABORT,'Opportunity link facts are immutable'); END`).run();
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS strategy_rule_changes_immutable BEFORE UPDATE ON strategy_rule_changes WHEN NOT (NEW.strategy_id IS NULL AND OLD.strategy_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM strategies WHERE id=OLD.strategy_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.strategy_key IS OLD.strategy_key AND NEW.strategy_name IS OLD.strategy_name AND NEW.from_version IS OLD.from_version AND NEW.to_version IS OLD.to_version AND NEW.before_json IS OLD.before_json AND NEW.after_json IS OLD.after_json AND NEW.delta_json IS OLD.delta_json AND NEW.units IS OLD.units AND NEW.quarter_start IS OLD.quarter_start AND NEW.recorded_at IS OLD.recorded_at AND NEW.rubric_version IS OLD.rubric_version AND NEW.source IS OLD.source AND NEW.context_hash IS OLD.context_hash AND NEW.historical_json IS OLD.historical_json) BEGIN SELECT RAISE(ABORT,'Recorded strategy rule change facts immutable'); END`).run();
++
 +  /* M102 backfill. Every strategy that has no version history gets an immutable v1
 +   * snapshot of the rule set it currently holds, and every trade already linked to it is
 +   * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in
@@ -11766,8 +12039,8 @@ index 7e2fd68..59f34b4 100644
 + * @param {number} strategyId
 + * @returns {Promise<number>}
 + */
-+async function currentStrategyVersion(strategyId) {
-+  const r = await db.prepare('SELECT MAX(version) AS v FROM strategy_versions WHERE strategy_id=?').get(strategyId);
++async function currentStrategyVersion(strategyId,store=db) {
++  const r = await store.prepare('SELECT MAX(version) AS v FROM strategy_versions WHERE strategy_id=?').get(strategyId);
 +  return r && Number.isFinite(r.v) && r.v !== null ? Number(r.v) : 0;
 +}
 +
@@ -11779,16 +12052,16 @@ index 7e2fd68..59f34b4 100644
 + * @param {string} [note]  why this version exists, shown next to the diff in the UI
 + * @returns {Promise<number>} the version number just written
 + */
-+async function snapshotStrategyVersion(strategyId, fields, note = '') {
-+  const next = (await currentStrategyVersion(strategyId)) + 1;
-+  await db.prepare(`INSERT INTO strategy_versions
-+    (strategy_id, version, name, description, market_conditions, timeframes, entry_rules, exit_rules, checklist, risk_rules, target_r_multiple, note)
-+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++async function snapshotStrategyVersion(strategyId, fields, note = '',store=db,at=new Date().toISOString()) {
++  const next = (await currentStrategyVersion(strategyId,store)) + 1;
++  await store.prepare(`INSERT INTO strategy_versions
++    (strategy_id, version, name, description, market_conditions, timeframes, entry_rules, exit_rules, checklist, risk_rules, target_r_multiple, note,created_at)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
 +    strategyId, next, fields.name || '', fields.description || '', fields.market_conditions || '',
 +    fields.timeframes || '', fields.entry_rules || '[]', fields.exit_rules || '[]',
 +    fields.checklist || '[]', fields.risk_rules || '',
 +    Number.isFinite(Number(fields.target_r_multiple)) ? Number(fields.target_r_multiple) : 2,
-+    String(note || ''));
++    String(note || ''),at);
 +  return next;
 +}
 +
@@ -11871,7 +12144,7 @@ index 7e2fd68..59f34b4 100644
  /* ------------------------------------------------------------------- meta */
  
  async function getMeta(k) {
-@@ -553,10 +1097,25 @@ async function userFromWebhookToken(token) {
+@@ -553,10 +1121,25 @@ async function userFromWebhookToken(token) {
  
  /** Wipe every table for a workspace (used by the "fresh workspace" flow). */
  async function clearWorkspace(userId) {
@@ -11901,7 +12174,7 @@ index 7e2fd68..59f34b4 100644
  }
  
  module.exports = {
-@@ -564,7 +1123,9 @@ module.exports = {
+@@ -564,7 +1147,9 @@ module.exports = {
    client, db, prepare, exec, batch, tx, ready,
    DB_URL, DB_PATH, REMOTE, DATA_DIR, SCHEMA_VERSION,
    getMeta, setMeta, seedGlobalInstruments, createUser, hashPassword, verifyPassword,
@@ -12503,10 +12776,10 @@ index 97110a5..dab030d 100644
      by_hold: segment(trades, (t) => holdBucket(t.hold_minutes)),
 diff --git a/src/period-reviews.js b/src/period-reviews.js
 new file mode 100644
-index 0000000..b48e40d
+index 0000000..d02f639
 --- /dev/null
 +++ b/src/period-reviews.js
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,77 @@
 +'use strict';
 +/** M99/M101 owned periodic artifacts, not trading/strategy/score authority. */
 +const crypto=require('crypto');
@@ -12556,7 +12829,8 @@ index 0000000..b48e40d
 + const baseline=versions.map(v=>({...v,closed_trades:selected.filter(t=>t.strategy_id===v.strategy_id&&t.strategy_version===v.version).length,source:'owned_saved_strategy_version_not_broker_or_causal_proof'}));
 + for(const plan of strategies.filter(s=>!versions.some(v=>v.strategy_id===s.id)))baseline.push({...plan,strategy_id:plan.id,version:null,closed_trades:null,source:'current_unversioned_not_original_entry_rules'});
 + const execution=require('./execution-review').summary(selected,{accountId:a.id,timezone:'UTC'}),process=await require('./process-outcomes').optional(userId,{accountId:a.id,from:range.start,to:range.last_day,store}),behavior=await require('./behavior-days').optional(userId,{accountId:a.id,from:range.start,to:range.last_day,store});
-+ const data={version:VERSION,period:range,account:{id:a.id,name:a.name,currency:a.currency,starting_balance:a.starting_balance},financial:money,execution,process_review:process,behavior_review:behavior,checklist_compliance:{known_trades:knownChecks.length,unreviewed_trades:selected.length-knownChecks.length,percent:knownChecks.length?round(knownChecks.reduce((n,r)=>n+rate(r),0)/knownChecks.length):null,basis:'Current declared checkbox compliance; absent checks not automatic plan adherence.'},strategy_baselines:baseline,strategy_version_unavailable:selected.filter(t=>!versions.some(v=>v.strategy_id===t.strategy_id&&v.version===t.strategy_version)).length,policy:{sample_floor:30,sample_ready:money.sample_ready,period_finished:range.end<=new Date().toISOString().slice(0,10),plan_applied:false,permission_granted:false,grade_or_core_completed:false,basis:'Review completion is an artifact acknowledgement, not full elapsed period, edge, strategy-change permission or execution proof.'}};
++ const quarterChanges=range.kind==='quarter'?await require('./rule-changes').inspectOn(store,userId,null,range.start).catch(()=>({report:{state:'unavailable',total_units:null,known_units:null,warning:'Quarter change history unavailable, not a verified zero/within-limit experiment.'},revision:null})):null;
++ const data={version:VERSION,quarter_rule_changes:quarterChanges,period:range,account:{id:a.id,name:a.name,currency:a.currency,starting_balance:a.starting_balance},financial:money,execution,process_review:process,behavior_review:behavior,checklist_compliance:{known_trades:knownChecks.length,unreviewed_trades:selected.length-knownChecks.length,percent:knownChecks.length?round(knownChecks.reduce((n,r)=>n+rate(r),0)/knownChecks.length):null,basis:'Current declared checkbox compliance; absent checks not automatic plan adherence.'},strategy_baselines:baseline,strategy_version_unavailable:selected.filter(t=>!versions.some(v=>v.strategy_id===t.strategy_id&&v.version===t.strategy_version)).length,policy:{sample_floor:30,sample_ready:money.sample_ready,period_finished:range.end<=new Date().toISOString().slice(0,10),plan_applied:false,permission_granted:false,grade_or_core_completed:false,basis:'Review completion is an artifact acknowledgement, not full elapsed period, edge, strategy-change permission or execution proof.'}};
 + data.opportunity_review=await require('./opportunities').optional(userId,{accountId:a.id,from:range.start,to:range.last_day,store});
 + const context=hash([a,range,rows,checks,versions,strategies,admissions,events,money,data.policy.period_finished,data.opportunity_review]);return {data,context};
 +}
@@ -12652,10 +12926,10 @@ index 0000000..bf173ca
 +function withCoach(data,review){const warning=insight(review);return {...data,process_review:review,insights:warning?[...(data.insights||[]),warning]:data.insights};}
 +module.exports={BASIS,invalid,dateKey,clock,evaluate,insight,inspect,optional,unavailable,withCoach};
 diff --git a/src/routes/api.js b/src/routes/api.js
-index 0bb768c..d2e0b65 100644
+index 0bb768c..1e95877 100644
 --- a/src/routes/api.js
 +++ b/src/routes/api.js
-@@ -1,12 +1,27 @@
+@@ -1,12 +1,28 @@
  'use strict';
  const { asyncRouter } = require('./async-router');
 -const { db, createUser, verifyPassword, createSession, userFromToken, destroySession, getMeta, DEFAULT_CHECKLIST } = require('../db');
@@ -12677,6 +12951,7 @@ index 0bb768c..d2e0b65 100644
 +const Confluences = require('../confluences');
 +const Emotions = require('../emotions');
 +const PeriodReviews = require('../period-reviews');
++const RuleChanges = require('../rule-changes');
 +const Opportunities = require('../opportunities');
 +const ProcessOutcomes = require('../process-outcomes');
 +const BehaviorDays = require('../behavior-days');
@@ -12684,7 +12959,7 @@ index 0bb768c..d2e0b65 100644
  const O = require('../options');
  const Exp = require('../exposure');
  const Prop = require('../prop');
-@@ -14,6 +29,13 @@ const N = require('../notify');
+@@ -14,6 +30,13 @@ const N = require('../notify');
  const createBotsRouter = require('./bots');
  
  const router = asyncRouter();
@@ -12698,7 +12973,7 @@ index 0bb768c..d2e0b65 100644
  const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  
-@@ -40,7 +62,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
+@@ -40,7 +63,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
  async function requireAuth(req, res, next) {
    try {
      const user = await userFromToken(readToken(req));
@@ -12726,7 +13001,7 @@ index 0bb768c..d2e0b65 100644
      req.user = user;
      next();
    } catch (e) { next(e); }
-@@ -237,6 +278,7 @@ function tradeFilters(req) {
+@@ -237,6 +279,7 @@ function tradeFilters(req) {
      status: req.query.status && req.query.status !== 'all' ? req.query.status : null,
      symbol: req.query.symbol || null,
      strategy_id: req.query.strategy_id || null,
@@ -12734,7 +13009,7 @@ index 0bb768c..d2e0b65 100644
      from: req.query.from || null, to: req.query.to || null,
      asset_class: req.query.asset_class || null,
      tag: req.query.tag || null,
-@@ -278,32 +320,76 @@ router.get('/trades', requireAuth, async (req, res) => {
+@@ -278,32 +321,76 @@ router.get('/trades', requireAuth, async (req, res) => {
        .some((v) => String(v || '').toLowerCase().includes(q)));
    }
    const total = (await db.prepare(`SELECT COUNT(*) n FROM trades WHERE ${where}`).get({ ...params, user_id: req.user.id })).n;
@@ -12817,7 +13092,7 @@ index 0bb768c..d2e0b65 100644
  router.put('/trades/:id', requireAuth, async (req, res) => {
    const id = Number(req.params.id);
    const existing = await db.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id, req.user.id);
-@@ -311,14 +397,61 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+@@ -311,14 +398,61 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
    const instruments = await instrumentMap(req.user.id);
    const merged = { ...existing, ...req.body };
    const spec = instruments[String(merged.symbol || '').toUpperCase()] || null;
@@ -12882,7 +13157,7 @@ index 0bb768c..d2e0b65 100644
  });
  
  router.post('/trades/:id/close', requireAuth, async (req, res) => {
-@@ -341,29 +474,92 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+@@ -341,29 +475,92 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
    };
    const instruments = await instrumentMap(req.user.id);
    const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
@@ -12980,7 +13255,7 @@ index 0bb768c..d2e0b65 100644
  router.get('/analytics', requireAuth, async (req, res) => {
    const tz = (await settingsOf(req)).timezone;
    const f = tradeFilters(req);
-@@ -374,14 +570,20 @@ router.get('/analytics', requireAuth, async (req, res) => {
+@@ -374,14 +571,20 @@ router.get('/analytics', requireAuth, async (req, res) => {
      const want = String(f.tag).toLowerCase();
      rows = rows.filter((t) => String(t.tags || '').toLowerCase().split(',').map((x) => x.trim()).includes(want));
    }
@@ -13002,7 +13277,7 @@ index 0bb768c..d2e0b65 100644
    res.json(analytics);
  });
  
-@@ -393,9 +595,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+@@ -393,9 +596,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const rs = rows.map((t) => num(t.r_multiple));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
@@ -13021,7 +13296,7 @@ index 0bb768c..d2e0b65 100644
    res.json({
      monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
      optimal_risk: P.optimalRisk(rs),
-@@ -411,7 +620,9 @@ router.get('/coach', requireAuth, async (req, res) => {
+@@ -411,7 +621,9 @@ router.get('/coach', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
      || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
@@ -13032,7 +13307,7 @@ index 0bb768c..d2e0b65 100644
  });
  
  router.get('/briefing', requireAuth, wrap(async (req, res) => {
-@@ -419,45 +630,125 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+@@ -419,45 +631,125 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
    const tz = settings.timezone;
    const acc = await accountOr404(req, res);
    if (!acc) return;
@@ -13170,7 +13445,7 @@ index 0bb768c..d2e0b65 100644
  });
  router.delete('/journal/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM journal_entries WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -470,11 +761,12 @@ router.get('/strategies', requireAuth, async (req, res) => {
+@@ -470,46 +762,56 @@ router.get('/strategies', requireAuth, async (req, res) => {
    const stats = {};
    const tz = (await settingsOf(req)).timezone;
    const rows = (await db.prepare("SELECT * FROM trades WHERE user_id=? AND status='closed'").all(req.user.id)).map((t) => P.decorate(t, tz));
@@ -13184,74 +13459,57 @@ index 0bb768c..d2e0b65 100644
    }
    res.json({ strategies, stats });
  });
-@@ -486,17 +778,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
-     req.user.id, b.name, b.description || '', b.market_conditions || '', b.timeframes || '',
-     JSON.stringify(b.entry_rules || []), JSON.stringify(b.exit_rules || []), JSON.stringify(b.checklist || []),
-     b.risk_rules || '', num(b.target_r_multiple, 2), b.colour || '#4f8cff', b.active === false ? 0 : 1);
+-router.post('/strategies', requireAuth, async (req, res) => {
+-  const b = req.body || {};
+-  if (!b.name) return res.status(400).json({ error: 'Name is required' });
+-  const info = await db.prepare(`INSERT INTO strategies (user_id,name,description,market_conditions,timeframes,entry_rules,exit_rules,checklist,risk_rules,target_r_multiple,colour,active)
+-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+-    req.user.id, b.name, b.description || '', b.market_conditions || '', b.timeframes || '',
+-    JSON.stringify(b.entry_rules || []), JSON.stringify(b.exit_rules || []), JSON.stringify(b.checklist || []),
+-    b.risk_rules || '', num(b.target_r_multiple, 2), b.colour || '#4f8cff', b.active === false ? 0 : 1);
 -  res.json({ ok: true, strategy: parseStrategy(await db.prepare('SELECT * FROM strategies WHERE id=?').get(info.lastInsertRowid)) });
-+  // M102: a new strategy is version 1 of itself from the moment it exists, so there is
-+  // never a window in which trades can be taken against an unversioned rule set.
-+  const v1 = await snapshotStrategyVersion(info.lastInsertRowid, {
-+    name: b.name, description: b.description || '', market_conditions: b.market_conditions || '',
-+    timeframes: b.timeframes || '', entry_rules: JSON.stringify(b.entry_rules || []),
-+    exit_rules: JSON.stringify(b.exit_rules || []), checklist: JSON.stringify(b.checklist || []),
-+    risk_rules: b.risk_rules || '', target_r_multiple: num(b.target_r_multiple, 2),
-+  }, 'Strategy created.');
-+  res.json({ ok: true, version: v1, strategy: parseStrategy(await db.prepare('SELECT * FROM strategies WHERE id=?').get(info.lastInsertRowid)) });
- });
- router.put('/strategies/:id', requireAuth, async (req, res) => {
-   const b = req.body || {};
-   const id = Number(req.params.id);
-   const cur = await db.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id, req.user.id);
-   if (!cur) return res.status(404).json({ error: 'Strategy not found' });
--  await db.prepare(`UPDATE strategies SET name=@name, description=@description, market_conditions=@market_conditions, timeframes=@timeframes,
--    entry_rules=@entry_rules, exit_rules=@exit_rules, checklist=@checklist, risk_rules=@risk_rules, target_r_multiple=@target_r_multiple,
--    colour=@colour, active=@active WHERE id=@id AND user_id=@user_id`).run({
--    id, user_id: req.user.id,
-+  /* M102 — this UPDATE used to overwrite the rule set in place, which is why Ep 27's
-+   * "you will never ever truly know what worked" applied: the strategy whose expectancy
-+   * you were reading had silently been a different strategy for part of the sample.
-+   * The row is still updated (it remains the CURRENT rule set, and every existing reader
-+   * depends on that), but the values are computed first so they can be compared, and a
-+   * change to a RULE-BEARING field appends an immutable version instead of vanishing.
-+   * A rename or a recolour deliberately does NOT bump: that would fragment the history of
-+   * a strategy the trader never actually changed. */
-+  const next = {
-     name: b.name !== undefined ? b.name : cur.name,
-     description: b.description !== undefined ? b.description : cur.description,
-     market_conditions: b.market_conditions !== undefined ? b.market_conditions : cur.market_conditions,
-@@ -508,8 +813,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
-     target_r_multiple: b.target_r_multiple !== undefined ? num(b.target_r_multiple, 2) : cur.target_r_multiple,
-     colour: b.colour || cur.colour,
-     active: b.active === undefined ? cur.active : (b.active ? 1 : 0),
-+  };
-+  await db.prepare(`UPDATE strategies SET name=@name, description=@description, market_conditions=@market_conditions, timeframes=@timeframes,
-+    entry_rules=@entry_rules, exit_rules=@exit_rules, checklist=@checklist, risk_rules=@risk_rules, target_r_multiple=@target_r_multiple,
-+    colour=@colour, active=@active WHERE id=@id AND user_id=@user_id`).run({ id, user_id: req.user.id, ...next });
-+
-+  const changedField = strategyRulesChanged(cur, next);
-+  let version = await currentStrategyVersion(id);
-+  if (changedField) {
-+    const prevVersion = version;
-+    version = await snapshotStrategyVersion(id, next,
-+      `Rule changed: ${changedField}. Trades from here on are attributed to v${prevVersion + 1}; trades already logged keep the version they were taken under.`);
-+  } else if (!version) {
-+    // A strategy that predates versioning and somehow has no snapshot yet - the backfill
-+    // covers this, but do not rely on it having run.
-+    version = await snapshotStrategyVersion(id, next, 'First snapshot recorded for a pre-existing strategy.');
-+  }
-+  res.json({
-+    ok: true, version, new_version: !!changedField, changed_field: changedField,
-+    strategy: parseStrategy(await db.prepare('SELECT * FROM strategies WHERE id=?').get(id)),
-+  });
-+});
+-});
+-router.put('/strategies/:id', requireAuth, async (req, res) => {
+-  const b = req.body || {};
++function strategyValues(cur,b){return {
++ name:b.name!==undefined?b.name:cur.name,description:b.description!==undefined?b.description:cur.description,
++ market_conditions:b.market_conditions!==undefined?b.market_conditions:cur.market_conditions,timeframes:b.timeframes!==undefined?b.timeframes:cur.timeframes,
++ entry_rules:JSON.stringify(b.entry_rules||JSON.parse(cur.entry_rules||'[]')),exit_rules:JSON.stringify(b.exit_rules||JSON.parse(cur.exit_rules||'[]')),checklist:JSON.stringify(b.checklist||JSON.parse(cur.checklist||'[]')),
++ risk_rules:b.risk_rules!==undefined?b.risk_rules:cur.risk_rules,target_r_multiple:b.target_r_multiple!==undefined?num(b.target_r_multiple,2):cur.target_r_multiple,
++ colour:b.colour||cur.colour,active:b.active===undefined?cur.active:(b.active?1:0)};}
++router.post('/strategies',requireAuth,async(req,res)=>{const b=req.body||{};if(!b.name)return res.status(400).json({error:'Name is required'});try{const out=await db.tx(async tx=>{const store=db.transactionStore(tx),fields={name:b.name,description:b.description||'',market_conditions:b.market_conditions||'',timeframes:b.timeframes||'',entry_rules:JSON.stringify(b.entry_rules||[]),exit_rules:JSON.stringify(b.exit_rules||[]),checklist:JSON.stringify(b.checklist||[]),risk_rules:b.risk_rules||'',target_r_multiple:num(b.target_r_multiple,2),colour:b.colour||'#4f8cff',active:b.active===false?0:1};const r=await store.prepare('INSERT INTO strategies(user_id,name,description,market_conditions,timeframes,entry_rules,exit_rules,checklist,risk_rules,target_r_multiple,colour,active) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(req.user.id,fields.name,fields.description,fields.market_conditions,fields.timeframes,fields.entry_rules,fields.exit_rules,fields.checklist,fields.risk_rules,fields.target_r_multiple,fields.colour,fields.active),id=r.lastInsertRowid,version=await snapshotStrategyVersion(id,fields,'Strategy created.',store);return {ok:true,version,strategy:parseStrategy(await store.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id,req.user.id))};});res.json(out);}catch{res.status(503).json({error:'Strategy/version creation could not be recorded; no unsnapshotted setup committed.'});}});
++const strategyChangeRoute=fn=>async(req,res)=>{try{const out=await fn(req);if(out.strategy)out.strategy=parseStrategy(out.strategy);res.json(out);}catch(e){if(e.code==='rule_change_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Rule-change guidance unavailable; original finance/risk/permission state unchanged.'});}};
++function strategyKey(value){if(typeof value!=='string'||!(/^[1-9]\d*$/.test(value))||!Number.isSafeInteger(Number(value)))throw RuleChanges.invalid('Strategy not found.',404);return Number(value);}
++router.get('/strategy-changes',requireAuth,strategyChangeRoute(req=>RuleChanges.inspect(req.user.id,null,req.query.quarter_start??null)));
++router.get('/strategies/:id/change-discipline',requireAuth,strategyChangeRoute(req=>RuleChanges.inspect(req.user.id,strategyKey(req.params.id),req.query.quarter_start??null)));
++router.post('/strategies/:id/change-preview',requireAuth,strategyChangeRoute(async req=>{const b=req.body;if(!b||typeof b!=='object'||Array.isArray(b)||Object.keys(b).some(k=>!['revision','changes'].includes(k))||!b.changes||typeof b.changes!=='object'||Array.isArray(b.changes)||typeof b.revision!=='string'||!/^[a-f0-9]{64}$/.test(b.revision))throw RuleChanges.invalid('Use the displayed revision and proposed fields only.');if(Object.keys(b.changes).some(k=>!['name','description','market_conditions','timeframes','entry_rules','exit_rules','checklist','risk_rules','target_r_multiple','colour','active'].includes(k)))throw RuleChanges.invalid('Propose only saved strategy fields, not clocks/owner/permission authority.');const view=await RuleChanges.inspect(req.user.id,strategyKey(req.params.id));if(view.revision!==b.revision)throw RuleChanges.invalid('Strategy or owned quarter history changed; explicitly reload.',409);const next=strategyValues(view.strategy,b.changes);return {...view,preview:RuleChanges.proposal(view.report,RuleChanges.diff(view.strategy,next))};}));
++router.put('/strategies/:id',requireAuth,async(req,res)=>{const b=req.body||{};let id;try{id=strategyKey(req.params.id);}catch(e){return res.status(e.status).json({error:e.message,code:e.code});}try{const out=await db.tx(async tx=>{const store=db.transactionStore(tx),cur=await store.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id,req.user.id);if(!cur)return null;if(b.strategy_revision!==undefined){if(typeof b.strategy_revision!=='string'||!/^[a-f0-9]{64}$/.test(b.strategy_revision))throw RuleChanges.invalid('Use the displayed strategy revision.');const seen=await RuleChanges.inspectOn(store,req.user.id,id);if(seen.revision!==b.strategy_revision)throw RuleChanges.invalid('Strategy or global owned quarter history changed. Reload before editing.',409);}const next=strategyValues(cur,b),changedField=strategyRulesChanged(cur,next);let version=await currentStrategyVersion(id,store);if(!version)version=await snapshotStrategyVersion(id,cur,'First pre-edit snapshot of current unversioned strategy; not reconstructed original entry rules.',store);
++ await store.prepare(`UPDATE strategies SET name=@name,description=@description,market_conditions=@market_conditions,timeframes=@timeframes,
++ entry_rules=@entry_rules,exit_rules=@exit_rules,checklist=@checklist,risk_rules=@risk_rules,target_r_multiple=@target_r_multiple,colour=@colour,active=@active WHERE id=@id AND user_id=@user_id`).run({id,user_id:req.user.id,...next});let delta=RuleChanges.diff(cur,next);if(changedField){const old=version;version=await snapshotStrategyVersion(id,next,`Rule changed: ${changedField}. Trades from here on are attributed to v${old+1}; trades already logged keep the version they were taken under.`,store);delta=await RuleChanges.recordOn(store,req.user.id,id,cur,next,old,version);}const guidance=await RuleChanges.optionalOn(store,req.user.id,id);return {ok:true,version,new_version:!!changedField,changed_field:changedField,changed_fields:delta.fields,rule_delta:delta,revision_checked:b.strategy_revision!==undefined,quarter_rule_changes:guidance.report,strategy:parseStrategy(await store.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id,req.user.id))};});if(!out)return res.status(404).json({error:'Strategy not found'});res.json(out);}catch(e){if(e.code==='rule_change_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Strategy/version/change edit not recorded; current rules and original facts unchanged.'});}});
 +/* M102 — the version history has to be READABLE or the table is write-only and the fix is
 + * half a fix: a trader who cannot see that their strategy changed in March cannot interpret
 + * their own expectancy. Newest first, with the note that says WHY each version exists and
 + * how many trades were taken under it, which is the number that decides whether a comparison
 + * between two versions means anything at all. */
 +router.get('/strategies/:id/versions', requireAuth, async (req, res) => {
-+  const id = Number(req.params.id);
+   const id = Number(req.params.id);
+-  const cur = await db.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id, req.user.id);
+-  if (!cur) return res.status(404).json({ error: 'Strategy not found' });
+-  await db.prepare(`UPDATE strategies SET name=@name, description=@description, market_conditions=@market_conditions, timeframes=@timeframes,
+-    entry_rules=@entry_rules, exit_rules=@exit_rules, checklist=@checklist, risk_rules=@risk_rules, target_r_multiple=@target_r_multiple,
+-    colour=@colour, active=@active WHERE id=@id AND user_id=@user_id`).run({
+-    id, user_id: req.user.id,
+-    name: b.name !== undefined ? b.name : cur.name,
+-    description: b.description !== undefined ? b.description : cur.description,
+-    market_conditions: b.market_conditions !== undefined ? b.market_conditions : cur.market_conditions,
+-    timeframes: b.timeframes !== undefined ? b.timeframes : cur.timeframes,
+-    entry_rules: JSON.stringify(b.entry_rules || JSON.parse(cur.entry_rules || '[]')),
+-    exit_rules: JSON.stringify(b.exit_rules || JSON.parse(cur.exit_rules || '[]')),
+-    checklist: JSON.stringify(b.checklist || JSON.parse(cur.checklist || '[]')),
+-    risk_rules: b.risk_rules !== undefined ? b.risk_rules : cur.risk_rules,
+-    target_r_multiple: b.target_r_multiple !== undefined ? num(b.target_r_multiple, 2) : cur.target_r_multiple,
+-    colour: b.colour || cur.colour,
+-    active: b.active === undefined ? cur.active : (b.active ? 1 : 0),
 +  const own = await db.prepare('SELECT id FROM strategies WHERE id=? AND user_id=?').get(id, req.user.id);
 +  if (!own) return res.status(404).json({ error: 'Strategy not found' });
 +  const rows = await db.prepare(`SELECT id, version, name, description, market_conditions, timeframes,
@@ -13275,7 +13533,7 @@ index 0bb768c..d2e0b65 100644
  });
  router.delete('/strategies/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM strategies WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -541,21 +891,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
+@@ -541,21 +843,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
  router.post('/accounts', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.name) return res.status(400).json({ error: 'Account name is required' });
@@ -13344,7 +13602,7 @@ index 0bb768c..d2e0b65 100644
      prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
      id, user_id: req.user.id,
      name: b.name !== undefined ? b.name : cur.name,
-@@ -563,7 +953,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -563,7 +905,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
      currency: b.currency !== undefined ? b.currency : cur.currency,
      starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
@@ -13358,7 +13616,7 @@ index 0bb768c..d2e0b65 100644
      daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
      max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
      prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
-@@ -571,7 +966,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -571,7 +918,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
      archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
    });
@@ -13371,7 +13629,7 @@ index 0bb768c..d2e0b65 100644
  });
  router.delete('/accounts/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -708,7 +1107,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -708,7 +1059,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
    const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
    const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
    const balance = num(b.balance, acc ? acc.current_balance : 10000);
@@ -13392,7 +13650,7 @@ index 0bb768c..d2e0b65 100644
    const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
    const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
    const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
-@@ -722,6 +1133,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -722,6 +1085,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
      pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
      pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
      percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,
@@ -13403,7 +13661,7 @@ index 0bb768c..d2e0b65 100644
    });
  });
  
-@@ -775,15 +1190,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
+@@ -775,15 +1142,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
  }));
  
  /* ------------------------------------------------------- import / export */
@@ -13424,7 +13682,7 @@ index 0bb768c..d2e0b65 100644
    const esc = (v) => {
      const s = v === null || v === undefined ? '' : String(v);
      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-@@ -792,17 +1208,20 @@ router.get('/export/csv', requireAuth, async (req, res) => {
+@@ -792,17 +1160,21 @@ router.get('/export/csv', requireAuth, async (req, res) => {
    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
    res.setHeader('Content-Disposition', `attachment; filename="trades-${new Date().toISOString().slice(0, 10)}.csv"`);
    res.send(csv);
@@ -13438,6 +13696,7 @@ index 0bb768c..d2e0b65 100644
      exported_at: new Date().toISOString(), version: 1,
 +    confluence_labels:(await Confluences.vocabulary(userId)).labels,
 +    period_reviews:await PeriodReviews.exportOwned(userId),
++    strategy_rule_changes:await RuleChanges.exportOwned(userId),
 +    opportunity_history:await Opportunities.exportOwned(userId),
      user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
      accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
@@ -13448,7 +13707,7 @@ index 0bb768c..d2e0b65 100644
      journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
      goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
      watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
-@@ -810,7 +1229,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
+@@ -810,7 +1182,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
    res.setHeader('Content-Type', 'application/json');
    res.setHeader('Content-Disposition', `attachment; filename="tradejournal-backup-${new Date().toISOString().slice(0, 10)}.json"`);
    res.send(JSON.stringify(data, null, 2));
@@ -13457,7 +13716,7 @@ index 0bb768c..d2e0b65 100644
  
  /** Import from CSV — auto-detects the usual broker column names. */
  router.post('/import/csv', requireAuth, async (req, res) => {
-@@ -831,13 +1250,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -831,13 +1203,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
      opened: findCol(['opened_at', 'open_time', 'entry_time', 'date', 'datetime', 'open_date', 'time_open', 'opened']),
      closed: findCol(['closed_at', 'close_time', 'exit_time', 'close_date', 'time_close', 'closed']),
      fees: findCol(['fees', 'commission', 'fee', 'cost', 'swap']),
@@ -13475,7 +13734,7 @@ index 0bb768c..d2e0b65 100644
    const instruments = await instrumentMap(req.user.id);
    const tz = (await settingsOf(req)).timezone;
    let inserted = 0, skipped = 0;
-@@ -864,11 +1286,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -864,11 +1239,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
            closed_at: map.closed > -1 ? r[map.closed] : null,
            fees: map.fees > -1 ? r[map.fees] : 0,
            strategy_name: map.strategy > -1 ? r[map.strategy] : '',
@@ -13492,7 +13751,7 @@ index 0bb768c..d2e0b65 100644
          if (map.net > -1 && String(r[map.net] || '').trim() && !isNaN(Number(String(r[map.net]).replace(/[^0-9.\-]/g, '')))) {
            const net = Number(String(r[map.net]).replace(/[^0-9.\-]/g, ''));
            if (net !== 0) {
-@@ -877,18 +1304,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -877,18 +1257,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
              if (trade.risk_amount > 0) trade.r_multiple = Math.round((net / trade.risk_amount) * 10000) / 10000;
            }
          }
@@ -13516,19 +13775,20 @@ index 0bb768c..d2e0b65 100644
 +// Actual transaction insert IDs (never raw backup IDs), with optional media
 +// warnings separate from financial parsing. Storage failure rolls back together.
 +function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
-+async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
 +  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
-+  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);return n;
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);return n;
 +});}
 +
  function parseCsv(text) {
    const rows = [];
    let row = [], field = '', inQuotes = false;
-@@ -912,10 +1349,12 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -912,10 +1302,13 @@ router.post('/import/json', requireAuth, async (req, res) => {
    const data = req.body && req.body.data ? req.body.data : req.body;
    if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
    const userId = req.user.id;
 -  const accountMap = {};
++  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes);
 +  const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
 +  const accountMap = Object.create(null);
    const instruments = await instrumentMap(userId);
@@ -13539,7 +13799,7 @@ index 0bb768c..d2e0b65 100644
    try {
      // reads happen before the write batch (libSQL never interleaves them)
      const myAccounts = await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId);
-@@ -925,14 +1364,17 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -925,14 +1318,17 @@ router.post('/import/json', requireAuth, async (req, res) => {
        accountMap[a.id] = match ? match.id : (def ? def.id : null);
      }
      const existingStrategies = new Set((await db.prepare('SELECT name FROM strategies WHERE user_id=?').all(userId)).map((r) => r.name));
@@ -13559,19 +13819,19 @@ index 0bb768c..d2e0b65 100644
        inserted++;
      }
      for (const s of (data.strategies || [])) {
-@@ -953,9 +1395,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -953,9 +1349,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
            j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
        });
      }
 -    await db.batch([...T.batchStatements(userId, collected), ...stmts]);
-+    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
    } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
 -  res.json({ ok: true, inserted });
-+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,opportunity_warnings:opportunities.warnings });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,opportunity_warnings:opportunities.warnings });
  });
  
  /* ---------------------------------------------------------------- settings */
-@@ -971,6 +1413,16 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -971,6 +1367,16 @@ router.put('/settings', requireAuth, async (req, res) => {
      risk_defaults: b.risk_defaults || cur.risk_defaults || { risk_pct: 1, daily_limit_pct: 3, max_trades: 5 },
      // the floor every plan is judged against: below it a plan may still be shown,
      // but it is labelled and never reads as a plain order
@@ -13588,7 +13848,7 @@ index 0bb768c..d2e0b65 100644
      min_rr: Number.isFinite(Number(b.min_rr)) && Number(b.min_rr) > 0
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
-@@ -982,7 +1434,7 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -982,7 +1388,7 @@ router.put('/settings', requireAuth, async (req, res) => {
  router.post('/demo/seed', requireAuth, async (req, res) => {
    const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
    const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
@@ -14021,6 +14281,53 @@ index 0000000..719f778
 +  if(r.cycle)await store.prepare('UPDATE routine_cycles SET first_action_at=? WHERE id=? AND user_id=? AND account_id=? AND first_action_at IS NULL').run(daily.evaluated_at,r.cycle.id,userId,daily.account_id);
 +}
 +module.exports={ORDERS,MEDITATION_MS,config,parts,windowAt,boundaries,validateCycle,current,acknowledge,meditation,elapsed,validateSteps,observeAdmission};
+diff --git a/src/rule-changes.js b/src/rule-changes.js
+new file mode 100644
+index 0000000..7aaa47b
+--- /dev/null
++++ b/src/rule-changes.js
+@@ -0,0 +1,41 @@
++'use strict';
++/** M104 advisory quarter discipline, never grade/risk/trade permission. */
++const crypto=require('crypto');
++const VERSION='rule-edit-v1',MAX_UNITS=3,RECOMMENDED_UNITS=1;
++const FIELDS=['description','market_conditions','timeframes','entry_rules','exit_rules','checklist','risk_rules','target_r_multiple'];
++const BASIS='APP recorded edit units: max(removed,added) rule lines, pure reorder1, scalar field1; not verified independent causal variables. UTC calendar quarter across own strategies. One recommended, three maximum guidance; warning, never trading/grade/risk authority.';
++const normal=s=>s.normalize('NFC').trim().replace(/\s+/gu,' ');
++const finite=n=>typeof n==='number'&&Number.isFinite(n),id=n=>Number.isSafeInteger(n)&&n>0;
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'rule_change_invalid',status});}
++const hash=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
++function lines(value,array=false){let list;if(array){if(typeof value==='string')value=JSON.parse(value);if(value==null)value=[];if(!Array.isArray(value))throw invalid('Rule list must be an array.');list=value;}else{if(value==null)value='';if(typeof value!=='string')throw invalid('Rule text must be recorded text.');list=value.split(/\r?\n/);}if(list.length>500||list.some(s=>typeof s!=='string'||s.length>5000))throw invalid('Rule edit APP budget500 lines/5000 chars per line exceeded or invalid.');return list.map(normal).filter(Boolean);}
++function delta(a,b){const take=(left,right)=>{const count=new Map();for(const v of right)count.set(v,(count.get(v)||0)+1);const out=[];for(const v of left){const n=count.get(v)||0;if(n)count.set(v,n-1);else out.push(v);}return out;};const removed=take(a,b),added=take(b,a),reordered=!removed.length&&!added.length&&JSON.stringify(a)!==JSON.stringify(b);return {units:Math.max(removed.length,added.length)||(reordered?1:0),removed,added,reordered};}
++function diff(before,after){const changes=[],unavailable=[];for(const field of FIELDS){try{let value;if(['entry_rules','exit_rules','checklist'].includes(field))value=delta(lines(before[field],true),lines(after[field],true));else if(['description','risk_rules'].includes(field))value=delta(lines(before[field]),lines(after[field]));else if(field==='target_r_multiple'){const number=x=>{if(x==null||!['string','number'].includes(typeof x)||typeof x==='string'&&!x.trim()||!Number.isFinite(Number(x)))throw invalid('Recorded target R unavailable.');return Number(x);};const a=number(before[field]),b=number(after[field]);value={units:a===b?0:1,before:a,after:b};}else{const text=x=>{if(x==null)return '';if(typeof x!=='string'||x.length>5000)throw invalid('Recorded scalar unavailable.');return normal(x);};const a=text(before[field]),b=text(after[field]);value={units:a===b?0:1,before:a,after:b};}if(value.units)changes.push({field,...value});}catch(e){unavailable.push({field,reason:e.message||'Recorded rule field unavailable.'});}}
++ const known=changes.reduce((n,c)=>n+c.units,0);return {state:unavailable.length?'unavailable':'known',units:unavailable.length?null:known,known_units:known,fields:changes.map(c=>c.field),changes,unavailable,basis:BASIS,rubric_version:VERSION,broker_verified:false};
++}
++function quarter(nowMs=Date.now()){if(!finite(nowMs))throw invalid('A known server date is required.');const d=new Date(nowMs);d.setUTCMonth(Math.floor(d.getUTCMonth()/3)*3,1);d.setUTCHours(0,0,0,0);const end=new Date(d);end.setUTCMonth(end.getUTCMonth()+3);return {start:d.toISOString().slice(0,10),end:end.toISOString().slice(0,10),timezone:'UTC',basis:'APP UTC calendar quarter; not inferred broker/trader hours.'};}
++
++
++function stamp(value,nowMs,canonical=false){return require('./process-outcomes').clock(value,{now:nowMs,canonical});}
++function aggregate({userId,strategies=[],versions=[],events=[],nowMs=Date.now(),quarterStart=null}={}){
++ if(!id(userId))throw invalid('An owned rule-change scope is required.');const range=quarter(quarterStart===null?nowMs:Date.parse(quarterStart));if(quarterStart!==null&&range.start!==quarterStart)throw invalid('Use a canonical UTC quarter start.');const owned=strategies.filter(s=>s.user_id===userId&&id(s.id)),ids=new Set(owned.map(s=>s.id)),changes=[],covered=new Map();let unavailable=0,unassigned=0,imported=0,legacy_assumption=0;const inRange=n=>new Date(n).toISOString().slice(0,10)>=range.start&&new Date(n).toISOString().slice(0,10)<range.end;
++ for(const e of events){if(e.user_id!==userId)continue;if(e.source==='imported_unverified'){imported++;continue;}try{const at=stamp(e.recorded_at,nowMs,true),b=JSON.parse(e.before_json),a=JSON.parse(e.after_json),d=diff(b,a);if(e.source!=='app_strategy_edit'||e.rubric_version!==VERSION||!id(e.strategy_key)||!id(e.from_version)||e.to_version!==e.from_version+1||at===null||quarter(at).start!==e.quarter_start||d.state!=='known'||d.units!==e.units||e.context_hash!==hash([e.user_id,e.strategy_key,e.from_version,e.to_version,b,a,d,e.recorded_at]))throw invalid('Unavailable captured change.');const key=e.strategy_key+':'+e.to_version;if(covered.has(key))throw invalid('Duplicate captured version identity.');covered.set(key,{event:e,after:a});if(inRange(at))changes.push({strategy_id:e.strategy_key,strategy_name:e.strategy_name,from_version:e.from_version,to_version:e.to_version,recorded_at:e.recorded_at,source:'captured_app_edit',event_id:e.id,delta:d,orphaned:e.strategy_id===null});}catch{unavailable++;unassigned++;}}
++ for(const plan of owned){const history=versions.filter(v=>v.strategy_id===plan.id).slice().sort((a,b)=>a.version-b.version),seen=new Set();if(!history.length){unavailable++;continue;}let previous=null;for(const v of history){const at=stamp(v.created_at,nowMs);if(!id(v.version)||seen.has(v.version)||at===null){unavailable++;previous=null;continue;}seen.add(v.version);if(/backfill|assumption|pre-existing/i.test(v.note||''))legacy_assumption++;
++   if(!previous){if(v.version!==1)unavailable++;previous=v;continue;}const priorAt=stamp(previous.created_at,nowMs);if(v.version!==previous.version+1||priorAt===null||at<priorAt){unavailable++;previous=v;continue;}const captured=covered.get(plan.id+':'+v.version);if(captured){const match=diff(captured.after,v);if(match.state!=='known'||match.units!==0)unavailable++;previous=v;continue;}const d=diff(previous,v);if(d.state!=='known'){unavailable++;previous=v;continue;}if(inRange(at)&&d.units)changes.push({strategy_id:plan.id,strategy_name:v.name||plan.name,from_version:previous.version,to_version:v.version,recorded_at:v.created_at,source:'surviving_version_delta',event_id:null,delta:d,orphaned:false});previous=v;
++  }}
++ const known=changes.reduce((n,c)=>n+c.delta.units,0),by=new Map();for(const c of changes){if(!by.has(c.strategy_id))by.set(c.strategy_id,{strategy_id:c.strategy_id,name:c.strategy_name,units:0,changes:[]});const x=by.get(c.strategy_id);x.units+=c.delta.units;x.changes.push(c);}const empty=!owned.length&&!events.length;return {state:empty?'empty':unavailable?'unavailable':'available',quarter:range,recommended:RECOMMENDED_UNITS,maximum:MAX_UNITS,total_units:unavailable?null:known,known_units:known,above_three:known>MAX_UNITS,unavailable,unassigned_evidence:unassigned,imported_unverified:imported,legacy_assumption_versions:legacy_assumption,by_strategy:[...by.values()],changes,history_complete:!empty&&unavailable===0,broker_verified:false,basis:BASIS,warning:known>MAX_UNITS?'More than three recorded APP edit units this quarter. Review the changed rules and run one controlled hypothesis. No trade, grade or risk setting is blocked/clamped by this advisory.':unavailable?'Quarter change history is unavailable/incomplete, not certified within the three-change guidance. No trade or risk authority.':known>RECOMMENDED_UNITS?'More than one recorded edit unit; one recommended, three maximum guidance. This is not causal/edge or permission proof.':'One recommended, three maximum guidance; absence of recorded changes does not verify an untouched historical plan.',scope:'Count every saved edit/reversal across all OWNED strategies. Legacy surviving versions have limited history; deleted pre-install versions cannot be reconstructed. Fresh retained events survive deletion. Not verified independent variables or causal attribution.'};
++}
++function proposal(report,delta){const unavailable=report.total_units===null||delta.units===null,total=unavailable?null:report.total_units+delta.units,known=report.known_units+delta.known_units;return {state:unavailable?'unavailable':'available',quarter:report.quarter,current:report,proposed:delta,total_if_saved:total,known_minimum_if_saved:known,above_three:known>MAX_UNITS,recommended:RECOMMENDED_UNITS,maximum:MAX_UNITS,permission_granted:false,warning:known>MAX_UNITS?'This edit would take recorded APP units above three this quarter; review each named change. Advisory only, not independent causal-variable proof.':unavailable?'History/proposal unavailable; no inferred clean budget or permission.':'One change recommended; at most three per quarter guidance. No strategy experiment outcome is verified.'};}
++
++
++async function inspectOn(store,userId,strategyId=null,quarterStart=null){if(strategyId!==null&&!id(strategyId))throw invalid('Strategy not found.',404);const strategies=await store.prepare('SELECT * FROM strategies WHERE user_id=? ORDER BY id').all(userId);const strategy=strategyId===null?null:strategies.find(s=>s.id===strategyId);if(strategyId!==null&&!strategy)throw invalid('Strategy not found.',404);const versions=await store.prepare('SELECT v.* FROM strategy_versions v JOIN strategies s ON v.strategy_id=s.id WHERE s.user_id=? ORDER BY v.strategy_id,v.version').all(userId),events=await store.prepare('SELECT * FROM strategy_rule_changes WHERE user_id=? ORDER BY id').all(userId);if(versions.length>10000||events.length>10000)throw invalid('Rule-history APP budget10000 records exceeded; no silently clipped quarter count.',503);const report=aggregate({userId,strategies,versions,events,quarterStart}),version=strategy?Math.max(0,...versions.filter(v=>v.strategy_id===strategyId).map(v=>v.version)):null;return {strategy,version,report,archives:events.filter(e=>e.source==='imported_unverified').map(archiveView),revision:hash([userId,strategyId,report.quarter,strategies,versions,events]),scope:'Owned global quarter guidance; displayed strategy is one component, not a separate limit.'};}
++async function inspect(userId,strategyId=null,quarterStart=null){const {db}=require('./db');return db.tx(async tx=>inspectOn(db.transactionStore(tx),userId,strategyId,quarterStart));}
++async function recordOn(store,userId,strategyId,before,after,fromVersion,toVersion){const at=new Date().toISOString(),d=diff(before,after),q=quarter();await store.prepare('INSERT INTO strategy_rule_changes(user_id,strategy_id,strategy_key,strategy_name,from_version,to_version,before_json,after_json,delta_json,units,quarter_start,recorded_at,rubric_version,source,context_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(userId,strategyId,strategyId,before.name||after.name||'',fromVersion,toVersion,JSON.stringify(before),JSON.stringify(after),JSON.stringify(d),d.units,q.start,at,VERSION,'app_strategy_edit',hash([userId,strategyId,fromVersion,toVersion,before,after,d,at]));return d;}
++async function optionalOn(store,userId,strategyId=null){try{return await inspectOn(store,userId,strategyId);}catch{return {strategy:null,version:null,report:{state:'unavailable',total_units:null,known_units:null,above_three:false,changes:[],by_strategy:[],basis:BASIS,warning:'Rule history unavailable; no within-limit/zero/permission inference.'},revision:null};}}
++
++
++function archiveView(e){try{return {id:e.id,strategy_id:null,source:'imported_unverified',received_at:e.recorded_at,before:JSON.parse(e.before_json),after:JSON.parse(e.after_json),historical:JSON.parse(e.historical_json),broker_verified:false};}catch{return {id:e.id,source:'unavailable',broker_verified:false};}}
++function portable(raw){const out={entries:[],warnings:[]};if(raw==null)return out;try{if(!raw||raw.version!==1||!Array.isArray(raw.entries)||raw.entries.length>500)throw invalid('Optional rule history needs version1 and at most500 entries.');if(raw.unavailable)out.warnings.push('Original rule history unavailable; no lost quarter/variable count inferred.');for(const e of raw.entries){try{const original=e.historical||{},before=e.before,after=e.after;if(!before||typeof before!=='object'||Array.isArray(before)||!after||typeof after!=='object'||Array.isArray(after)||JSON.stringify([before,after]).length>256000)throw invalid('Optional rule definitions unavailable or APP256KB budget exceeded.');const from=original.from_version??e.from_version,to=original.to_version??e.to_version;if(!id(from)||to!==from+1)throw invalid('Unverified rule version pair unavailable.');let at=original.recorded_at??e.recorded_at;if(at!=null&&stamp(at,Date.now(),true)===null){out.warnings.push('Invalid/future original rule clock omitted; no receipt/capture replay.');at=null;}const units=original.units??e.units;if(units!==null&&(!Number.isSafeInteger(units)||units<0||units>5000))throw invalid('Unverified rule unit declaration unavailable.');out.entries.push({before,after,historical:{source:original.source||e.source||null,recorded_at:at,strategy_key:original.strategy_key??e.strategy_key??null,strategy_name:original.strategy_name??e.strategy_name??'',from_version:from,to_version:to,units,quarter_start:original.quarter_start??e.quarter_start??null}});}catch(x){out.warnings.push(x.message||'Optional unverified rule history omitted.');}}}catch(x){out.warnings.push(x.message||'Optional rule history omitted.');}out.warnings=out.warnings.slice(0,20);return out;}
++async function exportOwned(userId){try{const {db}=require('./db'),rows=await db.prepare('SELECT * FROM strategy_rule_changes WHERE user_id=? ORDER BY id').all(userId);return {version:1,entries:rows.map(e=>({strategy_name:e.strategy_name,strategy_key:e.strategy_key,from_version:e.from_version,to_version:e.to_version,before:JSON.parse(e.before_json),after:JSON.parse(e.after_json),units:e.units,source:e.source,recorded_at:e.recorded_at,quarter_start:e.quarter_start,...(e.historical_json?{historical:JSON.parse(e.historical_json)}:{})}))};}catch{return {version:1,entries:[],unavailable:true};}}
++async function importOn(store,userId,parsed){for(const e of parsed.entries){const seq=(await store.prepare("SELECT MAX(to_version) v FROM strategy_rule_changes WHERE user_id=? AND strategy_key=0 AND source='imported_unverified'").get(userId)).v||0,at=new Date().toISOString(),d=diff(e.before,e.after);await store.prepare('INSERT INTO strategy_rule_changes(user_id,strategy_id,strategy_key,strategy_name,from_version,to_version,before_json,after_json,delta_json,units,quarter_start,recorded_at,rubric_version,source,context_hash,historical_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(userId,null,0,e.historical.strategy_name,0,seq+1,JSON.stringify(e.before),JSON.stringify(e.after),JSON.stringify(d),null,quarter().start,at,VERSION,'imported_unverified',hash(['imported_unverified',userId,seq+1,e,at]),JSON.stringify(e.historical));}}
++module.exports={VERSION,MAX_UNITS,RECOMMENDED_UNITS,FIELDS,BASIS,invalid,hash,id,diff,quarter,stamp,aggregate,proposal,inspectOn,inspect,recordOn,optionalOn,portable,exportOwned,importOn,archiveView};
 diff --git a/src/screenshots.js b/src/screenshots.js
 new file mode 100644
 index 0000000..332d159

@@ -1,0 +1,15 @@
+/home/user/Trader/analysis/probe-m104-migration.js:12
+ const restart=child(APP,now+180000,`console.log(JSON.stringify(await inspect(${uid})));`);ok('actual independent restart retains all event/version/rule/snapshot clocks',JSON.stringify(restart.facts)===JSON.stringify(made.facts)&&JSON.stringify(restart.rule_changes)===JSON.stringify(made.rule_changes)));const repeat=child(APP,now+240000,`if(Z)await Z.inspect(${uid});console.log(JSON.stringify(await inspect(${uid})));`);ok('repeatedreadonly guidance neverwrites counts or rewrites original experiment',JSON.stringify(repeat.facts)===JSON.stringify(restart.facts));ok('original63-column financial/journal review coverage remains unchanged',made.trade_columns.length===63&&!made.trade_columns.some(c=>/rule_change|variables_changed/.test(c.name)));
+                                                                                                                                                                                                                                                                                                               ^
+
+SyntaxError: Unexpected token ')'
+    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
+    at Module._compile (node:internal/modules/cjs/loader:1755:20)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.3

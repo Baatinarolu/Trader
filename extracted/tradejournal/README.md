@@ -1,5 +1,43 @@
 # TradeJournal Pro
 
+## M104 — named quarterly rule-change discipline (2026-10-12)
+
+**Playbook** now shows UTC quarterly guidance across **all owned setups**. Editing a
+setup reads fresh rules, previews each named delta, and asks you to review/continue
+with the shown configuration. Saved advice/history remains visible. One change is
+recommended, three maximum guidance; this is **advisory**, not a new technical,
+capital, grade or trade veto. Existing direct API edits remain legal and return advice.
+
+Counts are deterministic **APP edit units, not verified independent causal variables**:
+paired rule-line additions/removals use max count, pure reorder1/scalar1, all eight
+M102 rule fields inspected. Names/colour/pause excluded. Each saved edit/reversion
+counts; another setup or deleting it cannot erase fresh tracked history. Unknown/
+corrupt/missing/future/gapped history remains unavailable with a known minimum,
+not a certified0/within-budget quarter. Deleted pre-install versions aren't recoverable.
+
+Current setup/version/change fact save atomically, so a failed snapshot/history write
+cannot leave half-applied rules or an unsnapshotted setup. Optional displayed revision
+protects actual UI edits;409 retains draft/reload,503 never claims saved. An unversioned
+current setup gets a pre-edit baseline, not invented original entry rules. Existing
+trade attributions/financial numbers/grades/risk/weights/targets/RR stay unchanged.
+
+New quarterly review snapshots retain their original rule-change guidance/baseline;
+later edits don't rewrite the saved document. No review applies a plan. JSON backup
+carries rule history; restore is readonly own **imported/unverified** declaration with
+new receiving clock, not an actual strategy/action/quarter-budget replay. Archive
+and Settings warnings visible; bad optional history warns while finance imports,
+actual storage failure atomic, missing history still permits finance backup marker.
+
+APP budgets500lines/5000chars,10000history records,500portable declarations/256KB
+before-after pair; existing20MBfile/25MBbody limits, no silent clipping. One/three
+course guidance doesn't prove causal attribution, an edge or70% wins. Floor30,
+M103n>=5 and B/C tradeability unchanged. M105 identity/quarter theme remains next.
+
+**M104153/0 across11**, actual133-parent migration14/0. Ledger
+**132=98 done/3 partial/31TODO**. Older schema/raw/provider/mock negatives retained;
+no broker/human/mental/meditation/pixel/production validation claim. Full report
+`analysis/M104-QUARTERLY-RULE-CHANGE-DISCIPLINE.md` in delivery ZIP.
+
 ## M100 — saved opportunities are not automatically missed trades (2026-10-12)
 
 **Bots → Signals → Review value/decision** records your explicit own-plan value

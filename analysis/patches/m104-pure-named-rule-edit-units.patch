@@ -1,0 +1,23 @@
+diff --git a/src/rule-changes.js b/src/rule-changes.js
+new file mode 100644
+index 0000000..f5357ef
+--- /dev/null
++++ b/src/rule-changes.js
+@@ -0,0 +1,17 @@
++'use strict';
++/** M104 advisory quarter discipline, never grade/risk/trade permission. */
++const crypto=require('crypto');
++const VERSION='rule-edit-v1',MAX_UNITS=3,RECOMMENDED_UNITS=1;
++const FIELDS=['description','market_conditions','timeframes','entry_rules','exit_rules','checklist','risk_rules','target_r_multiple'];
++const BASIS='APP recorded edit units: max(removed,added) rule lines, pure reorder1, scalar field1; not verified independent causal variables. UTC calendar quarter across own strategies. One recommended, three maximum guidance; warning, never trading/grade/risk authority.';
++const normal=s=>s.normalize('NFC').trim().replace(/\s+/gu,' ');
++const finite=n=>typeof n==='number'&&Number.isFinite(n),id=n=>Number.isSafeInteger(n)&&n>0;
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'rule_change_invalid',status});}
++const hash=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
++function lines(value,array=false){let list;if(array){if(typeof value==='string')value=JSON.parse(value);if(value==null)value=[];if(!Array.isArray(value))throw invalid('Rule list must be an array.');list=value;}else{if(value==null)value='';if(typeof value!=='string')throw invalid('Rule text must be recorded text.');list=value.split(/\r?\n/);}if(list.length>500||list.some(s=>typeof s!=='string'||s.length>5000))throw invalid('Rule edit APP budget500 lines/5000 chars per line exceeded or invalid.');return list.map(normal).filter(Boolean);}
++function delta(a,b){const take=(left,right)=>{const count=new Map();for(const v of right)count.set(v,(count.get(v)||0)+1);const out=[];for(const v of left){const n=count.get(v)||0;if(n)count.set(v,n-1);else out.push(v);}return out;};const removed=take(a,b),added=take(b,a),reordered=!removed.length&&!added.length&&JSON.stringify(a)!==JSON.stringify(b);return {units:Math.max(removed.length,added.length)||(reordered?1:0),removed,added,reordered};}
++function diff(before,after){const changes=[],unavailable=[];for(const field of FIELDS){try{let value;if(['entry_rules','exit_rules','checklist'].includes(field))value=delta(lines(before[field],true),lines(after[field],true));else if(['description','risk_rules'].includes(field))value=delta(lines(before[field]),lines(after[field]));else if(field==='target_r_multiple'){const number=x=>{if(x==null||!['string','number'].includes(typeof x)||typeof x==='string'&&!x.trim()||!Number.isFinite(Number(x)))throw invalid('Recorded target R unavailable.');return Number(x);};const a=number(before[field]),b=number(after[field]);value={units:a===b?0:1,before:a,after:b};}else{const text=x=>{if(x==null)return '';if(typeof x!=='string'||x.length>5000)throw invalid('Recorded scalar unavailable.');return normal(x);};const a=text(before[field]),b=text(after[field]);value={units:a===b?0:1,before:a,after:b};}if(value.units)changes.push({field,...value});}catch(e){unavailable.push({field,reason:e.message||'Recorded rule field unavailable.'});}}
++ const known=changes.reduce((n,c)=>n+c.units,0);return {state:unavailable.length?'unavailable':'known',units:unavailable.length?null:known,known_units:known,fields:changes.map(c=>c.field),changes,unavailable,basis:BASIS,rubric_version:VERSION,broker_verified:false};
++}
++function quarter(nowMs=Date.now()){if(!finite(nowMs))throw invalid('A known server date is required.');const d=new Date(nowMs);d.setUTCMonth(Math.floor(d.getUTCMonth()/3)*3,1);d.setUTCHours(0,0,0,0);const end=new Date(d);end.setUTCMonth(end.getUTCMonth()+3);return {start:d.toISOString().slice(0,10),end:end.toISOString().slice(0,10),timezone:'UTC',basis:'APP UTC calendar quarter; not inferred broker/trader hours.'};}
++module.exports={VERSION,MAX_UNITS,RECOMMENDED_UNITS,FIELDS,BASIS,invalid,hash,id,diff,quarter};

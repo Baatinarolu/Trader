@@ -561,3 +561,37 @@ not change seeding/grade/risk policy.
 Current132=97done/3partial/32TODO. Next M104, M105/M106/M111/M112open;
 M30/M103/M108partial. Coursefloor30/M103n>=5/B-Ctradeability unchanged. No70%,
 causal/predictive/broker/provider/human/mental/meditation/pixel/production validation.
+
+
+## M104 — quarterly change advice, never trading/risk permission
+
+One change recommended/three maximum per quarter from saved Ep27, implemented as
+named APP edit-unit count/advice—not a new technical/capital/grade/action veto.
+Paired rule-line replacements/max add-remove, reorder1/scalar1 across all eight
+M102 rule fields; exact normalised text, not verified independent causal variables
+or an NLP judge. Cosmetic name/colour/pause excluded; raw formatting may retain
+M102 version bump with0 APP unit. Every saved edit/reversal across own setups;
+UTC calendar quarter of next-version write. Deleted fresh setup can't refund units.
+Legacy erased histories cannot be reconstructed; missing/corrupt/future/gapped/
+ambiguous coverage unavailable, known lower bound explicit, not certified zero/clean.
+
+Setup creation+v1 and current edit+newversion+captured before/after fact atomic.
+Real failure doesn't leave half-applied rules/unsnapshotted setup. Fresh optional
+revision/CAS used by actual UI, stale409 retains draft/reload,503 no saved claim.
+Legacy direct API edits still legal/advice-returning. Pre-edit current unversioned
+baseline not original entry-rule backfill. Original trades/attribution remain intact.
+No budget admission state, grading, core/loss-writing/routine/cap/timer/risk/factor/
+geometry/stop/target/RR change. Course floor30/M103n>=5/B-C untouched.
+
+Actual Playbook named preview/acknowledged save/advice/history, actor/account/token/
+serial/closed/superseded/fault guards, text escaped. New M99 quarter snapshots freeze
+counter/baseline; later edits don't rewrite them. Review never applies a strategy.
+Imported JSON history readonly owned receiving/unverified original declarations,
+no live strategy/action/budget replay. Archives/warnings visible, malformed optional
+history finance-legal, real import failure atomic, missing-history finance backup
+marker. APP limits500lines/5000chars,10000history,500portable/256KBpair +existing
+20MBfile/25MBbody, no silent clipping/dedupe. No sealed database-owner-proof vault.
+
+Current132=98done/3partial/31TODO, nextM105. M106/M111/M112 open; M30/M103/M108
+partial. No causal attribution, win-rate/edge/70%, actual broker/provider/mental/
+human/meditation/pixel/production validation from this descriptive discipline.

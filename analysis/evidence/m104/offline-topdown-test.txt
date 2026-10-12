@@ -1,0 +1,89 @@
+
+── steps 2–4: right candle → range → sweep → opposite side ─
+ ok   a right candle is found (a candle reacted at a level)
+ ok   it is the candle that wicked into the level
+ ok   step 3: the range is that candle's high/low (93.6 – 94.6)
+ ok   step 4: the sellside of the range was swept
+ ok   and price closed back inside the range (the sweep failed to hold)
+ ok   state is confirmed and the direction is long
+ ok   the plan is tradeable (not a chase)
+ ok   the target is the opposite side of the range
+ ok   the stop is beyond the candle that made the sweep
+ ok   the safer entry is the retest of the swept edge — better priced than the confirmation, still above the stop
+ ok   and it risks less than the aggressive fill for the same target
+ ok   the two fills carry different, non-zero R:R (the defect was them being identical)
+ ok   both entries carry an R:R
+ ok   without a sweep there is no direction and no plan
+ ok   and no plan is produced (the method does not front-run the sweep)
+ ok   a range with both sides swept is plain chop
+ ok   a range that was swept and never reclaimed is skipped as consumed
+ ok   and with no older right candle the answer is: wait (no trade to invent)
+ ok   price that has run most of the range is flagged as a chase
+
+── the hierarchy: higher timeframe decides, lower timeframes time 
+ ok   the stack declares only the three fetched roles, no unfetched fourth timeframe
+ ok   layersFor does not advertise a dead zone_tf layer
+ ok   the stack is stated in the method object
+ ok   the five steps are always reported
+ ok   each layer states its job
+ ok   a lower timeframe against the higher one is TIMING, not a blocking conflict
+ ok   and the rule that says so is carried with it
+ ok   a confirmed sweep of the low makes the method long even while the small chart reads bearish
+ ok   and that disagreement never blocks the trade (it changes timing, not direction)
+ ok   conviction tier B with the size rule attached
+
+── M33: internal counter-HTF execution does not change the daily narrative 
+ ok   counter execution -1 is permitted after all three roles confirm
+ ok   daily narrative 1 is NOT overwritten by execution -1
+ ok   one authoritative target: nearest HTF opposing zone
+ ok   reduced counter risk is numeric, not just a label
+ ok   counter execution 1 is permitted after all three roles confirm
+ ok   daily narrative -1 is NOT overwritten by execution 1
+ ok   one authoritative target: nearest HTF opposing zone
+ ok   reduced counter risk is numeric, not just a label
+ ok   a lower sweep alone cannot replace the confirmed lower structural shift
+
+── the method gate on the setup engine ─────────────────────
+ ok   a blocked method forces NO TRADE whatever the setups scored
+ ok   and the verdict says why (source: topdown-gate)
+ ok   the setup model's own opinion is kept separately
+ ok   both directional candidates still exist (as a watch list, not a trade)
+ ok   the method state is attached to the setups payload
+ ok   with a confirmed long method only the long side can be armed
+ ok   the verdict never points against the method
+
+── integration: candle aggregation and the momentum payload 
+ ok   four 15m bars fold into one 1h bar (2 built)
+ ok   and the buckets are anchored to the clock, not to the first bar fetched
+ ok   the aggregate carries the right high/low
+ ok   momentum.analyse carries the top-down method
+ ok   and states the hierarchy explicitly
+ ok   the three layers are reported with their roles
+ ok   the weighted score is labelled as display-only, not the decision
+ ok   every conflict carries a rule and a resolution
+ ok   the conviction tier is stated (watch)
+ ok   the payload names what each timeframe is for
+ ok   a fresh displacement leg in the trade direction confirms (this assertion fails on the old code)
+ ok   the leg age is derived from its bar index
+ ok   a 40-bar-old leg is history, not a trigger
+ ok   a leg in the opposite direction does not confirm
+ ok   a 0.3 ATR expansion is not displacement
+ ok   the NEWEST leg in the direction counts, not the oldest in the window
+ ok   a recent structure shift confirms — 'down' as a string is understood
+ ok   the string direction is normalised to ±1 for everything downstream
+ ok   an 'up' shift does not confirm a short
+ ok   when both happened, the note names both
+ ok   dirSign speaks both dialects (string breaks, numeric legs)
+ ok   the safer entry still points at the fresh FVG
+ ok   the plan records the R:R floor it was judged against
+ ok   the plan states whether it clears the floor (rr 4.7, below_min_rr false)
+ ok   the flag and the number agree
+ ok   this fixture clears the floor (no warning needed)
+ ok   the floor is the caller-s, so a 0.1R floor accepts the same plan
+ ok   the plan reports the stop distance in ranges (0.22)
+ ok   and whether the range and the sweep are the same event
+ ok   the flag and the ratio agree
+ ok   the sweep depth in ATR is stated (0.08)
+ ok   this plan clears the floor
+
+TOP-DOWN TEST: 77 passed, 0 failed

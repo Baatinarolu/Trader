@@ -1,0 +1,168 @@
+diff --git a/README.md b/README.md
+index 8382124..2960aa4 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,43 @@
+ # TradeJournal Pro
+ 
++## M104 — named quarterly rule-change discipline (2026-10-12)
++
++**Playbook** now shows UTC quarterly guidance across **all owned setups**. Editing a
++setup reads fresh rules, previews each named delta, and asks you to review/continue
++with the shown configuration. Saved advice/history remains visible. One change is
++recommended, three maximum guidance; this is **advisory**, not a new technical,
++capital, grade or trade veto. Existing direct API edits remain legal and return advice.
++
++Counts are deterministic **APP edit units, not verified independent causal variables**:
++paired rule-line additions/removals use max count, pure reorder1/scalar1, all eight
++M102 rule fields inspected. Names/colour/pause excluded. Each saved edit/reversion
++counts; another setup or deleting it cannot erase fresh tracked history. Unknown/
++corrupt/missing/future/gapped history remains unavailable with a known minimum,
++not a certified0/within-budget quarter. Deleted pre-install versions aren't recoverable.
++
++Current setup/version/change fact save atomically, so a failed snapshot/history write
++cannot leave half-applied rules or an unsnapshotted setup. Optional displayed revision
++protects actual UI edits;409 retains draft/reload,503 never claims saved. An unversioned
++current setup gets a pre-edit baseline, not invented original entry rules. Existing
++trade attributions/financial numbers/grades/risk/weights/targets/RR stay unchanged.
++
++New quarterly review snapshots retain their original rule-change guidance/baseline;
++later edits don't rewrite the saved document. No review applies a plan. JSON backup
++carries rule history; restore is readonly own **imported/unverified** declaration with
++new receiving clock, not an actual strategy/action/quarter-budget replay. Archive
++and Settings warnings visible; bad optional history warns while finance imports,
++actual storage failure atomic, missing history still permits finance backup marker.
++
++APP budgets500lines/5000chars,10000history records,500portable declarations/256KB
++before-after pair; existing20MBfile/25MBbody limits, no silent clipping. One/three
++course guidance doesn't prove causal attribution, an edge or70% wins. Floor30,
++M103n>=5 and B/C tradeability unchanged. M105 identity/quarter theme remains next.
++
++**M104153/0 across11**, actual133-parent migration14/0. Ledger
++**132=98 done/3 partial/31TODO**. Older schema/raw/provider/mock negatives retained;
++no broker/human/mental/meditation/pixel/production validation claim. Full report
++`analysis/M104-QUARTERLY-RULE-CHANGE-DISCIPLINE.md` in delivery ZIP.
++
+ ## M100 — saved opportunities are not automatically missed trades (2026-10-12)
+ 
+ **Bots → Signals → Review value/decision** records your explicit own-plan value
+diff --git a/docs/API.md b/docs/API.md
+index a72d984..2fd05a2 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -976,3 +976,73 @@ APP budgets:notecap2000,500portable captures/50decisions-links each/250KBrecord;
+ 20MBselected-file/25MBbody unchanged, no silent clipping/automaticdedupe. Independently
+ bounded inherited M99 `/demo/seed` response repaired to `{ok,inserted}` after actual
+ sample seeding; no sample data/grade/risk policy change or extra audit closure.
++
++
++## M104 — readonly quarter guidance and tracked rule edits
++
++`GET /strategy-changes?quarter_start=` own global quarter report/current revision
+++imported readonly archives. Omit quarter_start for server current UTC calendar
++quarter; supplied start must be canonical. `GET /strategies/:id/change-discipline`
++adds own CURRENT setup/version; canonical owned positive ID404 otherwise. All owned
++setups counted globally, per-setup details not separate limits. Actual snapshot
++read, not model/broker/causal independent-variable proof.
++
++`POST /strategies/:id/change-preview` only `{revision,changes}`. Supported changes:
++name/description/market_conditions/timeframes/entry_rules/exit_rules/checklist/
++risk_rules/target_r_multiple/colour/active. No user/clock/source/permission authority.
++Readonly; fresh displayed SHA includes current own setups/version history/change
++facts/quarter. Missing/invalid400, stale409, missing/foreign404, read outage503.
++Reply current discipline view +preview named diff/proposed/current/total_if_saved/
++known_minimum_if_saved/above_three/warning; unknown fullcountNULL, not zero/clean.
++
++Existing `PUT /strategies/:id` accepts optional `strategy_revision`; actual UI always
++supplies it. When present, malformed400 or unseen own-global context409, no write.
++Legacy direct PUT remains legal (`revision_checked:false`) and returns quarteradvice.
++Original M102 `version/new_version/changed_field` contract retained; added
++changed_fields (all), rule_delta, quarter_rule_changes. No three-unit hard veto,
++capital/technical gate or risk/target clamp. Creation+v1 and update+newversion+
++change fact atomic; actual failure503 rolls back all three, not earlier finance.
++Current unversioned pre-edit baseline saved before change, not restored historical
++entry rules or attribution backfill. Fresh version created_at canonical server ISO;
++legacy SQL clocks still understood with explicit coverage.
++
++APP rubric rule-edit-v1: normalised exact lines (NFC/trim/collapsed whitespace, no
++semantic/case aliases), list/multiline max(removed,added), pure reorder1, scalar1.
++All eight original rule-bearing fields checked. Cosmetic name/colour/pause excluded.
++Formatting/numeric-equivalent unit0 may still bump raw M102 version. Every saved
++edit/reversal counts globally across own setups in UTC next-version write quarter,
++not one unit per entire array or firstchangedfield. One recommended/three maximum
++course guidance, counting policy APP not true independent causal-variable proof.
++
++Additive strategy_rule_changes retains original key/name, before/after definitions,
++from/to versions, delta/rubric/hash, actual server clock/quarter/source. Owner FK
++cascade; setup FK SET NULL retains past fact on deletion, so deletion doesn't refund
++new recorded units. UPDATE facts immutable except FK nullification. No original
++trade/signal columns or backfill; imported/legacy DTO proof not accepted. Not a
++cryptographically sealed/database-admin-proof ledger. Existing old surviving
++version deltas compared once, prior baseline can be olderquarter; fresh event pair
++not double-counted. Missing/gapped/corrupt/future/duplicate source unavailable,
++known recorded lower bound separate. Deleted pre-install versions unavailable,
++absence not untouched-plan certificate or quarter-compliance proof.
++
++M99 quarterly new metrics snapshots include quarter_rule_changes and revision;
++saved old baseline/receipts immutable, live preview may differ. Nonquarter artifacts
++have null. Review completion never applies rule/risk/goal or grants entry.
++
++Full JSON backup strategy_rule_changes:{version:1,entries:[...]}. Restore readonly
++own imported_unverified archive, no live setup association/strategy/action/budget
++credit; receiving time new, original version/key/definitions/units/source/clock
++unverified in history. No native strategy/actual edit minted by archive replay.
++Re-export/restore keeps original declared clock/source, not receiving-capture replay.
++Optional bad/future/budget history warns with rule_change_warnings while truthful
++finance remains legal. Actual optional store failure atomically rolls back that
++import; missing store export finance still available with unavailable marker.
++Actual Playbook archive/Settings escaped warning-bearing success stays visible;
++no auto-refresh/dismissal hiding omission. Repeated restore appends declarations,
++not automatic dedupe. No authoritative rule budget in trade CSV.
++
++APP input budgets500lines/5000chars each,10000versions/events,500portable records/
++256KBdefinition pair; existing20MBfile/25MBrequest limits, no silent clipping. No
++score/core/routine/cap/loss/admission/financial-winner/trade-grade/weights/risk/factor/
++geometry/stop/target/RR mutation. Floor30/M103n>=5/B-C unchanged. No causal/predictive
++edge/70%/broker/provider/human/mental/meditation/pixel/production proof. M105 next.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index 93ce443..cae737d 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -561,3 +561,37 @@ not change seeding/grade/risk policy.
+ Current132=97done/3partial/32TODO. Next M104, M105/M106/M111/M112open;
+ M30/M103/M108partial. Coursefloor30/M103n>=5/B-Ctradeability unchanged. No70%,
+ causal/predictive/broker/provider/human/mental/meditation/pixel/production validation.
++
++
++## M104 — quarterly change advice, never trading/risk permission
++
++One change recommended/three maximum per quarter from saved Ep27, implemented as
++named APP edit-unit count/advice—not a new technical/capital/grade/action veto.
++Paired rule-line replacements/max add-remove, reorder1/scalar1 across all eight
++M102 rule fields; exact normalised text, not verified independent causal variables
++or an NLP judge. Cosmetic name/colour/pause excluded; raw formatting may retain
++M102 version bump with0 APP unit. Every saved edit/reversal across own setups;
++UTC calendar quarter of next-version write. Deleted fresh setup can't refund units.
++Legacy erased histories cannot be reconstructed; missing/corrupt/future/gapped/
++ambiguous coverage unavailable, known lower bound explicit, not certified zero/clean.
++
++Setup creation+v1 and current edit+newversion+captured before/after fact atomic.
++Real failure doesn't leave half-applied rules/unsnapshotted setup. Fresh optional
++revision/CAS used by actual UI, stale409 retains draft/reload,503 no saved claim.
++Legacy direct API edits still legal/advice-returning. Pre-edit current unversioned
++baseline not original entry-rule backfill. Original trades/attribution remain intact.
++No budget admission state, grading, core/loss-writing/routine/cap/timer/risk/factor/
++geometry/stop/target/RR change. Course floor30/M103n>=5/B-C untouched.
++
++Actual Playbook named preview/acknowledged save/advice/history, actor/account/token/
++serial/closed/superseded/fault guards, text escaped. New M99 quarter snapshots freeze
++counter/baseline; later edits don't rewrite them. Review never applies a strategy.
++Imported JSON history readonly owned receiving/unverified original declarations,
++no live strategy/action/budget replay. Archives/warnings visible, malformed optional
++history finance-legal, real import failure atomic, missing-history finance backup
++marker. APP limits500lines/5000chars,10000history,500portable/256KBpair +existing
++20MBfile/25MBbody, no silent clipping/dedupe. No sealed database-owner-proof vault.
++
++Current132=98done/3partial/31TODO, nextM105. M106/M111/M112 open; M30/M103/M108
++partial. No causal attribution, win-rate/edge/70%, actual broker/provider/mental/
++human/meditation/pixel/production validation from this descriptive discipline.
