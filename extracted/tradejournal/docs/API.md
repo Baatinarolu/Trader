@@ -679,3 +679,65 @@ show warning-bearing success without automatic dismissal/refresh.20MB selected
 file/25MB request limits unchanged; repeat historical restore can duplicate trades.
 Captures never complete core/post-loss writing, execution grade, admission, caps,
 routine or risk; optional exit capture/decline is followed by required writing.
+
+
+## M91 — current profit versus retained trade-exception account-days
+
+`GET /process-outcomes?account_id=&from=&to=` is authenticated/read-only.
+Optional canonical positive **OWNED** account ID; omitted means all owned accounts,
+kept as separate account-days. Optional valid UTC `YYYY-MM-DD` dates/from<=to;
+malformed400, invalid/foreign account404, process-read outage503. Empty parameters
+aren't evidence. No client override snapshots, flags, eligibility or ownership
+are accepted as report authority. No schema/column/persisted flag and no writes.
+
+Response `{review:{state,timezone:'UTC',account_ids,from,to,days,coverage,basis,
+metrics_policy,broker_verified:false}}`. Inspector reads accounts, raw closed
+journal outcomes and M90 `guardrail_entry_admissions`/`guardrail_events` in one
+transaction; never reruns past events against today's edited rule settings.
+Owned clock/date/action/state/reason/rule metadata required. Normal/caution
+admissions distinct from overridden. Admission+event same action linked once;
+conflicts/corrupt/undatable facts unavailable. Valid older trade-event-only
+exceptions can be read without fabricating an admission. Actual server reason
+policy nonblank<=2000 plain text, including short/multiline, is preserved.
+
+Each day exposes account_id,date,closed_trades,known_net_count,unknown_net_count,
+known_net_sum,realised_net,unassigned_closed,admitted_entries,exception_entries,
+exceptions,evidence_unavailable,context_counts,rewarded_breach,process_state,
+outcome,broker_verified. Exceptions retain original trade/action ID, UTC rule day,
+clock, rules/details/reason, sources/admission/event IDs. Current trade correction,
+reopen/deletion does not rewrite that past action. It is app-record evidence,
+not broker execution/misconduct or a sealed/database-owner-tamper-proof vault.
+
+`rewarded_breach:true` means a known complete positive WHOLE account-day plus
+actual retained traded exception. A merely reached stop (`breach`), blocked request,
+research-plan override or record-only observation is not that case; contextual
+counts distinguish them. Unknown history not clean. Finance is **current corrected
+journal**, exactly closed finite net on UTC close day, no floating/open values.
+Unknown constituent or invalid/missing/future close clock makes whole-day total
+unavailable; no guessed opening day or unknown→0. Unassigned evidence and clocks
+explicit in coverage. Overflowing sum unavailable, not Infinity/zero/profit.
+Different accounts/days never combined into one case. Overnight entry-rule day
+is not attributed to the eventual trade's profit day; association is calendar-level.
+
+`/analytics`, `/coach`, `/briefing`, `/journal`, `/journal/:date` add `process_review`.
+Day review selects its owned/default account and aligns M90 history to it. Date
+bounds respected; symbolic/strategy/tag/model trade filters do NOT thin the full
+account-day outcome for this annotation. Original financial statistics can still
+show that selected subset: the different annotation basis is explicit. Optional
+process-read fault returns `state:'unavailable',days:[],coverage:null`, rather than
+vetoing finance or silently declaring clean history. Dedicated read endpoint uses503.
+
+Coach adds one descriptive `rewarded_breach` warning only when known cases exist,
+with money_basis `recorded_flagged_account_day_net`. Compatibility `impact` is
+actual summed known flagged-day net, not causal cost; overflow null with
+recorded_net_available:false. UI labels it recorded flagged-day net/Unavailable,
+never fabricated+$0 impact. Unrelated insights/score/summary remain unchanged.
+No per-trade category filter for a day association; review actual account-day links.
+
+This feature **annotates**, never excludes financial wins or changes win-rate/
+expectancy denominators, execution/behaviour grades, sizing/risk/permission/caps,
+routine/admission/loss-writing clocks. No causal psychological reinforcement,
+prediction/edge/probability/70% claim. Existing plain financial/history imports
+remain legal; root/trade snapshots can't replay retained server proof. No new
+verified guard-history portability in this pass. M93 daily behaviour score remains
+separate TODO; M106/M111/M112 still open, M108 partial.

@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/user/Trader/analysis/run-m91-verification.py", line 73, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/user/Trader/analysis/run-m91-verification.py", line 52, in main
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:outs=list(pool.map(fn,M89_FEATURE))
+                                                                                            ^^^^^^^^^^^
+NameError: name 'M89_FEATURE' is not defined. Did you mean: 'M88_M89_FEATURE'?

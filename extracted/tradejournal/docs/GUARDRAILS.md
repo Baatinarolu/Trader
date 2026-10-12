@@ -412,3 +412,41 @@ All setup/execution grades, checklist/entry-model weights, default risk/factors,
 geometry/stops/targets/RR, admissions/caps/routine/loss-writing clocks unchanged.
 Current ledger132=92 done/3 partial/37TODO; M30/M103/M108 partial, M106/M111/M112
 open. No broker/provider/pixel/actual-human/meditation/production/edge proof.
+
+
+## M91 — profitable recorded exceptions require review, not metric rewrites
+
+Known positive whole-owned UTC account-day P&L plus a valid retained actual saved
+trade exception under a personal stop is a distinct review annotation. Reaching a
+trade/profit limit correctly or being blocked isn't evidence of breaking a rule;
+research exceptions/history are not executed positions. Original source, owner,
+account, action/trade identity, typed reason, clock/rule day and stop/waiver metadata
+required; admission+event linked once. Valid existing caution/short/multiline
+reason policy preserved. Corrupt/unavailable/undatable history not inferred clean.
+
+Financial current corrected CLOSE-day outcomes, no open/floating profit, full
+account totals even under winning-symbol/strategy filtering. Unknown/inconsistent
+availability not0, overflow unavailable. Accounts/days not pooled into cases;
+overnight rule-entry and eventual realised days not silently conflated. Historical
+exception survives correction/deletion/reopen, but current financial association
+can change honestly. No prior financial P&L or broker mental-state backfill.
+
+Same behaviour must score the same regardless of profit/loss: **M91 does not
+punish profit or recalculate behaviour/execution grades**. Financial wins remain
+wins and denominators/expectancy intact. Coach/Analytics/day/index annotate them
+without causal dollar “impact”, psychological reinforcement, edge/probability or
+permission claims. Displayed flagged-day net is recorded associated money, not
+the amount an exception caused. Missing grouped money explicitly unavailable.
+No misleading per-trade category filter for a day-level association.
+
+No schema, persisted flag or new write path. No cap/loss-writing/cooldown/routine/
+admission refund, entry-model/checklist/grade/risk/factor/stop/target/RR change.
+User/account/token/superseded/fault callbacks guarded, reasons escaped, historical
+account not automatically selected. Optional process store outage never certifies
+clean or rejects truthful financial reporting. Imports cannot replay proof through
+DTOs; no guard-history backup expansion or sealed/admin-proof vault claimed.
+
+Current132=93 done/3 partial/36TODO. M93 per-day behaviour score next; M30/M103/M108
+partial, M106/M111/M112 TODO. Course floor30, deliberate M103n>=5/B-C tradeability
+unchanged. No broker/provider/actual-human/meditation/pixels/production/edge/70%
+validation implied by this app review annotation.

@@ -1,0 +1,43 @@
+{
+  "source_manifest": "delivery-source.json",
+  "assets": [
+    {
+      "path": "public/index.html",
+      "http": 200,
+      "server_transform": "Exact existing {{V}} to per-boot build ID",
+      "expected_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/process-outcomes.js",
+      "http": 200,
+      "sha256": "6384d54f3b2a955edad54fd61a6ab1fcec3f240824d5eddcac1c00de9907879c",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/journal.js",
+      "http": 200,
+      "sha256": "9f60fccc2df1c1e874f76711da7cf42efeb5a26dbba876477c925d2bc4ea6c23",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/analytics.js",
+      "http": 200,
+      "sha256": "8a76fb0ad72b9cab0d162df6d8f1233d2ebc05d696c37042947981fe0b755bcf",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/coach.js",
+      "http": 200,
+      "sha256": "330261b4271e2f2603464e3b0a1f43a4b940f8423d4b6e4867838886db3fbf72",
+      "local_byte_differences": 0
+    }
+  ],
+  "preview": {
+    "port": 3000,
+    "database": "/tmp/m91-preview.db",
+    "remote": false,
+    "synthetic": true,
+    "scheduler": false
+  },
+  "scope": "Current restarted backend and actually served source bytes, exact existing HTML build transform, not pixels/production/user preservation."
+}

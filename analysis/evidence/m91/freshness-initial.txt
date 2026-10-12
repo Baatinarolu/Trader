@@ -1,0 +1,9 @@
+ReferenceError: Cannot access 'fetch' before initialization
+    at w.fetch (/home/user/Trader/analysis/probe-m91-ui-freshness.js:3:466)
+    at req (eval at load (/home/user/Trader/analysis/probe-m91-ui-freshness.js:3:533), <anonymous>:16:23)
+    at Object.get (eval at load (/home/user/Trader/analysis/probe-m91-ui-freshness.js:3:533), <anonymous>:41:25)
+    at S.load (eval at load (/home/user/Trader/analysis/probe-m91-ui-freshness.js:3:533), <anonymous>:43:25)
+    at /home/user/Trader/analysis/probe-m91-ui-freshness.js:3:770
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async finish (/home/user/Trader/analysis/m91-test-support.js:9:50)
+M91 annotation UI receiving/stale/unknown-money guards: 0 passed, 1 failed

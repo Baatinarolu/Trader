@@ -6,8 +6,10 @@
   Views.coach = {
     title: 'Coach',
     async render(root) {
+      const processContext=Views.processOutcomes?.context();
       const params = Store.queryParams();
       const [data, an] = await Promise.all([Store.fetch('/coach', params, 15000), Store.fetch('/analytics', params, 15000)]);
+      if(Views.processOutcomes&&!Views.processOutcomes.same(processContext))return;
       root.innerHTML = '';
       const s = data.summary || {};
 
@@ -36,6 +38,7 @@
         </div>
       </div>`;
       root.appendChild(banner);
+      if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(data.process_review));
 
       const split = U.h('div', { class: 'grid g-2-1', style: 'margin-top:14px' });
       const feed = U.h('div');
@@ -49,13 +52,13 @@
           el.innerHTML = `
             <div class="row-between" style="align-items:flex-start;gap:10px">
               <h4>${U.esc(i.title)}</h4>
-              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.impact >= 0 ? '+' : ''}${U.money(i.impact)} ${i.capture_basis==='app_record_window_self_report'?'recorded group net':'impact'}</span>
+              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.money_basis==='recorded_flagged_account_day_net'&&!Number.isFinite(i.impact)?'Unavailable':(i.impact >= 0 ? '+' : '')+U.money(i.impact)} ${i.money_basis==='recorded_flagged_account_day_net'?'recorded flagged-day net':i.capture_basis==='app_record_window_self_report'?'recorded group net':'impact'}</span>
             </div>
             <div class="detail">${U.esc(i.detail)}</div>
             <div class="evidence">${(i.evidence || []).map((e) => `<span class="ev">${U.esc(e.label)}<b>${U.esc(e.value)}</b></span>`).join('')}</div>
             <div class="actions"><b>Do this:</b> ${U.esc(i.action)}</div>
             <div class="row" style="gap:6px;margin-top:10px">
-              <button class="btn xs ghost" data-filter="${U.esc(i.category || '')}">Filter trades</button>
+              ${i.id==='rewarded_breach'?'<span class="tiny muted">Review captured account-day details above; no per-trade attribution/filter.</span>':`<button class="btn xs ghost" data-filter="${U.esc(i.category || '')}">Filter trades</button>`}
               <button class="btn xs ghost" data-dismiss="${U.esc(i.id)}">Got it</button>
             </div>`;
           feed.appendChild(el);

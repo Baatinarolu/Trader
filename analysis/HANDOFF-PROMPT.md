@@ -1,6 +1,51 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M89 — timely APP emotion prompts/provenance — 2026-10-12
+## Current M91 — profitable days with recorded guardrail exceptions — 2026-10-12
+
+**132:93 done /3 partial /36 TODO /0 no-action**, exact eight groups. Read-only
+M90 actual traded-exception + whole owned UTC account-day outcome review. A reached
+stop/blocked request/research exception/record-only observation is NOT a traded
+violation. Valid retained admission/event, reason/action/original rule day/clock,
+current complete finite close-day net; unknown/corrupt/undatable/unavailable separate.
+Profitable recorded-exception case => distinct **rewarded_breach** annotation,
+not actual broker misconduct, psychological reinforcement or causal-dollar proof.
+
+**Audit correction:** same behaviour scoring across profit/loss is correct.
+M91 annotates, NEVER removes financial wins, changes win-rate/expectancy/grades,
+creates a sizing veto or punishes profit. Full account-day outcome independent of
+winning-symbol/strategy filters; overnight rule-entry vs close-day not conflated.
+Zero schema/columns/writes; deletion/correction/reopen retains process history,
+while current financial association can honestly change. Imports can't replay
+server proof. Actual day/notebook/Analytics/Coach UI, escaped reasons, owner/token/
+account/late/superseded/error guards, known flagged-day NET label, not causal impact.
+
+**Final M91 108/0 across6 probes**, actual125-parent zero-schema/restart11/0.
+Original M89 emotion170/0, M88 reasons160/0, execution260/0, routine321/0;
+M87 screenshot223/3 old schema-shape negatives retained. RAW597/155 +90s timeout;
+DECLARED825/3 same old M85 browser-day fixture. Offline178/0, declared market325/0,
+live70/1 with6 nonzero/5 summaryless. Prepared actual-parent/current native
+API121/0/Bots206/0 each,24 synthetic fills/0 mismatches. Raw APIexit2/no summary,
+Bots200/6. Original smoke21/21 conditional DOM,0 style/console,8 canvas limits,
+observed exit0. Exact served-asset conditional smoke/exits/canvas limits are in
+`evidence/m91/smoke-exit.json`, not broker/pixel/human/production proof.
+
+Six separately frozen runtime stages+docs, actual5a/pristine forward/reverse byte
+proofs, deterministic **127-source** ZIP: `build-m91-process-artifacts.py`,
+`patches/M91-PROCESS-STAGES.json`, excluded archive SHA companion.
+[Full report](M91-PROFITABLE-GUARDRAIL-EXCEPTIONS.md). Main preview3000 is temporary
+synthetic `/tmp/m91-preview.db`, offline/schedulerOFF/blank remotes, not real data.
+
+**Next M93 — per-day behaviour score**, separate scope. M106/M111/M112 stillTODO;
+M30/M103/M108 partial. All132 IDs/eight groups retained. This session remains
+**arena/762c0295-trader**; older branches/counts/next steps below are historical.
+
+### Current remaining IDs — no omissions
+
+Partials **M30,M103,M108**. TODO36: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M62,M65,M66,M67,M72,M73,M74,M93,M99,M100,M101,M104,M105,M106,M107,M109,M110,M111,M112,M115,M117,M125**.
+PROGRESS is the exact132/eight-group partition. Older ID lists below are milestone
+snapshots, not the current remaining work.
+
+## Historical M89 — timely APP emotion prompts/provenance — 2026-10-12
 
 **132:92 done /3 partial /37 TODO /0 no-action**, exact eight groups. Actual
 owned after-entry/after-close popups, retained first answers/server clocks/context,

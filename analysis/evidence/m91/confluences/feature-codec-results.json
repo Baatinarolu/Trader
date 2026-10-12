@@ -1,0 +1,112 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 26,
+  "fail": 0,
+  "results": [
+    {
+      "label": "literal nullable/none/partial/selected text normalisation null",
+      "passed": true
+    },
+    {
+      "label": "literal nullable/none/partial/selected text normalisation []",
+      "passed": true
+    },
+    {
+      "label": "literal nullable/none/partial/selected text normalisation [\"Sweep\"]",
+      "passed": true
+    },
+    {
+      "label": "literal nullable/none/partial/selected text normalisation [\"Sweep\",\"Order block\"]",
+      "passed": true
+    },
+    {
+      "label": "literal nullable/none/partial/selected text normalisation [\"A\",\"B\",\"C\",\"D\",\"E\"]",
+      "passed": true
+    },
+    {
+      "label": "literal nullable/none/partial/selected text normalisation [\" Sweep \",\"sweep\",\"Order   block\"]",
+      "passed": true
+    },
+    {
+      "label": "literal nullable/none/partial/selected text normalisation [\"Café\",\"Café\"]",
+      "passed": true
+    },
+    {
+      "label": "literal nullable/none/partial/selected text normalisation [\"level, reaction\",\"\\\"quoted\\\" level\"]",
+      "passed": true
+    },
+    {
+      "label": "literal nullable/none/partial/selected text normalisation [\"<img src=x>\",\"Flip\"]",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget undefined",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget \"Sweep,Order block\"",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget \"[\\\"Sweep\\\"]\"",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget 1",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget false",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget {}",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget [null]",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget [\"\"]",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget [\"  \"]",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget [\"A\",{}]",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget [\"A\",\"B\",\"C\",\"D\",\"E\",\"F\"]",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget [\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"]",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget [\"a\\u0000b\"]",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget [\"a\\nb\"]",
+      "passed": true
+    },
+    {
+      "label": "reject malformed/ambiguous/over-budget [\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\",\"A\"]",
+      "passed": true
+    },
+    {
+      "label": "pure codec no mutation, no guessed source/capture clocks/technical truth",
+      "passed": true
+    },
+    {
+      "label": "case/spacing reusable key canonical, semantic alias not invented",
+      "passed": true
+    }
+  ],
+  "scope": "M88 explicit confluence codec: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

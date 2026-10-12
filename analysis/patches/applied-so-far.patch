@@ -315,12 +315,46 @@ index 0000000..bd0e991
 +no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
 +Those four are what distinguish a working deploy from one that merely builds.
 diff --git a/README.md b/README.md
-index df9ae3c..50457e8 100644
+index df9ae3c..94b15af 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,5 +1,125 @@
+@@ -1,5 +1,159 @@
  # TradeJournal Pro
  
++## M91 — positive money is not a clean-process certificate (2026-10-12)
++
++**Day review, Journal index, Analytics and Coach** now separate financial outcomes
++from recorded guardrail exceptions. A known profitable **whole owned UTC account-day**
++with an actual saved trade exception under a personal stop gets a review annotation,
++its original action/rules/reason/clock, and an invitation to identify a process fix.
++**Financial wins, win rate, expectancy, scores and grades remain unchanged.**
++
++A reached cap/profit ceiling, blocked entry, research exception or recording-time
++observation is not proof of a traded violation. No captured history means unknown,
++not compliant. Unknown/corrupt/undatable history or incomplete financial totals
++remain explicit; missing amounts are not0. Filters to winning symbols/strategies
++cannot make a losing whole account-day look profitable. Overnight entry-rule day
++is not automatically the later profit close day. Reasons are historical; current
++corrected journal totals can honestly change an association without rewriting them.
++
++The Coach's **recorded flagged-day net** is associated current money, not a causal
++“impact”/cost. The warning does not label every winner, prove psychological reward
++or broker misconduct, punish profit, resize risk, grant entry, remove caps/routine,
++or complete required core/post-loss writing. Review under the original selected
++account; no automatic account switch. Existing finance/history imports remain
++legal but cannot replay a server guardrail exception through DTOs.
++
++Read-only `GET /process-outcomes` supports owned account/date scope, separate
++account-days when all accounts selected, and explicit unavailable on read faults.
++No new schema/columns or persisted flag, no new guard-history backup transport.
++See [docs/API.md](docs/API.md) / [docs/GUARDRAILS.md](docs/GUARDRAILS.md).
++
++Measured **M91 108/0 across6**, actual-parent migration/restart11/0; original M89
++170/0, M88 reasons160/0, execution260/0, routine321/0. Ledger **132=93 done/3 partial/36TODO**.
++M93 daily behaviour score is next; M106/M111/M112 remain open, M108 partial. Older
++negative/provider/RAW/DECLARED/native/conditional-DOM results retained, not a claim
++of production, broker, actual human/meditation, pixels or a70% win rate.
++
 +## M89 — timely APP emotional-state reports (2026-10-12)
 +
 +After an admitted new/reopened trade is saved, answer **What emotion drove this
@@ -357,7 +391,7 @@ index df9ae3c..50457e8 100644
 +can duplicate trades, not an upsert.
 +
 +Measured M89 **170/0 across13** actual auth/SQL/DOM probes; parent migration14/0;
-+M88 reasons160/0, execution260/0, routine321/0. Ledger **132=92 done/3 partial/37TODO**.
++M88 reasons160/0, execution260/0, routine321/0. Historical M89 ledger **132=92 done/3 partial/37TODO** (current counts above).
 +M106/M111/M112 still open, M108 partial. Inherited/migration/provider/raw/native/DOM
 +negatives retained separately, not an all-green production/broker/human claim.
 +See `analysis/M89-TIMELY-EMOTION-CAPTURE.md` in the delivery ZIP.
@@ -444,7 +478,7 @@ index df9ae3c..50457e8 100644
  A **multi-asset trading journal, analytics engine, behavioural coach, SMC bot desk and TradingView-integrated
  pre-trade assistant**. No subscription, no broker login, no sign-in wall — a Node server, one libSQL database
  (a local file by default), and the whole thing deployable free to Vercel + Turso.
-@@ -11,6 +131,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -11,6 +165,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  
  ---
  
@@ -483,7 +517,7 @@ index df9ae3c..50457e8 100644
  ## What it does
  
  | Area | What you get |
-@@ -18,8 +170,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -18,8 +204,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  | **Journal** | 40+ fields per trade — thesis, execution notes, emotions, confidence, rule-adherence score, mistake tags, screenshots, MAE/MFE, planned R, **scale-out legs** (closes at the pct-weighted price). Works for FX, futures, stocks, ETFs, crypto, index CFDs and options. |
  | **Analytics** | Expectancy ($ and R), win rate, profit factor, payoff, SQN, Sharpe, Sortino, Calmar, recovery factor, Kelly, max drawdown, streaks, R-distribution, MAE/MFE capture efficiency, time-of-day and weekday grids, hold-time buckets, 10+ segment tables. |
  | **Coach** | 20+ deterministic behavioural tests on your own rows — losing setups, bad hours, revenge entries, post-loss trading, overtrading days, size creep, early exits, tight stops, cost of each mistake tag — each with the numbers, the dollar impact and one concrete action. |
@@ -494,7 +528,7 @@ index df9ae3c..50457e8 100644
  | **Data** | CSV import with automatic column detection, CSV export, full JSON backup & restore, multi-account (including prop-firm drawdown rules), instrument library. |
  | **Options** | Black-Scholes calculator (price, delta/gamma/theta/vega, break-even, ITM/OTM), premium-based position sizing, and a plan that warns instead of printing a fake R:R when your target premium is below the entry. 7 option presets (100× multiplier). *IV is yours to type — there is no options feed.* |
  | **Prop challenge** | Named challenge shapes (5 %/10 %, 6 %/6 %, instant…) applied to an account, then a live tracker over 4 checks — daily loss, max drawdown, profit target, consistency — with progress %. |
-@@ -263,6 +415,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
+@@ -263,6 +449,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
  
  Guides: [docs/BOTS.md](docs/BOTS.md) · [docs/PLAYLIST-CURRICULUM.md](docs/PLAYLIST-CURRICULUM.md)
  
@@ -543,7 +577,7 @@ index df9ae3c..50457e8 100644
  
  * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.
 diff --git a/docs/API.md b/docs/API.md
-index 4475db3..2921771 100644
+index 4475db3..3fe8cbd 100644
 --- a/docs/API.md
 +++ b/docs/API.md
 @@ -1,5 +1,55 @@
@@ -602,7 +636,7 @@ index 4475db3..2921771 100644
  Base URL: `http://localhost:3000/api`
  Auth: session cookie (`tj_session`) **or** an `x-session: <token>` header. There is **no sign-in wall**:
  `POST /auth/local` hands the caller a workspace (reusing the database's existing one locally, minting a
-@@ -383,3 +433,249 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
+@@ -383,3 +433,311 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
  | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
  | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
  | `DELETE /api/chart/drawings?symbol=…&tf=…` | clears that market |
@@ -852,12 +886,74 @@ index 4475db3..2921771 100644
 +file/25MB request limits unchanged; repeat historical restore can duplicate trades.
 +Captures never complete core/post-loss writing, execution grade, admission, caps,
 +routine or risk; optional exit capture/decline is followed by required writing.
++
++
++## M91 — current profit versus retained trade-exception account-days
++
++`GET /process-outcomes?account_id=&from=&to=` is authenticated/read-only.
++Optional canonical positive **OWNED** account ID; omitted means all owned accounts,
++kept as separate account-days. Optional valid UTC `YYYY-MM-DD` dates/from<=to;
++malformed400, invalid/foreign account404, process-read outage503. Empty parameters
++aren't evidence. No client override snapshots, flags, eligibility or ownership
++are accepted as report authority. No schema/column/persisted flag and no writes.
++
++Response `{review:{state,timezone:'UTC',account_ids,from,to,days,coverage,basis,
++metrics_policy,broker_verified:false}}`. Inspector reads accounts, raw closed
++journal outcomes and M90 `guardrail_entry_admissions`/`guardrail_events` in one
++transaction; never reruns past events against today's edited rule settings.
++Owned clock/date/action/state/reason/rule metadata required. Normal/caution
++admissions distinct from overridden. Admission+event same action linked once;
++conflicts/corrupt/undatable facts unavailable. Valid older trade-event-only
++exceptions can be read without fabricating an admission. Actual server reason
++policy nonblank<=2000 plain text, including short/multiline, is preserved.
++
++Each day exposes account_id,date,closed_trades,known_net_count,unknown_net_count,
++known_net_sum,realised_net,unassigned_closed,admitted_entries,exception_entries,
++exceptions,evidence_unavailable,context_counts,rewarded_breach,process_state,
++outcome,broker_verified. Exceptions retain original trade/action ID, UTC rule day,
++clock, rules/details/reason, sources/admission/event IDs. Current trade correction,
++reopen/deletion does not rewrite that past action. It is app-record evidence,
++not broker execution/misconduct or a sealed/database-owner-tamper-proof vault.
++
++`rewarded_breach:true` means a known complete positive WHOLE account-day plus
++actual retained traded exception. A merely reached stop (`breach`), blocked request,
++research-plan override or record-only observation is not that case; contextual
++counts distinguish them. Unknown history not clean. Finance is **current corrected
++journal**, exactly closed finite net on UTC close day, no floating/open values.
++Unknown constituent or invalid/missing/future close clock makes whole-day total
++unavailable; no guessed opening day or unknown→0. Unassigned evidence and clocks
++explicit in coverage. Overflowing sum unavailable, not Infinity/zero/profit.
++Different accounts/days never combined into one case. Overnight entry-rule day
++is not attributed to the eventual trade's profit day; association is calendar-level.
++
++`/analytics`, `/coach`, `/briefing`, `/journal`, `/journal/:date` add `process_review`.
++Day review selects its owned/default account and aligns M90 history to it. Date
++bounds respected; symbolic/strategy/tag/model trade filters do NOT thin the full
++account-day outcome for this annotation. Original financial statistics can still
++show that selected subset: the different annotation basis is explicit. Optional
++process-read fault returns `state:'unavailable',days:[],coverage:null`, rather than
++vetoing finance or silently declaring clean history. Dedicated read endpoint uses503.
++
++Coach adds one descriptive `rewarded_breach` warning only when known cases exist,
++with money_basis `recorded_flagged_account_day_net`. Compatibility `impact` is
++actual summed known flagged-day net, not causal cost; overflow null with
++recorded_net_available:false. UI labels it recorded flagged-day net/Unavailable,
++never fabricated+$0 impact. Unrelated insights/score/summary remain unchanged.
++No per-trade category filter for a day association; review actual account-day links.
++
++This feature **annotates**, never excludes financial wins or changes win-rate/
++expectancy denominators, execution/behaviour grades, sizing/risk/permission/caps,
++routine/admission/loss-writing clocks. No causal psychological reinforcement,
++prediction/edge/probability/70% claim. Existing plain financial/history imports
++remain legal; root/trade snapshots can't replay retained server proof. No new
++verified guard-history portability in this pass. M93 daily behaviour score remains
++separate TODO; M106/M111/M112 still open, M108 partial.
 diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
 new file mode 100644
-index 0000000..a10bce5
+index 0000000..8759da0
 --- /dev/null
 +++ b/docs/GUARDRAILS.md
-@@ -0,0 +1,414 @@
+@@ -0,0 +1,452 @@
 +# Personal guardrails, recording and reasoned exceptions
 +
 +## M87 visual journal scope (2026-10-11)
@@ -1272,6 +1368,44 @@ index 0000000..a10bce5
 +geometry/stops/targets/RR, admissions/caps/routine/loss-writing clocks unchanged.
 +Current ledger132=92 done/3 partial/37TODO; M30/M103/M108 partial, M106/M111/M112
 +open. No broker/provider/pixel/actual-human/meditation/production/edge proof.
++
++
++## M91 — profitable recorded exceptions require review, not metric rewrites
++
++Known positive whole-owned UTC account-day P&L plus a valid retained actual saved
++trade exception under a personal stop is a distinct review annotation. Reaching a
++trade/profit limit correctly or being blocked isn't evidence of breaking a rule;
++research exceptions/history are not executed positions. Original source, owner,
++account, action/trade identity, typed reason, clock/rule day and stop/waiver metadata
++required; admission+event linked once. Valid existing caution/short/multiline
++reason policy preserved. Corrupt/unavailable/undatable history not inferred clean.
++
++Financial current corrected CLOSE-day outcomes, no open/floating profit, full
++account totals even under winning-symbol/strategy filtering. Unknown/inconsistent
++availability not0, overflow unavailable. Accounts/days not pooled into cases;
++overnight rule-entry and eventual realised days not silently conflated. Historical
++exception survives correction/deletion/reopen, but current financial association
++can change honestly. No prior financial P&L or broker mental-state backfill.
++
++Same behaviour must score the same regardless of profit/loss: **M91 does not
++punish profit or recalculate behaviour/execution grades**. Financial wins remain
++wins and denominators/expectancy intact. Coach/Analytics/day/index annotate them
++without causal dollar “impact”, psychological reinforcement, edge/probability or
++permission claims. Displayed flagged-day net is recorded associated money, not
++the amount an exception caused. Missing grouped money explicitly unavailable.
++No misleading per-trade category filter for a day-level association.
++
++No schema, persisted flag or new write path. No cap/loss-writing/cooldown/routine/
++admission refund, entry-model/checklist/grade/risk/factor/stop/target/RR change.
++User/account/token/superseded/fault callbacks guarded, reasons escaped, historical
++account not automatically selected. Optional process store outage never certifies
++clean or rejects truthful financial reporting. Imports cannot replay proof through
++DTOs; no guard-history backup expansion or sealed/admin-proof vault claimed.
++
++Current132=93 done/3 partial/36TODO. M93 per-day behaviour score next; M30/M103/M108
++partial, M106/M111/M112 TODO. Course floor30, deliberate M103n>=5/B-C tradeability
++unchanged. No broker/provider/actual-human/meditation/pixels/production/edge/70%
++validation implied by this app review annotation.
 diff --git a/public/css/app.css b/public/css/app.css
 index 34cc0ff..877c80b 100644
 --- a/public/css/app.css
@@ -1312,21 +1446,22 @@ index 34cc0ff..877c80b 100644
 +.routine-report{margin-top:14px}.routine-report th{white-space:normal}
 +@media(max-width:700px){.routine-banner{position:relative;top:auto;align-items:flex-start;padding:10px;flex-wrap:wrap}.routine-schedule .form-grid{grid-template-columns:1fr!important}}
 diff --git a/public/index.html b/public/index.html
-index 7ed122b..76a93ff 100644
+index 7ed122b..f4672a7 100644
 --- a/public/index.html
 +++ b/public/index.html
-@@ -25,6 +25,10 @@
+@@ -25,6 +25,11 @@
  <script src="/js/api.js?v={{V}}"></script>
  <script src="/js/store.js?v={{V}}"></script>
  <script src="/js/tv.js?v={{V}}"></script>
 +<script src="/js/views/execution.js?v={{V}}"></script>
++<script src="/js/views/process-outcomes.js?v={{V}}"></script>
 +<script src="/js/views/emotions.js?v={{V}}"></script>
 +<script src="/js/views/confluences.js?v={{V}}"></script>
 +<script src="/js/views/screenshots.js?v={{V}}"></script>
  <script src="/js/views/dashboard.js?v={{V}}"></script>
  <script src="/js/views/bots.js?v={{V}}"></script>
  <script src="/js/views/trades.js?v={{V}}"></script>
-@@ -36,6 +40,7 @@
+@@ -36,6 +41,7 @@
  <script src="/js/views/risk.js?v={{V}}"></script>
  <script src="/js/views/market.js?v={{V}}"></script>
  <script src="/js/views/settings.js?v={{V}}"></script>
@@ -1684,10 +1819,29 @@ index 4ca4e5e..e13fa5d 100644
  
      /**
 diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
-index a3eb318..da29ccf 100644
+index a3eb318..6d9a1a2 100644
 --- a/public/js/views/analytics.js
 +++ b/public/js/views/analytics.js
-@@ -23,7 +23,8 @@
+@@ -6,8 +6,10 @@
+   Views.analytics = {
+     title: 'Analytics',
+     async render(root) {
++      const processContext=Views.processOutcomes?.context();
+       const params = Store.queryParams();
+       const an = await Store.fetch('/analytics', params, 15000);
++      if(Views.processOutcomes&&!Views.processOutcomes.same(processContext))return;
+       const k = an.kpis;
+       root.innerHTML = '';
+ 
+@@ -16,6 +18,7 @@
+       const TABS = [['core', 'Core statistics'], ['timing', 'Timing & sessions'], ['execution', 'Execution quality'], ['risk', 'Risk & drawdown'], ['segments', 'Segments']];
+       let active = 'core';
+       TABS.forEach(([id, label]) => tabs.appendChild(U.h('button', { class: active === id ? 'active' : '', text: label, onclick: () => { active = id; U.$$('button', tabs).forEach((b, i) => b.classList.toggle('active', TABS[i][0] === id)); U.clear(panes); panes.appendChild(PANES[id]()); } })));
++      if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(an.process_review));
+       root.appendChild(tabs); root.appendChild(panes);
+ 
+       const PANES = {
+@@ -23,7 +26,8 @@
            const w = U.h('div', { class: 'grid' });
            const cards = [
              ['Profitability', [['Net P&L', U.moneySign(k.net_pnl), U.cls(k.net_pnl)], ['Gross profit', U.money(k.gross_profit), 'pos'], ['Gross loss', U.money(-k.gross_loss), 'neg'], ['Fees & costs', U.money(-k.fees), 'neg'], ['Expectancy / trade', U.moneySign(k.expectancy), U.cls(k.expectancy)], ['Expectancy (R)', U.signed(k.expectancy_r, 3) + 'R', U.cls(k.expectancy_r)], ['Profit factor', k.profit_factor === null ? '∞' : U.num(k.profit_factor, 2), ''], ['Payoff ratio', U.num(k.payoff, 2), ''], ['Kelly optimum', U.pct(k.kelly, 1), '']]],
@@ -1697,7 +1851,7 @@ index a3eb318..da29ccf 100644
              ['Risk-adjusted', [['Sharpe (ann.)', U.num(k.sharpe, 2), k.sharpe > 1 ? 'pos' : ''], ['Sortino (ann.)', U.num(k.sortino, 2), k.sortino > 1 ? 'pos' : ''], ['SQN', U.num(k.sqn, 2), ''], ['Calmar', U.num(k.calmar, 2), ''], ['Recovery factor', U.num(k.recovery_factor, 2), ''], ['Std dev of R', U.num(k.std_r, 2), ''], ['Median R', U.signed(k.median_r, 2) + 'R', ''], ['Total R', U.signed(k.total_r, 1) + 'R', U.cls(k.total_r)], ['Profit concentration', U.pct(k.profit_concentration, 0), '']]],
              ['Discipline', [['Avg adherence', k.avg_adherence ? U.num(k.avg_adherence, 2) + ' / 5' : '—', ''], ['Risk consistency', '±' + U.pct(k.risk_consistency, 0), k.risk_consistency < 35 ? 'pos' : 'warn'], ['Avg risk / trade', U.money(k.avg_risk), ''], ['Avg risk % of balance', U.pct(k.avg_risk_pct_of_balance, 2), ''], ['Trades without stop', k.stops_overshot ? `${an.by_symbol.length ? '' : ''}${k.stops_overshot} over -1R` : '0', ''], ['Current streak', k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + ' wins' : Math.abs(k.streaks.current) + ' losses'), k.streaks.current_type === 'loss' ? 'neg' : 'pos'], ['Longest win streak', k.streaks.longest_win, ''], ['Longest loss streak', k.streaks.longest_loss, 'neg'], ['Trading days', `${k.trading_days} (${U.num(k.avg_trades_per_day, 1)}/day)`, '']]],
            ];
-@@ -205,16 +206,18 @@
+@@ -205,16 +209,18 @@
  
          segments() {
            const w = U.h('div', { class: 'grid' });
@@ -2201,18 +2355,44 @@ index 2222ac3..540c469 100644
            .catch((e) => { B.error = 'Correction bot failed: ' + e.message; B.busy = ''; global.App.refresh(); });
        } else if (B.busy === 'backtest') {
 diff --git a/public/js/views/coach.js b/public/js/views/coach.js
-index 3a346df..23e5b02 100644
+index 3a346df..6b54781 100644
 --- a/public/js/views/coach.js
 +++ b/public/js/views/coach.js
-@@ -49,7 +49,7 @@
+@@ -6,8 +6,10 @@
+   Views.coach = {
+     title: 'Coach',
+     async render(root) {
++      const processContext=Views.processOutcomes?.context();
+       const params = Store.queryParams();
+       const [data, an] = await Promise.all([Store.fetch('/coach', params, 15000), Store.fetch('/analytics', params, 15000)]);
++      if(Views.processOutcomes&&!Views.processOutcomes.same(processContext))return;
+       root.innerHTML = '';
+       const s = data.summary || {};
+ 
+@@ -36,6 +38,7 @@
+         </div>
+       </div>`;
+       root.appendChild(banner);
++      if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(data.process_review));
+ 
+       const split = U.h('div', { class: 'grid g-2-1', style: 'margin-top:14px' });
+       const feed = U.h('div');
+@@ -49,13 +52,13 @@
            el.innerHTML = `
              <div class="row-between" style="align-items:flex-start;gap:10px">
                <h4>${U.esc(i.title)}</h4>
 -              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.impact >= 0 ? '+' : ''}${U.money(i.impact)} impact</span>
-+              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.impact >= 0 ? '+' : ''}${U.money(i.impact)} ${i.capture_basis==='app_record_window_self_report'?'recorded group net':'impact'}</span>
++              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.money_basis==='recorded_flagged_account_day_net'&&!Number.isFinite(i.impact)?'Unavailable':(i.impact >= 0 ? '+' : '')+U.money(i.impact)} ${i.money_basis==='recorded_flagged_account_day_net'?'recorded flagged-day net':i.capture_basis==='app_record_window_self_report'?'recorded group net':'impact'}</span>
              </div>
              <div class="detail">${U.esc(i.detail)}</div>
              <div class="evidence">${(i.evidence || []).map((e) => `<span class="ev">${U.esc(e.label)}<b>${U.esc(e.value)}</b></span>`).join('')}</div>
+             <div class="actions"><b>Do this:</b> ${U.esc(i.action)}</div>
+             <div class="row" style="gap:6px;margin-top:10px">
+-              <button class="btn xs ghost" data-filter="${U.esc(i.category || '')}">Filter trades</button>
++              ${i.id==='rewarded_breach'?'<span class="tiny muted">Review captured account-day details above; no per-trade attribution/filter.</span>':`<button class="btn xs ghost" data-filter="${U.esc(i.category || '')}">Filter trades</button>`}
+               <button class="btn xs ghost" data-dismiss="${U.esc(i.id)}">Got it</button>
+             </div>`;
+           feed.appendChild(el);
 diff --git a/public/js/views/confluences.js b/public/js/views/confluences.js
 new file mode 100644
 index 0000000..974ec82
@@ -2456,19 +2636,29 @@ index 0000000..89a16ef
 +  };
 +})(window);
 diff --git a/public/js/views/journal.js b/public/js/views/journal.js
-index 1d22619..6ced815 100644
+index 1d22619..470b0ef 100644
 --- a/public/js/views/journal.js
 +++ b/public/js/views/journal.js
-@@ -6,7 +6,7 @@
+@@ -6,7 +6,9 @@
    Views.journal = {
      title: 'Journal',
      async render(root) {
 -      const [entries, goals] = await Promise.all([API.get('/journal'), API.get('/goals')]);
++      const processContext=Views.processOutcomes?.context();
 +      const [entries, goals,outcomes] = await Promise.all([API.get('/journal',{account_id:Store.accountId}), API.get('/goals'),API.get('/routine/report',{account_id:Store.accountId}).catch(()=>({report:{state:'unknown'}}))]);
++      if(Views.processOutcomes&&!Views.processOutcomes.same(processContext))return;
        root.innerHTML = '';
        const layout = U.h('div', { class: 'grid g-2-1' });
        root.appendChild(layout);
-@@ -42,6 +42,19 @@
+@@ -17,6 +19,7 @@
+           <div><h2 style="margin:0">Daily reviews</h2><div class="muted small">${entries.entries.length} entries — the habit that turns a log into a system.</div></div>
+           <button class="btn primary" id="j-new">+ Today's review</button></div>`;
+       listCol.appendChild(head);
++      if(Views.processOutcomes)listCol.appendChild(Views.processOutcomes.card(entries.process_review));
+       const list = U.h('div', { class: 'card' });
+       if (!entries.entries.length) {
+         list.innerHTML = '<div class="empty">No reviews yet. Write one at the end of every session — three sentences is enough to start.</div>';
+@@ -42,6 +45,19 @@
            </div>`).join('');
        }
        listCol.appendChild(list);
@@ -2488,7 +2678,7 @@ index 1d22619..6ced815 100644
        layout.appendChild(listCol);
  
        /* goals column */
-@@ -111,18 +124,35 @@
+@@ -111,18 +127,37 @@
      });
    }
  
@@ -2496,8 +2686,8 @@ index 1d22619..6ced815 100644
 +  Views.guardrailHistory = function(events = []) {
 +    const node = U.h('div',{class:'card',style:'margin-top:14px'});
 +    node.innerHTML = `<div class="card-head"><h3>Guardrail history — UTC rule day</h3></div>
-+      <div class="tiny muted">Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Recording-time flags do not infer what happened at a historical entry.</div>
-+      ${events.length ? `<div class="table-wrap"><table><thead><tr><th>Captured at (UTC)</th><th>Account / action</th><th>Violated rule(s)</th><th>Reason / decision</th></tr></thead><tbody>
++      <div class="tiny muted">Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Observed stops/blocked requests are not traded violations. Recording-time flags do not infer what happened at a historical entry.</div>
++      ${events.length ? `<div class="table-wrap"><table><thead><tr><th>Captured at (UTC)</th><th>Account / action</th><th>Observed stop/rule(s)</th><th>Reason / decision</th></tr></thead><tbody>
 +        ${events.map(ev=>`<tr><td class="mono tiny">${U.esc(ev.observed_at)}</td>
 +          <td>${U.esc(ev.account_id == null ? 'account removed' : '#'+ev.account_id)} · ${U.esc(ev.action)}<br><span class="tiny muted">${U.esc(ev.kind)}${ev.entity_type && ev.entity_id ? ' · '+U.esc(ev.entity_type)+' #'+U.esc(ev.entity_id) : ''}</span></td>
 +          <td class="tiny">${(ev.snapshot?.breaches || []).map(b=>`<b>${U.esc(b.rule)}</b>: ${U.esc(b.detail)}`).join('<br>') || U.esc(ev.snapshot?.message || 'No known stop in the captured snapshot.')}</td>
@@ -2505,11 +2695,13 @@ index 1d22619..6ced815 100644
 +    return node;
 +  };
 +
++  let processDaySerial=0;
++  Views.openProcessDay=async(date,accountId)=>{if(Number(Store.accountId)!==Number(accountId))return global.App.toast('Select the original account before reviewing its day.','err');return openEditor(date,null);};
    async function openEditor(dateISO, root) {
 -    const day = await API.get('/journal/' + dateISO);
-+    const accountId=Store.accountId,userId=Store.user?.id;
-+    const sameContext=()=>accountId===Store.accountId&&userId===Store.user?.id;
-+    const day = await API.get('/journal/' + dateISO,{account_id:accountId});
++    const serial=++processDaySerial,accountId=Store.accountId,userId=Store.user?.id,token=API.getToken();
++    const sameContext=()=>serial===processDaySerial&&accountId===Store.accountId&&userId===Store.user?.id&&token===API.getToken();
++    let day;try{day=await API.get('/journal/' + dateISO,{account_id:accountId});}catch(e){if(sameContext())global.App.toast(e.message||'Day process/financial review unavailable; retry without inferring completion.','err');return;}
 +    if(!sameContext())return global.App.toast('Workspace/account changed while loading the day; reopen it.','err');
      const e = day.entry || {};
      const trades = day.trades || [];
@@ -2529,7 +2721,7 @@ index 1d22619..6ced815 100644
        </div>
        <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
          <label class="field"><span>Market bias</span><select id="j-bias">${['', 'Bullish', 'Bearish', 'Neutral', 'Choppy'].map((v) => `<option ${e.market_bias === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-@@ -135,21 +165,39 @@
+@@ -135,21 +170,40 @@
        <label class="field"><span>Lessons</span><textarea id="j-lessons">${U.esc(e.lessons)}</textarea></label>
        <label class="field"><span>Tomorrow</span><textarea id="j-tomorrow">${U.esc(e.tomorrow)}</textarea></label>
        <label class="field"><span>Screen time (minutes)</span><input id="j-screen" type="number" value="${e.screen_time_minutes ?? ''}" /></label>
@@ -2540,6 +2732,7 @@ index 1d22619..6ced815 100644
 +        <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
 +        <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
          <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
 +    if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
 +    let routineDirty=false;
 +    if(Views.routine){
@@ -2571,6 +2764,32 @@ index 1d22619..6ced815 100644
            try { await API.post('/journal', payload); close(); global.App.toast('Review saved', 'ok'); global.App.refresh(); }
            catch (err) { global.App.toast(err.message, 'err'); }
          },
+diff --git a/public/js/views/process-outcomes.js b/public/js/views/process-outcomes.js
+new file mode 100644
+index 0000000..426719f
+--- /dev/null
++++ b/public/js/views/process-outcomes.js
+@@ -0,0 +1,20 @@
++/* M91 current account-day outcome vs retained exceptions; never authority. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U;
++ const context=()=>({user:global.Store.user?.id,account:global.Store.accountId,token:global.API.getToken()}),same=c=>!!c&&c.user===global.Store.user?.id&&c.account===global.Store.accountId&&c.token===global.API.getToken(),finite=n=>typeof n==='number'&&Number.isFinite(n);
++ Views.processOutcomes={context,same,
++  card(review){
++   const node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{processReview:'true'}}),expected=context();node.appendChild(U.h('h3',{text:'Positive P&L does not prove process adherence'}));
++   node.appendChild(U.h('p',{class:'field-note',text:'Financial wins, win rate and expectancy remain unchanged. This is an account-day review annotation, not a label on every winning trade, a behaviour score, causal dollar cost, broker violation proof or permission to trade/resize. Full account days, not a selected winning-symbol subset; overnight rule-entry day and realised close day are not interchangeable.'}));
++   if(review?.state!=='available'||!review.coverage){node.appendChild(U.h('p',{class:'sticky-note warn',text:'Process history unavailable / unknown, not clean. No compliant day or lost exception inferred; financial reporting is separate.'}));return node;}
++   const c=review.coverage;node.appendChild(U.h('p',{class:'small',text:`${c.profitable_exception_days} profitable account-day${c.profitable_exception_days===1?'':'s'} with recorded trade exceptions; ${c.exception_entries} exception entries across ${c.exception_days} account-days · ${c.outcome_unavailable_days} outcomes unavailable · ${c.process_unknown_days} process days unknown/unavailable · ${c.evidence_unavailable} corrupt/unavailable facts · ${c.unassigned_closed} unassigned close clocks · ${c.unassigned_evidence??0} unassigned process facts.`}));node.appendChild(U.h('p',{class:'tiny muted',text:review.basis||'Whole owned account UTC close-day current journal P&L + retained server rule-day trade-exception facts.'}));
++   const cases=(review.days||[]).filter(d=>d.exception_entries||d.evidence_unavailable);
++   if(!cases.length){node.appendChild(U.h('p',{class:'muted small',text:'No captured traded exception in this scope. Observed stops, blocked attempts, research and record-only observations are not actual traded violations; absence is not a verified clean-process certificate.'}));return node;}
++   for(const d of cases){const section=U.h('section',{class:d.rewarded_breach?'sticky-note warn':'card',style:'margin-top:10px',dataset:{processCase:d.account_id+':'+d.date}});section.appendChild(U.h('h4',{text:`${d.date} UTC · account #${d.account_id} · ${d.rewarded_breach?'Profitable with recorded exception':d.realised_net==null?'Outcome unavailable; exception history retained':'Recorded exception, no confirmed positive day'}`}));section.appendChild(U.h('p',{class:'small',text:`Whole-account current realised net: ${finite(d.realised_net)?U.moneySign(d.realised_net):'Unavailable'} · ${d.known_net_count} known / ${d.closed_trades} closed outcomes · ${d.exception_entries} exception entries. ${d.evidence_unavailable?'Some process facts unavailable; not inferred.':''}`}));
++    for(const e of d.exceptions||[]){section.appendChild(U.h('p',{class:'tiny',text:`Retained ${e.sources.join(' + ')} · trade #${e.trade_id} · ${e.action} · ${e.at} UTC. Original action, not necessarily the current/reopened trade state.`}));for(const rule of e.rules||[])section.appendChild(U.h('p',{class:'small',text:`${rule.rule}: ${rule.detail}`}));section.appendChild(U.h('p',{class:'small',text:'Captured one-action exception reason: '+e.reason}));}
++    section.appendChild(U.h('p',{class:'field-note',text:'Review the reason and identify a process fix. Positive outcome does not endorse repeating the exception. No automatic grade, cap, risk or required-writing completion.'}));section.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{processDay:d.date},text:'Review UTC day',onclick:()=>{if(!same(expected))return global.App.toast('Workspace/account/session changed; reopen this report.','err');if(Number(global.Store.accountId)!==d.account_id)return global.App.toast('Select this original owned account before reviewing its day. No account switch or annotation transfer inferred.','warn');return Views.openProcessDay?Views.openProcessDay(d.date,d.account_id):global.App.toast('Day review unavailable.','err');}}));node.appendChild(section);
++   }
++   return node;
++  }
++ };
++})(window);
 diff --git a/public/js/views/routine.js b/public/js/views/routine.js
 new file mode 100644
 index 0000000..615aef0
@@ -11458,11 +11677,79 @@ index 97110a5..dab030d 100644
      by_mistake: segment(trades, (t) => splitTags(t.mistakes)),
      by_tag: segment(trades, (t) => splitTags(t.tags)),
      by_hold: segment(trades, (t) => holdBucket(t.hold_minutes)),
+diff --git a/src/process-outcomes.js b/src/process-outcomes.js
+new file mode 100644
+index 0000000..bf173ca
+--- /dev/null
++++ b/src/process-outcomes.js
+@@ -0,0 +1,62 @@
++'use strict';
++/** M91: current financial account-days + actually captured trade exceptions.
++ * Read-only review annotation, not a broker/causal/clean-process certificate,
++ * score penalty, financial-win filter or trading/sizing authority. */
++const BASIS='Whole owned account UTC close-day current journal P&L + retained server rule-day trade-exception facts. Not causal reinforcement, broker execution or per-trade attribution.';
++const CONTEXT=['observed_stop','blocked_attempt','research_exception','recording_observation'];
++const finite=n=>typeof n==='number'&&Number.isFinite(n);
++const id=n=>Number.isSafeInteger(n)&&n>0;
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'process_outcome_invalid',status});}
++function dateKey(s){if(typeof s!=='string'||!/^\d{4}-\d\d-\d\d$/.test(s)||!Number.isFinite(Date.parse(s))||new Date(s).toISOString().slice(0,10)!==s)throw invalid('Select a valid UTC calendar date.');return s;}
++function clock(s,{canonical=false,now=Date.now()}={}){
++ if(typeof s!=='string'||!s.trim())return null;const value=/^\d{4}-\d\d-\d\d [\d:.]+$/.test(s)?s.replace(' ','T')+'Z':s,n=Date.parse(value);
++ try{dateKey(s.slice(0,10));if(!Number.isFinite(n)||n>now||canonical&&new Date(n).toISOString()!==s)return null;return n;}catch{return null;}
++}
++const utc=n=>new Date(n).toISOString().slice(0,10);
++function snapshot(row,userId,accountId,at,now){
++ const s=typeof row.snapshot==='string'?JSON.parse(row.snapshot):row.snapshot,ms=clock(at,{canonical:true,now});
++ if(!s||typeof s!=='object'||Array.isArray(s)||row.user_id!==userId||row.account_id!==accountId||s.account_id!==accountId||s.date!==row.rule_date||s.timezone!=='UTC'||ms===null||utc(ms)!==row.rule_date||s.evaluated_at!==at)throw invalid('Captured rule context unavailable.');return s;
++}
++function tradedException(row,s,at,source){
++ const a=s.admission,tradeId=source==='admission'?row.trade_id:row.entity_id;
++ if(!id(tradeId)||s.status!=='stop'||s.permission?.can_override!==true||s.permission.allowed!==false||!a||a.allowed!==true||a.state!=='overridden'||a.can_override!==false||a.action!==row.action||typeof a.override_reason!=='string'||!a.override_reason.trim()||a.override_reason.length>2000||!Array.isArray(s.breaches)||!s.breaches.length||s.breaches.some(b=>typeof b?.rule!=='string'||!b.rule||typeof b.detail!=='string'))throw invalid('Captured traded exception unavailable.');
++ if(source==='event'&&(!Array.isArray(a.entity_ids)||!a.entity_ids.includes(tradeId)||row.reason!==a.override_reason))throw invalid('Event action identity unavailable.');
++ return {trade_id:tradeId,rule_date:row.rule_date,account_id:row.account_id,at,action:row.action,reason:a.override_reason,rules:s.breaches.map(b=>({rule:b.rule,detail:b.detail})),sources:[source],admission_ids:source==='admission'?[row.id]:[],event_ids:source==='event'?[row.id]:[]};
++}
++const signature=e=>JSON.stringify([e.account_id,e.rule_date,e.at,e.action,e.trade_id]);
++function evaluate({userId,accounts=[],trades=[],admissions=[],events=[],from=null,to=null,nowMs=Date.now()}={}){
++ if(from!=null)dateKey(from);if(to!=null)dateKey(to);if(from&&to&&from>to)throw invalid('UTC date range is reversed.');if(!id(userId))throw invalid('An owned review scope is required.');
++ const accountIds=new Set(accounts.filter(a=>a.user_id===userId&&id(a.id)).map(a=>a.id)),days=new Map(),unassigned=new Map(),unassignedEvidence=new Map();
++ const get=(account,date)=>{const key=account+':'+date;if(!days.has(key))days.set(key,{account_id:account,date,closed_trades:0,known_net_count:0,unknown_net_count:0,known_net_sum:0,realised_net:null,unassigned_closed:0,exception_entries:0,exceptions:[],admitted_entries:0,evidence_unavailable:0,context_counts:Object.fromEntries(CONTEXT.map(k=>[k,0])),rewarded_breach:false,process_state:'unknown',broker_verified:false});return days.get(key);};
++ for(const t of trades){if(t.user_id!==userId||!accountIds.has(t.account_id)||t.status!=='closed')continue;const at=clock(t.closed_at,{now:nowMs});if(at===null){unassigned.set(t.account_id,(unassigned.get(t.account_id)||0)+1);continue;}const d=get(t.account_id,utc(at));d.closed_trades++;if(finite(t.net_pnl)){d.known_net_count++;d.known_net_sum+=t.net_pnl;}else d.unknown_net_count++;}
++ const tracked=new Map();
++ for(const a of admissions){if(a.user_id!==userId||!accountIds.has(a.account_id))continue;let d;try{d=get(a.account_id,dateKey(a.rule_date));const s=snapshot(a,userId,a.account_id,a.admitted_at,nowMs);if(a.admission_state==='overridden'){const ex=tradedException(a,s,a.admitted_at,'admission');d.exceptions.push(ex);const k=signature(ex);if(!tracked.has(k))tracked.set(k,[]);tracked.get(k).push(ex);}else if(a.admission_state==='admitted'&&s.admission?.state==='admitted'&&s.admission.allowed===true&&s.admission.action===a.action&&id(a.trade_id)&&['clear','caution'].includes(s.status)&&s.permission?.allowed===true&&s.permission.can_override===false&&Array.isArray(s.breaches)&&s.breaches.length===0)d.admitted_entries++;else throw invalid('Admission state unavailable.');}catch{if(d)d.evidence_unavailable++;else unassignedEvidence.set(a.account_id,(unassignedEvidence.get(a.account_id)||0)+1);}}
++ for(const e of events){if(e.user_id!==userId||!accountIds.has(e.account_id))continue;let d;try{d=get(e.account_id,dateKey(e.rule_date));const s=snapshot(e,userId,e.account_id,e.observed_at,nowMs);
++   if(e.kind==='override'&&e.entity_type==='trade'){const ex=tradedException(e,s,e.observed_at,'event'),matched=tracked.get(signature(ex));if(matched?.length){if(matched.some(a=>a.reason!==ex.reason||JSON.stringify(a.rules)!==JSON.stringify(ex.rules)))throw invalid('Conflicting captured action metadata unavailable.');for(const a of matched){if(!a.sources.includes('event'))a.sources.push('event');a.event_ids.push(e.id);}}else d.exceptions.push(ex);}
++   else if(e.kind==='override'&&e.entity_type==='signal')d.context_counts.research_exception++;
++   else if(e.kind==='breach')d.context_counts.observed_stop++;
++   else if(e.kind==='blocked_attempt')d.context_counts.blocked_attempt++;
++   else if(e.kind==='journal_record')d.context_counts.recording_observation++;
++   else throw invalid('Event kind unavailable.');
++  }catch{if(d)d.evidence_unavailable++;else unassignedEvidence.set(e.account_id,(unassignedEvidence.get(e.account_id)||0)+1);}}
++ const list=[...days.values()].filter(d=>(!from||d.date>=from)&&(!to||d.date<=to)).sort((a,b)=>b.date.localeCompare(a.date)||a.account_id-b.account_id);
++ const coverage={account_days:list.length,profitable_exception_days:0,exception_days:0,exception_entries:0,outcome_unavailable_days:0,process_unknown_days:0,evidence_unavailable:0,unassigned_closed:[...unassigned.values()].reduce((a,b)=>a+b,0),unassigned_evidence:[...unassignedEvidence.values()].reduce((a,b)=>a+b,0)};
++ for(const d of list){d.unassigned_closed=unassigned.get(d.account_id)||0;d.evidence_unavailable+=unassignedEvidence.get(d.account_id)||0;d.exception_entries=d.exceptions.length;d.known_net_sum=finite(d.known_net_sum)?Number(d.known_net_sum.toFixed(2)):null;d.realised_net=d.unknown_net_count||d.unassigned_closed||d.known_net_sum===null?null:d.known_net_sum;d.outcome=d.realised_net===null?'unavailable':!d.closed_trades?'empty':d.realised_net>0?'profit':d.realised_net<0?'loss':'breakeven';d.process_state=d.exception_entries?'recorded_exception':d.evidence_unavailable?'unavailable':d.admitted_entries?'captured_admission_only':'unknown';d.rewarded_breach=d.exception_entries>0&&d.outcome==='profit';if(d.rewarded_breach)coverage.profitable_exception_days++;if(d.exception_entries)coverage.exception_days++;coverage.exception_entries+=d.exception_entries;coverage.evidence_unavailable+=d.evidence_unavailable;if(d.realised_net===null)coverage.outcome_unavailable_days++;if(d.process_state==='unknown'||d.process_state==='unavailable')coverage.process_unknown_days++;}
++ return {state:'available',timezone:'UTC',account_ids:[...accountIds],from,to,days:list,coverage,broker_verified:false,basis:BASIS,metrics_policy:'Financial wins, P&L and expectancy remain unchanged. A positive account-day is not a clean-process certificate; no proof of causal reward or rule violation at a broker.'};
++}
++function insight(review){
++ if(review?.state!=='available')return null;const days=review.days.filter(d=>d.rewarded_breach);if(!days.length)return null;const sum=days.reduce((s,d)=>s+d.realised_net,0),net=finite(sum)?Number(sum.toFixed(2)):null,n=days.length;
++ return {id:'rewarded_breach',category:'discipline',severity:'warning',title:'Positive P&L with recorded guardrail exceptions',detail:`${n} owned UTC account-day${n===1?'':'s'} had positive current recorded realised P&L and an actual captured trade exception under a personal stop. This is a day-level review association, not a causal dollar cost, proof of psychological reinforcement, broker execution or a label on every winning trade. Merely observed stops/blocked attempts/research/history do not establish this case.`,impact:net,recorded_net_available:net!==null,money_basis:'recorded_flagged_account_day_net',evidence:[{label:'Flagged account-days',value:String(n)},{label:'Financial scope',value:'Whole account UTC close days, not selected symbol/strategy'},{label:'Basis',value:'Retained server exceptions + current corrected journal outcomes'}],action:'Review the captured rule/reason alongside the day and identify a process fix. Financial wins stay wins; this annotation never grants entry, changes grades or authorises sizing.',process_review_basis:'captured_trade_exception_day_association'};
++}
++
++
++function unavailable(){return {state:'unavailable',days:[],coverage:null,timezone:'UTC',broker_verified:false,basis:BASIS,metrics_policy:'Process history unavailable, not clean. Existing financial metrics remain financial; no inferred rule-following or profit/permission change.'};}
++async function inspect(userId,{accountId=null,from=null,to=null,store=null}={}){
++ if(from!=null)dateKey(from);if(to!=null)dateKey(to);if(from&&to&&from>to)throw invalid('UTC date range is reversed.');
++ if(accountId!=null&&(!['string','number'].includes(typeof accountId)||typeof accountId==='string'&&!/^[1-9]\d*$/.test(accountId)||!id(Number(accountId))))throw invalid('Account not found.',404);
++ const {db}=require('./db'),read=async store=>{const accounts=await store.prepare('SELECT * FROM accounts WHERE user_id=?'+(accountId==null?'':' AND id=?')).all(...(accountId==null?[userId]:[userId,Number(accountId)]));if(accountId!=null&&!accounts.length)throw invalid('Account not found.',404);const trades=await store.prepare('SELECT * FROM trades WHERE user_id=?').all(userId),admissions=await store.prepare('SELECT * FROM guardrail_entry_admissions WHERE user_id=? ORDER BY id').all(userId),events=await store.prepare('SELECT * FROM guardrail_events WHERE user_id=? ORDER BY id').all(userId);return evaluate({userId,accounts,trades,admissions,events,from,to,nowMs:Date.now()});};
++ return store?read(store):db.tx(async tx=>read(db.transactionStore(tx)));
++}
++async function optional(userId,options){try{return await inspect(userId,options);}catch{return unavailable();}}
++function withCoach(data,review){const warning=insight(review);return {...data,process_review:review,insights:warning?[...(data.insights||[]),warning]:data.insights};}
++module.exports={BASIS,invalid,dateKey,clock,evaluate,insight,inspect,optional,unavailable,withCoach};
 diff --git a/src/routes/api.js b/src/routes/api.js
-index 0bb768c..ae32e72 100644
+index 0bb768c..b053695 100644
 --- a/src/routes/api.js
 +++ b/src/routes/api.js
-@@ -1,12 +1,23 @@
+@@ -1,12 +1,24 @@
  'use strict';
  const { asyncRouter } = require('./async-router');
 -const { db, createUser, verifyPassword, createSession, userFromToken, destroySession, getMeta, DEFAULT_CHECKLIST } = require('../db');
@@ -11483,11 +11770,12 @@ index 0bb768c..ae32e72 100644
 +const Screenshots = require('../screenshots');
 +const Confluences = require('../confluences');
 +const Emotions = require('../emotions');
++const ProcessOutcomes = require('../process-outcomes');
 +const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
  const O = require('../options');
  const Exp = require('../exposure');
  const Prop = require('../prop');
-@@ -14,6 +25,13 @@ const N = require('../notify');
+@@ -14,6 +26,13 @@ const N = require('../notify');
  const createBotsRouter = require('./bots');
  
  const router = asyncRouter();
@@ -11501,7 +11789,7 @@ index 0bb768c..ae32e72 100644
  const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  
-@@ -40,7 +58,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
+@@ -40,7 +59,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
  async function requireAuth(req, res, next) {
    try {
      const user = await userFromToken(readToken(req));
@@ -11529,7 +11817,7 @@ index 0bb768c..ae32e72 100644
      req.user = user;
      next();
    } catch (e) { next(e); }
-@@ -237,6 +274,7 @@ function tradeFilters(req) {
+@@ -237,6 +275,7 @@ function tradeFilters(req) {
      status: req.query.status && req.query.status !== 'all' ? req.query.status : null,
      symbol: req.query.symbol || null,
      strategy_id: req.query.strategy_id || null,
@@ -11537,7 +11825,7 @@ index 0bb768c..ae32e72 100644
      from: req.query.from || null, to: req.query.to || null,
      asset_class: req.query.asset_class || null,
      tag: req.query.tag || null,
-@@ -278,32 +316,75 @@ router.get('/trades', requireAuth, async (req, res) => {
+@@ -278,32 +317,75 @@ router.get('/trades', requireAuth, async (req, res) => {
        .some((v) => String(v || '').toLowerCase().includes(q)));
    }
    const total = (await db.prepare(`SELECT COUNT(*) n FROM trades WHERE ${where}`).get({ ...params, user_id: req.user.id })).n;
@@ -11619,7 +11907,7 @@ index 0bb768c..ae32e72 100644
  router.put('/trades/:id', requireAuth, async (req, res) => {
    const id = Number(req.params.id);
    const existing = await db.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id, req.user.id);
-@@ -311,14 +392,60 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+@@ -311,14 +393,60 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
    const instruments = await instrumentMap(req.user.id);
    const merged = { ...existing, ...req.body };
    const spec = instruments[String(merged.symbol || '').toUpperCase()] || null;
@@ -11683,7 +11971,7 @@ index 0bb768c..ae32e72 100644
  });
  
  router.post('/trades/:id/close', requireAuth, async (req, res) => {
-@@ -341,29 +468,82 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+@@ -341,29 +469,87 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
    };
    const instruments = await instrumentMap(req.user.id);
    const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
@@ -11768,10 +12056,15 @@ index 0bb768c..ae32e72 100644
 +  };
 +}
 +
++router.get('/process-outcomes',requireAuth,async(req,res)=>{
++  try{res.json({review:await ProcessOutcomes.inspect(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})});}
++  catch(e){if(e.code==='process_outcome_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Process history unavailable; not a clean-process certificate.'});}
++});
++
  router.get('/analytics', requireAuth, async (req, res) => {
    const tz = (await settingsOf(req)).timezone;
    const f = tradeFilters(req);
-@@ -374,12 +554,15 @@ router.get('/analytics', requireAuth, async (req, res) => {
+@@ -374,14 +560,18 @@ router.get('/analytics', requireAuth, async (req, res) => {
      const want = String(f.tag).toLowerCase();
      rows = rows.filter((t) => String(t.tags || '').toLowerCase().split(',').map((x) => x.trim()).includes(want));
    }
@@ -11787,8 +12080,11 @@ index 0bb768c..ae32e72 100644
 +  Object.assign(analytics, complianceOver(await complianceByTrade(req.user.id), closed.map((t) => t.id)));
    analytics.account = acc;
    analytics.open_positions = decorated.filter((t) => t.status === 'open');
++  analytics.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
    res.json(analytics);
-@@ -393,9 +576,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+ });
+ 
+@@ -393,9 +583,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const rs = rows.map((t) => num(t.r_multiple));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
@@ -11807,16 +12103,16 @@ index 0bb768c..ae32e72 100644
    res.json({
      monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
      optimal_risk: P.optimalRisk(rs),
-@@ -411,7 +601,7 @@ router.get('/coach', requireAuth, async (req, res) => {
+@@ -411,7 +608,7 @@ router.get('/coach', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
      || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
 -  res.json(Coach.analyse(rows, { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }));
-+  res.json(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }));
++  res.json(ProcessOutcomes.withCoach(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }),await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})));
  });
  
  router.get('/briefing', requireAuth, wrap(async (req, res) => {
-@@ -419,45 +609,107 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+@@ -419,45 +616,108 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
    const tz = settings.timezone;
    const acc = await accountOr404(req, res);
    if (!acc) return;
@@ -11832,6 +12128,7 @@ index 0bb768c..ae32e72 100644
 +  const capPolicy = await Guards.dailyCap(db, req.user.id, acc);
 +  const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
 +  briefing.risk_plan.trade_cap_policy = capPolicy;
++  briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
 +  // Briefing amounts are advice, NOT permission. Use the same close-day UTC
 +  // state as entry admission for the optional profit display/retained latch.
 +  let daily;
@@ -11863,7 +12160,7 @@ index 0bb768c..ae32e72 100644
 +  const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
 +  if(req.query.account_id && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(Number(req.query.account_id),req.user.id))return res.status(404).json({error:'Account not found'});
 +  const journalRows=await db.prepare('SELECT * FROM trades WHERE user_id=?'+(req.query.account_id?' AND account_id=?':'')).all(...(req.query.account_id?[req.user.id,Number(req.query.account_id)]:[req.user.id]));
-+  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC' });
++  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC',process_review:await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null}) });
 +});
 +router.get('/routine',requireAuth,async(req,res)=>{
 +  try{res.json({routine:await Routine.current(req.user.id,{accountId:req.query.account_id})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine state could not be verified.'});}
@@ -11897,8 +12194,8 @@ index 0bb768c..ae32e72 100644
 +  const account=await accountOr404(req,res);if(!account)return;
 +  const accountId=account.id;
 +  const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
-+  const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
-+  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
++  const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
  });
  router.post('/journal', requireAuth, async (req, res) => {
    const b = req.body || {};
@@ -11936,7 +12233,7 @@ index 0bb768c..ae32e72 100644
  });
  router.delete('/journal/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM journal_entries WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -470,11 +722,12 @@ router.get('/strategies', requireAuth, async (req, res) => {
+@@ -470,11 +730,12 @@ router.get('/strategies', requireAuth, async (req, res) => {
    const stats = {};
    const tz = (await settingsOf(req)).timezone;
    const rows = (await db.prepare("SELECT * FROM trades WHERE user_id=? AND status='closed'").all(req.user.id)).map((t) => P.decorate(t, tz));
@@ -11950,7 +12247,7 @@ index 0bb768c..ae32e72 100644
    }
    res.json({ strategies, stats });
  });
-@@ -486,17 +739,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
+@@ -486,17 +747,30 @@ router.post('/strategies', requireAuth, async (req, res) => {
      req.user.id, b.name, b.description || '', b.market_conditions || '', b.timeframes || '',
      JSON.stringify(b.entry_rules || []), JSON.stringify(b.exit_rules || []), JSON.stringify(b.checklist || []),
      b.risk_rules || '', num(b.target_r_multiple, 2), b.colour || '#4f8cff', b.active === false ? 0 : 1);
@@ -11986,7 +12283,7 @@ index 0bb768c..ae32e72 100644
      name: b.name !== undefined ? b.name : cur.name,
      description: b.description !== undefined ? b.description : cur.description,
      market_conditions: b.market_conditions !== undefined ? b.market_conditions : cur.market_conditions,
-@@ -508,8 +774,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
+@@ -508,8 +782,53 @@ router.put('/strategies/:id', requireAuth, async (req, res) => {
      target_r_multiple: b.target_r_multiple !== undefined ? num(b.target_r_multiple, 2) : cur.target_r_multiple,
      colour: b.colour || cur.colour,
      active: b.active === undefined ? cur.active : (b.active ? 1 : 0),
@@ -12041,7 +12338,7 @@ index 0bb768c..ae32e72 100644
  });
  router.delete('/strategies/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM strategies WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -541,21 +852,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
+@@ -541,21 +860,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
  router.post('/accounts', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.name) return res.status(400).json({ error: 'Account name is required' });
@@ -12110,7 +12407,7 @@ index 0bb768c..ae32e72 100644
      prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
      id, user_id: req.user.id,
      name: b.name !== undefined ? b.name : cur.name,
-@@ -563,7 +914,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -563,7 +922,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
      currency: b.currency !== undefined ? b.currency : cur.currency,
      starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
@@ -12124,7 +12421,7 @@ index 0bb768c..ae32e72 100644
      daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
      max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
      prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
-@@ -571,7 +927,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -571,7 +935,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
      archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
    });
@@ -12137,7 +12434,7 @@ index 0bb768c..ae32e72 100644
  });
  router.delete('/accounts/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -708,7 +1068,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -708,7 +1076,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
    const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
    const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
    const balance = num(b.balance, acc ? acc.current_balance : 10000);
@@ -12158,7 +12455,7 @@ index 0bb768c..ae32e72 100644
    const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
    const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
    const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
-@@ -722,6 +1094,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -722,6 +1102,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
      pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
      pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
      percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,
@@ -12169,7 +12466,7 @@ index 0bb768c..ae32e72 100644
    });
  });
  
-@@ -775,15 +1151,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
+@@ -775,15 +1159,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
  }));
  
  /* ------------------------------------------------------- import / export */
@@ -12190,7 +12487,7 @@ index 0bb768c..ae32e72 100644
    const esc = (v) => {
      const s = v === null || v === undefined ? '' : String(v);
      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-@@ -792,17 +1169,18 @@ router.get('/export/csv', requireAuth, async (req, res) => {
+@@ -792,17 +1177,18 @@ router.get('/export/csv', requireAuth, async (req, res) => {
    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
    res.setHeader('Content-Disposition', `attachment; filename="trades-${new Date().toISOString().slice(0, 10)}.csv"`);
    res.send(csv);
@@ -12212,7 +12509,7 @@ index 0bb768c..ae32e72 100644
      journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
      goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
      watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
-@@ -810,7 +1188,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
+@@ -810,7 +1196,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
    res.setHeader('Content-Type', 'application/json');
    res.setHeader('Content-Disposition', `attachment; filename="tradejournal-backup-${new Date().toISOString().slice(0, 10)}.json"`);
    res.send(JSON.stringify(data, null, 2));
@@ -12221,7 +12518,7 @@ index 0bb768c..ae32e72 100644
  
  /** Import from CSV — auto-detects the usual broker column names. */
  router.post('/import/csv', requireAuth, async (req, res) => {
-@@ -831,13 +1209,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -831,13 +1217,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
      opened: findCol(['opened_at', 'open_time', 'entry_time', 'date', 'datetime', 'open_date', 'time_open', 'opened']),
      closed: findCol(['closed_at', 'close_time', 'exit_time', 'close_date', 'time_close', 'closed']),
      fees: findCol(['fees', 'commission', 'fee', 'cost', 'swap']),
@@ -12239,7 +12536,7 @@ index 0bb768c..ae32e72 100644
    const instruments = await instrumentMap(req.user.id);
    const tz = (await settingsOf(req)).timezone;
    let inserted = 0, skipped = 0;
-@@ -864,11 +1245,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -864,11 +1253,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
            closed_at: map.closed > -1 ? r[map.closed] : null,
            fees: map.fees > -1 ? r[map.fees] : 0,
            strategy_name: map.strategy > -1 ? r[map.strategy] : '',
@@ -12256,7 +12553,7 @@ index 0bb768c..ae32e72 100644
          if (map.net > -1 && String(r[map.net] || '').trim() && !isNaN(Number(String(r[map.net]).replace(/[^0-9.\-]/g, '')))) {
            const net = Number(String(r[map.net]).replace(/[^0-9.\-]/g, ''));
            if (net !== 0) {
-@@ -877,18 +1263,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -877,18 +1271,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
              if (trade.risk_amount > 0) trade.r_multiple = Math.round((net / trade.risk_amount) * 10000) / 10000;
            }
          }
@@ -12288,7 +12585,7 @@ index 0bb768c..ae32e72 100644
  function parseCsv(text) {
    const rows = [];
    let row = [], field = '', inQuotes = false;
-@@ -912,10 +1308,12 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -912,10 +1316,12 @@ router.post('/import/json', requireAuth, async (req, res) => {
    const data = req.body && req.body.data ? req.body.data : req.body;
    if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
    const userId = req.user.id;
@@ -12303,7 +12600,7 @@ index 0bb768c..ae32e72 100644
    try {
      // reads happen before the write batch (libSQL never interleaves them)
      const myAccounts = await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId);
-@@ -925,14 +1323,17 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -925,14 +1331,17 @@ router.post('/import/json', requireAuth, async (req, res) => {
        accountMap[a.id] = match ? match.id : (def ? def.id : null);
      }
      const existingStrategies = new Set((await db.prepare('SELECT name FROM strategies WHERE user_id=?').all(userId)).map((r) => r.name));
@@ -12323,7 +12620,7 @@ index 0bb768c..ae32e72 100644
        inserted++;
      }
      for (const s of (data.strategies || [])) {
-@@ -953,9 +1354,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -953,9 +1362,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
            j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
        });
      }
@@ -12335,7 +12632,7 @@ index 0bb768c..ae32e72 100644
  });
  
  /* ---------------------------------------------------------------- settings */
-@@ -971,6 +1372,16 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -971,6 +1380,16 @@ router.put('/settings', requireAuth, async (req, res) => {
      risk_defaults: b.risk_defaults || cur.risk_defaults || { risk_pct: 1, daily_limit_pct: 3, max_trades: 5 },
      // the floor every plan is judged against: below it a plan may still be shown,
      // but it is labelled and never reads as a plain order
@@ -12352,7 +12649,7 @@ index 0bb768c..ae32e72 100644
      min_rr: Number.isFinite(Number(b.min_rr)) && Number(b.min_rr) > 0
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
-@@ -982,7 +1393,7 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -982,7 +1401,7 @@ router.put('/settings', requireAuth, async (req, res) => {
  router.post('/demo/seed', requireAuth, async (req, res) => {
    const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
    const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });

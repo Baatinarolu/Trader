@@ -1,5 +1,39 @@
 # TradeJournal Pro
 
+## M91 — positive money is not a clean-process certificate (2026-10-12)
+
+**Day review, Journal index, Analytics and Coach** now separate financial outcomes
+from recorded guardrail exceptions. A known profitable **whole owned UTC account-day**
+with an actual saved trade exception under a personal stop gets a review annotation,
+its original action/rules/reason/clock, and an invitation to identify a process fix.
+**Financial wins, win rate, expectancy, scores and grades remain unchanged.**
+
+A reached cap/profit ceiling, blocked entry, research exception or recording-time
+observation is not proof of a traded violation. No captured history means unknown,
+not compliant. Unknown/corrupt/undatable history or incomplete financial totals
+remain explicit; missing amounts are not0. Filters to winning symbols/strategies
+cannot make a losing whole account-day look profitable. Overnight entry-rule day
+is not automatically the later profit close day. Reasons are historical; current
+corrected journal totals can honestly change an association without rewriting them.
+
+The Coach's **recorded flagged-day net** is associated current money, not a causal
+“impact”/cost. The warning does not label every winner, prove psychological reward
+or broker misconduct, punish profit, resize risk, grant entry, remove caps/routine,
+or complete required core/post-loss writing. Review under the original selected
+account; no automatic account switch. Existing finance/history imports remain
+legal but cannot replay a server guardrail exception through DTOs.
+
+Read-only `GET /process-outcomes` supports owned account/date scope, separate
+account-days when all accounts selected, and explicit unavailable on read faults.
+No new schema/columns or persisted flag, no new guard-history backup transport.
+See [docs/API.md](docs/API.md) / [docs/GUARDRAILS.md](docs/GUARDRAILS.md).
+
+Measured **M91 108/0 across6**, actual-parent migration/restart11/0; original M89
+170/0, M88 reasons160/0, execution260/0, routine321/0. Ledger **132=93 done/3 partial/36TODO**.
+M93 daily behaviour score is next; M106/M111/M112 remain open, M108 partial. Older
+negative/provider/RAW/DECLARED/native/conditional-DOM results retained, not a claim
+of production, broker, actual human/meditation, pixels or a70% win rate.
+
 ## M89 — timely APP emotional-state reports (2026-10-12)
 
 After an admitted new/reopened trade is saved, answer **What emotion drove this
@@ -36,7 +70,7 @@ primitive strings;20MB selected-file/25MB body limits unchanged. Repeated restor
 can duplicate trades, not an upsert.
 
 Measured M89 **170/0 across13** actual auth/SQL/DOM probes; parent migration14/0;
-M88 reasons160/0, execution260/0, routine321/0. Ledger **132=92 done/3 partial/37TODO**.
+M88 reasons160/0, execution260/0, routine321/0. Historical M89 ledger **132=92 done/3 partial/37TODO** (current counts above).
 M106/M111/M112 still open, M108 partial. Inherited/migration/provider/raw/native/DOM
 negatives retained separately, not an all-green production/broker/human claim.
 See `analysis/M89-TIMELY-EMOTION-CAPTURE.md` in the delivery ZIP.

@@ -1,0 +1,39 @@
+ok additive schema has persisted cap
+ok existing/default account gets course intraday3
+ok POST stores explicit scalper5
+ok POST without cap defaults3
+ok PUT stores explicit5
+ok unrelated rename retains5
+ok invalid PUT cap rejected: 0
+ok invalid POST cap rejected: 0
+ok invalid PUT cap rejected: -1
+ok invalid POST cap rejected: -1
+ok invalid PUT cap rejected: 101
+ok invalid POST cap rejected: 101
+ok invalid PUT cap rejected: 2.5
+ok invalid POST cap rejected: 2.5
+ok invalid PUT cap rejected: "bad"
+ok invalid POST cap rejected: "bad"
+ok invalid PUT cap rejected: ""
+ok invalid POST cap rejected: ""
+ok invalid PUT cap rejected: null
+ok invalid POST cap rejected: null
+ok invalid PUT cap rejected: true
+ok invalid POST cap rejected: true
+ok explicit bounded integer 1 roundtrips
+ok explicit bounded integer 2 roundtrips
+ok explicit bounded integer 3 roundtrips
+ok explicit bounded integer 5 roundtrips
+ok explicit bounded integer 100 roundtrips
+ok another user cannot edit policy
+ok empty sample uses chosen3
+ok midday config edit cannot undo frozen3
+ok 36 closed trades do not ratify12/day or rewrite preselected3
+ok historical cap exists only as labelled suggestion
+ok coach never ratifies history average12/day
+ok second account independently freezes scalper5
+ok next UTC day adopts explicitly chosen5, not old3/history6
+ok simultaneous first checks agree on one daily cap
+ok M11 floor30 stays30 with5 closed trades
+ok settings expose cap with predecision guidance
+M83/M113 cap policy: 38 passed, 0 failed

@@ -1,0 +1,148 @@
+diff --git a/public/index.html b/public/index.html
+index 76a93ff..f4672a7 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
++<script src="/js/views/process-outcomes.js?v={{V}}"></script>
+ <script src="/js/views/emotions.js?v={{V}}"></script>
+ <script src="/js/views/confluences.js?v={{V}}"></script>
+ <script src="/js/views/screenshots.js?v={{V}}"></script>
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index da29ccf..6d9a1a2 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -6,8 +6,10 @@
+   Views.analytics = {
+     title: 'Analytics',
+     async render(root) {
++      const processContext=Views.processOutcomes?.context();
+       const params = Store.queryParams();
+       const an = await Store.fetch('/analytics', params, 15000);
++      if(Views.processOutcomes&&!Views.processOutcomes.same(processContext))return;
+       const k = an.kpis;
+       root.innerHTML = '';
+ 
+@@ -16,6 +18,7 @@
+       const TABS = [['core', 'Core statistics'], ['timing', 'Timing & sessions'], ['execution', 'Execution quality'], ['risk', 'Risk & drawdown'], ['segments', 'Segments']];
+       let active = 'core';
+       TABS.forEach(([id, label]) => tabs.appendChild(U.h('button', { class: active === id ? 'active' : '', text: label, onclick: () => { active = id; U.$$('button', tabs).forEach((b, i) => b.classList.toggle('active', TABS[i][0] === id)); U.clear(panes); panes.appendChild(PANES[id]()); } })));
++      if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(an.process_review));
+       root.appendChild(tabs); root.appendChild(panes);
+ 
+       const PANES = {
+diff --git a/public/js/views/coach.js b/public/js/views/coach.js
+index 23e5b02..3e4fa31 100644
+--- a/public/js/views/coach.js
++++ b/public/js/views/coach.js
+@@ -6,8 +6,10 @@
+   Views.coach = {
+     title: 'Coach',
+     async render(root) {
++      const processContext=Views.processOutcomes?.context();
+       const params = Store.queryParams();
+       const [data, an] = await Promise.all([Store.fetch('/coach', params, 15000), Store.fetch('/analytics', params, 15000)]);
++      if(Views.processOutcomes&&!Views.processOutcomes.same(processContext))return;
+       root.innerHTML = '';
+       const s = data.summary || {};
+ 
+@@ -36,6 +38,7 @@
+         </div>
+       </div>`;
+       root.appendChild(banner);
++      if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(data.process_review));
+ 
+       const split = U.h('div', { class: 'grid g-2-1', style: 'margin-top:14px' });
+       const feed = U.h('div');
+@@ -49,7 +52,7 @@
+           el.innerHTML = `
+             <div class="row-between" style="align-items:flex-start;gap:10px">
+               <h4>${U.esc(i.title)}</h4>
+-              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.impact >= 0 ? '+' : ''}${U.money(i.impact)} ${i.capture_basis==='app_record_window_self_report'?'recorded group net':'impact'}</span>
++              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.impact >= 0 ? '+' : ''}${U.money(i.impact)} ${i.money_basis==='recorded_flagged_account_day_net'?'recorded flagged-day net':i.capture_basis==='app_record_window_self_report'?'recorded group net':'impact'}</span>
+             </div>
+             <div class="detail">${U.esc(i.detail)}</div>
+             <div class="evidence">${(i.evidence || []).map((e) => `<span class="ev">${U.esc(e.label)}<b>${U.esc(e.value)}</b></span>`).join('')}</div>
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 6ced815..b5ed484 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -6,7 +6,9 @@
+   Views.journal = {
+     title: 'Journal',
+     async render(root) {
++      const processContext=Views.processOutcomes?.context();
+       const [entries, goals,outcomes] = await Promise.all([API.get('/journal',{account_id:Store.accountId}), API.get('/goals'),API.get('/routine/report',{account_id:Store.accountId}).catch(()=>({report:{state:'unknown'}}))]);
++      if(Views.processOutcomes&&!Views.processOutcomes.same(processContext))return;
+       root.innerHTML = '';
+       const layout = U.h('div', { class: 'grid g-2-1' });
+       root.appendChild(layout);
+@@ -17,6 +19,7 @@
+           <div><h2 style="margin:0">Daily reviews</h2><div class="muted small">${entries.entries.length} entries — the habit that turns a log into a system.</div></div>
+           <button class="btn primary" id="j-new">+ Today's review</button></div>`;
+       listCol.appendChild(head);
++      if(Views.processOutcomes)listCol.appendChild(Views.processOutcomes.card(entries.process_review));
+       const list = U.h('div', { class: 'card' });
+       if (!entries.entries.length) {
+         list.innerHTML = '<div class="empty">No reviews yet. Write one at the end of every session — three sentences is enough to start.</div>';
+@@ -128,8 +131,8 @@
+   Views.guardrailHistory = function(events = []) {
+     const node = U.h('div',{class:'card',style:'margin-top:14px'});
+     node.innerHTML = `<div class="card-head"><h3>Guardrail history — UTC rule day</h3></div>
+-      <div class="tiny muted">Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Recording-time flags do not infer what happened at a historical entry.</div>
+-      ${events.length ? `<div class="table-wrap"><table><thead><tr><th>Captured at (UTC)</th><th>Account / action</th><th>Violated rule(s)</th><th>Reason / decision</th></tr></thead><tbody>
++      <div class="tiny muted">Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Observed stops/blocked requests are not traded violations. Recording-time flags do not infer what happened at a historical entry.</div>
++      ${events.length ? `<div class="table-wrap"><table><thead><tr><th>Captured at (UTC)</th><th>Account / action</th><th>Observed stop/rule(s)</th><th>Reason / decision</th></tr></thead><tbody>
+         ${events.map(ev=>`<tr><td class="mono tiny">${U.esc(ev.observed_at)}</td>
+           <td>${U.esc(ev.account_id == null ? 'account removed' : '#'+ev.account_id)} · ${U.esc(ev.action)}<br><span class="tiny muted">${U.esc(ev.kind)}${ev.entity_type && ev.entity_id ? ' · '+U.esc(ev.entity_type)+' #'+U.esc(ev.entity_id) : ''}</span></td>
+           <td class="tiny">${(ev.snapshot?.breaches || []).map(b=>`<b>${U.esc(b.rule)}</b>: ${U.esc(b.detail)}`).join('<br>') || U.esc(ev.snapshot?.message || 'No known stop in the captured snapshot.')}</td>
+@@ -137,9 +140,11 @@
+     return node;
+   };
+ 
++  let processDaySerial=0;
++  Views.openProcessDay=async(date,accountId)=>{if(Number(Store.accountId)!==Number(accountId))return global.App.toast('Select the original account before reviewing its day.','err');return openEditor(date,null);};
+   async function openEditor(dateISO, root) {
+-    const accountId=Store.accountId,userId=Store.user?.id;
+-    const sameContext=()=>accountId===Store.accountId&&userId===Store.user?.id;
++    const serial=++processDaySerial,accountId=Store.accountId,userId=Store.user?.id,token=API.getToken();
++    const sameContext=()=>serial===processDaySerial&&accountId===Store.accountId&&userId===Store.user?.id&&token===API.getToken();
+     const day = await API.get('/journal/' + dateISO,{account_id:accountId});
+     if(!sameContext())return global.App.toast('Workspace/account changed while loading the day; reopen it.','err');
+     const e = day.entry || {};
+@@ -171,6 +176,7 @@
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+         <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
++    if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+     if(Views.routine){
+diff --git a/public/js/views/process-outcomes.js b/public/js/views/process-outcomes.js
+new file mode 100644
+index 0000000..d1978b8
+--- /dev/null
++++ b/public/js/views/process-outcomes.js
+@@ -0,0 +1,20 @@
++/* M91 current account-day outcome vs retained exceptions; never authority. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U;
++ const context=()=>({user:global.Store.user?.id,account:global.Store.accountId,token:global.API.getToken()}),same=c=>!!c&&c.user===global.Store.user?.id&&c.account===global.Store.accountId&&c.token===global.API.getToken(),finite=n=>typeof n==='number'&&Number.isFinite(n);
++ Views.processOutcomes={context,same,
++  card(review){
++   const node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{processReview:'true'}}),expected=context();node.appendChild(U.h('h3',{text:'Positive P&L does not prove process adherence'}));
++   node.appendChild(U.h('p',{class:'field-note',text:'Financial wins, win rate and expectancy remain unchanged. This is an account-day review annotation, not a label on every winning trade, a behaviour score, causal dollar cost, broker violation proof or permission to trade/resize. Full account days, not a selected winning-symbol subset; overnight rule-entry day and realised close day are not interchangeable.'}));
++   if(review?.state!=='available'||!review.coverage){node.appendChild(U.h('p',{class:'sticky-note warn',text:'Process history unavailable / unknown, not clean. No compliant day or lost exception inferred; financial reporting is separate.'}));return node;}
++   const c=review.coverage;node.appendChild(U.h('p',{class:'small',text:`${c.profitable_exception_days} profitable account-day${c.profitable_exception_days===1?'':'s'} with recorded trade exceptions; ${c.exception_entries} exception entries across ${c.exception_days} account-days · ${c.outcome_unavailable_days} outcomes unavailable · ${c.process_unknown_days} process days unknown/unavailable · ${c.evidence_unavailable} corrupt/unavailable facts · ${c.unassigned_closed} unassigned close clocks.`}));node.appendChild(U.h('p',{class:'tiny muted',text:review.basis||'Whole owned account UTC close-day current journal P&L + retained server rule-day trade-exception facts.'}));
++   const cases=(review.days||[]).filter(d=>d.exception_entries||d.evidence_unavailable);
++   if(!cases.length){node.appendChild(U.h('p',{class:'muted small',text:'No captured traded exception in this scope. Observed stops, blocked attempts, research and record-only observations are not actual traded violations; absence is not a verified clean-process certificate.'}));return node;}
++   for(const d of cases){const section=U.h('section',{class:d.rewarded_breach?'sticky-note warn':'card',style:'margin-top:10px',dataset:{processCase:d.account_id+':'+d.date}});section.appendChild(U.h('h4',{text:`${d.date} UTC · account #${d.account_id} · ${d.rewarded_breach?'Profitable with recorded exception':d.realised_net==null?'Outcome unavailable; exception history retained':'Recorded exception, no confirmed positive day'}`}));section.appendChild(U.h('p',{class:'small',text:`Whole-account current realised net: ${finite(d.realised_net)?U.moneySign(d.realised_net):'Unavailable'} · ${d.known_net_count} known / ${d.closed_trades} closed outcomes · ${d.exception_entries} exception entries. ${d.evidence_unavailable?'Some process facts unavailable; not inferred.':''}`}));
++    for(const e of d.exceptions||[]){section.appendChild(U.h('p',{class:'tiny',text:`Retained ${e.sources.join(' + ')} · trade #${e.trade_id} · ${e.action} · ${e.at} UTC. Original action, not necessarily the current/reopened trade state.`}));for(const rule of e.rules||[])section.appendChild(U.h('p',{class:'small',text:`${rule.rule}: ${rule.detail}`}));section.appendChild(U.h('p',{class:'small',text:'Captured one-action exception reason: '+e.reason}));}
++    section.appendChild(U.h('p',{class:'field-note',text:'Review the reason and identify a process fix. Positive outcome does not endorse repeating the exception. No automatic grade, cap, risk or required-writing completion.'}));section.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{processDay:d.date},text:'Review UTC day',onclick:()=>{if(!same(expected))return global.App.toast('Workspace/account/session changed; reopen this report.','err');if(Number(global.Store.accountId)!==d.account_id)return global.App.toast('Select this original owned account before reviewing its day. No account switch or annotation transfer inferred.','warn');return Views.openProcessDay?Views.openProcessDay(d.date,d.account_id):global.App.toast('Day review unavailable.','err');}}));node.appendChild(section);
++   }
++   return node;
++  }
++ };
++})(window);

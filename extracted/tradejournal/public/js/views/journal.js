@@ -6,7 +6,9 @@
   Views.journal = {
     title: 'Journal',
     async render(root) {
+      const processContext=Views.processOutcomes?.context();
       const [entries, goals,outcomes] = await Promise.all([API.get('/journal',{account_id:Store.accountId}), API.get('/goals'),API.get('/routine/report',{account_id:Store.accountId}).catch(()=>({report:{state:'unknown'}}))]);
+      if(Views.processOutcomes&&!Views.processOutcomes.same(processContext))return;
       root.innerHTML = '';
       const layout = U.h('div', { class: 'grid g-2-1' });
       root.appendChild(layout);
@@ -17,6 +19,7 @@
           <div><h2 style="margin:0">Daily reviews</h2><div class="muted small">${entries.entries.length} entries — the habit that turns a log into a system.</div></div>
           <button class="btn primary" id="j-new">+ Today's review</button></div>`;
       listCol.appendChild(head);
+      if(Views.processOutcomes)listCol.appendChild(Views.processOutcomes.card(entries.process_review));
       const list = U.h('div', { class: 'card' });
       if (!entries.entries.length) {
         list.innerHTML = '<div class="empty">No reviews yet. Write one at the end of every session — three sentences is enough to start.</div>';
@@ -128,8 +131,8 @@
   Views.guardrailHistory = function(events = []) {
     const node = U.h('div',{class:'card',style:'margin-top:14px'});
     node.innerHTML = `<div class="card-head"><h3>Guardrail history — UTC rule day</h3></div>
-      <div class="tiny muted">Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Recording-time flags do not infer what happened at a historical entry.</div>
-      ${events.length ? `<div class="table-wrap"><table><thead><tr><th>Captured at (UTC)</th><th>Account / action</th><th>Violated rule(s)</th><th>Reason / decision</th></tr></thead><tbody>
+      <div class="tiny muted">Captured from server checks since this feature was installed. Research/imports and journal corrections are not execution permission. Observed stops/blocked requests are not traded violations. Recording-time flags do not infer what happened at a historical entry.</div>
+      ${events.length ? `<div class="table-wrap"><table><thead><tr><th>Captured at (UTC)</th><th>Account / action</th><th>Observed stop/rule(s)</th><th>Reason / decision</th></tr></thead><tbody>
         ${events.map(ev=>`<tr><td class="mono tiny">${U.esc(ev.observed_at)}</td>
           <td>${U.esc(ev.account_id == null ? 'account removed' : '#'+ev.account_id)} · ${U.esc(ev.action)}<br><span class="tiny muted">${U.esc(ev.kind)}${ev.entity_type && ev.entity_id ? ' · '+U.esc(ev.entity_type)+' #'+U.esc(ev.entity_id) : ''}</span></td>
           <td class="tiny">${(ev.snapshot?.breaches || []).map(b=>`<b>${U.esc(b.rule)}</b>: ${U.esc(b.detail)}`).join('<br>') || U.esc(ev.snapshot?.message || 'No known stop in the captured snapshot.')}</td>
@@ -137,10 +140,12 @@
     return node;
   };
 
+  let processDaySerial=0;
+  Views.openProcessDay=async(date,accountId)=>{if(Number(Store.accountId)!==Number(accountId))return global.App.toast('Select the original account before reviewing its day.','err');return openEditor(date,null);};
   async function openEditor(dateISO, root) {
-    const accountId=Store.accountId,userId=Store.user?.id;
-    const sameContext=()=>accountId===Store.accountId&&userId===Store.user?.id;
-    const day = await API.get('/journal/' + dateISO,{account_id:accountId});
+    const serial=++processDaySerial,accountId=Store.accountId,userId=Store.user?.id,token=API.getToken();
+    const sameContext=()=>serial===processDaySerial&&accountId===Store.accountId&&userId===Store.user?.id&&token===API.getToken();
+    let day;try{day=await API.get('/journal/' + dateISO,{account_id:accountId});}catch(e){if(sameContext())global.App.toast(e.message||'Day process/financial review unavailable; retry without inferring completion.','err');return;}
     if(!sameContext())return global.App.toast('Workspace/account changed while loading the day; reopen it.','err');
     const e = day.entry || {};
     const trades = day.trades || [];
@@ -171,6 +176,7 @@
         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
         <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+    if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
     let routineDirty=false;
     if(Views.routine){

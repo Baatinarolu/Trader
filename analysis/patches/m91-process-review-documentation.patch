@@ -1,0 +1,169 @@
+diff --git a/README.md b/README.md
+index 50457e8..94b15af 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,39 @@
+ # TradeJournal Pro
+ 
++## M91 — positive money is not a clean-process certificate (2026-10-12)
++
++**Day review, Journal index, Analytics and Coach** now separate financial outcomes
++from recorded guardrail exceptions. A known profitable **whole owned UTC account-day**
++with an actual saved trade exception under a personal stop gets a review annotation,
++its original action/rules/reason/clock, and an invitation to identify a process fix.
++**Financial wins, win rate, expectancy, scores and grades remain unchanged.**
++
++A reached cap/profit ceiling, blocked entry, research exception or recording-time
++observation is not proof of a traded violation. No captured history means unknown,
++not compliant. Unknown/corrupt/undatable history or incomplete financial totals
++remain explicit; missing amounts are not0. Filters to winning symbols/strategies
++cannot make a losing whole account-day look profitable. Overnight entry-rule day
++is not automatically the later profit close day. Reasons are historical; current
++corrected journal totals can honestly change an association without rewriting them.
++
++The Coach's **recorded flagged-day net** is associated current money, not a causal
++“impact”/cost. The warning does not label every winner, prove psychological reward
++or broker misconduct, punish profit, resize risk, grant entry, remove caps/routine,
++or complete required core/post-loss writing. Review under the original selected
++account; no automatic account switch. Existing finance/history imports remain
++legal but cannot replay a server guardrail exception through DTOs.
++
++Read-only `GET /process-outcomes` supports owned account/date scope, separate
++account-days when all accounts selected, and explicit unavailable on read faults.
++No new schema/columns or persisted flag, no new guard-history backup transport.
++See [docs/API.md](docs/API.md) / [docs/GUARDRAILS.md](docs/GUARDRAILS.md).
++
++Measured **M91 108/0 across6**, actual-parent migration/restart11/0; original M89
++170/0, M88 reasons160/0, execution260/0, routine321/0. Ledger **132=93 done/3 partial/36TODO**.
++M93 daily behaviour score is next; M106/M111/M112 remain open, M108 partial. Older
++negative/provider/RAW/DECLARED/native/conditional-DOM results retained, not a claim
++of production, broker, actual human/meditation, pixels or a70% win rate.
++
+ ## M89 — timely APP emotional-state reports (2026-10-12)
+ 
+ After an admitted new/reopened trade is saved, answer **What emotion drove this
+@@ -36,7 +70,7 @@ primitive strings;20MB selected-file/25MB body limits unchanged. Repeated restor
+ can duplicate trades, not an upsert.
+ 
+ Measured M89 **170/0 across13** actual auth/SQL/DOM probes; parent migration14/0;
+-M88 reasons160/0, execution260/0, routine321/0. Ledger **132=92 done/3 partial/37TODO**.
++M88 reasons160/0, execution260/0, routine321/0. Historical M89 ledger **132=92 done/3 partial/37TODO** (current counts above).
+ M106/M111/M112 still open, M108 partial. Inherited/migration/provider/raw/native/DOM
+ negatives retained separately, not an all-green production/broker/human claim.
+ See `analysis/M89-TIMELY-EMOTION-CAPTURE.md` in the delivery ZIP.
+diff --git a/docs/API.md b/docs/API.md
+index 2921771..3fe8cbd 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -679,3 +679,65 @@ show warning-bearing success without automatic dismissal/refresh.20MB selected
+ file/25MB request limits unchanged; repeat historical restore can duplicate trades.
+ Captures never complete core/post-loss writing, execution grade, admission, caps,
+ routine or risk; optional exit capture/decline is followed by required writing.
++
++
++## M91 — current profit versus retained trade-exception account-days
++
++`GET /process-outcomes?account_id=&from=&to=` is authenticated/read-only.
++Optional canonical positive **OWNED** account ID; omitted means all owned accounts,
++kept as separate account-days. Optional valid UTC `YYYY-MM-DD` dates/from<=to;
++malformed400, invalid/foreign account404, process-read outage503. Empty parameters
++aren't evidence. No client override snapshots, flags, eligibility or ownership
++are accepted as report authority. No schema/column/persisted flag and no writes.
++
++Response `{review:{state,timezone:'UTC',account_ids,from,to,days,coverage,basis,
++metrics_policy,broker_verified:false}}`. Inspector reads accounts, raw closed
++journal outcomes and M90 `guardrail_entry_admissions`/`guardrail_events` in one
++transaction; never reruns past events against today's edited rule settings.
++Owned clock/date/action/state/reason/rule metadata required. Normal/caution
++admissions distinct from overridden. Admission+event same action linked once;
++conflicts/corrupt/undatable facts unavailable. Valid older trade-event-only
++exceptions can be read without fabricating an admission. Actual server reason
++policy nonblank<=2000 plain text, including short/multiline, is preserved.
++
++Each day exposes account_id,date,closed_trades,known_net_count,unknown_net_count,
++known_net_sum,realised_net,unassigned_closed,admitted_entries,exception_entries,
++exceptions,evidence_unavailable,context_counts,rewarded_breach,process_state,
++outcome,broker_verified. Exceptions retain original trade/action ID, UTC rule day,
++clock, rules/details/reason, sources/admission/event IDs. Current trade correction,
++reopen/deletion does not rewrite that past action. It is app-record evidence,
++not broker execution/misconduct or a sealed/database-owner-tamper-proof vault.
++
++`rewarded_breach:true` means a known complete positive WHOLE account-day plus
++actual retained traded exception. A merely reached stop (`breach`), blocked request,
++research-plan override or record-only observation is not that case; contextual
++counts distinguish them. Unknown history not clean. Finance is **current corrected
++journal**, exactly closed finite net on UTC close day, no floating/open values.
++Unknown constituent or invalid/missing/future close clock makes whole-day total
++unavailable; no guessed opening day or unknown→0. Unassigned evidence and clocks
++explicit in coverage. Overflowing sum unavailable, not Infinity/zero/profit.
++Different accounts/days never combined into one case. Overnight entry-rule day
++is not attributed to the eventual trade's profit day; association is calendar-level.
++
++`/analytics`, `/coach`, `/briefing`, `/journal`, `/journal/:date` add `process_review`.
++Day review selects its owned/default account and aligns M90 history to it. Date
++bounds respected; symbolic/strategy/tag/model trade filters do NOT thin the full
++account-day outcome for this annotation. Original financial statistics can still
++show that selected subset: the different annotation basis is explicit. Optional
++process-read fault returns `state:'unavailable',days:[],coverage:null`, rather than
++vetoing finance or silently declaring clean history. Dedicated read endpoint uses503.
++
++Coach adds one descriptive `rewarded_breach` warning only when known cases exist,
++with money_basis `recorded_flagged_account_day_net`. Compatibility `impact` is
++actual summed known flagged-day net, not causal cost; overflow null with
++recorded_net_available:false. UI labels it recorded flagged-day net/Unavailable,
++never fabricated+$0 impact. Unrelated insights/score/summary remain unchanged.
++No per-trade category filter for a day association; review actual account-day links.
++
++This feature **annotates**, never excludes financial wins or changes win-rate/
++expectancy denominators, execution/behaviour grades, sizing/risk/permission/caps,
++routine/admission/loss-writing clocks. No causal psychological reinforcement,
++prediction/edge/probability/70% claim. Existing plain financial/history imports
++remain legal; root/trade snapshots can't replay retained server proof. No new
++verified guard-history portability in this pass. M93 daily behaviour score remains
++separate TODO; M106/M111/M112 still open, M108 partial.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index a10bce5..8759da0 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -412,3 +412,41 @@ All setup/execution grades, checklist/entry-model weights, default risk/factors,
+ geometry/stops/targets/RR, admissions/caps/routine/loss-writing clocks unchanged.
+ Current ledger132=92 done/3 partial/37TODO; M30/M103/M108 partial, M106/M111/M112
+ open. No broker/provider/pixel/actual-human/meditation/production/edge proof.
++
++
++## M91 — profitable recorded exceptions require review, not metric rewrites
++
++Known positive whole-owned UTC account-day P&L plus a valid retained actual saved
++trade exception under a personal stop is a distinct review annotation. Reaching a
++trade/profit limit correctly or being blocked isn't evidence of breaking a rule;
++research exceptions/history are not executed positions. Original source, owner,
++account, action/trade identity, typed reason, clock/rule day and stop/waiver metadata
++required; admission+event linked once. Valid existing caution/short/multiline
++reason policy preserved. Corrupt/unavailable/undatable history not inferred clean.
++
++Financial current corrected CLOSE-day outcomes, no open/floating profit, full
++account totals even under winning-symbol/strategy filtering. Unknown/inconsistent
++availability not0, overflow unavailable. Accounts/days not pooled into cases;
++overnight rule-entry and eventual realised days not silently conflated. Historical
++exception survives correction/deletion/reopen, but current financial association
++can change honestly. No prior financial P&L or broker mental-state backfill.
++
++Same behaviour must score the same regardless of profit/loss: **M91 does not
++punish profit or recalculate behaviour/execution grades**. Financial wins remain
++wins and denominators/expectancy intact. Coach/Analytics/day/index annotate them
++without causal dollar “impact”, psychological reinforcement, edge/probability or
++permission claims. Displayed flagged-day net is recorded associated money, not
++the amount an exception caused. Missing grouped money explicitly unavailable.
++No misleading per-trade category filter for a day-level association.
++
++No schema, persisted flag or new write path. No cap/loss-writing/cooldown/routine/
++admission refund, entry-model/checklist/grade/risk/factor/stop/target/RR change.
++User/account/token/superseded/fault callbacks guarded, reasons escaped, historical
++account not automatically selected. Optional process store outage never certifies
++clean or rejects truthful financial reporting. Imports cannot replay proof through
++DTOs; no guard-history backup expansion or sealed/admin-proof vault claimed.
++
++Current132=93 done/3 partial/36TODO. M93 per-day behaviour score next; M30/M103/M108
++partial, M106/M111/M112 TODO. Course floor30, deliberate M103n>=5/B-C tradeability
++unchanged. No broker/provider/actual-human/meditation/pixels/production/edge/70%
++validation implied by this app review annotation.

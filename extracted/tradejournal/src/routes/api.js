@@ -17,6 +17,7 @@ const Execution = require('../execution-review');
 const Screenshots = require('../screenshots');
 const Confluences = require('../confluences');
 const Emotions = require('../emotions');
+const ProcessOutcomes = require('../process-outcomes');
 const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
 const O = require('../options');
 const Exp = require('../exposure');
@@ -544,6 +545,11 @@ function complianceOver(map, ids) {
   };
 }
 
+router.get('/process-outcomes',requireAuth,async(req,res)=>{
+  try{res.json({review:await ProcessOutcomes.inspect(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})});}
+  catch(e){if(e.code==='process_outcome_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Process history unavailable; not a clean-process certificate.'});}
+});
+
 router.get('/analytics', requireAuth, async (req, res) => {
   const tz = (await settingsOf(req)).timezone;
   const f = tradeFilters(req);
@@ -565,6 +571,7 @@ router.get('/analytics', requireAuth, async (req, res) => {
   Object.assign(analytics, complianceOver(await complianceByTrade(req.user.id), closed.map((t) => t.id)));
   analytics.account = acc;
   analytics.open_positions = decorated.filter((t) => t.status === 'open');
+  analytics.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
   res.json(analytics);
 });
 
@@ -601,7 +608,7 @@ router.get('/coach', requireAuth, async (req, res) => {
     .map((t) => P.decorate(t, tz));
   const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
     || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
-  res.json(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }));
+  res.json(ProcessOutcomes.withCoach(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }),await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})));
 });
 
 router.get('/briefing', requireAuth, wrap(async (req, res) => {
@@ -619,6 +626,7 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
   const capPolicy = await Guards.dailyCap(db, req.user.id, acc);
   const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
   briefing.risk_plan.trade_cap_policy = capPolicy;
+  briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
   // Briefing amounts are advice, NOT permission. Use the same close-day UTC
   // state as entry admission for the optional profit display/retained latch.
   let daily;
@@ -649,7 +657,7 @@ router.get('/journal', requireAuth, async (req, res) => {
   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
   if(req.query.account_id && !await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(Number(req.query.account_id),req.user.id))return res.status(404).json({error:'Account not found'});
   const journalRows=await db.prepare('SELECT * FROM trades WHERE user_id=?'+(req.query.account_id?' AND account_id=?':'')).all(...(req.query.account_id?[req.user.id,Number(req.query.account_id)]:[req.user.id]));
-  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC' });
+  res.json({ entries: rows, guardrail_days:guardrailDays, journal_days:J.days(journalRows),pre_market_days:await RR.list(req.user.id,{accountId:req.query.account_id}),journal_timezone:'UTC',process_review:await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null}) });
 });
 router.get('/routine',requireAuth,async(req,res)=>{
   try{res.json({routine:await Routine.current(req.user.id,{accountId:req.query.account_id})});}catch(e){if(e.code==='routine_input_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Pre-market routine state could not be verified.'});}
@@ -681,8 +689,8 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
   const account=await accountOr404(req,res);if(!account)return;
   const accountId=account.id;
   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
-  const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,req.query.account_id ? Number(req.query.account_id) : null);
-  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC' });
+  const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
+  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
 });
 router.post('/journal', requireAuth, async (req, res) => {
   const b = req.body || {};

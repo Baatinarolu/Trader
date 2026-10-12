@@ -1,0 +1,39 @@
+diff --git a/public/js/views/coach.js b/public/js/views/coach.js
+index 3e4fa31..db76a85 100644
+--- a/public/js/views/coach.js
++++ b/public/js/views/coach.js
+@@ -52,7 +52,7 @@
+           el.innerHTML = `
+             <div class="row-between" style="align-items:flex-start;gap:10px">
+               <h4>${U.esc(i.title)}</h4>
+-              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.impact >= 0 ? '+' : ''}${U.money(i.impact)} ${i.money_basis==='recorded_flagged_account_day_net'?'recorded flagged-day net':i.capture_basis==='app_record_window_self_report'?'recorded group net':'impact'}</span>
++              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.money_basis==='recorded_flagged_account_day_net'&&!Number.isFinite(i.impact)?'Unavailable':(i.impact >= 0 ? '+' : '')+U.money(i.impact)} ${i.money_basis==='recorded_flagged_account_day_net'?'recorded flagged-day net':i.capture_basis==='app_record_window_self_report'?'recorded group net':'impact'}</span>
+             </div>
+             <div class="detail">${U.esc(i.detail)}</div>
+             <div class="evidence">${(i.evidence || []).map((e) => `<span class="ev">${U.esc(e.label)}<b>${U.esc(e.value)}</b></span>`).join('')}</div>
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index b5ed484..470b0ef 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -145,7 +145,7 @@
+   async function openEditor(dateISO, root) {
+     const serial=++processDaySerial,accountId=Store.accountId,userId=Store.user?.id,token=API.getToken();
+     const sameContext=()=>serial===processDaySerial&&accountId===Store.accountId&&userId===Store.user?.id&&token===API.getToken();
+-    const day = await API.get('/journal/' + dateISO,{account_id:accountId});
++    let day;try{day=await API.get('/journal/' + dateISO,{account_id:accountId});}catch(e){if(sameContext())global.App.toast(e.message||'Day process/financial review unavailable; retry without inferring completion.','err');return;}
+     if(!sameContext())return global.App.toast('Workspace/account changed while loading the day; reopen it.','err');
+     const e = day.entry || {};
+     const trades = day.trades || [];
+diff --git a/public/js/views/process-outcomes.js b/public/js/views/process-outcomes.js
+index d1978b8..426719f 100644
+--- a/public/js/views/process-outcomes.js
++++ b/public/js/views/process-outcomes.js
+@@ -7,7 +7,7 @@
+    const node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{processReview:'true'}}),expected=context();node.appendChild(U.h('h3',{text:'Positive P&L does not prove process adherence'}));
+    node.appendChild(U.h('p',{class:'field-note',text:'Financial wins, win rate and expectancy remain unchanged. This is an account-day review annotation, not a label on every winning trade, a behaviour score, causal dollar cost, broker violation proof or permission to trade/resize. Full account days, not a selected winning-symbol subset; overnight rule-entry day and realised close day are not interchangeable.'}));
+    if(review?.state!=='available'||!review.coverage){node.appendChild(U.h('p',{class:'sticky-note warn',text:'Process history unavailable / unknown, not clean. No compliant day or lost exception inferred; financial reporting is separate.'}));return node;}
+-   const c=review.coverage;node.appendChild(U.h('p',{class:'small',text:`${c.profitable_exception_days} profitable account-day${c.profitable_exception_days===1?'':'s'} with recorded trade exceptions; ${c.exception_entries} exception entries across ${c.exception_days} account-days · ${c.outcome_unavailable_days} outcomes unavailable · ${c.process_unknown_days} process days unknown/unavailable · ${c.evidence_unavailable} corrupt/unavailable facts · ${c.unassigned_closed} unassigned close clocks.`}));node.appendChild(U.h('p',{class:'tiny muted',text:review.basis||'Whole owned account UTC close-day current journal P&L + retained server rule-day trade-exception facts.'}));
++   const c=review.coverage;node.appendChild(U.h('p',{class:'small',text:`${c.profitable_exception_days} profitable account-day${c.profitable_exception_days===1?'':'s'} with recorded trade exceptions; ${c.exception_entries} exception entries across ${c.exception_days} account-days · ${c.outcome_unavailable_days} outcomes unavailable · ${c.process_unknown_days} process days unknown/unavailable · ${c.evidence_unavailable} corrupt/unavailable facts · ${c.unassigned_closed} unassigned close clocks · ${c.unassigned_evidence??0} unassigned process facts.`}));node.appendChild(U.h('p',{class:'tiny muted',text:review.basis||'Whole owned account UTC close-day current journal P&L + retained server rule-day trade-exception facts.'}));
+    const cases=(review.days||[]).filter(d=>d.exception_entries||d.evidence_unavailable);
+    if(!cases.length){node.appendChild(U.h('p',{class:'muted small',text:'No captured traded exception in this scope. Observed stops, blocked attempts, research and record-only observations are not actual traded violations; absence is not a verified clean-process certificate.'}));return node;}
+    for(const d of cases){const section=U.h('section',{class:d.rewarded_breach?'sticky-note warn':'card',style:'margin-top:10px',dataset:{processCase:d.account_id+':'+d.date}});section.appendChild(U.h('h4',{text:`${d.date} UTC · account #${d.account_id} · ${d.rewarded_breach?'Profitable with recorded exception':d.realised_net==null?'Outcome unavailable; exception history retained':'Recorded exception, no confirmed positive day'}`}));section.appendChild(U.h('p',{class:'small',text:`Whole-account current realised net: ${finite(d.realised_net)?U.moneySign(d.realised_net):'Unavailable'} · ${d.known_net_count} known / ${d.closed_trades} closed outcomes · ${d.exception_entries} exception entries. ${d.evidence_unavailable?'Some process facts unavailable; not inferred.':''}`}));

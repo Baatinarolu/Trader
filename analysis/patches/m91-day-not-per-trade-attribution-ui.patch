@@ -1,0 +1,13 @@
+diff --git a/public/js/views/coach.js b/public/js/views/coach.js
+index db76a85..6b54781 100644
+--- a/public/js/views/coach.js
++++ b/public/js/views/coach.js
+@@ -58,7 +58,7 @@
+             <div class="evidence">${(i.evidence || []).map((e) => `<span class="ev">${U.esc(e.label)}<b>${U.esc(e.value)}</b></span>`).join('')}</div>
+             <div class="actions"><b>Do this:</b> ${U.esc(i.action)}</div>
+             <div class="row" style="gap:6px;margin-top:10px">
+-              <button class="btn xs ghost" data-filter="${U.esc(i.category || '')}">Filter trades</button>
++              ${i.id==='rewarded_breach'?'<span class="tiny muted">Review captured account-day details above; no per-trade attribution/filter.</span>':`<button class="btn xs ghost" data-filter="${U.esc(i.category || '')}">Filter trades</button>`}
+               <button class="btn xs ghost" data-dismiss="${U.esc(i.id)}">Got it</button>
+             </div>`;
+           feed.appendChild(el);
