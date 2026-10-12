@@ -1,0 +1,181 @@
+diff --git a/public/index.html b/public/index.html
+index 2b23853..b390e0b 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/period-reviews.js?v={{V}}"></script>
++<script src="/js/views/opportunities.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
+ <script src="/js/views/behavior-days.js?v={{V}}"></script>
+ <script src="/js/views/process-outcomes.js?v={{V}}"></script>
+diff --git a/public/js/app.js b/public/js/app.js
+index 9e7a471..d494dca 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -366,6 +366,7 @@
+         };
+         const d = form.requiresAdmission() ? await this.runGuarded(operation,form.guardrailState()) : await operation(null);
+         if (!d) return; // cancelled required-reason dialog, no request/admission
++        for(const warning of d.opportunity_warnings||[])this.toast(warning,'warn');
+         Store.invalidate();
+         close();
+         const t = d.trade || {};
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index 7b0d6c9..5a1a54d 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -19,6 +19,7 @@
+       let active = 'core';
+       TABS.forEach(([id, label]) => tabs.appendChild(U.h('button', { class: active === id ? 'active' : '', text: label, onclick: () => { active = id; U.$$('button', tabs).forEach((b, i) => b.classList.toggle('active', TABS[i][0] === id)); U.clear(panes); panes.appendChild(PANES[id]()); } })));
+       if(Views.behaviorDays)root.appendChild(Views.behaviorDays.card(an.behavior_days));
++      if(Views.opportunities)root.appendChild(Views.opportunities.summary(an.opportunity_review));
+       if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(an.process_review));
+       root.appendChild(tabs); root.appendChild(panes);
+ 
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index dbc40a4..0651896 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -26,7 +26,7 @@
+     drawings: [],
+   };
+ 
+-  let correctionSerial=0;
++  let correctionSerial=0,signalSerial=0;
+   const correctionContext=()=>({user:Store.user?.id,account:Store.accountId||null,token:API.getToken()}),sameCorrection=c=>!!c&&c.user===Store.user?.id&&c.account===(Store.accountId||null)&&c.token===API.getToken();
+ 
+   /** bar length per timeframe — used to decide when a read has gone stale */
+@@ -1210,6 +1210,7 @@
+     const s = B.signals;
+     if (!s) { pane.appendChild(h('div', { class: 'empty', text: 'Loading signals…' })); return; }
+     const st = s.stats || {};
++    if(Views.opportunities)pane.appendChild(Views.opportunities.summary(s.opportunity_review));
+     pane.appendChild(h('div', { class: 'card', html: `<div class="stat-strip">
+       <div><div class="l">Tracked</div><div class="v">${st.total || 0}</div></div>
+       <div><div class="l">Pending</div><div class="v">${st.pending || 0}</div></div>
+@@ -1229,8 +1230,9 @@
+       <td class="mono">${g.rr_final ? g.rr_final + 'R' : '—'}</td>
+       <td>${g.status === 'pending' ? '<span class="chip info">pending</span>' : g.status === 'win' ? '<span class="chip pos">win</span>' : g.status === 'loss' ? '<span class="chip neg">loss</span>' : `<span class="chip muted">${esc(g.status)}</span>`}</td>
+       <td class="mono">${g.outcome_r == null ? '—' : g.outcome_r + 'R'}</td>
+-      <td class="muted-2">${esc(String(g.created_at || '').slice(0, 16))}</td></tr>`).join('');
+-    pane.appendChild(h('div', { class: 'card', html: `<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Market</th><th>Side</th><th>Grade</th><th>Entry model</th><th>P(win)</th><th>Entry</th><th>Stop</th><th>Final R:R</th><th>Status</th><th>R</th><th>Saved</th></tr></thead><tbody>${rows}</tbody></table></div>` }));
++      <td class="muted-2">${esc(String(g.created_at || '').slice(0, 16))}</td><td><button class="btn xs ghost" type="button" data-signal-review="${g.id}">Review value/decision</button> <button class="btn xs ghost" type="button" data-signal-log="${g.id}">Record own trade from saved plan</button></td></tr>`).join('');
++    pane.appendChild(h('div', { class: 'card', html: `<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Market</th><th>Side</th><th>Grade</th><th>Entry model</th><th>P(win)</th><th>Entry</th><th>Stop</th><th>Final R:R</th><th>Status (model)</th><th>R (model)</th><th>Saved</th><th>Own opportunity review</th></tr></thead><tbody>${rows}</tbody></table></div>` }));
++    const signalContext=correctionContext();pane.querySelectorAll('[data-signal-review]').forEach(b=>b.addEventListener('click',()=>{if(!sameCorrection(signalContext))return global.App.toast('Workspace/account/session changed; reload saved signals.','err');return Views.opportunities?.openSignal(Number(b.dataset.signalReview));}));pane.querySelectorAll('[data-signal-log]').forEach(b=>b.addEventListener('click',()=>{if(!sameCorrection(signalContext))return global.App.toast('Workspace/account/session changed; reload saved signals.','err');return Views.opportunities?.logSignal(Number(b.dataset.signalLog));}));
+     if ((st.by_entry_model || []).length) pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Resolved signals by entry model</strong></div><div class="muted bot-detail">Unknown is not inferred. Under 30 resolved signals per model: descriptive only.</div><div class="table-wrap"><table class="table"><thead><tr><th>Model</th><th>Resolved</th><th>Win %</th><th>Expectancy</th><th>Sample</th></tr></thead><tbody>${st.by_entry_model.map((x) => `<tr><td>${esc(x.entry_model)}</td><td>${x.resolved}</td><td>${x.win_rate}%</td><td>${x.expectancy_r}R</td><td>${x.sample_ready ? '30+ recorded' : 'thin sample'}</td></tr>`).join('')}</tbody></table></div>` }));
+     if ((st.by_grade || []).length) {
+       pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Signal quality by grade</strong></div><div class="table-wrap"><table class="table"><thead><tr><th>Grade</th><th>Resolved</th><th>Win rate</th><th>Expectancy</th></tr></thead><tbody>${st.by_grade.map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.resolved}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('')}</tbody></table></div>` }));
+@@ -1244,6 +1246,7 @@
+     title: 'Bots',
+     render(root) {
+       const accountKey=Store.accountId || null;
++      if(B.signalsContext&&!sameCorrection(B.signalsContext)){signalSerial++;B.signals=null;B.signalsContext=null;}
+       if(B.correctionContext&&!sameCorrection(B.correctionContext)){correctionSerial++;B.correction=null;B.correctionContext=null;B.error='';if(B.busy==='correct')B.busy='';}
+       if (B.accountKey!==undefined && B.accountKey!==accountKey) {B.data=null;B.chart=null;B.scan=null;B.correction=null;B.error='';B.busy='';}
+       B.accountKey=accountKey;
+@@ -1324,12 +1327,12 @@
+           .then((bt) => { B.backtestTrades = bt.trades || []; B.busy = ''; global.App.refresh(); })
+           .catch(() => { B.busy = ''; global.App.refresh(); });
+       } else if (B.tab === 'signals' && !B.signals) {
+-        API.get('/bots/signals', {})
+-          .then((r) => { B.signals = r; global.App.refresh(); })
+-          .catch(() => {});
++        const context=correctionContext(),number=++signalSerial;B.signalsContext=context;API.get('/bots/signals', {account_id:Store.accountId||null})
++          .then((r) => { if(!sameCorrection(context)||number!==signalSerial)return;B.signals = r; global.App.refresh(); })
++          .catch((e) => {if(!sameCorrection(context)||number!==signalSerial)return;B.error='Saved signals unavailable: '+e.message;});
+       }
+     },
+-    reset() { B.data = null; B.predict = null; B.scan = null; B.correction = null; B.signals = null; B.candles = null; B.chart = null; B.backtestTrades = null; B.error = ''; },
++    reset() { signalSerial++;B.signalsContext=null;B.data = null; B.predict = null; B.scan = null; B.correction = null; B.signals = null; B.candles = null; B.chart = null; B.backtestTrades = null; B.error = ''; },
+   };
+ 
+   B.initial = null;
+diff --git a/public/js/views/opportunities.js b/public/js/views/opportunities.js
+new file mode 100644
+index 0000000..a165c8b
+--- /dev/null
++++ b/public/js/views/opportunities.js
+@@ -0,0 +1,20 @@
++/* M100 saved opportunity decisions/linkage are not simulated P&L or permission. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U;let serial=0;
++ const ctx=()=>({account:global.Store.accountId,user:global.Store.user?.id,token:global.API.getToken()}),same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id&&c.token===global.API.getToken(),finite=n=>typeof n==='number'&&Number.isFinite(n);
++ const O=Views.opportunities={ctx,same,
++  summary(report){const node=U.h('section',{class:'card',style:'margin-top:12px',dataset:{opportunitySummary:'true'}});node.appendChild(U.h('h3',{text:'Recorded opportunities — explicit value/inaction review'}));node.appendChild(U.h('p',{class:'field-note',text:'Saved signals and model outcomes are not actual entries or automatically missed value. Count explicit own-plan judgments/associations. Hypothetical model R is not lost profit, realised journal money, a causal counterfactual, prediction or permission to trade/resize. UTC server opportunity record day, not broker/execution/close day. Original personal stops should be respected, not celebrated as missed winners.'}));if(report?.state!=='available'||!report.summary){node.appendChild(U.h('p',{text:'Opportunity evidence unavailable; not zero missed/acted or clean.'}));return node;}const s=report.summary;node.appendChild(U.h('p',{class:'small',text:`${s.reported_missed_value} reported value miss${s.reported_missed_value===1?'':'es'} · ${s.app_eligible_missed} with captured APP-confirmed gate / ${s.unverified_value_missed} unverified value judgment · ${s.acted_app} app-entry link${s.acted_app===1?'':'s'} / ${s.acted_declared} declared journal links · Unreviewed ${s.unreviewed} · Unknown ${s.unknown} · Not taken ${s.not_taken} · Not value ${s.not_value} · Prior ${s.prior} · Unavailable ${s.unavailable} · Imported ${s.imported} · unattributed legacy ${s.unattributed_legacy_signals??0}. Whole missed total ${s.complete_missed_total==null?'Unavailable/incomplete coverage':s.complete_missed_total}. Absence is not a complete zero-miss certificate.`}));return node;},
++  async logSignal(id){const context=ctx(),number=++serial;let v;try{v=await global.API.get('/opportunities/signals/'+id,{account_id:context.account});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');return;}if(!same(context)||number!==serial)return;const s=v.signal;if(!s||v.review?.state==='prior'||v.review?.state==='unavailable')return global.App.toast('Saved plan context unavailable/prior; do not convert it into an actual-entry assertion.','err');return global.App.openTrade(null,{source_signal_id:id,account_id:context.account,symbol:s.symbol,direction:s.side,status:'open',entry:s.entry,stop:s.stop,target:s.t1,entry_model:s.entry_model,entry_tf:s.entry_tf,entry_evidence:s.entry_evidence,setup_grade:s.grade,thesis:'Optional source association to saved signal #'+id+'; recheck own current plan/market and admission, not a reusable permit.'});},
++  async openSignal(id){const context=ctx(),number=++serial,url='/opportunities/signals/'+id;let view;try{view=await global.API.get(url,{account_id:context.account});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');return;}if(!same(context)||number!==serial)return;const body=U.h('div');let alive=true,busy=false,stale=false;const valid=()=>alive&&body.isConnected&&same(context)&&number===serial;
++   function draw(){body.replaceChildren();const s=view.signal,r=view.review;body.appendChild(U.h('h3',{text:`Saved #${id} ${s?.symbol||'unavailable'} · ${s?.side||'unknown'} · account #${context.account}`}));body.appendChild(U.h('p',{class:'small',text:`Original plan entry ${s?.entry??'unknown'}, stop ${s?.stop??'unknown'}, first target ${s?.t1??'unknown'} · capture ${view.capture?.source||'legacy unverified'} / ${view.capture?.observed_at||'no original observation'} · original eligibility ${r.original_eligibility||'unverified'}. Broker verified: false.`}));body.appendChild(U.h('p',{class:'field-note',text:`${r.decision} / ${r.state}. Planned primary RR ${finite(r.planned_rr)?r.planned_rr+'R':'unavailable'}; existing modeled signal ${s?.status||'unknown'} ${finite(r.simulation?.r)?r.simulation.r+'R':'outcome unavailable'} — not realised journal P&L or lost profit. Unused signals/no-fill/expired are not automatically missed value. Named fear/hesitation/value is your retrospective self-report, not verified market permission. First and corrected decisions/history kept; never completes required trade writing/grades/entry rules.`}));
++    const decision=U.h('select',{dataset:{opportunityDecision:'true'}});for(const [value,label]of [['missing','Choose explicitly'],['unknown','Unknown / not recorded'],['not_taken','Not taken — value unknown or another reason'],['not_value','Not value under my plan'],['missed_value','Missed value — my explicit own-plan judgment']])decision.appendChild(U.h('option',{value,text:label}));if(['unknown','not_taken','not_value','missed_value'].includes(r.decision)&&view.history.length)decision.value=r.decision;const value=U.h('select',{dataset:{opportunityValue:'true'}});for(const [v,label]of [['unknown','Value not known'],['yes','Yes — value under my own plan'],['no','No — not value under my plan']])value.appendChild(U.h('option',{value:v,text:label}));if(r.value_setup!==null&&r.value_setup!==undefined)value.value=r.value_setup?'yes':'no';const reason=U.h('select',{dataset:{opportunityReason:'true'}});for(const [v,label]of [['','Reason unknown'],['fear','Fear'],['hesitation','Hesitation'],['distraction','Distraction'],['other','Other personal reason']])reason.appendChild(U.h('option',{value:v,text:label}));reason.value=r.reason_code||'';const note=U.h('textarea',{maxlength:2000,dataset:{opportunityNote:'true'}});note.value=r.note||'';for(const [label,input]of [['Decision',decision],['Your own-plan value judgment',value],['Reason for the decision',reason],['Honest note (no outcome rationalisation)',note]])body.appendChild(U.h('label',{class:'field'},U.h('span',{text:label}),input));
++    async function update(endpoint,payload){if(!valid()||busy)return;busy=true;disable();try{const result=await global.API.post(endpoint,{revision:view.revision,...payload});if(!valid())return;view=result;stale=false;draw();global.Store.invalidate();global.App.toast('Owned opportunity declaration/association recorded; signal/finance/permission unchanged.','ok');}catch(e){if(valid()){stale=e.status===409;global.App.toast(e.message,'err');}}finally{busy=false;if(valid())disable();}}
++    body.appendChild(U.h('button',{class:'btn sm primary',type:'button',dataset:{opportunitySave:'true'},text:'Save explicit decision',onclick:()=>{if(decision.value==='missing')return global.App.toast('Choose a decision explicitly; no miss or action inferred.','err');return update(url+'?account_id='+context.account,{decision:decision.value,value_setup:value.value==='unknown'?null:value.value==='yes',reason_code:reason.value||null,note:note.value});}}));
++    if(view.capture){const trade=U.h('input',{type:'number',min:1,step:1,dataset:{opportunityTrade:'true'},placeholder:'Own saved journal trade ID'}),association=U.h('textarea',{maxlength:2000,dataset:{opportunityLinkNote:'true'}});body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Explicit saved journal association, not symbol/time guessing'}),trade));body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Why does that own journal correspond to this plan?'}),association));body.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{opportunityLink:'true'},text:'Link own journal (self-report, not broker proof)',onclick:()=>update('/opportunities/'+view.capture.id+'/links',{trade_id:Number(trade.value),note:association.value})}));for(const l of view.links){body.appendChild(U.h('p',{class:'tiny',text:`Associated original trade #${l.trade_key} · source ${l.source} · original entry ${l.opened_at} · association ${l.recorded_at} · ${l.note}. Original association retained if finance was corrected/deleted.`}));body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',text:'Retract mistaken association with note above',onclick:()=>update('/opportunities/'+view.capture.id+'/links/'+l.id+'/retract',{note:association.value})}));}}
++    body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{opportunityReload:'true'},text:'Reload saved context (discard unsaved input)',onclick:async()=>{if(!valid()||busy)return;busy=true;disable();try{const result=await global.API.get(url,{account_id:context.account});if(!valid())return;view=result;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message,'err');}finally{busy=false;if(valid())disable();}}}));if(view.history.length||view.link_history.length){const details=U.h('details');details.appendChild(U.h('summary',{text:'Retained decision/association history'}));for(const h of [...view.history,...view.link_history])details.appendChild(U.h('p',{class:'tiny',text:JSON.stringify(h)}));body.appendChild(details);}
++   }
++   function disable(){for(const b of body.querySelectorAll('button'))b.disabled=busy||stale;body.querySelector('[data-opportunity-reload]').disabled=busy;}
++   draw();const modal=global.App.modal({title:'Saved opportunity review — not model profit',body,wide:true,onClose:()=>{alive=false;},actions:[{label:'Close — unknown if not recorded',ghost:true}]});disable();return modal;
++  }
++ };
++})(window);
+diff --git a/public/js/views/period-reviews.js b/public/js/views/period-reviews.js
+index f4124e0..d75d981 100644
+--- a/public/js/views/period-reviews.js
++++ b/public/js/views/period-reviews.js
+@@ -5,7 +5,8 @@
+  const P=Views.periodReviews={ctx,same,feedback(out){if(!out.review_warnings?.length)return null;return U.h('section',{class:'sticky-note warn'},U.h('strong',{text:'Optional periodic review history'}),...out.review_warnings.map(text=>U.h('p',{class:'tiny',text})));},
+   async manager(){const context=ctx(),number=++serial;let out;try{out=await global.API.get('/reviews',{account_id:context.account});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');return;}if(!same(context)||number!==serial)return;const body=U.h('div');body.appendChild(U.h('p',{class:'field-note',text:'Five R cadence: record daily, review weekly, reflect monthly, document refinement quarterly, reassess yearly. One chosen focus per period. UTC/Monday APP buckets, not a broker calendar; review records never grant entry or apply strategy/risk changes.'}));const kind=U.h('select',{dataset:{periodKind:'true'}});for(const [key,label]of [['week','Weekly review'],['month','Monthly reflection'],['quarter','Quarterly refinement'],['year','Annual reassessment']])kind.appendChild(U.h('option',{value:key,text:label}));const date=U.h('input',{type:'date',value:global.Store.isoToday(),dataset:{periodDate:'true'}});body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Cadence'}),kind));body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Date inside the chosen period (UTC)'}),date));let modal;body.appendChild(U.h('button',{class:'btn primary',type:'button',dataset:{periodOpen:'true'},text:'Open selected period',onclick:async()=>{if(!same(context)||number!==serial||!body.isConnected)return;try{const v=await global.API.get('/reviews/template',{account_id:context.account,kind:kind.value,date:date.value});if(!same(context)||number!==serial||!body.isConnected)return;modal.close();await P.open(v.period.kind,v.period.start);}catch(e){if(same(context)&&number===serial&&body.isConnected)global.App.toast(e.message,'err');}}}));body.appendChild(U.h('h3',{text:'Saved periods'}));for(const r of out.reviews||[])body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',text:`${r.kind} · ${r.period_start} · ${r.latest.status} · revision ${r.latest.version}`,onclick:()=>{if(!same(context)||number!==serial)return;modal.close();return P.open(r.kind,r.period_start);}}));if(!out.reviews?.length)body.appendChild(U.h('p',{text:'No saved periodic reviews. Not inferred from a daily note or score.'}));modal=global.App.modal({title:'Periodic review cadence',body,wide:true,actions:[{label:'Close',ghost:true}]});return modal;},
+   async open(kind,start){const context=ctx(),number=++serial,url='/reviews/'+encodeURIComponent(kind)+'/'+encodeURIComponent(start);let view;try{view=await global.API.get(url,{account_id:context.account});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');return;}if(!same(context)||number!==serial||view.account_id!==Number(context.account))return;const body=U.h('div');let alive=true,busy=false,stale=false,amending=false,modal;const valid=()=>alive&&same(context)&&number===serial&&body.isConnected;
+-   function draw(){body.replaceChildren();const last=view.latest,locked=last?.status==='completed'&&!amending,data=last?.metrics||view.preview,f=data?.financial||{};body.appendChild(U.h('p',{class:'small',text:`${view.template.title} · account #${view.account_id} · ${view.period.start} inclusive to ${view.period.end} exclusive · ${last?last.status+' revision '+last.version:'Unsaved draft'}. ${view.period.basis}`}));body.appendChild(U.h('p',{class:'field-note',text:view.template.policy+' Review completion is not trading permission, evidence of human/broker execution or core/day journal completion. No weekly/monthly plan-apply or automatic annual goal rewrite.'}));body.appendChild(U.h('p',{class:'tiny muted',text:'Question basis: '+view.template.question_basis+(kind==='year'?' · APP-guided annual prompts; not a full quoted course template.':'')}));body.appendChild(U.h('p',{class:'small',text:`${last?'Saved snapshot':'Live preview'}: Known outcomes ${f.known_net_count??'unknown'} / ${f.closed_trades??'unknown'} · Net ${finite(f.net)?U.moneySign(f.net):'Unavailable'} · Win % ${finite(f.win_rate)?U.pct(f.win_rate,1):'Unavailable'} · Mean R ${finite(f.mean_r)?U.R(f.mean_r):'Unavailable'} · ${f.sample_ready?'30+ recorded; not edge proof':'Below30; do not tweak the system'}. Missed value setups/verified impulse count unavailable (separate M100).`}));if(last)body.appendChild(U.h('p',{class:'tiny',text:`Saved source ${last.source} · server receipt ${last.recorded_at||'unavailable'} · first and amended revisions retained; receipt is not original entry-time proof.`}));if(view.context_matches===false)body.appendChild(U.h('p',{class:'sticky-note warn',text:'Saved financial/strategy context is prior. Original snapshot retained; current live preview differs. Explicitly reload/amend, never overwrite the original baseline.'}));if(!view.preview.policy.period_finished)body.appendChild(U.h('p',{class:'sticky-note warn',text:'Calendar period still in progress: a completed answer record is an early review, not a fully elapsed period.'}));
++   function draw(){body.replaceChildren();const last=view.latest,locked=last?.status==='completed'&&!amending,data=last?.metrics||view.preview,f=data?.financial||{};body.appendChild(U.h('p',{class:'small',text:`${view.template.title} · account #${view.account_id} · ${view.period.start} inclusive to ${view.period.end} exclusive · ${last?last.status+' revision '+last.version:'Unsaved draft'}. ${view.period.basis}`}));body.appendChild(U.h('p',{class:'field-note',text:view.template.policy+' Review completion is not trading permission, evidence of human/broker execution or core/day journal completion. No weekly/monthly plan-apply or automatic annual goal rewrite.'}));body.appendChild(U.h('p',{class:'tiny muted',text:'Question basis: '+view.template.question_basis+(kind==='year'?' · APP-guided annual prompts; not a full quoted course template.':'')}));body.appendChild(U.h('p',{class:'small',text:`${last?'Saved snapshot':'Live preview'}: Known outcomes ${f.known_net_count??'unknown'} / ${f.closed_trades??'unknown'} · Net ${finite(f.net)?U.moneySign(f.net):'Unavailable'} · Win % ${finite(f.win_rate)?U.pct(f.win_rate,1):'Unavailable'} · Mean R ${finite(f.mean_r)?U.R(f.mean_r):'Unavailable'} · ${f.sample_ready?'30+ recorded; not edge proof':'Below30; do not tweak the system'}. Financial snapshot alone does not certify missed/impulse setups; opportunity evidence is separate below.`}));if(Views.opportunities)body.appendChild(Views.opportunities.summary(data?.opportunity_review));
++    if(last)body.appendChild(U.h('p',{class:'tiny',text:`Saved source ${last.source} · server receipt ${last.recorded_at||'unavailable'} · first and amended revisions retained; receipt is not original entry-time proof.`}));if(view.context_matches===false)body.appendChild(U.h('p',{class:'sticky-note warn',text:'Saved financial/strategy context is prior. Original snapshot retained; current live preview differs. Explicitly reload/amend, never overwrite the original baseline.'}));if(!view.preview.policy.period_finished)body.appendChild(U.h('p',{class:'sticky-note warn',text:'Calendar period still in progress: a completed answer record is an early review, not a fully elapsed period.'}));
+     for(const q of view.template.questions){const el=U.h('textarea',{maxlength:4000,dataset:{periodAnswer:q.id},value:last?.answers?.[q.id]||''});el.setAttribute('data-period-answer-'+q.id,'true');el.value=last?.answers?.[q.id]||'';el.disabled=locked;body.appendChild(U.h('label',{class:'field'},U.h('span',{text:q.label}),el));}
+     const focus=U.h('input',{type:'text',maxlength:300,dataset:{periodFocus:'true'},value:last?.focus||'',disabled:locked});body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'One chosen focus for the next period (no automatic recommendation)'}),focus));const previous=view.previous_focus;if(previous){body.appendChild(U.h('p',{class:'small',text:`Prior adjacent ${kind} focus #${previous.review_id} revision ${previous.version}: ${previous.focus} · ${previous.source} · original server receipt ${previous.recorded_at}. This is a commitment record, not proof you acted.`}));const select=U.h('select',{dataset:{periodActed:'true'},disabled:locked});for(const [value,label]of [['missing','Choose explicitly'],['yes','Yes — my self-report'],['no','No — my self-report'],['unknown','Unknown / not recorded']])select.appendChild(U.h('option',{value,text:label}));const follow=last?.follow_up;if(follow?.previous_review_id===previous.review_id)select.value=follow.acted_on_focus===null?'unknown':follow.acted_on_focus?'yes':'no';const reflection=U.h('textarea',{maxlength:2000,dataset:{periodFollowReflection:'true'},value:follow?.reflection||'',disabled:locked});reflection.value=follow?.reflection||'';body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Did you act on that exact prior focus?'}),select));body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Your evidence/reflection, not a completion claim'}),reflection));if(view.previous_focus_changed_since_saved)body.appendChild(U.h('p',{class:'sticky-note warn',text:'The current prior-period commitment changed after this saved answer. The earlier follow-up still references the original focus/version; deliberately review before amending.'}));}else body.appendChild(U.h('p',{class:'muted small',text:'No adjacent completed prior focus recorded. Do not infer acted/failed from missing history.'}));
+     const send=mode=>async()=>{if(!valid()||busy)return;const answers={};for(const q of view.template.questions)answers[q.id]=body.querySelector('[data-period-answer-'+q.id+']').value;const payload={revision:view.revision,answers,focus:focus.value.trim()||null};if(previous){const value=body.querySelector('[data-period-acted]').value;if(value!=='missing')payload.follow_up={previous_review_id:previous.review_id,acted_on_focus:value==='unknown'?null:value==='yes',reflection:body.querySelector('[data-period-follow-reflection]').value};}if(mode==='amend')payload.amend_reason=body.querySelector('[data-period-amend-reason]').value;busy=true;disable();try{const result=await global.API.post(url+(mode==='draft'?'':'/'+mode)+'?account_id='+context.account,payload);if(!valid())return;view=result;stale=false;amending=false;draw();global.Store.invalidate();global.App.toast('Periodic artifact recorded; finance/core/strategy/permission unchanged.','ok');}catch(e){if(valid()){stale=e.status===409;global.App.toast(e.message,'err');}}finally{busy=false;if(valid())disable();}};
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index b03944d..b816f56 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -400,6 +400,7 @@
+     const confluenceDraft=isNew&&Views.confluences?Views.confluences.draft():null;
+     if(confluenceDraft){const box=U.h('section',{class:'card',style:'margin-top:12px'});box.appendChild(U.h('h3',{text:'Entry confluences — actual market/setup reasons'}));box.appendChild(confluenceDraft.node);node.appendChild(box);}
+ 
++    if(t.source_signal_id!==undefined)node.prepend(U.h('p',{class:'field-note',text:'Optional reference to saved signal #'+t.source_signal_id+'. Recheck own current plan/market/admission; a stored signal is not a reusable permit. Changed geometry may skip association without undoing truthful finance.'}));
+     function collect() {
+       const body = {
+         record_only:U.$('#tf-record-only',node).checked,
+@@ -433,6 +434,7 @@
+       if (!body.symbol) throw new Error('Symbol is required.');
+       if (!body.entry) throw new Error('Entry price is required.');
+       if(confluenceDraft?.dirty())body.entry_confluences=confluenceDraft.value();
++      if(t.source_signal_id!==undefined)body.source_signal_id=t.source_signal_id;
+       return body;
+     }
+     /* --------------------------------------------- TradingView helpers */
+diff --git a/src/routes/api.js b/src/routes/api.js
+index c2e6411..907b228 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -420,7 +420,8 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   }
+   const phase=existing.status!=='open'&&trade.status==='open'&&req.body.record_only!==true?'entry':existing.status==='open'&&trade.status==='closed'?'exit':null;
+   const emotion=phase?await Emotions.observe(req.user.id,written,phase,phase==='entry'?'app_entry':'app_close',existing.closed_at||''):{};
+-  res.json({ ok: true, ...emotion, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
++  const association=phase==='entry'?await Opportunities.autoLink(req.user.id,req.body.source_signal_id,written):{};
++  res.json({ ok: true, ...emotion, ...association,trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
+ });
+ 
+ // M87 optional owned visual evidence is independent from financial truth,
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 84a0264..df5ff18 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -266,7 +266,7 @@ router.get('/markets', requireAuth, (req, res) => {
+ 
+   router.get('/signals', requireAuth, wrap(async (req, res) => {
+     const status = req.query.status ? String(req.query.status) : null;
+-    res.json({ ok: true, signals: await Bots.listSignals(req.user.id, { status, limit: Math.min(num(req.query.limit, 50), 200) }), stats: await Bots.signalStats(req.user.id) });
++    res.json({ ok: true, signals: await Bots.listSignals(req.user.id, { status, limit: Math.min(num(req.query.limit, 50), 200) }), stats: await Bots.signalStats(req.user.id),opportunity_review:await Opportunities.optional(req.user.id,{accountId:req.query.account_id??null}) });
+   }));
+ 
+   router.post('/signals/save', requireAuth, wrap(async (req, res) => {

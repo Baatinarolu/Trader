@@ -26,7 +26,7 @@
     drawings: [],
   };
 
-  let correctionSerial=0;
+  let correctionSerial=0,signalSerial=0;
   const correctionContext=()=>({user:Store.user?.id,account:Store.accountId||null,token:API.getToken()}),sameCorrection=c=>!!c&&c.user===Store.user?.id&&c.account===(Store.accountId||null)&&c.token===API.getToken();
 
   /** bar length per timeframe — used to decide when a read has gone stale */
@@ -1210,6 +1210,7 @@
     const s = B.signals;
     if (!s) { pane.appendChild(h('div', { class: 'empty', text: 'Loading signals…' })); return; }
     const st = s.stats || {};
+    if(Views.opportunities)pane.appendChild(Views.opportunities.summary(s.opportunity_review));
     pane.appendChild(h('div', { class: 'card', html: `<div class="stat-strip">
       <div><div class="l">Tracked</div><div class="v">${st.total || 0}</div></div>
       <div><div class="l">Pending</div><div class="v">${st.pending || 0}</div></div>
@@ -1229,8 +1230,9 @@
       <td class="mono">${g.rr_final ? g.rr_final + 'R' : '—'}</td>
       <td>${g.status === 'pending' ? '<span class="chip info">pending</span>' : g.status === 'win' ? '<span class="chip pos">win</span>' : g.status === 'loss' ? '<span class="chip neg">loss</span>' : `<span class="chip muted">${esc(g.status)}</span>`}</td>
       <td class="mono">${g.outcome_r == null ? '—' : g.outcome_r + 'R'}</td>
-      <td class="muted-2">${esc(String(g.created_at || '').slice(0, 16))}</td></tr>`).join('');
-    pane.appendChild(h('div', { class: 'card', html: `<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Market</th><th>Side</th><th>Grade</th><th>Entry model</th><th>P(win)</th><th>Entry</th><th>Stop</th><th>Final R:R</th><th>Status</th><th>R</th><th>Saved</th></tr></thead><tbody>${rows}</tbody></table></div>` }));
+      <td class="muted-2">${esc(String(g.created_at || '').slice(0, 16))}</td><td><button class="btn xs ghost" type="button" data-signal-review="${g.id}">Review value/decision</button> <button class="btn xs ghost" type="button" data-signal-log="${g.id}">Record own trade from saved plan</button></td></tr>`).join('');
+    pane.appendChild(h('div', { class: 'card', html: `<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Market</th><th>Side</th><th>Grade</th><th>Entry model</th><th>P(win)</th><th>Entry</th><th>Stop</th><th>Final R:R</th><th>Status (model)</th><th>R (model)</th><th>Saved</th><th>Own opportunity review</th></tr></thead><tbody>${rows}</tbody></table></div>` }));
+    const signalContext=correctionContext();pane.querySelectorAll('[data-signal-review]').forEach(b=>b.addEventListener('click',()=>{if(!sameCorrection(signalContext))return global.App.toast('Workspace/account/session changed; reload saved signals.','err');return Views.opportunities?.openSignal(Number(b.dataset.signalReview));}));pane.querySelectorAll('[data-signal-log]').forEach(b=>b.addEventListener('click',()=>{if(!sameCorrection(signalContext))return global.App.toast('Workspace/account/session changed; reload saved signals.','err');return Views.opportunities?.logSignal(Number(b.dataset.signalLog));}));
     if ((st.by_entry_model || []).length) pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Resolved signals by entry model</strong></div><div class="muted bot-detail">Unknown is not inferred. Under 30 resolved signals per model: descriptive only.</div><div class="table-wrap"><table class="table"><thead><tr><th>Model</th><th>Resolved</th><th>Win %</th><th>Expectancy</th><th>Sample</th></tr></thead><tbody>${st.by_entry_model.map((x) => `<tr><td>${esc(x.entry_model)}</td><td>${x.resolved}</td><td>${x.win_rate}%</td><td>${x.expectancy_r}R</td><td>${x.sample_ready ? '30+ recorded' : 'thin sample'}</td></tr>`).join('')}</tbody></table></div>` }));
     if ((st.by_grade || []).length) {
       pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Signal quality by grade</strong></div><div class="table-wrap"><table class="table"><thead><tr><th>Grade</th><th>Resolved</th><th>Win rate</th><th>Expectancy</th></tr></thead><tbody>${st.by_grade.map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.resolved}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('')}</tbody></table></div>` }));
@@ -1244,6 +1246,7 @@
     title: 'Bots',
     render(root) {
       const accountKey=Store.accountId || null;
+      if(B.signalsContext&&!sameCorrection(B.signalsContext)){signalSerial++;B.signals=null;B.signalsContext=null;}
       if(B.correctionContext&&!sameCorrection(B.correctionContext)){correctionSerial++;B.correction=null;B.correctionContext=null;B.error='';if(B.busy==='correct')B.busy='';}
       if (B.accountKey!==undefined && B.accountKey!==accountKey) {B.data=null;B.chart=null;B.scan=null;B.correction=null;B.error='';B.busy='';}
       B.accountKey=accountKey;
@@ -1324,12 +1327,12 @@
           .then((bt) => { B.backtestTrades = bt.trades || []; B.busy = ''; global.App.refresh(); })
           .catch(() => { B.busy = ''; global.App.refresh(); });
       } else if (B.tab === 'signals' && !B.signals) {
-        API.get('/bots/signals', {})
-          .then((r) => { B.signals = r; global.App.refresh(); })
-          .catch(() => {});
+        const context=correctionContext(),number=++signalSerial;B.signalsContext=context;API.get('/bots/signals', {account_id:Store.accountId||null})
+          .then((r) => { if(!sameCorrection(context)||number!==signalSerial)return;B.signals = r; global.App.refresh(); })
+          .catch((e) => {if(!sameCorrection(context)||number!==signalSerial)return;B.error='Saved signals unavailable: '+e.message;});
       }
     },
-    reset() { B.data = null; B.predict = null; B.scan = null; B.correction = null; B.signals = null; B.candles = null; B.chart = null; B.backtestTrades = null; B.error = ''; },
+    reset() { signalSerial++;B.signalsContext=null;B.data = null; B.predict = null; B.scan = null; B.correction = null; B.signals = null; B.candles = null; B.chart = null; B.backtestTrades = null; B.error = ''; },
   };
 
   B.initial = null;

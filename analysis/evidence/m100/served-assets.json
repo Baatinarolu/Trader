@@ -1,0 +1,49 @@
+{
+  "source_manifest": "release-source.json",
+  "assets": [
+    {
+      "path": "public/index.html",
+      "http": 200,
+      "server_transform": "Exact existing {{V}} to per-boot build ID",
+      "expected_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/opportunities.js",
+      "http": 200,
+      "sha256": "c5d5e90fbe414bb2ed230f6d7cd4bb8c9c480ff4206a5d8128d52a2ee75da44b",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/bots.js",
+      "http": 200,
+      "sha256": "704dfeed7b4ce62122d526bbc1623be6fd24f63c73e6d4b6e98e2c19c5801630",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/trades.js",
+      "http": 200,
+      "sha256": "24bba5f9d9585b9e993454c20956a4786fb6cbec451a80f8475d49bdefa8de65",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/period-reviews.js",
+      "http": 200,
+      "sha256": "82c6431327ece39fdf78753b140c3e096af5b0051aa330ce89f4276a345e9caf",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/settings.js",
+      "http": 200,
+      "sha256": "d339a19b9302f585df2f2f72b50a53a8272d84ab59ccd969f135c9d52a073a5b",
+      "local_byte_differences": 0
+    }
+  ],
+  "preview": {
+    "port": 3000,
+    "database": "/tmp/m100-preview.db",
+    "remote": false,
+    "synthetic": true,
+    "scheduler": false
+  },
+  "scope": "Actually served final source, exact existing index build-ID transform; not pixels/production/user preservation."
+}

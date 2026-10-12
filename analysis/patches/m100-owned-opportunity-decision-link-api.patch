@@ -1,0 +1,173 @@
+diff --git a/src/db.js b/src/db.js
+index 53d2da3..59f34b4 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -307,6 +307,52 @@ CREATE TABLE IF NOT EXISTS period_reviews (
+   UNIQUE(user_id,account_key,period_kind,period_start,version)
+ );
+ CREATE INDEX IF NOT EXISTS idx_period_reviews_owner ON period_reviews(user_id,account_key,period_kind,period_start,id);
++-- M100 optional owned captured opportunities, explicit decisions and journal links.
++-- Resolver signal statuses remain separate from actual entry or missed-value reports.
++CREATE TABLE IF NOT EXISTS signal_opportunities (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ signal_id INTEGER REFERENCES bot_signals(id) ON DELETE SET NULL,
++ signal_key INTEGER NOT NULL,
++ record_key TEXT NOT NULL,
++ account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
++ account_key INTEGER NOT NULL,
++ source TEXT NOT NULL,
++ observed_at TEXT NOT NULL,
++ signal_snapshot TEXT NOT NULL,
++ signal_hash TEXT NOT NULL,
++ personal_json TEXT,
++ historical_json TEXT,
++ UNIQUE(user_id,record_key)
++);
++CREATE INDEX IF NOT EXISTS idx_opportunity_scope ON signal_opportunities(user_id,account_key,observed_at,id);
++CREATE TABLE IF NOT EXISTS opportunity_decisions (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ opportunity_id INTEGER NOT NULL REFERENCES signal_opportunities(id) ON DELETE CASCADE,
++ version INTEGER NOT NULL,
++ decision TEXT NOT NULL,
++ value_setup INTEGER CHECK(value_setup IS NULL OR value_setup IN (0,1)),
++ reason_code TEXT,
++ note TEXT NOT NULL,
++ source TEXT NOT NULL,
++ recorded_at TEXT NOT NULL,
++ UNIQUE(opportunity_id,version)
++);
++CREATE TABLE IF NOT EXISTS opportunity_trade_links (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ opportunity_id INTEGER NOT NULL REFERENCES signal_opportunities(id) ON DELETE CASCADE,
++ trade_id INTEGER REFERENCES trades(id) ON DELETE SET NULL,
++ trade_key INTEGER NOT NULL,
++ opened_at TEXT NOT NULL,
++ action TEXT NOT NULL CHECK(action IN ('link','retract')),
++ source TEXT NOT NULL,
++ note TEXT NOT NULL,
++ recorded_at TEXT NOT NULL,
++ trade_snapshot TEXT NOT NULL,
++ trade_hash TEXT NOT NULL
++);
++CREATE INDEX IF NOT EXISTS idx_opportunity_links_cycle ON opportunity_trade_links(user_id,trade_key,opened_at,id);
+ CREATE TABLE IF NOT EXISTS goals (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -726,6 +772,9 @@ async function migrate() {
+ 
+   await db.prepare(`CREATE TRIGGER IF NOT EXISTS period_reviews_immutable BEFORE UPDATE ON period_reviews WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.period_kind IS OLD.period_kind AND NEW.period_start IS OLD.period_start AND NEW.period_end IS OLD.period_end AND NEW.version IS OLD.version AND NEW.template_version IS OLD.template_version AND NEW.status IS OLD.status AND NEW.answers_json IS OLD.answers_json AND NEW.focus IS OLD.focus AND NEW.followup_json IS OLD.followup_json AND NEW.metrics_json IS OLD.metrics_json AND NEW.context_hash IS OLD.context_hash AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.amendment IS OLD.amendment AND NEW.historical_json IS OLD.historical_json) BEGIN SELECT RAISE(ABORT,'Periodic review revisions are immutable'); END`).run();
+ 
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_decisions_immutable BEFORE UPDATE ON opportunity_decisions BEGIN SELECT RAISE(ABORT,'Opportunity decision versions are immutable'); END`).run();
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_capture_immutable BEFORE UPDATE ON signal_opportunities WHEN NOT (NEW.user_id IS OLD.user_id AND NEW.id IS OLD.id AND NEW.signal_key IS OLD.signal_key AND NEW.record_key IS OLD.record_key AND NEW.account_key IS OLD.account_key AND NEW.source IS OLD.source AND NEW.observed_at IS OLD.observed_at AND NEW.signal_snapshot IS OLD.signal_snapshot AND NEW.signal_hash IS OLD.signal_hash AND NEW.personal_json IS OLD.personal_json AND NEW.historical_json IS OLD.historical_json AND (NEW.account_id IS OLD.account_id OR NEW.account_id IS NULL AND NOT EXISTS(SELECT 1 FROM accounts WHERE id=OLD.account_id)) AND (NEW.signal_id IS OLD.signal_id OR NEW.signal_id IS NULL AND NOT EXISTS(SELECT 1 FROM bot_signals WHERE id=OLD.signal_id))) BEGIN SELECT RAISE(ABORT,'Opportunity capture facts are immutable'); END`).run();
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_links_immutable BEFORE UPDATE ON opportunity_trade_links WHEN NOT (NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.opportunity_id IS OLD.opportunity_id AND NEW.trade_key IS OLD.trade_key AND NEW.opened_at IS OLD.opened_at AND NEW.action IS OLD.action AND NEW.source IS OLD.source AND NEW.note IS OLD.note AND NEW.recorded_at IS OLD.recorded_at AND NEW.trade_snapshot IS OLD.trade_snapshot AND NEW.trade_hash IS OLD.trade_hash AND NEW.trade_id IS NULL AND NOT EXISTS(SELECT 1 FROM trades WHERE id=OLD.trade_id)) BEGIN SELECT RAISE(ABORT,'Opportunity link facts are immutable'); END`).run();
+   /* M102 backfill. Every strategy that has no version history gets an immutable v1
+    * snapshot of the rule set it currently holds, and every trade already linked to it is
+    * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in
+diff --git a/src/opportunities.js b/src/opportunities.js
+index 5429a35..87fa613 100644
+--- a/src/opportunities.js
++++ b/src/opportunities.js
+@@ -20,4 +20,26 @@ function classify({signal,capture,decision=null,links=[],nowMs=Date.now()}={}){
+  }catch{return base;}
+ }
+ function aggregate(rows){const out={opportunities:rows.length,reported_missed_value:0,app_eligible_missed:0,unverified_value_missed:0,acted_app:0,acted_declared:0,unreviewed:0,unknown:0,not_taken:0,not_value:0,prior:0,unavailable:0,imported:0,complete_missed_total:null,broker_verified:false,basis:'Count explicit OWNED opportunity record-day decisions/links, not unused signals or simulated wins. Self-reported value/inaction, not broker/causal/probability/permission proof.'};for(const r of rows){if(!r){out.unknown++;continue;}if(['prior','unavailable','imported'].includes(r.state)){out[r.state]++;continue;}if(r.acted){out[r.acted_basis==='recorded_app_entry_link'?'acted_app':'acted_declared']++;continue;}if(r.missed){out.reported_missed_value++;out[r.missed_basis==='app_eligible_self_report'?'app_eligible_missed':'unverified_value_missed']++;}else if(Object.hasOwn(out,r.decision))out[r.decision]++;else out.unknown++;}if(out.unreviewed+out.unknown+out.prior+out.unavailable+out.imported===0)out.complete_missed_total=out.reported_missed_value;return out;}
+-module.exports={FIELDS,DECISIONS,REASONS,invalid,snapshot,hash,geometry,input,simulation,classify,aggregate,id};
++
++
++const digest=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
++const TRADE_FIELDS=['id','user_id','account_id','symbol','direction','opened_at','entry','stop','target','entry_model','entry_tf'];
++const tradeSnapshot=t=>Object.fromEntries(TRADE_FIELDS.map(k=>[k,t[k]??null]));
++async function ownedAccount(store,userId,value){if(!['number','string'].includes(typeof value)||typeof value==='string'&&!/^[1-9]\d*$/.test(value)||!id(Number(value)))throw invalid('Account not found.',404);const a=await store.prepare('SELECT * FROM accounts WHERE user_id=? AND id=?').get(userId,Number(value));if(!a)throw invalid('Account not found.',404);return a;}
++async function signalOn(store,userId,sid){if(!id(sid))throw invalid('Signal not found.',404);const s=await store.prepare('SELECT * FROM bot_signals WHERE user_id=? AND id=?').get(userId,sid);if(!s)throw invalid('Signal not found.',404);return s;}
++async function captureOn(store,userId,signal,account,source,permission=null){await store.prepare('INSERT INTO signal_opportunities(user_id,signal_id,signal_key,record_key,account_id,account_key,source,observed_at,signal_snapshot,signal_hash,personal_json) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id,record_key) DO NOTHING').run(userId,signal.id,signal.id,'signal:'+signal.id,account,account,source,new Date().toISOString(),JSON.stringify(snapshot(signal)),hash(signal),permission?JSON.stringify(permission):null);return store.prepare('SELECT * FROM signal_opportunities WHERE user_id=? AND record_key=?').get(userId,'signal:'+signal.id);}
++async function observeSaved(userId,result,source){const warnings=[];if(!result?.ids?.length)return {opportunity_warnings:warnings};try{const {db}=require('./db');await db.tx(async tx=>{const store=db.transactionStore(tx),permission=result.permission,account=await ownedAccount(store,userId,permission?.account_id);for(const sid of result.ids){const s=await signalOn(store,userId,sid);await captureOn(store,userId,s,account.id,source,{account_id:account.id,state:permission.state,allowed:permission.allowed===true});}});}catch{warnings.push('Saved signal retained; optional opportunity capture unavailable. No value/miss/entry proof inferred.');}return {opportunity_warnings:warnings};}
++async function captureOwned(store,userId,oid){if(!id(oid))throw invalid('Opportunity not found.',404);const c=await store.prepare('SELECT * FROM signal_opportunities WHERE id=? AND user_id=?').get(oid,userId);if(!c)throw invalid('Opportunity not found.',404);return c;}
++function activeLinks(rows){const map=new Map();for(const r of rows)map.set(r.trade_key+':'+r.opened_at,r);return [...map.values()].filter(r=>r.action==='link');}
++async function viewOn(store,userId,c,signal=null){if(!signal&&c.signal_id)signal=await store.prepare('SELECT * FROM bot_signals WHERE id=? AND user_id=?').get(c.signal_id,userId);const history=await store.prepare('SELECT * FROM opportunity_decisions WHERE opportunity_id=? ORDER BY version').all(c.id),link_history=await store.prepare('SELECT * FROM opportunity_trade_links WHERE opportunity_id=? AND user_id=? ORDER BY id').all(c.id,userId),links=activeLinks(link_history),review=classify({signal,capture:c,decision:history.at(-1)||null,links});return {capture:c,signal,review,history,links,link_history,revision:digest([c,signal?snapshot(signal):null,history.at(-1)||null,link_history]),scope:'Owned captured saved plan + explicit self-report/journal association. Not actual broker, value validation, simulated profit, core completion or permission.'};}
++async function signalViewOn(store,userId,sid,accountId){const a=await ownedAccount(store,userId,accountId),s=await signalOn(store,userId,sid),c=await store.prepare('SELECT * FROM signal_opportunities WHERE user_id=? AND record_key=?').get(userId,'signal:'+sid);if(c){if(c.account_key!==a.id)throw invalid('This saved opportunity belongs to its original account. No transfer inferred.',404);return viewOn(store,userId,c,s);}return {capture:null,signal:s,review:{decision:'unreviewed',state:'legacy_unverified',missed:false,acted:false,original_eligibility:'unverified',broker_verified:false},history:[],links:[],link_history:[],revision:digest([userId,a.id,snapshot(s),'unrecorded']),scope:'Legacy saved signal; no original value/permission/inaction or actual trade inferred. Explicit review records a retrospective declaration only.'};}
++async function readSignal(userId,sid,accountId){const {db}=require('./db');return db.tx(async tx=>signalViewOn(db.transactionStore(tx),userId,sid,accountId));}
++async function read(userId,oid){const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx);return viewOn(store,userId,await captureOwned(store,userId,oid));});}
++async function review(userId,sid,accountId,body){const fields=input(body),{db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),v=await signalViewOn(store,userId,sid,accountId);if(body.revision!==v.revision)throw invalid('Saved opportunity/decision/link context changed. Explicitly reload.',409);if(fields.decision==='missed_value'&&v.links.length)throw invalid('A linked journal action cannot also be counted as missed; correct a mistaken association explicitly first.',409);const c=v.capture||await captureOn(store,userId,v.signal,Number(accountId),'retrospective');const last=v.history.at(-1);if(last&&Object.keys(fields).every(k=>last[k]===fields[k]))return viewOn(store,userId,c,v.signal);await store.prepare('INSERT INTO opportunity_decisions(opportunity_id,version,decision,value_setup,reason_code,note,source,recorded_at) VALUES(?,?,?,?,?,?,?,?)').run(c.id,(last?.version||0)+1,fields.decision,fields.value_setup,fields.reason_code,fields.note,'human_report',new Date().toISOString());return viewOn(store,userId,c,v.signal);});}
++function samePlan(signal,trade){return signal.symbol===trade.symbol&&signal.side===trade.direction&&signal.entry===trade.entry&&signal.stop===trade.stop&&signal.t1===trade.target&&(signal.entry_model??null)===(trade.entry_model??null)&&(signal.entry_tf??null)===(trade.entry_tf??null);}
++async function linkOn(store,userId,c,trade,note,source){if(trade.user_id!==userId||trade.account_id!==c.account_key||trade.symbol!==JSON.parse(c.signal_snapshot).symbol||trade.direction!==JSON.parse(c.signal_snapshot).side)throw invalid('Select the same own account/market/direction journal; no guessed association.',409);const rows=await store.prepare('SELECT * FROM opportunity_trade_links WHERE user_id=? AND trade_key=? AND opened_at=? ORDER BY id').all(userId,trade.id,trade.opened_at),byOpportunity=new Map();for(const row of rows)byOpportunity.set(row.opportunity_id,row);if([...byOpportunity.values()].some(l=>l.action==='link'&&l.opportunity_id!==c.id))throw invalid('This actual journal entry cycle is already associated with a different opportunity; no duplicate credit.',409);const old=byOpportunity.get(c.id);if(old?.action==='link'&&old.note===note)return;const s=tradeSnapshot(trade);await store.prepare('INSERT INTO opportunity_trade_links(user_id,opportunity_id,trade_id,trade_key,opened_at,action,source,note,recorded_at,trade_snapshot,trade_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(userId,c.id,trade.id,trade.id,trade.opened_at,'link',source,note,new Date().toISOString(),JSON.stringify(s),digest(s));}
++async function link(userId,oid,body){if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['revision','trade_id','note'].includes(k))||!id(body.trade_id)||typeof body.revision!=='string'||typeof body.note!=='string'||!body.note.trim()||body.note.length>2000)throw invalid('Use displayed revision, an own journal trade ID and your association note.');const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),c=await captureOwned(store,userId,oid),v=await viewOn(store,userId,c);if(v.revision!==body.revision)throw invalid('Opportunity changed; reload before linking.',409);const t=await store.prepare('SELECT * FROM trades WHERE user_id=? AND id=?').get(userId,body.trade_id);if(!t)throw invalid('Trade not found.',404);await linkOn(store,userId,c,t,body.note.trim(),'human_link');return viewOn(store,userId,c);});}
++async function retract(userId,oid,lid,body){if(!id(lid)||!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['revision','note'].includes(k))||typeof body.revision!=='string'||typeof body.note!=='string'||!body.note.trim()||body.note.length>2000)throw invalid('Explicit association correction requires displayed revision and note.');const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),c=await captureOwned(store,userId,oid),v=await viewOn(store,userId,c);if(body.revision!==v.revision)throw invalid('Opportunity/association changed; reload.',409);const old=v.links.find(l=>l.id===lid);if(!old)throw invalid('Current own link not found.',404);await store.prepare('INSERT INTO opportunity_trade_links(user_id,opportunity_id,trade_id,trade_key,opened_at,action,source,note,recorded_at,trade_snapshot,trade_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(userId,c.id,old.trade_id,old.trade_key,old.opened_at,'retract','human_link',body.note.trim(),new Date().toISOString(),old.trade_snapshot,old.trade_hash);return viewOn(store,userId,c);});}
++async function report(userId,{accountId=null,from=null,to=null,store=null}={}){const Dates=require('./process-outcomes');if(from!=null)Dates.dateKey(from);if(to!=null)Dates.dateKey(to);if(from&&to&&from>to)throw invalid('UTC opportunity range reversed.');const {db}=require('./db'),run=async store=>{if(accountId!=null)await ownedAccount(store,userId,accountId);const rows=await store.prepare('SELECT * FROM signal_opportunities WHERE user_id=?'+(accountId==null?'':' AND account_key=?')+' ORDER BY id').all(...(accountId==null?[userId]:[userId,Number(accountId)]));const selected=rows.filter(c=>{const ms=Clock(c.observed_at);return ms!==null&&(!from||new Date(ms).toISOString().slice(0,10)>=from)&&(!to||new Date(ms).toISOString().slice(0,10)<=to);}),records=[];for(const c of selected)records.push(await viewOn(store,userId,c));const summary=aggregate(records.map(r=>r.review)),allSignals=await store.prepare('SELECT id FROM bot_signals WHERE user_id=?').all(userId),captures=await store.prepare('SELECT signal_id FROM signal_opportunities WHERE user_id=?').all(userId);summary.unattributed_legacy_signals=allSignals.filter(s=>!captures.some(c=>c.signal_id===s.id)).length;if(summary.unattributed_legacy_signals)summary.complete_missed_total=null;return {state:'available',account_id:accountId==null?null:Number(accountId),from,to,timezone:'UTC',date_basis:'server_opportunity_record_day_not_trade_execution_day',summary,records,broker_verified:false};};return store?run(store):db.tx(async tx=>run(db.transactionStore(tx)));}
++async function optional(userId,opts){try{return await report(userId,opts);}catch{return {state:'unavailable',summary:null,records:[],broker_verified:false,basis:'Opportunity evidence unavailable, not zero missed/acted or clean.'};}}
++module.exports={FIELDS,DECISIONS,REASONS,invalid,snapshot,hash,geometry,input,simulation,classify,aggregate,id,observeSaved,readSignal,read,review,link,retract,report,optional,tradeSnapshot,digest,samePlan,ownedAccount,signalOn,captureOn,viewOn,linkOn};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 3f2ab91..c3ee06e 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -18,6 +18,7 @@ const Screenshots = require('../screenshots');
+ const Confluences = require('../confluences');
+ const Emotions = require('../emotions');
+ const PeriodReviews = require('../period-reviews');
++const Opportunities = require('../opportunities');
+ const ProcessOutcomes = require('../process-outcomes');
+ const BehaviorDays = require('../behavior-days');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
+@@ -663,6 +664,14 @@ for(const action of ['start','end'])router.post('/session-time/'+action,requireA
+ });
+ 
+ /* ----------------------------------------------------------------- journal */
++const opportunityRoute=fn=>async(req,res)=>{try{for(const key of ['id','link'])if(req.params[key]&&!/^[1-9]\d*$/.test(req.params[key]))throw Opportunities.invalid('Owned opportunity/signal/link not found.',404);res.json(await fn(req));}catch(e){if(e.code==='opportunity_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Optional opportunity evidence unavailable; financial/signal/permission state unchanged.'});}};
++router.get('/opportunities',requireAuth,opportunityRoute(req=>Opportunities.report(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})));
++router.get('/opportunities/signals/:id',requireAuth,opportunityRoute(req=>Opportunities.readSignal(req.user.id,Number(req.params.id),req.query.account_id)));
++router.post('/opportunities/signals/:id',requireAuth,opportunityRoute(req=>Opportunities.review(req.user.id,Number(req.params.id),req.query.account_id,req.body)));
++router.get('/opportunities/:id',requireAuth,opportunityRoute(req=>Opportunities.read(req.user.id,Number(req.params.id))));
++router.post('/opportunities/:id/links',requireAuth,opportunityRoute(req=>Opportunities.link(req.user.id,Number(req.params.id),req.body)));
++router.post('/opportunities/:id/links/:link/retract',requireAuth,opportunityRoute(req=>Opportunities.retract(req.user.id,Number(req.params.id),Number(req.params.link),req.body)));
++
+ const reviewRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='period_review_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Periodic review unavailable; financial/core/permission state unchanged.'});}};
+ router.get('/reviews',requireAuth,reviewRoute(req=>PeriodReviews.list(req.user.id,req.query.account_id??null)));
+ router.get('/reviews/template',requireAuth,reviewRoute(req=>{const p=PeriodReviews.period(req.query.kind,req.query.date);return PeriodReviews.read(req.user.id,req.query.account_id,p.kind,p.start);}));
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 2c998eb..84a0264 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -10,6 +10,7 @@ const C = require('../candles');
+ const I = require('../instruments');
+ const TV = require('../tradingview');
+ const D = require('../db');
++const Opportunities = require('../opportunities');
+ 
+ function createBotsRouter({ requireAuth }) {
+   const router = asyncRouter();
+@@ -111,7 +112,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       as_of: req.query.as_of || null,                                  // bar replay: read as of this instant
+     });
+     let saved = null;
+-    if (req.query.save === '1') saved = await Bots.saveSignals(req.user.id, payload);
++    if (req.query.save === '1') {saved = await Bots.saveSignals(req.user.id, payload);Object.assign(saved,await Opportunities.observeSaved(req.user.id,saved,'app_analysis'));}
+     res.json({ ...payload, saved });
+   }));
+ 
+@@ -278,6 +279,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       includePrediction: req.body && req.body.prediction !== false,
+     });
+     const saved = await Bots.saveSignals(req.user.id, payload, {accountId:req.body?.account_id || null,research_only:req.body?.research_only === true,override_reason:req.body?.override_reason});
++    Object.assign(saved,await Opportunities.observeSaved(req.user.id,saved,'app_analysis'));
+     res.json({ ok: true, saved, permission:saved.permission || null, headline: payload.headline, setups: payload.setups.verdict });
+   }));
+ 
+@@ -309,7 +311,8 @@ router.get('/markets', requireAuth, (req, res) => {
+       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
+       account_id:b.account_id || null, research_only:b.research_only === true, override_reason:b.override_reason, mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
+     });
+-    res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null,permission:out.permission || null });
++    const opportunity=await Opportunities.observeSaved(req.user.id,out,'app_declared_plan');
++    res.json({ ...opportunity,ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null,permission:out.permission || null });
+   }));
+ 
+   router.post('/signals/resolve', requireAuth, wrap(async (req, res) => {
+@@ -435,6 +438,7 @@ router.get('/markets', requireAuth, (req, res) => {
+         plan = summarise(payload, parsed);
+         if (user.autocreate && payload.setups && payload.setups.verdict && payload.setups.verdict.action !== 'NO TRADE') {
+           const saved = await Bots.saveSignals(user.id, payload);
++          Object.assign(saved,await Opportunities.observeSaved(user.id,saved,'app_analysis'));
+           signal = saved && saved.saved ? saved.saved[0] : (Array.isArray(saved) ? saved[0] : saved);
+         }
+       } catch (e) { error = e.message; }

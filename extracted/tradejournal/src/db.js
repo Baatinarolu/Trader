@@ -307,6 +307,52 @@ CREATE TABLE IF NOT EXISTS period_reviews (
   UNIQUE(user_id,account_key,period_kind,period_start,version)
 );
 CREATE INDEX IF NOT EXISTS idx_period_reviews_owner ON period_reviews(user_id,account_key,period_kind,period_start,id);
+-- M100 optional owned captured opportunities, explicit decisions and journal links.
+-- Resolver signal statuses remain separate from actual entry or missed-value reports.
+CREATE TABLE IF NOT EXISTS signal_opportunities (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ signal_id INTEGER REFERENCES bot_signals(id) ON DELETE SET NULL,
+ signal_key INTEGER NOT NULL,
+ record_key TEXT NOT NULL,
+ account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+ account_key INTEGER NOT NULL,
+ source TEXT NOT NULL,
+ observed_at TEXT NOT NULL,
+ signal_snapshot TEXT NOT NULL,
+ signal_hash TEXT NOT NULL,
+ personal_json TEXT,
+ historical_json TEXT,
+ UNIQUE(user_id,record_key)
+);
+CREATE INDEX IF NOT EXISTS idx_opportunity_scope ON signal_opportunities(user_id,account_key,observed_at,id);
+CREATE TABLE IF NOT EXISTS opportunity_decisions (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ opportunity_id INTEGER NOT NULL REFERENCES signal_opportunities(id) ON DELETE CASCADE,
+ version INTEGER NOT NULL,
+ decision TEXT NOT NULL,
+ value_setup INTEGER CHECK(value_setup IS NULL OR value_setup IN (0,1)),
+ reason_code TEXT,
+ note TEXT NOT NULL,
+ source TEXT NOT NULL,
+ recorded_at TEXT NOT NULL,
+ UNIQUE(opportunity_id,version)
+);
+CREATE TABLE IF NOT EXISTS opportunity_trade_links (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ opportunity_id INTEGER NOT NULL REFERENCES signal_opportunities(id) ON DELETE CASCADE,
+ trade_id INTEGER REFERENCES trades(id) ON DELETE SET NULL,
+ trade_key INTEGER NOT NULL,
+ opened_at TEXT NOT NULL,
+ action TEXT NOT NULL CHECK(action IN ('link','retract')),
+ source TEXT NOT NULL,
+ note TEXT NOT NULL,
+ recorded_at TEXT NOT NULL,
+ trade_snapshot TEXT NOT NULL,
+ trade_hash TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_opportunity_links_cycle ON opportunity_trade_links(user_id,trade_key,opened_at,id);
 CREATE TABLE IF NOT EXISTS goals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -726,6 +772,9 @@ async function migrate() {
 
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS period_reviews_immutable BEFORE UPDATE ON period_reviews WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.period_kind IS OLD.period_kind AND NEW.period_start IS OLD.period_start AND NEW.period_end IS OLD.period_end AND NEW.version IS OLD.version AND NEW.template_version IS OLD.template_version AND NEW.status IS OLD.status AND NEW.answers_json IS OLD.answers_json AND NEW.focus IS OLD.focus AND NEW.followup_json IS OLD.followup_json AND NEW.metrics_json IS OLD.metrics_json AND NEW.context_hash IS OLD.context_hash AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.amendment IS OLD.amendment AND NEW.historical_json IS OLD.historical_json) BEGIN SELECT RAISE(ABORT,'Periodic review revisions are immutable'); END`).run();
 
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_decisions_immutable BEFORE UPDATE ON opportunity_decisions BEGIN SELECT RAISE(ABORT,'Opportunity decision versions are immutable'); END`).run();
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_capture_immutable BEFORE UPDATE ON signal_opportunities WHEN NOT (NEW.user_id IS OLD.user_id AND NEW.id IS OLD.id AND NEW.signal_key IS OLD.signal_key AND NEW.record_key IS OLD.record_key AND NEW.account_key IS OLD.account_key AND NEW.source IS OLD.source AND NEW.observed_at IS OLD.observed_at AND NEW.signal_snapshot IS OLD.signal_snapshot AND NEW.signal_hash IS OLD.signal_hash AND NEW.personal_json IS OLD.personal_json AND NEW.historical_json IS OLD.historical_json AND (NEW.account_id IS OLD.account_id OR NEW.account_id IS NULL AND NOT EXISTS(SELECT 1 FROM accounts WHERE id=OLD.account_id)) AND (NEW.signal_id IS OLD.signal_id OR NEW.signal_id IS NULL AND NOT EXISTS(SELECT 1 FROM bot_signals WHERE id=OLD.signal_id))) BEGIN SELECT RAISE(ABORT,'Opportunity capture facts are immutable'); END`).run();
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_links_immutable BEFORE UPDATE ON opportunity_trade_links WHEN NOT (NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.opportunity_id IS OLD.opportunity_id AND NEW.trade_key IS OLD.trade_key AND NEW.opened_at IS OLD.opened_at AND NEW.action IS OLD.action AND NEW.source IS OLD.source AND NEW.note IS OLD.note AND NEW.recorded_at IS OLD.recorded_at AND NEW.trade_snapshot IS OLD.trade_snapshot AND NEW.trade_hash IS OLD.trade_hash AND NEW.trade_id IS NULL AND NOT EXISTS(SELECT 1 FROM trades WHERE id=OLD.trade_id)) BEGIN SELECT RAISE(ABORT,'Opportunity link facts are immutable'); END`).run();
   /* M102 backfill. Every strategy that has no version history gets an immutable v1
    * snapshot of the rule set it currently holds, and every trade already linked to it is
    * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in

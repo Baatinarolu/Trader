@@ -1,0 +1,13 @@
+ok actual shared opportunity UI loaded before Bots/Analytics readers
+BOT API error on GET /api/bots/chart?symbol=XAUUSD&tf=15m&account_id=1&bars=600&min_rr=1&trim=0: No candles for XAUUSD 4h (aggregate: No candles for XAUUSD 1h (Yahoo: Yahoo GC=F [1h/1y]: query2: fetch failed (ECONNRESET) | query1: fetch failed (ECONNRESET)) [network: every provider failed at the transport layer, so the data hosts were unreachable from this machine. That is a connectivity problem, not a bad symbol, an unsupported interval, or an empty dataset — no data source replied at all.]) [network: every provider failed at the transport layer, so the data hosts were unreachable from this machine. That is a connectivity problem, not a bad symbol, an unsupported interval, or an empty dataset — no data source replied at all.]
+ok actual Saved Signals offers explicit own review + recorded plan entry insteadof inferredmiss status
+ok actual editor distinguishes modeledstatus/planR from realisedlostprofit, unreviewed notmissed
+ok missingchoice neverautomaticallyreportedvalue/no trade
+ok actual saved own missed/selfreported value/reason, no source/clock/profitclaim
+ok reason rendered escaped in retainedhistory, noactiveimg
+ok actual Analytics shows explicitmiss/link coverage and uncertainty, not financialprediction
+ok actual saved-plan Log button opens originalfinancialform with nonsilent source ID/recheck
+TypeError: Cannot set properties of null (setting 'value')
+    at /home/user/Trader/analysis/probe-m100-ui.js:8:628
+    at async finish (/home/user/Trader/analysis/m100-test-support.js:9:50)
+M100 real Saved Signals/review/entry/log/period/Analytics UI: 8 passed, 1 failed

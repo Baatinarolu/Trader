@@ -1,5 +1,51 @@
 # TradeJournal Pro
 
+## M100 — saved opportunities are not automatically missed trades (2026-10-12)
+
+**Bots → Signals → Review value/decision** records your explicit own-plan value
+judgment, missed/not-taken/not-value/unknown choice, fear/hesitation/other reason
+and note. Unreviewed never becomes a miss. Model pending/win/loss/no_fill/expired
+is separate from actual entry or regret. APP-confirmed original method/personal
+context is split from manual/legacy/unverified value reports; neither proves broker
+execution or that you should override a stop. B/C tradeability unchanged.
+
+Use **Record own trade from saved plan** to open the real financial form; recheck
+market/own plan/routine/admission and enter your own size/emotion. Optional source
+ID links only an exact saved plan and actual admitted entry. Material mismatch or
+optional observation outage warns without undoing truthful finance. Explicit saved
+journal links/retractions require owned same-account market/direction and preserve
+history; one entry cycle cannot inflate multiple opportunity counts. Manual links
+are self-report, not broker confirmation. Corrections/deletion don't erase original
+association or refund caps/loss writing/routine; no automatic inferred misses.
+
+Analytics and new periodic snapshots show explicit report/link counts with unknown,
+unreviewed/prior/imported/legacy/unassigned coverage. Incomplete whole missed total
+is **Unavailable**, not a zero-miss certificate. UTC opportunity record day, not
+trade execution/close day. Original completed period baselines never recalculate.
+Original first-target planned RR and already stored resolver MODEL R are shown
+separately—**not lost profit, realised P&L, causal cost, prediction or sizing authority**.
+No new resolver/candle fill, win-rate/risk/grade or70% promise.
+
+JSON `opportunity_history` retains captures/decision/link declarations; trade CSV
+does not carry standalone history. Restore forces new owned destination/receipt/
+imported history, no native signal/live pointer/entry link/eligibility replay.
+Original clocks remain unverified, including re-restore; bad clocks omitted with
+warnings. Malformed optional evidence warns while finance remains legal; actual
+import-store failure rolls back whole request. Missing history still allows finance
+backup with explicit unavailable marker. Settings warnings stay visible. Readonly
+orphan/import archives escaped, no automatic ownership transfer.
+
+APP budgets (not course rules):notes<=2000,500portable records,50decision/link
+entries per record,250KBrecord;20MBfile/25MBbody unchanged, no silent clipping.
+Actual actor/token/account/serial/cache/409draft/reload/503guards; no grade/core/
+financial/admission/technical-engine/floor/target/stop/RR changes. Independently
+repaired inherited M99 sample-seed RESPONSE bug without changing seeding policy.
+
+**Final145/0 across10**, actual131-parent migration13/0. Ledger **132=97 done/3 partial/32TODO**.
+Older schema/mock/date/RAW/provider negatives retained. Next M104; M105/M106/M111/
+M112 TODO, M30/M103/M108 partial. Report `analysis/M100-MISSED-VALUE-OPPORTUNITIES.md`
+in delivery; no broker/human/mental/meditation/provider/pixel/production/edge validation.
+
 ## M99/M101 — periodic reviews and one committed focus (2026-10-12)
 
 Open **Journal → Weekly / monthly / quarterly / annual reviews**. Select a cadence

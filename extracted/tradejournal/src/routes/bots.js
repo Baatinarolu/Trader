@@ -10,6 +10,7 @@ const C = require('../candles');
 const I = require('../instruments');
 const TV = require('../tradingview');
 const D = require('../db');
+const Opportunities = require('../opportunities');
 
 function createBotsRouter({ requireAuth }) {
   const router = asyncRouter();
@@ -111,7 +112,7 @@ router.get('/markets', requireAuth, (req, res) => {
       as_of: req.query.as_of || null,                                  // bar replay: read as of this instant
     });
     let saved = null;
-    if (req.query.save === '1') saved = await Bots.saveSignals(req.user.id, payload);
+    if (req.query.save === '1') {saved = await Bots.saveSignals(req.user.id, payload);Object.assign(saved,await Opportunities.observeSaved(req.user.id,saved,'app_analysis'));}
     res.json({ ...payload, saved });
   }));
 
@@ -265,7 +266,7 @@ router.get('/markets', requireAuth, (req, res) => {
 
   router.get('/signals', requireAuth, wrap(async (req, res) => {
     const status = req.query.status ? String(req.query.status) : null;
-    res.json({ ok: true, signals: await Bots.listSignals(req.user.id, { status, limit: Math.min(num(req.query.limit, 50), 200) }), stats: await Bots.signalStats(req.user.id) });
+    res.json({ ok: true, signals: await Bots.listSignals(req.user.id, { status, limit: Math.min(num(req.query.limit, 50), 200) }), stats: await Bots.signalStats(req.user.id),opportunity_review:await Opportunities.optional(req.user.id,{accountId:req.query.account_id??null}) });
   }));
 
   router.post('/signals/save', requireAuth, wrap(async (req, res) => {
@@ -278,6 +279,7 @@ router.get('/markets', requireAuth, (req, res) => {
       includePrediction: req.body && req.body.prediction !== false,
     });
     const saved = await Bots.saveSignals(req.user.id, payload, {accountId:req.body?.account_id || null,research_only:req.body?.research_only === true,override_reason:req.body?.override_reason});
+    Object.assign(saved,await Opportunities.observeSaved(req.user.id,saved,'app_analysis'));
     res.json({ ok: true, saved, permission:saved.permission || null, headline: payload.headline, setups: payload.setups.verdict });
   }));
 
@@ -309,7 +311,8 @@ router.get('/markets', requireAuth, (req, res) => {
       targets: b.targets, t1: b.t1, t2: b.t2, grade: b.grade, score: b.score, p_win: b.p_win,
       account_id:b.account_id || null, research_only:b.research_only === true, override_reason:b.override_reason, mechanics: b.mechanics, note: b.note, entry_model: b.entry_model, entry_tf: b.entry_tf, entry_evidence: b.entry_evidence, entry_mode: b.entry_mode, mtf_tf: b.mtf_tf, risk_atr: b.risk_atr, target_policy: b.target_policy, stop_policy: b.stop_policy, entry_preference: b.entry_preference,
     });
-    res.json({ ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null,permission:out.permission || null });
+    const opportunity=await Opportunities.observeSaved(req.user.id,out,'app_declared_plan');
+    res.json({ ...opportunity,ok: out.saved > 0, saved: out.saved, ids: out.ids || [], reason: out.reason || null,permission:out.permission || null });
   }));
 
   router.post('/signals/resolve', requireAuth, wrap(async (req, res) => {
@@ -435,6 +438,7 @@ router.get('/markets', requireAuth, (req, res) => {
         plan = summarise(payload, parsed);
         if (user.autocreate && payload.setups && payload.setups.verdict && payload.setups.verdict.action !== 'NO TRADE') {
           const saved = await Bots.saveSignals(user.id, payload);
+          Object.assign(saved,await Opportunities.observeSaved(user.id,saved,'app_analysis'));
           signal = saved && saved.saved ? saved.saved[0] : (Array.isArray(saved) ? saved[0] : saved);
         }
       } catch (e) { error = e.message; }

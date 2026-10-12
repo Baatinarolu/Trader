@@ -1,0 +1,18 @@
+ok topdown forwards requested owned second account to chart
+FAIL clear second account is not blocked by default account cap {"status":200,"data":{"ok":true,"symbol":"TEST","timeframe":"15m","blocked":true,"market_blocked":false,"execution_permission":{"allowed":false,"can_override":true,"state":"stopped","account_id":2},"verdict":{"action":"NO TRADE"}}}
+ok explicit first account still reports its actual stop
+ok omitted account deliberately resolves owned default
+ok topdown scope repair retains real auth
+TypeError: API.getToken is not a function
+    at correctionContext (eval at <anonymous> (/home/user/Trader/analysis/probe-m79-account-forwarding.js:22:4), <anonymous>:30:93)
+    at Object.render (eval at <anonymous> (/home/user/Trader/analysis/probe-m79-account-forwarding.js:22:4), <anonymous>:1318:21)
+    at w.App.refresh (/home/user/Trader/analysis/probe-m79-account-forwarding.js:23:33)
+    at HTMLButtonElement.onclick (eval at <anonymous> (/home/user/Trader/analysis/probe-m79-account-forwarding.js:22:4), <anonymous>:1263:158)
+    at HTMLButtonElement.callTheUserObjectsOperation (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)
+    at innerInvokeEventListeners (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLButtonElementImpl._dispatch (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at fireAnEvent (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/helpers/events.js:18:36)
+    at HTMLButtonElementImpl.click (/home/user/Trader/extracted/tradejournal/node_modules/jsdom/lib/jsdom/living/nodes/HTMLElement-impl.js:85:5)
+FAIL actual Corrections tab forwards the selected UI account, not {} default []
+M79 account forwarding: 4 passed, 2 failed

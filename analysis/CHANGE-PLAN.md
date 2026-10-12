@@ -1,6 +1,49 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
-## Current M99/M101 — periodic artifacts and chosen-focus follow-up — 2026-10-12
+## Current M100 — explicit missed-value opportunity review — 2026-10-12
+
+**132:97 done /3 partial /32 TODO /0 no-action**, exact eight groups. Additive
+owned saved-signal capture, revisioned decisions and explicit journal link/retract
+history. Unused/pending/no-fill/expired/model win/loss NOT missed or actualentry.
+Owner must explicitly declare value/inaction/reason; APP-confirmed original context
+split from manual/legacy/stop/unverified judgments, no A-only/B-C or risk retune.
+Actual saved-signal APIs observe aftercommit; truthful signal/finance survives optional
+outage/mismatch warnings. Actual new/reopen source_signal_id links only admitted
+exact saved plan; manual association self-report, no symbol/time guessing or duplicate
+entry-cycle credit. Old words/association survive correction/deletion; no core/cap refund.
+
+Planned first-target RR and existing resolver MODEL R are separately labelled,
+not realised lost profit/causalcounterfactual/probability/permission. Unknown R/value/
+unreviewed/legacy/unassigned coverage never certified0. Actual Saved Signals/editor/
+form/Analytics/M99 period snapshot, wholeactor/token/account/serial/cache/error guards,
+escaped history; old period financial baselines never rewritten. JSON restores forced
+own receiving/imported history, no signal/action/eligibility proof replay, preserved
+original declared clocks, invalidoptional warnings and real atomic import failure.
+Settings warnings/readonly imported-orphan archives visible. Also independently fixed
+inherited M99 demo RESPONSE error (seeded correctly then undefined import vars500),
+response-only4/0vs3/1, no extra finding closure or seeding/grade/risk policy change.
+
+**Final145/0 across10 probes**, actual131-parent additive/restart13/0. Original
+M99/M101159/1, M93113/2, M91106/2, M87223/3 schema-shape negatives retained;
+only new objects, old facts/columns exact. M89emotion170/0, reasons160/0, execution
+260/0, routine321/0. RAW596/156+90s timeout vsDECLARED824/4; inherited mock/date
+negatives not erased. Offline178/0, declared market325/0, live70/1 with6nonzero/
+5summaryless. Prepared parent/current API121/0/Bots206/0 each,24syntheticfills/
+0mismatch. RawAPIexit2/no summary/Bots200/6. Smoke21/21conditionalDOM,0style/
+console,8canvaslimits,observedexit0. Exact conditional served-DOM smoke/
+exits/canvas limits in `evidence/m100/smoke-exit.json`, not pixel/broker proof.
+
+Ten measured runtime stages+docs, actualee977/pristine forward/reverse byteproofs,
+deterministic **133-source** ZIP: `build-m100-opportunity-artifacts.py`,
+`patches/M100-OPPORTUNITY-STAGES.json`, excluded archive SHA companion.
+[Full report](M100-MISSED-VALUE-OPPORTUNITIES.md). Preview3000 temporary synthetic
+`/tmp/m100-preview.db`, offline/schedulerOFF/blank remotes, not real data preservation.
+
+**Next M104 — controlled quarterly rule-change discipline.** M105/M106/M111/M112
+stillTODO, M30/M103/M108 partial; all132 IDs/eightgroups retained. Session fixed to
+**arena/762c0295-trader**; older branches/counts/next steps below are historical.
+
+## Historical M99/M101 — periodic artifacts and chosen-focus follow-up — 2026-10-12
 
 **132:96 done /3 partial /33 TODO /0 no-action**, exact eight groups. Distinct
 weekly review/monthly reflection/quarterly documented refinement/annual reassessment,

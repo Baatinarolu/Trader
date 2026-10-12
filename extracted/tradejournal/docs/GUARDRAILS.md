@@ -520,3 +520,44 @@ no silent clipping. No sealed database-admin-proof vault or automaticdedupe.
 Current132=96done/3partial/33TODO. Next M100; M104/M105/M106/M111/M112 TODO,
 M30/M103/M108 partial. No70% win-rate, causal/predictive edge, live provider,
 actual broker/human/mental/meditation/pixel/production validation implied.
+
+
+## M100 — missed value is a reviewed assertion, not every unused signal
+
+Owner explicitly records missed/not_taken/not_value/unknown and true/false/null
+own-plan value judgment with reason/note. Pending/modelwin/modelloss/no_fill/expired
+is not actual entry, an inaction judgment or lost profit. Captured APP-confirmed
+method/personal context distinct from manual/legacy/stop/unverified claims, not
+broker/mental-state/value certification. No A-only/weights/risk/floor retuning.
+Original personal stops should be respected, not promoted as missed winners.
+
+Saved signal observer AFTER commit; optional failure warns without undoing signal
+or finance. Actual admitted matching source_signal_id may record app-entry link;
+manual own market/direction journal association is self-report. No symbol/time
+matching or duplicated entry-cycle credit, no reusable saved permit. Link/retract
+history original facts/clocks/words persist after correction/deletion; no cap/loss/
+routine/core/admission refund or false automatic miss. Auth/revision/account/source/
+hash/cycle/clock/strictbody and user/token/serial/cache/failure callbacks guarded.
+Actual409 retains draft/reload required,503 never claims stored.
+
+UTC opportunity record-day report distinct from finance-close/entry-rule days.
+Unknown/value-missing/unreviewed/prior/corrupt/imported/legacy/unassigned coverage
+not certified0. APP/declared associations separate. First-target planned RR and
+existing resolved MODEL R labelledhypothetical/unverified, not realised journal/
+causal lostprofit/probability/edge/permission. Missing/no-fill/expired/future/bad
+model R NULL. M99 original period baselines never rewritten, new source record-day
+annotation explicitlyscoped. Financial wins/expectancy/grade/size/window/daily score,
+entry models/geometry/stops/targets/RR/risk/factors/caps/routine/core unchanged.
+
+JSON restored own new receipt/imported histories cannot mint signals/link/source
+eligibility or action proof; old IDs/clocks declarations, no ownership transfer.
+Invalidoptional warnings/financelegal, real storefailure whole-request rollback,
+missing store stillfinancialbackup withunavailable marker. Settings warning success
+visible. No sealeddatabase-admin-proof vault or automaticdedupe. APP caps:notecap
+2000/500captures/50decisions-links each/250KBrecord +unchanged20MBfile/25MBbody,
+not course quotas, no silent clipping. Inherited M99 demo response-only repair does
+not change seeding/grade/risk policy.
+
+Current132=97done/3partial/32TODO. Next M104, M105/M106/M111/M112open;
+M30/M103/M108partial. Coursefloor30/M103n>=5/B-Ctradeability unchanged. No70%,
+causal/predictive/broker/provider/human/mental/meditation/pixel/production validation.

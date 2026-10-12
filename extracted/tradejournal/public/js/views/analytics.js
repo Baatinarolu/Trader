@@ -19,6 +19,7 @@
       let active = 'core';
       TABS.forEach(([id, label]) => tabs.appendChild(U.h('button', { class: active === id ? 'active' : '', text: label, onclick: () => { active = id; U.$$('button', tabs).forEach((b, i) => b.classList.toggle('active', TABS[i][0] === id)); U.clear(panes); panes.appendChild(PANES[id]()); } })));
       if(Views.behaviorDays)root.appendChild(Views.behaviorDays.card(an.behavior_days));
+      if(Views.opportunities)root.appendChild(Views.opportunities.summary(an.opportunity_review));
       if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(an.process_review));
       root.appendChild(tabs); root.appendChild(panes);
 

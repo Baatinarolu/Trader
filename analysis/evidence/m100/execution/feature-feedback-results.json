@@ -1,0 +1,100 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 23,
+  "fail": 0,
+  "results": [
+    {
+      "label": "legacy backfill compatibility now READ-ONLY, no setup_grade overwrite",
+      "passed": true
+    },
+    {
+      "label": "derived review evaluated selected own4 closed rows, unknown separately labelled",
+      "passed": true
+    },
+    {
+      "label": "known execution grade vs deliberately opposite pre-entry grade never overwrites",
+      "passed": true
+    },
+    {
+      "label": "repeated derived refresh remains idempotent/read-only",
+      "passed": true
+    },
+    {
+      "label": "foreign account cannot trigger another cohort refresh404",
+      "passed": true
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write [1]",
+      "passed": true
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write 0",
+      "passed": true
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write -1",
+      "passed": true
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write 1.1",
+      "passed": true
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write \"1e0\"",
+      "passed": true
+    },
+    {
+      "label": "malformed selected account is400 no coercion/write \"oops\"",
+      "passed": true
+    },
+    {
+      "label": "actual correction table exposes execution grades not entry setup quality",
+      "passed": true
+    },
+    {
+      "label": "entry setup-grade analytics remain separate/current (no empty-grade guesses)",
+      "passed": true
+    },
+    {
+      "label": "samplefloor30/behaviour/routine/old loss-writing gate still independent",
+      "passed": true
+    },
+    {
+      "label": "legacy GET backfill has same read-only semantics/current grades",
+      "passed": true
+    },
+    {
+      "label": "actual feedback clean losing trade is good by owner plan/stop, not negative R size",
+      "passed": true
+    },
+    {
+      "label": "actual feedback profitable rule breaker D, never textbook/repeat praise",
+      "passed": true
+    },
+    {
+      "label": "actual feedback winning explicit stop violation remains D",
+      "passed": true
+    },
+    {
+      "label": "unknown legacy stop stays unreviewed/no punitive claim or invented0 score",
+      "passed": true
+    },
+    {
+      "label": "recorded protective stop move is not falsely described as moved-away loss cause",
+      "passed": true
+    },
+    {
+      "label": "large slippage-like loss does not itself prove missed stop or grade penalty",
+      "passed": true
+    },
+    {
+      "label": "foreign feedback retains real owner404",
+      "passed": true
+    },
+    {
+      "label": "metadata grading never refunds entry caps/admissions or completes loss reflection writing",
+      "passed": true
+    }
+  ],
+  "scope": "M86 derived grade and feedback: real auth/HTTP/SQL on literal/fixedUTC journals, no legacy/native routine adapter, broker/provider/real-human/pixel/outcome or financial retune proof"
+}

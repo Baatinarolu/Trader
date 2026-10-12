@@ -1,0 +1,15 @@
+/home/user/Trader/analysis/probe-m100-pure.js:10
+ const ts=[state(s(),c(),d()),state(s({id:2}),c({signal_id:2,signal_key:2,signal_snapshot:JSON.stringify(O?.snapshot(s({id:2}))),signal_hash:O?.hash(s({id:2}))}),null];const report=O?.aggregate(ts);test('count onlyexplicit reviewedmiss, known denominatorseparate, unknownoverallnot0',report?.reported_missed_value===1&&report.unreviewed===1&&report.complete_missed_total===null,report);test('simulation stayssideannotation, no changing financial win denominator/grades/sizing',report?.broker_verified===false&&!Object.hasOwn(report,'win_rate')&&!Object.hasOwn(report,'risk'));const sig=s(),before=JSON.stringify(sig);state(sig,c(),d());test('classification read-only, signal status/model pricesnotmodified',JSON.stringify(sig)===before);
+                                                                                                                                                                  ^^^^
+
+SyntaxError: missing ) after argument list
+    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
+    at Module._compile (node:internal/modules/cjs/loader:1755:20)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.3

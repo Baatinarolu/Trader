@@ -400,6 +400,7 @@
     const confluenceDraft=isNew&&Views.confluences?Views.confluences.draft():null;
     if(confluenceDraft){const box=U.h('section',{class:'card',style:'margin-top:12px'});box.appendChild(U.h('h3',{text:'Entry confluences — actual market/setup reasons'}));box.appendChild(confluenceDraft.node);node.appendChild(box);}
 
+    if(t.source_signal_id!==undefined)node.prepend(U.h('p',{class:'field-note',text:'Optional reference to saved signal #'+t.source_signal_id+'. Recheck own current plan/market/admission; a stored signal is not a reusable permit. Changed geometry may skip association without undoing truthful finance.'}));
     function collect() {
       const body = {
         record_only:U.$('#tf-record-only',node).checked,
@@ -433,6 +434,7 @@
       if (!body.symbol) throw new Error('Symbol is required.');
       if (!body.entry) throw new Error('Entry price is required.');
       if(confluenceDraft?.dirty())body.entry_confluences=confluenceDraft.value();
+      if(t.source_signal_id!==undefined)body.source_signal_id=t.source_signal_id;
       return body;
     }
     /* --------------------------------------------- TradingView helpers */

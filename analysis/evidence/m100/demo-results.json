@@ -1,0 +1,28 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 3,
+  "fail": 1,
+  "results": [
+    {
+      "label": "actual synthetic sample route succeeds, not undefined import-only response fields500",
+      "passed": false,
+      "detail": {
+        "status": 500,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>ReferenceError: media_imported is not defined<br> &nbsp; &nbsp;at /home/user/Trader/extracted/tradejournal/src/routes/api.js:1437:34<br> &nbsp; &nbsp;at process.processTicksAndRejections (node:internal/process/task_queues:103:5)</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "sample records actually present for requested owned default account",
+      "passed": true
+    },
+    {
+      "label": "other owner untouched by sample seeding",
+      "passed": true
+    },
+    {
+      "label": "sample route doesnotmint live opportunitycaptured/acted broker evidence",
+      "passed": true
+    }
+  ],
+  "scope": "M100 discovered inherited M99 demo response regression: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

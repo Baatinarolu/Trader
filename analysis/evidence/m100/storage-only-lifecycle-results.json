@@ -1,0 +1,297 @@
+{
+  "app": "/tmp/m100-storage-stage/app",
+  "pass": 6,
+  "fail": 11,
+  "results": [
+    {
+      "label": "actual saved server analysis/guard context distinctfromcaller manualplan",
+      "passed": true
+    },
+    {
+      "label": "explicit qualifying own value miss primary count, not statuswin/pending heuristic",
+      "passed": true
+    },
+    {
+      "label": "ACTUAL prospective admitted financialPOST optionally auto-links exactsavedplan",
+      "passed": false,
+      "detail": {
+        "capture": {
+          "id": 1,
+          "user_id": 1,
+          "signal_id": 1,
+          "signal_key": 1,
+          "record_key": "signal:1",
+          "account_id": 1,
+          "account_key": 1,
+          "source": "app_analysis",
+          "observed_at": "2026-10-12T12:00:00.000Z",
+          "signal_snapshot": "{\"id\":1,\"user_id\":1,\"symbol\":\"DECLARED_STOCK\",\"timeframe\":\"15m\",\"dir\":1,\"side\":\"long\",\"entry\":100,\"stop\":99,\"t1\":102,\"t2\":null,\"rr_primary\":2,\"rr_final\":2,\"grade\":\"B\",\"score\":60,\"entry_model\":\"none\",\"entry_tf\":\"5m\",\"entry_evidence\":null,\"entry_mode\":null,\"mtf_tf\":null,\"risk_atr\":null,\"method_state\":\"confirmed\",\"method_dir\":1,\"method_blocked\":0,\"created_at\":\"2026-10-12 13:57:57\",\"entry_permission\":\"admitted\",\"guardrail_snapshot\":\"{\\\"date\\\":\\\"2026-10-12\\\",\\\"timezone\\\":\\\"UTC\\\",\\\"evaluated_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"account_id\\\":1,\\\"guardrails\\\":{\\\"max_risk_pct\\\":1,\\\"max_trades_day\\\":20,\\\"cooldown_min\\\":30,\\\"max_consecutive_losses\\\":2,\\\"daily_profit_limit_pct\\\":null,\\\"daily_loss_limit_pct\\\":3,\\\"trade_cap_policy\\\":{\\\"max_trades_day\\\":20,\\\"selected_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"daily_profit_limit_pct\\\":null,\\\"profit_selected_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"rule_date\\\":\\\"2026-10-12\\\",\\\"timezone\\\":\\\"UTC\\\"},\\\"size_cap_note\\\":null,\\\"basis\\\":\\\"Default risk rules and the preselected account trade cap (not enough personal data yet).\\\",\\\"guardrails\\\":{\\\"max_risk_pct\\\":1,\\\"max_trades_day\\\":20,\\\"cooldown_min\\\":30,\\\"max_consecutive_losses\\\":2,\\\"daily_profit_limit_pct\\\":null,\\\"daily_loss_limit_pct\\\":3,\\\"trade_cap_policy\\\":{\\\"max_trades_day\\\":20,\\\"selected_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"daily_profit_limit_pct\\\":null,\\\"profit_selected_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"rule_date\\\":\\\"2026-10-12\\\",\\\"timezone\\\":\\\"UTC\\\"},\\\"size_cap_note\\\":null,\\\"basis\\\":\\\"Default risk rules and the preselected account trade cap (not enough personal data yet).\\\"},\\\"stats\\\":null,\\\"user\\\":{\\\"trades\\\":0},\\\"sample_sufficient\\\":false,\\\"min_trades_for_personal_guardrails\\\":30},\\\"today\\\":{\\\"trades\\\":0,\\\"closed\\\":0,\\\"realised\\\":0,\\\"r_sum\\\":0,\\\"avg_r\\\":0,\\\"loss_streak\\\":0,\\\"balance\\\":10000,\\\"loss_limit\\\":300,\\\"balance_basis\\\":\\\"day-start realised journal equity\\\"},\\\"profit_stop\\\":{\\\"enabled\\\":false,\\\"limit_pct\\\":null,\\\"limit_amount\\\":null,\\\"realised_amount\\\":0,\\\"selected_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"balance_basis\\\":\\\"day-start realised journal equity\\\",\\\"timezone\\\":\\\"UTC\\\"},\\\"persistence\\\":{\\\"entry_count_basis\\\":\\\"monotonic observed journal entries plus server admissions, not inferred historical permission\\\",\\\"journal_entries\\\":0,\\\"retained_stops\\\":[]},\\\"breaches\\\":[],\\\"status\\\":\\\"clear\\\",\\\"remaining_trades\\\":20,\\\"post_loss\\\":{\\\"last_loss_trade_id\\\":null,\\\"last_loss_at\\\":null,\\\"entry_tf\\\":\\\"5m\\\",\\\"entry_tf_required\\\":false,\\\"cooldown_until\\\":null,\\\"next_candle_until\\\":null},\\\"message\\\":\\\"No personal stop. 20 entries remain under the preselected 20-entry cap. This is not market/setup approval.\\\",\\\"permission\\\":{\\\"allowed\\\":true,\\\"can_override\\\":false,\\\"state\\\":\\\"clear\\\"},\\\"session_time\\\":{\\\"account_id\\\":1,\\\"advisory\\\":true,\\\"evaluated_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"timezone\\\":\\\"UTC\\\",\\\"saved_limit_minutes\\\":null,\\\"scope\\\":\\\"Manual marker only, not measured broker/chart screen time or execution permission\\\",\\\"state\\\":\\\"off\\\",\\\"limit_minutes\\\":null,\\\"elapsed_minutes\\\":null,\\\"started_at\\\":null,\\\"ended_at\\\":null,\\\"message\\\":\\\"Session-duration warning is Off (optional).\\\"},\\\"post_loss_journal\\\":{\\\"pending_count\\\":0,\\\"pending\\\":[],\\\"completed_count\\\":0,\\\"timezone\\\":\\\"UTC\\\",\\\"rule_date\\\":\\\"2026-10-12\\\",\\\"scope\\\":\\\"Observed current-day known losses, required writing; not a broker-time entry violation or all historical incomplete journals\\\"},\\\"routine\\\":{\\\"account_id\\\":1,\\\"state\\\":\\\"complete\\\",\\\"complete\\\":true,\\\"cycle\\\":{\\\"id\\\":1,\\\"user_id\\\":1,\\\"account_id\\\":1,\\\"cycle_date\\\":\\\"2026-10-12\\\",\\\"rule_date\\\":\\\"2026-10-12\\\",\\\"timezone\\\":\\\"UTC\\\",\\\"window_start\\\":\\\"14:00\\\",\\\"lead_minutes\\\":180,\\\"step_order\\\":\\\"ep17\\\",\\\"reset_at\\\":\\\"2026-10-12T11:00:00.000Z\\\",\\\"window_at\\\":\\\"2026-10-12T14:00:00.000Z\\\",\\\"expires_at\\\":\\\"2026-10-13T11:00:00.000Z\\\",\\\"selected_at\\\":\\\"2026-10-12T11:45:00.000Z\\\",\\\"meditation_state\\\":\\\"completed\\\",\\\"meditation_started_at\\\":null,\\\"meditation_elapsed_ms\\\":900000,\\\"completed_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"completed_before_window\\\":1,\\\"first_action_at\\\":null,\\\"dst_policy\\\":\\\"earlier fold / shift forward gap\\\"},\\\"order\\\":[\\\"calendar\\\",\\\"plan\\\",\\\"charts\\\",\\\"meditation\\\",\\\"check_in\\\"],\\\"steps\\\":[{\\\"cycle_id\\\":1,\\\"step\\\":\\\"calendar\\\",\\\"completed_at\\\":\\\"2026-10-12T11:45:00.000Z\\\",\\\"payload\\\":{\\\"reviewed\\\":true,\\\"method\\\":\\\"manual_external\\\",\\\"summary\\\":\\\"DECLARED actual preparation review\\\",\\\"source\\\":\\\"human_calendar_review\\\"}},{\\\"cycle_id\\\":1,\\\"step\\\":\\\"plan\\\",\\\"completed_at\\\":\\\"2026-10-12T11:45:00.000Z\\\",\\\"payload\\\":{\\\"reviewed\\\":true,\\\"source\\\":\\\"manual_plan_text\\\",\\\"plan_text\\\":\\\"DECLARED actual own daily plan\\\"}},{\\\"cycle_id\\\":1,\\\"step\\\":\\\"charts\\\",\\\"completed_at\\\":\\\"2026-10-12T11:45:00.000Z\\\",\\\"payload\\\":{\\\"reviewed\\\":true,\\\"daily_bias\\\":\\\"neutral\\\",\\\"htf_range\\\":\\\"DECLARED range review\\\",\\\"alert_status\\\":\\\"not_applicable\\\",\\\"alert_note\\\":\\\"No fixture alert\\\",\\\"source\\\":\\\"human_chart_review\\\"}},{\\\"cycle_id\\\":1,\\\"step\\\":\\\"meditation\\\",\\\"completed_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"payload\\\":{\\\"source\\\":\\\"server_running_time\\\",\\\"minimum_ms\\\":900000,\\\"elapsed_ms\\\":900000,\\\"actual_meditation_verified\\\":false}},{\\\"cycle_id\\\":1,\\\"step\\\":\\\"check_in\\\",\\\"completed_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"payload\\\":{\\\"source\\\":\\\"human_morning_check_in\\\",\\\"answers\\\":{\\\"calm\\\":true,\\\"clear\\\":true,\\\"following_plan\\\":true,\\\"would_take_if_up_big\\\":true}}}],\\\"check_in_attempts\\\":[{\\\"id\\\":1,\\\"cycle_id\\\":1,\\\"captured_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"passed\\\":1,\\\"answers\\\":{\\\"calm\\\":true,\\\"clear\\\":true,\\\"following_plan\\\":true,\\\"would_take_if_up_big\\\":true}}],\\\"next_step\\\":null,\\\"meditation\\\":{\\\"minimum_ms\\\":900000,\\\"state\\\":\\\"completed\\\",\\\"elapsed_ms\\\":900000,\\\"actual_meditation_verified\\\":false},\\\"evaluated_at\\\":\\\"2026-10-12T12:00:00.000Z\\\",\\\"message\\\":\\\"Current routine steps acknowledged; this is preparation, not reusable entry/mental/news permission.\\\",\\\"scope\\\":\\\"Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof\\\"},\\\"admission\\\":{\\\"allowed\\\":true,\\\"can_override\\\":false,\\\"state\\\":\\\"admitted\\\",\\\"override_reason\\\":null,\\\"action\\\":\\\"save_signal\\\"},\\\"capture_basis\\\":\\\"fresh server admission state, valid only for this recorded action\\\"}\"}",
+          "signal_hash": "cb0821697ed3b72c4f419f912e820f2290a1cb18f66b1d1059ea61f7ad97002e",
+          "personal_json": "{\"account_id\":1,\"state\":\"admitted\",\"allowed\":true}",
+          "historical_json": null
+        },
+        "signal": {
+          "id": 1,
+          "user_id": 1,
+          "symbol": "DECLARED_STOCK",
+          "timeframe": "15m",
+          "dir": 1,
+          "side": "long",
+          "grade": "B",
+          "score": 60,
+          "p_win": null,
+          "entry": 100,
+          "stop": 99,
+          "t1": 102,
+          "t2": null,
+          "rr_primary": 2,
+          "rr_final": 2,
+          "mechanics": 80,
+          "sentiment": "DECLARED literal server analysis payload, no market proof",
+          "entry_model": "none",
+          "entry_tf": "5m",
+          "entry_evidence": null,
+          "entry_mode": null,
+          "mtf_tf": null,
+          "risk_atr": null,
+          "status": "pending",
+          "outcome_r": null,
+          "outcome_note": null,
+          "created_at": "2026-10-12 13:57:57",
+          "resolved_at": null,
+          "guardrail_snapshot": "{\"date\":\"2026-10-12\",\"timezone\":\"UTC\",\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"account_id\":1,\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":20,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":20,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-12T12:00:00.000Z\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\",\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":20,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":20,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-12T12:00:00.000Z\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\"},\"stats\":null,\"user\":{\"trades\":0},\"sample_sufficient\":false,\"min_trades_for_personal_guardrails\":30},\"today\":{\"trades\":0,\"closed\":0,\"realised\":0,\"r_sum\":0,\"avg_r\":0,\"loss_streak\":0,\"balance\":10000,\"loss_limit\":300,\"balance_basis\":\"day-start realised journal equity\"},\"profit_stop\":{\"enabled\":false,\"limit_pct\":null,\"limit_amount\":null,\"realised_amount\":0,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"balance_basis\":\"day-start realised journal equity\",\"timezone\":\"UTC\"},\"persistence\":{\"entry_count_basis\":\"monotonic observed journal entries plus server admissions, not inferred historical permission\",\"journal_entries\":0,\"retained_stops\":[]},\"breaches\":[],\"status\":\"clear\",\"remaining_trades\":20,\"post_loss\":{\"last_loss_trade_id\":null,\"last_loss_at\":null,\"entry_tf\":\"5m\",\"entry_tf_required\":false,\"cooldown_until\":null,\"next_candle_until\":null},\"message\":\"No personal stop. 20 entries remain under the preselected 20-entry cap. This is not market/setup approval.\",\"permission\":{\"allowed\":true,\"can_override\":false,\"state\":\"clear\"},\"session_time\":{\"account_id\":1,\"advisory\":true,\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"timezone\":\"UTC\",\"saved_limit_minutes\":null,\"scope\":\"Manual marker only, not measured broker/chart screen time or execution permission\",\"state\":\"off\",\"limit_minutes\":null,\"elapsed_minutes\":null,\"started_at\":null,\"ended_at\":null,\"message\":\"Session-duration warning is Off (optional).\"},\"post_loss_journal\":{\"pending_count\":0,\"pending\":[],\"completed_count\":0,\"timezone\":\"UTC\",\"rule_date\":\"2026-10-12\",\"scope\":\"Observed current-day known losses, required writing; not a broker-time entry violation or all historical incomplete journals\"},\"routine\":{\"account_id\":1,\"state\":\"complete\",\"complete\":true,\"cycle\":{\"id\":1,\"user_id\":1,\"account_id\":1,\"cycle_date\":\"2026-10-12\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\",\"window_start\":\"14:00\",\"lead_minutes\":180,\"step_order\":\"ep17\",\"reset_at\":\"2026-10-12T11:00:00.000Z\",\"window_at\":\"2026-10-12T14:00:00.000Z\",\"expires_at\":\"2026-10-13T11:00:00.000Z\",\"selected_at\":\"2026-10-12T11:45:00.000Z\",\"meditation_state\":\"completed\",\"meditation_started_at\":null,\"meditation_elapsed_ms\":900000,\"completed_at\":\"2026-10-12T12:00:00.000Z\",\"completed_before_window\":1,\"first_action_at\":null,\"dst_policy\":\"earlier fold / shift forward gap\"},\"order\":[\"calendar\",\"plan\",\"charts\",\"meditation\",\"check_in\"],\"steps\":[{\"cycle_id\":1,\"step\":\"calendar\",\"completed_at\":\"2026-10-12T11:45:00.000Z\",\"payload\":{\"reviewed\":true,\"method\":\"manual_external\",\"summary\":\"DECLARED actual preparation review\",\"source\":\"human_calendar_review\"}},{\"cycle_id\":1,\"step\":\"plan\",\"completed_at\":\"2026-10-12T11:45:00.000Z\",\"payload\":{\"reviewed\":true,\"source\":\"manual_plan_text\",\"plan_text\":\"DECLARED actual own daily plan\"}},{\"cycle_id\":1,\"step\":\"charts\",\"completed_at\":\"2026-10-12T11:45:00.000Z\",\"payload\":{\"reviewed\":true,\"daily_bias\":\"neutral\",\"htf_range\":\"DECLARED range review\",\"alert_status\":\"not_applicable\",\"alert_note\":\"No fixture alert\",\"source\":\"human_chart_review\"}},{\"cycle_id\":1,\"step\":\"meditation\",\"completed_at\":\"2026-10-12T12:00:00.000Z\",\"payload\":{\"source\":\"server_running_time\",\"minimum_ms\":900000,\"elapsed_ms\":900000,\"actual_meditation_verified\":false}},{\"cycle_id\":1,\"step\":\"check_in\",\"completed_at\":\"2026-10-12T12:00:00.000Z\",\"payload\":{\"source\":\"human_morning_check_in\",\"answers\":{\"calm\":true,\"clear\":true,\"following_plan\":true,\"would_take_if_up_big\":true}}}],\"check_in_attempts\":[{\"id\":1,\"cycle_id\":1,\"captured_at\":\"2026-10-12T12:00:00.000Z\",\"passed\":1,\"answers\":{\"calm\":true,\"clear\":true,\"following_plan\":true,\"would_take_if_up_big\":true}}],\"next_step\":null,\"meditation\":{\"minimum_ms\":900000,\"state\":\"completed\",\"elapsed_ms\":900000,\"actual_meditation_verified\":false},\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"message\":\"Current routine steps acknowledged; this is preparation, not reusable entry/mental/news permission.\",\"scope\":\"Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof\"},\"admission\":{\"allowed\":true,\"can_override\":false,\"state\":\"admitted\",\"override_reason\":null,\"action\":\"save_signal\"},\"capture_basis\":\"fresh server admission state, valid only for this recorded action\"}",
+          "entry_permission": "admitted",
+          "override_reason": null,
+          "method_state": "confirmed",
+          "method_dir": 1,
+          "method_blocked": 0
+        },
+        "review": {
+          "opportunity_id": 1,
+          "signal_id": 1,
+          "signal_key": 1,
+          "account_id": 1,
+          "account_key": 1,
+          "source": "app_analysis",
+          "observed_at": "2026-10-12T12:00:00.000Z",
+          "state": "current",
+          "decision": "missed_value",
+          "missed": true,
+          "acted": false,
+          "acted_basis": null,
+          "missed_basis": "app_eligible_self_report",
+          "original_eligibility": "app_eligible",
+          "planned_rr": 2,
+          "simulation": {
+            "state": "unavailable",
+            "r": null,
+            "basis": "Already stored resolver MODEL annotation, unverified fill/path/cost assumptions; not realised journal money, causal missed profit or entry permission.",
+            "broker_verified": false
+          },
+          "broker_verified": false,
+          "original_snapshot": {
+            "id": 1,
+            "user_id": 1,
+            "symbol": "DECLARED_STOCK",
+            "timeframe": "15m",
+            "dir": 1,
+            "side": "long",
+            "entry": 100,
+            "stop": 99,
+            "t1": 102,
+            "t2": null,
+            "rr_primary": 2,
+            "rr_final": 2,
+            "grade": "B",
+            "score": 60,
+            "entry_model": "none",
+            "entry_tf": "5m",
+            "entry_evidence": null,
+            "entry_mode": null,
+            "mtf_tf": null,
+            "risk_atr": null,
+            "method_state": "confirmed",
+            "method_dir": 1,
+            "method_blocked": 0,
+            "created_at": "2026-10-12 13:57:57",
+            "entry_permission": "admitted",
+            "guardrail_snapshot": "{\"date\":\"2026-10-12\",\"timezone\":\"UTC\",\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"account_id\":1,\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":20,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":20,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-12T12:00:00.000Z\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\",\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":20,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":20,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-12T12:00:00.000Z\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\"},\"stats\":null,\"user\":{\"trades\":0},\"sample_sufficient\":false,\"min_trades_for_personal_guardrails\":30},\"today\":{\"trades\":0,\"closed\":0,\"realised\":0,\"r_sum\":0,\"avg_r\":0,\"loss_streak\":0,\"balance\":10000,\"loss_limit\":300,\"balance_basis\":\"day-start realised journal equity\"},\"profit_stop\":{\"enabled\":false,\"limit_pct\":null,\"limit_amount\":null,\"realised_amount\":0,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"balance_basis\":\"day-start realised journal equity\",\"timezone\":\"UTC\"},\"persistence\":{\"entry_count_basis\":\"monotonic observed journal entries plus server admissions, not inferred historical permission\",\"journal_entries\":0,\"retained_stops\":[]},\"breaches\":[],\"status\":\"clear\",\"remaining_trades\":20,\"post_loss\":{\"last_loss_trade_id\":null,\"last_loss_at\":null,\"entry_tf\":\"5m\",\"entry_tf_required\":false,\"cooldown_until\":null,\"next_candle_until\":null},\"message\":\"No personal stop. 20 entries remain under the preselected 20-entry cap. This is not market/setup approval.\",\"permission\":{\"allowed\":true,\"can_override\":false,\"state\":\"clear\"},\"session_time\":{\"account_id\":1,\"advisory\":true,\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"timezone\":\"UTC\",\"saved_limit_minutes\":null,\"scope\":\"Manual marker only, not measured broker/chart screen time or execution permission\",\"state\":\"off\",\"limit_minutes\":null,\"elapsed_minutes\":null,\"started_at\":null,\"ended_at\":null,\"message\":\"Session-duration warning is Off (optional).\"},\"post_loss_journal\":{\"pending_count\":0,\"pending\":[],\"completed_count\":0,\"timezone\":\"UTC\",\"rule_date\":\"2026-10-12\",\"scope\":\"Observed current-day known losses, required writing; not a broker-time entry violation or all historical incomplete journals\"},\"routine\":{\"account_id\":1,\"state\":\"complete\",\"complete\":true,\"cycle\":{\"id\":1,\"user_id\":1,\"account_id\":1,\"cycle_date\":\"2026-10-12\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\",\"window_start\":\"14:00\",\"lead_minutes\":180,\"step_order\":\"ep17\",\"reset_at\":\"2026-10-12T11:00:00.000Z\",\"window_at\":\"2026-10-12T14:00:00.000Z\",\"expires_at\":\"2026-10-13T11:00:00.000Z\",\"selected_at\":\"2026-10-12T11:45:00.000Z\",\"meditation_state\":\"completed\",\"meditation_started_at\":null,\"meditation_elapsed_ms\":900000,\"completed_at\":\"2026-10-12T12:00:00.000Z\",\"completed_before_window\":1,\"first_action_at\":null,\"dst_policy\":\"earlier fold / shift forward gap\"},\"order\":[\"calendar\",\"plan\",\"charts\",\"meditation\",\"check_in\"],\"steps\":[{\"cycle_id\":1,\"step\":\"calendar\",\"completed_at\":\"2026-10-12T11:45:00.000Z\",\"payload\":{\"reviewed\":true,\"method\":\"manual_external\",\"summary\":\"DECLARED actual preparation review\",\"source\":\"human_calendar_review\"}},{\"cycle_id\":1,\"step\":\"plan\",\"completed_at\":\"2026-10-12T11:45:00.000Z\",\"payload\":{\"reviewed\":true,\"source\":\"manual_plan_text\",\"plan_text\":\"DECLARED actual own daily plan\"}},{\"cycle_id\":1,\"step\":\"charts\",\"completed_at\":\"2026-10-12T11:45:00.000Z\",\"payload\":{\"reviewed\":true,\"daily_bias\":\"neutral\",\"htf_range\":\"DECLARED range review\",\"alert_status\":\"not_applicable\",\"alert_note\":\"No fixture alert\",\"source\":\"human_chart_review\"}},{\"cycle_id\":1,\"step\":\"meditation\",\"completed_at\":\"2026-10-12T12:00:00.000Z\",\"payload\":{\"source\":\"server_running_time\",\"minimum_ms\":900000,\"elapsed_ms\":900000,\"actual_meditation_verified\":false}},{\"cycle_id\":1,\"step\":\"check_in\",\"completed_at\":\"2026-10-12T12:00:00.000Z\",\"payload\":{\"source\":\"human_morning_check_in\",\"answers\":{\"calm\":true,\"clear\":true,\"following_plan\":true,\"would_take_if_up_big\":true}}}],\"check_in_attempts\":[{\"id\":1,\"cycle_id\":1,\"captured_at\":\"2026-10-12T12:00:00.000Z\",\"passed\":1,\"answers\":{\"calm\":true,\"clear\":true,\"following_plan\":true,\"would_take_if_up_big\":true}}],\"next_step\":null,\"meditation\":{\"minimum_ms\":900000,\"state\":\"completed\",\"elapsed_ms\":900000,\"actual_meditation_verified\":false},\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"message\":\"Current routine steps acknowledged; this is preparation, not reusable entry/mental/news permission.\",\"scope\":\"Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof\"},\"admission\":{\"allowed\":true,\"can_override\":false,\"state\":\"admitted\",\"override_reason\":null,\"action\":\"save_signal\"},\"capture_basis\":\"fresh server admission state, valid only for this recorded action\"}"
+          },
+          "current_context": true,
+          "note": "DECLARED own value setup I did not act on",
+          "reason_code": "hesitation",
+          "value_setup": 1
+        },
+        "history": [
+          {
+            "id": 1,
+            "opportunity_id": 1,
+            "version": 1,
+            "decision": "missed_value",
+            "value_setup": 1,
+            "reason_code": "hesitation",
+            "note": "DECLARED own value setup I did not act on",
+            "source": "human_report",
+            "recorded_at": "2026-10-12T12:00:00.000Z"
+          }
+        ],
+        "links": [],
+        "link_history": [],
+        "revision": "31ebb1a54bf1094afe90a7148099adda8ffcb12c2408baf78f310903328b3def",
+        "scope": "Owned captured saved plan + explicit self-report/journal association. Not actual broker, value validation, simulated profit, core completion or permission."
+      }
+    },
+    {
+      "label": "automatic source linkage preserves earlier missedwords not rewritefirstdecision",
+      "passed": true
+    },
+    {
+      "label": "full own reporting links tradeonce, missed0observed ratherthanfakecompletepastopportunities",
+      "passed": false,
+      "detail": {
+        "opportunities": 1,
+        "reported_missed_value": 1,
+        "app_eligible_missed": 1,
+        "unverified_value_missed": 0,
+        "acted_app": 0,
+        "acted_declared": 0,
+        "unreviewed": 0,
+        "unknown": 0,
+        "not_taken": 0,
+        "not_value": 0,
+        "prior": 0,
+        "unavailable": 0,
+        "imported": 0,
+        "complete_missed_total": 1,
+        "broker_verified": false,
+        "basis": "Count explicit OWNED opportunity record-day decisions/links, not unused signals or simulated wins. Self-reported value/inaction, not broker/causal/probability/permission proof.",
+        "unattributed_legacy_signals": 0
+      }
+    },
+    {
+      "label": "laterfinancialcorrection doesnoterase original recorded appassociation",
+      "passed": false
+    },
+    {
+      "label": "deliberate financialdelete retains originalassociation andcannotbackfillmiss",
+      "passed": false,
+      "detail": {
+        "opportunity_id": 1,
+        "signal_id": 1,
+        "signal_key": 1,
+        "account_id": 1,
+        "account_key": 1,
+        "source": "app_analysis",
+        "observed_at": "2026-10-12T12:00:00.000Z",
+        "state": "current",
+        "decision": "missed_value",
+        "missed": true,
+        "acted": false,
+        "acted_basis": null,
+        "missed_basis": "app_eligible_self_report",
+        "original_eligibility": "app_eligible",
+        "planned_rr": 2,
+        "simulation": {
+          "state": "unavailable",
+          "r": null,
+          "basis": "Already stored resolver MODEL annotation, unverified fill/path/cost assumptions; not realised journal money, causal missed profit or entry permission.",
+          "broker_verified": false
+        },
+        "broker_verified": false,
+        "original_snapshot": {
+          "id": 1,
+          "user_id": 1,
+          "symbol": "DECLARED_STOCK",
+          "timeframe": "15m",
+          "dir": 1,
+          "side": "long",
+          "entry": 100,
+          "stop": 99,
+          "t1": 102,
+          "t2": null,
+          "rr_primary": 2,
+          "rr_final": 2,
+          "grade": "B",
+          "score": 60,
+          "entry_model": "none",
+          "entry_tf": "5m",
+          "entry_evidence": null,
+          "entry_mode": null,
+          "mtf_tf": null,
+          "risk_atr": null,
+          "method_state": "confirmed",
+          "method_dir": 1,
+          "method_blocked": 0,
+          "created_at": "2026-10-12 13:57:57",
+          "entry_permission": "admitted",
+          "guardrail_snapshot": "{\"date\":\"2026-10-12\",\"timezone\":\"UTC\",\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"account_id\":1,\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":20,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":20,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-12T12:00:00.000Z\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\",\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":20,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":20,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-12T12:00:00.000Z\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\"},\"stats\":null,\"user\":{\"trades\":0},\"sample_sufficient\":false,\"min_trades_for_personal_guardrails\":30},\"today\":{\"trades\":0,\"closed\":0,\"realised\":0,\"r_sum\":0,\"avg_r\":0,\"loss_streak\":0,\"balance\":10000,\"loss_limit\":300,\"balance_basis\":\"day-start realised journal equity\"},\"profit_stop\":{\"enabled\":false,\"limit_pct\":null,\"limit_amount\":null,\"realised_amount\":0,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"balance_basis\":\"day-start realised journal equity\",\"timezone\":\"UTC\"},\"persistence\":{\"entry_count_basis\":\"monotonic observed journal entries plus server admissions, not inferred historical permission\",\"journal_entries\":0,\"retained_stops\":[]},\"breaches\":[],\"status\":\"clear\",\"remaining_trades\":20,\"post_loss\":{\"last_loss_trade_id\":null,\"last_loss_at\":null,\"entry_tf\":\"5m\",\"entry_tf_required\":false,\"cooldown_until\":null,\"next_candle_until\":null},\"message\":\"No personal stop. 20 entries remain under the preselected 20-entry cap. This is not market/setup approval.\",\"permission\":{\"allowed\":true,\"can_override\":false,\"state\":\"clear\"},\"session_time\":{\"account_id\":1,\"advisory\":true,\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"timezone\":\"UTC\",\"saved_limit_minutes\":null,\"scope\":\"Manual marker only, not measured broker/chart screen time or execution permission\",\"state\":\"off\",\"limit_minutes\":null,\"elapsed_minutes\":null,\"started_at\":null,\"ended_at\":null,\"message\":\"Session-duration warning is Off (optional).\"},\"post_loss_journal\":{\"pending_count\":0,\"pending\":[],\"completed_count\":0,\"timezone\":\"UTC\",\"rule_date\":\"2026-10-12\",\"scope\":\"Observed current-day known losses, required writing; not a broker-time entry violation or all historical incomplete journals\"},\"routine\":{\"account_id\":1,\"state\":\"complete\",\"complete\":true,\"cycle\":{\"id\":1,\"user_id\":1,\"account_id\":1,\"cycle_date\":\"2026-10-12\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\",\"window_start\":\"14:00\",\"lead_minutes\":180,\"step_order\":\"ep17\",\"reset_at\":\"2026-10-12T11:00:00.000Z\",\"window_at\":\"2026-10-12T14:00:00.000Z\",\"expires_at\":\"2026-10-13T11:00:00.000Z\",\"selected_at\":\"2026-10-12T11:45:00.000Z\",\"meditation_state\":\"completed\",\"meditation_started_at\":null,\"meditation_elapsed_ms\":900000,\"completed_at\":\"2026-10-12T12:00:00.000Z\",\"completed_before_window\":1,\"first_action_at\":null,\"dst_policy\":\"earlier fold / shift forward gap\"},\"order\":[\"calendar\",\"plan\",\"charts\",\"meditation\",\"check_in\"],\"steps\":[{\"cycle_id\":1,\"step\":\"calendar\",\"completed_at\":\"2026-10-12T11:45:00.000Z\",\"payload\":{\"reviewed\":true,\"method\":\"manual_external\",\"summary\":\"DECLARED actual preparation review\",\"source\":\"human_calendar_review\"}},{\"cycle_id\":1,\"step\":\"plan\",\"completed_at\":\"2026-10-12T11:45:00.000Z\",\"payload\":{\"reviewed\":true,\"source\":\"manual_plan_text\",\"plan_text\":\"DECLARED actual own daily plan\"}},{\"cycle_id\":1,\"step\":\"charts\",\"completed_at\":\"2026-10-12T11:45:00.000Z\",\"payload\":{\"reviewed\":true,\"daily_bias\":\"neutral\",\"htf_range\":\"DECLARED range review\",\"alert_status\":\"not_applicable\",\"alert_note\":\"No fixture alert\",\"source\":\"human_chart_review\"}},{\"cycle_id\":1,\"step\":\"meditation\",\"completed_at\":\"2026-10-12T12:00:00.000Z\",\"payload\":{\"source\":\"server_running_time\",\"minimum_ms\":900000,\"elapsed_ms\":900000,\"actual_meditation_verified\":false}},{\"cycle_id\":1,\"step\":\"check_in\",\"completed_at\":\"2026-10-12T12:00:00.000Z\",\"payload\":{\"source\":\"human_morning_check_in\",\"answers\":{\"calm\":true,\"clear\":true,\"following_plan\":true,\"would_take_if_up_big\":true}}}],\"check_in_attempts\":[{\"id\":1,\"cycle_id\":1,\"captured_at\":\"2026-10-12T12:00:00.000Z\",\"passed\":1,\"answers\":{\"calm\":true,\"clear\":true,\"following_plan\":true,\"would_take_if_up_big\":true}}],\"next_step\":null,\"meditation\":{\"minimum_ms\":900000,\"state\":\"completed\",\"elapsed_ms\":900000,\"actual_meditation_verified\":false},\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"message\":\"Current routine steps acknowledged; this is preparation, not reusable entry/mental/news permission.\",\"scope\":\"Explicit human preparation and server timer only; no broker window/actual meditation or live mental/news proof\"},\"admission\":{\"allowed\":true,\"can_override\":false,\"state\":\"admitted\",\"override_reason\":null,\"action\":\"save_signal\"},\"capture_basis\":\"fresh server admission state, valid only for this recorded action\"}"
+        },
+        "current_context": true,
+        "note": "DECLARED own value setup I did not act on",
+        "reason_code": "hesitation",
+        "value_setup": 1
+      }
+    },
+    {
+      "label": "manualvalue miss split from app-confirmedeligible, both clearlyselfreported",
+      "passed": false,
+      "detail": {
+        "opportunities": 2,
+        "reported_missed_value": 2,
+        "app_eligible_missed": 1,
+        "unverified_value_missed": 1,
+        "acted_app": 0,
+        "acted_declared": 0,
+        "unreviewed": 0,
+        "unknown": 0,
+        "not_taken": 0,
+        "not_value": 0,
+        "prior": 0,
+        "unavailable": 0,
+        "imported": 0,
+        "complete_missed_total": 2,
+        "broker_verified": false,
+        "basis": "Count explicit OWNED opportunity record-day decisions/links, not unused signals or simulated wins. Self-reported value/inaction, not broker/causal/probability/permission proof.",
+        "unattributed_legacy_signals": 0
+      }
+    },
+    {
+      "label": "M99 live periodpreview consumes current opportunity record-day counts andunknowncoverage",
+      "passed": false
+    },
+    {
+      "label": "new opportunitydecision stalesliveperiodcontext butsavedfrozen misscount retained",
+      "passed": false,
+      "detail": true
+    },
+    {
+      "label": "M99 original frozenfinancialmetrics unchanged by opportunitycorrection",
+      "passed": true
+    },
+    {
+      "label": "existing modeledsignal outcome annotated2R, not realisedjournalmoney ormissedprofit",
+      "passed": false
+    },
+    {
+      "label": "record-only historicalfinancialsave neverclaims freshautomaticacted link",
+      "passed": true
+    },
+    {
+      "label": "material mismatch optional source warns withoutvetoing financial truth/no boguslink",
+      "passed": false
+    },
+    {
+      "label": "legacyunattributed/no-fill signal creates coveragegap, not automaticmiss/0completehistory",
+      "passed": true
+    },
+    {
+      "label": "post-financial observer outage warns, truthfulnewentry remains committed",
+      "passed": false
+    },
+    {
+      "label": "optional opportunityread outage explicitunavailable, financeAPI unchanged/legal",
+      "passed": false
+    }
+  ],
+  "scope": "M100 actual source-to-financial linkage/report/frozen review readers: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

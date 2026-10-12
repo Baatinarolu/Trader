@@ -18,6 +18,7 @@ const Screenshots = require('../screenshots');
 const Confluences = require('../confluences');
 const Emotions = require('../emotions');
 const PeriodReviews = require('../period-reviews');
+const Opportunities = require('../opportunities');
 const ProcessOutcomes = require('../process-outcomes');
 const BehaviorDays = require('../behavior-days');
 const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
@@ -375,7 +376,8 @@ router.post('/trades', requireAuth, async (req, res) => {
   }
   const saved = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
   const emotion=permission?.allowed&&written?await Emotions.observe(req.user.id,written,'entry','app_entry'):{};
-  res.json({ ok: true, permission, ...emotion, confluence_warnings:confluences.warnings, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
+  const association=permission?.allowed&&written?await Opportunities.autoLink(req.user.id,body.source_signal_id,written):{};
+  res.json({ ok: true, permission, ...emotion, ...association,confluence_warnings:confluences.warnings, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
 });
 
 // Optional reasons never grant entry, complete core writing or alter execution/risk.
@@ -418,7 +420,8 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
   }
   const phase=existing.status!=='open'&&trade.status==='open'&&req.body.record_only!==true?'entry':existing.status==='open'&&trade.status==='closed'?'exit':null;
   const emotion=phase?await Emotions.observe(req.user.id,written,phase,phase==='entry'?'app_entry':'app_close',existing.closed_at||''):{};
-  res.json({ ok: true, ...emotion, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
+  const association=phase==='entry'?await Opportunities.autoLink(req.user.id,req.body.source_signal_id,written):{};
+  res.json({ ok: true, ...emotion, ...association,trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
 });
 
 // M87 optional owned visual evidence is independent from financial truth,
@@ -578,6 +581,7 @@ router.get('/analytics', requireAuth, async (req, res) => {
   Object.assign(analytics, complianceOver(await complianceByTrade(req.user.id), closed.map((t) => t.id)));
   analytics.account = acc;
   analytics.open_positions = decorated.filter((t) => t.status === 'open');
+  analytics.opportunity_review=await Opportunities.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
   analytics.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
   analytics.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
   res.json(analytics);
@@ -663,6 +667,14 @@ for(const action of ['start','end'])router.post('/session-time/'+action,requireA
 });
 
 /* ----------------------------------------------------------------- journal */
+const opportunityRoute=fn=>async(req,res)=>{try{for(const key of ['id','link'])if(req.params[key]&&!/^[1-9]\d*$/.test(req.params[key]))throw Opportunities.invalid('Owned opportunity/signal/link not found.',404);res.json(await fn(req));}catch(e){if(e.code==='opportunity_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Optional opportunity evidence unavailable; financial/signal/permission state unchanged.'});}};
+router.get('/opportunities',requireAuth,opportunityRoute(req=>Opportunities.report(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null})));
+router.get('/opportunities/signals/:id',requireAuth,opportunityRoute(req=>Opportunities.readSignal(req.user.id,Number(req.params.id),req.query.account_id)));
+router.post('/opportunities/signals/:id',requireAuth,opportunityRoute(req=>Opportunities.review(req.user.id,Number(req.params.id),req.query.account_id,req.body)));
+router.get('/opportunities/:id',requireAuth,opportunityRoute(req=>Opportunities.read(req.user.id,Number(req.params.id))));
+router.post('/opportunities/:id/links',requireAuth,opportunityRoute(req=>Opportunities.link(req.user.id,Number(req.params.id),req.body)));
+router.post('/opportunities/:id/links/:link/retract',requireAuth,opportunityRoute(req=>Opportunities.retract(req.user.id,Number(req.params.id),Number(req.params.link),req.body)));
+
 const reviewRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='period_review_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Periodic review unavailable; financial/core/permission state unchanged.'});}};
 router.get('/reviews',requireAuth,reviewRoute(req=>PeriodReviews.list(req.user.id,req.query.account_id??null)));
 router.get('/reviews/template',requireAuth,reviewRoute(req=>{const p=PeriodReviews.period(req.query.kind,req.query.date);return PeriodReviews.read(req.user.id,req.query.account_id,p.kind,p.start);}));
@@ -1204,6 +1216,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
     exported_at: new Date().toISOString(), version: 1,
     confluence_labels:(await Confluences.vocabulary(userId)).labels,
     period_reviews:await PeriodReviews.exportOwned(userId),
+    opportunity_history:await Opportunities.exportOwned(userId),
     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
     strategies: (await db.prepare('SELECT * FROM strategies WHERE user_id=?').all(userId)).map(parseStrategy),
@@ -1308,9 +1321,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
 // Actual transaction insert IDs (never raw backup IDs), with optional media
 // warnings separate from financial parsing. Storage failure rolls back together.
 function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
-async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
   for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);return n;
+  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);return n;
 });}
 
 function parseCsv(text) {
@@ -1336,7 +1349,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
   const data = req.body && req.body.data ? req.body.data : req.body;
   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
   const userId = req.user.id;
-  const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews);
+  const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
   const accountMap = Object.create(null);
   const instruments = await instrumentMap(userId);
   const tz = (await settingsOf(req)).timezone;
@@ -1382,9 +1395,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
       });
     }
-    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings });
+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,opportunity_warnings:opportunities.warnings });
 });
 
 /* ---------------------------------------------------------------- settings */
@@ -1421,7 +1434,7 @@ router.put('/settings', requireAuth, async (req, res) => {
 router.post('/demo/seed', requireAuth, async (req, res) => {
   const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
   const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings });
+  res.json({ok:true,inserted});
 });
 
 /**

@@ -1,0 +1,20 @@
+{
+  "app": "/tmp/m100-freshness-stage/app",
+  "pass": 2,
+  "fail": 1,
+  "results": [
+    {
+      "label": "decision original clock preserved HISTORICAL, receivingclock distinct/no renewed APP action",
+      "passed": true
+    },
+    {
+      "label": "second destination doesnotreplace original decisiontime with first receivingclock",
+      "passed": true
+    },
+    {
+      "label": "invalid future originaldecisionclock OMITTED with warning even inside historical metadata",
+      "passed": false
+    }
+  ],
+  "scope": "M100 distinct original decision versus receiving clocks: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

@@ -889,3 +889,90 @@ APP budgets (not course rules):4000chars/question,300single-line focus,1000amend
 snapshot.20MBselected-file/25MBbody limits unchanged, no silent clipping. Review
 artifacts never complete required trade/loss writing, grade/resize risk or prove
 human/mental/meditation/broker/provider/pixels/production/causal edge/70% wins.
+
+
+## M100 — owned recorded opportunities, explicit decisions and journal association
+
+No original trade/signal columns or status/price/probability/grade/score backfill.
+Three owned additive tables: signal_opportunities (immutable origin/snapshot/hash/
+account/capture source/clock), opportunity_decisions (immutable human revisions),
+opportunity_trade_links (immutable link/retract/original-entry cycle facts).
+Owner deletion cascades; signal/account/trade deletion NULLs FKs while original keys
+and snapshots persist. Not a sealed/database-admin-tamper-proof vault.
+
+Authenticated saved analysis/refined-plan/GET-analyse-save/webhook-save routes
+optionally observe their actual returned signal IDs AFTER commit, source app_analysis
+or app_declared_plan, original server account/permission and plan snapshot. Observation
+fault warns, never undoes saved signal or manufactures original eligibility. Legacy/
+direct unobserved background saves remain unattributed, no backfill. A original
+personal-stop exception isn't an APP-confirmed should-have-taken plan. Manual/caller
+refined plan is not a server technical-gate certificate; B/C/engine rules unchanged.
+
+- `GET /opportunities?account_id=&from=&to=` owned report, UTC server opportunity
+  record day, not execution/close day. Optional canonical account/UTC range.
+- `GET /opportunities/signals/:id?account_id=` canonical owned signal/original
+  account context and displayed revision; no automatic legacy capture write.
+- `POST /opportunities/signals/:id?account_id=` only `{revision,decision,
+  value_setup:true|false|null,reason_code:null|fear|hesitation|distraction|other,note}`.
+  Decisions unknown/not_taken/not_value/missed_value. Missed requires your true
+  own-plan value judgment, reason and note. Missing review not none/acted/missed.
+  Legacy first declaration gets retrospective source/new receipt, not past appgate.
+- `GET /opportunities/:id` owns actual capture/archive, including imported/orphan
+  source; no foreign signal/trade lookup authority from old IDs.
+- `POST /opportunities/:id/links` only `{revision,trade_id:positive_integer,note}`;
+  actual owned same-account/market/direction journal, source human_link. No fuzzy
+  symbol/time reconciliation or broker execution assertion.
+- `POST /opportunities/:id/links/:link/retract` only `{revision,note}` corrects an
+  own active association, appends history; no trade deletion/cap refund.
+
+400 invalid body/value/reason,404 missing/foreign/noncanonical,409 unseen record/
+review/link change or contradictory missed+active-link,503 actual optional evidence
+failure. Identical current decision/link retry no duplicate. Original capture facts
+and decision/link versions SQL UPDATE immutable except true FK nullification.
+Active same journal entry cycle can't be credited across two different opportunities.
+Prior missed words remain in history after later linkage or correction.
+
+Actual prospective trade POST/guarded reopen accepts optional literal positive
+source_signal_id. Actual saved written row/admission/clock and exact saved entry/
+stop/first target/model/TF required for automatic app_trade_link AFTER finance commit.
+Record-only/history not automatically acted. Wrong/foreign/stale/material mismatch/
+observer outage returns opportunity_warnings but keeps financial truth. Optional
+M100 never grants admission, replaces routine/emotion/core/post-loss review or
+changes grade/size/risk/geometry/targets/stops/RR/floors/window/daily scores.
+
+APP-confirmed original context vs declared/legacy/unverified value report displayed.
+Current plan correction =>prior, bad owner/source/hash/chronology=>unavailable. Future
+origin or observation before creation unavailable. App-entry/declaration link validates
+original owner/account/cycle/hash/clock; actual deleted/corrected journal remains an
+original association, not newly missed. No actual broker order proof.
+
+Report summary distinguishes reported_missed_value,app_eligible_missed,
+unverified_value_missed,acted_app,acted_declared,unknown/unreviewed/not_value/
+not_taken/prior/unavailable/imported/value_unknown,legacy/unassigned evidence.
+complete_missed_total NULL for incomplete coverage, no zero universe certificate.
+Original planned first-target RR, and valid already resolved stored MODEL R, are
+side annotations—not realised money, lost profit, causal counterfactual or prediction.
+Pending/no_fill/expired/future/contradictory/missing model outcome NULL, not0. Existing
+resolver/native signal metrics remain compatibility output, no new fill/path/cost
+assumptions. No financial win-rate/expectancy/sizing or70% claim from this cohort.
+
+Analytics/Saved Signals/M99 new live/frozen preview adds opportunity_review under
+full own account/date scope. Old completed snapshots remain unchanged; new decision
+changes stale live review revision, not old financial baseline. ENTRY/close/record-day
+bases distinct. Actual Saved Signals whole cache/owner/token/serial/failure guards,
+review/form/link/retract/archive UI and actual409draft/reload/503retention.
+
+JSON backup opportunity_history `{version:1,records:[{capture,decisions,links}]}`;
+standalone history isn't trade CSV. Import appends new destination-owned capture IDs/
+keys/receiving receipt, source imported, no live native signal pointer/signal creation/
+trade link/action/eligibility replay. Original declarations in historical metadata,
+clocks unverified/invalid omitted with warnings, preserved across re-export/restore.
+Imported decisions excluded current primary action/miss proof. Bad optional data
+warns while truthful finance imports; actual store outage rolls back whole request.
+Missing table permits financial backup explicit unavailable marker; restore warning,
+not invented empty history. Settings warning-bearing success remains visible.
+
+APP budgets:notecap2000,500portable captures/50decisions-links each/250KBrecord;
+20MBselected-file/25MBbody unchanged, no silent clipping/automaticdedupe. Independently
+bounded inherited M99 `/demo/seed` response repaired to `{ok,inserted}` after actual
+sample seeding; no sample data/grade/risk policy change or extra audit closure.

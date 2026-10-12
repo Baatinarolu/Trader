@@ -1,0 +1,13 @@
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 99621e6..d2e0b65 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -1434,7 +1434,7 @@ router.put('/settings', requireAuth, async (req, res) => {
+ router.post('/demo/seed', requireAuth, async (req, res) => {
+   const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
+   const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
+-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings });
++  res.json({ok:true,inserted});
+ });
+ 
+ /**

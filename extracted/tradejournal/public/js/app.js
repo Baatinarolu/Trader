@@ -356,7 +356,7 @@
     },
 
     async saveTrade(form, id, close, andNew) {
-      const emotionContext=Views.emotions?.context();
+      const emotionContext=Views.emotions?.context(),opportunityContext=Views.opportunities?.ctx();
       let payload;
       try { payload = form.collect(); } catch (e) { return this.toast(e.message, 'err'); }
       try {
@@ -366,6 +366,7 @@
         };
         const d = form.requiresAdmission() ? await this.runGuarded(operation,form.guardrailState()) : await operation(null);
         if (!d) return; // cancelled required-reason dialog, no request/admission
+        if(!Views.opportunities||Views.opportunities.same(opportunityContext))for(const warning of d.opportunity_warnings||[])this.toast(warning,'warn');
         Store.invalidate();
         close();
         const t = d.trade || {};
