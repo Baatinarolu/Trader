@@ -1,0 +1,8 @@
+FAIL actual old fields not guessed into new nullable confluence evidence "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/trades/1/confluences</pre>\n</body>\n</html>\n"
+FAIL actual owned labels cap/dedupe/JSON roundtrip/source/server time {"status":404,"data":"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/trades/1/confluences</pre>\n</body>\n</html>\n"}
+ok ALL financial/core/grade/permission/legacy fields untouched by separate label edit
+TypeError: Cannot read properties of undefined (reading 'recorded_at')
+    at /home/user/Trader/analysis/probe-m88-confluence-contracts.js:8:537
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async finish (/home/user/Trader/analysis/m88-test-support.js:9:50)
+M88 owned confluence storage/portable contracts: 1 passed, 3 failed

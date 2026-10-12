@@ -240,6 +240,13 @@ CREATE TABLE IF NOT EXISTS bot_signals (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     resolved_at TEXT
   );
+-- M88 reusable, user-owned free-text vocabulary, NOT market-model checklist facts.
+CREATE TABLE IF NOT EXISTS confluence_labels (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  label_key TEXT NOT NULL,
+  label TEXT NOT NULL,
+  PRIMARY KEY(user_id,label_key)
+);
 CREATE TABLE IF NOT EXISTS trade_screenshots (
     trade_id INTEGER NOT NULL REFERENCES trades(id) ON DELETE CASCADE,
     role TEXT NOT NULL CHECK(role IN ('htf','mtf','ltf')),
@@ -652,6 +659,8 @@ async function migrate() {
   await add('trades','stop_honoured_source','TEXT');
   await add('trades','stop_honoured_recorded_at','TEXT');
   await add('trades','execution_review_hash','TEXT');
+  // M88 additive NULL, no inferred labels/source/entry-time history on old trades.
+  for(const field of ['entry_confluences','entry_confluences_source','entry_confluences_recorded_at'])await add('trades',field,'TEXT');
   await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
   await add('journal_entries','pre_market_basis','TEXT');
   await add('journal_entries','pre_market_recorded_at','TEXT');

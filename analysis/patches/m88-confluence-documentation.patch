@@ -1,0 +1,153 @@
+diff --git a/README.md b/README.md
+index 9bead1c..2261b15 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,39 @@
+ # TradeJournal Pro
+ 
++## M88 — distinct entry confluences (2026-10-12)
++
++Use **Entry reasons** in the trade log or review link in the saved financial form,
++core-writing dialog or UTC day journal. On a new trade, type one market/setup
++reason and **Add**; prior names appear in your own reusable dropdown. Commas stay
++inside a label, not delimiters. Pick the actual **two to five** reasons, not10
++invented ones. One honest reason is partial; **Unknown** differs from explicitly
++**None**. Optional reasons never replace writing/emotion or grant entry/sizing.
++Old trades and bots without an explicit human declaration remain unknown.
++
++Save financial edits first; the separate saved-reasons editor uses the displayed
++current revision. Unseen edits409 require deliberate reload; storage503 retains
++the old field/time and finance. Only the new confluence columns are changed.
++Human/imported source and server declaration/receiving time are shown: **not
++verified original entry-time/broker/causal intent proof**, possibly retrospective.
++M89 fresh emotion remains open. Labels are separate from tags, mistakes, entry
++models/checklists, execution grades and HTF/MTF/LTF images; nothing backfilled.
++
++**Analytics → Segments → Entry confluences** shows closed-trade descriptive
++associations with overlapping labels, sample counts, known outcome denominators,
++unknown net/R and human/imported counts. Do not add groups as independent trades.
++Below30 closed trades per label: descriptive only;30+ still does not establish
++prediction, causality, market edge, permission or risk advice. Course30 and M103's
++deliberate n>=5 stay unchanged. No70% win-rate promise or model/exit retuning.
++
++JSON backup carries trade reasons plus reusable prior-unused vocabulary; CSV
++`entry_confluences` is a quoted **JSON-array cell**, not a comma-list of reasons.
++Imports use new owned IDs/source/time, not backup entry-time/owner proof. Bad
++optional evidence warns without vetoing financial truth; actual storage failure
++rolls back the request. Warning-bearing restore stays visible. JSON unused-choice
++restore budget5000 per request with an explicit warning if exceeded; CSV does not
++carry unused choices. Repeat restore can duplicate trades. Existing20MB file
++selection/25MB API body limits apply; split larger backups, never silent clipping.
++
+ ## M87 — saved HTF / MTF / LTF chart references (2026-10-11)
+ 
+ Use **Visual evidence** in the trade log, saved-trade form, core-writing dialog
+diff --git a/docs/API.md b/docs/API.md
+index edea497..b0c1ad8 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -544,3 +544,60 @@ as money fields. New `trade_extremes_basis` labels that compatibility basis, and
+ All ranking/grade/outcome associations are descriptive, self-reported and
+ retrospective, not statistical edge, causation, live emotion/provider/broker proof,
+ fresh entry readiness, permission or risk advice.
++
++
++## M88 — human entry-confluence declarations
++
++Three nullable trade columns: `entry_confluences` (canonical JSON-array text,
++NULL unknown), `entry_confluences_source` and `entry_confluences_recorded_at`.
++`[]` explicit none,1 partial,2–5 selected. Never inferred from tags/mistakes,
++emotion/model/checklist/images. Independent from unchanged financial normalizer,
++core/execution/routine/permission and risk inputs. User-owned reusable vocabulary
++retains past choices after deselection/deletion, user FK cascade.
++
++- `GET /confluences` → own reusable `{labels:[strings]}` only.
++- `GET /trades/:id/confluences` → canonical owned `trade_id`, `account_id`,
++  same-snapshot `saved_record:{symbol,status,entry,stop,exit}` and `review`.
++- `PUT /trades/:id/confluences` → **only** `{labels:null|[]|[strings],revision}`.
++  Required displayed SHA covers all63 current trade fields, including original
++  finance/notes/excursions/legs/reviews/clocks and confluence evidence. Malformed400,
++  missing/foreign/noncanonical trade404, stale409, real storage503 atomic rollback.
++  Valid label replacement updates ONLY these3 new columns. Identical valid retry
++  does not invent a new clock. Existing financial PUT/close preserves reasons;
++  use the dedicated editor, not an unacknowledged optional-body overwrite.
++- `POST /trades` accepts optional `entry_confluences` array (or explicit null),
++  validated/canonicalised separately inside the actual insert/admission transaction.
++  Invalid optional declaration warns/omits, financial truth not discarded. No
++  default “none”; no new checklist/entry requirement or score/sizing authority.
++
++`review` has state unknown/none/partial/selected/unavailable, nullable labels,
++source `human_declared`/`imported`, server recorded/received time, displayed revision
++and **entry_time_verified:false** always. Can be retrospective; never broker/live
++capture proof or immutable confluence history. Corrupt/future metadata is
++unavailable, not guessed. Corrections retain declarations until deliberate edit;
++no automatic validation of whether a label really explained an original entry.
++
++`GET /analytics` adds `by_confluence` and `confluence_coverage`, exactly closed
++rows only, filter/owner scope preserved. A trade appears once per normalised label,
++may appear in multiple labels; groups are not independent/disjoint. Coverage
++separates unknown/none/partial/selected/unavailable. Rows expose n, known/unavailable
++net counts, wins/losses/breakeven, known-outcome win denominator, nullable all-n
++net/R/expectancy and labelled known-net subtotal/known-R count/mean, human/imported
++counts. Missing net/R is never0 or∞; R needs finite positive risk and consistency.
++`sample_floor:30`/`sample_ready` annotate recorded closed count only—not edge,
++causation, valid outcome availability, permission or sizing. Existing legacy
++analytics numerics unchanged. M103 n>=5 is not replaced.
++
++JSON trade exports include the3 fields, and JSON top-level `confluence_labels`
++backs up reusable strings even when unused. CSV `entry_confluences` is a JSON
++array **inside the CSV cell**, escaped normally (commas/quotes in labels survive);
++source/time informational. Blank CSV means unknown, `[]` explicit none. Restore
++uses new actual owned trade IDs, forced imported source/new receiving time; raw
++source/old-clock/owner IDs aren't replayed. Optional malformed labels/choices have
++bounded `confluence_warnings` while truthful finance still imports. Real optional
++storage failure rolls back finance/media/choices together. Unused vocabulary
++restore budget5000 labels/request, explicit omission warning above—not clipping.
++Trade labels themselves also populate choices. CSV does not carry unused choices;
++JSON is the full vocabulary backup. Historical insertion is not upsert/deduping.
++Existing20MB selected-file/25MB body limits unchanged. UI presents warnings without
++auto-closing/refreshing a warning-bearing restore. M89 capture/M106/M111/M112 open.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index b7ef885..1af75cb 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -333,3 +333,39 @@ These changes do not change
+ entry models, target/stop geometry, RR floors, entry setup-grade policies, the course's
+ 30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
+ edge, win-rate improvement, live-provider or production-deployment claim is made.
++
++
++## M88 — optional entry reasons, NEVER authority to trade
++
++Dedicated human market/setup reasons remain independent from general tags,
++mistakes, emotion, core writing, entry model/checklist, execution review and
++HTF/MTF/LTF screenshots. NULL unknown != [] explicit none;1 honest partial is
++legal,2–5 course guidance/max5 avoids invented reasons. No historical copying,
++automatic confluence capture, label weighting or grade/risk/permission change.
++
++Separate owned saved-record revision edits only the3 nullable confluence fields;
++all original trade clocks/review hashes/financial values remain unchanged.
++Stale409 needs explicit reload, invalid editor400, actual storage503 rollback.
++New/portable optional malformed evidence warns rather than vetoing a truthful
++financial record. Close/correction/deletion/import/record-only remain legal;
++confluences never complete required loss writing or refund a cap/loss/timer/routine
++obligation. Account/user/token changes and late/closed/replaced callbacks guarded.
++
++Human/imported declarations and server declaration/receiving time are **not
++verified original entry-time or broker capture**, may be retrospective and are
++not append-only histories. Imports can't replay human timing/ownership/workflow
++proof. Reusable vocabulary is user-owned and survives deselection/deleting trades;
++JSON backs up unused choices, CSV only trade-row reasons. Bad optional import
++warnings remain visible. Storage failure rolls back the request rather than
++claiming complete success. Original20MB file/25MB body limits unchanged; optional
++unused vocabulary restore budget5000 with explicit omission warning, never silent
++clipping. Repeat historical restore can duplicate trades.
++
++Closed-only confluence cohorts overlap; each trade counts once per normalised
++label, not one independent sample per label. Known denominators/unknown outcomes
++and import mix explicit. Missing/contradictory net/R isn't0 or∞. Course30 is a
++record-count review annotation, not proof of edge/known-outcome completeness or
++permission. Retrospective associations don't establish causality/prediction and
++must not resize risk. Deliberate M103 n>=5/B-C tradeability, existing weights,
++grades, factors, default risk, stops/targets/RR/geometry all unchanged.
++M89 fresh emotion and M106/M111/M112 remain TODO; M108 remains partial.

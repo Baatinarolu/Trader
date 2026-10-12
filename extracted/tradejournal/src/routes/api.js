@@ -15,7 +15,8 @@ const RR = require('../routine-records');
 const Routine = require('../routine');
 const Execution = require('../execution-review');
 const Screenshots = require('../screenshots');
-const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t)});
+const Confluences = require('../confluences');
+const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
 const O = require('../options');
 const Exp = require('../exposure');
 const Prop = require('../prop');
@@ -326,6 +327,7 @@ router.get('/trades/:id', requireAuth, async (req, res) => {
 router.post('/trades', requireAuth, async (req, res) => {
   const instruments = await instrumentMap(req.user.id);
   const body = req.body || {};
+  const confluences=Confluences.optional(body.entry_confluences);
   const spec = instruments[String(body.symbol || '').toUpperCase()] || null;
   const accountId = num(body.account_id, 0) || (await db.prepare('SELECT id FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
   if (!body.symbol) return res.status(400).json({ error: 'Symbol is required' });
@@ -352,11 +354,11 @@ router.post('/trades', requireAuth, async (req, res) => {
       catch(e){throw Guards.inputError(e.message);}
       const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade',overrideReason:body.override_reason},async (store,daily) => {
         const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
-        return {id:await T.insert(store,req.user.id,entry),permission:Guards.actionPermission(daily)};
+        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,permission:Guards.actionPermission(daily)};
       });
       id = out.id; permission = out.permission;
     } else {
-      const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>({id:await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')})}));
+      const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>{const id=await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')});await Confluences.attachOn(store,req.user.id,id,confluences);return {id};});
       id = out.id; permission = {allowed:false,state:'record_only',can_override:false};
     }
   } catch(e) {
@@ -368,8 +370,14 @@ router.post('/trades', requireAuth, async (req, res) => {
     for (const rc of body.rule_checks) await ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
   }
   const saved = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
-  res.json({ ok: true, permission, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
+  res.json({ ok: true, permission, confluence_warnings:confluences.warnings, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
 });
+
+// Optional reasons never grant entry, complete core writing or alter execution/risk.
+const confluenceRoute=fn=>async(req,res)=>{try{if(req.params.id&&!/^[1-9]\d*$/.test(req.params.id))throw Confluences.invalid('Trade not found.',404);res.json(await fn(req));}catch(e){if(e.code==='confluence_invalid')return res.status(e.status).json({error:e.message,code:e.code});return res.status(503).json({error:'Entry confluence evidence unavailable; existing financial truth unchanged.'});}};
+router.get('/confluences',requireAuth,confluenceRoute(req=>Confluences.vocabulary(req.user.id)));
+router.get('/trades/:id/confluences',requireAuth,confluenceRoute(req=>Confluences.read(req.user.id,Number(req.params.id))));
+router.put('/trades/:id/confluences',requireAuth,confluenceRoute(req=>Confluences.change(req.user.id,Number(req.params.id),req.body)));
 
 router.put('/trades/:id', requireAuth, async (req, res) => {
   const id = Number(req.params.id);
@@ -1141,7 +1149,7 @@ router.get('/export/csv', requireAuth, backup(async (req, res) => {
   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
     'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
-    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json'];
+    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json', 'entry_confluences', 'entry_confluences_source', 'entry_confluences_recorded_at'];
   const esc = (v) => {
     const s = v === null || v === undefined ? '' : String(v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -1156,6 +1164,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
   const userId = req.user.id;
   const data = {
     exported_at: new Date().toISOString(), version: 1,
+    confluence_labels:(await Confluences.vocabulary(userId)).labels,
     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
     strategies: (await db.prepare('SELECT * FROM strategies WHERE user_id=?').all(userId)).map(parseStrategy),
@@ -1193,7 +1202,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
     entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
     tags: findCol(['tags', 'tag', 'labels']),
     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
-    screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
+    entry_confluences:findCol(['entry_confluences']), screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
   };
   if (map.symbol < 0) return res.status(400).json({ error: 'Could not find a symbol/ticker column in the CSV.' });
@@ -1245,7 +1254,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
         }
         const media=Screenshots.parsePortable(map.screenshot_views_json>-1?r[map.screenshot_views_json]:undefined,{json:true});
         trade.screenshot_url=Screenshots.legacyImport(map.screenshot_url>-1?r[map.screenshot_url]:undefined,media);
-        collected.push({trade,media});
+        collected.push({trade,media,confluences:Confluences.optional(map.entry_confluences>-1?r[map.entry_confluences]:undefined,{json:true})});
         inserted++;
       } catch (e) { skipped++; if (errors.length < 5) errors.push(`Row ${i + 1}: ${e.message}`); }
     }
@@ -1259,10 +1268,10 @@ router.post('/import/csv', requireAuth, async (req, res) => {
 
 // Actual transaction insert IDs (never raw backup IDs), with optional media
 // warnings separate from financial parsing. Storage failure rolls back together.
-function mediaFeedback(collected){return {media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
-async function importTradesWithMedia(userId,collected,extras=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
-  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);}
-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);return n;
+function mediaFeedback(collected){return {confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});}
+  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);return n;
 });}
 
 function parseCsv(text) {
@@ -1288,6 +1297,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
   const data = req.body && req.body.data ? req.body.data : req.body;
   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
   const userId = req.user.id;
+  const vocabulary=Confluences.portableVocabulary(data.confluence_labels);
   const accountMap = Object.create(null);
   const instruments = await instrumentMap(userId);
   const tz = (await settingsOf(req)).timezone;
@@ -1312,7 +1322,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
       if (!trade.account_id) continue;
       const media=Screenshots.parsePortable(t.screenshots);
       trade.screenshot_url=Screenshots.legacyImport(t.screenshot_url,media);
-      collected.push({trade,media});
+      collected.push({trade,media,confluences:Confluences.optional(t.entry_confluences)});
       inserted++;
     }
     for (const s of (data.strategies || [])) {
@@ -1333,9 +1343,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
       });
     }
-    try{media_imported=await importTradesWithMedia(userId,collected,stmts);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20) });
 });
 
 /* ---------------------------------------------------------------- settings */
@@ -1372,7 +1382,7 @@ router.put('/settings', requireAuth, async (req, res) => {
 router.post('/demo/seed', requireAuth, async (req, res) => {
   const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
   const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20) });
 });
 
 /**

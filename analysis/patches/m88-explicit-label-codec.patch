@@ -1,0 +1,19 @@
+diff --git a/src/confluences.js b/src/confluences.js
+new file mode 100644
+index 0000000..28ea37d
+--- /dev/null
++++ b/src/confluences.js
+@@ -0,0 +1,13 @@
++'use strict';
++/** M88 human-declared entry reasons, NOT model checks/emotions/mistakes,
++ * entry-time/broker proof, grades or risk inputs. NULL unknown != explicit []. */
++const crypto=require('crypto');
++const key=s=>s.normalize('NFC').trim().replace(/\s+/gu,' ').toLowerCase();
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'confluence_invalid',status});}
++function labels(value){
++  if(value===null)return null;
++  if(!Array.isArray(value)||value.length>20)throw invalid('Use an explicit array of at most5 distinct plain-text entry reasons, or null for unknown.');
++  const seen=new Set(),out=[];for(const raw of value){if(typeof raw!=='string'||/[\x00-\x1f\x7f]/.test(raw))throw invalid('Confluences must be single-line plain text.');const s=raw.normalize('NFC').trim().replace(/\s+/gu,' ');if(!s||s.length>80)throw invalid('Each entry confluence needs1–80 characters.');const k=key(s);if(!seen.has(k)){seen.add(k);out.push(s);}}
++  if(out.length>5)throw invalid('Choose at most5 confluences you actually used; do not pad your reasons.');return out;
++}
++module.exports={key,labels,invalid};

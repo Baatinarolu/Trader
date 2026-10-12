@@ -169,7 +169,7 @@
         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
-        <td class="tiny"><button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+        <td class="tiny"><button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
     let routineDirty=false;
@@ -179,6 +179,7 @@
       selection.innerHTML=`<span>Daily routine completion — explicit self-report (never workflow permission)</span><select id="j-pre-market"><option value="" ${flag===null?'selected':''}>Unknown / not recorded</option><option value="true" ${flag===true?'selected':''}>Completed — my self-report</option><option value="false" ${flag===false?'selected':''}>Not completed — my self-report</option></select><div class="field-note">Current account only, separate from the shared daily note and actual ordered/timed workflow. Unrelated note edits preserve this flag/source/time. Retrospective self-report cannot rewrite first-entry/on-time evidence.</div>`;
       U.$('#j-pre-market',selection).addEventListener('change',()=>{routineDirty=true;});body.prepend(selection);
     }
+    body.querySelectorAll('[data-day-confluences]').forEach(b=>b.addEventListener('click',()=>Views.confluences?Views.confluences.open(Number(b.dataset.dayConfluences)):global.App.toast('Entry reasons UI unavailable.','err')));
     body.querySelectorAll('[data-day-screenshots]').forEach(b=>b.addEventListener('click',()=>Views.screenshots?Views.screenshots.open(Number(b.dataset.dayScreenshots)):global.App.toast('Visual evidence UI unavailable.','err')));
     body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
     if(Views.lossWritingCard)body.appendChild(Views.lossWritingCard({pending:(day.loss_reflections||[]).filter(r=>r.completed_at===null),pending_count:(day.loss_reflections||[]).filter(r=>r.completed_at===null).length}));

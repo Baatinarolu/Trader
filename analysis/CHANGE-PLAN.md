@@ -1,6 +1,39 @@
 # Change plan — consolidated from Ep 0 through the current audit pass
 
-## Current M87 — three-timeframe visual evidence — 2026-10-11
+## Current M88 — explicit entry confluences — 2026-10-12
+
+**132:91 done /3 partial /38 TODO /0 no-action**, exact eight groups. Dedicated
+nullable human reasons, **unknown != explicit none**, honest1 partial and2–5
+recommended/max5; no tags/mistakes/emotion/model/image backfill. Reusable owned
+dropdown, actual new/saved trade UI/API and JSON/CSV portability with declared
+human/imported source/server receiving time, **not verified original entry time**.
+Saved revision/concurrent/token/account/outage guards; optional invalid imports
+warn without vetoing financial truth. Closed-only overlapping **by_confluence**
+and coverage visible in Analytics; known denominators/unknown outcomes explicit,
+course30 only a review annotation, no causal/predictive/70% or sizing claim.
+
+**M88 actual160/0 across8 probes**, execution260/0/routine321/0 unchanged.
+Original M87 **223/3**: three old migration shape assertions assume no added trade
+columns; retained, not silently rewritten. New actual b0c migration12/0 proves
+only3 nullable additions and prior finance/core/grades/images/caps/routine exact.
+RAW597/155/one90s timeout vs DECLARED isolated828/0; offline178/0,
+DECLARED market325/0, live70/1 with6 nonzero/5 summaryless. Native prepared
+b0c/current API121/0 each/Bots205/1 each: identical20 synthetic fills/0 mismatches
+and inherited>20-floor negative. Raw APIexit2/no summary/Bots201/5 retained.
+Smoke22/22 conditional DOM/0 style-console/**16 canvas limits/observed exit0**;
+initial90s tool timeout printed22/22/8canvas but exit unobserved, retained.
+
+Seven runtime stages+docs, actual b0c/pristine forward/reverse byte proofs,
+deterministic **123-source** ZIP/private exclusions guarded by
+`build-m88-confluence-artifacts.py`; exact artifact metadata in
+`patches/M88-CONFLUENCE-STAGES.json`, excluded archive SHA companion in
+`evidence/m88/archive-sha256.json`. [Full report](M88-ENTRY-CONFLUENCES.md).
+
+**Next M89 — timely emotion prompts/provenance.** M106/M111/M112 still TODO;
+M30/M103/M108 partial. All132 IDs/eight groups preserved. M87/M86 results below
+are historical milestones, not current all-green claims.
+
+## Historical M87 — three-timeframe visual evidence — 2026-10-11
 
 **132:90 done /3 partial /39 TODO /0 no-action**, exact eight groups. M87 is
 optional human-labelled HTF bias /MTF location-liquidity /LTF trigger evidence,

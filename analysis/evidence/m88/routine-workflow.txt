@@ -1,0 +1,44 @@
+ok reject out-of-order chart acknowledgment409
+ok Ep17 cannot skip calendar/plan/charts to start meditation
+ok calendar reviewed requires literal Boolean true: string
+ok calendar reviewed requires literal Boolean true: one
+ok calendar reviewed requires literal Boolean true: null
+ok calendar reviewed requires literal Boolean true: missing
+ok cannot spoof machine/live provider news review
+ok ack calendar stores explicit human source/time
+ok completed step snapshot cannot be rewritten
+ok foreign plan snapshot404
+ok own plan step snapshots exact stored plan, not client override
+ok later plan edit cannot retrospectively change reviewed snapshot
+ok reject incomplete or coercive chart human report daily_bias
+ok reject incomplete or coercive chart human report alert_status
+ok reject incomplete or coercive chart human report alert_note
+ok reject incomplete or coercive chart human report reviewed
+ok human chart bias/alert report stored without order-authority claim
+ok reject client-supplied elapsed/start completion proof400
+ok server starts actual next meditation step at own clock
+ok pause retains10m server elapsed
+ok two-hour paused gap cannot count toward meditation
+ok cannot complete paused timer with only10m409
+ok resume uses server clock, not client clock
+ok 14m59.999 active remains incomplete409
+ok inclusive15m active completes timer, still requires four checks
+ok strict Boolean readiness calm
+ok strict Boolean readiness clear
+ok strict Boolean readiness following_plan
+ok strict Boolean readiness would_take_if_up_big
+ok false morning answer retained but cannot complete
+ok all four literal true finishes actual current workflow
+ok late completion recorded as late, never on-time preparation
+ok repeat completion idempotent, no new completion time
+ok foreign cycle/account mutation404
+ok step mutation auth401
+ok cannot submit arbitrary or prior cycle409
+ok meditation-first prevents calendar bypass409
+ok variant meditation completes first, not whole routine
+ok explicit manual own plan allowed and labelled self-reported snapshot
+ok on-time variant complete preserves chosen sequence/context
+ok next reset actually removes current-cycle step/timer completion
+ok stale completed cycle not reusable after reset409
+ok routine reads/steps do not reset or fabricate mechanical day policy/admissions
+M64 routine workflow: 43 passed, 0 failed

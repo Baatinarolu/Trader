@@ -1,0 +1,27 @@
+FAIL literal nullable/none/partial/selected text normalisation null undefined
+FAIL literal nullable/none/partial/selected text normalisation [] undefined
+FAIL literal nullable/none/partial/selected text normalisation ["Sweep"] undefined
+FAIL literal nullable/none/partial/selected text normalisation ["Sweep","Order block"] undefined
+FAIL literal nullable/none/partial/selected text normalisation ["A","B","C","D","E"] undefined
+FAIL literal nullable/none/partial/selected text normalisation [" Sweep ","sweep","Order   block"] undefined
+FAIL literal nullable/none/partial/selected text normalisation ["Café","Café"] undefined
+FAIL literal nullable/none/partial/selected text normalisation ["level, reaction","\"quoted\" level"] undefined
+FAIL literal nullable/none/partial/selected text normalisation ["<img src=x>","Flip"] undefined
+FAIL reject malformed/ambiguous/over-budget undefined undefined
+FAIL reject malformed/ambiguous/over-budget "Sweep,Order block" undefined
+FAIL reject malformed/ambiguous/over-budget "[\"Sweep\"]" undefined
+FAIL reject malformed/ambiguous/over-budget 1 undefined
+FAIL reject malformed/ambiguous/over-budget false undefined
+FAIL reject malformed/ambiguous/over-budget {} undefined
+FAIL reject malformed/ambiguous/over-budget [null] undefined
+FAIL reject malformed/ambiguous/over-budget [""] undefined
+FAIL reject malformed/ambiguous/over-budget ["  "] undefined
+FAIL reject malformed/ambiguous/over-budget ["A",{}] undefined
+FAIL reject malformed/ambiguous/over-budget ["A","B","C","D","E","F"] undefined
+FAIL reject malformed/ambiguous/over-budget ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"] undefined
+FAIL reject malformed/ambiguous/over-budget ["a\u0000b"] undefined
+FAIL reject malformed/ambiguous/over-budget ["a\nb"] undefined
+FAIL reject malformed/ambiguous/over-budget ["A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A"] undefined
+FAIL pure codec no mutation, no guessed source/capture clocks/technical truth undefined
+FAIL case/spacing reusable key canonical, semantic alias not invented undefined
+M88 explicit confluence codec: 0 passed, 26 failed

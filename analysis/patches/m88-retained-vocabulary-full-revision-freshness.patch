@@ -1,0 +1,139 @@
+diff --git a/public/js/app.js b/public/js/app.js
+index acd85a8..0520edf 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -389,9 +389,10 @@
+             try {
+               const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value, account_id: Store.accountId });
+               out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`+(Views.screenshots?Views.screenshots.importResult(d):'');
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);
+               Store.invalidate();
+-              if(!d.media_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
+-              else this.toast('Financial import recorded; review optional media omissions below before closing.','ok');
++              if(!d.media_warnings?.length&&!d.confluence_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
++              else this.toast('Financial import recorded; review optional journal evidence omissions below before closing.','ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           },
+         }],
+diff --git a/public/js/views/confluences.js b/public/js/views/confluences.js
+index d079532..974ec82 100644
+--- a/public/js/views/confluences.js
++++ b/public/js/views/confluences.js
+@@ -3,8 +3,8 @@
+ (function(global){
+   'use strict';
+   const Views=global.Views=global.Views||{},U=global.U;let opened=0,widgetId=0;
+-  const context=()=>({account:global.Store.accountId,user:global.Store.user?.id});
+-  const same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id;
++  const context=()=>({account:global.Store.accountId,user:global.Store.user?.id,token:global.API.getToken()});
++  const same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id&&c.token===global.API.getToken();
+   const key=s=>s.normalize('NFC').trim().replace(/\s+/gu,' ').toLowerCase();
+   const hint='Pick the two to five market/setup confluences that actually caused you to take the trade, not10 invented reasons. One honest reason is partial; unknown is not none. Separate from tags, mistakes and emotion. Optional: not an entry gate, core-writing check, grade or sizing input.';
+   function editor(initial=null,choices=[]){
+@@ -35,6 +35,7 @@
+       }
+       draw();return global.App.modal({title:'Review entry confluences',body,wide:true,onClose:()=>{alive=false;},actions:[{label:'Close — financial/core state unchanged',ghost:true}]});
+     },
++    feedback(out){if(!out.confluence_warnings?.length)return null;const node=U.h('section',{class:'sticky-note warn',style:'margin-top:8px',dataset:{confluenceWarnings:'true'}});node.appendChild(U.h('strong',{text:'Optional entry confluences / reusable choices'}));for(const warning of out.confluence_warnings)node.appendChild(U.h('div',{class:'tiny',text:warning}));node.appendChild(U.h('p',{class:'tiny',text:'Financial truth recorded; invalid optional reasons/choices were not guessed or treated as none. Review these omissions before closing.'}));return node;},
+     summary(an){
+       const rows=an.by_confluence||[],v=an.confluence_coverage,node=U.h('section',{class:'card',dataset:{confluenceAnalytics:'true'}});node.appendChild(U.h('h3',{text:'Entry confluences — descriptive closed-trade associations'}));
+       node.appendChild(U.h('p',{class:'field-note',text:'Labels overlap: each trade counts once per normalised reason, but can appear in several groups. Do not add groups as independent trades. Human/imported declarations are not verified entry-time capture, prediction, causality or market-edge proof. Below30 closed trades per label: descriptive only.30 is a review annotation, not entry/sizing permission; even30+ does not prove an edge.'}));
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index bd89c58..a61a6d2 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -175,7 +175,8 @@
+                 const d = await API.post('/import/json', { data });
+                 if(!currentMediaPane()||attempt!==jsonRead)return;
+                 U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length?'Financial restore recorded; review optional media omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length)global.App.refresh();
++                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);
++                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length?'Financial restore recorded; review optional media omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length)global.App.refresh();
+               } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+             };
+             r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
+diff --git a/src/confluences.js b/src/confluences.js
+index d91f01e..5d2e9d9 100644
+--- a/src/confluences.js
++++ b/src/confluences.js
+@@ -12,7 +12,7 @@ function labels(value){
+ }
+ 
+ const {db}=require('./db');
+-const contextFields=['id','user_id','account_id','symbol','asset_class','direction','status','opened_at','closed_at','entry','exit','stop','target','size','fees','net_pnl','r_multiple','risk_amount','strategy_id','strategy_version','entry_model','entry_tf','entry_evidence','thesis','lesson','execution_notes','notes','tags','mistakes','mistakes_none','adherence','stop_honoured','stop_honoured_source','stop_honoured_recorded_at','execution_review_hash','journal_reviewed_at','journal_review_hash','setup_grade','screenshot_url','entry_confluences','entry_confluences_source','entry_confluences_recorded_at'];
++const contextFields=['id','user_id','account_id','symbol','asset_class','direction','status','opened_at','closed_at','entry','exit','stop','target','size','fees','net_pnl','r_multiple','risk_amount','strategy_id','strategy_version','entry_model','entry_tf','entry_evidence','thesis','lesson','execution_notes','notes','tags','mistakes','mistakes_none','adherence','stop_honoured','stop_honoured_source','stop_honoured_recorded_at','execution_review_hash','journal_reviewed_at','journal_review_hash','setup_grade','screenshot_url','entry_confluences','entry_confluences_source','entry_confluences_recorded_at','gross_pnl','planned_r','mae_r','mfe_r','stop_moved','exit_reason','strategy_name','session','timeframes','emotion_before','emotion_after','confidence','guardrail_snapshot','entry_permission','override_reason','legs','entries','manual_mae','manual_mfe','created_at','updated_at'];
+ const revision=t=>crypto.createHash('sha256').update(JSON.stringify(contextFields.map(k=>[k,t[k]??null]))).digest('hex');
+ function info(t){
+   let selected=null,state='unknown';try{if(t.entry_confluences!=null){selected=labels(JSON.parse(t.entry_confluences));state=selected===null?'unknown':selected.length===0?'none':selected.length===1?'partial':'selected';}
+@@ -39,6 +39,12 @@ async function change(userId,id,body){
+   if(!body||Array.isArray(body)||typeof body!=='object'||Object.keys(body).some(k=>!['labels','revision'].includes(k))||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision)||!Object.hasOwn(body,'labels'))throw invalid('Use labels and the displayed saved-record revision only.');
+   const value=labels(body.labels);return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id);if(body.revision!==revision(t))throw invalid('This trade changed. Reload and deliberately review its reasons before saving.',409);return {review:info(await recordOn(store,t,value))};});
+ }
++function portableVocabulary(raw){
++  if(raw===undefined)return {labels:[],warnings:[]};
++  if(!Array.isArray(raw)||raw.length>5000)return {labels:[],warnings:['Optional reusable choices must be an array of at most5000 plain-text labels; skipped, financial rows unaffected.']};
++  const values=new Map(),warnings=[];for(const item of raw){try{const value=labels([item])[0];if(!values.has(key(value)))values.set(key(value),value);}catch(e){if(warnings.length<20)warnings.push(e.message);}}return {labels:[...values.values()],warnings};
++}
++async function vocabularyOn(store,userId,values){for(const label of values)await store.prepare('INSERT INTO confluence_labels(user_id,label_key,label) VALUES(?,?,?) ON CONFLICT(user_id,label_key) DO NOTHING').run(userId,key(label),label);}
+ async function vocabulary(userId){return {labels:(await db.prepare('SELECT label FROM confluence_labels WHERE user_id=? ORDER BY label_key').all(userId)).map(t=>t.label)};}
+ 
+ /** Descriptive overlapping CLOSED journal cohorts, not predictive/causal evidence.
+@@ -56,4 +62,4 @@ function aggregate(trades){
+   }
+   rows.sort((a,b)=>b.trades-a.trades||key(a.key).localeCompare(key(b.key)));return {rows,coverage};
+ }
+-module.exports={key,labels,invalid,info,optional,owned,recordOn,attachOn,read,change,vocabulary,aggregate};
++module.exports={key,labels,invalid,info,optional,owned,recordOn,attachOn,read,change,vocabulary,portableVocabulary,vocabularyOn,aggregate};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 9ed2df9..cbc01dc 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -1164,6 +1164,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
+   const userId = req.user.id;
+   const data = {
+     exported_at: new Date().toISOString(), version: 1,
++    confluence_labels:(await Confluences.vocabulary(userId)).labels,
+     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
+     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
+     strategies: (await db.prepare('SELECT * FROM strategies WHERE user_id=?').all(userId)).map(parseStrategy),
+@@ -1268,9 +1269,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+ // Actual transaction insert IDs (never raw backup IDs), with optional media
+ // warnings separate from financial parsing. Storage failure rolls back together.
+ function mediaFeedback(collected){return {confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+-async function importTradesWithMedia(userId,collected,extras=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+   for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});}
+-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);return n;
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);return n;
+ });}
+ 
+ function parseCsv(text) {
+@@ -1296,6 +1297,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
+   const data = req.body && req.body.data ? req.body.data : req.body;
+   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
+   const userId = req.user.id;
++  const vocabulary=Confluences.portableVocabulary(data.confluence_labels);
+   const accountMap = Object.create(null);
+   const instruments = await instrumentMap(userId);
+   const tz = (await settingsOf(req)).timezone;
+@@ -1341,9 +1343,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
+       });
+     }
+-    try{media_imported=await importTradesWithMedia(userId,collected,stmts);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
+-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20) });
+ });
+ 
+ /* ---------------------------------------------------------------- settings */
+@@ -1380,7 +1382,7 @@ router.put('/settings', requireAuth, async (req, res) => {
+ router.post('/demo/seed', requireAuth, async (req, res) => {
+   const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
+   const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
+-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20) });
+ });
+ 
+ /**

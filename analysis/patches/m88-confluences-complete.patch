@@ -1,0 +1,624 @@
+diff --git a/README.md b/README.md
+index 9bead1c..2261b15 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,39 @@
+ # TradeJournal Pro
+ 
++## M88 — distinct entry confluences (2026-10-12)
++
++Use **Entry reasons** in the trade log or review link in the saved financial form,
++core-writing dialog or UTC day journal. On a new trade, type one market/setup
++reason and **Add**; prior names appear in your own reusable dropdown. Commas stay
++inside a label, not delimiters. Pick the actual **two to five** reasons, not10
++invented ones. One honest reason is partial; **Unknown** differs from explicitly
++**None**. Optional reasons never replace writing/emotion or grant entry/sizing.
++Old trades and bots without an explicit human declaration remain unknown.
++
++Save financial edits first; the separate saved-reasons editor uses the displayed
++current revision. Unseen edits409 require deliberate reload; storage503 retains
++the old field/time and finance. Only the new confluence columns are changed.
++Human/imported source and server declaration/receiving time are shown: **not
++verified original entry-time/broker/causal intent proof**, possibly retrospective.
++M89 fresh emotion remains open. Labels are separate from tags, mistakes, entry
++models/checklists, execution grades and HTF/MTF/LTF images; nothing backfilled.
++
++**Analytics → Segments → Entry confluences** shows closed-trade descriptive
++associations with overlapping labels, sample counts, known outcome denominators,
++unknown net/R and human/imported counts. Do not add groups as independent trades.
++Below30 closed trades per label: descriptive only;30+ still does not establish
++prediction, causality, market edge, permission or risk advice. Course30 and M103's
++deliberate n>=5 stay unchanged. No70% win-rate promise or model/exit retuning.
++
++JSON backup carries trade reasons plus reusable prior-unused vocabulary; CSV
++`entry_confluences` is a quoted **JSON-array cell**, not a comma-list of reasons.
++Imports use new owned IDs/source/time, not backup entry-time/owner proof. Bad
++optional evidence warns without vetoing financial truth; actual storage failure
++rolls back the request. Warning-bearing restore stays visible. JSON unused-choice
++restore budget5000 per request with an explicit warning if exceeded; CSV does not
++carry unused choices. Repeat restore can duplicate trades. Existing20MB file
++selection/25MB API body limits apply; split larger backups, never silent clipping.
++
+ ## M87 — saved HTF / MTF / LTF chart references (2026-10-11)
+ 
+ Use **Visual evidence** in the trade log, saved-trade form, core-writing dialog
+diff --git a/docs/API.md b/docs/API.md
+index edea497..b0c1ad8 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -544,3 +544,60 @@ as money fields. New `trade_extremes_basis` labels that compatibility basis, and
+ All ranking/grade/outcome associations are descriptive, self-reported and
+ retrospective, not statistical edge, causation, live emotion/provider/broker proof,
+ fresh entry readiness, permission or risk advice.
++
++
++## M88 — human entry-confluence declarations
++
++Three nullable trade columns: `entry_confluences` (canonical JSON-array text,
++NULL unknown), `entry_confluences_source` and `entry_confluences_recorded_at`.
++`[]` explicit none,1 partial,2–5 selected. Never inferred from tags/mistakes,
++emotion/model/checklist/images. Independent from unchanged financial normalizer,
++core/execution/routine/permission and risk inputs. User-owned reusable vocabulary
++retains past choices after deselection/deletion, user FK cascade.
++
++- `GET /confluences` → own reusable `{labels:[strings]}` only.
++- `GET /trades/:id/confluences` → canonical owned `trade_id`, `account_id`,
++  same-snapshot `saved_record:{symbol,status,entry,stop,exit}` and `review`.
++- `PUT /trades/:id/confluences` → **only** `{labels:null|[]|[strings],revision}`.
++  Required displayed SHA covers all63 current trade fields, including original
++  finance/notes/excursions/legs/reviews/clocks and confluence evidence. Malformed400,
++  missing/foreign/noncanonical trade404, stale409, real storage503 atomic rollback.
++  Valid label replacement updates ONLY these3 new columns. Identical valid retry
++  does not invent a new clock. Existing financial PUT/close preserves reasons;
++  use the dedicated editor, not an unacknowledged optional-body overwrite.
++- `POST /trades` accepts optional `entry_confluences` array (or explicit null),
++  validated/canonicalised separately inside the actual insert/admission transaction.
++  Invalid optional declaration warns/omits, financial truth not discarded. No
++  default “none”; no new checklist/entry requirement or score/sizing authority.
++
++`review` has state unknown/none/partial/selected/unavailable, nullable labels,
++source `human_declared`/`imported`, server recorded/received time, displayed revision
++and **entry_time_verified:false** always. Can be retrospective; never broker/live
++capture proof or immutable confluence history. Corrupt/future metadata is
++unavailable, not guessed. Corrections retain declarations until deliberate edit;
++no automatic validation of whether a label really explained an original entry.
++
++`GET /analytics` adds `by_confluence` and `confluence_coverage`, exactly closed
++rows only, filter/owner scope preserved. A trade appears once per normalised label,
++may appear in multiple labels; groups are not independent/disjoint. Coverage
++separates unknown/none/partial/selected/unavailable. Rows expose n, known/unavailable
++net counts, wins/losses/breakeven, known-outcome win denominator, nullable all-n
++net/R/expectancy and labelled known-net subtotal/known-R count/mean, human/imported
++counts. Missing net/R is never0 or∞; R needs finite positive risk and consistency.
++`sample_floor:30`/`sample_ready` annotate recorded closed count only—not edge,
++causation, valid outcome availability, permission or sizing. Existing legacy
++analytics numerics unchanged. M103 n>=5 is not replaced.
++
++JSON trade exports include the3 fields, and JSON top-level `confluence_labels`
++backs up reusable strings even when unused. CSV `entry_confluences` is a JSON
++array **inside the CSV cell**, escaped normally (commas/quotes in labels survive);
++source/time informational. Blank CSV means unknown, `[]` explicit none. Restore
++uses new actual owned trade IDs, forced imported source/new receiving time; raw
++source/old-clock/owner IDs aren't replayed. Optional malformed labels/choices have
++bounded `confluence_warnings` while truthful finance still imports. Real optional
++storage failure rolls back finance/media/choices together. Unused vocabulary
++restore budget5000 labels/request, explicit omission warning above—not clipping.
++Trade labels themselves also populate choices. CSV does not carry unused choices;
++JSON is the full vocabulary backup. Historical insertion is not upsert/deduping.
++Existing20MB selected-file/25MB body limits unchanged. UI presents warnings without
++auto-closing/refreshing a warning-bearing restore. M89 capture/M106/M111/M112 open.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index b7ef885..1af75cb 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -333,3 +333,39 @@ These changes do not change
+ entry models, target/stop geometry, RR floors, entry setup-grade policies, the course's
+ 30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
+ edge, win-rate improvement, live-provider or production-deployment claim is made.
++
++
++## M88 — optional entry reasons, NEVER authority to trade
++
++Dedicated human market/setup reasons remain independent from general tags,
++mistakes, emotion, core writing, entry model/checklist, execution review and
++HTF/MTF/LTF screenshots. NULL unknown != [] explicit none;1 honest partial is
++legal,2–5 course guidance/max5 avoids invented reasons. No historical copying,
++automatic confluence capture, label weighting or grade/risk/permission change.
++
++Separate owned saved-record revision edits only the3 nullable confluence fields;
++all original trade clocks/review hashes/financial values remain unchanged.
++Stale409 needs explicit reload, invalid editor400, actual storage503 rollback.
++New/portable optional malformed evidence warns rather than vetoing a truthful
++financial record. Close/correction/deletion/import/record-only remain legal;
++confluences never complete required loss writing or refund a cap/loss/timer/routine
++obligation. Account/user/token changes and late/closed/replaced callbacks guarded.
++
++Human/imported declarations and server declaration/receiving time are **not
++verified original entry-time or broker capture**, may be retrospective and are
++not append-only histories. Imports can't replay human timing/ownership/workflow
++proof. Reusable vocabulary is user-owned and survives deselection/deleting trades;
++JSON backs up unused choices, CSV only trade-row reasons. Bad optional import
++warnings remain visible. Storage failure rolls back the request rather than
++claiming complete success. Original20MB file/25MB body limits unchanged; optional
++unused vocabulary restore budget5000 with explicit omission warning, never silent
++clipping. Repeat historical restore can duplicate trades.
++
++Closed-only confluence cohorts overlap; each trade counts once per normalised
++label, not one independent sample per label. Known denominators/unknown outcomes
++and import mix explicit. Missing/contradictory net/R isn't0 or∞. Course30 is a
++record-count review annotation, not proof of edge/known-outcome completeness or
++permission. Retrospective associations don't establish causality/prediction and
++must not resize risk. Deliberate M103 n>=5/B-C tradeability, existing weights,
++grades, factors, default risk, stops/targets/RR/geometry all unchanged.
++M89 fresh emotion and M106/M111/M112 remain TODO; M108 remains partial.
+diff --git a/public/index.html b/public/index.html
+index fe0cc08..56fe52e 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
++<script src="/js/views/confluences.js?v={{V}}"></script>
+ <script src="/js/views/screenshots.js?v={{V}}"></script>
+ <script src="/js/views/dashboard.js?v={{V}}"></script>
+ <script src="/js/views/bots.js?v={{V}}"></script>
+diff --git a/public/js/app.js b/public/js/app.js
+index acd85a8..0520edf 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -389,9 +389,10 @@
+             try {
+               const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value, account_id: Store.accountId });
+               out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`+(Views.screenshots?Views.screenshots.importResult(d):'');
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);
+               Store.invalidate();
+-              if(!d.media_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
+-              else this.toast('Financial import recorded; review optional media omissions below before closing.','ok');
++              if(!d.media_warnings?.length&&!d.confluence_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
++              else this.toast('Financial import recorded; review optional journal evidence omissions below before closing.','ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           },
+         }],
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index b696929..74005ff 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -206,6 +206,7 @@
+ 
+         segments() {
+           const w = U.h('div', { class: 'grid' });
++          if(Views.confluences)w.appendChild(Views.confluences.summary(an));
+           const defs = [
+             ['Playbook / setup', an.by_strategy], ['Instrument', an.by_symbol], ['Session', an.by_session],
+             ['Direction', an.by_direction], ['Setup grade', an.by_grade], ['Entry model', an.by_entry_model], ['Asset class', an.by_asset],
+diff --git a/public/js/views/confluences.js b/public/js/views/confluences.js
+new file mode 100644
+index 0000000..974ec82
+--- /dev/null
++++ b/public/js/views/confluences.js
+@@ -0,0 +1,49 @@
++/* M88 human-declared market/setup reasons. Independent of core writing,
++ * emotion, mistakes, setup/ execution grades, admission and sizing. */
++(function(global){
++  'use strict';
++  const Views=global.Views=global.Views||{},U=global.U;let opened=0,widgetId=0;
++  const context=()=>({account:global.Store.accountId,user:global.Store.user?.id,token:global.API.getToken()});
++  const same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id&&c.token===global.API.getToken();
++  const key=s=>s.normalize('NFC').trim().replace(/\s+/gu,' ').toLowerCase();
++  const hint='Pick the two to five market/setup confluences that actually caused you to take the trade, not10 invented reasons. One honest reason is partial; unknown is not none. Separate from tags, mistakes and emotion. Optional: not an entry gate, core-writing check, grade or sizing input.';
++  function editor(initial=null,choices=[]){
++    const node=U.h('div',{dataset:{confluenceEditor:'true'}}),id='entry-confluence-options-'+(++widgetId);let selected=initial===null?null:[...initial],dirty=false;
++    node.innerHTML=`<p class="field-note">${hint}</p><label class="field"><span>Entry reason — type one label, then Add (commas stay inside the label)</span><input data-confluence-input maxlength="80" list="${id}" autocomplete="off" /><datalist id="${id}"></datalist></label><div class="row wrap gap-8"><button class="btn sm" type="button" data-confluence-add>Add reason</button><button class="btn sm ghost" type="button" data-confluence-none>Explicitly no entry confluences</button><button class="btn sm ghost" type="button" data-confluence-unknown>Unknown / not recorded</button></div><div data-confluence-count class="small muted" aria-live="polite"></div><div data-confluence-selected class="row wrap gap-8" style="margin-top:8px"></div>`;
++    const input=node.querySelector('[data-confluence-input]'),list=node.querySelector('datalist');
++    function options(values){list.replaceChildren(...values.map(label=>U.h('option',{value:label})));}
++    function draw(){node.querySelector('[data-confluence-count]').textContent=selected===null?'Unknown / not recorded — no reasons guessed.':selected.length===0?'Explicit none — your declaration, not unknown.':`${selected.length} / 5 selected${selected.length===1?' — partial; do not invent a second reason.':''}`;node.querySelector('[data-confluence-selected]').replaceChildren(...(selected||[]).map(label=>U.h('button',{class:'chip',type:'button',text:label+' ×',dataset:{confluenceLabel:label},title:'Remove '+label,onclick:()=>{selected=selected.filter(s=>key(s)!==key(label));dirty=true;draw();}})));}
++    function add(){const raw=input.value;if(/[\x00-\x1f\x7f]/.test(raw))return global.App.toast('Use a single-line plain-text market/setup reason.','err');const s=raw.normalize('NFC').trim().replace(/\s+/gu,' ');if(!s||s.length>80)return global.App.toast('Each reason needs1–80 characters.','err');if((selected||[]).some(x=>key(x)===key(s))){input.value='';return;}if((selected||[]).length>=5)return global.App.toast('At most5 actual reasons; do not pad them.','err');selected=[...(selected||[]),s];dirty=true;input.value='';draw();}
++    node.querySelector('[data-confluence-add]').addEventListener('click',add);input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();add();}});
++    for(const [mode,value] of [['none',[]],['unknown',null]])node.querySelector('[data-confluence-'+mode+']').addEventListener('click',()=>{selected=value===null?null:[];dirty=true;input.value='';draw();});
++    options(choices);draw();return {node,value:()=>selected===null?null:[...selected],dirty:()=>dirty,options};
++  }
++  const C=Views.confluences={
++    draft(){const before=context(),widget=editor();global.API.get('/confluences').then(out=>{if(same(before))widget.options(out.labels||[]);}).catch(()=>{if(same(before))widget.node.appendChild(U.h('p',{class:'tiny warn',text:'Reusable choices unavailable. You may still record truthful reasons or leave them unknown.'}));});return widget;},
++    card(trade){const v=trade.entry_confluence_review||{},node=U.h('section',{class:'card',style:'margin-top:12px',dataset:{confluencesCard:'true'}});node.appendChild(U.h('h3',{text:'Entry confluences — market/setup reasons'}));node.appendChild(U.h('p',{class:'field-note',text:hint+' Save financial edits first. Saved declarations may be retrospective; they are not verified original entry-time thought process.'}));node.appendChild(U.h('p',{class:'small',text:v.labels?.length?v.labels.join(' · '):v.state==='none'?'Explicit none':v.state==='unavailable'?'Unavailable declaration evidence':'Unknown / not recorded'}));if(trade?.id)node.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{confluencesOpen:String(trade.id)},text:'Review saved entry reasons',onclick:()=>C.open(Number(trade.id))}));return node;},
++    async open(id){
++      const before=context(),serial=++opened;let view,choices;
++      try{[view,choices]=await Promise.all([global.API.get('/trades/'+id+'/confluences'),global.API.get('/confluences')]);}catch(e){return global.App.toast(e.message||'Entry reasons unavailable; nothing inferred.','err');}
++      if(!same(before)||serial!==opened||before.account!=null&&Number(before.account)!==view.account_id)return global.App.toast('Workspace/account changed or saved record is outside the selected account; reopen there.','err');
++      const body=U.h('div');let alive=true,busy=false,stale=false,widget,review=view.review;
++      const valid=()=>alive&&serial===opened&&same(before)&&body.isConnected;
++      const guard=()=>{if(!valid()){global.App.toast('Workspace/account changed or editor closed; reopen the current saved record.','err');return false;}return !busy;};
++      function disable(){body.querySelectorAll('input,button').forEach(el=>{el.disabled=busy||stale;});const reload=body.querySelector('[data-confluence-reload]');if(reload)reload.disabled=busy;}
++      function draw(){const t=view.saved_record||{};widget=editor(review.labels,choices.labels||[]);body.replaceChildren(U.h('p',{class:'small',text:`Saved #${view.trade_id} ${t.symbol||''} · account #${view.account_id} · entry ${t.entry??'unknown'}, stop ${t.stop??'unknown'}, exit ${t.exit??'unknown'} (${t.status||'unknown'}).`}),U.h('p',{class:'field-note',text:'Save financial edits first. Human-declared reasons only; server declaration/receiving time is NOT original entry-time or broker proof. Imports remain imported. Changing labels does not acknowledge execution, routine or core writing, grant entry, resize risk or erase loss/cap obligations.'}),U.h('p',{class:'small muted',dataset:{confluenceProvenance:'true'},text:`${review.state} · source ${review.source||'unknown'} · recorded/received ${review.recorded_at||'unknown'}`}),widget.node);
++        body.appendChild(U.h('button',{class:'btn sm primary',type:'button',dataset:{confluenceSave:'true'},text:'Save my declared entry reasons',onclick:async()=>{if(!guard())return;busy=true;disable();try{const out=await global.API.put('/trades/'+id+'/confluences',{labels:widget.value(),revision:review.revision});if(!valid())return;review=out.review;view.review=review;stale=false;draw();global.Store.invalidate();global.App.toast('Entry reasons recorded as your declaration; core writing/grades/permission unchanged.','ok');}catch(e){if(valid()){stale=e.status===409;global.App.toast(e.message||'Entry reasons could not be recorded; financial truth unchanged.','err');}}finally{busy=false;if(valid())disable();}}}));
++        body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{confluenceReload:'true'},text:'Reload saved record (discard unsaved reasons)',onclick:async()=>{if(!guard())return;busy=true;disable();try{const out=await global.API.get('/trades/'+id+'/confluences');if(!valid())return;view=out;review=out.review;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message||'Current saved record unavailable.','err');}finally{busy=false;if(valid())disable();}}}));
++      }
++      draw();return global.App.modal({title:'Review entry confluences',body,wide:true,onClose:()=>{alive=false;},actions:[{label:'Close — financial/core state unchanged',ghost:true}]});
++    },
++    feedback(out){if(!out.confluence_warnings?.length)return null;const node=U.h('section',{class:'sticky-note warn',style:'margin-top:8px',dataset:{confluenceWarnings:'true'}});node.appendChild(U.h('strong',{text:'Optional entry confluences / reusable choices'}));for(const warning of out.confluence_warnings)node.appendChild(U.h('div',{class:'tiny',text:warning}));node.appendChild(U.h('p',{class:'tiny',text:'Financial truth recorded; invalid optional reasons/choices were not guessed or treated as none. Review these omissions before closing.'}));return node;},
++    summary(an){
++      const rows=an.by_confluence||[],v=an.confluence_coverage,node=U.h('section',{class:'card',dataset:{confluenceAnalytics:'true'}});node.appendChild(U.h('h3',{text:'Entry confluences — descriptive closed-trade associations'}));
++      node.appendChild(U.h('p',{class:'field-note',text:'Labels overlap: each trade counts once per normalised reason, but can appear in several groups. Do not add groups as independent trades. Human/imported declarations are not verified entry-time capture, prediction, causality or market-edge proof. Below30 closed trades per label: descriptive only.30 is a review annotation, not entry/sizing permission; even30+ does not prove an edge.'}));
++      if(!v){node.appendChild(U.h('p',{text:'Confluence coverage unavailable; no missing data inferred as none.'}));return node;}
++      node.appendChild(U.h('p',{class:'small',dataset:{confluenceCoverage:'true'},text:`${v.closed_trades} closed trades · ${v.selected} with2–5 reasons · ${v.partial} with1 (partial) · ${v.none} explicit none · ${v.unknown} unknown · ${v.unavailable} unavailable · ${v.memberships} overlapping label memberships.`}));
++      if(!rows.length){node.appendChild(U.h('p',{class:'muted',text:'No usable declared reasons in this closed-trade filter. Existing tags, mistakes, models and emotion are not backfilled.'}));return node;}
++      const finite=x=>typeof x==='number'&&Number.isFinite(x),fmt=(x,fn)=>finite(x)?fn(x):'Unavailable';const table=U.h('div',{class:'table-wrap'});
++      table.innerHTML=`<table><thead><tr><th>Declared reason</th><th>n / review floor30</th><th>Known outcomes / n</th><th>Win % (known outcomes)</th><th>Net (all n)</th><th>Known net subtotal</th><th>Known R / n</th><th>Mean R (all n)</th><th>Human / imported</th></tr></thead><tbody>${rows.map(r=>`<tr data-confluence-group><td>${U.esc(r.key)}</td><td>${r.trades}${r.sample_ready?' · review sample':' · below30'}</td><td>${r.known_net_count} / ${r.trades}</td><td>${fmt(r.win_rate,x=>U.pct(x,1))}</td><td>${fmt(r.net_pnl,x=>U.moneySign(x))}</td><td>${fmt(r.known_net_subtotal,x=>U.moneySign(x))}</td><td>${r.known_r_count} / ${r.trades}</td><td>${fmt(r.expectancy_r,x=>U.signed(x,2)+'R')}</td><td>${r.human_declared_count} / ${r.imported_count}</td></tr>`).join('')}</tbody></table>`;node.appendChild(table);return node;
++    },
++  };
++})(window);
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 4d81940..2ba01ad 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -169,7 +169,7 @@
+         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+-        <td class="tiny"><button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
++        <td class="tiny"><button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+@@ -179,6 +179,7 @@
+       selection.innerHTML=`<span>Daily routine completion — explicit self-report (never workflow permission)</span><select id="j-pre-market"><option value="" ${flag===null?'selected':''}>Unknown / not recorded</option><option value="true" ${flag===true?'selected':''}>Completed — my self-report</option><option value="false" ${flag===false?'selected':''}>Not completed — my self-report</option></select><div class="field-note">Current account only, separate from the shared daily note and actual ordered/timed workflow. Unrelated note edits preserve this flag/source/time. Retrospective self-report cannot rewrite first-entry/on-time evidence.</div>`;
+       U.$('#j-pre-market',selection).addEventListener('change',()=>{routineDirty=true;});body.prepend(selection);
+     }
++    body.querySelectorAll('[data-day-confluences]').forEach(b=>b.addEventListener('click',()=>Views.confluences?Views.confluences.open(Number(b.dataset.dayConfluences)):global.App.toast('Entry reasons UI unavailable.','err')));
+     body.querySelectorAll('[data-day-screenshots]').forEach(b=>b.addEventListener('click',()=>Views.screenshots?Views.screenshots.open(Number(b.dataset.dayScreenshots)):global.App.toast('Visual evidence UI unavailable.','err')));
+     body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
+     if(Views.lossWritingCard)body.appendChild(Views.lossWritingCard({pending:(day.loss_reflections||[]).filter(r=>r.completed_at===null),pending_count:(day.loss_reflections||[]).filter(r=>r.completed_at===null).length}));
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index bd89c58..c5236d7 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -151,7 +151,8 @@
+               const d = await API.post('/import/csv', { csv, account_id: U.$('#im-account', w).value });
+               if(!currentMediaPane())return;
+               out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-              Store.invalidate(); global.App.toast('Import complete', 'ok');
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);
++              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           });
+           const file = U.$('#im-file', w);
+@@ -175,7 +176,8 @@
+                 const d = await API.post('/import/json', { data });
+                 if(!currentMediaPane()||attempt!==jsonRead)return;
+                 U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length?'Financial restore recorded; review optional media omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length)global.App.refresh();
++                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);
++                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length)global.App.refresh();
+               } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+             };
+             r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index 30987d8..6cb79dc 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -26,6 +26,7 @@
+       <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
+     if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
+     if(!capture&&Views.screenshots)body.appendChild(Views.screenshots.card(trade));
++    if(!capture&&Views.confluences)body.appendChild(Views.confluences.card(trade));
+     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
+     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
+       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
+@@ -161,7 +162,7 @@
+             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
+             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
+               ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', '']].map(([k, l]) =>
++              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', 'Entry confluences'], ['', '']].map(([k, l]) =>
+               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
+           </tr></thead>
+           <tbody>
+@@ -185,6 +186,7 @@
+             <td class="tiny"><span data-execution-state>${U.esc(Views.execution?Views.execution.state(t.execution_review):'Unreviewed')}</span>${t.status==='closed'?` <button class="btn xs ghost" data-execution="${t.id}">Execution</button>`:''}</td>
+             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
+             <td class="tiny"><button class="btn xs ghost" data-screenshots="${t.id}">HTF / MTF / LTF</button></td>
++            <td class="tiny"><button class="btn xs ghost" data-confluences="${t.id}">Entry reasons</button></td>
+             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
+           </tr>`).join('')}
+           </tbody>
+@@ -198,9 +200,10 @@
+       U.$$('[data-execution]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.execution)Views.execution.open(Number(b.dataset.execution));else global.App.toast('Execution review UI unavailable; no grade inferred.','err');}));
+       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
+       U.$$('[data-screenshots]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.screenshots)Views.screenshots.open(Number(b.dataset.screenshots));else global.App.toast('Visual evidence UI unavailable; nothing is inferred.','err');}));
++      U.$$('[data-confluences]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.confluences)Views.confluences.open(Number(b.dataset.confluences));else global.App.toast('Entry reasons UI unavailable; nothing inferred.','err');}));
+       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
+       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
+-        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution]')) return;
++        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution],[data-confluences]')) return;
+         global.App.openTrade(Number(tr.dataset.id));
+       }));
+       const chkAll = U.$('#chk-all', body);
+@@ -391,6 +394,8 @@
+     g('strategy').addEventListener('change', () => { if (applyChk.checked) { const s = Store.strategyById(g('strategy').value); renderChecklist(s && s.checklist && s.checklist.length ? s.checklist : (Store.user.default_checklist || [])); } });
+ 
+     updateSpec(); calc();
++    const confluenceDraft=isNew&&Views.confluences?Views.confluences.draft():null;
++    if(confluenceDraft){const box=U.h('section',{class:'card',style:'margin-top:12px'});box.appendChild(U.h('h3',{text:'Entry confluences — actual market/setup reasons'}));box.appendChild(confluenceDraft.node);node.appendChild(box);}
+ 
+     function collect() {
+       const body = {
+@@ -424,6 +429,7 @@
+       if (body.status === 'closed' && !body.exit) throw new Error('A closed trade needs an exit price (or set the status to Open).');
+       if (!body.symbol) throw new Error('Symbol is required.');
+       if (!body.entry) throw new Error('Entry price is required.');
++      if(confluenceDraft?.dirty())body.entry_confluences=confluenceDraft.value();
+       return body;
+     }
+     /* --------------------------------------------- TradingView helpers */
+@@ -494,6 +500,7 @@
+     refreshGuard();
+     if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
+     if(Views.screenshots)node.appendChild(Views.screenshots.card(t));
++    if(!isNew&&Views.confluences)node.appendChild(Views.confluences.card(t));
+     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
+   };
+ 
+diff --git a/src/confluences.js b/src/confluences.js
+new file mode 100644
+index 0000000..5d2e9d9
+--- /dev/null
++++ b/src/confluences.js
+@@ -0,0 +1,65 @@
++'use strict';
++/** M88 human-declared entry reasons, NOT model checks/emotions/mistakes,
++ * entry-time/broker proof, grades or risk inputs. NULL unknown != explicit []. */
++const crypto=require('crypto');
++const key=s=>s.normalize('NFC').trim().replace(/\s+/gu,' ').toLowerCase();
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'confluence_invalid',status});}
++function labels(value){
++  if(value===null)return null;
++  if(!Array.isArray(value)||value.length>20)throw invalid('Use an explicit array of at most5 distinct plain-text entry reasons, or null for unknown.');
++  const seen=new Set(),out=[];for(const raw of value){if(typeof raw!=='string'||/[\x00-\x1f\x7f]/.test(raw))throw invalid('Confluences must be single-line plain text.');const s=raw.normalize('NFC').trim().replace(/\s+/gu,' ');if(!s||s.length>80)throw invalid('Each entry confluence needs1–80 characters.');const k=key(s);if(!seen.has(k)){seen.add(k);out.push(s);}}
++  if(out.length>5)throw invalid('Choose at most5 confluences you actually used; do not pad your reasons.');return out;
++}
++
++const {db}=require('./db');
++const contextFields=['id','user_id','account_id','symbol','asset_class','direction','status','opened_at','closed_at','entry','exit','stop','target','size','fees','net_pnl','r_multiple','risk_amount','strategy_id','strategy_version','entry_model','entry_tf','entry_evidence','thesis','lesson','execution_notes','notes','tags','mistakes','mistakes_none','adherence','stop_honoured','stop_honoured_source','stop_honoured_recorded_at','execution_review_hash','journal_reviewed_at','journal_review_hash','setup_grade','screenshot_url','entry_confluences','entry_confluences_source','entry_confluences_recorded_at','gross_pnl','planned_r','mae_r','mfe_r','stop_moved','exit_reason','strategy_name','session','timeframes','emotion_before','emotion_after','confidence','guardrail_snapshot','entry_permission','override_reason','legs','entries','manual_mae','manual_mfe','created_at','updated_at'];
++const revision=t=>crypto.createHash('sha256').update(JSON.stringify(contextFields.map(k=>[k,t[k]??null]))).digest('hex');
++function info(t){
++  let selected=null,state='unknown';try{if(t.entry_confluences!=null){selected=labels(JSON.parse(t.entry_confluences));state=selected===null?'unknown':selected.length===0?'none':selected.length===1?'partial':'selected';}
++    const source=t.entry_confluences_source,time=t.entry_confluences_recorded_at;
++    if(selected!==null||source!=null||time!=null){if(!['human_declared','imported'].includes(source)||typeof time!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(time)||!Number.isFinite(Date.parse(time))||new Date(time).toISOString()!==time||Date.parse(time)>Date.now())throw invalid('Unavailable declaration metadata.');}
++  }catch{selected=null;state='unavailable';}
++  return {state,labels:selected,source:state==='unavailable'?null:t.entry_confluences_source??null,recorded_at:state==='unavailable'?null:t.entry_confluences_recorded_at??null,entry_time_verified:false,revision:revision(t),basis:'Human-declared market/setup reasons only; declaration/receiving time is NOT original entry-time or broker proof.'};
++}
++function optional(value,{json=false,present=value!==undefined}={}){
++  if(!present||(json&&(value===undefined||value==='')))return {present:false,warnings:[]};
++  try{return {present:true,labels:labels((json||typeof value==='string')&&value!==null?JSON.parse(value):value),warnings:[]};}catch(e){return {present:false,warnings:[e.message||'Invalid optional entry confluences skipped.']};}
++}
++async function owned(store,userId,id){if(!Number.isSafeInteger(id)||id<1)throw invalid('Trade not found.',404);const t=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);if(!t)throw invalid('Trade not found.',404);return t;}
++async function recordOn(store,t,value,{source='human_declared'}={}){
++  const selected=labels(value),encoded=selected===null?null:JSON.stringify(selected),previous=info(t);
++  if(t.entry_confluences===encoded&&t.entry_confluences_source===source&&previous.state!=='unavailable')return t;
++  const recorded=new Date().toISOString();
++  for(const label of selected||[])await store.prepare('INSERT INTO confluence_labels(user_id,label_key,label) VALUES(?,?,?) ON CONFLICT(user_id,label_key) DO NOTHING').run(t.user_id,key(label),label);
++  await store.prepare('UPDATE trades SET entry_confluences=?,entry_confluences_source=?,entry_confluences_recorded_at=? WHERE id=? AND user_id=?').run(encoded,source,recorded,t.id,t.user_id);return owned(store,t.user_id,t.id);
++}
++async function attachOn(store,userId,id,input,{source='human_declared'}={}){if(!input?.present)return;return recordOn(store,await owned(store,userId,id),input.labels,{source});}
++async function read(userId,id){const t=await owned(db,userId,id);return {trade_id:t.id,account_id:t.account_id,saved_record:{symbol:t.symbol,status:t.status,entry:t.entry,stop:t.stop,exit:t.exit},review:info(t)};}
++async function change(userId,id,body){
++  if(!body||Array.isArray(body)||typeof body!=='object'||Object.keys(body).some(k=>!['labels','revision'].includes(k))||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision)||!Object.hasOwn(body,'labels'))throw invalid('Use labels and the displayed saved-record revision only.');
++  const value=labels(body.labels);return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id);if(body.revision!==revision(t))throw invalid('This trade changed. Reload and deliberately review its reasons before saving.',409);return {review:info(await recordOn(store,t,value))};});
++}
++function portableVocabulary(raw){
++  if(raw===undefined)return {labels:[],warnings:[]};
++  if(!Array.isArray(raw)||raw.length>5000)return {labels:[],warnings:['Optional reusable choices must be an array of at most5000 plain-text labels; skipped, financial rows unaffected.']};
++  const values=new Map(),warnings=[];for(const item of raw){try{const value=labels([item])[0];if(!values.has(key(value)))values.set(key(value),value);}catch(e){if(warnings.length<20)warnings.push(e.message);}}return {labels:[...values.values()],warnings};
++}
++async function vocabularyOn(store,userId,values){for(const label of values)await store.prepare('INSERT INTO confluence_labels(user_id,label_key,label) VALUES(?,?,?) ON CONFLICT(user_id,label_key) DO NOTHING').run(userId,key(label),label);}
++async function vocabulary(userId){return {labels:(await db.prepare('SELECT label FROM confluence_labels WHERE user_id=? ORDER BY label_key').all(userId)).map(t=>t.label)};}
++
++/** Descriptive overlapping CLOSED journal cohorts, not predictive/causal evidence.
++ * Strict outcome availability here is deliberately separate from legacy segments. */
++function aggregate(trades){
++  const coverage={closed_trades:0,unknown:0,none:0,partial:0,selected:0,unavailable:0,memberships:0,overlapping_labels:true,sample_floor:30};const map=new Map();
++  for(const t of trades){if(t.status!=='closed')continue;coverage.closed_trades++;const v=info(t);coverage[v.state]++;if(!['partial','selected'].includes(v.state))continue;
++    for(const label of v.labels){const k=key(label);if(!map.has(k))map.set(k,{label,list:[]});map.get(k).list.push({t,v});coverage.memberships++;}
++  }
++  const finite=n=>typeof n==='number'&&Number.isFinite(n),round=(n,d=2)=>Math.round(n*10**d)/10**d;
++  const rows=[];for(const {label,list} of map.values()){
++    const known=list.filter(({t})=>finite(t.net_pnl)),knownR=list.filter(({t})=>finite(t.net_pnl)&&finite(t.r_multiple)&&finite(t.risk_amount)&&t.risk_amount>0&&Math.abs(t.net_pnl-t.risk_amount*t.r_multiple)<=Math.max(.02,Math.abs(t.risk_amount)*.0001));
++    const n=list.length,net=known.reduce((s,{t})=>s+t.net_pnl,0),r=knownR.reduce((s,{t})=>s+t.r_multiple,0),wins=known.filter(({t})=>t.net_pnl>0).length,losses=known.filter(({t})=>t.net_pnl<0).length;
++    rows.push({key:label,label,trades:n,known_net_count:known.length,unavailable_net_count:n-known.length,wins,losses,breakeven:known.length-wins-losses,win_rate:known.length?round(wins*100/known.length):null,net_pnl:known.length===n?round(net):null,known_net_subtotal:known.length?round(net):null,known_r_count:knownR.length,total_r:knownR.length===n?round(r,4):null,expectancy_r:knownR.length===n?round(r/n,4):null,known_r_mean:knownR.length?round(r/knownR.length,4):null,human_declared_count:list.filter(({v})=>v.source==='human_declared').length,imported_count:list.filter(({v})=>v.source==='imported').length,entry_time_verified:false,sample_floor:30,sample_ready:n>=30,sample_note:n<30?'Descriptive only; below the course30-trade review floor.':'Descriptive recorded associations only; labels overlap and self-report does not prove prediction, causality or market edge.'});
++  }
++  rows.sort((a,b)=>b.trades-a.trades||key(a.key).localeCompare(key(b.key)));return {rows,coverage};
++}
++module.exports={key,labels,invalid,info,optional,owned,recordOn,attachOn,read,change,vocabulary,portableVocabulary,vocabularyOn,aggregate};
+diff --git a/src/db.js b/src/db.js
+index 27188d6..a5518f5 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -240,6 +240,13 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     resolved_at TEXT
+   );
++-- M88 reusable, user-owned free-text vocabulary, NOT market-model checklist facts.
++CREATE TABLE IF NOT EXISTS confluence_labels (
++  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  label_key TEXT NOT NULL,
++  label TEXT NOT NULL,
++  PRIMARY KEY(user_id,label_key)
++);
+ CREATE TABLE IF NOT EXISTS trade_screenshots (
+     trade_id INTEGER NOT NULL REFERENCES trades(id) ON DELETE CASCADE,
+     role TEXT NOT NULL CHECK(role IN ('htf','mtf','ltf')),
+@@ -652,6 +659,8 @@ async function migrate() {
+   await add('trades','stop_honoured_source','TEXT');
+   await add('trades','stop_honoured_recorded_at','TEXT');
+   await add('trades','execution_review_hash','TEXT');
++  // M88 additive NULL, no inferred labels/source/entry-time history on old trades.
++  for(const field of ['entry_confluences','entry_confluences_source','entry_confluences_recorded_at'])await add('trades',field,'TEXT');
+   await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
+   await add('journal_entries','pre_market_basis','TEXT');
+   await add('journal_entries','pre_market_recorded_at','TEXT');
+diff --git a/src/performance.js b/src/performance.js
+index 5ac760a..4f3c2e5 100644
+--- a/src/performance.js
++++ b/src/performance.js
+@@ -9,6 +9,7 @@
+  */
+ 
+ const Execution = require('./execution-review');
++const Confluences = require('./confluences');
+ 
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+@@ -528,9 +529,12 @@ function optimalRisk(rs, { cap = 0.05, floor = 0.001 } = {}) {
+ /** Aggregate everything the dashboard needs in one payload. */
+ function fullAnalytics(trades, opts = {}) {
+   const k = kpis(trades, opts);
++  const confluences=Confluences.aggregate(trades);
+   const closed = trades.filter((t) => t.status !== 'open');
+   return {
+     kpis: k,
++    by_confluence:confluences.rows,
++    confluence_coverage:confluences.coverage,
+     points: closed.map((t, i) => ({
+       i: i + 1, id: t.id, symbol: t.symbol, r: r4(num(t.r_multiple)), risk: r2(num(t.risk_amount)),
+       mae: t.mae_r === null || t.mae_r === undefined ? null : r4(num(t.mae_r)),
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 644cce1..cbc01dc 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -15,7 +15,8 @@ const RR = require('../routine-records');
+ const Routine = require('../routine');
+ const Execution = require('../execution-review');
+ const Screenshots = require('../screenshots');
+-const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t)});
++const Confluences = require('../confluences');
++const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+ const Prop = require('../prop');
+@@ -326,6 +327,7 @@ router.get('/trades/:id', requireAuth, async (req, res) => {
+ router.post('/trades', requireAuth, async (req, res) => {
+   const instruments = await instrumentMap(req.user.id);
+   const body = req.body || {};
++  const confluences=Confluences.optional(body.entry_confluences);
+   const spec = instruments[String(body.symbol || '').toUpperCase()] || null;
+   const accountId = num(body.account_id, 0) || (await db.prepare('SELECT id FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id) || {}).id;
+   if (!body.symbol) return res.status(400).json({ error: 'Symbol is required' });
+@@ -352,11 +354,11 @@ router.post('/trades', requireAuth, async (req, res) => {
+       catch(e){throw Guards.inputError(e.message);}
+       const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade',overrideReason:body.override_reason},async (store,daily) => {
+         const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
+-        return {id:await T.insert(store,req.user.id,entry),permission:Guards.actionPermission(daily)};
++        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,permission:Guards.actionPermission(daily)};
+       });
+       id = out.id; permission = out.permission;
+     } else {
+-      const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>({id:await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')})}));
++      const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>{const id=await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')});await Confluences.attachOn(store,req.user.id,id,confluences);return {id};});
+       id = out.id; permission = {allowed:false,state:'record_only',can_override:false};
+     }
+   } catch(e) {
+@@ -368,9 +370,15 @@ router.post('/trades', requireAuth, async (req, res) => {
+     for (const rc of body.rule_checks) await ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
+   }
+   const saved = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
+-  res.json({ ok: true, permission, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
++  res.json({ ok: true, permission, confluence_warnings:confluences.warnings, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
+ });
+ 
++// Optional reasons never grant entry, complete core writing or alter execution/risk.
++const confluenceRoute=fn=>async(req,res)=>{try{if(req.params.id&&!/^[1-9]\d*$/.test(req.params.id))throw Confluences.invalid('Trade not found.',404);res.json(await fn(req));}catch(e){if(e.code==='confluence_invalid')return res.status(e.status).json({error:e.message,code:e.code});return res.status(503).json({error:'Entry confluence evidence unavailable; existing financial truth unchanged.'});}};
++router.get('/confluences',requireAuth,confluenceRoute(req=>Confluences.vocabulary(req.user.id)));
++router.get('/trades/:id/confluences',requireAuth,confluenceRoute(req=>Confluences.read(req.user.id,Number(req.params.id))));
++router.put('/trades/:id/confluences',requireAuth,confluenceRoute(req=>Confluences.change(req.user.id,Number(req.params.id),req.body)));
++
+ router.put('/trades/:id', requireAuth, async (req, res) => {
+   const id = Number(req.params.id);
+   const existing = await db.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id, req.user.id);
+@@ -1141,7 +1149,7 @@ router.get('/export/csv', requireAuth, backup(async (req, res) => {
+   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
+     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
+     'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
+-    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json'];
++    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json', 'entry_confluences', 'entry_confluences_source', 'entry_confluences_recorded_at'];
+   const esc = (v) => {
+     const s = v === null || v === undefined ? '' : String(v);
+     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+@@ -1156,6 +1164,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
+   const userId = req.user.id;
+   const data = {
+     exported_at: new Date().toISOString(), version: 1,
++    confluence_labels:(await Confluences.vocabulary(userId)).labels,
+     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
+     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
+     strategies: (await db.prepare('SELECT * FROM strategies WHERE user_id=?').all(userId)).map(parseStrategy),
+@@ -1193,7 +1202,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+     entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
+     tags: findCol(['tags', 'tag', 'labels']),
+     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
+-    screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
++    entry_confluences:findCol(['entry_confluences']), screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
+     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
+   };
+   if (map.symbol < 0) return res.status(400).json({ error: 'Could not find a symbol/ticker column in the CSV.' });
+@@ -1245,7 +1254,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+         }
+         const media=Screenshots.parsePortable(map.screenshot_views_json>-1?r[map.screenshot_views_json]:undefined,{json:true});
+         trade.screenshot_url=Screenshots.legacyImport(map.screenshot_url>-1?r[map.screenshot_url]:undefined,media);
+-        collected.push({trade,media});
++        collected.push({trade,media,confluences:Confluences.optional(map.entry_confluences>-1?r[map.entry_confluences]:undefined,{json:true})});
+         inserted++;
+       } catch (e) { skipped++; if (errors.length < 5) errors.push(`Row ${i + 1}: ${e.message}`); }
+     }
+@@ -1259,10 +1268,10 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+ 
+ // Actual transaction insert IDs (never raw backup IDs), with optional media
+ // warnings separate from financial parsing. Storage failure rolls back together.
+-function mediaFeedback(collected){return {media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+-async function importTradesWithMedia(userId,collected,extras=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+-  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);}
+-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);return n;
++function mediaFeedback(collected){return {confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
++async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});}
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);return n;
+ });}
+ 
+ function parseCsv(text) {
+@@ -1288,6 +1297,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
+   const data = req.body && req.body.data ? req.body.data : req.body;
+   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
+   const userId = req.user.id;
++  const vocabulary=Confluences.portableVocabulary(data.confluence_labels);
+   const accountMap = Object.create(null);
+   const instruments = await instrumentMap(userId);
+   const tz = (await settingsOf(req)).timezone;
+@@ -1312,7 +1322,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
+       if (!trade.account_id) continue;
+       const media=Screenshots.parsePortable(t.screenshots);
+       trade.screenshot_url=Screenshots.legacyImport(t.screenshot_url,media);
+-      collected.push({trade,media});
++      collected.push({trade,media,confluences:Confluences.optional(t.entry_confluences)});
+       inserted++;
+     }
+     for (const s of (data.strategies || [])) {
+@@ -1333,9 +1343,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
+       });
+     }
+-    try{media_imported=await importTradesWithMedia(userId,collected,stmts);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
+-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20) });
+ });
+ 
+ /* ---------------------------------------------------------------- settings */
+@@ -1372,7 +1382,7 @@ router.put('/settings', requireAuth, async (req, res) => {
+ router.post('/demo/seed', requireAuth, async (req, res) => {
+   const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
+   const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
+-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected) });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20) });
+ });
+ 
+ /**

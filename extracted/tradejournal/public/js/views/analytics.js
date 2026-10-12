@@ -206,6 +206,7 @@
 
         segments() {
           const w = U.h('div', { class: 'grid' });
+          if(Views.confluences)w.appendChild(Views.confluences.summary(an));
           const defs = [
             ['Playbook / setup', an.by_strategy], ['Instrument', an.by_symbol], ['Session', an.by_session],
             ['Direction', an.by_direction], ['Setup grade', an.by_grade], ['Entry model', an.by_entry_model], ['Asset class', an.by_asset],

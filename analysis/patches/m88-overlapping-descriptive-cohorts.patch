@@ -1,0 +1,51 @@
+diff --git a/src/confluences.js b/src/confluences.js
+index 9948659..eddf251 100644
+--- a/src/confluences.js
++++ b/src/confluences.js
+@@ -40,4 +40,20 @@ async function change(userId,id,body){
+   const value=labels(body.labels);return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id);if(body.revision!==revision(t))throw invalid('This trade changed. Reload and deliberately review its reasons before saving.',409);return {review:info(await recordOn(store,t,value))};});
+ }
+ async function vocabulary(userId){return {labels:(await db.prepare('SELECT label FROM confluence_labels WHERE user_id=? ORDER BY label_key').all(userId)).map(t=>t.label)};}
+-module.exports={key,labels,invalid,info,optional,owned,recordOn,attachOn,read,change,vocabulary};
++
++/** Descriptive overlapping CLOSED journal cohorts, not predictive/causal evidence.
++ * Strict outcome availability here is deliberately separate from legacy segments. */
++function aggregate(trades){
++  const coverage={closed_trades:0,unknown:0,none:0,partial:0,selected:0,unavailable:0,memberships:0,overlapping_labels:true,sample_floor:30};const map=new Map();
++  for(const t of trades){if(t.status!=='closed')continue;coverage.closed_trades++;const v=info(t);coverage[v.state]++;if(!['partial','selected'].includes(v.state))continue;
++    for(const label of v.labels){const k=key(label);if(!map.has(k))map.set(k,{label,list:[]});map.get(k).list.push({t,v});coverage.memberships++;}
++  }
++  const finite=n=>typeof n==='number'&&Number.isFinite(n),round=(n,d=2)=>Math.round(n*10**d)/10**d;
++  const rows=[];for(const {label,list} of map.values()){
++    const known=list.filter(({t})=>finite(t.net_pnl)),knownR=list.filter(({t})=>finite(t.net_pnl)&&finite(t.r_multiple)&&finite(t.risk_amount)&&t.risk_amount>0&&Math.abs(t.net_pnl-t.risk_amount*t.r_multiple)<=Math.max(.02,Math.abs(t.risk_amount)*.0001));
++    const n=list.length,net=known.reduce((s,{t})=>s+t.net_pnl,0),r=knownR.reduce((s,{t})=>s+t.r_multiple,0),wins=known.filter(({t})=>t.net_pnl>0).length,losses=known.filter(({t})=>t.net_pnl<0).length;
++    rows.push({key:label,label,trades:n,known_net_count:known.length,unavailable_net_count:n-known.length,wins,losses,breakeven:known.length-wins-losses,win_rate:known.length?round(wins*100/known.length):null,net_pnl:known.length===n?round(net):null,known_net_subtotal:known.length?round(net):null,known_r_count:knownR.length,total_r:knownR.length===n?round(r,4):null,expectancy_r:knownR.length===n?round(r/n,4):null,known_r_mean:knownR.length?round(r/knownR.length,4):null,human_declared_count:list.filter(({v})=>v.source==='human_declared').length,imported_count:list.filter(({v})=>v.source==='imported').length,entry_time_verified:false,sample_floor:30,sample_ready:n>=30,sample_note:n<30?'Descriptive only; below the course30-trade review floor.':'Descriptive recorded associations only; labels overlap and self-report does not prove prediction, causality or market edge.'});
++  }
++  rows.sort((a,b)=>b.trades-a.trades||key(a.key).localeCompare(key(b.key)));return {rows,coverage};
++}
++module.exports={key,labels,invalid,info,optional,owned,recordOn,attachOn,read,change,vocabulary,aggregate};
+diff --git a/src/performance.js b/src/performance.js
+index 5ac760a..4f3c2e5 100644
+--- a/src/performance.js
++++ b/src/performance.js
+@@ -9,6 +9,7 @@
+  */
+ 
+ const Execution = require('./execution-review');
++const Confluences = require('./confluences');
+ 
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+@@ -528,9 +529,12 @@ function optimalRisk(rs, { cap = 0.05, floor = 0.001 } = {}) {
+ /** Aggregate everything the dashboard needs in one payload. */
+ function fullAnalytics(trades, opts = {}) {
+   const k = kpis(trades, opts);
++  const confluences=Confluences.aggregate(trades);
+   const closed = trades.filter((t) => t.status !== 'open');
+   return {
+     kpis: k,
++    by_confluence:confluences.rows,
++    confluence_coverage:confluences.coverage,
+     points: closed.map((t, i) => ({
+       i: i + 1, id: t.id, symbol: t.symbol, r: r4(num(t.r_multiple)), risk: r2(num(t.risk_amount)),
+       mae: t.mae_r === null || t.mae_r === undefined ? null : r4(num(t.mae_r)),

@@ -333,3 +333,39 @@ These changes do not change
 entry models, target/stop geometry, RR floors, entry setup-grade policies, the course's
 30-trade adaptation minimum or the deliberate M103 `n >= 5` gate. No new market
 edge, win-rate improvement, live-provider or production-deployment claim is made.
+
+
+## M88 — optional entry reasons, NEVER authority to trade
+
+Dedicated human market/setup reasons remain independent from general tags,
+mistakes, emotion, core writing, entry model/checklist, execution review and
+HTF/MTF/LTF screenshots. NULL unknown != [] explicit none;1 honest partial is
+legal,2–5 course guidance/max5 avoids invented reasons. No historical copying,
+automatic confluence capture, label weighting or grade/risk/permission change.
+
+Separate owned saved-record revision edits only the3 nullable confluence fields;
+all original trade clocks/review hashes/financial values remain unchanged.
+Stale409 needs explicit reload, invalid editor400, actual storage503 rollback.
+New/portable optional malformed evidence warns rather than vetoing a truthful
+financial record. Close/correction/deletion/import/record-only remain legal;
+confluences never complete required loss writing or refund a cap/loss/timer/routine
+obligation. Account/user/token changes and late/closed/replaced callbacks guarded.
+
+Human/imported declarations and server declaration/receiving time are **not
+verified original entry-time or broker capture**, may be retrospective and are
+not append-only histories. Imports can't replay human timing/ownership/workflow
+proof. Reusable vocabulary is user-owned and survives deselection/deleting trades;
+JSON backs up unused choices, CSV only trade-row reasons. Bad optional import
+warnings remain visible. Storage failure rolls back the request rather than
+claiming complete success. Original20MB file/25MB body limits unchanged; optional
+unused vocabulary restore budget5000 with explicit omission warning, never silent
+clipping. Repeat historical restore can duplicate trades.
+
+Closed-only confluence cohorts overlap; each trade counts once per normalised
+label, not one independent sample per label. Known denominators/unknown outcomes
+and import mix explicit. Missing/contradictory net/R isn't0 or∞. Course30 is a
+record-count review annotation, not proof of edge/known-outcome completeness or
+permission. Retrospective associations don't establish causality/prediction and
+must not resize risk. Deliberate M103 n>=5/B-C tradeability, existing weights,
+grades, factors, default risk, stops/targets/RR/geometry all unchanged.
+M89 fresh emotion and M106/M111/M112 remain TODO; M108 remains partial.

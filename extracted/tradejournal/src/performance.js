@@ -9,6 +9,7 @@
  */
 
 const Execution = require('./execution-review');
+const Confluences = require('./confluences');
 
 const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -528,9 +529,12 @@ function optimalRisk(rs, { cap = 0.05, floor = 0.001 } = {}) {
 /** Aggregate everything the dashboard needs in one payload. */
 function fullAnalytics(trades, opts = {}) {
   const k = kpis(trades, opts);
+  const confluences=Confluences.aggregate(trades);
   const closed = trades.filter((t) => t.status !== 'open');
   return {
     kpis: k,
+    by_confluence:confluences.rows,
+    confluence_coverage:confluences.coverage,
     points: closed.map((t, i) => ({
       i: i + 1, id: t.id, symbol: t.symbol, r: r4(num(t.r_multiple)), risk: r2(num(t.risk_amount)),
       mae: t.mae_r === null || t.mae_r === undefined ? null : r4(num(t.mae_r)),

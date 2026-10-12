@@ -1,0 +1,178 @@
+diff --git a/public/index.html b/public/index.html
+index fe0cc08..56fe52e 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
++<script src="/js/views/confluences.js?v={{V}}"></script>
+ <script src="/js/views/screenshots.js?v={{V}}"></script>
+ <script src="/js/views/dashboard.js?v={{V}}"></script>
+ <script src="/js/views/bots.js?v={{V}}"></script>
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index b696929..74005ff 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -206,6 +206,7 @@
+ 
+         segments() {
+           const w = U.h('div', { class: 'grid' });
++          if(Views.confluences)w.appendChild(Views.confluences.summary(an));
+           const defs = [
+             ['Playbook / setup', an.by_strategy], ['Instrument', an.by_symbol], ['Session', an.by_session],
+             ['Direction', an.by_direction], ['Setup grade', an.by_grade], ['Entry model', an.by_entry_model], ['Asset class', an.by_asset],
+diff --git a/public/js/views/confluences.js b/public/js/views/confluences.js
+new file mode 100644
+index 0000000..d079532
+--- /dev/null
++++ b/public/js/views/confluences.js
+@@ -0,0 +1,48 @@
++/* M88 human-declared market/setup reasons. Independent of core writing,
++ * emotion, mistakes, setup/ execution grades, admission and sizing. */
++(function(global){
++  'use strict';
++  const Views=global.Views=global.Views||{},U=global.U;let opened=0,widgetId=0;
++  const context=()=>({account:global.Store.accountId,user:global.Store.user?.id});
++  const same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id;
++  const key=s=>s.normalize('NFC').trim().replace(/\s+/gu,' ').toLowerCase();
++  const hint='Pick the two to five market/setup confluences that actually caused you to take the trade, not10 invented reasons. One honest reason is partial; unknown is not none. Separate from tags, mistakes and emotion. Optional: not an entry gate, core-writing check, grade or sizing input.';
++  function editor(initial=null,choices=[]){
++    const node=U.h('div',{dataset:{confluenceEditor:'true'}}),id='entry-confluence-options-'+(++widgetId);let selected=initial===null?null:[...initial],dirty=false;
++    node.innerHTML=`<p class="field-note">${hint}</p><label class="field"><span>Entry reason — type one label, then Add (commas stay inside the label)</span><input data-confluence-input maxlength="80" list="${id}" autocomplete="off" /><datalist id="${id}"></datalist></label><div class="row wrap gap-8"><button class="btn sm" type="button" data-confluence-add>Add reason</button><button class="btn sm ghost" type="button" data-confluence-none>Explicitly no entry confluences</button><button class="btn sm ghost" type="button" data-confluence-unknown>Unknown / not recorded</button></div><div data-confluence-count class="small muted" aria-live="polite"></div><div data-confluence-selected class="row wrap gap-8" style="margin-top:8px"></div>`;
++    const input=node.querySelector('[data-confluence-input]'),list=node.querySelector('datalist');
++    function options(values){list.replaceChildren(...values.map(label=>U.h('option',{value:label})));}
++    function draw(){node.querySelector('[data-confluence-count]').textContent=selected===null?'Unknown / not recorded — no reasons guessed.':selected.length===0?'Explicit none — your declaration, not unknown.':`${selected.length} / 5 selected${selected.length===1?' — partial; do not invent a second reason.':''}`;node.querySelector('[data-confluence-selected]').replaceChildren(...(selected||[]).map(label=>U.h('button',{class:'chip',type:'button',text:label+' ×',dataset:{confluenceLabel:label},title:'Remove '+label,onclick:()=>{selected=selected.filter(s=>key(s)!==key(label));dirty=true;draw();}})));}
++    function add(){const raw=input.value;if(/[\x00-\x1f\x7f]/.test(raw))return global.App.toast('Use a single-line plain-text market/setup reason.','err');const s=raw.normalize('NFC').trim().replace(/\s+/gu,' ');if(!s||s.length>80)return global.App.toast('Each reason needs1–80 characters.','err');if((selected||[]).some(x=>key(x)===key(s))){input.value='';return;}if((selected||[]).length>=5)return global.App.toast('At most5 actual reasons; do not pad them.','err');selected=[...(selected||[]),s];dirty=true;input.value='';draw();}
++    node.querySelector('[data-confluence-add]').addEventListener('click',add);input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();add();}});
++    for(const [mode,value] of [['none',[]],['unknown',null]])node.querySelector('[data-confluence-'+mode+']').addEventListener('click',()=>{selected=value===null?null:[];dirty=true;input.value='';draw();});
++    options(choices);draw();return {node,value:()=>selected===null?null:[...selected],dirty:()=>dirty,options};
++  }
++  const C=Views.confluences={
++    draft(){const before=context(),widget=editor();global.API.get('/confluences').then(out=>{if(same(before))widget.options(out.labels||[]);}).catch(()=>{if(same(before))widget.node.appendChild(U.h('p',{class:'tiny warn',text:'Reusable choices unavailable. You may still record truthful reasons or leave them unknown.'}));});return widget;},
++    card(trade){const v=trade.entry_confluence_review||{},node=U.h('section',{class:'card',style:'margin-top:12px',dataset:{confluencesCard:'true'}});node.appendChild(U.h('h3',{text:'Entry confluences — market/setup reasons'}));node.appendChild(U.h('p',{class:'field-note',text:hint+' Save financial edits first. Saved declarations may be retrospective; they are not verified original entry-time thought process.'}));node.appendChild(U.h('p',{class:'small',text:v.labels?.length?v.labels.join(' · '):v.state==='none'?'Explicit none':v.state==='unavailable'?'Unavailable declaration evidence':'Unknown / not recorded'}));if(trade?.id)node.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{confluencesOpen:String(trade.id)},text:'Review saved entry reasons',onclick:()=>C.open(Number(trade.id))}));return node;},
++    async open(id){
++      const before=context(),serial=++opened;let view,choices;
++      try{[view,choices]=await Promise.all([global.API.get('/trades/'+id+'/confluences'),global.API.get('/confluences')]);}catch(e){return global.App.toast(e.message||'Entry reasons unavailable; nothing inferred.','err');}
++      if(!same(before)||serial!==opened||before.account!=null&&Number(before.account)!==view.account_id)return global.App.toast('Workspace/account changed or saved record is outside the selected account; reopen there.','err');
++      const body=U.h('div');let alive=true,busy=false,stale=false,widget,review=view.review;
++      const valid=()=>alive&&serial===opened&&same(before)&&body.isConnected;
++      const guard=()=>{if(!valid()){global.App.toast('Workspace/account changed or editor closed; reopen the current saved record.','err');return false;}return !busy;};
++      function disable(){body.querySelectorAll('input,button').forEach(el=>{el.disabled=busy||stale;});const reload=body.querySelector('[data-confluence-reload]');if(reload)reload.disabled=busy;}
++      function draw(){const t=view.saved_record||{};widget=editor(review.labels,choices.labels||[]);body.replaceChildren(U.h('p',{class:'small',text:`Saved #${view.trade_id} ${t.symbol||''} · account #${view.account_id} · entry ${t.entry??'unknown'}, stop ${t.stop??'unknown'}, exit ${t.exit??'unknown'} (${t.status||'unknown'}).`}),U.h('p',{class:'field-note',text:'Save financial edits first. Human-declared reasons only; server declaration/receiving time is NOT original entry-time or broker proof. Imports remain imported. Changing labels does not acknowledge execution, routine or core writing, grant entry, resize risk or erase loss/cap obligations.'}),U.h('p',{class:'small muted',dataset:{confluenceProvenance:'true'},text:`${review.state} · source ${review.source||'unknown'} · recorded/received ${review.recorded_at||'unknown'}`}),widget.node);
++        body.appendChild(U.h('button',{class:'btn sm primary',type:'button',dataset:{confluenceSave:'true'},text:'Save my declared entry reasons',onclick:async()=>{if(!guard())return;busy=true;disable();try{const out=await global.API.put('/trades/'+id+'/confluences',{labels:widget.value(),revision:review.revision});if(!valid())return;review=out.review;view.review=review;stale=false;draw();global.Store.invalidate();global.App.toast('Entry reasons recorded as your declaration; core writing/grades/permission unchanged.','ok');}catch(e){if(valid()){stale=e.status===409;global.App.toast(e.message||'Entry reasons could not be recorded; financial truth unchanged.','err');}}finally{busy=false;if(valid())disable();}}}));
++        body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{confluenceReload:'true'},text:'Reload saved record (discard unsaved reasons)',onclick:async()=>{if(!guard())return;busy=true;disable();try{const out=await global.API.get('/trades/'+id+'/confluences');if(!valid())return;view=out;review=out.review;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message||'Current saved record unavailable.','err');}finally{busy=false;if(valid())disable();}}}));
++      }
++      draw();return global.App.modal({title:'Review entry confluences',body,wide:true,onClose:()=>{alive=false;},actions:[{label:'Close — financial/core state unchanged',ghost:true}]});
++    },
++    summary(an){
++      const rows=an.by_confluence||[],v=an.confluence_coverage,node=U.h('section',{class:'card',dataset:{confluenceAnalytics:'true'}});node.appendChild(U.h('h3',{text:'Entry confluences — descriptive closed-trade associations'}));
++      node.appendChild(U.h('p',{class:'field-note',text:'Labels overlap: each trade counts once per normalised reason, but can appear in several groups. Do not add groups as independent trades. Human/imported declarations are not verified entry-time capture, prediction, causality or market-edge proof. Below30 closed trades per label: descriptive only.30 is a review annotation, not entry/sizing permission; even30+ does not prove an edge.'}));
++      if(!v){node.appendChild(U.h('p',{text:'Confluence coverage unavailable; no missing data inferred as none.'}));return node;}
++      node.appendChild(U.h('p',{class:'small',dataset:{confluenceCoverage:'true'},text:`${v.closed_trades} closed trades · ${v.selected} with2–5 reasons · ${v.partial} with1 (partial) · ${v.none} explicit none · ${v.unknown} unknown · ${v.unavailable} unavailable · ${v.memberships} overlapping label memberships.`}));
++      if(!rows.length){node.appendChild(U.h('p',{class:'muted',text:'No usable declared reasons in this closed-trade filter. Existing tags, mistakes, models and emotion are not backfilled.'}));return node;}
++      const finite=x=>typeof x==='number'&&Number.isFinite(x),fmt=(x,fn)=>finite(x)?fn(x):'Unavailable';const table=U.h('div',{class:'table-wrap'});
++      table.innerHTML=`<table><thead><tr><th>Declared reason</th><th>n / review floor30</th><th>Known outcomes / n</th><th>Win % (known outcomes)</th><th>Net (all n)</th><th>Known net subtotal</th><th>Known R / n</th><th>Mean R (all n)</th><th>Human / imported</th></tr></thead><tbody>${rows.map(r=>`<tr data-confluence-group><td>${U.esc(r.key)}</td><td>${r.trades}${r.sample_ready?' · review sample':' · below30'}</td><td>${r.known_net_count} / ${r.trades}</td><td>${fmt(r.win_rate,x=>U.pct(x,1))}</td><td>${fmt(r.net_pnl,x=>U.moneySign(x))}</td><td>${fmt(r.known_net_subtotal,x=>U.moneySign(x))}</td><td>${r.known_r_count} / ${r.trades}</td><td>${fmt(r.expectancy_r,x=>U.signed(x,2)+'R')}</td><td>${r.human_declared_count} / ${r.imported_count}</td></tr>`).join('')}</tbody></table>`;node.appendChild(table);return node;
++    },
++  };
++})(window);
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 4d81940..2ba01ad 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -169,7 +169,7 @@
+         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+-        <td class="tiny"><button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
++        <td class="tiny"><button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+@@ -179,6 +179,7 @@
+       selection.innerHTML=`<span>Daily routine completion — explicit self-report (never workflow permission)</span><select id="j-pre-market"><option value="" ${flag===null?'selected':''}>Unknown / not recorded</option><option value="true" ${flag===true?'selected':''}>Completed — my self-report</option><option value="false" ${flag===false?'selected':''}>Not completed — my self-report</option></select><div class="field-note">Current account only, separate from the shared daily note and actual ordered/timed workflow. Unrelated note edits preserve this flag/source/time. Retrospective self-report cannot rewrite first-entry/on-time evidence.</div>`;
+       U.$('#j-pre-market',selection).addEventListener('change',()=>{routineDirty=true;});body.prepend(selection);
+     }
++    body.querySelectorAll('[data-day-confluences]').forEach(b=>b.addEventListener('click',()=>Views.confluences?Views.confluences.open(Number(b.dataset.dayConfluences)):global.App.toast('Entry reasons UI unavailable.','err')));
+     body.querySelectorAll('[data-day-screenshots]').forEach(b=>b.addEventListener('click',()=>Views.screenshots?Views.screenshots.open(Number(b.dataset.dayScreenshots)):global.App.toast('Visual evidence UI unavailable.','err')));
+     body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
+     if(Views.lossWritingCard)body.appendChild(Views.lossWritingCard({pending:(day.loss_reflections||[]).filter(r=>r.completed_at===null),pending_count:(day.loss_reflections||[]).filter(r=>r.completed_at===null).length}));
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index 30987d8..6cb79dc 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -26,6 +26,7 @@
+       <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
+     if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
+     if(!capture&&Views.screenshots)body.appendChild(Views.screenshots.card(trade));
++    if(!capture&&Views.confluences)body.appendChild(Views.confluences.card(trade));
+     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
+     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
+       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
+@@ -161,7 +162,7 @@
+             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
+             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
+               ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', '']].map(([k, l]) =>
++              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', 'Entry confluences'], ['', '']].map(([k, l]) =>
+               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
+           </tr></thead>
+           <tbody>
+@@ -185,6 +186,7 @@
+             <td class="tiny"><span data-execution-state>${U.esc(Views.execution?Views.execution.state(t.execution_review):'Unreviewed')}</span>${t.status==='closed'?` <button class="btn xs ghost" data-execution="${t.id}">Execution</button>`:''}</td>
+             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
+             <td class="tiny"><button class="btn xs ghost" data-screenshots="${t.id}">HTF / MTF / LTF</button></td>
++            <td class="tiny"><button class="btn xs ghost" data-confluences="${t.id}">Entry reasons</button></td>
+             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
+           </tr>`).join('')}
+           </tbody>
+@@ -198,9 +200,10 @@
+       U.$$('[data-execution]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.execution)Views.execution.open(Number(b.dataset.execution));else global.App.toast('Execution review UI unavailable; no grade inferred.','err');}));
+       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
+       U.$$('[data-screenshots]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.screenshots)Views.screenshots.open(Number(b.dataset.screenshots));else global.App.toast('Visual evidence UI unavailable; nothing is inferred.','err');}));
++      U.$$('[data-confluences]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.confluences)Views.confluences.open(Number(b.dataset.confluences));else global.App.toast('Entry reasons UI unavailable; nothing inferred.','err');}));
+       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
+       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
+-        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution]')) return;
++        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution],[data-confluences]')) return;
+         global.App.openTrade(Number(tr.dataset.id));
+       }));
+       const chkAll = U.$('#chk-all', body);
+@@ -391,6 +394,8 @@
+     g('strategy').addEventListener('change', () => { if (applyChk.checked) { const s = Store.strategyById(g('strategy').value); renderChecklist(s && s.checklist && s.checklist.length ? s.checklist : (Store.user.default_checklist || [])); } });
+ 
+     updateSpec(); calc();
++    const confluenceDraft=isNew&&Views.confluences?Views.confluences.draft():null;
++    if(confluenceDraft){const box=U.h('section',{class:'card',style:'margin-top:12px'});box.appendChild(U.h('h3',{text:'Entry confluences — actual market/setup reasons'}));box.appendChild(confluenceDraft.node);node.appendChild(box);}
+ 
+     function collect() {
+       const body = {
+@@ -424,6 +429,7 @@
+       if (body.status === 'closed' && !body.exit) throw new Error('A closed trade needs an exit price (or set the status to Open).');
+       if (!body.symbol) throw new Error('Symbol is required.');
+       if (!body.entry) throw new Error('Entry price is required.');
++      if(confluenceDraft?.dirty())body.entry_confluences=confluenceDraft.value();
+       return body;
+     }
+     /* --------------------------------------------- TradingView helpers */
+@@ -494,6 +500,7 @@
+     refreshGuard();
+     if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
+     if(Views.screenshots)node.appendChild(Views.screenshots.card(t));
++    if(!isNew&&Views.confluences)node.appendChild(Views.confluences.card(t));
+     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
+   };
+ 
+diff --git a/src/confluences.js b/src/confluences.js
+index eddf251..d91f01e 100644
+--- a/src/confluences.js
++++ b/src/confluences.js
+@@ -34,7 +34,7 @@ async function recordOn(store,t,value,{source='human_declared'}={}){
+   await store.prepare('UPDATE trades SET entry_confluences=?,entry_confluences_source=?,entry_confluences_recorded_at=? WHERE id=? AND user_id=?').run(encoded,source,recorded,t.id,t.user_id);return owned(store,t.user_id,t.id);
+ }
+ async function attachOn(store,userId,id,input,{source='human_declared'}={}){if(!input?.present)return;return recordOn(store,await owned(store,userId,id),input.labels,{source});}
+-async function read(userId,id){return {review:info(await owned(db,userId,id))};}
++async function read(userId,id){const t=await owned(db,userId,id);return {trade_id:t.id,account_id:t.account_id,saved_record:{symbol:t.symbol,status:t.status,entry:t.entry,stop:t.stop,exit:t.exit},review:info(t)};}
+ async function change(userId,id,body){
+   if(!body||Array.isArray(body)||typeof body!=='object'||Object.keys(body).some(k=>!['labels','revision'].includes(k))||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision)||!Object.hasOwn(body,'labels'))throw invalid('Use labels and the displayed saved-record revision only.');
+   const value=labels(body.labels);return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id);if(body.revision!==revision(t))throw invalid('This trade changed. Reload and deliberately review its reasons before saving.',409);return {review:info(await recordOn(store,t,value))};});

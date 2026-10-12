@@ -1,0 +1,12 @@
+{
+  "counts": [
+    132,
+    90,
+    4,
+    38,
+    0,
+    8
+  ],
+  "cause": "Existing progress parser checks the word PARTIAL anywhere in the status cell before APPLIED. New M88 status explanation said1-partial, unintentionally classifying the finding as partial.",
+  "correction": "Status prose changed to1-known-reason only; feature/UI partial state and progress parser unchanged. Subsequent exact counts asserted91/3/38."
+}

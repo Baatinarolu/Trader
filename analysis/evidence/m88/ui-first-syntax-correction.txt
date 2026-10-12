@@ -1,0 +1,9 @@
+/home/user/Trader/extracted/tradejournal/public/js/views/confluences.js:18
+    for(const [mode,value] of [['none',[]],['unknown',null]])node.querySelector('[data-confluence-'+mode+']'').addEventListener('click',()=>{selected=value===null?null:[];dirty=true;input.value='';draw();});
+                                                                                                         ^^^
+
+SyntaxError: missing ) after argument list
+    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
+    at checkSyntax (node:internal/main/check_syntax:78:3)
+
+Node.js v22.22.3

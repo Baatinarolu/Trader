@@ -544,3 +544,60 @@ as money fields. New `trade_extremes_basis` labels that compatibility basis, and
 All ranking/grade/outcome associations are descriptive, self-reported and
 retrospective, not statistical edge, causation, live emotion/provider/broker proof,
 fresh entry readiness, permission or risk advice.
+
+
+## M88 — human entry-confluence declarations
+
+Three nullable trade columns: `entry_confluences` (canonical JSON-array text,
+NULL unknown), `entry_confluences_source` and `entry_confluences_recorded_at`.
+`[]` explicit none,1 partial,2–5 selected. Never inferred from tags/mistakes,
+emotion/model/checklist/images. Independent from unchanged financial normalizer,
+core/execution/routine/permission and risk inputs. User-owned reusable vocabulary
+retains past choices after deselection/deletion, user FK cascade.
+
+- `GET /confluences` → own reusable `{labels:[strings]}` only.
+- `GET /trades/:id/confluences` → canonical owned `trade_id`, `account_id`,
+  same-snapshot `saved_record:{symbol,status,entry,stop,exit}` and `review`.
+- `PUT /trades/:id/confluences` → **only** `{labels:null|[]|[strings],revision}`.
+  Required displayed SHA covers all63 current trade fields, including original
+  finance/notes/excursions/legs/reviews/clocks and confluence evidence. Malformed400,
+  missing/foreign/noncanonical trade404, stale409, real storage503 atomic rollback.
+  Valid label replacement updates ONLY these3 new columns. Identical valid retry
+  does not invent a new clock. Existing financial PUT/close preserves reasons;
+  use the dedicated editor, not an unacknowledged optional-body overwrite.
+- `POST /trades` accepts optional `entry_confluences` array (or explicit null),
+  validated/canonicalised separately inside the actual insert/admission transaction.
+  Invalid optional declaration warns/omits, financial truth not discarded. No
+  default “none”; no new checklist/entry requirement or score/sizing authority.
+
+`review` has state unknown/none/partial/selected/unavailable, nullable labels,
+source `human_declared`/`imported`, server recorded/received time, displayed revision
+and **entry_time_verified:false** always. Can be retrospective; never broker/live
+capture proof or immutable confluence history. Corrupt/future metadata is
+unavailable, not guessed. Corrections retain declarations until deliberate edit;
+no automatic validation of whether a label really explained an original entry.
+
+`GET /analytics` adds `by_confluence` and `confluence_coverage`, exactly closed
+rows only, filter/owner scope preserved. A trade appears once per normalised label,
+may appear in multiple labels; groups are not independent/disjoint. Coverage
+separates unknown/none/partial/selected/unavailable. Rows expose n, known/unavailable
+net counts, wins/losses/breakeven, known-outcome win denominator, nullable all-n
+net/R/expectancy and labelled known-net subtotal/known-R count/mean, human/imported
+counts. Missing net/R is never0 or∞; R needs finite positive risk and consistency.
+`sample_floor:30`/`sample_ready` annotate recorded closed count only—not edge,
+causation, valid outcome availability, permission or sizing. Existing legacy
+analytics numerics unchanged. M103 n>=5 is not replaced.
+
+JSON trade exports include the3 fields, and JSON top-level `confluence_labels`
+backs up reusable strings even when unused. CSV `entry_confluences` is a JSON
+array **inside the CSV cell**, escaped normally (commas/quotes in labels survive);
+source/time informational. Blank CSV means unknown, `[]` explicit none. Restore
+uses new actual owned trade IDs, forced imported source/new receiving time; raw
+source/old-clock/owner IDs aren't replayed. Optional malformed labels/choices have
+bounded `confluence_warnings` while truthful finance still imports. Real optional
+storage failure rolls back finance/media/choices together. Unused vocabulary
+restore budget5000 labels/request, explicit omission warning above—not clipping.
+Trade labels themselves also populate choices. CSV does not carry unused choices;
+JSON is the full vocabulary backup. Historical insertion is not upsert/deduping.
+Existing20MB selected-file/25MB body limits unchanged. UI presents warnings without
+auto-closing/refreshing a warning-bearing restore. M89 capture/M106/M111/M112 open.

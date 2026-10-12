@@ -389,9 +389,10 @@
             try {
               const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value, account_id: Store.accountId });
               out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`+(Views.screenshots?Views.screenshots.importResult(d):'');
+              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);
               Store.invalidate();
-              if(!d.media_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
-              else this.toast('Financial import recorded; review optional media omissions below before closing.','ok');
+              if(!d.media_warnings?.length&&!d.confluence_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
+              else this.toast('Financial import recorded; review optional journal evidence omissions below before closing.','ok');
             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
           },
         }],

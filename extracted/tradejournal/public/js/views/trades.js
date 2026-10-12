@@ -26,6 +26,7 @@
       <div class="field-note">This acknowledges core writing only. It does not waive cap/loss/streak/cooldown rules, grant an entry, or prove live emotion timing/the entire course journal is complete.</div>`;
     if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
     if(!capture&&Views.screenshots)body.appendChild(Views.screenshots.card(trade));
+    if(!capture&&Views.confluences)body.appendChild(Views.confluences.card(trade));
     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
@@ -161,7 +162,7 @@
             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
               ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', '']].map(([k, l]) =>
+              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', 'Entry confluences'], ['', '']].map(([k, l]) =>
               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
           </tr></thead>
           <tbody>
@@ -185,6 +186,7 @@
             <td class="tiny"><span data-execution-state>${U.esc(Views.execution?Views.execution.state(t.execution_review):'Unreviewed')}</span>${t.status==='closed'?` <button class="btn xs ghost" data-execution="${t.id}">Execution</button>`:''}</td>
             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
             <td class="tiny"><button class="btn xs ghost" data-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+            <td class="tiny"><button class="btn xs ghost" data-confluences="${t.id}">Entry reasons</button></td>
             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
           </tr>`).join('')}
           </tbody>
@@ -198,9 +200,10 @@
       U.$$('[data-execution]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.execution)Views.execution.open(Number(b.dataset.execution));else global.App.toast('Execution review UI unavailable; no grade inferred.','err');}));
       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
       U.$$('[data-screenshots]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.screenshots)Views.screenshots.open(Number(b.dataset.screenshots));else global.App.toast('Visual evidence UI unavailable; nothing is inferred.','err');}));
+      U.$$('[data-confluences]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.confluences)Views.confluences.open(Number(b.dataset.confluences));else global.App.toast('Entry reasons UI unavailable; nothing inferred.','err');}));
       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
-        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution]')) return;
+        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution],[data-confluences]')) return;
         global.App.openTrade(Number(tr.dataset.id));
       }));
       const chkAll = U.$('#chk-all', body);
@@ -391,6 +394,8 @@
     g('strategy').addEventListener('change', () => { if (applyChk.checked) { const s = Store.strategyById(g('strategy').value); renderChecklist(s && s.checklist && s.checklist.length ? s.checklist : (Store.user.default_checklist || [])); } });
 
     updateSpec(); calc();
+    const confluenceDraft=isNew&&Views.confluences?Views.confluences.draft():null;
+    if(confluenceDraft){const box=U.h('section',{class:'card',style:'margin-top:12px'});box.appendChild(U.h('h3',{text:'Entry confluences — actual market/setup reasons'}));box.appendChild(confluenceDraft.node);node.appendChild(box);}
 
     function collect() {
       const body = {
@@ -424,6 +429,7 @@
       if (body.status === 'closed' && !body.exit) throw new Error('A closed trade needs an exit price (or set the status to Open).');
       if (!body.symbol) throw new Error('Symbol is required.');
       if (!body.entry) throw new Error('Entry price is required.');
+      if(confluenceDraft?.dirty())body.entry_confluences=confluenceDraft.value();
       return body;
     }
     /* --------------------------------------------- TradingView helpers */
@@ -494,6 +500,7 @@
     refreshGuard();
     if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
     if(Views.screenshots)node.appendChild(Views.screenshots.card(t));
+    if(!isNew&&Views.confluences)node.appendChild(Views.confluences.card(t));
     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
   };
 

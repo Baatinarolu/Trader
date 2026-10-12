@@ -1,5 +1,39 @@
 # TradeJournal Pro
 
+## M88 — distinct entry confluences (2026-10-12)
+
+Use **Entry reasons** in the trade log or review link in the saved financial form,
+core-writing dialog or UTC day journal. On a new trade, type one market/setup
+reason and **Add**; prior names appear in your own reusable dropdown. Commas stay
+inside a label, not delimiters. Pick the actual **two to five** reasons, not10
+invented ones. One honest reason is partial; **Unknown** differs from explicitly
+**None**. Optional reasons never replace writing/emotion or grant entry/sizing.
+Old trades and bots without an explicit human declaration remain unknown.
+
+Save financial edits first; the separate saved-reasons editor uses the displayed
+current revision. Unseen edits409 require deliberate reload; storage503 retains
+the old field/time and finance. Only the new confluence columns are changed.
+Human/imported source and server declaration/receiving time are shown: **not
+verified original entry-time/broker/causal intent proof**, possibly retrospective.
+M89 fresh emotion remains open. Labels are separate from tags, mistakes, entry
+models/checklists, execution grades and HTF/MTF/LTF images; nothing backfilled.
+
+**Analytics → Segments → Entry confluences** shows closed-trade descriptive
+associations with overlapping labels, sample counts, known outcome denominators,
+unknown net/R and human/imported counts. Do not add groups as independent trades.
+Below30 closed trades per label: descriptive only;30+ still does not establish
+prediction, causality, market edge, permission or risk advice. Course30 and M103's
+deliberate n>=5 stay unchanged. No70% win-rate promise or model/exit retuning.
+
+JSON backup carries trade reasons plus reusable prior-unused vocabulary; CSV
+`entry_confluences` is a quoted **JSON-array cell**, not a comma-list of reasons.
+Imports use new owned IDs/source/time, not backup entry-time/owner proof. Bad
+optional evidence warns without vetoing financial truth; actual storage failure
+rolls back the request. Warning-bearing restore stays visible. JSON unused-choice
+restore budget5000 per request with an explicit warning if exceeded; CSV does not
+carry unused choices. Repeat restore can duplicate trades. Existing20MB file
+selection/25MB API body limits apply; split larger backups, never silent clipping.
+
 ## M87 — saved HTF / MTF / LTF chart references (2026-10-11)
 
 Use **Visual evidence** in the trade log, saved-trade form, core-writing dialog

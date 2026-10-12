@@ -1,0 +1,466 @@
+{
+  "base_commit": "b0c07daf3dd843a82ac9bf1ce2a383b9ca92c0c5",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 91,
+    "partial": 3,
+    "todo": 38,
+    "no_action": 0,
+    "partition_groups": 8,
+    "partial_ids": [
+      "M30",
+      "M103",
+      "M108"
+    ],
+    "todo_ids": [
+      "M12",
+      "M13",
+      "M15",
+      "M17",
+      "M18",
+      "M19",
+      "M45",
+      "M46",
+      "M49",
+      "M53",
+      "M55",
+      "M56",
+      "M59",
+      "M60",
+      "M62",
+      "M65",
+      "M66",
+      "M67",
+      "M72",
+      "M73",
+      "M74",
+      "M89",
+      "M91",
+      "M93",
+      "M99",
+      "M100",
+      "M101",
+      "M104",
+      "M105",
+      "M106",
+      "M107",
+      "M109",
+      "M110",
+      "M111",
+      "M112",
+      "M115",
+      "M117",
+      "M125"
+    ]
+  },
+  "feature_assertions": {
+    "pass": 160,
+    "fail": 0,
+    "probes": 8,
+    "scope": "Actual no preparation adapter; declared clock/literal journals/DOM. Not original entry-time, broker, pixels, human or causation."
+  },
+  "prior_actual_execution": {
+    "pass": 260,
+    "fail": 0,
+    "probes": 9
+  },
+  "prior_actual_routine": {
+    "pass": 321,
+    "fail": 0,
+    "probes": 10,
+    "owned_strategy_ui_freshness": "UNMEASURED prior distinct scope"
+  },
+  "unchanged_screenshot_feature": {
+    "pass": 223,
+    "fail": 3,
+    "probes": 9,
+    "scope": "Original d5 migration schema/whole-row expectations fail on3 newly added nullable columns. Kept, not rewritten; actual b0c migration12/0 proves all ORIGINAL trade/media/review/obligation values retained."
+  },
+  "raw_inherited": {
+    "pass": 597,
+    "fail": 155,
+    "probes": 31,
+    "completed_nonzero": 21,
+    "timeout_no_exit": 1,
+    "summaryless": 1,
+    "scope": "REPORTED completed assertions; literal clocks/journals/DOM only. Feature/execution/routine no prerequisite adapter; RAW failures/early aborts and DECLARED assumptions remain SEPARATE. No chart/broker/provider/pixel/meditation/edge/production proof."
+  },
+  "declared_isolation": {
+    "pass": 828,
+    "fail": 0
+  },
+  "regression_parents": {
+    "method": "Actual d5 Git archive; literal c22 and7517 restored by durable reverse patches and ALL-source SHA guards; fdaa via four old reverse patches. No guessed schema/current module in older parent.",
+    "parents": {
+      "/tmp/m87-parent/app": {
+        "files": 119,
+        "byte_differences": 0
+      },
+      "/tmp/m86-parent/app": {
+        "files": 117,
+        "byte_differences": 0
+      },
+      "/tmp/m64-parent/app": {
+        "files": 114,
+        "byte_differences": 0
+      },
+      "/tmp/m79-parent/extracted/tradejournal": {
+        "files": 110,
+        "byte_differences": 0
+      },
+      "/tmp/m84-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      },
+      "/tmp/m81-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      }
+    }
+  },
+  "offline_synthetic_no_prerequisite_adapter": {
+    "pass": 178,
+    "fail": 0
+  },
+  "live_provider_attempts": {
+    "pass": 70,
+    "fail": 1,
+    "completed_nonzero": 6,
+    "summaryless": 5
+  },
+  "declared_market": {
+    "pass": 325,
+    "fail": 0
+  },
+  "native": [
+    {
+      "arm": "parent",
+      "suite": "api",
+      "server_app": "/tmp/m88-parent/app",
+      "scripts_unchanged": true,
+      "pass": 121,
+      "fail": 0,
+      "exit_code": 0,
+      "output": "native-parent-api.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. DECLARED synthetic owned preparation actual modules/15m control clock; old assertions, not human/meditation/live/broker/production proof.",
+      "parity_fills": null,
+      "parity_mismatches": null
+    },
+    {
+      "arm": "parent",
+      "suite": "bots",
+      "server_app": "/tmp/m88-parent/app",
+      "scripts_unchanged": true,
+      "pass": 205,
+      "fail": 1,
+      "exit_code": 1,
+      "output": "native-parent-bots.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. DECLARED synthetic owned preparation actual modules/15m control clock; old assertions, not human/meditation/live/broker/production proof.",
+      "parity_fills": 20,
+      "parity_mismatches": 0
+    },
+    {
+      "arm": "raw",
+      "suite": "api",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": null,
+      "fail": null,
+      "exit_code": 2,
+      "output": "native-raw-api.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. NO preparation fixture, retained new mandatory-routine aborts, not integrated-all assertion pass.",
+      "parity_fills": null,
+      "parity_mismatches": null
+    },
+    {
+      "arm": "raw",
+      "suite": "bots",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": 201,
+      "fail": 5,
+      "exit_code": 1,
+      "output": "native-raw-bots.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. NO preparation fixture, retained new mandatory-routine aborts, not integrated-all assertion pass.",
+      "parity_fills": 20,
+      "parity_mismatches": 0
+    },
+    {
+      "arm": "fixture",
+      "suite": "api",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": 121,
+      "fail": 0,
+      "exit_code": 0,
+      "output": "native-fixture-api.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. DECLARED synthetic owned preparation actual modules/15m control clock; old assertions, not human/meditation/live/broker/production proof.",
+      "parity_fills": null,
+      "parity_mismatches": null
+    },
+    {
+      "arm": "fixture",
+      "suite": "bots",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": 205,
+      "fail": 1,
+      "exit_code": 1,
+      "output": "native-fixture-bots.txt",
+      "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. DECLARED synthetic owned preparation actual modules/15m control clock; old assertions, not human/meditation/live/broker/production proof.",
+      "parity_fills": 20,
+      "parity_mismatches": 0
+    }
+  ],
+  "smoke": {
+    "exit_code": 0,
+    "status": "completed",
+    "duration_seconds": 99.251,
+    "scope": "Independent bounded subprocess after no previous smoke child remained. Unchanged original script; actual current server/HTML/assets; JSDOM/TradingView blocked/no canvas. Conditional DOM views, not pixels/live/broker/human/production proof.",
+    "result_views_passed": 22,
+    "result_views_failed": 0,
+    "style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limitations": 16
+  },
+  "initial_smoke_tool_timeout": {
+    "status": "tool_stopped_waiting_90s",
+    "exit_code": null,
+    "summary_views_passed": 22,
+    "summary_views_failed": 0,
+    "style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limits": 8,
+    "epilogue_exit_file_written": false,
+    "no_prior_smoke_child_at_inspection": true,
+    "scope": "Completed printed conditional DOM summary NOT an observed process exit0. Retained independently; monitored repeat after no old child remained."
+  },
+  "controls_and_errors": {
+    "parent-codec-results.json": [
+      0,
+      26
+    ],
+    "codec-only-contracts-results.json": [
+      1,
+      3
+    ],
+    "codec-only-contracts-corrected-results.json": [
+      6,
+      27
+    ],
+    "storage-only-contracts-results.json": [
+      29,
+      4
+    ],
+    "portable-only-analysis-results.json": [
+      9,
+      14
+    ],
+    "analysis-only-ui-results.json": [
+      0,
+      25
+    ],
+    "analysis-only-ui-corrected-results.json": [
+      2,
+      30
+    ],
+    "ui-initial-results.json": [
+      24,
+      1
+    ],
+    "ui-only-hardening-results.json": [
+      3,
+      16
+    ],
+    "hardening-results.json": [
+      11,
+      8
+    ],
+    "ui-only-freshness-results.json": [
+      1,
+      7
+    ],
+    "ui-only-settings-results.json": [
+      2,
+      5
+    ],
+    "hardening-only-settings-results.json": [
+      6,
+      1
+    ],
+    "parent-migration-results.json": [
+      7,
+      5
+    ],
+    "parent-migration-corrected-results.json": [
+      8,
+      4
+    ],
+    "migration-initial-results.json": [
+      11,
+      1
+    ],
+    "contracts-initial-results.json": [
+      0,
+      1
+    ]
+  },
+  "initial_ledger_classification": {
+    "counts": [
+      132,
+      90,
+      4,
+      38,
+      0,
+      8
+    ],
+    "cause": "Existing progress parser checks the word PARTIAL anywhere in the status cell before APPLIED. New M88 status explanation said1-partial, unintentionally classifying the finding as partial.",
+    "correction": "Status prose changed to1-known-reason only; feature/UI partial state and progress parser unchanged. Subsequent exact counts asserted91/3/38."
+  },
+  "required_revision_schema": {
+    "current_trade_columns": 63,
+    "required_revision_fields": 63,
+    "missing": [],
+    "measurement": "Actual ready local libSQL PRAGMA table_info(trades), compared to the literal contextFields list; all remote vars blank/test DB in /tmp. Not broker/input-history verification."
+  },
+  "stages": [
+    {
+      "stage": "codec",
+      "source_manifest": "codec-source.json",
+      "source_files": 122,
+      "patch": "m88-explicit-label-codec.patch",
+      "files": 1,
+      "bytes": 1291,
+      "sha256": "8174cc01a9f18a10caab1408224cc6dc03d52ec4b9be0aaf0dd45df0e5f91659",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "storage",
+      "source_manifest": "storage-source.json",
+      "source_files": 122,
+      "patch": "m88-owned-declaration-storage-api.patch",
+      "files": 3,
+      "bytes": 11010,
+      "sha256": "f7e3d4ba8501e72a17a094a8f080c5fa45a472a4950f10e449e655ea5a09c235",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "portable",
+      "source_manifest": "portable-source.json",
+      "source_files": 122,
+      "patch": "m88-owned-confluence-portability.patch",
+      "files": 1,
+      "bytes": 4848,
+      "sha256": "8bb5908d6327da9fcd905e97c849348445dee6f734445713f84c79e27f26a7ec",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "analysis",
+      "source_manifest": "analysis-source.json",
+      "source_files": 122,
+      "patch": "m88-overlapping-descriptive-cohorts.patch",
+      "files": 2,
+      "bytes": 4281,
+      "sha256": "e0aa0aba5d16397d75f83b84f54db56e831eb756e5951f8106496297c431b2bd",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "ui",
+      "source_manifest": "ui-source.json",
+      "source_files": 123,
+      "patch": "m88-real-confluence-editor-analytics.patch",
+      "files": 6,
+      "bytes": 22715,
+      "sha256": "f1936b4e18005597cdde0acf7f3470aeded0dc6bce37bde506a5063d55bc4b45",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "hardening",
+      "source_manifest": "hardening-source.json",
+      "source_files": 123,
+      "patch": "m88-retained-vocabulary-full-revision-freshness.patch",
+      "files": 5,
+      "bytes": 14199,
+      "sha256": "a398bf4ab78de736b31e7db03ef4bc4a07c658018dbbbd88ba7be53afb7d6314",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "settings",
+      "source_manifest": "settings-source.json",
+      "source_files": 123,
+      "patch": "m88-visible-settings-confluence-warnings.patch",
+      "files": 1,
+      "bytes": 2544,
+      "sha256": "5dbd0a52962c569c24331893f0cddb0bb37f6f304177d62fe70a4962df1d1a8b",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "full",
+      "source_manifest": "full-source.json",
+      "source_files": 123,
+      "patch": "m88-confluence-documentation.patch",
+      "files": 3,
+      "bytes": 9852,
+      "sha256": "7d88edd218f33d0c555ff39a5c1f9275fecbd93d1d217026107930525ee0623c",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 14,
+    "bytes": 59569,
+    "sha256": "ded64068e41bfddc4c08ba85b2ed8c4bed116576ac19ce63e591d012a3120ee1",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 60,
+    "bytes": 950798,
+    "sha256": "410ecb585d6f7b0860de57c9aac2fdd7e97555104f3e50be906e80dd71f3df5c",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 123,
+    "application_byte_differences": 0,
+    "private_env_db_dependency_files": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/setup.js",
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "other_neutral_files": [
+    "src/instruments.js",
+    "src/trades.js",
+    "src/journaling.js",
+    "src/execution-review.js",
+    "src/routine.js",
+    "src/routine-records.js",
+    "public/js/views/execution.js",
+    "package-lock.json",
+    "scripts/api-test.js",
+    "scripts/bots-test.js",
+    "scripts/smoke-test.js"
+  ],
+  "package_lock_sha256": "33e859914328605792ab71c75957b752716748828b0b2bef164956525cffb74c",
+  "scope": "M88 optional human/imported market reasons only. Declaration/receiving time NOT original entry-time capture; retrospective overlapping descriptive associations, not causal/predictive/edge/grade/sizing/permission/human/broker/news/meditation/pixel/production proof. M89/M106/M111/M112 open; M30/M103/M108 partial."
+}

@@ -1,0 +1,52 @@
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 2288c9a..9ed2df9 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -1149,7 +1149,7 @@ router.get('/export/csv', requireAuth, backup(async (req, res) => {
+   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
+     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
+     'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
+-    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json'];
++    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json', 'entry_confluences', 'entry_confluences_source', 'entry_confluences_recorded_at'];
+   const esc = (v) => {
+     const s = v === null || v === undefined ? '' : String(v);
+     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+@@ -1201,7 +1201,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+     entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
+     tags: findCol(['tags', 'tag', 'labels']),
+     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
+-    screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
++    entry_confluences:findCol(['entry_confluences']), screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
+     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
+   };
+   if (map.symbol < 0) return res.status(400).json({ error: 'Could not find a symbol/ticker column in the CSV.' });
+@@ -1253,7 +1253,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+         }
+         const media=Screenshots.parsePortable(map.screenshot_views_json>-1?r[map.screenshot_views_json]:undefined,{json:true});
+         trade.screenshot_url=Screenshots.legacyImport(map.screenshot_url>-1?r[map.screenshot_url]:undefined,media);
+-        collected.push({trade,media});
++        collected.push({trade,media,confluences:Confluences.optional(map.entry_confluences>-1?r[map.entry_confluences]:undefined,{json:true})});
+         inserted++;
+       } catch (e) { skipped++; if (errors.length < 5) errors.push(`Row ${i + 1}: ${e.message}`); }
+     }
+@@ -1267,9 +1267,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+ 
+ // Actual transaction insert IDs (never raw backup IDs), with optional media
+ // warnings separate from financial parsing. Storage failure rolls back together.
+-function mediaFeedback(collected){return {media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
++function mediaFeedback(collected){return {confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+ async function importTradesWithMedia(userId,collected,extras=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+-  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);}
++  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});}
+   for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);return n;
+ });}
+ 
+@@ -1320,7 +1320,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
+       if (!trade.account_id) continue;
+       const media=Screenshots.parsePortable(t.screenshots);
+       trade.screenshot_url=Screenshots.legacyImport(t.screenshot_url,media);
+-      collected.push({trade,media});
++      collected.push({trade,media,confluences:Confluences.optional(t.entry_confluences)});
+       inserted++;
+     }
+     for (const s of (data.strategies || [])) {
