@@ -356,6 +356,7 @@
     },
 
     async saveTrade(form, id, close, andNew) {
+      const emotionContext=Views.emotions?.context();
       let payload;
       try { payload = form.collect(); } catch (e) { return this.toast(e.message, 'err'); }
       try {
@@ -370,8 +371,8 @@
         const t = d.trade || {};
         this.toast(`${id ? 'Updated' : 'Logged'} ${t.symbol} · ${U.R(t.r_multiple)}${t.net_pnl ? ' · ' + U.moneySign(t.net_pnl) : ''}`, t.net_pnl >= 0 ? 'ok' : 'warn');
         this.refresh();
-        if(t.status==='closed' && t.journal?.state==='incomplete' && Views.openJournalReview)await Views.openJournalReview(t.id,{onComplete:()=>{this.refresh();if(andNew)this.openTrade(null);}});
-        else if (andNew) this.openTrade(null);
+        const followup=async()=>{if(t.status==='closed' && t.journal?.state==='incomplete' && Views.openJournalReview)await Views.openJournalReview(t.id,{onComplete:()=>{this.refresh();if(andNew)this.openTrade(null);}});else if(andNew)this.openTrade(null);};
+        if(Views.emotions)await Views.emotions.begin(d,followup,emotionContext);else await followup();
       } catch (e) { this.toast(e.message, 'err'); }
     },
 
@@ -389,9 +390,9 @@
             try {
               const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value, account_id: Store.accountId });
               out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`+(Views.screenshots?Views.screenshots.importResult(d):'');
-              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);
+              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);
               Store.invalidate();
-              if(!d.media_warnings?.length&&!d.confluence_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
+              if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
               else this.toast('Financial import recorded; review optional journal evidence omissions below before closing.','ok');
             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
           },

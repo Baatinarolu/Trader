@@ -1,0 +1,158 @@
+diff --git a/public/index.html b/public/index.html
+index 56fe52e..76a93ff 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
++<script src="/js/views/emotions.js?v={{V}}"></script>
+ <script src="/js/views/confluences.js?v={{V}}"></script>
+ <script src="/js/views/screenshots.js?v={{V}}"></script>
+ <script src="/js/views/dashboard.js?v={{V}}"></script>
+diff --git a/public/js/app.js b/public/js/app.js
+index 0520edf..c86589c 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -356,6 +356,7 @@
+     },
+ 
+     async saveTrade(form, id, close, andNew) {
++      const emotionContext=Views.emotions?.context();
+       let payload;
+       try { payload = form.collect(); } catch (e) { return this.toast(e.message, 'err'); }
+       try {
+@@ -370,8 +371,8 @@
+         const t = d.trade || {};
+         this.toast(`${id ? 'Updated' : 'Logged'} ${t.symbol} · ${U.R(t.r_multiple)}${t.net_pnl ? ' · ' + U.moneySign(t.net_pnl) : ''}`, t.net_pnl >= 0 ? 'ok' : 'warn');
+         this.refresh();
+-        if(t.status==='closed' && t.journal?.state==='incomplete' && Views.openJournalReview)await Views.openJournalReview(t.id,{onComplete:()=>{this.refresh();if(andNew)this.openTrade(null);}});
+-        else if (andNew) this.openTrade(null);
++        const followup=async()=>{if(t.status==='closed' && t.journal?.state==='incomplete' && Views.openJournalReview)await Views.openJournalReview(t.id,{onComplete:()=>{this.refresh();if(andNew)this.openTrade(null);}});else if(andNew)this.openTrade(null);};
++        if(Views.emotions)await Views.emotions.begin(d,followup,emotionContext);else await followup();
+       } catch (e) { this.toast(e.message, 'err'); }
+     },
+ 
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index 74005ff..da29ccf 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -207,10 +207,11 @@
+         segments() {
+           const w = U.h('div', { class: 'grid' });
+           if(Views.confluences)w.appendChild(Views.confluences.summary(an));
++          if(Views.emotions)w.appendChild(Views.emotions.summary(an));
+           const defs = [
+             ['Playbook / setup', an.by_strategy], ['Instrument', an.by_symbol], ['Session', an.by_session],
+             ['Direction', an.by_direction], ['Setup grade', an.by_grade], ['Entry model', an.by_entry_model], ['Asset class', an.by_asset],
+-            ['Emotion before entry', an.by_emotion], ['Tags', an.by_tag], ['Confidence', an.by_confidence], ['Adherence', an.by_adherence],
++            ['Journal emotion text (timing unverified)', an.by_emotion_unverified], ['Tags', an.by_tag], ['Confidence', an.by_confidence], ['Adherence', an.by_adherence],
+           ];
+           defs.forEach(([title, rows]) => {
+             if (!rows || !rows.length) return;
+diff --git a/public/js/views/emotions.js b/public/js/views/emotions.js
+new file mode 100644
+index 0000000..0adee79
+--- /dev/null
++++ b/public/js/views/emotions.js
+@@ -0,0 +1,30 @@
++/* M89 first APP event/response, not broker execution or actual mental-state proof. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U;let opened=0;
++ const context=()=>({account:global.Store.accountId,user:global.Store.user?.id,token:global.API.getToken()}),same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id&&c.token===global.API.getToken();
++ const C=Views.emotions={context,same,
++  card(t){const node=U.h('section',{class:'card',style:'margin-top:12px'});node.appendChild(U.h('h3',{text:'Entry / exit emotional-state provenance'}));node.appendChild(U.h('p',{class:'field-note',text:'Current journal text may be retrospective. Review first app responses, their server clocks and prior/imported/unknown status; no broker/live mental-state proof. This never completes core writing or grants entry/sizing.'}));if(t.id)node.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{emotionsOpen:String(t.id)},text:'Review saved emotion capture',onclick:()=>C.open(Number(t.id))}));return node;},
++  async begin(result,onDone,expected=context()){
++   if(!same(expected))return;for(const warning of result.emotion_warnings||[])global.App.toast(warning,'warn');
++   if(result.emotion_prompt)return C.open(result.trade.id,{phase:result.emotion_prompt.phase,onDone,expected});if(onDone)await onDone();
++  },
++  async open(id,{phase=null,onDone=null,expected=context()}={}){
++   const serial=++opened;let view;try{view=await global.API.get('/trades/'+id+'/emotions');}catch(e){global.App.toast(e.message||'Emotion capture unavailable; financial truth unchanged.','err');if(same(expected)&&onDone)await onDone();return;}
++   if(!same(expected)||serial!==opened||expected.account!=null&&Number(expected.account)!==view.account_id)return global.App.toast('Workspace/account changed or saved record is outside the selected account. Reopen its own context; no capture inferred.','err');
++   const body=U.h('div');let alive=true,busy=false,stale=false;const valid=()=>alive&&serial===opened&&same(expected)&&body.isConnected;
++   function disable(){body.querySelectorAll('input,button').forEach(el=>{el.disabled=busy||stale;});body.querySelector('[data-emotion-reload]').disabled=busy;for(const p of ['entry','exit']){const save=body.querySelector('[data-emotion-phase="'+p+'"] [data-emotion-save]');if(save)save.disabled=busy||stale||view[p].answered_at!=null||view[p].state==='prior'||view[p].state==='unavailable'||view[p].state==='imported'||p==='exit'&&view.saved_record.status!=='closed';}}
++   function draw(){const t=view.saved_record;body.replaceChildren(U.h('p',{class:'small',text:`Saved #${view.trade_id} ${t.symbol} · account #${view.account_id} · entry ${t.entry??'unknown'}, stop ${t.stop??'unknown'}, exit ${t.exit??'unknown'} (${t.status}).`}),U.h('p',{class:'field-note',text:'Name your state while the app record is fresh, not after rationalising an outcome. The five-minute APP-record response window is an app policy, NOT a course quotation or broker-time proof. No response is not none. First response/time is retained; later journal edits stay retrospective. Closing/declining never completes mandatory writing, removes guard stops, grades execution or grants entry/sizing. Save financial edits first.'}));
++    for(const p of phase?[phase]:['entry','exit']){const v=view[p],node=U.h('section',{class:'card',style:'margin-top:12px',dataset:{emotionPhase:p}});node.appendChild(U.h('h3',{text:p==='entry'?'What emotion drove this entry?':'How do you feel after getting out?'}));node.appendChild(U.h('p',{class:'small',dataset:{emotionProvenance:'true'},text:`${v.state} · source ${v.source||'unknown'} · app observed ${v.app_observed_at||'unknown'} · first answered ${v.answered_at||'unknown'} · ${v.delay_ms==null?'response delay unknown':v.delay_ms+'ms response delay'}. App-only timing, never broker verified.`}));node.appendChild(U.h('p',{class:'small',text:v.emotion==null?'No named first state; do not infer from old journal text.':'Retained first report: '+v.emotion}));node.innerHTML+=`<label class="field"><span>${v.event_id==null?'Retrospective self-report (no observed app event)':'Your first response now (late answers remain late)'}</span><input data-emotion-input maxlength="100" autocomplete="off" value="" placeholder="Name the actual state, not a result-based grade" /></label><label class="row gap-8"><input type="checkbox" data-emotion-unknown /><span>Explicitly unknown / not recorded — do not invent an emotion</span></label>`;
++     const input=node.querySelector('[data-emotion-input]'),unknown=node.querySelector('[data-emotion-unknown]');unknown.addEventListener('change',()=>{input.disabled=unknown.checked;});
++     node.appendChild(U.h('button',{class:'btn sm primary',type:'button',dataset:{emotionSave:'true'},text:'Record first '+p+' state',onclick:async()=>{if(!valid()||busy)return global.App.toast('Workspace/account changed or editor closed; reopen the current record.','err');const emotion=unknown.checked?null:input.value.trim();if(emotion!==null&&!emotion)return global.App.toast('Name the actual state or explicitly choose unknown.','err');busy=true;disable();try{const out=await global.API.post('/trades/'+id+'/emotions/'+p,{emotion,event_id:v.event_id,revision:v.revision});if(!valid())return;view=out;stale=false;draw();global.Store.invalidate();global.App.toast('First emotional-state response/time recorded; financial/core/permission state not completed.','ok');if(phase)closeModal.close();}catch(e){if(valid()){stale=e.status===409;global.App.toast(e.message||'Emotion response unavailable; financial truth unchanged.','err');}}finally{busy=false;if(valid())disable();}}}));body.appendChild(node);
++    }
++    body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{emotionReload:'true'},text:'Reload saved event (discard unsaved input)',onclick:async()=>{if(!valid()||busy)return;busy=true;disable();try{const out=await global.API.get('/trades/'+id+'/emotions');if(!valid())return;view=out;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message,'err');}finally{busy=false;if(valid())disable();}}}));
++    const legacy=view.legacy;body.appendChild(U.h('p',{class:'tiny muted',text:`Current journal self-report (NOT captured-time proof): entry ${legacy.emotion_before||'unknown'}; exit ${legacy.emotion_after||'unknown'}.` }));
++    if(view.history.length)body.appendChild(U.h('details',{},U.h('summary',{text:'Retained app/capture history ('+view.history.length+')'}),...view.history.map(v=>U.h('p',{class:'tiny',text:`${v.phase} · ${v.state} · ${v.source} · ${v.emotion??'no named state'} · observed ${v.app_observed_at||'unknown'} · answered ${v.answered_at||'unknown'}`}))));
++   }
++   let closeModal;draw();closeModal=global.App.modal({title:phase==='entry'?'Entry emotional state':phase==='exit'?'Exit emotional state':'Review emotion-capture provenance',body,wide:true,onClose:()=>{alive=false;if(same(expected)&&serial===opened&&onDone)Promise.resolve(onDone()).catch(e=>global.App.toast(e.message,'err'));},actions:[{label:'Record later — no response inferred; writing still required',ghost:true}]});disable();return closeModal;
++  },
++  summary(an){const node=U.h('section',{class:'card',dataset:{emotionAnalytics:'true'}}),v=an.emotion_coverage;node.appendChild(U.h('h3',{text:'App-timed entry-state self-reports — descriptive only'}));node.appendChild(U.h('p',{class:'field-note',text:'Five-minute APP-record/first-response window only, NOT broker execution or actual mental-state proof. Late/imported/prior/unknown responses excluded; no causal dollar cost, prediction or sizing authority. Below30 per state: descriptive;30+ still does not prove an edge. Legacy journal text is separate and timing-unverified.'}));if(!v){node.appendChild(U.h('p',{text:'Capture coverage unavailable.'}));return node;}node.appendChild(U.h('p',{class:'small',text:`${v.closed_trades} closed · ${v.timely} app-window reports · ${v.late} late · ${v.unknown} unknown · ${v.pending} pending · ${v.retrospective} retrospective · ${v.imported} imported · ${v.prior} prior context · ${v.unavailable} unavailable.`}));const rows=an.by_emotion||[],finite=x=>typeof x==='number'&&Number.isFinite(x);const table=U.h('div',{class:'table-wrap'});table.innerHTML='<table><thead><tr><th>First entry report</th><th>n / floor30</th><th>Known outcomes / n</th><th>Win % (known)</th><th>Mean R (all n)</th><th>Net (all n)</th></tr></thead><tbody>'+rows.map(r=>`<tr><td>${U.esc(r.key)}</td><td>${r.trades}${r.sample_ready?'':' · below30'}</td><td>${r.known_net_count} / ${r.trades}</td><td>${finite(r.win_rate)?U.pct(r.win_rate,1):'Unavailable'}</td><td>${finite(r.expectancy_r)?U.R(r.expectancy_r):'Unavailable'}</td><td>${finite(r.net_pnl)?U.moneySign(r.net_pnl):'Unavailable'}</td></tr>`).join('')+'</tbody></table>';if(rows.length)node.appendChild(table);else node.appendChild(U.h('p',{class:'muted',text:'No eligible named first-entry responses in this filter. No legacy state backfilled.'}));return node;},
++  feedback(out){if(!out.emotion_warnings?.length)return null;return U.h('section',{class:'sticky-note warn'},U.h('strong',{text:'Optional emotion evidence'}),...out.emotion_warnings.map(text=>U.h('div',{class:'tiny',text})));},
++ };
++})(window);
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 2ba01ad..6ced815 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -169,7 +169,7 @@
+         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+-        <td class="tiny"><button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
++        <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+@@ -179,6 +179,7 @@
+       selection.innerHTML=`<span>Daily routine completion — explicit self-report (never workflow permission)</span><select id="j-pre-market"><option value="" ${flag===null?'selected':''}>Unknown / not recorded</option><option value="true" ${flag===true?'selected':''}>Completed — my self-report</option><option value="false" ${flag===false?'selected':''}>Not completed — my self-report</option></select><div class="field-note">Current account only, separate from the shared daily note and actual ordered/timed workflow. Unrelated note edits preserve this flag/source/time. Retrospective self-report cannot rewrite first-entry/on-time evidence.</div>`;
+       U.$('#j-pre-market',selection).addEventListener('change',()=>{routineDirty=true;});body.prepend(selection);
+     }
++    body.querySelectorAll('[data-day-emotions]').forEach(b=>b.addEventListener('click',()=>Views.emotions?Views.emotions.open(Number(b.dataset.dayEmotions)):global.App.toast('Emotion timing unavailable.','err')));
+     body.querySelectorAll('[data-day-confluences]').forEach(b=>b.addEventListener('click',()=>Views.confluences?Views.confluences.open(Number(b.dataset.dayConfluences)):global.App.toast('Entry reasons UI unavailable.','err')));
+     body.querySelectorAll('[data-day-screenshots]').forEach(b=>b.addEventListener('click',()=>Views.screenshots?Views.screenshots.open(Number(b.dataset.dayScreenshots)):global.App.toast('Visual evidence UI unavailable.','err')));
+     body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index 6cb79dc..b03944d 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -27,6 +27,7 @@
+     if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
+     if(!capture&&Views.screenshots)body.appendChild(Views.screenshots.card(trade));
+     if(!capture&&Views.confluences)body.appendChild(Views.confluences.card(trade));
++    if(!capture&&Views.emotions)body.appendChild(Views.emotions.card(trade));
+     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
+     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
+       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
+@@ -162,7 +163,7 @@
+             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
+             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
+               ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', 'Entry confluences'], ['', '']].map(([k, l]) =>
++              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', 'Entry confluences'], ['', 'Emotion timing'], ['', '']].map(([k, l]) =>
+               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
+           </tr></thead>
+           <tbody>
+@@ -187,6 +188,7 @@
+             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
+             <td class="tiny"><button class="btn xs ghost" data-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+             <td class="tiny"><button class="btn xs ghost" data-confluences="${t.id}">Entry reasons</button></td>
++            <td class="tiny"><button class="btn xs ghost" data-emotions="${t.id}">Entry / exit states</button></td>
+             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
+           </tr>`).join('')}
+           </tbody>
+@@ -201,9 +203,10 @@
+       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
+       U.$$('[data-screenshots]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.screenshots)Views.screenshots.open(Number(b.dataset.screenshots));else global.App.toast('Visual evidence UI unavailable; nothing is inferred.','err');}));
+       U.$$('[data-confluences]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.confluences)Views.confluences.open(Number(b.dataset.confluences));else global.App.toast('Entry reasons UI unavailable; nothing inferred.','err');}));
++      U.$$('[data-emotions]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.emotions)Views.emotions.open(Number(b.dataset.emotions));else global.App.toast('Emotion capture unavailable; timing not inferred.','err');}));
+       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
+       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
+-        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution],[data-confluences]')) return;
++        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution],[data-confluences],[data-emotions]')) return;
+         global.App.openTrade(Number(tr.dataset.id));
+       }));
+       const chkAll = U.$('#chk-all', body);
+@@ -501,6 +504,7 @@
+     if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
+     if(Views.screenshots)node.appendChild(Views.screenshots.card(t));
+     if(!isNew&&Views.confluences)node.appendChild(Views.confluences.card(t));
++    if(!isNew&&Views.emotions)node.appendChild(Views.emotions.card(t));
+     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
+   };
+ 

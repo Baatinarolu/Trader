@@ -1,0 +1,119 @@
+{
+  "app": "/tmp/m89-receipt-ui-stage/app",
+  "pass": 1,
+  "fail": 7,
+  "results": [
+    {
+      "label": "JSON retains ORIGINAL first context100 despite CURRENT finance101",
+      "passed": false,
+      "detail": {
+        "phase": "entry",
+        "emotion": "Fear",
+        "source": "app_entry",
+        "app_observed_at": "2026-10-12T12:00:00.000Z",
+        "answered_at": "2026-10-12T12:00:00.000Z"
+      }
+    },
+    {
+      "label": "destination context101/owner/id forced; old100 is historical declaration only",
+      "passed": false,
+      "detail": {
+        "event_id": 3,
+        "phase": "entry",
+        "state": "imported",
+        "emotion": "Fear",
+        "source": "imported",
+        "app_observed_at": null,
+        "answered_at": null,
+        "received_at": "2026-10-12T12:00:00.000Z",
+        "delay_ms": null,
+        "current_context": false,
+        "eligible": false,
+        "window_ms": 300000,
+        "broker_verified": false,
+        "basis": "Server app-event and first-response timing only; not broker execution, actual mental state, causation, permission or grade.",
+        "historical": {
+          "source": "app_entry",
+          "app_observed_at": "2026-10-12T12:00:00.000Z",
+          "answered_at": "2026-10-12T12:00:00.000Z"
+        },
+        "recorded_context": {
+          "id": 2,
+          "user_id": 1,
+          "account_id": 1,
+          "symbol": "DECLARED_STOCK",
+          "direction": "long",
+          "entry": 101,
+          "stop": 99,
+          "target": 102,
+          "size": 1,
+          "strategy_id": null,
+          "strategy_version": null,
+          "entry_model": null,
+          "entry_tf": null,
+          "opened_at": "2026-10-12T12:00:00.000Z",
+          "status": "closed"
+        },
+        "revision": "977c61b67f8af38eb93c58e019ea86f0c877ec558db1f0f2e2bd23065eebca43"
+      }
+    },
+    {
+      "label": "re-export does not replace original100 context with receiving101",
+      "passed": false,
+      "detail": {
+        "phase": "entry",
+        "emotion": "Fear",
+        "source": "imported",
+        "app_observed_at": null,
+        "answered_at": null,
+        "historical": {
+          "source": "app_entry",
+          "app_observed_at": "2026-10-12T12:00:00.000Z",
+          "answered_at": "2026-10-12T12:00:00.000Z"
+        }
+      }
+    },
+    {
+      "label": "bad optional original context warns but finance/emotion preserved, no proof",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "emotion_warnings": [],
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "declared foreign IDs never become destination owned snapshot or first-capture authority",
+      "passed": true
+    },
+    {
+      "label": "optional missing capture table cannot deny truthful financial JSON/CSV backup",
+      "passed": false,
+      "detail": {
+        "json": 503,
+        "csv": 503
+      }
+    },
+    {
+      "label": "financial backups label unavailable emotion history, never silently known empty",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "restored omission marker warns; original data cannot be fabricated",
+      "passed": false,
+      "detail": {
+        "entries": [],
+        "warnings": []
+      }
+    }
+  ],
+  "scope": "M89 original declared context and optional export outage: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

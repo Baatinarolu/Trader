@@ -1,0 +1,126 @@
+diff --git a/src/db.js b/src/db.js
+index adbb4f7..4bda2d2 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -681,6 +681,9 @@ async function migrate() {
+   await add('trades','stop_honoured_source','TEXT');
+   await add('trades','stop_honoured_recorded_at','TEXT');
+   await add('trades','execution_review_hash','TEXT');
++  // Single-statement triggers: exec splits semicolons, so use prepare for bodies.
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS emotion_events_immutable BEFORE UPDATE ON trade_emotion_events BEGIN SELECT RAISE(ABORT,'Emotion event facts are immutable'); END`).run();
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS emotion_responses_immutable BEFORE UPDATE ON trade_emotion_responses BEGIN SELECT RAISE(ABORT,'First emotion response is immutable'); END`).run();
+   // M88 additive NULL, no inferred labels/source/entry-time history on old trades.
+   for(const field of ['entry_confluences','entry_confluences_source','entry_confluences_recorded_at'])await add('trades',field,'TEXT');
+   await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
+diff --git a/src/emotions.js b/src/emotions.js
+index e332129..b56f2f9 100644
+--- a/src/emotions.js
++++ b/src/emotions.js
+@@ -11,15 +11,15 @@ function stamp(value){if(typeof value!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\
+ function snapshot(t,phase){if(!['entry','exit'].includes(phase))throw invalid('Unknown capture phase.');return Object.fromEntries([...new Set([...(phase==='entry'?ENTRY:EXIT),'status'])].map(k=>[k,t[k]??null]));}
+ const hash=(s,phase)=>crypto.createHash('sha256').update(JSON.stringify((phase==='entry'?ENTRY:EXIT).map(k=>[k,s[k]??null]))).digest('hex');
+ function classify(t,event,response,now=Date.now()){
+-  const base={event_id:event?.id??null,phase:event?.phase??null,state:'unavailable',emotion:null,source:event?.source??null,app_observed_at:event?.app_observed_at??null,answered_at:response?.answered_at??null,delay_ms:null,current_context:false,eligible:false,window_ms:WINDOW_MS,broker_verified:false,basis:'Server app-event and first-response timing only; not broker execution, actual mental state, causation, permission or grade.'};
++  const base={event_id:event?.id??null,phase:event?.phase??null,state:'unavailable',emotion:null,source:event?.source??null,app_observed_at:event?.source==='imported'?null:event?.app_observed_at??null,answered_at:response?.answered_at??null,received_at:event?.source==='imported'?event.app_observed_at:null,delay_ms:null,current_context:false,eligible:false,window_ms:WINDOW_MS,broker_verified:false,basis:'Server app-event and first-response timing only; not broker execution, actual mental state, causation, permission or grade.'};
+   try{
+-    if(!event||!['entry','exit'].includes(event.phase)||!['app_entry','app_close','retrospective','imported'].includes(event.source)||event.user_id!==t.user_id||event.trade_id!==t.id||event.account_id!==t.account_id)throw invalid('Unavailable event identity.');
++    if(!event||!['entry','exit'].includes(event.phase)||!['app_entry','app_close','retrospective','imported'].includes(event.source)||event.source==='app_entry'&&event.phase!=='entry'||event.source==='app_close'&&event.phase!=='exit'||event.user_id!==t.user_id||event.trade_id!==t.id||event.account_id!==t.account_id)throw invalid('Unavailable event identity.');
+     const s=JSON.parse(event.snapshot),at=stamp(event.app_observed_at);if(!s||s.id!==t.id||s.user_id!==t.user_id||s.account_id!==t.account_id||hash(s,event.phase)!==event.context_hash||at===null||at>now)throw invalid('Unavailable event context/clock.');
+     const matches=hash(snapshot(t,event.phase),event.phase)===event.context_hash;let state=matches?'pending':'prior',emotion=null,answered=null,delay=null;
+     if(response){const r=JSON.parse(response.snapshot),ms=stamp(response.answered_at);emotion=input(response.emotion);if(response.event_id!==event.id||!r||hash(r,event.phase)!==event.context_hash||ms===null||ms<at||ms>now)throw invalid('Unavailable response.');answered=response.answered_at;delay=ms-at;
+       if(matches){const financial=stamp(event.phase==='entry'?s.opened_at:s.closed_at),age=financial===null?Infinity:at-financial;state=emotion===null?'unknown':event.source==='imported'?'imported':event.source==='retrospective'?'retrospective':delay<=WINDOW_MS&&age>=0&&age<=WINDOW_MS&&(event.phase==='exit'?r.status==='closed':r.status==='open')?'timely':'late';}
+     }
+-    if(event.source==='imported')state='imported';return {...base,state,emotion,answered_at:answered,delay_ms:delay,current_context:matches&&event.source!=='imported',eligible:state==='timely',recorded_context:s};
++    if(event.source==='imported')state='imported';return {...base,state,emotion,historical:event.historical_json?JSON.parse(event.historical_json):null,answered_at:event.source==='imported'?null:answered,delay_ms:delay,current_context:matches&&event.source!=='imported',eligible:state==='timely',recorded_context:s};
+   }catch{return base;}
+ }
+ 
+@@ -51,6 +51,7 @@ async function observe(userId,expected,phase,source,transition=''){
+ async function answer(userId,id,phase,body){
+   if(!['entry','exit'].includes(phase)||!body||Array.isArray(body)||typeof body!=='object'||Object.keys(body).some(k=>!['event_id','emotion','revision'].includes(k))||!Object.hasOwn(body,'emotion')||!Object.hasOwn(body,'event_id')||body.event_id!==null&&(!Number.isSafeInteger(body.event_id)||body.event_id<1)||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision))throw invalid('Use the displayed event_id/revision and an explicit emotional state or null only.');
+   const value=input(body.emotion);return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id),rows=await rowsOn(store,userId,id),v=view(t,rows),slot=v[phase];
++    if(phase==='exit'&&t.status!=='closed')throw invalid('Record the actual close before an exit-state report.',409);
+     if(body.revision!==slot.revision||body.event_id!==slot.event_id)throw invalid('Saved record or capture changed. Reload and deliberately review the current event.',409);
+     let selected=rows.find(r=>r.event.id===body.event_id);
+     if(selected?.response){if(selected.response.emotion===value)return v;throw invalid('The first response is retained unchanged. Later corrections belong in retrospective journal text, not a new fresh capture.',409);}
+@@ -71,4 +72,13 @@ function aggregate(trades){
+  for(const {text,rows:list}of map.values()){const known=list.filter(t=>finite(t.net_pnl)),rs=list.filter(t=>finite(t.net_pnl)&&finite(t.r_multiple)&&finite(t.risk_amount)&&t.risk_amount>0&&Math.abs(t.net_pnl-t.risk_amount*t.r_multiple)<=Math.max(.02,t.risk_amount*.0001)),n=list.length,net=known.reduce((s,t)=>s+t.net_pnl,0),r=rs.reduce((s,t)=>s+t.r_multiple,0),wins=known.filter(t=>t.net_pnl>0).length,losses=known.filter(t=>t.net_pnl<0).length;rows.push({key:text,trades:n,known_net_count:known.length,unavailable_net_count:n-known.length,wins,losses,breakeven:known.length-wins-losses,win_rate:known.length?round(wins*100/known.length):null,net_pnl:known.length===n?round(net):null,known_r_count:rs.length,expectancy_r:rs.length===n?round(r/n,4):null,sample_floor:30,sample_ready:n>=30,capture_basis:'app_record_window_self_report',broker_verified:false});}
+  rows.sort((a,b)=>b.trades-a.trades||a.key.localeCompare(b.key));return {rows,coverage};
+ }
+-module.exports={WINDOW_MS,input,stamp,snapshot,hash,classify,invalid,owned,view,read,observe,answer,annotate,rowsOn,eventOn,captured,aggregate};
++
++function parsePortable(raw,{json=false}={}){
++ const result={entries:[],warnings:[]};if(raw===undefined||raw===null||raw==='')return result;
++ try{if(json||typeof raw==='string')raw=JSON.parse(raw);if(!raw||raw.version!==1||!Array.isArray(raw.entries)||raw.entries.length>50)throw invalid('Optional emotion history needs version1 and at most50 entries.');
++  for(const e of raw.entries){try{if(!e||!['entry','exit'].includes(e.phase)||!Object.hasOwn(e,'emotion'))throw invalid('Invalid optional emotion phase/state.');const emotion=input(e.emotion),historical={source:typeof e.source==='string'?e.source.slice(0,80):null,app_observed_at:null,answered_at:null};for(const field of ['app_observed_at','answered_at']){const value=e.historical?.[field]??e[field];if(value!=null){const n=stamp(value);if(n!==null&&n<=Date.now())historical[field]=value;else result.warnings.push('Unverified invalid/future original emotion clock omitted.');}}result.entries.push({phase:e.phase,emotion,historical});}catch(err){result.warnings.push(err.message);}}
++ }catch(err){result.warnings.push(err.message||'Invalid optional emotion history omitted.');}result.warnings=result.warnings.slice(0,20);return result;
++}
++async function importOn(store,t,parsed){for(const e of parsed?.entries||[]){const s=snapshot(t,e.phase),at=new Date().toISOString(),key=sha(['imported',t.id,e.phase,crypto.randomUUID()]);const r=await store.prepare('INSERT INTO trade_emotion_events(user_id,trade_id,account_id,phase,source,event_key,app_observed_at,snapshot,context_hash,historical_json) VALUES(?,?,?,?,?,?,?,?,?,?)').run(t.user_id,t.id,t.account_id,e.phase,'imported',key,at,JSON.stringify(s),hash(s,e.phase),JSON.stringify(e.historical));await store.prepare('INSERT INTO trade_emotion_responses(event_id,emotion,answered_at,snapshot) VALUES(?,?,?,?)').run(r.lastInsertRowid,e.emotion,at,JSON.stringify(s));}}
++async function portableRowsOn(store,rows){const out=[];for(const t of rows){const events=await rowsOn(store,t.user_id,t.id),entries=[];let unavailable=0;for(const r of events){const v=classify(t,r.event,r.response);if(v.state==='unavailable'){unavailable++;continue;}if(!r.response)continue;entries.push({phase:v.phase,emotion:v.emotion,source:v.source,app_observed_at:v.app_observed_at,answered_at:v.answered_at,...(v.historical?{historical:v.historical}:{})});}out.push({...t,emotion_events:{version:1,entries,unavailable_events:unavailable}});}return out;}
++module.exports={WINDOW_MS,input,stamp,snapshot,hash,classify,invalid,owned,view,read,observe,answer,annotate,rowsOn,eventOn,captured,aggregate,parsePortable,importOn,portableRowsOn};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 9e75ce6..ae32e72 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -1156,11 +1156,11 @@ router.get('/export/csv', requireAuth, backup(async (req, res) => {
+   const tz = (await settingsOf(req)).timezone;
+   const f = tradeFilters(req);
+   const { where, params, order } = T.listQuery(f);
+-  const rows = (await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({...params,user_id:req.user.id}));})).map(t=>({...P.decorate(t,tz),screenshot_views_json:JSON.stringify(t.screenshots)}));
++  const rows = (await db.tx(async tx=>{const store=db.transactionStore(tx);return Emotions.portableRowsOn(store,await Screenshots.portableRowsOn(store,await store.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({...params,user_id:req.user.id})));})).map(t=>({...P.decorate(t,tz),screenshot_views_json:JSON.stringify(t.screenshots),emotion_events_json:JSON.stringify(t.emotion_events)}));
+   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
+     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
+     'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
+-    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json', 'entry_confluences', 'entry_confluences_source', 'entry_confluences_recorded_at'];
++    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json', 'entry_confluences', 'entry_confluences_source', 'entry_confluences_recorded_at','emotion_events_json'];
+   const esc = (v) => {
+     const s = v === null || v === undefined ? '' : String(v);
+     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+@@ -1180,7 +1180,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
+     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
+     strategies: (await db.prepare('SELECT * FROM strategies WHERE user_id=?').all(userId)).map(parseStrategy),
+     instruments: await db.prepare('SELECT * FROM instruments WHERE user_id=?').all(userId),
+-    trades: await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId));}),
++    trades: await db.tx(async tx=>{const store=db.transactionStore(tx);return Emotions.portableRowsOn(store,await Screenshots.portableRowsOn(store,await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId)));}),
+     journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
+     goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
+     watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
+@@ -1213,7 +1213,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+     entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
+     tags: findCol(['tags', 'tag', 'labels']),
+     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
+-    entry_confluences:findCol(['entry_confluences']), screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
++    emotion_events_json:findCol(['emotion_events_json']), entry_confluences:findCol(['entry_confluences']), screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
+     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
+   };
+   if (map.symbol < 0) return res.status(400).json({ error: 'Could not find a symbol/ticker column in the CSV.' });
+@@ -1265,7 +1265,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+         }
+         const media=Screenshots.parsePortable(map.screenshot_views_json>-1?r[map.screenshot_views_json]:undefined,{json:true});
+         trade.screenshot_url=Screenshots.legacyImport(map.screenshot_url>-1?r[map.screenshot_url]:undefined,media);
+-        collected.push({trade,media,confluences:Confluences.optional(map.entry_confluences>-1?r[map.entry_confluences]:undefined,{json:true})});
++        collected.push({trade,media,confluences:Confluences.optional(map.entry_confluences>-1?r[map.entry_confluences]:undefined,{json:true}),emotions:Emotions.parsePortable(map.emotion_events_json>-1?r[map.emotion_events_json]:undefined,{json:true})});
+         inserted++;
+       } catch (e) { skipped++; if (errors.length < 5) errors.push(`Row ${i + 1}: ${e.message}`); }
+     }
+@@ -1279,9 +1279,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+ 
+ // Actual transaction insert IDs (never raw backup IDs), with optional media
+ // warnings separate from financial parsing. Storage failure rolls back together.
+-function mediaFeedback(collected){return {confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
++function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+ async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+-  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});}
++  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
+   for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);return n;
+ });}
+ 
+@@ -1333,7 +1333,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
+       if (!trade.account_id) continue;
+       const media=Screenshots.parsePortable(t.screenshots);
+       trade.screenshot_url=Screenshots.legacyImport(t.screenshot_url,media);
+-      collected.push({trade,media,confluences:Confluences.optional(t.entry_confluences)});
++      collected.push({trade,media,confluences:Confluences.optional(t.entry_confluences),emotions:Emotions.parsePortable(t.emotion_events)});
+       inserted++;
+     }
+     for (const s of (data.strategies || [])) {

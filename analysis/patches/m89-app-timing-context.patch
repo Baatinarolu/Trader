@@ -1,0 +1,31 @@
+diff --git a/src/emotions.js b/src/emotions.js
+new file mode 100644
+index 0000000..1b8acf3
+--- /dev/null
++++ b/src/emotions.js
+@@ -0,0 +1,25 @@
++'use strict';
++/** M89 APP-record/response timing, never broker-time or mental-state proof.
++ * Optional evidence cannot authorise entry, score execution or complete writing. */
++const crypto=require('crypto');
++const WINDOW_MS=300000; // APP five-minute budget, not a course quotation.
++const ENTRY=['id','user_id','account_id','symbol','direction','entry','stop','target','size','strategy_id','strategy_version','entry_model','entry_tf','opened_at'];
++const EXIT=[...ENTRY,'closed_at','exit','fees','net_pnl','risk_amount','r_multiple','legs'];
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'emotion_capture_invalid',status});}
++function input(value){if(value===null)return null;if(typeof value!=='string'||!value.trim()||value.length>100||/[\x00-\x1f\x7f]/.test(value))throw invalid('Name the emotional state in1–100 single-line characters or explicitly choose unknown.');return value.trim();}
++function stamp(value){if(typeof value!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value))return null;const n=Date.parse(value);return Number.isFinite(n)&&new Date(n).toISOString()===value?n:null;}
++function snapshot(t,phase){if(!['entry','exit'].includes(phase))throw invalid('Unknown capture phase.');return Object.fromEntries([...new Set([...(phase==='entry'?ENTRY:EXIT),'status'])].map(k=>[k,t[k]??null]));}
++const hash=(s,phase)=>crypto.createHash('sha256').update(JSON.stringify((phase==='entry'?ENTRY:EXIT).map(k=>[k,s[k]??null]))).digest('hex');
++function classify(t,event,response,now=Date.now()){
++  const base={event_id:event?.id??null,phase:event?.phase??null,state:'unavailable',emotion:null,source:event?.source??null,app_observed_at:event?.app_observed_at??null,answered_at:response?.answered_at??null,delay_ms:null,current_context:false,eligible:false,window_ms:WINDOW_MS,broker_verified:false,basis:'Server app-event and first-response timing only; not broker execution, actual mental state, causation, permission or grade.'};
++  try{
++    if(!event||!['entry','exit'].includes(event.phase)||!['app_entry','app_close','retrospective','imported'].includes(event.source)||event.user_id!==t.user_id||event.trade_id!==t.id||event.account_id!==t.account_id)throw invalid('Unavailable event identity.');
++    const s=JSON.parse(event.snapshot),at=stamp(event.app_observed_at);if(!s||s.id!==t.id||s.user_id!==t.user_id||s.account_id!==t.account_id||hash(s,event.phase)!==event.context_hash||at===null||at>now)throw invalid('Unavailable event context/clock.');
++    const matches=hash(snapshot(t,event.phase),event.phase)===event.context_hash;let state=matches?'pending':'prior',emotion=null,answered=null,delay=null;
++    if(response){const r=JSON.parse(response.snapshot),ms=stamp(response.answered_at);emotion=input(response.emotion);if(response.event_id!==event.id||!r||hash(r,event.phase)!==event.context_hash||ms===null||ms<at||ms>now)throw invalid('Unavailable response.');answered=response.answered_at;delay=ms-at;
++      if(matches){const financial=stamp(event.phase==='entry'?s.opened_at:s.closed_at),age=financial===null?Infinity:at-financial;state=emotion===null?'unknown':event.source==='imported'?'imported':event.source==='retrospective'?'retrospective':delay<=WINDOW_MS&&age>=0&&age<=WINDOW_MS&&(event.phase==='exit'?r.status==='closed':r.status==='open')?'timely':'late';}
++    }
++    if(event.source==='imported')state='imported';return {...base,state,emotion,answered_at:answered,delay_ms:delay,current_context:matches&&event.source!=='imported',eligible:state==='timely',recorded_context:s};
++  }catch{return base;}
++}
++module.exports={WINDOW_MS,input,stamp,snapshot,hash,classify,invalid};

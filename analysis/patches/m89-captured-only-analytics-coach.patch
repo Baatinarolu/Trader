@@ -1,0 +1,124 @@
+diff --git a/src/coach.js b/src/coach.js
+index e446945..c8beb65 100644
+--- a/src/coach.js
++++ b/src/coach.js
+@@ -8,6 +8,7 @@
+  * every claim points at a slice of your own trade rows.
+  */
+ const P = require('./performance');
++const Emotions = require('./emotions');
+ const Guards = require('./bots/guardrails');
+ const I = require('./instruments');
+ 
+@@ -305,22 +306,13 @@ function analyse(trades, ctx = {}) {
+     }
+   }
+ 
+-  /* 10 — emotional state ------------------------------------------------- */
+-  const negWords = ['revenge', 'fomo', 'anxious', 'angry', 'frustrated', 'greedy', 'impatient', 'tilted', 'bored', 'tired', 'fear'];
+-  const neg = closed.filter((t) => negWords.some((w) => String(t.emotion_before || '').toLowerCase().includes(w)));
+-  const pos = closed.filter((t) => /calm|confident|focused|patient|neutral|disciplined/i.test(String(t.emotion_before || '')));
+-  if (neg.length >= 6 && pos.length >= 5) {
+-    const sn = stat(neg), sp = stat(pos);
+-    if (sn.exp_r < sp.exp_r - 0.15) {
+-      add({
+-        id: 'emotion', category: 'psychology', severity: 'critical',
+-        title: `${neg.length} trades were taken in a bad mental state`,
+-        detail: `Trades tagged with a negative state (${[...new Set(neg.map((t) => t.emotion_before))].slice(0, 4).join(', ')}) average ${sn.exp_r}R. Calm/focused trades average ${sp.exp_r}R. Same trader, different state, ${money(sn.net)} difference.`,
+-        impact: sn.net - sn.n * sp.exp_r, evidence: [...evidenceOf(sn, 'Negative state'), ...evidenceOf(sp, 'Calm / focused')],
+-        action: 'Add a 10-second state check before every entry. If the honest answer is not calm/neutral, the trade does not happen.',
+-      });
+-    }
+-  }
++  /* M89 — APP-window self-reports only, retrospective/late/imported excluded.
++   * Regex group names are descriptive, not read-mind or causal/sizing authority. */
++  const negWords = ['revenge','fomo','anxious','angry','frustrated','greedy','impatient','tilted','bored','tired','fear'];
++  const states=closed.filter(t=>Emotions.captured(t)!==null&&typeof t.net_pnl==='number'&&Number.isFinite(t.net_pnl)&&typeof t.r_multiple==='number'&&Number.isFinite(t.r_multiple)&&typeof t.risk_amount==='number'&&t.risk_amount>0&&Math.abs(t.net_pnl-t.risk_amount*t.r_multiple)<=Math.max(.02,t.risk_amount*.0001));
++  const negative=t=>negWords.some(w=>Emotions.captured(t).toLowerCase().includes(w)),positive=t=>/calm|confident|focused|patient|neutral|disciplined/i.test(Emotions.captured(t));
++  const neg=states.filter(t=>negative(t)&&!positive(t)),pos=states.filter(t=>positive(t)&&!negative(t));
++  if(neg.length>=6&&pos.length>=5){const sn=stat(neg),sp=stat(pos);if(sn.exp_r<sp.exp_r-.15)add({id:'emotion',category:'psychology',severity:'warning',title:'Recorded entry-state associations (descriptive)',detail:`App-window entry self-reports: negative-labelled ${sn.n} trades averaged ${sn.exp_r}R; calm/focused-labelled ${sp.n} averaged ${sp.exp_r}R. Not a causal dollar cost, broker mental-state verification or predictive edge. Below30 per group is descriptive only;30+ still does not prove an edge. Late/imported/missing responses excluded.`,impact:sn.net,evidence:[...evidenceOf(sn,'App-window negative label'),...evidenceOf(sp,'App-window calm/focused label')],action:'Review the original captured states alongside your plan and outcomes; do not infer causality, resize risk or treat this comparison as entry permission.',capture_basis:'app_record_window_self_report'});}
+ 
+   /* 11 — symbol leak ----------------------------------------------------- */
+   const symRows = P.segment(closed, (t) => t.symbol).filter((r) => r.trades >= 6 && r.net_pnl < 0 && r.expectancy_r < -0.15);
+diff --git a/src/emotions.js b/src/emotions.js
+index ea1f599..e332129 100644
+--- a/src/emotions.js
++++ b/src/emotions.js
+@@ -62,4 +62,13 @@ async function answer(userId,id,phase,body){
+   });
+ }
+ async function annotate(rows){try{if(!rows.length)return [];const user=rows[0].user_id,events=await db.prepare(`SELECT e.*,r.event_id response_id,r.emotion,r.answered_at,r.snapshot answer_snapshot FROM trade_emotion_events e LEFT JOIN trade_emotion_responses r ON r.event_id=e.id WHERE e.user_id=? ORDER BY e.id`).all(user),map=new Map();for(const r of events){if(!map.has(r.trade_id))map.set(r.trade_id,[]);map.get(r.trade_id).push({event:r,response:r.response_id==null?null:{event_id:r.response_id,emotion:r.emotion,answered_at:r.answered_at,snapshot:r.answer_snapshot}});}return rows.map(t=>({...t,emotion_capture:view(t,map.get(t.id)||[])}));}catch{return rows.map(t=>({...t,emotion_capture:{entry:{state:'unavailable',eligible:false},exit:{state:'unavailable',eligible:false}}}));}}
+-module.exports={WINDOW_MS,input,stamp,snapshot,hash,classify,invalid,owned,view,read,observe,answer,annotate,rowsOn,eventOn};
++
++function captured(t){const v=t.emotion_capture?.entry;return t.status==='closed'&&v?.state==='timely'&&v.eligible===true&&v.source==='app_entry'&&v.broker_verified===false&&v.current_context===true&&typeof v.emotion==='string'&&v.emotion.trim()&&typeof v.delay_ms==='number'&&v.delay_ms>=0&&v.delay_ms<=WINDOW_MS?v.emotion:null;}
++function aggregate(trades){
++ const coverage={closed_trades:0,timely:0,late:0,unknown:0,pending:0,retrospective:0,imported:0,prior:0,unavailable:0,window_ms:WINDOW_MS,broker_verified:false},map=new Map();
++ for(const t of trades){if(t.status!=='closed')continue;coverage.closed_trades++;const state=t.emotion_capture?.entry?.state||'unknown',value=captured(t);if(value){coverage.timely++;const text=value.trim().replace(/\s+/gu,' '),k=text.toLowerCase();if(!map.has(k))map.set(k,{text,rows:[]});map.get(k).rows.push(t);}else coverage[Object.hasOwn(coverage,state)&&state!=='timely'?state:'unavailable']++;}
++ const finite=n=>typeof n==='number'&&Number.isFinite(n),round=(n,d=2)=>Math.round(n*10**d)/10**d,rows=[];
++ for(const {text,rows:list}of map.values()){const known=list.filter(t=>finite(t.net_pnl)),rs=list.filter(t=>finite(t.net_pnl)&&finite(t.r_multiple)&&finite(t.risk_amount)&&t.risk_amount>0&&Math.abs(t.net_pnl-t.risk_amount*t.r_multiple)<=Math.max(.02,t.risk_amount*.0001)),n=list.length,net=known.reduce((s,t)=>s+t.net_pnl,0),r=rs.reduce((s,t)=>s+t.r_multiple,0),wins=known.filter(t=>t.net_pnl>0).length,losses=known.filter(t=>t.net_pnl<0).length;rows.push({key:text,trades:n,known_net_count:known.length,unavailable_net_count:n-known.length,wins,losses,breakeven:known.length-wins-losses,win_rate:known.length?round(wins*100/known.length):null,net_pnl:known.length===n?round(net):null,known_r_count:rs.length,expectancy_r:rs.length===n?round(r/n,4):null,sample_floor:30,sample_ready:n>=30,capture_basis:'app_record_window_self_report',broker_verified:false});}
++ rows.sort((a,b)=>b.trades-a.trades||a.key.localeCompare(b.key));return {rows,coverage};
++}
++module.exports={WINDOW_MS,input,stamp,snapshot,hash,classify,invalid,owned,view,read,observe,answer,annotate,rowsOn,eventOn,captured,aggregate};
+diff --git a/src/performance.js b/src/performance.js
+index 4f3c2e5..dab030d 100644
+--- a/src/performance.js
++++ b/src/performance.js
+@@ -10,6 +10,7 @@
+ 
+ const Execution = require('./execution-review');
+ const Confluences = require('./confluences');
++const Emotions = require('./emotions');
+ 
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+@@ -530,6 +531,7 @@ function optimalRisk(rs, { cap = 0.05, floor = 0.001 } = {}) {
+ function fullAnalytics(trades, opts = {}) {
+   const k = kpis(trades, opts);
+   const confluences=Confluences.aggregate(trades);
++  const emotions=Emotions.aggregate(trades);
+   const closed = trades.filter((t) => t.status !== 'open');
+   return {
+     kpis: k,
+@@ -562,7 +564,9 @@ function fullAnalytics(trades, opts = {}) {
+     by_entry_model: segment(closed, (t) => t.entry_model == null ? 'Unknown (unrecorded)' : t.entry_model)
+       .map((r) => ({ ...r, sample_ready: r.trades >= 30, sample_floor: 30,
+         sample_note: r.trades < 30 ? 'Descriptive only; below the course 30-trade review floor.' : 'Recorded journal outcomes; not a causal market-edge claim.' })),
+-    by_emotion: segment(trades, (t) => splitTags(t.emotion_before)),
++    by_emotion: emotions.rows,
++    emotion_coverage:emotions.coverage,
++    by_emotion_unverified:segment(closed,(t)=>splitTags(t.emotion_before)),
+     by_mistake: segment(trades, (t) => splitTags(t.mistakes)),
+     by_tag: segment(trades, (t) => splitTags(t.tags)),
+     by_hold: segment(trades, (t) => holdBucket(t.hold_minutes)),
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 835102b..9e75ce6 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -554,7 +554,7 @@ router.get('/analytics', requireAuth, async (req, res) => {
+     const want = String(f.tag).toLowerCase();
+     rows = rows.filter((t) => String(t.tags || '').toLowerCase().split(',').map((x) => x.trim()).includes(want));
+   }
+-  const decorated = rows.map((t) => P.decorate(t, tz));
++  const decorated = (await Emotions.annotate(rows)).map((t) => P.decorate(t, tz));
+   const closed = decorated.filter((t) => t.status !== 'open');
+   const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
+     || await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id)
+@@ -601,7 +601,7 @@ router.get('/coach', requireAuth, async (req, res) => {
+     .map((t) => P.decorate(t, tz));
+   const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
+     || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
+-  res.json(Coach.analyse(rows, { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }));
++  res.json(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }));
+ });
+ 
+ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+@@ -609,7 +609,8 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+   const tz = settings.timezone;
+   const acc = await accountOr404(req, res);
+   if (!acc) return;
+-  const rows = (await db.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY COALESCE(closed_at, opened_at)').all(req.user.id, acc.id)).map((t) => P.decorate(t, tz));
++  let rows = (await db.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY COALESCE(closed_at, opened_at)').all(req.user.id, acc.id)).map((t) => P.decorate(t, tz));
++  rows=await Emotions.annotate(rows);
+   const todayStr = P.localDateStr(new Date().toISOString(), tz);
+   const journalEntry = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, todayStr) || null;
+   const symbols = [...new Set([...(settings.focus_symbols || []), ...rows.slice(-25).map((t) => t.symbol)])].slice(0, 12);

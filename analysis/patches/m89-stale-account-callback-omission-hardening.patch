@@ -1,0 +1,79 @@
+diff --git a/public/js/app.js b/public/js/app.js
+index c86589c..9e7a471 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -390,9 +390,9 @@
+             try {
+               const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value, account_id: Store.accountId });
+               out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);
+               Store.invalidate();
+-              if(!d.media_warnings?.length&&!d.confluence_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
++              if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
+               else this.toast('Financial import recorded; review optional journal evidence omissions below before closing.','ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           },
+diff --git a/public/js/views/emotions.js b/public/js/views/emotions.js
+index 0adee79..fed7a07 100644
+--- a/public/js/views/emotions.js
++++ b/public/js/views/emotions.js
+@@ -9,7 +9,7 @@
+    if(result.emotion_prompt)return C.open(result.trade.id,{phase:result.emotion_prompt.phase,onDone,expected});if(onDone)await onDone();
+   },
+   async open(id,{phase=null,onDone=null,expected=context()}={}){
+-   const serial=++opened;let view;try{view=await global.API.get('/trades/'+id+'/emotions');}catch(e){global.App.toast(e.message||'Emotion capture unavailable; financial truth unchanged.','err');if(same(expected)&&onDone)await onDone();return;}
++   const serial=++opened;let view;try{view=await global.API.get('/trades/'+id+'/emotions');}catch(e){if(same(expected)&&serial===opened){global.App.toast(e.message||'Emotion capture unavailable; financial truth unchanged.','err');if(onDone)await onDone();}return;}
+    if(!same(expected)||serial!==opened||expected.account!=null&&Number(expected.account)!==view.account_id)return global.App.toast('Workspace/account changed or saved record is outside the selected account. Reopen its own context; no capture inferred.','err');
+    const body=U.h('div');let alive=true,busy=false,stale=false;const valid=()=>alive&&serial===opened&&same(expected)&&body.isConnected;
+    function disable(){body.querySelectorAll('input,button').forEach(el=>{el.disabled=busy||stale;});body.querySelector('[data-emotion-reload]').disabled=busy;for(const p of ['entry','exit']){const save=body.querySelector('[data-emotion-phase="'+p+'"] [data-emotion-save]');if(save)save.disabled=busy||stale||view[p].answered_at!=null||view[p].state==='prior'||view[p].state==='unavailable'||view[p].state==='imported'||p==='exit'&&view.saved_record.status!=='closed';}}
+@@ -18,7 +18,7 @@
+      const input=node.querySelector('[data-emotion-input]'),unknown=node.querySelector('[data-emotion-unknown]');unknown.addEventListener('change',()=>{input.disabled=unknown.checked;});
+      node.appendChild(U.h('button',{class:'btn sm primary',type:'button',dataset:{emotionSave:'true'},text:'Record first '+p+' state',onclick:async()=>{if(!valid()||busy)return global.App.toast('Workspace/account changed or editor closed; reopen the current record.','err');const emotion=unknown.checked?null:input.value.trim();if(emotion!==null&&!emotion)return global.App.toast('Name the actual state or explicitly choose unknown.','err');busy=true;disable();try{const out=await global.API.post('/trades/'+id+'/emotions/'+p,{emotion,event_id:v.event_id,revision:v.revision});if(!valid())return;view=out;stale=false;draw();global.Store.invalidate();global.App.toast('First emotional-state response/time recorded; financial/core/permission state not completed.','ok');if(phase)closeModal.close();}catch(e){if(valid()){stale=e.status===409;global.App.toast(e.message||'Emotion response unavailable; financial truth unchanged.','err');}}finally{busy=false;if(valid())disable();}}}));body.appendChild(node);
+     }
+-    body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{emotionReload:'true'},text:'Reload saved event (discard unsaved input)',onclick:async()=>{if(!valid()||busy)return;busy=true;disable();try{const out=await global.API.get('/trades/'+id+'/emotions');if(!valid())return;view=out;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message,'err');}finally{busy=false;if(valid())disable();}}}));
++    body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{emotionReload:'true'},text:'Reload saved event (discard unsaved input)',onclick:async()=>{if(!valid()||busy)return;busy=true;disable();try{const out=await global.API.get('/trades/'+id+'/emotions');if(!valid())return;if(expected.account!=null&&Number(expected.account)!==out.account_id){stale=true;global.App.toast('Saved account changed; reopen in its current account. No response accepted here.','err');return;}view=out;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message,'err');}finally{busy=false;if(valid())disable();}}}));
+     const legacy=view.legacy;body.appendChild(U.h('p',{class:'tiny muted',text:`Current journal self-report (NOT captured-time proof): entry ${legacy.emotion_before||'unknown'}; exit ${legacy.emotion_after||'unknown'}.` }));
+     if(view.history.length)body.appendChild(U.h('details',{},U.h('summary',{text:'Retained app/capture history ('+view.history.length+')'}),...view.history.map(v=>U.h('p',{class:'tiny',text:`${v.phase} · ${v.state} · ${v.source} · ${v.emotion??'no named state'} · observed ${v.app_observed_at||'unknown'} · answered ${v.answered_at||'unknown'}`}))));
+    }
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index c5236d7..bfd05db 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -151,8 +151,8 @@
+               const d = await API.post('/import/csv', { csv, account_id: U.$('#im-account', w).value });
+               if(!currentMediaPane())return;
+               out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);
+-              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);
++              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           });
+           const file = U.$('#im-file', w);
+@@ -176,8 +176,8 @@
+                 const d = await API.post('/import/json', { data });
+                 if(!currentMediaPane()||attempt!==jsonRead)return;
+                 U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);
+-                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length)global.App.refresh();
++                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);
++                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length)global.App.refresh();
+               } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+             };
+             r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
+diff --git a/src/emotions.js b/src/emotions.js
+index b56f2f9..a09fe3f 100644
+--- a/src/emotions.js
++++ b/src/emotions.js
+@@ -13,8 +13,8 @@ const hash=(s,phase)=>crypto.createHash('sha256').update(JSON.stringify((phase==
+ function classify(t,event,response,now=Date.now()){
+   const base={event_id:event?.id??null,phase:event?.phase??null,state:'unavailable',emotion:null,source:event?.source??null,app_observed_at:event?.source==='imported'?null:event?.app_observed_at??null,answered_at:response?.answered_at??null,received_at:event?.source==='imported'?event.app_observed_at:null,delay_ms:null,current_context:false,eligible:false,window_ms:WINDOW_MS,broker_verified:false,basis:'Server app-event and first-response timing only; not broker execution, actual mental state, causation, permission or grade.'};
+   try{
+-    if(!event||!['entry','exit'].includes(event.phase)||!['app_entry','app_close','retrospective','imported'].includes(event.source)||event.source==='app_entry'&&event.phase!=='entry'||event.source==='app_close'&&event.phase!=='exit'||event.user_id!==t.user_id||event.trade_id!==t.id||event.account_id!==t.account_id)throw invalid('Unavailable event identity.');
+-    const s=JSON.parse(event.snapshot),at=stamp(event.app_observed_at);if(!s||s.id!==t.id||s.user_id!==t.user_id||s.account_id!==t.account_id||hash(s,event.phase)!==event.context_hash||at===null||at>now)throw invalid('Unavailable event context/clock.');
++    if(!event||!['entry','exit'].includes(event.phase)||!['app_entry','app_close','retrospective','imported'].includes(event.source)||event.source==='app_entry'&&event.phase!=='entry'||event.source==='app_close'&&event.phase!=='exit'||event.user_id!==t.user_id||event.trade_id!==t.id)throw invalid('Unavailable event identity.');
++    const s=JSON.parse(event.snapshot),at=stamp(event.app_observed_at);if(event.source==='app_entry'&&s?.status!=='open'||event.source==='app_close'&&s?.status!=='closed')throw invalid('Unavailable observed lifecycle.');if(!s||s.id!==t.id||s.user_id!==t.user_id||s.account_id!==event.account_id||hash(s,event.phase)!==event.context_hash||at===null||at>now)throw invalid('Unavailable event context/clock.');
+     const matches=hash(snapshot(t,event.phase),event.phase)===event.context_hash;let state=matches?'pending':'prior',emotion=null,answered=null,delay=null;
+     if(response){const r=JSON.parse(response.snapshot),ms=stamp(response.answered_at);emotion=input(response.emotion);if(response.event_id!==event.id||!r||hash(r,event.phase)!==event.context_hash||ms===null||ms<at||ms>now)throw invalid('Unavailable response.');answered=response.answered_at;delay=ms-at;
+       if(matches){const financial=stamp(event.phase==='entry'?s.opened_at:s.closed_at),age=financial===null?Infinity:at-financial;state=emotion===null?'unknown':event.source==='imported'?'imported':event.source==='retrospective'?'retrospective':delay<=WINDOW_MS&&age>=0&&age<=WINDOW_MS&&(event.phase==='exit'?r.status==='closed':r.status==='open')?'timely':'late';}

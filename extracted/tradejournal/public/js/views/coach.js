@@ -49,7 +49,7 @@
           el.innerHTML = `
             <div class="row-between" style="align-items:flex-start;gap:10px">
               <h4>${U.esc(i.title)}</h4>
-              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.impact >= 0 ? '+' : ''}${U.money(i.impact)} impact</span>
+              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.impact >= 0 ? '+' : ''}${U.money(i.impact)} ${i.capture_basis==='app_record_window_self_report'?'recorded group net':'impact'}</span>
             </div>
             <div class="detail">${U.esc(i.detail)}</div>
             <div class="evidence">${(i.evidence || []).map((e) => `<span class="ev">${U.esc(e.label)}<b>${U.esc(e.value)}</b></span>`).join('')}</div>

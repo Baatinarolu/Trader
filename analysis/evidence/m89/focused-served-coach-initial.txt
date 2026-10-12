@@ -1,0 +1,31 @@
+ACTUAL_HTTP /coach 200 7.6ms [ 'insights', 'score' ]
+ACTUAL_HTTP /analytics 200 7.5ms [
+  'kpis',                  'by_confluence',
+  'confluence_coverage',   'points',
+  'equity',                'daily',
+  'monthly',               'distribution',
+  'by_strategy',           'by_symbol',
+  'by_session',            'by_direction',
+  'by_grade',              'by_entry_model',
+  'by_emotion',            'emotion_coverage',
+  'by_emotion_unverified', 'by_mistake',
+  'by_tag',                'by_hold',
+  'by_asset',              'by_adherence',
+  'by_confidence',         'time',
+  'compliance',            'compliance_pooled',
+  'compliance_trades',     'compliance_checks',
+  'compliance_passed',     'account',
+  'open_positions'
+]
+ACTUAL_SERVED_COACH 1716chars 123.6ms
+http://127.0.0.1:3000/js/util.js?v=mv4wrfyc:83
+  const $ = (sel, root = document) => root.querySelector(sel);
+                                           ^
+
+TypeError: Cannot read properties of undefined (reading 'querySelector')
+    at Object.$ (http://127.0.0.1:3000/js/util.js?v=mv4wrfyc:83:44)
+    at Object.offlineScreen (http://127.0.0.1:3000/js/app.js?v=mv4wrfyc:89:21)
+    at Object.boot (http://127.0.0.1:3000/js/app.js?v=mv4wrfyc:57:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+Node.js v22.22.3

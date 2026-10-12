@@ -1,0 +1,35 @@
+{"arm": "raw", "suite": "api", "server_app": "/home/user/Trader/extracted/tradejournal", "scripts_unchanged": true, "pass": null, "fail": null, "exit_code": 2, "output": "native-raw-api.txt", "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. NO preparation fixture, retained new mandatory-routine aborts, not integrated-all assertion pass.", "parity_fills": null, "parity_mismatches": null}
+{"arm": "fixture", "suite": "api", "server_app": "/home/user/Trader/extracted/tradejournal", "scripts_unchanged": true, "pass": 121, "fail": 0, "exit_code": 0, "output": "native-fixture-api.txt", "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. DECLARED synthetic owned preparation actual modules/15m control clock; old assertions, not human/meditation/live/broker/production proof.", "parity_fills": null, "parity_mismatches": null}
+{"arm": "parent", "suite": "api", "server_app": "/tmp/m89-parent/app", "scripts_unchanged": true, "pass": 121, "fail": 0, "exit_code": 0, "output": "native-parent-api.txt", "scope": "Original native assertions and cleanup on same server/DB; synthetic offline candle IO. DECLARED synthetic owned preparation actual modules/15m control clock; old assertions, not human/meditation/live/broker/production proof.", "parity_fills": null, "parity_mismatches": null}
+Traceback (most recent call last):
+  File "/home/user/Trader/analysis/run-m89-native.py", line 12, in <module>
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:groups=list(pool.map(OLD['arm'],ARMS))
+                                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Trader/analysis/run-m86-native.py", line 16, in arm
+    out=subprocess.run(cmd,cwd=app,env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=120);text=out.stdout.decode(errors='replace');path=f'native-{name}-{suite}.txt';(E/path).write_text(text)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/subprocess.py", line 1207, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/subprocess.py", line 2060, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+  File "/usr/lib/python3.11/subprocess.py", line 1251, in _check_timeout
+    raise TimeoutExpired(
+subprocess.TimeoutExpired: Command '['node', 'scripts/bots-test.js']' timed out after 120 seconds

@@ -8,6 +8,7 @@
  * every claim points at a slice of your own trade rows.
  */
 const P = require('./performance');
+const Emotions = require('./emotions');
 const Guards = require('./bots/guardrails');
 const I = require('./instruments');
 
@@ -305,22 +306,13 @@ function analyse(trades, ctx = {}) {
     }
   }
 
-  /* 10 — emotional state ------------------------------------------------- */
-  const negWords = ['revenge', 'fomo', 'anxious', 'angry', 'frustrated', 'greedy', 'impatient', 'tilted', 'bored', 'tired', 'fear'];
-  const neg = closed.filter((t) => negWords.some((w) => String(t.emotion_before || '').toLowerCase().includes(w)));
-  const pos = closed.filter((t) => /calm|confident|focused|patient|neutral|disciplined/i.test(String(t.emotion_before || '')));
-  if (neg.length >= 6 && pos.length >= 5) {
-    const sn = stat(neg), sp = stat(pos);
-    if (sn.exp_r < sp.exp_r - 0.15) {
-      add({
-        id: 'emotion', category: 'psychology', severity: 'critical',
-        title: `${neg.length} trades were taken in a bad mental state`,
-        detail: `Trades tagged with a negative state (${[...new Set(neg.map((t) => t.emotion_before))].slice(0, 4).join(', ')}) average ${sn.exp_r}R. Calm/focused trades average ${sp.exp_r}R. Same trader, different state, ${money(sn.net)} difference.`,
-        impact: sn.net - sn.n * sp.exp_r, evidence: [...evidenceOf(sn, 'Negative state'), ...evidenceOf(sp, 'Calm / focused')],
-        action: 'Add a 10-second state check before every entry. If the honest answer is not calm/neutral, the trade does not happen.',
-      });
-    }
-  }
+  /* M89 — APP-window self-reports only, retrospective/late/imported excluded.
+   * Regex group names are descriptive, not read-mind or causal/sizing authority. */
+  const negWords = ['revenge','fomo','anxious','angry','frustrated','greedy','impatient','tilted','bored','tired','fear'];
+  const states=closed.filter(t=>Emotions.captured(t)!==null&&typeof t.net_pnl==='number'&&Number.isFinite(t.net_pnl)&&typeof t.r_multiple==='number'&&Number.isFinite(t.r_multiple)&&typeof t.risk_amount==='number'&&t.risk_amount>0&&Math.abs(t.net_pnl-t.risk_amount*t.r_multiple)<=Math.max(.02,t.risk_amount*.0001));
+  const negative=t=>negWords.some(w=>Emotions.captured(t).toLowerCase().includes(w)),positive=t=>/calm|confident|focused|patient|neutral|disciplined/i.test(Emotions.captured(t));
+  const neg=states.filter(t=>negative(t)&&!positive(t)),pos=states.filter(t=>positive(t)&&!negative(t));
+  if(neg.length>=6&&pos.length>=5){const sn=stat(neg),sp=stat(pos);if(sn.exp_r<sp.exp_r-.15)add({id:'emotion',category:'psychology',severity:'warning',title:'Recorded entry-state associations (descriptive)',detail:`App-window entry self-reports: negative-labelled ${sn.n} trades averaged ${sn.exp_r}R; calm/focused-labelled ${sp.n} averaged ${sp.exp_r}R. Not a causal dollar cost, broker mental-state verification or predictive edge. Below30 per group is descriptive only;30+ still does not prove an edge. Late/imported/missing responses excluded.`,impact:sn.net,evidence:[...evidenceOf(sn,'App-window negative label'),...evidenceOf(sp,'App-window calm/focused label')],action:'Review the original captured states alongside your plan and outcomes; do not infer causality, resize risk or treat this comparison as entry permission.',capture_basis:'app_record_window_self_report'});}
 
   /* 11 — symbol leak ----------------------------------------------------- */
   const symRows = P.segment(closed, (t) => t.symbol).filter((r) => r.trades >= 6 && r.net_pnl < 0 && r.expectancy_r < -0.15);

@@ -1,0 +1,26 @@
+feature/rubric: 60/0, exit=0, completed
+feature/freshness: 14/0, exit=0, completed
+feature/feedback: 23/0, exit=0, completed
+feature/contracts: 42/0, exit=0, completed
+feature/day: 24/0, exit=0, completed
+feature/hardening: 15/0, exit=0, completed
+feature/ui: 0/1, exit=1, completed
+feature/noninterference: 34/0, exit=0, completed
+feature/migration: 15/0, exit=0, completed
+{
+  "pass": 227,
+  "fail": 1,
+  "probes": 9,
+  "completed_nonzero": 1,
+  "timeout_no_exit": 0,
+  "summaryless": 0,
+  "scope": "REPORTED completed assertions; literal clocks/journals/DOM only. Feature/execution/routine no prerequisite adapter; RAW failures/early aborts and DECLARED assumptions remain SEPARATE. No chart/broker/provider/pixel/meditation/edge/production proof."
+}
+Traceback (most recent call last):
+  File "/home/user/Trader/analysis/run-m89-verification.py", line 67, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/user/Trader/analysis/run-m89-verification.py", line 66, in main
+    if a.suite in ['feature','execution','routine']:assert all(r['pass']==r['expected_pass'] and r['fail']==0 and r['exit_code']==0 for r in outs)
+                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

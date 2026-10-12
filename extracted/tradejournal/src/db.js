@@ -241,6 +241,28 @@ CREATE TABLE IF NOT EXISTS bot_signals (
     resolved_at TEXT
   );
 -- M88 reusable, user-owned free-text vocabulary, NOT market-model checklist facts.
+-- M89 optional owned APP event + immutable first response, NOT broker proof.
+CREATE TABLE IF NOT EXISTS trade_emotion_events (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ trade_id INTEGER NOT NULL REFERENCES trades(id) ON DELETE CASCADE,
+ account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+ phase TEXT NOT NULL CHECK(phase IN ('entry','exit')),
+ source TEXT NOT NULL CHECK(source IN ('app_entry','app_close','retrospective','imported')),
+ event_key TEXT NOT NULL,
+ app_observed_at TEXT NOT NULL,
+ snapshot TEXT NOT NULL,
+ context_hash TEXT NOT NULL,
+ historical_json TEXT,
+ UNIQUE(user_id,trade_id,event_key)
+);
+CREATE TABLE IF NOT EXISTS trade_emotion_responses (
+ event_id INTEGER PRIMARY KEY REFERENCES trade_emotion_events(id) ON DELETE CASCADE,
+ emotion TEXT,
+ answered_at TEXT NOT NULL,
+ snapshot TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_emotion_owner_trade ON trade_emotion_events(user_id,trade_id,id);
 CREATE TABLE IF NOT EXISTS confluence_labels (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   label_key TEXT NOT NULL,
@@ -659,6 +681,9 @@ async function migrate() {
   await add('trades','stop_honoured_source','TEXT');
   await add('trades','stop_honoured_recorded_at','TEXT');
   await add('trades','execution_review_hash','TEXT');
+  // Single-statement triggers: exec splits semicolons, so use prepare for bodies.
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS emotion_events_immutable BEFORE UPDATE ON trade_emotion_events BEGIN SELECT RAISE(ABORT,'Emotion event facts are immutable'); END`).run();
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS emotion_responses_immutable BEFORE UPDATE ON trade_emotion_responses BEGIN SELECT RAISE(ABORT,'First emotion response is immutable'); END`).run();
   // M88 additive NULL, no inferred labels/source/entry-time history on old trades.
   for(const field of ['entry_confluences','entry_confluences_source','entry_confluences_recorded_at'])await add('trades',field,'TEXT');
   await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');

@@ -1,6 +1,55 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M88 — explicit entry confluences — 2026-10-12
+## Current M89 — timely APP emotion prompts/provenance — 2026-10-12
+
+**132:92 done /3 partial /37 TODO /0 no-action**, exact eight groups. Actual
+owned after-entry/after-close popups, retained first answers/server clocks/context,
+compatibility auto-tags and saved history; unknown/late/retrospective/imported/prior/
+unavailable separate. **Five-minute APP policy, NOT a course quotation or broker/
+mental-state proof**. Entry answered after close excluded; no legacy backfill.
+Optional post-commit outage warns without undoing finance; strict displayed
+revision/owner/token/account guards, one answer per event, immutable DB UPDATE.
+Exit capture/decline still leads to required core/post-loss writing; no score,
+permission/admission/cap/routine/risk refund or M106 calmness gate.
+
+Closed-only primary Analytics/Coach use server child annotations, known outcome
+counts and explicit coverage; old text is separately timing-unverified. No causal
+dollar cost, prediction, sizing signal or70% claim. JSON/CSV retain original first
+response/context as unverified declarations, forced imported/new destination IDs
+and receiving clock, no original answer delay/proof replay. Invalid optional import
+warns; real import-store failure rolls back. Capture-read outage cannot deny a
+financial backup; omission markers and actual CSV/Settings warnings stay visible.
+
+**M89 final170/0 across13 probes**, actual-parent migration14/0; unchanged
+M88 confluence160/0, execution260/0, routine321/0. Original M87 **223/3** migration
+shape negatives retained. RAW597/155 plus90s timeout; DECLARED825/3, same old
+M85 browser-day fixture22/3 on actual parent (fixed server11th vs browser12th).
+Offline178/0, DECLARED market325/0, live70/1 with6 nonzero/5 summaryless.
+Final serial native prepared parent/current API121/0 each/Bots206/0 each,
+24 synthetic fills/0 mismatches; initial205/1 each quarter-ATR0.19 negative kept,
+not a clock/engine/risk patch or improvement. Raw APIexit2/no summary/Bots200/6.
+Smoke**21/21 conditional DOM**,0 style/console,16 canvas limits,observed exit0.
+Concurrent fetch/SQL_BUSY/native-timeout/4of21-smoke and fresh-preview20of21
+Coach-deadline negatives retained, not erased. Focused served Coach rendered1716
+chars/0 non-canvas errors; unchanged final smoke21/21/16canvas/exit0.
+
+Twelve frozen runtime stages+docs, actual63d/pristine forward/reverse byte proofs,
+deterministic **125-source** ZIP/private exclusions: `build-m89-emotion-artifacts.py`,
+`patches/M89-EMOTION-STAGES.json`, excluded `evidence/m89/archive-sha256.json`.
+[Full report](M89-TIMELY-EMOTION-CAPTURE.md). Main preview3000: temporary synthetic
+`/tmp/m89-preview.db`, offline/schedulerOFF/blank remotes, no preserved real data.
+
+**Next M91.** M106/M111/M112 remain TODO; M30/M103/M108 partial. All132 IDs/eight
+groups preserved. This session stays on **arena/762c0295-trader**; older branch/
+next-step/counts below are historical, never instructions to switch or push elsewhere.
+
+### Current remaining IDs — no omissions
+
+Partials **M30,M103,M108**. TODO37: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M62,M65,M66,M67,M72,M73,M74,M91,M93,M99,M100,M101,M104,M105,M106,M107,M109,M110,M111,M112,M115,M117,M125**.
+Generated PROGRESS asserts exact132/eight groups. All older remaining-ID lists
+below are milestone snapshots, NOT the current partition.
+
+## Historical M88 — explicit entry confluences — 2026-10-12
 
 **132:91 done /3 partial /38 TODO /0 no-action**, exact eight groups. Dedicated
 nullable human reasons, **unknown != explicit none**, honest1 partial and2–5
@@ -916,9 +965,9 @@ could surface it in *any* rung and the probe accepted `targets.some(kind === 'we
 a probe written in the same pass that wrote the code. The check that matters is not "is the value
 computed" but **"is the value actually consumed, and does it survive to the output"**.
 
-## 8. What to do next, in order
+## 8. Historical next steps (superseded by current M89 section)
 
-1. **Push.** `git push origin arena/0f969311-trader`. Nothing is on the remote.
+1. **Obsolete historical push instruction.** This session is fixed to `arena/762c0295-trader`; never push another branch. Current source/delivery state is in the leading M89 section.
 2. **Re-verification sweep** of the 36 APPLIED rows (§7). Highest value item outstanding.
 3. **M52** — mid-range risk reduction. Course: *"if it's mid-range… reduce your risk, use a smaller
    position size."* `riskPct` is a constant from the request context, never scaled by range position.

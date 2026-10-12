@@ -1,0 +1,323 @@
+{
+  "app": "/tmp/m89-ui-stage/app",
+  "pass": 0,
+  "fail": 15,
+  "results": [
+    {
+      "label": "EXIT cannot be recorded before actual financial close",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "trade_id": 1,
+          "account_id": 1,
+          "saved_record": {
+            "symbol": "DECLARED_STOCK",
+            "status": "open",
+            "entry": 100,
+            "stop": 99,
+            "exit": null
+          },
+          "entry": {
+            "event_id": null,
+            "phase": "entry",
+            "state": "unknown",
+            "emotion": null,
+            "eligible": false,
+            "broker_verified": false,
+            "window_ms": 300000,
+            "app_observed_at": null,
+            "answered_at": null,
+            "revision": "b2d873db6fed52536a8d3e2cf8d096b2e5aaadb0d77b9fcaab1d8055fb41024c"
+          },
+          "exit": {
+            "event_id": 1,
+            "phase": "exit",
+            "state": "retrospective",
+            "emotion": "Imaginary exit",
+            "source": "retrospective",
+            "app_observed_at": "2026-10-12T12:00:00.000Z",
+            "answered_at": "2026-10-12T12:00:00.000Z",
+            "delay_ms": 0,
+            "current_context": true,
+            "eligible": false,
+            "window_ms": 300000,
+            "broker_verified": false,
+            "basis": "Server app-event and first-response timing only; not broker execution, actual mental state, causation, permission or grade.",
+            "recorded_context": {
+              "id": 1,
+              "user_id": 1,
+              "account_id": 1,
+              "symbol": "DECLARED_STOCK",
+              "direction": "long",
+              "entry": 100,
+              "stop": 99,
+              "target": 102,
+              "size": 100,
+              "strategy_id": null,
+              "strategy_version": null,
+              "entry_model": null,
+              "entry_tf": null,
+              "opened_at": "2026-10-12T12:00:00.000Z",
+              "closed_at": null,
+              "exit": null,
+              "fees": 0,
+              "net_pnl": 0,
+              "risk_amount": 100,
+              "r_multiple": 0,
+              "legs": null,
+              "status": "open"
+            },
+            "revision": "e78166874264c22f17570c38c58a68f5f7b9a4a967007dc6cef08045dcfca09d"
+          },
+          "history": [
+            {
+              "event_id": 1,
+              "phase": "exit",
+              "state": "retrospective",
+              "emotion": "Imaginary exit",
+              "source": "retrospective",
+              "app_observed_at": "2026-10-12T12:00:00.000Z",
+              "answered_at": "2026-10-12T12:00:00.000Z",
+              "delay_ms": 0,
+              "current_context": true,
+              "eligible": false,
+              "window_ms": 300000,
+              "broker_verified": false,
+              "basis": "Server app-event and first-response timing only; not broker execution, actual mental state, causation, permission or grade.",
+              "recorded_context": {
+                "id": 1,
+                "user_id": 1,
+                "account_id": 1,
+                "symbol": "DECLARED_STOCK",
+                "direction": "long",
+                "entry": 100,
+                "stop": 99,
+                "target": 102,
+                "size": 100,
+                "strategy_id": null,
+                "strategy_version": null,
+                "entry_model": null,
+                "entry_tf": null,
+                "opened_at": "2026-10-12T12:00:00.000Z",
+                "closed_at": null,
+                "exit": null,
+                "fees": 0,
+                "net_pnl": 0,
+                "risk_amount": 100,
+                "r_multiple": 0,
+                "legs": null,
+                "status": "open"
+              }
+            }
+          ],
+          "legacy": {
+            "emotion_before": "",
+            "emotion_after": "Imaginary exit",
+            "basis": "Compatibility self-report, NOT timing proof. Later journal edits do not rewrite the immutable first response."
+          }
+        }
+      }
+    },
+    {
+      "label": "actual DB disallows rewriting retained trade_emotion_events first facts",
+      "passed": false
+    },
+    {
+      "label": "actual DB disallows rewriting retained trade_emotion_responses first facts",
+      "passed": false
+    },
+    {
+      "label": "JSON exports two independent first responses/timing, explicitunknown retained",
+      "passed": false
+    },
+    {
+      "label": "JSON actual new owned ID, forced imported/new receiving clock, never fresh proof",
+      "passed": false,
+      "detail": {
+        "trade_id": 2,
+        "account_id": 2,
+        "saved_record": {
+          "symbol": "DECLARED_STOCK",
+          "status": "closed",
+          "entry": 100,
+          "stop": 99,
+          "exit": 101
+        },
+        "entry": {
+          "event_id": null,
+          "phase": "entry",
+          "state": "unknown",
+          "emotion": null,
+          "eligible": false,
+          "broker_verified": false,
+          "window_ms": 300000,
+          "app_observed_at": null,
+          "answered_at": null,
+          "revision": "2f24433c57326a57142b09c4b9b956db671dfab74e4f087460620cccc53463a9"
+        },
+        "exit": {
+          "event_id": null,
+          "phase": "exit",
+          "state": "unknown",
+          "emotion": null,
+          "eligible": false,
+          "broker_verified": false,
+          "window_ms": 300000,
+          "app_observed_at": null,
+          "answered_at": null,
+          "revision": "2c19988afcd9e9efd78f580630ff6c63269570c23eb59b524dd095412b730809"
+        },
+        "history": [],
+        "legacy": {
+          "emotion_before": "Rewritten current journal text",
+          "emotion_after": "Imaginary exit",
+          "basis": "Compatibility self-report, NOT timing proof. Later journal edits do not rewrite the immutable first response."
+        }
+      }
+    },
+    {
+      "label": "original first clock survives only as unverified declaration, not answered proof replay",
+      "passed": false,
+      "detail": {
+        "event_id": null,
+        "phase": "entry",
+        "state": "unknown",
+        "emotion": null,
+        "eligible": false,
+        "broker_verified": false,
+        "window_ms": 300000,
+        "app_observed_at": null,
+        "answered_at": null,
+        "revision": "2f24433c57326a57142b09c4b9b956db671dfab74e4f087460620cccc53463a9"
+      }
+    },
+    {
+      "label": "legacy later journal text does not rewrite imported original response",
+      "passed": false
+    },
+    {
+      "label": "CSV carries dedicated JSON-cell for emotion events",
+      "passed": false
+    },
+    {
+      "label": "CSV quoted comma-state/null actual import survives as IMPORTED",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "skipped": 0,
+          "errors": [],
+          "media_imported": 0,
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": [],
+          "detected": {
+            "symbol": "symbol",
+            "direction": null,
+            "size": "size",
+            "entry": "entry",
+            "exit": "exit",
+            "stop": null,
+            "target": null,
+            "opened": null,
+            "closed": null,
+            "fees": null,
+            "strategy": null,
+            "entry_model": null,
+            "entry_tf": null,
+            "entry_evidence": null,
+            "tags": null,
+            "notes": null,
+            "entry_confluences": null,
+            "screenshot_url": null,
+            "screenshot_views_json": null,
+            "net": null
+          }
+        }
+      }
+    },
+    {
+      "label": "bad optional portable evidence warns while finance remains truthful {\"entries\":\"bad\"}",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "bad optional portable evidence warns while finance remains truthful false",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "bad optional portable evidence warns while finance remains truthful {\"version\":1,\"entries\":[{\"phase\":\"entry\",\"emotion\"",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "bad optional portable evidence warns while finance remains truthful {\"version\":1,\"entries\":[{\"phase\":\"entry\",\"emotion\"",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "real optional import-store503 rolls back whole finance/evidence mapping",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "inserted": 1,
+          "media_imported": 0,
+          "confluence_warnings": [],
+          "media_skipped": 0,
+          "media_warnings": []
+        }
+      }
+    },
+    {
+      "label": "corrupt phase/source alias uncredited, not invented timing",
+      "passed": false
+    }
+  ],
+  "scope": "M89 portable/unavailable/immutable evidence: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

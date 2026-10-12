@@ -10,6 +10,7 @@
 
 const Execution = require('./execution-review');
 const Confluences = require('./confluences');
+const Emotions = require('./emotions');
 
 const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -530,6 +531,7 @@ function optimalRisk(rs, { cap = 0.05, floor = 0.001 } = {}) {
 function fullAnalytics(trades, opts = {}) {
   const k = kpis(trades, opts);
   const confluences=Confluences.aggregate(trades);
+  const emotions=Emotions.aggregate(trades);
   const closed = trades.filter((t) => t.status !== 'open');
   return {
     kpis: k,
@@ -562,7 +564,9 @@ function fullAnalytics(trades, opts = {}) {
     by_entry_model: segment(closed, (t) => t.entry_model == null ? 'Unknown (unrecorded)' : t.entry_model)
       .map((r) => ({ ...r, sample_ready: r.trades >= 30, sample_floor: 30,
         sample_note: r.trades < 30 ? 'Descriptive only; below the course 30-trade review floor.' : 'Recorded journal outcomes; not a causal market-edge claim.' })),
-    by_emotion: segment(trades, (t) => splitTags(t.emotion_before)),
+    by_emotion: emotions.rows,
+    emotion_coverage:emotions.coverage,
+    by_emotion_unverified:segment(closed,(t)=>splitTags(t.emotion_before)),
     by_mistake: segment(trades, (t) => splitTags(t.mistakes)),
     by_tag: segment(trades, (t) => splitTags(t.tags)),
     by_hold: segment(trades, (t) => holdBucket(t.hold_minutes)),

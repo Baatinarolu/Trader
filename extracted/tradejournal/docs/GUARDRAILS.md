@@ -17,7 +17,7 @@ not assumed skipped or complete; reused images/equivalent frames flagged rather
 than3 independent views. Unsafe legacy remains stored/unassigned but is not
 rendered/copied into portable backups; server never fetches external image URLs.
 
-M88/M89/M106/M111/M112 remain TODO, M108 PARTIAL. Exact132=90done/3partial/39TODO;
+Historical M87 delivery: M88/M89 were then TODO (now applied); M106/M111/M112 remain TODO, M108 PARTIAL. Historical132=90done/3partial/39TODO;
 course floor30, deliberate M103 n>=5, B/C tradeability, checklist/entry weights,
 stops/targets/geometry/RR/default risk/factors untouched. No70% edge, provider,
 broker, actual meditation/human or production claims. See report in delivery ZIP.
@@ -183,7 +183,7 @@ responsible for the selected session ceiling outside the app; no broker is conne
 
 A prospective new entry/reopen requires an explicit nonblank named emotional state.
 It is input capture, **not the four-question calm/clear state gate** (M106) or verified
-entry-time emotion provenance (M89). Already-executed/open/historical truth can be
+M89 app-record/first-response timing (not broker-time emotion verification). Already-executed/open/historical truth can be
 recorded even when the state was never captured; do not invent an emotion afterward.
 
 Closing a position is **never refused because reflection is missing**. The actual
@@ -226,7 +226,7 @@ are retained even while the new writing state is unavailable.
 
 **"Core complete" is deliberately scoped to the fields above.** It does not claim
 all course screenshots/confluences/timing/routine/state checks are implemented.
-M87/M88/M89/M106 and all other unresolved findings stay visible. M94 is now separately implemented with the actual M64 workflow; core trade writing alone does not satisfy it.
+M87/M88/M89 are separately implemented evidence scopes; M106 and all other unresolved findings stay visible. M94 is now separately implemented with the actual M64 workflow; core trade writing alone does not satisfy it.
 
 ## Pre-market routine and daily preparation evidence (M14/M64/M94)
 
@@ -324,8 +324,9 @@ financial close/correction/deletion/import and record-only entries remain legal.
 ## Scope still open
 
 M108's full Sanctuary presets/ambient/intention/toolkit/independent session log
-and progress remain partial beyond this routine timer. M111's news fail-closed policy, M112's time restrictions, M89's verified emotion
-capture timing, M106's four-question state gate and all other unresolved findings
+and progress remain partial beyond this routine timer. M89 adds app-timed human
+self-report provenance, not broker/mental-state verification. M111's news fail-closed
+policy, M112's time restrictions, M106's four-question state gate and all other unresolved findings
 stay open. **Correction:** M116 is already classified APPLIED in the ledger; the
 prior guide/summaries incorrectly listed it open. No new closure/retuning is counted.
 M84/M85 complete their scoped input-capture/manual-marker gaps, not adaptive sizing.
@@ -368,4 +369,46 @@ record-count review annotation, not proof of edge/known-outcome completeness or
 permission. Retrospective associations don't establish causality/prediction and
 must not resize risk. Deliberate M103 n>=5/B-C tradeability, existing weights,
 grades, factors, default risk, stops/targets/RR/geometry all unchanged.
-M89 fresh emotion and M106/M111/M112 remain TODO; M108 remains partial.
+M89 adds separate app-timed emotion provenance, not confluence capture proof. M106/M111/M112 remain TODO; M108 remains partial.
+
+
+## M89 — capture is evidence, NEVER authority or required-writing completion
+
+After saved admitted entry/reopen, the app offers a blank first-state prompt;
+after truthful close, it offers an exit-state prompt, then the still-required
+core/post-loss review on answer/decline. Server clocks/current finance protect
+first app facts, not real execution/mental state. Five-minute APP budget is not
+a course quotation or a calmness gate. Before-entry required self-report remains
+separate; M106 fresh questions still TODO. Missing/declined is not none; explicit
+unknown remains unknown. No emotion/mistake/tag/model/outcome backfill.
+
+Financial transition commits first. Optional observation failure warns, never
+rolls back finance, refunds a cap or lets a closed trade pretend it never lost.
+Answer503 rolls back only response/compatibility auto-tag; actual import-store
+failure rolls back that import atomically. First response immutable via strict
+owned revision/API and DB UPDATE triggers. Ordinary manual/core edits remain
+retrospective and cannot rewrite first facts. Deliberate deletion cascades; no
+sealed/admin-tamper-proof vault claim. Corrected/reopened/moved-account prior
+history survives but cannot be credited to a new current position. Premature
+exit409; entry first answered after close remains late, even within5minutes.
+
+Capture-only primary Analytics/Coach uses server-owned child evidence and closed
+trades. Late, unknown, pending, retrospective, imported, prior and unavailable
+excluded with coverage; legacy text labelled separate/unverified. Known net/R
+availability explicit, no unknown-to0. Descriptive self-report comparisons have
+no causal dollar counterfactual, prediction, sizing veto or70% claim.30-trade
+review floor and deliberate M103 n>=5 unchanged;30+ is not edge proof.
+
+Backups preserve first responses/original context as declarations; receiving IDs,
+owner/account/source/time forced new/imported, no original clock/delay/workflow
+replay. Old IDs aren't ownership proof. Invalid optional imports warn while finance
+persists; missing capture store permits financial backup with explicit unavailable
+markers. CSV/Settings warnings stay visible. App budgets100-character single-line
+state,50 portable entries/trade,8KB declared original context/2048-character
+primitive strings are not course rules. Existing20MB file/25MB body limits and
+repeat historical insertion semantics remain. No automatic batching/deduping.
+
+All setup/execution grades, checklist/entry-model weights, default risk/factors,
+geometry/stops/targets/RR, admissions/caps/routine/loss-writing clocks unchanged.
+Current ledger132=92 done/3 partial/37TODO; M30/M103/M108 partial, M106/M111/M112
+open. No broker/provider/pixel/actual-human/meditation/production/edge proof.

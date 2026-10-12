@@ -1,0 +1,38 @@
+{
+  "source_manifest": "delivery-source.json",
+  "assets": [
+    {
+      "path": "public/index.html",
+      "http": 200,
+      "server_transform": "Exact {{V}} to actual per-boot ID, existing server contract",
+      "served_sha256": "f8db5e62a60ae3b3f1518510797ce111d90fca9c44f2b2a9cac2795672a69a46",
+      "expected_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/emotions.js",
+      "http": 200,
+      "sha256": "c64025e24c25c9dd0f848ded9101c9862123072c4fc9030764d63fd1ef5a0e7c",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/views/coach.js",
+      "http": 200,
+      "sha256": "92a4845fc5d7437ac4c21ab32eea1ebc40d8569b381b2f7a6e28e3c56d9975e8",
+      "local_byte_differences": 0
+    },
+    {
+      "path": "public/js/app.js",
+      "http": 200,
+      "sha256": "682e34c29fc736edceda1d8d31dff27f216b57b6f0077899e96e1699de2397ce",
+      "local_byte_differences": 0
+    }
+  ],
+  "preview": {
+    "port": 3000,
+    "database": "/tmp/m89-preview.db",
+    "remote": false,
+    "synthetic": true,
+    "scheduler": false
+  },
+  "scope": "Actual served latest source bytes; index exact existing build-ID transform. Not pixels/live/preserved-user/production."
+}

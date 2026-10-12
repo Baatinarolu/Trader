@@ -1,0 +1,179 @@
+diff --git a/src/db.js b/src/db.js
+index a5518f5..adbb4f7 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -241,6 +241,28 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+     resolved_at TEXT
+   );
+ -- M88 reusable, user-owned free-text vocabulary, NOT market-model checklist facts.
++-- M89 optional owned APP event + immutable first response, NOT broker proof.
++CREATE TABLE IF NOT EXISTS trade_emotion_events (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ trade_id INTEGER NOT NULL REFERENCES trades(id) ON DELETE CASCADE,
++ account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++ phase TEXT NOT NULL CHECK(phase IN ('entry','exit')),
++ source TEXT NOT NULL CHECK(source IN ('app_entry','app_close','retrospective','imported')),
++ event_key TEXT NOT NULL,
++ app_observed_at TEXT NOT NULL,
++ snapshot TEXT NOT NULL,
++ context_hash TEXT NOT NULL,
++ historical_json TEXT,
++ UNIQUE(user_id,trade_id,event_key)
++);
++CREATE TABLE IF NOT EXISTS trade_emotion_responses (
++ event_id INTEGER PRIMARY KEY REFERENCES trade_emotion_events(id) ON DELETE CASCADE,
++ emotion TEXT,
++ answered_at TEXT NOT NULL,
++ snapshot TEXT NOT NULL
++);
++CREATE INDEX IF NOT EXISTS idx_emotion_owner_trade ON trade_emotion_events(user_id,trade_id,id);
+ CREATE TABLE IF NOT EXISTS confluence_labels (
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+   label_key TEXT NOT NULL,
+diff --git a/src/emotions.js b/src/emotions.js
+index 1b8acf3..ea1f599 100644
+--- a/src/emotions.js
++++ b/src/emotions.js
+@@ -22,4 +22,44 @@ function classify(t,event,response,now=Date.now()){
+     if(event.source==='imported')state='imported';return {...base,state,emotion,answered_at:answered,delay_ms:delay,current_context:matches&&event.source!=='imported',eligible:state==='timely',recorded_context:s};
+   }catch{return base;}
+ }
+-module.exports={WINDOW_MS,input,stamp,snapshot,hash,classify,invalid};
++
++const {db}=require('./db');
++const sha=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
++async function owned(store,userId,id){if(!Number.isSafeInteger(id)||id<1)throw invalid('Trade not found.',404);const t=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);if(!t)throw invalid('Trade not found.',404);return t;}
++async function rowsOn(store,userId,id){const rows=await store.prepare(`SELECT e.*,r.event_id response_id,r.emotion,r.answered_at,r.snapshot answer_snapshot FROM trade_emotion_events e LEFT JOIN trade_emotion_responses r ON r.event_id=e.id WHERE e.user_id=? AND e.trade_id=? ORDER BY e.id`).all(userId,id);return rows.map(r=>({event:r,response:r.response_id==null?null:{event_id:r.response_id,emotion:r.emotion,answered_at:r.answered_at,snapshot:r.answer_snapshot}}));}
++const revision=(t,phase,selected)=>sha([require('./confluences').info(t).revision,phase,selected?.event,selected?.response]);
++function view(t,rows){
++  const phases={};for(const phase of ['entry','exit']){
++    const all=rows.filter(r=>r.event.phase===phase),app=all.filter(r=>r.event.source===(phase==='entry'?'app_entry':'app_close'));
++    const clock=phase==='entry'?'opened_at':'closed_at',sameCycle=app.filter(r=>{try{return JSON.parse(r.event.snapshot)[clock]===t[clock];}catch{return false;}});
++    const selected=sameCycle.at(-1)||app.at(-1)||all.at(-1);
++    phases[phase]={...(selected?classify(t,selected.event,selected.response):{event_id:null,phase,state:'unknown',emotion:null,eligible:false,broker_verified:false,window_ms:WINDOW_MS,app_observed_at:null,answered_at:null}),revision:revision(t,phase,selected)};
++  }
++  return {trade_id:t.id,account_id:t.account_id,saved_record:{symbol:t.symbol,status:t.status,entry:t.entry,stop:t.stop,exit:t.exit},...phases,history:rows.map(r=>classify(t,r.event,r.response)),legacy:{emotion_before:t.emotion_before||'',emotion_after:t.emotion_after||'',basis:'Compatibility self-report, NOT timing proof. Later journal edits do not rewrite the immutable first response.'}};
++}
++async function read(userId,id){return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id);return view(t,await rowsOn(store,userId,id));});}
++async function eventOn(store,t,phase,source,transition=''){
++  const s=snapshot(t,phase),digest=hash(s,phase),at=new Date().toISOString(),eventKey=sha([phase,source,digest,transition]);
++  await store.prepare('INSERT INTO trade_emotion_events(user_id,trade_id,account_id,phase,source,event_key,app_observed_at,snapshot,context_hash) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id,trade_id,event_key) DO NOTHING').run(t.user_id,t.id,t.account_id,phase,source,eventKey,at,JSON.stringify(s),digest);
++  return store.prepare('SELECT * FROM trade_emotion_events WHERE user_id=? AND trade_id=? AND event_key=?').get(t.user_id,t.id,eventKey);
++}
++/** Called AFTER truthful financial commit. Evidence outage is an explicit warning,
++ * never financial rollback or guessed clock/state; concurrent correction skips. */
++async function observe(userId,expected,phase,source,transition=''){
++  try{return await db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,expected.id);if(t.account_id!==expected.account_id||hash(snapshot(t,phase),phase)!==hash(snapshot(expected,phase),phase)||t.status!==(phase==='entry'?'open':'closed'))return {emotion_prompt:null,emotion_warnings:['Financial record changed before optional emotion observation; no timely capture inferred.']};const e=await eventOn(store,t,phase,source,transition);return {emotion_prompt:{phase,event_id:e.id,trade_id:t.id,account_id:t.account_id},emotion_warnings:[]};});}catch{return {emotion_prompt:null,emotion_warnings:['Financial truth recorded; optional emotion observation unavailable. No captured state or timing inferred.']};}
++}
++async function answer(userId,id,phase,body){
++  if(!['entry','exit'].includes(phase)||!body||Array.isArray(body)||typeof body!=='object'||Object.keys(body).some(k=>!['event_id','emotion','revision'].includes(k))||!Object.hasOwn(body,'emotion')||!Object.hasOwn(body,'event_id')||body.event_id!==null&&(!Number.isSafeInteger(body.event_id)||body.event_id<1)||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision))throw invalid('Use the displayed event_id/revision and an explicit emotional state or null only.');
++  const value=input(body.emotion);return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id),rows=await rowsOn(store,userId,id),v=view(t,rows),slot=v[phase];
++    if(body.revision!==slot.revision||body.event_id!==slot.event_id)throw invalid('Saved record or capture changed. Reload and deliberately review the current event.',409);
++    let selected=rows.find(r=>r.event.id===body.event_id);
++    if(selected?.response){if(selected.response.emotion===value)return v;throw invalid('The first response is retained unchanged. Later corrections belong in retrospective journal text, not a new fresh capture.',409);}
++    if(selected&&(!slot.current_context||slot.state==='unavailable'||slot.source==='imported'))throw invalid('Prior/imported/unavailable events cannot be converted into new timely proof.',409);
++    if(!selected){const e=await eventOn(store,t,phase,'retrospective','explicit manual '+new Date().toISOString());selected={event:e};}
++    const at=new Date().toISOString(),s=snapshot(t,phase);await store.prepare('INSERT INTO trade_emotion_responses(event_id,emotion,answered_at,snapshot) VALUES(?,?,?,?)').run(selected.event.id,value,at,JSON.stringify(s));
++    if(value!==null)await store.prepare('UPDATE trades SET '+(phase==='entry'?'emotion_before':'emotion_after')+'=? WHERE id=? AND user_id=?').run(value,id,userId);
++    return view(await owned(store,userId,id),await rowsOn(store,userId,id));
++  });
++}
++async function annotate(rows){try{if(!rows.length)return [];const user=rows[0].user_id,events=await db.prepare(`SELECT e.*,r.event_id response_id,r.emotion,r.answered_at,r.snapshot answer_snapshot FROM trade_emotion_events e LEFT JOIN trade_emotion_responses r ON r.event_id=e.id WHERE e.user_id=? ORDER BY e.id`).all(user),map=new Map();for(const r of events){if(!map.has(r.trade_id))map.set(r.trade_id,[]);map.get(r.trade_id).push({event:r,response:r.response_id==null?null:{event_id:r.response_id,emotion:r.emotion,answered_at:r.answered_at,snapshot:r.answer_snapshot}});}return rows.map(t=>({...t,emotion_capture:view(t,map.get(t.id)||[])}));}catch{return rows.map(t=>({...t,emotion_capture:{entry:{state:'unavailable',eligible:false},exit:{state:'unavailable',eligible:false}}}));}}
++module.exports={WINDOW_MS,input,stamp,snapshot,hash,classify,invalid,owned,view,read,observe,answer,annotate,rowsOn,eventOn};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index cbc01dc..835102b 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -16,6 +16,7 @@ const Routine = require('../routine');
+ const Execution = require('../execution-review');
+ const Screenshots = require('../screenshots');
+ const Confluences = require('../confluences');
++const Emotions = require('../emotions');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+@@ -347,16 +348,16 @@ router.post('/trades', requireAuth, async (req, res) => {
+   }
+   const owned = await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id);
+   if (!owned) return res.status(404).json({error:'Account not found'});
+-  let id, permission;
++  let id, permission, written;
+   try {
+     if (trade.status === 'open' && body.record_only !== true) {
+       try { trade.emotion_before=J.text(body.emotion_before,'Name your emotional state before prospective entry',100); }
+       catch(e){throw Guards.inputError(e.message);}
+       const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade',overrideReason:body.override_reason},async (store,daily) => {
+         const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
+-        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,permission:Guards.actionPermission(daily)};
++        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,record:await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id),permission:Guards.actionPermission(daily)};
+       });
+-      id = out.id; permission = out.permission;
++      id = out.id; permission = out.permission; written=out.record;
+     } else {
+       const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>{const id=await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')});await Confluences.attachOn(store,req.user.id,id,confluences);return {id};});
+       id = out.id; permission = {allowed:false,state:'record_only',can_override:false};
+@@ -370,7 +371,8 @@ router.post('/trades', requireAuth, async (req, res) => {
+     for (const rc of body.rule_checks) await ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
+   }
+   const saved = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
+-  res.json({ ok: true, permission, confluence_warnings:confluences.warnings, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
++  const emotion=permission?.allowed&&written?await Emotions.observe(req.user.id,written,'entry','app_entry'):{};
++  res.json({ ok: true, permission, ...emotion, confluence_warnings:confluences.warnings, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
+ });
+ 
+ // Optional reasons never grant entry, complete core writing or alter execution/risk.
+@@ -379,6 +381,10 @@ router.get('/confluences',requireAuth,confluenceRoute(req=>Confluences.vocabular
+ router.get('/trades/:id/confluences',requireAuth,confluenceRoute(req=>Confluences.read(req.user.id,Number(req.params.id))));
+ router.put('/trades/:id/confluences',requireAuth,confluenceRoute(req=>Confluences.change(req.user.id,Number(req.params.id),req.body)));
+ 
++const emotionRoute=fn=>async(req,res)=>{try{if(!/^[1-9]\d*$/.test(req.params.id))throw Emotions.invalid('Trade not found.',404);res.json(await fn(req));}catch(e){if(e.code==='emotion_capture_invalid')return res.status(e.status).json({error:e.message,code:e.code});return res.status(503).json({error:'Optional emotion evidence unavailable; financial truth unchanged.'});}};
++router.get('/trades/:id/emotions',requireAuth,emotionRoute(req=>Emotions.read(req.user.id,Number(req.params.id))));
++router.post('/trades/:id/emotions/:phase',requireAuth,emotionRoute(req=>Emotions.answer(req.user.id,Number(req.params.id),req.params.phase,req.body)));
++
+ router.put('/trades/:id', requireAuth, async (req, res) => {
+   const id = Number(req.params.id);
+   const existing = await db.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id, req.user.id);
+@@ -391,12 +397,13 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   catch (e) { return res.status(400).json({ error: e.message }); }
+   const accountId = num(merged.account_id,existing.account_id);
+   if (!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id)) return res.status(404).json({error:'Account not found'});
++  let written;const write=async(store,fields)=>{await T.update(store,req.user.id,id,fields);return store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id);};
+   try {
+     if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
+       try { trade.emotion_before=J.text(req.body.emotion_before,'Name your current emotional state before reopening',100); }
+       catch(e){throw Guards.inputError(e.message);}
+-      await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>T.update(store,req.user.id,id,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
+-    } else await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,{...trade,account_id:accountId}));
++      written=await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>write(store,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
++    } else written=await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>write(store,{...trade,account_id:accountId}));
+   } catch(e) {
+     if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
+     throw e;
+@@ -406,7 +413,9 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
+     for (const rc of req.body.rule_checks) ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
+   }
+-  res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
++  const phase=existing.status!=='open'&&trade.status==='open'&&req.body.record_only!==true?'entry':existing.status==='open'&&trade.status==='closed'?'exit':null;
++  const emotion=phase?await Emotions.observe(req.user.id,written,phase,phase==='entry'?'app_entry':'app_close',existing.closed_at||''):{};
++  res.json({ ok: true, ...emotion, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
+ });
+ 
+ // M87 optional owned visual evidence is independent from financial truth,
+@@ -459,12 +468,13 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+   };
+   const instruments = await instrumentMap(req.user.id);
+   const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
+-  await Guards.record(req.user.id,{accountId:existing.account_id,entryTf:trade.entry_tf,action:'journal_close',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,trade));
++  const written=await Guards.record(req.user.id,{accountId:existing.account_id,entryTf:trade.entry_tf,action:'journal_close',entityType:'trade',entityId:id},async store=>{await T.update(store,req.user.id,id,trade);return store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id);});
+   const fresh = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
+   if (req.body && req.body.notify !== false) {
+     notifyEvent(req.user.id, 'trade_closed', `${trade.symbol} ${trade.direction} closed ${fresh.net_pnl >= 0 ? '+' : ''}${fresh.net_pnl} (${fresh.r_multiple}R)${trade.legs_n ? ` · ${trade.legs_n} scale-outs` : ''}`, { trade_id: id, symbol: trade.symbol, net_pnl: fresh.net_pnl, r_multiple: fresh.r_multiple }).catch(() => {});
+   }
+-  res.json({ ok: true, trade: journalTrade(fresh, (await settingsOf(req)).timezone) });
++  const emotion=existing.status==='open'?await Emotions.observe(req.user.id,written,'exit','app_close'):{};
++  res.json({ ok: true, ...emotion, trade: journalTrade(fresh, (await settingsOf(req)).timezone) });
+ });
+ 
+ router.delete('/trades/:id', requireAuth, async (req, res) => {

@@ -1,0 +1,862 @@
+diff --git a/README.md b/README.md
+index 2261b15..50457e8 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,46 @@
+ # TradeJournal Pro
+ 
++## M89 — timely APP emotional-state reports (2026-10-12)
++
++After an admitted new/reopened trade is saved, answer **What emotion drove this
++entry?**; after the actual close is saved, answer **How do you feel after getting
++out?**. Start blank, name the state honestly or explicitly choose unknown; record
++later/close does not infer none. The optional exit popup then leads to still-required
++core/post-loss writing. Save truthful financial edits first. Review retained first
++answers/context/history via **Emotion provenance** in the log, saved form, core or
++day review; later journal text cannot replace that original answer/time.
++
++**Five-minute APP policy, not a course quotation or broker-time proof.** The server
++knows app-record/response clocks, not actual execution or your original mental
++state. Entry answered after close stays late, even inside five minutes. Old text,
++late/unknown/retrospective/imported/prior/unavailable evidence is not a timely
++capture. Optional storage outage cannot undo a financial entry/close or complete
++required writing. Captures never grant entry, reset caps/preparation or grade/size
++risk; M106's fresh four-question gate remains open.
++
++**Analytics → Segments** separates app-window entry self-reports, excluded-state
++coverage and timing-unverified legacy text. Known-outcome denominators and unknown
++net/R are explicit in the new cohort. Below30 is descriptive;30+ still does not
++prove causality, predictive edge or sizing permission. No causal dollar “cost” or
++70% win-rate promise. Existing engine/risk/targets/stops/RR and M103 n>=5 unchanged.
++
++JSON `emotion_events` and CSV `emotion_events_json` retain first named/null reports
++and declared old context/clocks. Restores get actual new owned IDs, imported source
++and a new **receiving** clock, never verified old app/answer clocks/delay. Old
++metadata/IDs remain unverified declarations. Invalid optional data warns without
++vetoing truthful finance; actual import-store failure rolls back the request.
++Missing capture storage still permits financial backup with explicit unavailable
++markers. Warning-bearing CSV/Settings restores stay visible. App budgets:100-character
++single-line state,50 history entries/trade,8KB original context/2048-character
++primitive strings;20MB selected-file/25MB body limits unchanged. Repeated restore
++can duplicate trades, not an upsert.
++
++Measured M89 **170/0 across13** actual auth/SQL/DOM probes; parent migration14/0;
++M88 reasons160/0, execution260/0, routine321/0. Ledger **132=92 done/3 partial/37TODO**.
++M106/M111/M112 still open, M108 partial. Inherited/migration/provider/raw/native/DOM
++negatives retained separately, not an all-green production/broker/human claim.
++See `analysis/M89-TIMELY-EMOTION-CAPTURE.md` in the delivery ZIP.
++
+ ## M88 — distinct entry confluences (2026-10-12)
+ 
+ Use **Entry reasons** in the trade log or review link in the saved financial form,
+@@ -15,7 +56,7 @@ current revision. Unseen edits409 require deliberate reload; storage503 retains
+ the old field/time and finance. Only the new confluence columns are changed.
+ Human/imported source and server declaration/receiving time are shown: **not
+ verified original entry-time/broker/causal intent proof**, possibly retrospective.
+-M89 fresh emotion remains open. Labels are separate from tags, mistakes, entry
++M89 adds separate app-timed self-report provenance, not confluence timing proof. Labels are separate from tags, mistakes, entry
+ models/checklists, execution grades and HTF/MTF/LTF images; nothing backfilled.
+ 
+ **Analytics → Segments → Entry confluences** shows closed-trade descriptive
+@@ -72,7 +113,7 @@ automatic large-backup batching or proof backfill.
+ 
+ Measured M87:226/0 across9 actual pure/auth/SQL/DOM probes; literal clocks and tiny
+ raster protocol fixtures, not real chart screenshots. Prior execution260/0 and
+-routine321/0; exact ledger132=90done/3partial/39TODO. M88/M89 remain open. Prepared
++routine321/0; historical M87 ledger132=90done/3partial/39TODO (M88/M89 then open; now applied). Prepared
+ parent/current native Bots205/1 both (20 synthetic parity fills,0 mismatches;
+ inherited>20 sample floor), negatives kept rather than padded. Whole-app smoke
+ 22/22 conditional DOM views,0 style/console,8 canvas limits, observed exit0; not
+@@ -411,7 +452,7 @@ instruction to resize/change strategy. No older completion is fabricated.
+ 
+ M108 is **partial**: this mandatory routine timer is not the full Sanctuary presets,
+ ambient audio, intention, toolkit or independent session-log/progress feature.
+-M89 capture provenance, M106 fresh in-session questions, M111 fail-closed news and
++M89 app-timed self-report provenance is separate from this routine. M106 fresh in-session questions, M111 fail-closed news and
+ M112 allowed hours remain open. See [docs/GUARDRAILS.md](docs/GUARDRAILS.md) and
+ [docs/API.md](docs/API.md#pre-market-routine).
+ 
+diff --git a/docs/API.md b/docs/API.md
+index b0c1ad8..2921771 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -600,4 +600,82 @@ restore budget5000 labels/request, explicit omission warning above—not clippin
+ Trade labels themselves also populate choices. CSV does not carry unused choices;
+ JSON is the full vocabulary backup. Historical insertion is not upsert/deduping.
+ Existing20MB selected-file/25MB body limits unchanged. UI presents warnings without
+-auto-closing/refreshing a warning-bearing restore. M89 capture/M106/M111/M112 open.
++auto-closing/refreshing a warning-bearing restore. M89 adds separate app-timed emotion evidence; M106/M111/M112 open.
++
++
++## M89 — first APP emotion observations/responses
++
++No broker connection: server app-record/response timing and human declaration
++only, **broker_verified:false** always. Five-minute window is APP policy, not a
++course quotation, mental-state verification, fresh M106 readiness or permission.
++Additive child tables `trade_emotion_events` and `trade_emotion_responses`; no new
++trade columns or historical/legacy backfill. One response/event, DB UPDATE facts
++immutable, parent FK deletion cascades. Not a cryptographic/admin-tamper-proof vault.
++
++- `GET /trades/:id/emotions` returns owned canonical trade/account IDs,
++  `saved_record`, `entry`, `exit`, `history`, `legacy`. Required displayed revision
++  includes all63 current trade fields and selected event/response facts.
++- `POST /trades/:id/emotions/entry` or `/exit` accepts **only**
++  `{event_id:displayed_id|null,emotion:nonblank_string|null,revision:displayed_sha}`.
++  Named state1–100 single-line characters; null explicitly unknown. No client
++  source/clock/owner/context/eligibility input. Auth required; missing/foreign/
++  noncanonical ID404, malformed400, stale/different first-answer replacement409,
++  premature exit409, real storage failure503. Same first answer/current revision
++  idempotent. Named answer atomically auto-tags the corresponding compatibility
++  field; null does not turn old text into a named captured answer.
++
++Actual `POST /trades` prospective admission and guarded PUT reopen observe entry
++AFTER financial commit. Actual open-to-closed PUT/close observes exit after commit.
++Financially written row is captured inside its transaction; optional observer
++re-checks current saved context/status. Return optional `emotion_prompt:{phase,
++trade_id,account_id,event_id}`/`emotion_warnings`; failed/changed-context observation
++warns, never undoes finance. Record-only/history/import/correction does not mint
++fresh entry proof. Response-store503 rolls back answer/auto-tag, not the earlier
++financial transition. Core/manual journal text may change later; first answer does not.
++
++Each phase exposes state, nullable emotion/event_id, source, revision, server
++app_observed_at/answered_at, nullable delay_ms, current_context, eligible,
++window_ms300000, recorded_context and basis. Sources app_entry/app_close/
++retrospective/imported; states timely/late/unknown/pending/retrospective/imported/
++prior/unavailable. Freshness requires valid owned phase/source/context and
++canonical non-future clocks, app observation within5min of saved financial clock,
++first answer within5min of observation. Entry answered while still open only;
++a valid earlier answer survives later close, after-close answer stays late.
++Changed finance/reopen/account preserves original context/words as prior. Null,
++missing/declined, bad clocks/context and late/imported history never become proof.
++Manual event_id:null is explicitly retrospective, not a timing backfill.
++
++`GET /analytics` primary `by_emotion` is closed-only eligible server-annotated
++entry reports, plus `emotion_coverage`. Old text compatibility segmentation is
++`by_emotion_unverified`, labelled timing-unverified, not automatically promoted.
++Primary rows expose n, known/unavailable net counts, known wins/losses/breakeven,
++known-outcome win denominator, nullable all-n net/mean-R and known consistent-R
++count. Unknown/inconsistent outcomes not0 or infinity. sample_floor30/sample_ready
++is review count only, not causality/edge/permission. Coach/briefing use the same
++server child annotations; mutually exclusive descriptive regex groups, no causal
++dollar loss or sizing veto; the actual card labels known subgroup dollars recorded
++group net, not causal impact. Other analytics numerics/insights remain compatibility
++output, not newly certified. No70% promise, floor or geometry change.
++
++JSON trade field `emotion_events:{version:1,entries:[{phase,emotion,source,
++app_observed_at,answered_at,recorded_context,historical?}],unavailable_events}`;
++CSV dedicated `emotion_events_json` cell (proper CSV escaping). At most50 portable
++entries/trade. First responses, including null unknown, survive; no-answer pending
++observations aren't portable verified workflow. Import forces actual destination
++IDs/owner/account, source imported/new server receipt, with `received_at` and
++null verified app_observed_at/answered_at/delay_ms. Valid old source/clocks/context
++are in `historical`, explicitly unverified; subsequent export/import retains
++original declarations, never replaces them with receiving context. Original IDs
++confer no ownership. Original context budget8KB, known primitive fields with
++strings<=2048; invalid clocks/context omitted with warnings, never authority.
++
++Invalid optional evidence produces bounded `emotion_warnings` without rejecting
++truthful financial import. Real optional import-store failure atomically rolls
++back financial/evidence mapping. Capture-table read outage allows JSON/CSV finance
++backup with `emotion_events:{version:1,entries:[],unavailable:true,
++unavailable_events:null}`; omitted corrupt events counted. Restore warns on these
++markers rather than fabricating lost history. Actual CSV dialog/Settings JSON/CSV
++show warning-bearing success without automatic dismissal/refresh.20MB selected
++file/25MB request limits unchanged; repeat historical restore can duplicate trades.
++Captures never complete core/post-loss writing, execution grade, admission, caps,
++routine or risk; optional exit capture/decline is followed by required writing.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index 1af75cb..a10bce5 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -17,7 +17,7 @@ not assumed skipped or complete; reused images/equivalent frames flagged rather
+ than3 independent views. Unsafe legacy remains stored/unassigned but is not
+ rendered/copied into portable backups; server never fetches external image URLs.
+ 
+-M88/M89/M106/M111/M112 remain TODO, M108 PARTIAL. Exact132=90done/3partial/39TODO;
++Historical M87 delivery: M88/M89 were then TODO (now applied); M106/M111/M112 remain TODO, M108 PARTIAL. Historical132=90done/3partial/39TODO;
+ course floor30, deliberate M103 n>=5, B/C tradeability, checklist/entry weights,
+ stops/targets/geometry/RR/default risk/factors untouched. No70% edge, provider,
+ broker, actual meditation/human or production claims. See report in delivery ZIP.
+@@ -183,7 +183,7 @@ responsible for the selected session ceiling outside the app; no broker is conne
+ 
+ A prospective new entry/reopen requires an explicit nonblank named emotional state.
+ It is input capture, **not the four-question calm/clear state gate** (M106) or verified
+-entry-time emotion provenance (M89). Already-executed/open/historical truth can be
++M89 app-record/first-response timing (not broker-time emotion verification). Already-executed/open/historical truth can be
+ recorded even when the state was never captured; do not invent an emotion afterward.
+ 
+ Closing a position is **never refused because reflection is missing**. The actual
+@@ -226,7 +226,7 @@ are retained even while the new writing state is unavailable.
+ 
+ **"Core complete" is deliberately scoped to the fields above.** It does not claim
+ all course screenshots/confluences/timing/routine/state checks are implemented.
+-M87/M88/M89/M106 and all other unresolved findings stay visible. M94 is now separately implemented with the actual M64 workflow; core trade writing alone does not satisfy it.
++M87/M88/M89 are separately implemented evidence scopes; M106 and all other unresolved findings stay visible. M94 is now separately implemented with the actual M64 workflow; core trade writing alone does not satisfy it.
+ 
+ ## Pre-market routine and daily preparation evidence (M14/M64/M94)
+ 
+@@ -324,8 +324,9 @@ financial close/correction/deletion/import and record-only entries remain legal.
+ ## Scope still open
+ 
+ M108's full Sanctuary presets/ambient/intention/toolkit/independent session log
+-and progress remain partial beyond this routine timer. M111's news fail-closed policy, M112's time restrictions, M89's verified emotion
+-capture timing, M106's four-question state gate and all other unresolved findings
++and progress remain partial beyond this routine timer. M89 adds app-timed human
++self-report provenance, not broker/mental-state verification. M111's news fail-closed
++policy, M112's time restrictions, M106's four-question state gate and all other unresolved findings
+ stay open. **Correction:** M116 is already classified APPLIED in the ledger; the
+ prior guide/summaries incorrectly listed it open. No new closure/retuning is counted.
+ M84/M85 complete their scoped input-capture/manual-marker gaps, not adaptive sizing.
+@@ -368,4 +369,46 @@ record-count review annotation, not proof of edge/known-outcome completeness or
+ permission. Retrospective associations don't establish causality/prediction and
+ must not resize risk. Deliberate M103 n>=5/B-C tradeability, existing weights,
+ grades, factors, default risk, stops/targets/RR/geometry all unchanged.
+-M89 fresh emotion and M106/M111/M112 remain TODO; M108 remains partial.
++M89 adds separate app-timed emotion provenance, not confluence capture proof. M106/M111/M112 remain TODO; M108 remains partial.
++
++
++## M89 — capture is evidence, NEVER authority or required-writing completion
++
++After saved admitted entry/reopen, the app offers a blank first-state prompt;
++after truthful close, it offers an exit-state prompt, then the still-required
++core/post-loss review on answer/decline. Server clocks/current finance protect
++first app facts, not real execution/mental state. Five-minute APP budget is not
++a course quotation or a calmness gate. Before-entry required self-report remains
++separate; M106 fresh questions still TODO. Missing/declined is not none; explicit
++unknown remains unknown. No emotion/mistake/tag/model/outcome backfill.
++
++Financial transition commits first. Optional observation failure warns, never
++rolls back finance, refunds a cap or lets a closed trade pretend it never lost.
++Answer503 rolls back only response/compatibility auto-tag; actual import-store
++failure rolls back that import atomically. First response immutable via strict
++owned revision/API and DB UPDATE triggers. Ordinary manual/core edits remain
++retrospective and cannot rewrite first facts. Deliberate deletion cascades; no
++sealed/admin-tamper-proof vault claim. Corrected/reopened/moved-account prior
++history survives but cannot be credited to a new current position. Premature
++exit409; entry first answered after close remains late, even within5minutes.
++
++Capture-only primary Analytics/Coach uses server-owned child evidence and closed
++trades. Late, unknown, pending, retrospective, imported, prior and unavailable
++excluded with coverage; legacy text labelled separate/unverified. Known net/R
++availability explicit, no unknown-to0. Descriptive self-report comparisons have
++no causal dollar counterfactual, prediction, sizing veto or70% claim.30-trade
++review floor and deliberate M103 n>=5 unchanged;30+ is not edge proof.
++
++Backups preserve first responses/original context as declarations; receiving IDs,
++owner/account/source/time forced new/imported, no original clock/delay/workflow
++replay. Old IDs aren't ownership proof. Invalid optional imports warn while finance
++persists; missing capture store permits financial backup with explicit unavailable
++markers. CSV/Settings warnings stay visible. App budgets100-character single-line
++state,50 portable entries/trade,8KB declared original context/2048-character
++primitive strings are not course rules. Existing20MB file/25MB body limits and
++repeat historical insertion semantics remain. No automatic batching/deduping.
++
++All setup/execution grades, checklist/entry-model weights, default risk/factors,
++geometry/stops/targets/RR, admissions/caps/routine/loss-writing clocks unchanged.
++Current ledger132=92 done/3 partial/37TODO; M30/M103/M108 partial, M106/M111/M112
++open. No broker/provider/pixel/actual-human/meditation/production/edge proof.
+diff --git a/public/index.html b/public/index.html
+index 56fe52e..76a93ff 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/execution.js?v={{V}}"></script>
++<script src="/js/views/emotions.js?v={{V}}"></script>
+ <script src="/js/views/confluences.js?v={{V}}"></script>
+ <script src="/js/views/screenshots.js?v={{V}}"></script>
+ <script src="/js/views/dashboard.js?v={{V}}"></script>
+diff --git a/public/js/app.js b/public/js/app.js
+index 0520edf..9e7a471 100644
+--- a/public/js/app.js
++++ b/public/js/app.js
+@@ -356,6 +356,7 @@
+     },
+ 
+     async saveTrade(form, id, close, andNew) {
++      const emotionContext=Views.emotions?.context();
+       let payload;
+       try { payload = form.collect(); } catch (e) { return this.toast(e.message, 'err'); }
+       try {
+@@ -370,8 +371,8 @@
+         const t = d.trade || {};
+         this.toast(`${id ? 'Updated' : 'Logged'} ${t.symbol} · ${U.R(t.r_multiple)}${t.net_pnl ? ' · ' + U.moneySign(t.net_pnl) : ''}`, t.net_pnl >= 0 ? 'ok' : 'warn');
+         this.refresh();
+-        if(t.status==='closed' && t.journal?.state==='incomplete' && Views.openJournalReview)await Views.openJournalReview(t.id,{onComplete:()=>{this.refresh();if(andNew)this.openTrade(null);}});
+-        else if (andNew) this.openTrade(null);
++        const followup=async()=>{if(t.status==='closed' && t.journal?.state==='incomplete' && Views.openJournalReview)await Views.openJournalReview(t.id,{onComplete:()=>{this.refresh();if(andNew)this.openTrade(null);}});else if(andNew)this.openTrade(null);};
++        if(Views.emotions)await Views.emotions.begin(d,followup,emotionContext);else await followup();
+       } catch (e) { this.toast(e.message, 'err'); }
+     },
+ 
+@@ -389,9 +390,9 @@
+             try {
+               const d = await API.post('/import/csv', { csv: U.$('#imp-csv', body).value, account_id: Store.accountId });
+               out.innerHTML = `Imported <b>${d.inserted}</b> trades (skipped ${d.skipped}).`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);
+               Store.invalidate();
+-              if(!d.media_warnings?.length&&!d.confluence_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
++              if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length)setTimeout(() => { close(); this.refresh(); this.toast(`${d.inserted} trades imported`, 'ok'); }, 700);
+               else this.toast('Financial import recorded; review optional journal evidence omissions below before closing.','ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           },
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index 74005ff..da29ccf 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -207,10 +207,11 @@
+         segments() {
+           const w = U.h('div', { class: 'grid' });
+           if(Views.confluences)w.appendChild(Views.confluences.summary(an));
++          if(Views.emotions)w.appendChild(Views.emotions.summary(an));
+           const defs = [
+             ['Playbook / setup', an.by_strategy], ['Instrument', an.by_symbol], ['Session', an.by_session],
+             ['Direction', an.by_direction], ['Setup grade', an.by_grade], ['Entry model', an.by_entry_model], ['Asset class', an.by_asset],
+-            ['Emotion before entry', an.by_emotion], ['Tags', an.by_tag], ['Confidence', an.by_confidence], ['Adherence', an.by_adherence],
++            ['Journal emotion text (timing unverified)', an.by_emotion_unverified], ['Tags', an.by_tag], ['Confidence', an.by_confidence], ['Adherence', an.by_adherence],
+           ];
+           defs.forEach(([title, rows]) => {
+             if (!rows || !rows.length) return;
+diff --git a/public/js/views/coach.js b/public/js/views/coach.js
+index 3a346df..23e5b02 100644
+--- a/public/js/views/coach.js
++++ b/public/js/views/coach.js
+@@ -49,7 +49,7 @@
+           el.innerHTML = `
+             <div class="row-between" style="align-items:flex-start;gap:10px">
+               <h4>${U.esc(i.title)}</h4>
+-              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.impact >= 0 ? '+' : ''}${U.money(i.impact)} impact</span>
++              <span class="chip ${i.impact >= 0 ? 'pos' : 'neg'}" style="flex:none">${i.impact >= 0 ? '+' : ''}${U.money(i.impact)} ${i.capture_basis==='app_record_window_self_report'?'recorded group net':'impact'}</span>
+             </div>
+             <div class="detail">${U.esc(i.detail)}</div>
+             <div class="evidence">${(i.evidence || []).map((e) => `<span class="ev">${U.esc(e.label)}<b>${U.esc(e.value)}</b></span>`).join('')}</div>
+diff --git a/public/js/views/emotions.js b/public/js/views/emotions.js
+new file mode 100644
+index 0000000..b4bba10
+--- /dev/null
++++ b/public/js/views/emotions.js
+@@ -0,0 +1,30 @@
++/* M89 first APP event/response, not broker execution or actual mental-state proof. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U;let opened=0;
++ const context=()=>({account:global.Store.accountId,user:global.Store.user?.id,token:global.API.getToken()}),same=c=>c.account===global.Store.accountId&&c.user===global.Store.user?.id&&c.token===global.API.getToken();
++ const C=Views.emotions={context,same,
++  card(t){const node=U.h('section',{class:'card',style:'margin-top:12px'});node.appendChild(U.h('h3',{text:'Entry / exit emotional-state provenance'}));node.appendChild(U.h('p',{class:'field-note',text:'Current journal text may be retrospective. Review first app responses, their server clocks and prior/imported/unknown status; no broker/live mental-state proof. This never completes core writing or grants entry/sizing.'}));if(t.id)node.appendChild(U.h('button',{class:'btn sm',type:'button',dataset:{emotionsOpen:String(t.id)},text:'Review saved emotion capture',onclick:()=>C.open(Number(t.id))}));return node;},
++  async begin(result,onDone,expected=context()){
++   if(!same(expected))return;for(const warning of result.emotion_warnings||[])global.App.toast(warning,'warn');
++   if(result.emotion_prompt)return C.open(result.trade.id,{phase:result.emotion_prompt.phase,onDone,expected});if(onDone)await onDone();
++  },
++  async open(id,{phase=null,onDone=null,expected=context()}={}){
++   const serial=++opened;let view;try{view=await global.API.get('/trades/'+id+'/emotions');}catch(e){if(same(expected)&&serial===opened){global.App.toast(e.message||'Emotion capture unavailable; financial truth unchanged.','err');if(onDone)await onDone();}return;}
++   if(!same(expected)||serial!==opened||expected.account!=null&&Number(expected.account)!==view.account_id)return global.App.toast('Workspace/account changed or saved record is outside the selected account. Reopen its own context; no capture inferred.','err');
++   const body=U.h('div');let alive=true,busy=false,stale=false;const valid=()=>alive&&serial===opened&&same(expected)&&body.isConnected;
++   function disable(){body.querySelectorAll('input,button').forEach(el=>{el.disabled=busy||stale;});body.querySelector('[data-emotion-reload]').disabled=busy;for(const p of ['entry','exit']){const save=body.querySelector('[data-emotion-phase="'+p+'"] [data-emotion-save]');if(save)save.disabled=busy||stale||view[p].answered_at!=null||view[p].state==='prior'||view[p].state==='unavailable'||view[p].state==='imported'||p==='exit'&&view.saved_record.status!=='closed';}}
++   function draw(){const t=view.saved_record;body.replaceChildren(U.h('p',{class:'small',text:`Saved #${view.trade_id} ${t.symbol} · account #${view.account_id} · entry ${t.entry??'unknown'}, stop ${t.stop??'unknown'}, exit ${t.exit??'unknown'} (${t.status}).`}),U.h('p',{class:'field-note',text:'Name your state while the app record is fresh, not after rationalising an outcome. The five-minute APP-record response window is an app policy, NOT a course quotation or broker-time proof. No response is not none. First response/time is retained; later journal edits stay retrospective. Closing/declining never completes mandatory writing, removes guard stops, grades execution or grants entry/sizing. Save financial edits first.'}));
++    for(const p of phase?[phase]:['entry','exit']){const v=view[p],node=U.h('section',{class:'card',style:'margin-top:12px',dataset:{emotionPhase:p}});node.appendChild(U.h('h3',{text:p==='entry'?'What emotion drove this entry?':'How do you feel after getting out?'}));node.appendChild(U.h('p',{class:'small',dataset:{emotionProvenance:'true'},text:v.source==='imported'?`${v.state} · source imported · receiving clock ${v.received_at||'unknown'} · unverified original app clock ${v.historical?.app_observed_at||'unknown'} and answer clock ${v.historical?.answered_at||'unknown'}. Not a fresh app response, no verified delay or broker proof.`:`${v.state} · source ${v.source||'unknown'} · app observed ${v.app_observed_at||'unknown'} · first answered ${v.answered_at||'unknown'} · ${v.delay_ms==null?'response delay unknown':v.delay_ms+'ms response delay'}. App-only timing, never broker verified.`}));const original=v.source==='imported'?v.historical?.recorded_context:v.recorded_context;if(original)node.appendChild(U.h('p',{class:'small',dataset:{emotionOriginalContext:'true'},text:`${v.source==='imported'?'Unverified declared original context':'Retained first app context'}: #${original.id??'unknown'} ${original.symbol??'unknown'} · declared account #${original.account_id??'unknown'} · entry ${original.entry??'unknown'}, stop ${original.stop??'unknown'}, target ${original.target??'unknown'}, exit ${original.exit??'unknown'} (${original.status??'unknown'}); opened ${original.opened_at??'unknown'}, closed ${original.closed_at??'unknown'}. ${v.source==='imported'?'Old IDs/fields are declarations, not ownership or broker proof.':'Saved app financial context, not broker execution or original mental-state verification.'}`}));node.appendChild(U.h('p',{class:'small',text:v.emotion==null?'No named first state; do not infer from old journal text.':'Retained first report: '+v.emotion}));node.innerHTML+=`<label class="field"><span>${v.source==='imported'||v.answered_at!=null?'First report retained (not editable)':v.event_id==null?'Retrospective self-report (no observed app event)':'Your first response now (late answers remain late)'}</span><input data-emotion-input maxlength="100" autocomplete="off" value="" placeholder="Name the actual state, not a result-based grade" /></label><label class="row gap-8"><input type="checkbox" data-emotion-unknown /><span>Explicitly unknown / not recorded — do not invent an emotion</span></label>`;
++     const input=node.querySelector('[data-emotion-input]'),unknown=node.querySelector('[data-emotion-unknown]');unknown.addEventListener('change',()=>{input.disabled=unknown.checked;});
++     node.appendChild(U.h('button',{class:'btn sm primary',type:'button',dataset:{emotionSave:'true'},text:'Record first '+p+' state',onclick:async()=>{if(!valid()||busy)return global.App.toast('Workspace/account changed or editor closed; reopen the current record.','err');const emotion=unknown.checked?null:input.value.trim();if(emotion!==null&&!emotion)return global.App.toast('Name the actual state or explicitly choose unknown.','err');busy=true;disable();try{const out=await global.API.post('/trades/'+id+'/emotions/'+p,{emotion,event_id:v.event_id,revision:v.revision});if(!valid())return;view=out;stale=false;draw();global.Store.invalidate();global.App.toast('First emotional-state response/time recorded; financial/core/permission state not completed.','ok');if(phase)closeModal.close();}catch(e){if(valid()){stale=e.status===409;global.App.toast(e.message||'Emotion response unavailable; financial truth unchanged.','err');}}finally{busy=false;if(valid())disable();}}}));body.appendChild(node);
++    }
++    body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{emotionReload:'true'},text:'Reload saved event (discard unsaved input)',onclick:async()=>{if(!valid()||busy)return;busy=true;disable();try{const out=await global.API.get('/trades/'+id+'/emotions');if(!valid())return;if(expected.account!=null&&Number(expected.account)!==out.account_id){stale=true;global.App.toast('Saved account changed; reopen in its current account. No response accepted here.','err');return;}view=out;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message,'err');}finally{busy=false;if(valid())disable();}}}));
++    const legacy=view.legacy;body.appendChild(U.h('p',{class:'tiny muted',text:`Current journal self-report (NOT captured-time proof): entry ${legacy.emotion_before||'unknown'}; exit ${legacy.emotion_after||'unknown'}.` }));
++    if(view.history.length)body.appendChild(U.h('details',{},U.h('summary',{text:'Retained app/capture history ('+view.history.length+')'}),...view.history.map(v=>U.h('p',{class:'tiny',text:`${v.phase} · ${v.state} · ${v.source} · ${v.emotion??'no named state'} · ${v.source==='imported'?'receiving clock '+(v.received_at||'unknown')+'; unverified original app '+(v.historical?.app_observed_at||'unknown')+' and answer '+(v.historical?.answered_at||'unknown'):'observed '+(v.app_observed_at||'unknown')+' · answered '+(v.answered_at||'unknown')}`}))));
++   }
++   let closeModal;draw();closeModal=global.App.modal({title:phase==='entry'?'Entry emotional state':phase==='exit'?'Exit emotional state':'Review emotion-capture provenance',body,wide:true,onClose:()=>{alive=false;if(same(expected)&&serial===opened&&onDone)Promise.resolve(onDone()).catch(e=>global.App.toast(e.message,'err'));},actions:[{label:'Record later — no response inferred; writing still required',ghost:true}]});disable();return closeModal;
++  },
++  summary(an){const node=U.h('section',{class:'card',dataset:{emotionAnalytics:'true'}}),v=an.emotion_coverage;node.appendChild(U.h('h3',{text:'App-timed entry-state self-reports — descriptive only'}));node.appendChild(U.h('p',{class:'field-note',text:'Five-minute APP-record/first-response window only, NOT broker execution or actual mental-state proof. Late/imported/prior/unknown responses excluded; no causal dollar cost, prediction or sizing authority. Below30 per state: descriptive;30+ still does not prove an edge. Legacy journal text is separate and timing-unverified.'}));if(!v){node.appendChild(U.h('p',{text:'Capture coverage unavailable.'}));return node;}node.appendChild(U.h('p',{class:'small',text:`${v.closed_trades} closed · ${v.timely} app-window reports · ${v.late} late · ${v.unknown} unknown · ${v.pending} pending · ${v.retrospective} retrospective · ${v.imported} imported · ${v.prior} prior context · ${v.unavailable} unavailable.`}));const rows=an.by_emotion||[],finite=x=>typeof x==='number'&&Number.isFinite(x);const table=U.h('div',{class:'table-wrap'});table.innerHTML='<table><thead><tr><th>First entry report</th><th>n / floor30</th><th>Known outcomes / n</th><th>Win % (known)</th><th>Mean R (all n)</th><th>Net (all n)</th></tr></thead><tbody>'+rows.map(r=>`<tr><td>${U.esc(r.key)}</td><td>${r.trades}${r.sample_ready?'':' · below30'}</td><td>${r.known_net_count} / ${r.trades}</td><td>${finite(r.win_rate)?U.pct(r.win_rate,1):'Unavailable'}</td><td>${finite(r.expectancy_r)?U.R(r.expectancy_r):'Unavailable'}</td><td>${finite(r.net_pnl)?U.moneySign(r.net_pnl):'Unavailable'}</td></tr>`).join('')+'</tbody></table>';if(rows.length)node.appendChild(table);else node.appendChild(U.h('p',{class:'muted',text:'No eligible named first-entry responses in this filter. No legacy state backfilled.'}));return node;},
++  feedback(out){if(!out.emotion_warnings?.length)return null;return U.h('section',{class:'sticky-note warn'},U.h('strong',{text:'Optional emotion evidence'}),...out.emotion_warnings.map(text=>U.h('div',{class:'tiny',text})));},
++ };
++})(window);
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 2ba01ad..6ced815 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -169,7 +169,7 @@
+         ${trades.map((t) => `<tr><td class="mono tiny">${U.dt(t.opened_at, { day: undefined, month: undefined })}</td><td>${U.esc(t.symbol)}</td>
+         <td class="num ${U.rClass(t.r_multiple)}">${U.R(t.r_multiple)}</td><td class="num ${U.cls(t.net_pnl)}">${U.moneySign(t.net_pnl)}</td>
+         <td class="tiny">${t.journal?.complete?'Journaled':'Journal missing'}${t.status==='closed'?` <button class="btn xs ghost" data-day-trade-journal="${t.id}">Journal</button>`:''}</td>
+-        <td class="tiny"><button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
++        <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+@@ -179,6 +179,7 @@
+       selection.innerHTML=`<span>Daily routine completion — explicit self-report (never workflow permission)</span><select id="j-pre-market"><option value="" ${flag===null?'selected':''}>Unknown / not recorded</option><option value="true" ${flag===true?'selected':''}>Completed — my self-report</option><option value="false" ${flag===false?'selected':''}>Not completed — my self-report</option></select><div class="field-note">Current account only, separate from the shared daily note and actual ordered/timed workflow. Unrelated note edits preserve this flag/source/time. Retrospective self-report cannot rewrite first-entry/on-time evidence.</div>`;
+       U.$('#j-pre-market',selection).addEventListener('change',()=>{routineDirty=true;});body.prepend(selection);
+     }
++    body.querySelectorAll('[data-day-emotions]').forEach(b=>b.addEventListener('click',()=>Views.emotions?Views.emotions.open(Number(b.dataset.dayEmotions)):global.App.toast('Emotion timing unavailable.','err')));
+     body.querySelectorAll('[data-day-confluences]').forEach(b=>b.addEventListener('click',()=>Views.confluences?Views.confluences.open(Number(b.dataset.dayConfluences)):global.App.toast('Entry reasons UI unavailable.','err')));
+     body.querySelectorAll('[data-day-screenshots]').forEach(b=>b.addEventListener('click',()=>Views.screenshots?Views.screenshots.open(Number(b.dataset.dayScreenshots)):global.App.toast('Visual evidence UI unavailable.','err')));
+     body.querySelectorAll('[data-day-trade-journal]').forEach(b=>b.addEventListener('click',()=>Views.openJournalReview(Number(b.dataset.dayTradeJournal))));
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index c5236d7..bfd05db 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -151,8 +151,8 @@
+               const d = await API.post('/import/csv', { csv, account_id: U.$('#im-account', w).value });
+               if(!currentMediaPane())return;
+               out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);
+-              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);
++              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           });
+           const file = U.$('#im-file', w);
+@@ -176,8 +176,8 @@
+                 const d = await API.post('/import/json', { data });
+                 if(!currentMediaPane()||attempt!==jsonRead)return;
+                 U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);
+-                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length)global.App.refresh();
++                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);
++                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length)global.App.refresh();
+               } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+             };
+             r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
+diff --git a/public/js/views/trades.js b/public/js/views/trades.js
+index 6cb79dc..b03944d 100644
+--- a/public/js/views/trades.js
++++ b/public/js/views/trades.js
+@@ -27,6 +27,7 @@
+     if(!capture&&Views.execution)body.appendChild(Views.execution.card(trade));
+     if(!capture&&Views.screenshots)body.appendChild(Views.screenshots.card(trade));
+     if(!capture&&Views.confluences)body.appendChild(Views.confluences.card(trade));
++    if(!capture&&Views.emotions)body.appendChild(Views.emotions.card(trade));
+     const f=id=>body.querySelector('#'+id),none=f('jr-none');none.addEventListener('change',()=>{f('jr-mistakes').disabled=none.checked;});f('jr-mistakes').disabled=none.checked;
+     return global.App.modal({title:capture || Number(trade.net_pnl)<0?'Post-loss reflection':'Complete trade journal',body,wide:true,
+       actions:[{label:'Review later — remains incomplete',ghost:true},{label:'Complete core journal',primary:true,onClick:async close=>{
+@@ -162,7 +163,7 @@
+             <th style="width:28px"><input type="checkbox" id="chk-all" /></th>
+             ${[['date', 'Closed'], ['symbol', 'Symbol'], ['direction', 'Side'], ['size', 'Size'], ['entry', 'Entry'], ['exit', 'Exit'], ['stop', 'Stop'],
+               ['r_multiple', 'R'], ['net_pnl', 'Net P&L'], ['strategy_name', 'Setup'], ['setup_grade', 'Entry setup grade'], ['entry_model', 'Entry model'], ['session_label', 'Session'],
+-              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', 'Entry confluences'], ['', '']].map(([k, l]) =>
++              ['adherence', 'Adh'], ['mistakes', 'Mistakes'], ['', 'Execution self-review'], ['', 'Journal'], ['', 'Visual evidence'], ['', 'Entry confluences'], ['', 'Emotion timing'], ['', '']].map(([k, l]) =>
+               `<th class="${['size', 'entry', 'exit', 'stop', 'r_multiple', 'net_pnl'].includes(k) ? 'num ' : ''}${k ? 'sortable' : ''}" data-sort="${k}">${l}${sortKey === k ? (sortDir > 0 ? ' asc' : ' desc') : ''}</th>`).join('')}
+           </tr></thead>
+           <tbody>
+@@ -187,6 +188,7 @@
+             <td class="tiny" title="${U.esc(t.journal?.scope||'Core journal state unavailable')}"><span class="chip ${t.journal?.complete?'pos':'muted'}">${t.journal?.complete?'Journaled':t.status==='open'?'Awaiting close':'<i style="display:inline-block;width:6px;height:6px;background:#6b7280;border-radius:50%;margin-right:4px" aria-hidden="true"></i>Journal missing'}</span>${t.status==='closed'?` <button class="btn xs ghost" data-journal="${t.id}">Journal</button>`:''}</td>
+             <td class="tiny"><button class="btn xs ghost" data-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+             <td class="tiny"><button class="btn xs ghost" data-confluences="${t.id}">Entry reasons</button></td>
++            <td class="tiny"><button class="btn xs ghost" data-emotions="${t.id}">Entry / exit states</button></td>
+             <td class="nowrap"><button class="btn xs ghost" data-edit="${t.id}">Edit</button></td>
+           </tr>`).join('')}
+           </tbody>
+@@ -201,9 +203,10 @@
+       U.$$('[data-journal]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();Views.openJournalReview(Number(b.dataset.journal));}));
+       U.$$('[data-screenshots]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.screenshots)Views.screenshots.open(Number(b.dataset.screenshots));else global.App.toast('Visual evidence UI unavailable; nothing is inferred.','err');}));
+       U.$$('[data-confluences]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.confluences)Views.confluences.open(Number(b.dataset.confluences));else global.App.toast('Entry reasons UI unavailable; nothing inferred.','err');}));
++      U.$$('[data-emotions]',body).forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(Views.emotions)Views.emotions.open(Number(b.dataset.emotions));else global.App.toast('Emotion capture unavailable; timing not inferred.','err');}));
+       U.$$('[data-edit]', body).forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); global.App.openTrade(Number(b.dataset.edit)); }));
+       U.$$('tr[data-id]', body).forEach((tr) => tr.addEventListener('click', (e) => {
+-        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution],[data-confluences]')) return;
++        if (e.target.type === 'checkbox' || e.target.closest('[data-edit],[data-journal],[data-execution],[data-confluences],[data-emotions]')) return;
+         global.App.openTrade(Number(tr.dataset.id));
+       }));
+       const chkAll = U.$('#chk-all', body);
+@@ -501,6 +504,7 @@
+     if(!isNew&&Views.execution)node.appendChild(Views.execution.card(t));
+     if(Views.screenshots)node.appendChild(Views.screenshots.card(t));
+     if(!isNew&&Views.confluences)node.appendChild(Views.confluences.card(t));
++    if(!isNew&&Views.emotions)node.appendChild(Views.emotions.card(t));
+     return { node, collect, isNew, requiresAdmission, refreshGuard, guardrailState:()=>guard };
+   };
+ 
+diff --git a/src/coach.js b/src/coach.js
+index e446945..c8beb65 100644
+--- a/src/coach.js
++++ b/src/coach.js
+@@ -8,6 +8,7 @@
+  * every claim points at a slice of your own trade rows.
+  */
+ const P = require('./performance');
++const Emotions = require('./emotions');
+ const Guards = require('./bots/guardrails');
+ const I = require('./instruments');
+ 
+@@ -305,22 +306,13 @@ function analyse(trades, ctx = {}) {
+     }
+   }
+ 
+-  /* 10 — emotional state ------------------------------------------------- */
+-  const negWords = ['revenge', 'fomo', 'anxious', 'angry', 'frustrated', 'greedy', 'impatient', 'tilted', 'bored', 'tired', 'fear'];
+-  const neg = closed.filter((t) => negWords.some((w) => String(t.emotion_before || '').toLowerCase().includes(w)));
+-  const pos = closed.filter((t) => /calm|confident|focused|patient|neutral|disciplined/i.test(String(t.emotion_before || '')));
+-  if (neg.length >= 6 && pos.length >= 5) {
+-    const sn = stat(neg), sp = stat(pos);
+-    if (sn.exp_r < sp.exp_r - 0.15) {
+-      add({
+-        id: 'emotion', category: 'psychology', severity: 'critical',
+-        title: `${neg.length} trades were taken in a bad mental state`,
+-        detail: `Trades tagged with a negative state (${[...new Set(neg.map((t) => t.emotion_before))].slice(0, 4).join(', ')}) average ${sn.exp_r}R. Calm/focused trades average ${sp.exp_r}R. Same trader, different state, ${money(sn.net)} difference.`,
+-        impact: sn.net - sn.n * sp.exp_r, evidence: [...evidenceOf(sn, 'Negative state'), ...evidenceOf(sp, 'Calm / focused')],
+-        action: 'Add a 10-second state check before every entry. If the honest answer is not calm/neutral, the trade does not happen.',
+-      });
+-    }
+-  }
++  /* M89 — APP-window self-reports only, retrospective/late/imported excluded.
++   * Regex group names are descriptive, not read-mind or causal/sizing authority. */
++  const negWords = ['revenge','fomo','anxious','angry','frustrated','greedy','impatient','tilted','bored','tired','fear'];
++  const states=closed.filter(t=>Emotions.captured(t)!==null&&typeof t.net_pnl==='number'&&Number.isFinite(t.net_pnl)&&typeof t.r_multiple==='number'&&Number.isFinite(t.r_multiple)&&typeof t.risk_amount==='number'&&t.risk_amount>0&&Math.abs(t.net_pnl-t.risk_amount*t.r_multiple)<=Math.max(.02,t.risk_amount*.0001));
++  const negative=t=>negWords.some(w=>Emotions.captured(t).toLowerCase().includes(w)),positive=t=>/calm|confident|focused|patient|neutral|disciplined/i.test(Emotions.captured(t));
++  const neg=states.filter(t=>negative(t)&&!positive(t)),pos=states.filter(t=>positive(t)&&!negative(t));
++  if(neg.length>=6&&pos.length>=5){const sn=stat(neg),sp=stat(pos);if(sn.exp_r<sp.exp_r-.15)add({id:'emotion',category:'psychology',severity:'warning',title:'Recorded entry-state associations (descriptive)',detail:`App-window entry self-reports: negative-labelled ${sn.n} trades averaged ${sn.exp_r}R; calm/focused-labelled ${sp.n} averaged ${sp.exp_r}R. Not a causal dollar cost, broker mental-state verification or predictive edge. Below30 per group is descriptive only;30+ still does not prove an edge. Late/imported/missing responses excluded.`,impact:sn.net,evidence:[...evidenceOf(sn,'App-window negative label'),...evidenceOf(sp,'App-window calm/focused label')],action:'Review the original captured states alongside your plan and outcomes; do not infer causality, resize risk or treat this comparison as entry permission.',capture_basis:'app_record_window_self_report'});}
+ 
+   /* 11 — symbol leak ----------------------------------------------------- */
+   const symRows = P.segment(closed, (t) => t.symbol).filter((r) => r.trades >= 6 && r.net_pnl < 0 && r.expectancy_r < -0.15);
+diff --git a/src/db.js b/src/db.js
+index a5518f5..4bda2d2 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -241,6 +241,28 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+     resolved_at TEXT
+   );
+ -- M88 reusable, user-owned free-text vocabulary, NOT market-model checklist facts.
++-- M89 optional owned APP event + immutable first response, NOT broker proof.
++CREATE TABLE IF NOT EXISTS trade_emotion_events (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ trade_id INTEGER NOT NULL REFERENCES trades(id) ON DELETE CASCADE,
++ account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
++ phase TEXT NOT NULL CHECK(phase IN ('entry','exit')),
++ source TEXT NOT NULL CHECK(source IN ('app_entry','app_close','retrospective','imported')),
++ event_key TEXT NOT NULL,
++ app_observed_at TEXT NOT NULL,
++ snapshot TEXT NOT NULL,
++ context_hash TEXT NOT NULL,
++ historical_json TEXT,
++ UNIQUE(user_id,trade_id,event_key)
++);
++CREATE TABLE IF NOT EXISTS trade_emotion_responses (
++ event_id INTEGER PRIMARY KEY REFERENCES trade_emotion_events(id) ON DELETE CASCADE,
++ emotion TEXT,
++ answered_at TEXT NOT NULL,
++ snapshot TEXT NOT NULL
++);
++CREATE INDEX IF NOT EXISTS idx_emotion_owner_trade ON trade_emotion_events(user_id,trade_id,id);
+ CREATE TABLE IF NOT EXISTS confluence_labels (
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+   label_key TEXT NOT NULL,
+@@ -659,6 +681,9 @@ async function migrate() {
+   await add('trades','stop_honoured_source','TEXT');
+   await add('trades','stop_honoured_recorded_at','TEXT');
+   await add('trades','execution_review_hash','TEXT');
++  // Single-statement triggers: exec splits semicolons, so use prepare for bodies.
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS emotion_events_immutable BEFORE UPDATE ON trade_emotion_events BEGIN SELECT RAISE(ABORT,'Emotion event facts are immutable'); END`).run();
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS emotion_responses_immutable BEFORE UPDATE ON trade_emotion_responses BEGIN SELECT RAISE(ABORT,'First emotion response is immutable'); END`).run();
+   // M88 additive NULL, no inferred labels/source/entry-time history on old trades.
+   for(const field of ['entry_confluences','entry_confluences_source','entry_confluences_recorded_at'])await add('trades',field,'TEXT');
+   await add('journal_entries','pre_market_done','INTEGER CHECK(pre_market_done IS NULL OR pre_market_done IN (0,1))');
+diff --git a/src/emotions.js b/src/emotions.js
+new file mode 100644
+index 0000000..bea07ca
+--- /dev/null
++++ b/src/emotions.js
+@@ -0,0 +1,88 @@
++'use strict';
++/** M89 APP-record/response timing, never broker-time or mental-state proof.
++ * Optional evidence cannot authorise entry, score execution or complete writing. */
++const crypto=require('crypto');
++const WINDOW_MS=300000; // APP five-minute budget, not a course quotation.
++const ENTRY=['id','user_id','account_id','symbol','direction','entry','stop','target','size','strategy_id','strategy_version','entry_model','entry_tf','opened_at'];
++const EXIT=[...ENTRY,'closed_at','exit','fees','net_pnl','risk_amount','r_multiple','legs'];
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'emotion_capture_invalid',status});}
++function input(value){if(value===null)return null;if(typeof value!=='string'||!value.trim()||value.length>100||/[\x00-\x1f\x7f]/.test(value))throw invalid('Name the emotional state in1–100 single-line characters or explicitly choose unknown.');return value.trim();}
++function stamp(value){if(typeof value!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value))return null;const n=Date.parse(value);return Number.isFinite(n)&&new Date(n).toISOString()===value?n:null;}
++function snapshot(t,phase){if(!['entry','exit'].includes(phase))throw invalid('Unknown capture phase.');return Object.fromEntries([...new Set([...(phase==='entry'?ENTRY:EXIT),'status'])].map(k=>[k,t[k]??null]));}
++const hash=(s,phase)=>crypto.createHash('sha256').update(JSON.stringify((phase==='entry'?ENTRY:EXIT).map(k=>[k,s[k]??null]))).digest('hex');
++function classify(t,event,response,now=Date.now()){
++  const base={event_id:event?.id??null,phase:event?.phase??null,state:'unavailable',emotion:null,source:event?.source??null,app_observed_at:event?.source==='imported'?null:event?.app_observed_at??null,answered_at:response?.answered_at??null,received_at:event?.source==='imported'?event.app_observed_at:null,delay_ms:null,current_context:false,eligible:false,window_ms:WINDOW_MS,broker_verified:false,basis:'Server app-event and first-response timing only; not broker execution, actual mental state, causation, permission or grade.'};
++  try{
++    if(!event||!['entry','exit'].includes(event.phase)||!['app_entry','app_close','retrospective','imported'].includes(event.source)||event.source==='app_entry'&&event.phase!=='entry'||event.source==='app_close'&&event.phase!=='exit'||event.user_id!==t.user_id||event.trade_id!==t.id)throw invalid('Unavailable event identity.');
++    const s=JSON.parse(event.snapshot),at=stamp(event.app_observed_at);if(event.source==='app_entry'&&s?.status!=='open'||event.source==='app_close'&&s?.status!=='closed')throw invalid('Unavailable observed lifecycle.');if(!s||s.id!==t.id||s.user_id!==t.user_id||s.account_id!==event.account_id||hash(s,event.phase)!==event.context_hash||at===null||at>now)throw invalid('Unavailable event context/clock.');
++    const matches=hash(snapshot(t,event.phase),event.phase)===event.context_hash;let state=matches?'pending':'prior',emotion=null,answered=null,delay=null;
++    if(response){const r=JSON.parse(response.snapshot),ms=stamp(response.answered_at);emotion=input(response.emotion);if(response.event_id!==event.id||!r||hash(r,event.phase)!==event.context_hash||ms===null||ms<at||ms>now)throw invalid('Unavailable response.');answered=response.answered_at;delay=ms-at;
++      if(matches){const financial=stamp(event.phase==='entry'?s.opened_at:s.closed_at),age=financial===null?Infinity:at-financial;state=emotion===null?'unknown':event.source==='imported'?'imported':event.source==='retrospective'?'retrospective':delay<=WINDOW_MS&&age>=0&&age<=WINDOW_MS&&(event.phase==='exit'?r.status==='closed':r.status==='open')?'timely':'late';}
++    }
++    if(event.source==='imported')state='imported';return {...base,state,emotion,historical:event.historical_json?JSON.parse(event.historical_json):null,answered_at:event.source==='imported'?null:answered,delay_ms:event.source==='imported'?null:delay,current_context:matches&&event.source!=='imported',eligible:state==='timely',recorded_context:s};
++  }catch{return base;}
++}
++
++const {db}=require('./db');
++const sha=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
++async function owned(store,userId,id){if(!Number.isSafeInteger(id)||id<1)throw invalid('Trade not found.',404);const t=await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,userId);if(!t)throw invalid('Trade not found.',404);return t;}
++async function rowsOn(store,userId,id){const rows=await store.prepare(`SELECT e.*,r.event_id response_id,r.emotion,r.answered_at,r.snapshot answer_snapshot FROM trade_emotion_events e LEFT JOIN trade_emotion_responses r ON r.event_id=e.id WHERE e.user_id=? AND e.trade_id=? ORDER BY e.id`).all(userId,id);return rows.map(r=>({event:r,response:r.response_id==null?null:{event_id:r.response_id,emotion:r.emotion,answered_at:r.answered_at,snapshot:r.answer_snapshot}}));}
++const revision=(t,phase,selected)=>sha([require('./confluences').info(t).revision,phase,selected?.event,selected?.response]);
++function view(t,rows){
++  const phases={};for(const phase of ['entry','exit']){
++    const all=rows.filter(r=>r.event.phase===phase),app=all.filter(r=>r.event.source===(phase==='entry'?'app_entry':'app_close'));
++    const clock=phase==='entry'?'opened_at':'closed_at',sameCycle=app.filter(r=>{try{return JSON.parse(r.event.snapshot)[clock]===t[clock];}catch{return false;}});
++    const selected=sameCycle.at(-1)||app.at(-1)||all.at(-1);
++    phases[phase]={...(selected?classify(t,selected.event,selected.response):{event_id:null,phase,state:'unknown',emotion:null,eligible:false,broker_verified:false,window_ms:WINDOW_MS,app_observed_at:null,answered_at:null}),revision:revision(t,phase,selected)};
++  }
++  return {trade_id:t.id,account_id:t.account_id,saved_record:{symbol:t.symbol,status:t.status,entry:t.entry,stop:t.stop,exit:t.exit},...phases,history:rows.map(r=>classify(t,r.event,r.response)),legacy:{emotion_before:t.emotion_before||'',emotion_after:t.emotion_after||'',basis:'Compatibility self-report, NOT timing proof. Later journal edits do not rewrite the immutable first response.'}};
++}
++async function read(userId,id){return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id);return view(t,await rowsOn(store,userId,id));});}
++async function eventOn(store,t,phase,source,transition=''){
++  const s=snapshot(t,phase),digest=hash(s,phase),at=new Date().toISOString(),eventKey=sha([phase,source,digest,transition]);
++  await store.prepare('INSERT INTO trade_emotion_events(user_id,trade_id,account_id,phase,source,event_key,app_observed_at,snapshot,context_hash) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id,trade_id,event_key) DO NOTHING').run(t.user_id,t.id,t.account_id,phase,source,eventKey,at,JSON.stringify(s),digest);
++  return store.prepare('SELECT * FROM trade_emotion_events WHERE user_id=? AND trade_id=? AND event_key=?').get(t.user_id,t.id,eventKey);
++}
++/** Called AFTER truthful financial commit. Evidence outage is an explicit warning,
++ * never financial rollback or guessed clock/state; concurrent correction skips. */
++async function observe(userId,expected,phase,source,transition=''){
++  try{return await db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,expected.id);if(t.account_id!==expected.account_id||hash(snapshot(t,phase),phase)!==hash(snapshot(expected,phase),phase)||t.status!==(phase==='entry'?'open':'closed'))return {emotion_prompt:null,emotion_warnings:['Financial record changed before optional emotion observation; no timely capture inferred.']};const e=await eventOn(store,t,phase,source,transition);return {emotion_prompt:{phase,event_id:e.id,trade_id:t.id,account_id:t.account_id},emotion_warnings:[]};});}catch{return {emotion_prompt:null,emotion_warnings:['Financial truth recorded; optional emotion observation unavailable. No captured state or timing inferred.']};}
++}
++async function answer(userId,id,phase,body){
++  if(!['entry','exit'].includes(phase)||!body||Array.isArray(body)||typeof body!=='object'||Object.keys(body).some(k=>!['event_id','emotion','revision'].includes(k))||!Object.hasOwn(body,'emotion')||!Object.hasOwn(body,'event_id')||body.event_id!==null&&(!Number.isSafeInteger(body.event_id)||body.event_id<1)||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision))throw invalid('Use the displayed event_id/revision and an explicit emotional state or null only.');
++  const value=input(body.emotion);return db.tx(async tx=>{const store=db.transactionStore(tx),t=await owned(store,userId,id),rows=await rowsOn(store,userId,id),v=view(t,rows),slot=v[phase];
++    if(phase==='exit'&&t.status!=='closed')throw invalid('Record the actual close before an exit-state report.',409);
++    if(body.revision!==slot.revision||body.event_id!==slot.event_id)throw invalid('Saved record or capture changed. Reload and deliberately review the current event.',409);
++    let selected=rows.find(r=>r.event.id===body.event_id);
++    if(selected?.response){if(selected.response.emotion===value)return v;throw invalid('The first response is retained unchanged. Later corrections belong in retrospective journal text, not a new fresh capture.',409);}
++    if(selected&&(!slot.current_context||slot.state==='unavailable'||slot.source==='imported'))throw invalid('Prior/imported/unavailable events cannot be converted into new timely proof.',409);
++    if(!selected){const e=await eventOn(store,t,phase,'retrospective','explicit manual '+new Date().toISOString());selected={event:e};}
++    const at=new Date().toISOString(),s=snapshot(t,phase);await store.prepare('INSERT INTO trade_emotion_responses(event_id,emotion,answered_at,snapshot) VALUES(?,?,?,?)').run(selected.event.id,value,at,JSON.stringify(s));
++    if(value!==null)await store.prepare('UPDATE trades SET '+(phase==='entry'?'emotion_before':'emotion_after')+'=? WHERE id=? AND user_id=?').run(value,id,userId);
++    return view(await owned(store,userId,id),await rowsOn(store,userId,id));
++  });
++}
++async function annotate(rows){try{if(!rows.length)return [];const user=rows[0].user_id,events=await db.prepare(`SELECT e.*,r.event_id response_id,r.emotion,r.answered_at,r.snapshot answer_snapshot FROM trade_emotion_events e LEFT JOIN trade_emotion_responses r ON r.event_id=e.id WHERE e.user_id=? ORDER BY e.id`).all(user),map=new Map();for(const r of events){if(!map.has(r.trade_id))map.set(r.trade_id,[]);map.get(r.trade_id).push({event:r,response:r.response_id==null?null:{event_id:r.response_id,emotion:r.emotion,answered_at:r.answered_at,snapshot:r.answer_snapshot}});}return rows.map(t=>({...t,emotion_capture:view(t,map.get(t.id)||[])}));}catch{return rows.map(t=>({...t,emotion_capture:{entry:{state:'unavailable',eligible:false},exit:{state:'unavailable',eligible:false}}}));}}
++
++function captured(t){const v=t.emotion_capture?.entry;return t.status==='closed'&&v?.state==='timely'&&v.eligible===true&&v.source==='app_entry'&&v.broker_verified===false&&v.current_context===true&&typeof v.emotion==='string'&&v.emotion.trim()&&typeof v.delay_ms==='number'&&v.delay_ms>=0&&v.delay_ms<=WINDOW_MS?v.emotion:null;}
++function aggregate(trades){
++ const coverage={closed_trades:0,timely:0,late:0,unknown:0,pending:0,retrospective:0,imported:0,prior:0,unavailable:0,window_ms:WINDOW_MS,broker_verified:false},map=new Map();
++ for(const t of trades){if(t.status!=='closed')continue;coverage.closed_trades++;const state=t.emotion_capture?.entry?.state||'unknown',value=captured(t);if(value){coverage.timely++;const text=value.trim().replace(/\s+/gu,' '),k=text.toLowerCase();if(!map.has(k))map.set(k,{text,rows:[]});map.get(k).rows.push(t);}else coverage[Object.hasOwn(coverage,state)&&state!=='timely'?state:'unavailable']++;}
++ const finite=n=>typeof n==='number'&&Number.isFinite(n),round=(n,d=2)=>Math.round(n*10**d)/10**d,rows=[];
++ for(const {text,rows:list}of map.values()){const known=list.filter(t=>finite(t.net_pnl)),rs=list.filter(t=>finite(t.net_pnl)&&finite(t.r_multiple)&&finite(t.risk_amount)&&t.risk_amount>0&&Math.abs(t.net_pnl-t.risk_amount*t.r_multiple)<=Math.max(.02,t.risk_amount*.0001)),n=list.length,net=known.reduce((s,t)=>s+t.net_pnl,0),r=rs.reduce((s,t)=>s+t.r_multiple,0),wins=known.filter(t=>t.net_pnl>0).length,losses=known.filter(t=>t.net_pnl<0).length;rows.push({key:text,trades:n,known_net_count:known.length,unavailable_net_count:n-known.length,wins,losses,breakeven:known.length-wins-losses,win_rate:known.length?round(wins*100/known.length):null,net_pnl:known.length===n?round(net):null,known_r_count:rs.length,expectancy_r:rs.length===n?round(r/n,4):null,sample_floor:30,sample_ready:n>=30,capture_basis:'app_record_window_self_report',broker_verified:false});}
++ rows.sort((a,b)=>b.trades-a.trades||a.key.localeCompare(b.key));return {rows,coverage};
++}
++
++function declaredContext(raw,phase){
++ if(raw==null)return null;if(typeof raw!=='object'||Array.isArray(raw)||Buffer.byteLength(JSON.stringify(raw),'utf8')>8192)throw invalid('Unverified original emotion context omitted: invalid shape/app8KB budget.');const out={};
++ for(const k of [...(phase==='entry'?ENTRY:EXIT),'status']){if(!Object.hasOwn(raw,k))continue;const v=raw[k];if(v!==null&&!(typeof v==='string'&&v.length<=2048)&&!(typeof v==='number'&&Number.isFinite(v)))throw invalid('Unverified original emotion context omitted: invalid field '+k+'.');out[k]=v;}return out;
++}
++function parsePortable(raw,{json=false}={}){
++ const result={entries:[],warnings:[]};if(raw===undefined||raw===null||raw==='')return result;
++ try{if(json||typeof raw==='string')raw=JSON.parse(raw);if(!raw||raw.version!==1||!Array.isArray(raw.entries)||raw.entries.length>50)throw invalid('Optional emotion history needs version1 and at most50 entries.');if(raw.unavailable||raw.unavailable_events>0)result.warnings.push('Original backup reports unavailable emotion history; no lost response can be inferred.');
++  for(const e of raw.entries){try{if(!e||!['entry','exit'].includes(e.phase)||!Object.hasOwn(e,'emotion'))throw invalid('Invalid optional emotion phase/state.');const emotion=input(e.emotion),originalSource=e.historical?.source??e.source,historical={source:typeof originalSource==='string'?originalSource.slice(0,80):null,app_observed_at:null,answered_at:null,recorded_context:null};try{historical.recorded_context=declaredContext(e.historical?.recorded_context??e.recorded_context,e.phase);}catch(err){result.warnings.push(err.message);}for(const field of ['app_observed_at','answered_at']){const value=e.historical?.[field]??e[field];if(value!=null){const n=stamp(value);if(n!==null&&n<=Date.now())historical[field]=value;else result.warnings.push('Unverified invalid/future original emotion clock omitted.');}}result.entries.push({phase:e.phase,emotion,historical});}catch(err){result.warnings.push(err.message);}}
++ }catch(err){result.warnings.push(err.message||'Invalid optional emotion history omitted.');}result.warnings=result.warnings.slice(0,20);return result;
++}
++async function importOn(store,t,parsed){for(const e of parsed?.entries||[]){const s=snapshot(t,e.phase),at=new Date().toISOString(),key=sha(['imported',t.id,e.phase,crypto.randomUUID()]);const r=await store.prepare('INSERT INTO trade_emotion_events(user_id,trade_id,account_id,phase,source,event_key,app_observed_at,snapshot,context_hash,historical_json) VALUES(?,?,?,?,?,?,?,?,?,?)').run(t.user_id,t.id,t.account_id,e.phase,'imported',key,at,JSON.stringify(s),hash(s,e.phase),JSON.stringify(e.historical));await store.prepare('INSERT INTO trade_emotion_responses(event_id,emotion,answered_at,snapshot) VALUES(?,?,?,?)').run(r.lastInsertRowid,e.emotion,at,JSON.stringify(s));}}
++async function portableRowsOn(store,rows){const out=[];for(const t of rows){let events;try{events=await rowsOn(store,t.user_id,t.id);}catch{out.push({...t,emotion_events:{version:1,entries:[],unavailable_events:null,unavailable:true}});continue;}const entries=[];let unavailable=0;for(const r of events){const v=classify(t,r.event,r.response);if(v.state==='unavailable'){unavailable++;continue;}if(!r.response)continue;entries.push({phase:v.phase,emotion:v.emotion,source:v.source,app_observed_at:v.app_observed_at,answered_at:v.answered_at,recorded_context:v.recorded_context,...(v.historical?{historical:v.historical}:{})});}out.push({...t,emotion_events:{version:1,entries,unavailable_events:unavailable}});}return out;}
++module.exports={WINDOW_MS,input,stamp,snapshot,hash,classify,invalid,owned,view,read,observe,answer,annotate,rowsOn,eventOn,captured,aggregate,parsePortable,importOn,portableRowsOn};
+diff --git a/src/performance.js b/src/performance.js
+index 4f3c2e5..dab030d 100644
+--- a/src/performance.js
++++ b/src/performance.js
+@@ -10,6 +10,7 @@
+ 
+ const Execution = require('./execution-review');
+ const Confluences = require('./confluences');
++const Emotions = require('./emotions');
+ 
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+@@ -530,6 +531,7 @@ function optimalRisk(rs, { cap = 0.05, floor = 0.001 } = {}) {
+ function fullAnalytics(trades, opts = {}) {
+   const k = kpis(trades, opts);
+   const confluences=Confluences.aggregate(trades);
++  const emotions=Emotions.aggregate(trades);
+   const closed = trades.filter((t) => t.status !== 'open');
+   return {
+     kpis: k,
+@@ -562,7 +564,9 @@ function fullAnalytics(trades, opts = {}) {
+     by_entry_model: segment(closed, (t) => t.entry_model == null ? 'Unknown (unrecorded)' : t.entry_model)
+       .map((r) => ({ ...r, sample_ready: r.trades >= 30, sample_floor: 30,
+         sample_note: r.trades < 30 ? 'Descriptive only; below the course 30-trade review floor.' : 'Recorded journal outcomes; not a causal market-edge claim.' })),
+-    by_emotion: segment(trades, (t) => splitTags(t.emotion_before)),
++    by_emotion: emotions.rows,
++    emotion_coverage:emotions.coverage,
++    by_emotion_unverified:segment(closed,(t)=>splitTags(t.emotion_before)),
+     by_mistake: segment(trades, (t) => splitTags(t.mistakes)),
+     by_tag: segment(trades, (t) => splitTags(t.tags)),
+     by_hold: segment(trades, (t) => holdBucket(t.hold_minutes)),
+diff --git a/src/routes/api.js b/src/routes/api.js
+index cbc01dc..ae32e72 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -16,6 +16,7 @@ const Routine = require('../routine');
+ const Execution = require('../execution-review');
+ const Screenshots = require('../screenshots');
+ const Confluences = require('../confluences');
++const Emotions = require('../emotions');
+ const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
+ const O = require('../options');
+ const Exp = require('../exposure');
+@@ -347,16 +348,16 @@ router.post('/trades', requireAuth, async (req, res) => {
+   }
+   const owned = await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id);
+   if (!owned) return res.status(404).json({error:'Account not found'});
+-  let id, permission;
++  let id, permission, written;
+   try {
+     if (trade.status === 'open' && body.record_only !== true) {
+       try { trade.emotion_before=J.text(body.emotion_before,'Name your emotional state before prospective entry',100); }
+       catch(e){throw Guards.inputError(e.message);}
+       const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade',overrideReason:body.override_reason},async (store,daily) => {
+         const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
+-        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,permission:Guards.actionPermission(daily)};
++        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,record:await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id),permission:Guards.actionPermission(daily)};
+       });
+-      id = out.id; permission = out.permission;
++      id = out.id; permission = out.permission; written=out.record;
+     } else {
+       const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>{const id=await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')});await Confluences.attachOn(store,req.user.id,id,confluences);return {id};});
+       id = out.id; permission = {allowed:false,state:'record_only',can_override:false};
+@@ -370,7 +371,8 @@ router.post('/trades', requireAuth, async (req, res) => {
+     for (const rc of body.rule_checks) await ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
+   }
+   const saved = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
+-  res.json({ ok: true, permission, confluence_warnings:confluences.warnings, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
++  const emotion=permission?.allowed&&written?await Emotions.observe(req.user.id,written,'entry','app_entry'):{};
++  res.json({ ok: true, permission, ...emotion, confluence_warnings:confluences.warnings, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
+ });
+ 
+ // Optional reasons never grant entry, complete core writing or alter execution/risk.
+@@ -379,6 +381,10 @@ router.get('/confluences',requireAuth,confluenceRoute(req=>Confluences.vocabular
+ router.get('/trades/:id/confluences',requireAuth,confluenceRoute(req=>Confluences.read(req.user.id,Number(req.params.id))));
+ router.put('/trades/:id/confluences',requireAuth,confluenceRoute(req=>Confluences.change(req.user.id,Number(req.params.id),req.body)));
+ 
++const emotionRoute=fn=>async(req,res)=>{try{if(!/^[1-9]\d*$/.test(req.params.id))throw Emotions.invalid('Trade not found.',404);res.json(await fn(req));}catch(e){if(e.code==='emotion_capture_invalid')return res.status(e.status).json({error:e.message,code:e.code});return res.status(503).json({error:'Optional emotion evidence unavailable; financial truth unchanged.'});}};
++router.get('/trades/:id/emotions',requireAuth,emotionRoute(req=>Emotions.read(req.user.id,Number(req.params.id))));
++router.post('/trades/:id/emotions/:phase',requireAuth,emotionRoute(req=>Emotions.answer(req.user.id,Number(req.params.id),req.params.phase,req.body)));
++
+ router.put('/trades/:id', requireAuth, async (req, res) => {
+   const id = Number(req.params.id);
+   const existing = await db.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id, req.user.id);
+@@ -391,12 +397,13 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+   catch (e) { return res.status(400).json({ error: e.message }); }
+   const accountId = num(merged.account_id,existing.account_id);
+   if (!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id)) return res.status(404).json({error:'Account not found'});
++  let written;const write=async(store,fields)=>{await T.update(store,req.user.id,id,fields);return store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id);};
+   try {
+     if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
+       try { trade.emotion_before=J.text(req.body.emotion_before,'Name your current emotional state before reopening',100); }
+       catch(e){throw Guards.inputError(e.message);}
+-      await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>T.update(store,req.user.id,id,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
+-    } else await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,{...trade,account_id:accountId}));
++      written=await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>write(store,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
++    } else written=await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>write(store,{...trade,account_id:accountId}));
+   } catch(e) {
+     if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
+     throw e;
+@@ -406,7 +413,9 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
+     for (const rc of req.body.rule_checks) ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
+   }
+-  res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
++  const phase=existing.status!=='open'&&trade.status==='open'&&req.body.record_only!==true?'entry':existing.status==='open'&&trade.status==='closed'?'exit':null;
++  const emotion=phase?await Emotions.observe(req.user.id,written,phase,phase==='entry'?'app_entry':'app_close',existing.closed_at||''):{};
++  res.json({ ok: true, ...emotion, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
+ });
+ 
+ // M87 optional owned visual evidence is independent from financial truth,
+@@ -459,12 +468,13 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+   };
+   const instruments = await instrumentMap(req.user.id);
+   const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
+-  await Guards.record(req.user.id,{accountId:existing.account_id,entryTf:trade.entry_tf,action:'journal_close',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,trade));
++  const written=await Guards.record(req.user.id,{accountId:existing.account_id,entryTf:trade.entry_tf,action:'journal_close',entityType:'trade',entityId:id},async store=>{await T.update(store,req.user.id,id,trade);return store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id);});
+   const fresh = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
+   if (req.body && req.body.notify !== false) {
+     notifyEvent(req.user.id, 'trade_closed', `${trade.symbol} ${trade.direction} closed ${fresh.net_pnl >= 0 ? '+' : ''}${fresh.net_pnl} (${fresh.r_multiple}R)${trade.legs_n ? ` · ${trade.legs_n} scale-outs` : ''}`, { trade_id: id, symbol: trade.symbol, net_pnl: fresh.net_pnl, r_multiple: fresh.r_multiple }).catch(() => {});
+   }
+-  res.json({ ok: true, trade: journalTrade(fresh, (await settingsOf(req)).timezone) });
++  const emotion=existing.status==='open'?await Emotions.observe(req.user.id,written,'exit','app_close'):{};
++  res.json({ ok: true, ...emotion, trade: journalTrade(fresh, (await settingsOf(req)).timezone) });
+ });
+ 
+ router.delete('/trades/:id', requireAuth, async (req, res) => {
+@@ -544,7 +554,7 @@ router.get('/analytics', requireAuth, async (req, res) => {
+     const want = String(f.tag).toLowerCase();
+     rows = rows.filter((t) => String(t.tags || '').toLowerCase().split(',').map((x) => x.trim()).includes(want));
+   }
+-  const decorated = rows.map((t) => P.decorate(t, tz));
++  const decorated = (await Emotions.annotate(rows)).map((t) => P.decorate(t, tz));
+   const closed = decorated.filter((t) => t.status !== 'open');
+   const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
+     || await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id)
+@@ -591,7 +601,7 @@ router.get('/coach', requireAuth, async (req, res) => {
+     .map((t) => P.decorate(t, tz));
+   const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
+     || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
+-  res.json(Coach.analyse(rows, { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }));
++  res.json(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }));
+ });
+ 
+ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+@@ -599,7 +609,8 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+   const tz = settings.timezone;
+   const acc = await accountOr404(req, res);
+   if (!acc) return;
+-  const rows = (await db.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY COALESCE(closed_at, opened_at)').all(req.user.id, acc.id)).map((t) => P.decorate(t, tz));
++  let rows = (await db.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY COALESCE(closed_at, opened_at)').all(req.user.id, acc.id)).map((t) => P.decorate(t, tz));
++  rows=await Emotions.annotate(rows);
+   const todayStr = P.localDateStr(new Date().toISOString(), tz);
+   const journalEntry = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, todayStr) || null;
+   const symbols = [...new Set([...(settings.focus_symbols || []), ...rows.slice(-25).map((t) => t.symbol)])].slice(0, 12);
+@@ -1145,11 +1156,11 @@ router.get('/export/csv', requireAuth, backup(async (req, res) => {
+   const tz = (await settingsOf(req)).timezone;
+   const f = tradeFilters(req);
+   const { where, params, order } = T.listQuery(f);
+-  const rows = (await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({...params,user_id:req.user.id}));})).map(t=>({...P.decorate(t,tz),screenshot_views_json:JSON.stringify(t.screenshots)}));
++  const rows = (await db.tx(async tx=>{const store=db.transactionStore(tx);return Emotions.portableRowsOn(store,await Screenshots.portableRowsOn(store,await store.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({...params,user_id:req.user.id})));})).map(t=>({...P.decorate(t,tz),screenshot_views_json:JSON.stringify(t.screenshots),emotion_events_json:JSON.stringify(t.emotion_events)}));
+   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
+     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
+     'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
+-    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json', 'entry_confluences', 'entry_confluences_source', 'entry_confluences_recorded_at'];
++    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json', 'entry_confluences', 'entry_confluences_source', 'entry_confluences_recorded_at','emotion_events_json'];
+   const esc = (v) => {
+     const s = v === null || v === undefined ? '' : String(v);
+     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+@@ -1169,7 +1180,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
+     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
+     strategies: (await db.prepare('SELECT * FROM strategies WHERE user_id=?').all(userId)).map(parseStrategy),
+     instruments: await db.prepare('SELECT * FROM instruments WHERE user_id=?').all(userId),
+-    trades: await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId));}),
++    trades: await db.tx(async tx=>{const store=db.transactionStore(tx);return Emotions.portableRowsOn(store,await Screenshots.portableRowsOn(store,await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId)));}),
+     journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
+     goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
+     watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
+@@ -1202,7 +1213,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+     entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
+     tags: findCol(['tags', 'tag', 'labels']),
+     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
+-    entry_confluences:findCol(['entry_confluences']), screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
++    emotion_events_json:findCol(['emotion_events_json']), entry_confluences:findCol(['entry_confluences']), screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
+     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
+   };
+   if (map.symbol < 0) return res.status(400).json({ error: 'Could not find a symbol/ticker column in the CSV.' });
+@@ -1254,7 +1265,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+         }
+         const media=Screenshots.parsePortable(map.screenshot_views_json>-1?r[map.screenshot_views_json]:undefined,{json:true});
+         trade.screenshot_url=Screenshots.legacyImport(map.screenshot_url>-1?r[map.screenshot_url]:undefined,media);
+-        collected.push({trade,media,confluences:Confluences.optional(map.entry_confluences>-1?r[map.entry_confluences]:undefined,{json:true})});
++        collected.push({trade,media,confluences:Confluences.optional(map.entry_confluences>-1?r[map.entry_confluences]:undefined,{json:true}),emotions:Emotions.parsePortable(map.emotion_events_json>-1?r[map.emotion_events_json]:undefined,{json:true})});
+         inserted++;
+       } catch (e) { skipped++; if (errors.length < 5) errors.push(`Row ${i + 1}: ${e.message}`); }
+     }
+@@ -1268,9 +1279,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+ 
+ // Actual transaction insert IDs (never raw backup IDs), with optional media
+ // warnings separate from financial parsing. Storage failure rolls back together.
+-function mediaFeedback(collected){return {confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
++function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+ async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+-  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});}
++  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
+   for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);return n;
+ });}
+ 
+@@ -1322,7 +1333,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
+       if (!trade.account_id) continue;
+       const media=Screenshots.parsePortable(t.screenshots);
+       trade.screenshot_url=Screenshots.legacyImport(t.screenshot_url,media);
+-      collected.push({trade,media,confluences:Confluences.optional(t.entry_confluences)});
++      collected.push({trade,media,confluences:Confluences.optional(t.entry_confluences),emotions:Emotions.parsePortable(t.emotion_events)});
+       inserted++;
+     }
+     for (const s of (data.strategies || [])) {

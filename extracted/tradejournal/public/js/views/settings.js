@@ -151,8 +151,8 @@
               const d = await API.post('/import/csv', { csv, account_id: U.$('#im-account', w).value });
               if(!currentMediaPane())return;
               out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
-              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);
-              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
+              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);
+              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
           });
           const file = U.$('#im-file', w);
@@ -176,8 +176,8 @@
                 const d = await API.post('/import/json', { data });
                 if(!currentMediaPane()||attempt!==jsonRead)return;
                 U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
-                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);
-                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length)global.App.refresh();
+                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);
+                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length)global.App.refresh();
               } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
             };
             r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};

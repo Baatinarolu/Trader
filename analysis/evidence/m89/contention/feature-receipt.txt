@@ -1,0 +1,11 @@
+ok destination clock is receiving only; original app/answer times not verified fields
+ok no receiving-duration invented as original capture delay
+ok original declared source preserved as unverified, never eligible
+ok second destination still imported but retains original declared source/clock history
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:14976:13
+    at async req (eval at <anonymous> (/home/user/Trader/analysis/probe-m89-import-receipt.js:5:406), <anonymous>:16:17)
+    at async S.load (eval at <anonymous> (/home/user/Trader/analysis/probe-m89-import-receipt.js:5:406), <anonymous>:43:15)
+    at async /home/user/Trader/analysis/probe-m89-import-receipt.js:5:492
+    at async finish (/home/user/Trader/analysis/m89-test-support.js:9:50)
+M89 imported receipt is not observed/answer timing: 4 passed, 1 failed

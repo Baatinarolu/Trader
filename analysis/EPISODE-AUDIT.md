@@ -1,6 +1,49 @@
 # Full-playlist episode audit — running ledger
 
-## Current M88 — explicit entry confluences — 2026-10-12
+## Current M89 — timely APP emotion prompts/provenance — 2026-10-12
+
+**132:92 done /3 partial /37 TODO /0 no-action**, exact eight groups. Actual
+owned after-entry/after-close popups, retained first answers/server clocks/context,
+compatibility auto-tags and saved history; unknown/late/retrospective/imported/prior/
+unavailable separate. **Five-minute APP policy, NOT a course quotation or broker/
+mental-state proof**. Entry answered after close excluded; no legacy backfill.
+Optional post-commit outage warns without undoing finance; strict displayed
+revision/owner/token/account guards, one answer per event, immutable DB UPDATE.
+Exit capture/decline still leads to required core/post-loss writing; no score,
+permission/admission/cap/routine/risk refund or M106 calmness gate.
+
+Closed-only primary Analytics/Coach use server child annotations, known outcome
+counts and explicit coverage; old text is separately timing-unverified. No causal
+dollar cost, prediction, sizing signal or70% claim. JSON/CSV retain original first
+response/context as unverified declarations, forced imported/new destination IDs
+and receiving clock, no original answer delay/proof replay. Invalid optional import
+warns; real import-store failure rolls back. Capture-read outage cannot deny a
+financial backup; omission markers and actual CSV/Settings warnings stay visible.
+
+**M89 final170/0 across13 probes**, actual-parent migration14/0; unchanged
+M88 confluence160/0, execution260/0, routine321/0. Original M87 **223/3** migration
+shape negatives retained. RAW597/155 plus90s timeout; DECLARED825/3, same old
+M85 browser-day fixture22/3 on actual parent (fixed server11th vs browser12th).
+Offline178/0, DECLARED market325/0, live70/1 with6 nonzero/5 summaryless.
+Final serial native prepared parent/current API121/0 each/Bots206/0 each,
+24 synthetic fills/0 mismatches; initial205/1 each quarter-ATR0.19 negative kept,
+not a clock/engine/risk patch or improvement. Raw APIexit2/no summary/Bots200/6.
+Smoke**21/21 conditional DOM**,0 style/console,16 canvas limits,observed exit0.
+Concurrent fetch/SQL_BUSY/native-timeout/4of21-smoke and fresh-preview20of21
+Coach-deadline negatives retained, not erased. Focused served Coach rendered1716
+chars/0 non-canvas errors; unchanged final smoke21/21/16canvas/exit0.
+
+Twelve frozen runtime stages+docs, actual63d/pristine forward/reverse byte proofs,
+deterministic **125-source** ZIP/private exclusions: `build-m89-emotion-artifacts.py`,
+`patches/M89-EMOTION-STAGES.json`, excluded `evidence/m89/archive-sha256.json`.
+[Full report](M89-TIMELY-EMOTION-CAPTURE.md). Main preview3000: temporary synthetic
+`/tmp/m89-preview.db`, offline/schedulerOFF/blank remotes, no preserved real data.
+
+**Next M91.** M106/M111/M112 remain TODO; M30/M103/M108 partial. All132 IDs/eight
+groups preserved. This session stays on **arena/762c0295-trader**; older branch/
+next-step/counts below are historical, never instructions to switch or push elsewhere.
+
+## Historical M88 — explicit entry confluences — 2026-10-12
 
 **132:91 done /3 partial /38 TODO /0 no-action**, exact eight groups. Dedicated
 nullable human reasons, **unknown != explicit none**, honest1 partial and2–5

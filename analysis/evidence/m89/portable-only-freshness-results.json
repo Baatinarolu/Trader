@@ -1,0 +1,56 @@
+{
+  "app": "/tmp/m89-portable-stage/app",
+  "pass": 8,
+  "fail": 4,
+  "results": [
+    {
+      "label": "token change before user refresh rejects stale response locally",
+      "passed": true
+    },
+    {
+      "label": "late changed-account opening discarded",
+      "passed": true
+    },
+    {
+      "label": "late superseded failure cannot launch obsolete core/new-trade followup",
+      "passed": false
+    },
+    {
+      "label": "actual409 retains draft, disables stale save; no auto-refresh/resubmit",
+      "passed": true
+    },
+    {
+      "label": "stale disabled response requires explicit reload",
+      "passed": true
+    },
+    {
+      "label": "explicit reload discards draft and exposes CURRENT saved finance",
+      "passed": true
+    },
+    {
+      "label": "actual503 keeps typed state/unknown source and never claims saved capture",
+      "passed": true
+    },
+    {
+      "label": "same-user moved-account reload cannot accept old-account editor writes",
+      "passed": false
+    },
+    {
+      "label": "actual CSV import dialog shows optional emotion omission separately from financial count",
+      "passed": false
+    },
+    {
+      "label": "emotion-warning import not auto-dismissed at inherited700ms",
+      "passed": false
+    },
+    {
+      "label": "omission text escaped, not active HTML",
+      "passed": true
+    },
+    {
+      "label": "additional capture UI event/transport runtime errors0",
+      "passed": true
+    }
+  ],
+  "scope": "M89 capture freshness/omission UI: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

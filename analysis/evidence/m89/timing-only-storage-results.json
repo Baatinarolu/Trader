@@ -1,0 +1,461 @@
+{
+  "app": "/tmp/m89-timing-stage/app",
+  "pass": 5,
+  "fail": 23,
+  "results": [
+    {
+      "label": "record-only legacy text has no invented server capture, entry unknown",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/trades/1/emotions</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "owned module observation stores event/saved context/pending, NOT supplied legacy label",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/trades/1/emotions</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "app-event observation alone changes NO original trade fields/clock",
+      "passed": true
+    },
+    {
+      "label": "server first response stored + journal auto-tag + app-only timing classification",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "same first-answer retry does not invent newer clock",
+      "passed": false
+    },
+    {
+      "label": "different response cannot overwrite original into fake fresh state",
+      "passed": false
+    },
+    {
+      "label": "strict saved response rejects bad shape/metadata emotion",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved response rejects bad shape/metadata emotion",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved response rejects bad shape/metadata emotion",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved response rejects bad shape/metadata emotion",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved response rejects bad shape/metadata source",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved response rejects bad shape/metadata answered_at",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved response rejects bad shape/metadata revision",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved response rejects bad shape/metadata event_id",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "strict saved response rejects bad shape/metadata phase",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "foreign user GET404",
+      "passed": true
+    },
+    {
+      "label": "foreign user capture404",
+      "passed": true
+    },
+    {
+      "label": "actual auth401",
+      "passed": false
+    },
+    {
+      "label": "canonical ID enforced404",
+      "passed": true
+    },
+    {
+      "label": "actual close creates automatic EXIT prompt only after finance recorded",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "trade": {
+            "id": 1,
+            "user_id": 1,
+            "account_id": 1,
+            "symbol": "DECLARED_STOCK",
+            "asset_class": "stocks",
+            "direction": "long",
+            "status": "closed",
+            "opened_at": "2026-10-12T12:00:00.000Z",
+            "closed_at": "2026-10-12T12:01:01.000Z",
+            "entry": 100,
+            "exit": 99,
+            "stop": 99,
+            "target": 102,
+            "size": 100,
+            "fees": 0,
+            "gross_pnl": -100,
+            "net_pnl": -100,
+            "risk_amount": 100,
+            "r_multiple": -1,
+            "planned_r": 2,
+            "mae_r": -1,
+            "mfe_r": null,
+            "stop_moved": 0,
+            "stop_honoured": null,
+            "stop_honoured_source": null,
+            "stop_honoured_recorded_at": null,
+            "execution_review_hash": null,
+            "exit_reason": "Stop loss",
+            "notes": "",
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "B",
+            "entry_model": null,
+            "entry_tf": null,
+            "entry_evidence": null,
+            "session": "overlap",
+            "timeframes": "",
+            "emotion_before": "Old recalled calm",
+            "emotion_after": "",
+            "confidence": null,
+            "adherence": 5,
+            "mistakes": "",
+            "mistakes_none": 0,
+            "journal_reviewed_at": null,
+            "journal_review_hash": null,
+            "tags": "",
+            "thesis": "",
+            "lesson": "",
+            "execution_notes": "",
+            "screenshot_url": "",
+            "manual_mae": null,
+            "manual_mfe": null,
+            "created_at": "2026-10-12 06:14:10",
+            "updated_at": "2026-10-12 06:14:10",
+            "legs": null,
+            "entries": null,
+            "guardrail_snapshot": "{\"date\":\"2026-10-12\",\"timezone\":\"UTC\",\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"account_id\":1,\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":3,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":3,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-12T12:00:00.000Z\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\",\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":3,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":3,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-12T12:00:00.000Z\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\"},\"stats\":null,\"user\":{\"trades\":0},\"sample_sufficient\":false,\"min_trades_for_personal_guardrails\":30},\"today\":{\"trades\":0,\"closed\":0,\"realised\":0,\"r_sum\":0,\"avg_r\":0,\"loss_streak\":0,\"balance\":10000,\"loss_limit\":300,\"balance_basis\":\"day-start realised journal equity\"},\"profit_stop\":{\"enabled\":false,\"limit_pct\":null,\"limit_amount\":null,\"realised_amount\":0,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"balance_basis\":\"day-start realised journal equity\",\"timezone\":\"UTC\"},\"persistence\":{\"entry_count_basis\":\"monotonic observed journal entries plus server admissions, not inferred historical permission\",\"journal_entries\":0,\"retained_stops\":[]},\"breaches\":[{\"rule\":\"pre_market_routine\",\"cycle_id\":null,\"next_step\":\"setup\",\"detail\":\"Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.\"}],\"status\":\"stop\",\"remaining_trades\":3,\"post_loss\":{\"last_loss_trade_id\":null,\"last_loss_at\":null,\"entry_tf\":null,\"entry_tf_required\":false,\"cooldown_until\":null,\"next_candle_until\":null},\"message\":\"Stand down: Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.\",\"permission\":{\"allowed\":false,\"can_override\":true,\"state\":\"stopped\"},\"session_time\":{\"account_id\":1,\"advisory\":true,\"evaluated_at\":\"2026-10-12T12:00:00.000Z\",\"timezone\":\"UTC\",\"saved_limit_minutes\":null,\"scope\":\"Manual marker only, not measured broker/chart screen time or execution permission\",\"state\":\"off\",\"limit_minutes\":null,\"elapsed_minutes\":null,\"started_at\":null,\"ended_at\":null,\"message\":\"Session-duration warning is Off (optional).\"},\"post_loss_journal\":{\"pending_count\":0,\"pending\":[],\"completed_count\":0,\"timezone\":\"UTC\",\"rule_date\":\"2026-10-12\",\"scope\":\"Observed current-day known losses, required writing; not a broker-time entry violation or all historical incomplete journals\"},\"routine\":{\"account_id\":1,\"state\":\"setup_required\",\"complete\":false,\"cycle\":null,\"order\":[\"calendar\",\"plan\",\"charts\",\"meditation\",\"check_in\"],\"steps\":[],\"next_step\":\"setup\",\"message\":\"Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.\",\"scope\":\"Personal preparation requirement, not broker-hours or market permission\"},\"capture_basis\":\"recording-time state, not an inferred historic entry violation\"}",
+            "entry_permission": "record_only",
+            "override_reason": null,
+            "strategy_version": null,
+            "entry_confluences": null,
+            "entry_confluences_source": null,
+            "entry_confluences_recorded_at": null,
+            "session_label": "London/NY Overlap",
+            "hour": 13,
+            "weekday": "Mon",
+            "weekday_index": 0,
+            "day": "2026-10-12",
+            "close_day": "2026-10-12",
+            "dir_sign": 1,
+            "is_win": false,
+            "is_loss": true,
+            "is_be": false,
+            "tags_arr": [],
+            "mistakes_arr": [],
+            "hold_minutes": 1,
+            "risk_used": 100,
+            "legs_n": 0,
+            "weighted_exit": null,
+            "execution_review": {
+              "state": "unreviewed",
+              "grade": "Unreviewed",
+              "score": null,
+              "reasons": [
+                "Execution basis: self-reported journal evidence, not broker-verified adherence.",
+                "Recorded rule adherence 5/5: not acknowledged for the current record; provisional only.",
+                "Stop honour unreviewed/invalid: not inferred from movement, realised R, default zero or a legacy row.",
+                "Execution grade withheld until an actual closed journal and complete valid self-review exist.",
+                "Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect."
+              ],
+              "basis": "self_reported_execution",
+              "rubric_version": "execution-v1",
+              "execution_quality": "unreviewed",
+              "loss_quality": "unknown",
+              "outcome": {
+                "state": "known",
+                "kind": "loss",
+                "net_pnl": -100,
+                "r_multiple": -1,
+                "basis": "recorded_realised_net_pnl"
+              },
+              "evidence": {
+                "adherence": null,
+                "stop_honoured": null,
+                "stop_honoured_source": null,
+                "stop_honoured_recorded_at": null
+              },
+              "retrospective": true,
+              "broker_verified": false,
+              "entry_setup_grade": "B",
+              "record_revision": "635111a1a292b206ff79f9a8adbfce97082c4a0e3db511f5762e72ebf0429695"
+            },
+            "journal": {
+              "state": "incomplete",
+              "complete": false,
+              "missing": [
+                "emotion_after",
+                "execution_notes",
+                "lesson",
+                "mistakes_or_explicit_none",
+                "explicit_review_acknowledgement"
+              ],
+              "reflection_required": true,
+              "reviewed_at": null,
+              "scope": "Explicit core review of the current journal record; not broker-time emotion provenance, screenshots, confluences or whole-course completeness"
+            },
+            "entry_confluence_review": {
+              "state": "unknown",
+              "labels": null,
+              "source": null,
+              "recorded_at": null,
+              "entry_time_verified": false,
+              "revision": "ecb1523ccacd257ff3ca492b0c30f586aa0852d140fcdff51832c091e28a07d0",
+              "basis": "Human-declared market/setup reasons only; declaration/receiving time is NOT original entry-time or broker proof."
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "entry response stays original/current eligible after closing, not restamped",
+      "passed": false
+    },
+    {
+      "label": "late exit response persists but cannot be called timely",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/1/emotions/exit</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "capture does not grade/acknowledge core/complete writing",
+      "passed": true
+    },
+    {
+      "label": "old/historical current text can be honestly timestamped RETROSPECTIVE, never fresh",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/2/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "unseen correction409, no acknowledged unseen record or refreshed revision",
+      "passed": false
+    },
+    {
+      "label": "optional observation outage NEVER rolls back truthful close or claims prompt proof",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "data": {
+          "ok": true,
+          "trade": {
+            "id": 4,
+            "user_id": 1,
+            "account_id": 1,
+            "symbol": "DECLARED_STOCK",
+            "asset_class": "stocks",
+            "direction": "long",
+            "status": "closed",
+            "opened_at": "2026-10-12T12:06:01.001Z",
+            "closed_at": "2026-10-12T12:06:01.001Z",
+            "entry": 100,
+            "exit": 99,
+            "stop": 99,
+            "target": 102,
+            "size": 100,
+            "fees": 0,
+            "gross_pnl": -100,
+            "net_pnl": -100,
+            "risk_amount": 100,
+            "r_multiple": -1,
+            "planned_r": 2,
+            "mae_r": -1,
+            "mfe_r": null,
+            "stop_moved": 0,
+            "stop_honoured": null,
+            "stop_honoured_source": null,
+            "stop_honoured_recorded_at": null,
+            "execution_review_hash": null,
+            "exit_reason": "Stop loss",
+            "notes": "",
+            "strategy_id": null,
+            "strategy_name": "",
+            "setup_grade": "B",
+            "entry_model": null,
+            "entry_tf": null,
+            "entry_evidence": null,
+            "session": "overlap",
+            "timeframes": "",
+            "emotion_before": "",
+            "emotion_after": "",
+            "confidence": null,
+            "adherence": 5,
+            "mistakes": "",
+            "mistakes_none": 0,
+            "journal_reviewed_at": null,
+            "journal_review_hash": null,
+            "tags": "",
+            "thesis": "",
+            "lesson": "",
+            "execution_notes": "",
+            "screenshot_url": "",
+            "manual_mae": null,
+            "manual_mfe": null,
+            "created_at": "2026-10-12 06:14:10",
+            "updated_at": "2026-10-12 06:14:10",
+            "legs": null,
+            "entries": null,
+            "guardrail_snapshot": "{\"date\":\"2026-10-12\",\"timezone\":\"UTC\",\"evaluated_at\":\"2026-10-12T12:06:01.001Z\",\"account_id\":1,\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":3,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":3,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-12T12:00:00.000Z\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Defaults from the risk engine. 2 closed trades is below the 30-trade minimum the method requires before personal guardrails are derived — Ep 27: \\\"at least 30 to 50 minimum trades just to see anything meaningful\\\", and below that \\\"don't tweak the system at all\\\". These are NOT your personal numbers yet.\",\"guardrails\":{\"max_risk_pct\":1,\"max_trades_day\":3,\"cooldown_min\":30,\"max_consecutive_losses\":2,\"daily_profit_limit_pct\":null,\"daily_loss_limit_pct\":3,\"trade_cap_policy\":{\"max_trades_day\":3,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"daily_profit_limit_pct\":null,\"profit_selected_at\":\"2026-10-12T12:00:00.000Z\",\"rule_date\":\"2026-10-12\",\"timezone\":\"UTC\"},\"size_cap_note\":null,\"basis\":\"Default risk rules and the preselected account trade cap (not enough personal data yet).\"},\"stats\":{\"trades\":2,\"wins\":0,\"losses\":2,\"win_rate\":0,\"net\":-180,\"expectancy_r\":-0.9,\"total_r\":-1.8,\"profit_factor\":0,\"avg_win_r\":0,\"avg_loss_r\":-0.9,\"median_risk\":100},\"user\":{\"trades\":2},\"sample_sufficient\":false,\"min_trades_for_personal_guardrails\":30},\"today\":{\"trades\":3,\"closed\":2,\"realised\":-180,\"r_sum\":-1.8,\"avg_r\":-0.9,\"loss_streak\":2,\"balance\":10000,\"loss_limit\":300,\"balance_basis\":\"day-start realised journal equity\"},\"profit_stop\":{\"enabled\":false,\"limit_pct\":null,\"limit_amount\":null,\"realised_amount\":-180,\"selected_at\":\"2026-10-12T12:00:00.000Z\",\"balance_basis\":\"day-start realised journal equity\",\"timezone\":\"UTC\"},\"persistence\":{\"entry_count_basis\":\"monotonic observed journal entries plus server admissions, not inferred historical permission\",\"journal_entries\":3,\"retained_stops\":[\"consecutive_losses\",\"max_trades_day\"]},\"breaches\":[{\"rule\":\"max_trades_day\",\"detail\":\"3 entries today — your preselected cap is 3.\"},{\"rule\":\"consecutive_losses\",\"detail\":\"2 consecutive closed losses today — stop for this rule day.\"},{\"rule\":\"post_loss_cooldown\",\"detail\":\"After a loss, no new entry until 2026-10-12T12:31:01.000Z (30-minute cooldown).\",\"until\":\"2026-10-12T12:31:01.000Z\"},{\"rule\":\"post_loss_reflection\",\"pending_ids\":[1,4],\"detail\":\"2 observed loss(es) need the three-line post-loss review: what happened, rule/mistake or explicit followed-plan none, what differently. A pause alone is not completed writing.\"},{\"rule\":\"pre_market_routine\",\"cycle_id\":null,\"next_step\":\"setup\",\"detail\":\"Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.\"}],\"status\":\"stop\",\"remaining_trades\":0,\"post_loss\":{\"last_loss_trade_id\":1,\"last_loss_at\":\"2026-10-12T12:01:01.000Z\",\"entry_tf\":null,\"entry_tf_required\":true,\"cooldown_until\":\"2026-10-12T12:31:01.000Z\",\"next_candle_until\":null},\"message\":\"Stand down: 3 entries today — your preselected cap is 3. 2 consecutive closed losses today — stop for this rule day. After a loss, no new entry until 2026-10-12T12:31:01.000Z (30-minute cooldown). 2 observed loss(es) need the three-line post-loss review: what happened, rule/mistake or explicit followed-plan none, what differently. A pause alone is not completed writing. Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.\",\"permission\":{\"allowed\":false,\"can_override\":true,\"state\":\"stopped\"},\"session_time\":{\"account_id\":1,\"advisory\":true,\"evaluated_at\":\"2026-10-12T12:06:01.001Z\",\"timezone\":\"UTC\",\"saved_limit_minutes\":null,\"scope\":\"Manual marker only, not measured broker/chart screen time or execution permission\",\"state\":\"off\",\"limit_minutes\":null,\"elapsed_minutes\":null,\"started_at\":null,\"ended_at\":null,\"message\":\"Session-duration warning is Off (optional).\"},\"post_loss_journal\":{\"pending_count\":2,\"pending\":[{\"id\":1,\"user_id\":1,\"account_id\":1,\"rule_date\":\"2026-10-12\",\"obligation_key\":\"6210a71f372dee601b02020880842da9e03461f4a5c3e0318bfd4c0e32ca8b1d\",\"loss_trade_id\":1,\"observed_at\":\"2026-10-12T12:01:01.000Z\",\"snapshot\":{\"id\":1,\"user_id\":1,\"account_id\":1,\"symbol\":\"DECLARED_STOCK\",\"status\":\"closed\",\"opened_at\":\"2026-10-12T12:00:00.000Z\",\"closed_at\":\"2026-10-12T12:01:01.000Z\",\"net_pnl\":-100,\"r_multiple\":-1,\"entry\":100,\"exit\":99,\"stop\":99,\"target\":102,\"size\":100,\"fees\":0,\"emotion_before\":\"Old recalled calm\",\"emotion_after\":\"\"},\"completed_at\":null,\"reflection_json\":null,\"completion_source\":null,\"reflection\":null},{\"id\":4,\"user_id\":1,\"account_id\":1,\"rule_date\":\"2026-10-12\",\"obligation_key\":\"55d3d0d1c58fd5f790f1dc3f7f9d1841ad44de8a1dcb4c6fce806bfa0284d8b8\",\"loss_trade_id\":2,\"observed_at\":\"2026-10-12T12:06:01.001Z\",\"snapshot\":{\"id\":2,\"user_id\":1,\"account_id\":1,\"symbol\":\"DECLARED_STOCK\",\"status\":\"closed\",\"opened_at\":\"2026-10-12T12:06:01.001Z\",\"closed_at\":\"2026-10-12T11:00:00.000Z\",\"net_pnl\":-80,\"r_multiple\":-0.8,\"entry\":100,\"exit\":99.2,\"stop\":99,\"target\":102,\"size\":100,\"fees\":0,\"emotion_before\":\"Recalled fear\",\"emotion_after\":\"\"},\"completed_at\":null,\"reflection_json\":null,\"completion_source\":null,\"reflection\":null}],\"completed_count\":0,\"timezone\":\"UTC\",\"rule_date\":\"2026-10-12\",\"scope\":\"Observed current-day known losses, required writing; not a broker-time entry violation or all historical incomplete journals\"},\"routine\":{\"account_id\":1,\"state\":\"setup_required\",\"complete\":false,\"cycle\":null,\"order\":[\"calendar\",\"plan\",\"charts\",\"meditation\",\"check_in\"],\"steps\":[],\"next_step\":\"setup\",\"message\":\"Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.\",\"scope\":\"Personal preparation requirement, not broker-hours or market permission\"},\"capture_basis\":\"recording-time state, not an inferred historic entry violation\"}",
+            "entry_permission": "record_only",
+            "override_reason": null,
+            "strategy_version": null,
+            "entry_confluences": null,
+            "entry_confluences_source": null,
+            "entry_confluences_recorded_at": null,
+            "session_label": "London/NY Overlap",
+            "hour": 13,
+            "weekday": "Mon",
+            "weekday_index": 0,
+            "day": "2026-10-12",
+            "close_day": "2026-10-12",
+            "dir_sign": 1,
+            "is_win": false,
+            "is_loss": true,
+            "is_be": false,
+            "tags_arr": [],
+            "mistakes_arr": [],
+            "hold_minutes": 0,
+            "risk_used": 100,
+            "legs_n": 0,
+            "weighted_exit": null,
+            "execution_review": {
+              "state": "unreviewed",
+              "grade": "Unreviewed",
+              "score": null,
+              "reasons": [
+                "Execution basis: self-reported journal evidence, not broker-verified adherence.",
+                "Recorded rule adherence 5/5: not acknowledged for the current record; provisional only.",
+                "Stop honour unreviewed/invalid: not inferred from movement, realised R, default zero or a legacy row.",
+                "Execution grade withheld until an actual closed journal and complete valid self-review exist.",
+                "Realised P&L/R, planned R:R, session and MAE/MFE award no execution points; no sizing or permission effect."
+              ],
+              "basis": "self_reported_execution",
+              "rubric_version": "execution-v1",
+              "execution_quality": "unreviewed",
+              "loss_quality": "unknown",
+              "outcome": {
+                "state": "known",
+                "kind": "loss",
+                "net_pnl": -100,
+                "r_multiple": -1,
+                "basis": "recorded_realised_net_pnl"
+              },
+              "evidence": {
+                "adherence": null,
+                "stop_honoured": null,
+                "stop_honoured_source": null,
+                "stop_honoured_recorded_at": null
+              },
+              "retrospective": true,
+              "broker_verified": false,
+              "entry_setup_grade": "B",
+              "record_revision": "bba6bdb273eee114ebe38ce7e403919a50a5d243a53a973742c20369d019ddd4"
+            },
+            "journal": {
+              "state": "incomplete",
+              "complete": false,
+              "missing": [
+                "emotion_before",
+                "emotion_after",
+                "execution_notes",
+                "lesson",
+                "mistakes_or_explicit_none",
+                "explicit_review_acknowledgement"
+              ],
+              "reflection_required": true,
+              "reviewed_at": null,
+              "scope": "Explicit core review of the current journal record; not broker-time emotion provenance, screenshots, confluences or whole-course completeness"
+            },
+            "entry_confluence_review": {
+              "state": "unknown",
+              "labels": null,
+              "source": null,
+              "recorded_at": null,
+              "entry_time_verified": false,
+              "revision": "fc489127fa079dece390a110bb18850cd47be527ae09648155755c906de76c71",
+              "basis": "Human-declared market/setup reasons only; declaration/receiving time is NOT original entry-time or broker proof."
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "response failure503 rolls back auto-tag and capture, financial truth unchanged",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "data": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/trades/5/emotions/entry</pre>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "label": "actual owned delete cascades child evidence only, no recreated phantom journal",
+      "passed": false
+    }
+  ],
+  "scope": "M89 owned event/response API: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

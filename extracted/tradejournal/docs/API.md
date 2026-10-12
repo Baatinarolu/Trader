@@ -600,4 +600,82 @@ restore budget5000 labels/request, explicit omission warning above—not clippin
 Trade labels themselves also populate choices. CSV does not carry unused choices;
 JSON is the full vocabulary backup. Historical insertion is not upsert/deduping.
 Existing20MB selected-file/25MB body limits unchanged. UI presents warnings without
-auto-closing/refreshing a warning-bearing restore. M89 capture/M106/M111/M112 open.
+auto-closing/refreshing a warning-bearing restore. M89 adds separate app-timed emotion evidence; M106/M111/M112 open.
+
+
+## M89 — first APP emotion observations/responses
+
+No broker connection: server app-record/response timing and human declaration
+only, **broker_verified:false** always. Five-minute window is APP policy, not a
+course quotation, mental-state verification, fresh M106 readiness or permission.
+Additive child tables `trade_emotion_events` and `trade_emotion_responses`; no new
+trade columns or historical/legacy backfill. One response/event, DB UPDATE facts
+immutable, parent FK deletion cascades. Not a cryptographic/admin-tamper-proof vault.
+
+- `GET /trades/:id/emotions` returns owned canonical trade/account IDs,
+  `saved_record`, `entry`, `exit`, `history`, `legacy`. Required displayed revision
+  includes all63 current trade fields and selected event/response facts.
+- `POST /trades/:id/emotions/entry` or `/exit` accepts **only**
+  `{event_id:displayed_id|null,emotion:nonblank_string|null,revision:displayed_sha}`.
+  Named state1–100 single-line characters; null explicitly unknown. No client
+  source/clock/owner/context/eligibility input. Auth required; missing/foreign/
+  noncanonical ID404, malformed400, stale/different first-answer replacement409,
+  premature exit409, real storage failure503. Same first answer/current revision
+  idempotent. Named answer atomically auto-tags the corresponding compatibility
+  field; null does not turn old text into a named captured answer.
+
+Actual `POST /trades` prospective admission and guarded PUT reopen observe entry
+AFTER financial commit. Actual open-to-closed PUT/close observes exit after commit.
+Financially written row is captured inside its transaction; optional observer
+re-checks current saved context/status. Return optional `emotion_prompt:{phase,
+trade_id,account_id,event_id}`/`emotion_warnings`; failed/changed-context observation
+warns, never undoes finance. Record-only/history/import/correction does not mint
+fresh entry proof. Response-store503 rolls back answer/auto-tag, not the earlier
+financial transition. Core/manual journal text may change later; first answer does not.
+
+Each phase exposes state, nullable emotion/event_id, source, revision, server
+app_observed_at/answered_at, nullable delay_ms, current_context, eligible,
+window_ms300000, recorded_context and basis. Sources app_entry/app_close/
+retrospective/imported; states timely/late/unknown/pending/retrospective/imported/
+prior/unavailable. Freshness requires valid owned phase/source/context and
+canonical non-future clocks, app observation within5min of saved financial clock,
+first answer within5min of observation. Entry answered while still open only;
+a valid earlier answer survives later close, after-close answer stays late.
+Changed finance/reopen/account preserves original context/words as prior. Null,
+missing/declined, bad clocks/context and late/imported history never become proof.
+Manual event_id:null is explicitly retrospective, not a timing backfill.
+
+`GET /analytics` primary `by_emotion` is closed-only eligible server-annotated
+entry reports, plus `emotion_coverage`. Old text compatibility segmentation is
+`by_emotion_unverified`, labelled timing-unverified, not automatically promoted.
+Primary rows expose n, known/unavailable net counts, known wins/losses/breakeven,
+known-outcome win denominator, nullable all-n net/mean-R and known consistent-R
+count. Unknown/inconsistent outcomes not0 or infinity. sample_floor30/sample_ready
+is review count only, not causality/edge/permission. Coach/briefing use the same
+server child annotations; mutually exclusive descriptive regex groups, no causal
+dollar loss or sizing veto; the actual card labels known subgroup dollars recorded
+group net, not causal impact. Other analytics numerics/insights remain compatibility
+output, not newly certified. No70% promise, floor or geometry change.
+
+JSON trade field `emotion_events:{version:1,entries:[{phase,emotion,source,
+app_observed_at,answered_at,recorded_context,historical?}],unavailable_events}`;
+CSV dedicated `emotion_events_json` cell (proper CSV escaping). At most50 portable
+entries/trade. First responses, including null unknown, survive; no-answer pending
+observations aren't portable verified workflow. Import forces actual destination
+IDs/owner/account, source imported/new server receipt, with `received_at` and
+null verified app_observed_at/answered_at/delay_ms. Valid old source/clocks/context
+are in `historical`, explicitly unverified; subsequent export/import retains
+original declarations, never replaces them with receiving context. Original IDs
+confer no ownership. Original context budget8KB, known primitive fields with
+strings<=2048; invalid clocks/context omitted with warnings, never authority.
+
+Invalid optional evidence produces bounded `emotion_warnings` without rejecting
+truthful financial import. Real optional import-store failure atomically rolls
+back financial/evidence mapping. Capture-table read outage allows JSON/CSV finance
+backup with `emotion_events:{version:1,entries:[],unavailable:true,
+unavailable_events:null}`; omitted corrupt events counted. Restore warns on these
+markers rather than fabricating lost history. Actual CSV dialog/Settings JSON/CSV
+show warning-bearing success without automatic dismissal/refresh.20MB selected
+file/25MB request limits unchanged; repeat historical restore can duplicate trades.
+Captures never complete core/post-loss writing, execution grade, admission, caps,
+routine or risk; optional exit capture/decline is followed by required writing.

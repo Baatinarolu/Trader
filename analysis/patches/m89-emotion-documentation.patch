@@ -1,0 +1,257 @@
+diff --git a/README.md b/README.md
+index 2261b15..50457e8 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,46 @@
+ # TradeJournal Pro
+ 
++## M89 — timely APP emotional-state reports (2026-10-12)
++
++After an admitted new/reopened trade is saved, answer **What emotion drove this
++entry?**; after the actual close is saved, answer **How do you feel after getting
++out?**. Start blank, name the state honestly or explicitly choose unknown; record
++later/close does not infer none. The optional exit popup then leads to still-required
++core/post-loss writing. Save truthful financial edits first. Review retained first
++answers/context/history via **Emotion provenance** in the log, saved form, core or
++day review; later journal text cannot replace that original answer/time.
++
++**Five-minute APP policy, not a course quotation or broker-time proof.** The server
++knows app-record/response clocks, not actual execution or your original mental
++state. Entry answered after close stays late, even inside five minutes. Old text,
++late/unknown/retrospective/imported/prior/unavailable evidence is not a timely
++capture. Optional storage outage cannot undo a financial entry/close or complete
++required writing. Captures never grant entry, reset caps/preparation or grade/size
++risk; M106's fresh four-question gate remains open.
++
++**Analytics → Segments** separates app-window entry self-reports, excluded-state
++coverage and timing-unverified legacy text. Known-outcome denominators and unknown
++net/R are explicit in the new cohort. Below30 is descriptive;30+ still does not
++prove causality, predictive edge or sizing permission. No causal dollar “cost” or
++70% win-rate promise. Existing engine/risk/targets/stops/RR and M103 n>=5 unchanged.
++
++JSON `emotion_events` and CSV `emotion_events_json` retain first named/null reports
++and declared old context/clocks. Restores get actual new owned IDs, imported source
++and a new **receiving** clock, never verified old app/answer clocks/delay. Old
++metadata/IDs remain unverified declarations. Invalid optional data warns without
++vetoing truthful finance; actual import-store failure rolls back the request.
++Missing capture storage still permits financial backup with explicit unavailable
++markers. Warning-bearing CSV/Settings restores stay visible. App budgets:100-character
++single-line state,50 history entries/trade,8KB original context/2048-character
++primitive strings;20MB selected-file/25MB body limits unchanged. Repeated restore
++can duplicate trades, not an upsert.
++
++Measured M89 **170/0 across13** actual auth/SQL/DOM probes; parent migration14/0;
++M88 reasons160/0, execution260/0, routine321/0. Ledger **132=92 done/3 partial/37TODO**.
++M106/M111/M112 still open, M108 partial. Inherited/migration/provider/raw/native/DOM
++negatives retained separately, not an all-green production/broker/human claim.
++See `analysis/M89-TIMELY-EMOTION-CAPTURE.md` in the delivery ZIP.
++
+ ## M88 — distinct entry confluences (2026-10-12)
+ 
+ Use **Entry reasons** in the trade log or review link in the saved financial form,
+@@ -15,7 +56,7 @@ current revision. Unseen edits409 require deliberate reload; storage503 retains
+ the old field/time and finance. Only the new confluence columns are changed.
+ Human/imported source and server declaration/receiving time are shown: **not
+ verified original entry-time/broker/causal intent proof**, possibly retrospective.
+-M89 fresh emotion remains open. Labels are separate from tags, mistakes, entry
++M89 adds separate app-timed self-report provenance, not confluence timing proof. Labels are separate from tags, mistakes, entry
+ models/checklists, execution grades and HTF/MTF/LTF images; nothing backfilled.
+ 
+ **Analytics → Segments → Entry confluences** shows closed-trade descriptive
+@@ -72,7 +113,7 @@ automatic large-backup batching or proof backfill.
+ 
+ Measured M87:226/0 across9 actual pure/auth/SQL/DOM probes; literal clocks and tiny
+ raster protocol fixtures, not real chart screenshots. Prior execution260/0 and
+-routine321/0; exact ledger132=90done/3partial/39TODO. M88/M89 remain open. Prepared
++routine321/0; historical M87 ledger132=90done/3partial/39TODO (M88/M89 then open; now applied). Prepared
+ parent/current native Bots205/1 both (20 synthetic parity fills,0 mismatches;
+ inherited>20 sample floor), negatives kept rather than padded. Whole-app smoke
+ 22/22 conditional DOM views,0 style/console,8 canvas limits, observed exit0; not
+@@ -411,7 +452,7 @@ instruction to resize/change strategy. No older completion is fabricated.
+ 
+ M108 is **partial**: this mandatory routine timer is not the full Sanctuary presets,
+ ambient audio, intention, toolkit or independent session-log/progress feature.
+-M89 capture provenance, M106 fresh in-session questions, M111 fail-closed news and
++M89 app-timed self-report provenance is separate from this routine. M106 fresh in-session questions, M111 fail-closed news and
+ M112 allowed hours remain open. See [docs/GUARDRAILS.md](docs/GUARDRAILS.md) and
+ [docs/API.md](docs/API.md#pre-market-routine).
+ 
+diff --git a/docs/API.md b/docs/API.md
+index b0c1ad8..2921771 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -600,4 +600,82 @@ restore budget5000 labels/request, explicit omission warning above—not clippin
+ Trade labels themselves also populate choices. CSV does not carry unused choices;
+ JSON is the full vocabulary backup. Historical insertion is not upsert/deduping.
+ Existing20MB selected-file/25MB body limits unchanged. UI presents warnings without
+-auto-closing/refreshing a warning-bearing restore. M89 capture/M106/M111/M112 open.
++auto-closing/refreshing a warning-bearing restore. M89 adds separate app-timed emotion evidence; M106/M111/M112 open.
++
++
++## M89 — first APP emotion observations/responses
++
++No broker connection: server app-record/response timing and human declaration
++only, **broker_verified:false** always. Five-minute window is APP policy, not a
++course quotation, mental-state verification, fresh M106 readiness or permission.
++Additive child tables `trade_emotion_events` and `trade_emotion_responses`; no new
++trade columns or historical/legacy backfill. One response/event, DB UPDATE facts
++immutable, parent FK deletion cascades. Not a cryptographic/admin-tamper-proof vault.
++
++- `GET /trades/:id/emotions` returns owned canonical trade/account IDs,
++  `saved_record`, `entry`, `exit`, `history`, `legacy`. Required displayed revision
++  includes all63 current trade fields and selected event/response facts.
++- `POST /trades/:id/emotions/entry` or `/exit` accepts **only**
++  `{event_id:displayed_id|null,emotion:nonblank_string|null,revision:displayed_sha}`.
++  Named state1–100 single-line characters; null explicitly unknown. No client
++  source/clock/owner/context/eligibility input. Auth required; missing/foreign/
++  noncanonical ID404, malformed400, stale/different first-answer replacement409,
++  premature exit409, real storage failure503. Same first answer/current revision
++  idempotent. Named answer atomically auto-tags the corresponding compatibility
++  field; null does not turn old text into a named captured answer.
++
++Actual `POST /trades` prospective admission and guarded PUT reopen observe entry
++AFTER financial commit. Actual open-to-closed PUT/close observes exit after commit.
++Financially written row is captured inside its transaction; optional observer
++re-checks current saved context/status. Return optional `emotion_prompt:{phase,
++trade_id,account_id,event_id}`/`emotion_warnings`; failed/changed-context observation
++warns, never undoes finance. Record-only/history/import/correction does not mint
++fresh entry proof. Response-store503 rolls back answer/auto-tag, not the earlier
++financial transition. Core/manual journal text may change later; first answer does not.
++
++Each phase exposes state, nullable emotion/event_id, source, revision, server
++app_observed_at/answered_at, nullable delay_ms, current_context, eligible,
++window_ms300000, recorded_context and basis. Sources app_entry/app_close/
++retrospective/imported; states timely/late/unknown/pending/retrospective/imported/
++prior/unavailable. Freshness requires valid owned phase/source/context and
++canonical non-future clocks, app observation within5min of saved financial clock,
++first answer within5min of observation. Entry answered while still open only;
++a valid earlier answer survives later close, after-close answer stays late.
++Changed finance/reopen/account preserves original context/words as prior. Null,
++missing/declined, bad clocks/context and late/imported history never become proof.
++Manual event_id:null is explicitly retrospective, not a timing backfill.
++
++`GET /analytics` primary `by_emotion` is closed-only eligible server-annotated
++entry reports, plus `emotion_coverage`. Old text compatibility segmentation is
++`by_emotion_unverified`, labelled timing-unverified, not automatically promoted.
++Primary rows expose n, known/unavailable net counts, known wins/losses/breakeven,
++known-outcome win denominator, nullable all-n net/mean-R and known consistent-R
++count. Unknown/inconsistent outcomes not0 or infinity. sample_floor30/sample_ready
++is review count only, not causality/edge/permission. Coach/briefing use the same
++server child annotations; mutually exclusive descriptive regex groups, no causal
++dollar loss or sizing veto; the actual card labels known subgroup dollars recorded
++group net, not causal impact. Other analytics numerics/insights remain compatibility
++output, not newly certified. No70% promise, floor or geometry change.
++
++JSON trade field `emotion_events:{version:1,entries:[{phase,emotion,source,
++app_observed_at,answered_at,recorded_context,historical?}],unavailable_events}`;
++CSV dedicated `emotion_events_json` cell (proper CSV escaping). At most50 portable
++entries/trade. First responses, including null unknown, survive; no-answer pending
++observations aren't portable verified workflow. Import forces actual destination
++IDs/owner/account, source imported/new server receipt, with `received_at` and
++null verified app_observed_at/answered_at/delay_ms. Valid old source/clocks/context
++are in `historical`, explicitly unverified; subsequent export/import retains
++original declarations, never replaces them with receiving context. Original IDs
++confer no ownership. Original context budget8KB, known primitive fields with
++strings<=2048; invalid clocks/context omitted with warnings, never authority.
++
++Invalid optional evidence produces bounded `emotion_warnings` without rejecting
++truthful financial import. Real optional import-store failure atomically rolls
++back financial/evidence mapping. Capture-table read outage allows JSON/CSV finance
++backup with `emotion_events:{version:1,entries:[],unavailable:true,
++unavailable_events:null}`; omitted corrupt events counted. Restore warns on these
++markers rather than fabricating lost history. Actual CSV dialog/Settings JSON/CSV
++show warning-bearing success without automatic dismissal/refresh.20MB selected
++file/25MB request limits unchanged; repeat historical restore can duplicate trades.
++Captures never complete core/post-loss writing, execution grade, admission, caps,
++routine or risk; optional exit capture/decline is followed by required writing.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index 1af75cb..a10bce5 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -17,7 +17,7 @@ not assumed skipped or complete; reused images/equivalent frames flagged rather
+ than3 independent views. Unsafe legacy remains stored/unassigned but is not
+ rendered/copied into portable backups; server never fetches external image URLs.
+ 
+-M88/M89/M106/M111/M112 remain TODO, M108 PARTIAL. Exact132=90done/3partial/39TODO;
++Historical M87 delivery: M88/M89 were then TODO (now applied); M106/M111/M112 remain TODO, M108 PARTIAL. Historical132=90done/3partial/39TODO;
+ course floor30, deliberate M103 n>=5, B/C tradeability, checklist/entry weights,
+ stops/targets/geometry/RR/default risk/factors untouched. No70% edge, provider,
+ broker, actual meditation/human or production claims. See report in delivery ZIP.
+@@ -183,7 +183,7 @@ responsible for the selected session ceiling outside the app; no broker is conne
+ 
+ A prospective new entry/reopen requires an explicit nonblank named emotional state.
+ It is input capture, **not the four-question calm/clear state gate** (M106) or verified
+-entry-time emotion provenance (M89). Already-executed/open/historical truth can be
++M89 app-record/first-response timing (not broker-time emotion verification). Already-executed/open/historical truth can be
+ recorded even when the state was never captured; do not invent an emotion afterward.
+ 
+ Closing a position is **never refused because reflection is missing**. The actual
+@@ -226,7 +226,7 @@ are retained even while the new writing state is unavailable.
+ 
+ **"Core complete" is deliberately scoped to the fields above.** It does not claim
+ all course screenshots/confluences/timing/routine/state checks are implemented.
+-M87/M88/M89/M106 and all other unresolved findings stay visible. M94 is now separately implemented with the actual M64 workflow; core trade writing alone does not satisfy it.
++M87/M88/M89 are separately implemented evidence scopes; M106 and all other unresolved findings stay visible. M94 is now separately implemented with the actual M64 workflow; core trade writing alone does not satisfy it.
+ 
+ ## Pre-market routine and daily preparation evidence (M14/M64/M94)
+ 
+@@ -324,8 +324,9 @@ financial close/correction/deletion/import and record-only entries remain legal.
+ ## Scope still open
+ 
+ M108's full Sanctuary presets/ambient/intention/toolkit/independent session log
+-and progress remain partial beyond this routine timer. M111's news fail-closed policy, M112's time restrictions, M89's verified emotion
+-capture timing, M106's four-question state gate and all other unresolved findings
++and progress remain partial beyond this routine timer. M89 adds app-timed human
++self-report provenance, not broker/mental-state verification. M111's news fail-closed
++policy, M112's time restrictions, M106's four-question state gate and all other unresolved findings
+ stay open. **Correction:** M116 is already classified APPLIED in the ledger; the
+ prior guide/summaries incorrectly listed it open. No new closure/retuning is counted.
+ M84/M85 complete their scoped input-capture/manual-marker gaps, not adaptive sizing.
+@@ -368,4 +369,46 @@ record-count review annotation, not proof of edge/known-outcome completeness or
+ permission. Retrospective associations don't establish causality/prediction and
+ must not resize risk. Deliberate M103 n>=5/B-C tradeability, existing weights,
+ grades, factors, default risk, stops/targets/RR/geometry all unchanged.
+-M89 fresh emotion and M106/M111/M112 remain TODO; M108 remains partial.
++M89 adds separate app-timed emotion provenance, not confluence capture proof. M106/M111/M112 remain TODO; M108 remains partial.
++
++
++## M89 — capture is evidence, NEVER authority or required-writing completion
++
++After saved admitted entry/reopen, the app offers a blank first-state prompt;
++after truthful close, it offers an exit-state prompt, then the still-required
++core/post-loss review on answer/decline. Server clocks/current finance protect
++first app facts, not real execution/mental state. Five-minute APP budget is not
++a course quotation or a calmness gate. Before-entry required self-report remains
++separate; M106 fresh questions still TODO. Missing/declined is not none; explicit
++unknown remains unknown. No emotion/mistake/tag/model/outcome backfill.
++
++Financial transition commits first. Optional observation failure warns, never
++rolls back finance, refunds a cap or lets a closed trade pretend it never lost.
++Answer503 rolls back only response/compatibility auto-tag; actual import-store
++failure rolls back that import atomically. First response immutable via strict
++owned revision/API and DB UPDATE triggers. Ordinary manual/core edits remain
++retrospective and cannot rewrite first facts. Deliberate deletion cascades; no
++sealed/admin-tamper-proof vault claim. Corrected/reopened/moved-account prior
++history survives but cannot be credited to a new current position. Premature
++exit409; entry first answered after close remains late, even within5minutes.
++
++Capture-only primary Analytics/Coach uses server-owned child evidence and closed
++trades. Late, unknown, pending, retrospective, imported, prior and unavailable
++excluded with coverage; legacy text labelled separate/unverified. Known net/R
++availability explicit, no unknown-to0. Descriptive self-report comparisons have
++no causal dollar counterfactual, prediction, sizing veto or70% claim.30-trade
++review floor and deliberate M103 n>=5 unchanged;30+ is not edge proof.
++
++Backups preserve first responses/original context as declarations; receiving IDs,
++owner/account/source/time forced new/imported, no original clock/delay/workflow
++replay. Old IDs aren't ownership proof. Invalid optional imports warn while finance
++persists; missing capture store permits financial backup with explicit unavailable
++markers. CSV/Settings warnings stay visible. App budgets100-character single-line
++state,50 portable entries/trade,8KB declared original context/2048-character
++primitive strings are not course rules. Existing20MB file/25MB body limits and
++repeat historical insertion semantics remain. No automatic batching/deduping.
++
++All setup/execution grades, checklist/entry-model weights, default risk/factors,
++geometry/stops/targets/RR, admissions/caps/routine/loss-writing clocks unchanged.
++Current ledger132=92 done/3 partial/37TODO; M30/M103/M108 partial, M106/M111/M112
++open. No broker/provider/pixel/actual-human/meditation/production/edge proof.

@@ -16,6 +16,7 @@ const Routine = require('../routine');
 const Execution = require('../execution-review');
 const Screenshots = require('../screenshots');
 const Confluences = require('../confluences');
+const Emotions = require('../emotions');
 const journalTrade = (t,tz) => ({...P.decorate(t,tz),journal:J.info(t),execution_review:Execution.review(t),entry_confluence_review:Confluences.info(t)});
 const O = require('../options');
 const Exp = require('../exposure');
@@ -347,16 +348,16 @@ router.post('/trades', requireAuth, async (req, res) => {
   }
   const owned = await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id);
   if (!owned) return res.status(404).json({error:'Account not found'});
-  let id, permission;
+  let id, permission, written;
   try {
     if (trade.status === 'open' && body.record_only !== true) {
       try { trade.emotion_before=J.text(body.emotion_before,'Name your emotional state before prospective entry',100); }
       catch(e){throw Guards.inputError(e.message);}
       const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade',overrideReason:body.override_reason},async (store,daily) => {
         const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
-        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,permission:Guards.actionPermission(daily)};
+        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,record:await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id),permission:Guards.actionPermission(daily)};
       });
-      id = out.id; permission = out.permission;
+      id = out.id; permission = out.permission; written=out.record;
     } else {
       const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>{const id=await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')});await Confluences.attachOn(store,req.user.id,id,confluences);return {id};});
       id = out.id; permission = {allowed:false,state:'record_only',can_override:false};
@@ -370,7 +371,8 @@ router.post('/trades', requireAuth, async (req, res) => {
     for (const rc of body.rule_checks) await ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
   }
   const saved = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
-  res.json({ ok: true, permission, confluence_warnings:confluences.warnings, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
+  const emotion=permission?.allowed&&written?await Emotions.observe(req.user.id,written,'entry','app_entry'):{};
+  res.json({ ok: true, permission, ...emotion, confluence_warnings:confluences.warnings, trade: journalTrade(saved, (await settingsOf(req)).timezone) });
 });
 
 // Optional reasons never grant entry, complete core writing or alter execution/risk.
@@ -378,6 +380,10 @@ const confluenceRoute=fn=>async(req,res)=>{try{if(req.params.id&&!/^[1-9]\d*$/.t
 router.get('/confluences',requireAuth,confluenceRoute(req=>Confluences.vocabulary(req.user.id)));
 router.get('/trades/:id/confluences',requireAuth,confluenceRoute(req=>Confluences.read(req.user.id,Number(req.params.id))));
 router.put('/trades/:id/confluences',requireAuth,confluenceRoute(req=>Confluences.change(req.user.id,Number(req.params.id),req.body)));
+
+const emotionRoute=fn=>async(req,res)=>{try{if(!/^[1-9]\d*$/.test(req.params.id))throw Emotions.invalid('Trade not found.',404);res.json(await fn(req));}catch(e){if(e.code==='emotion_capture_invalid')return res.status(e.status).json({error:e.message,code:e.code});return res.status(503).json({error:'Optional emotion evidence unavailable; financial truth unchanged.'});}};
+router.get('/trades/:id/emotions',requireAuth,emotionRoute(req=>Emotions.read(req.user.id,Number(req.params.id))));
+router.post('/trades/:id/emotions/:phase',requireAuth,emotionRoute(req=>Emotions.answer(req.user.id,Number(req.params.id),req.params.phase,req.body)));
 
 router.put('/trades/:id', requireAuth, async (req, res) => {
   const id = Number(req.params.id);
@@ -391,12 +397,13 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
   catch (e) { return res.status(400).json({ error: e.message }); }
   const accountId = num(merged.account_id,existing.account_id);
   if (!await db.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(accountId,req.user.id)) return res.status(404).json({error:'Account not found'});
+  let written;const write=async(store,fields)=>{await T.update(store,req.user.id,id,fields);return store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id);};
   try {
     if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
       try { trade.emotion_before=J.text(req.body.emotion_before,'Name your current emotional state before reopening',100); }
       catch(e){throw Guards.inputError(e.message);}
-      await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>T.update(store,req.user.id,id,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
-    } else await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,{...trade,account_id:accountId}));
+      written=await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>write(store,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
+    } else written=await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>write(store,{...trade,account_id:accountId}));
   } catch(e) {
     if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
     throw e;
@@ -406,7 +413,9 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
     const ins = await db.prepare('INSERT INTO rule_checks(trade_id,label,passed) VALUES(?,?,?)');
     for (const rc of req.body.rule_checks) ins.run(id, String(rc.label || ''), rc.passed ? 1 : 0);
   }
-  res.json({ ok: true, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
+  const phase=existing.status!=='open'&&trade.status==='open'&&req.body.record_only!==true?'entry':existing.status==='open'&&trade.status==='closed'?'exit':null;
+  const emotion=phase?await Emotions.observe(req.user.id,written,phase,phase==='entry'?'app_entry':'app_close',existing.closed_at||''):{};
+  res.json({ ok: true, ...emotion, trade: journalTrade(await db.prepare('SELECT * FROM trades WHERE id=?').get(id), (await settingsOf(req)).timezone) });
 });
 
 // M87 optional owned visual evidence is independent from financial truth,
@@ -459,12 +468,13 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
   };
   const instruments = await instrumentMap(req.user.id);
   const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
-  await Guards.record(req.user.id,{accountId:existing.account_id,entryTf:trade.entry_tf,action:'journal_close',entityType:'trade',entityId:id},store=>T.update(store,req.user.id,id,trade));
+  const written=await Guards.record(req.user.id,{accountId:existing.account_id,entryTf:trade.entry_tf,action:'journal_close',entityType:'trade',entityId:id},async store=>{await T.update(store,req.user.id,id,trade);return store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id);});
   const fresh = await db.prepare('SELECT * FROM trades WHERE id=?').get(id);
   if (req.body && req.body.notify !== false) {
     notifyEvent(req.user.id, 'trade_closed', `${trade.symbol} ${trade.direction} closed ${fresh.net_pnl >= 0 ? '+' : ''}${fresh.net_pnl} (${fresh.r_multiple}R)${trade.legs_n ? ` · ${trade.legs_n} scale-outs` : ''}`, { trade_id: id, symbol: trade.symbol, net_pnl: fresh.net_pnl, r_multiple: fresh.r_multiple }).catch(() => {});
   }
-  res.json({ ok: true, trade: journalTrade(fresh, (await settingsOf(req)).timezone) });
+  const emotion=existing.status==='open'?await Emotions.observe(req.user.id,written,'exit','app_close'):{};
+  res.json({ ok: true, ...emotion, trade: journalTrade(fresh, (await settingsOf(req)).timezone) });
 });
 
 router.delete('/trades/:id', requireAuth, async (req, res) => {
@@ -544,7 +554,7 @@ router.get('/analytics', requireAuth, async (req, res) => {
     const want = String(f.tag).toLowerCase();
     rows = rows.filter((t) => String(t.tags || '').toLowerCase().split(',').map((x) => x.trim()).includes(want));
   }
-  const decorated = rows.map((t) => P.decorate(t, tz));
+  const decorated = (await Emotions.annotate(rows)).map((t) => P.decorate(t, tz));
   const closed = decorated.filter((t) => t.status !== 'open');
   const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
     || await db.prepare('SELECT * FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC LIMIT 1').get(req.user.id)
@@ -591,7 +601,7 @@ router.get('/coach', requireAuth, async (req, res) => {
     .map((t) => P.decorate(t, tz));
   const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
     || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
-  res.json(Coach.analyse(rows, { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }));
+  res.json(Coach.analyse(await Emotions.annotate(rows), { startingBalance: acc ? acc.starting_balance : 10000, timezone: tz }));
 });
 
 router.get('/briefing', requireAuth, wrap(async (req, res) => {
@@ -599,7 +609,8 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
   const tz = settings.timezone;
   const acc = await accountOr404(req, res);
   if (!acc) return;
-  const rows = (await db.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY COALESCE(closed_at, opened_at)').all(req.user.id, acc.id)).map((t) => P.decorate(t, tz));
+  let rows = (await db.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY COALESCE(closed_at, opened_at)').all(req.user.id, acc.id)).map((t) => P.decorate(t, tz));
+  rows=await Emotions.annotate(rows);
   const todayStr = P.localDateStr(new Date().toISOString(), tz);
   const journalEntry = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(req.user.id, todayStr) || null;
   const symbols = [...new Set([...(settings.focus_symbols || []), ...rows.slice(-25).map((t) => t.symbol)])].slice(0, 12);
@@ -1145,11 +1156,11 @@ router.get('/export/csv', requireAuth, backup(async (req, res) => {
   const tz = (await settingsOf(req)).timezone;
   const f = tradeFilters(req);
   const { where, params, order } = T.listQuery(f);
-  const rows = (await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({...params,user_id:req.user.id}));})).map(t=>({...P.decorate(t,tz),screenshot_views_json:JSON.stringify(t.screenshots)}));
+  const rows = (await db.tx(async tx=>{const store=db.transactionStore(tx);return Emotions.portableRowsOn(store,await Screenshots.portableRowsOn(store,await store.prepare(`SELECT * FROM trades WHERE ${where} ORDER BY ${order}`).all({...params,user_id:req.user.id})));})).map(t=>({...P.decorate(t,tz),screenshot_views_json:JSON.stringify(t.screenshots),emotion_events_json:JSON.stringify(t.emotion_events)}));
   const cols = ['id', 'account_id', 'symbol', 'asset_class', 'direction', 'status', 'opened_at', 'closed_at', 'entry', 'exit', 'stop', 'target',
     'size', 'fees', 'gross_pnl', 'net_pnl', 'risk_amount', 'r_multiple', 'mae_r', 'mfe_r', 'planned_r', 'exit_reason', 'strategy_name',
     'setup_grade', 'entry_model', 'entry_tf', 'entry_evidence', 'session', 'timeframe' , 'timeframes', 'emotion_before', 'emotion_after', 'confidence', 'adherence', 'mistakes', 'tags',
-    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json', 'entry_confluences', 'entry_confluences_source', 'entry_confluences_recorded_at'];
+    'thesis', 'lesson', 'execution_notes', 'notes', 'screenshot_url', 'screenshot_views_json', 'entry_confluences', 'entry_confluences_source', 'entry_confluences_recorded_at','emotion_events_json'];
   const esc = (v) => {
     const s = v === null || v === undefined ? '' : String(v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -1169,7 +1180,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
     strategies: (await db.prepare('SELECT * FROM strategies WHERE user_id=?').all(userId)).map(parseStrategy),
     instruments: await db.prepare('SELECT * FROM instruments WHERE user_id=?').all(userId),
-    trades: await db.tx(async tx=>{const store=db.transactionStore(tx);return Screenshots.portableRowsOn(store,await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId));}),
+    trades: await db.tx(async tx=>{const store=db.transactionStore(tx);return Emotions.portableRowsOn(store,await Screenshots.portableRowsOn(store,await store.prepare('SELECT * FROM trades WHERE user_id=? ORDER BY opened_at').all(userId)));}),
     journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
     goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
     watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
@@ -1202,7 +1213,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
     entry_model: findCol(['entry_model']), entry_tf: findCol(['entry_tf']), entry_evidence: findCol(['entry_evidence']),
     tags: findCol(['tags', 'tag', 'labels']),
     notes: findCol(['notes', 'note', 'comment', 'comments', 'remark']),
-    entry_confluences:findCol(['entry_confluences']), screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
+    emotion_events_json:findCol(['emotion_events_json']), entry_confluences:findCol(['entry_confluences']), screenshot_url: findCol(['screenshot_url']), screenshot_views_json: findCol(['screenshot_views_json']),
     net: findCol(['net_pnl', 'net', 'profit', 'pnl', 'p/l', 'realized_pnl', 'profit_loss', 'net_profit']),
   };
   if (map.symbol < 0) return res.status(400).json({ error: 'Could not find a symbol/ticker column in the CSV.' });
@@ -1254,7 +1265,7 @@ router.post('/import/csv', requireAuth, async (req, res) => {
         }
         const media=Screenshots.parsePortable(map.screenshot_views_json>-1?r[map.screenshot_views_json]:undefined,{json:true});
         trade.screenshot_url=Screenshots.legacyImport(map.screenshot_url>-1?r[map.screenshot_url]:undefined,media);
-        collected.push({trade,media,confluences:Confluences.optional(map.entry_confluences>-1?r[map.entry_confluences]:undefined,{json:true})});
+        collected.push({trade,media,confluences:Confluences.optional(map.entry_confluences>-1?r[map.entry_confluences]:undefined,{json:true}),emotions:Emotions.parsePortable(map.emotion_events_json>-1?r[map.emotion_events_json]:undefined,{json:true})});
         inserted++;
       } catch (e) { skipped++; if (errors.length < 5) errors.push(`Row ${i + 1}: ${e.message}`); }
     }
@@ -1268,9 +1279,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
 
 // Actual transaction insert IDs (never raw backup IDs), with optional media
 // warnings separate from financial parsing. Storage failure rolls back together.
-function mediaFeedback(collected){return {confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
 async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[]){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
-  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});}
+  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
   for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);return n;
 });}
 
@@ -1322,7 +1333,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
       if (!trade.account_id) continue;
       const media=Screenshots.parsePortable(t.screenshots);
       trade.screenshot_url=Screenshots.legacyImport(t.screenshot_url,media);
-      collected.push({trade,media,confluences:Confluences.optional(t.entry_confluences)});
+      collected.push({trade,media,confluences:Confluences.optional(t.entry_confluences),emotions:Emotions.parsePortable(t.emotion_events)});
       inserted++;
     }
     for (const s of (data.strategies || [])) {

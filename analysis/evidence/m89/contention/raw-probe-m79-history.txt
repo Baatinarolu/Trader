@@ -1,0 +1,26 @@
+ok additive durable guardrail event table exists
+ok preexisting journal rows have NULL provenance, never invented admission
+ok observed cap stop is durably captured
+ok re-reading identical stop is deduplicated, not a new violation every poll
+FAIL blocked entry attempt is committed to audit even though no trade is written {"status":400,"kinds":["breach"]}
+ok day review returns captured rule/details with server date/UTC context
+FAIL captured rule days are discoverable even without written review [{"rule_date":"2026-10-11","events":1,"overrides":0}]
+ok another user never receives captured first-user events
+FAIL account-filtered review does not mix another account into the day undefined
+FAIL trade deletion/settings change cannot erase or recompute the captured stop 1
+FAIL tomorrow clear state does not overwrite yesterday history {"tomorrow":"stop","old":1}
+FAIL admitted record carries actual server snapshot and permission provenance {"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+ok historical record cannot forge server admission snapshot
+ok editing history cannot rewrite immutable server provenance
+ok permission read outage still allows honest closed record, explicitly unknown/no permit
+ok JSON imported open position stays record-only, not permission
+ok CSV imported position stays record-only, never guessed a historical breach
+ok research signal explicitly carries no live permission or inferred breach
+ok actual day-review renderer shows captured rule and UTC label
+ok empty history never claims older trades followed rules
+ok rendered rule/reason text is escaped, not executable HTML
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:14976:13
+    at async req (/home/user/Trader/analysis/probe-m79-history.js:23:61)
+    at async /home/user/Trader/analysis/probe-m79-history.js:57:15
+M90 history: 15 passed, 7 failed

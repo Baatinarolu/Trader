@@ -1,5 +1,46 @@
 # TradeJournal Pro
 
+## M89 — timely APP emotional-state reports (2026-10-12)
+
+After an admitted new/reopened trade is saved, answer **What emotion drove this
+entry?**; after the actual close is saved, answer **How do you feel after getting
+out?**. Start blank, name the state honestly or explicitly choose unknown; record
+later/close does not infer none. The optional exit popup then leads to still-required
+core/post-loss writing. Save truthful financial edits first. Review retained first
+answers/context/history via **Emotion provenance** in the log, saved form, core or
+day review; later journal text cannot replace that original answer/time.
+
+**Five-minute APP policy, not a course quotation or broker-time proof.** The server
+knows app-record/response clocks, not actual execution or your original mental
+state. Entry answered after close stays late, even inside five minutes. Old text,
+late/unknown/retrospective/imported/prior/unavailable evidence is not a timely
+capture. Optional storage outage cannot undo a financial entry/close or complete
+required writing. Captures never grant entry, reset caps/preparation or grade/size
+risk; M106's fresh four-question gate remains open.
+
+**Analytics → Segments** separates app-window entry self-reports, excluded-state
+coverage and timing-unverified legacy text. Known-outcome denominators and unknown
+net/R are explicit in the new cohort. Below30 is descriptive;30+ still does not
+prove causality, predictive edge or sizing permission. No causal dollar “cost” or
+70% win-rate promise. Existing engine/risk/targets/stops/RR and M103 n>=5 unchanged.
+
+JSON `emotion_events` and CSV `emotion_events_json` retain first named/null reports
+and declared old context/clocks. Restores get actual new owned IDs, imported source
+and a new **receiving** clock, never verified old app/answer clocks/delay. Old
+metadata/IDs remain unverified declarations. Invalid optional data warns without
+vetoing truthful finance; actual import-store failure rolls back the request.
+Missing capture storage still permits financial backup with explicit unavailable
+markers. Warning-bearing CSV/Settings restores stay visible. App budgets:100-character
+single-line state,50 history entries/trade,8KB original context/2048-character
+primitive strings;20MB selected-file/25MB body limits unchanged. Repeated restore
+can duplicate trades, not an upsert.
+
+Measured M89 **170/0 across13** actual auth/SQL/DOM probes; parent migration14/0;
+M88 reasons160/0, execution260/0, routine321/0. Ledger **132=92 done/3 partial/37TODO**.
+M106/M111/M112 still open, M108 partial. Inherited/migration/provider/raw/native/DOM
+negatives retained separately, not an all-green production/broker/human claim.
+See `analysis/M89-TIMELY-EMOTION-CAPTURE.md` in the delivery ZIP.
+
 ## M88 — distinct entry confluences (2026-10-12)
 
 Use **Entry reasons** in the trade log or review link in the saved financial form,
@@ -15,7 +56,7 @@ current revision. Unseen edits409 require deliberate reload; storage503 retains
 the old field/time and finance. Only the new confluence columns are changed.
 Human/imported source and server declaration/receiving time are shown: **not
 verified original entry-time/broker/causal intent proof**, possibly retrospective.
-M89 fresh emotion remains open. Labels are separate from tags, mistakes, entry
+M89 adds separate app-timed self-report provenance, not confluence timing proof. Labels are separate from tags, mistakes, entry
 models/checklists, execution grades and HTF/MTF/LTF images; nothing backfilled.
 
 **Analytics → Segments → Entry confluences** shows closed-trade descriptive
@@ -72,7 +113,7 @@ automatic large-backup batching or proof backfill.
 
 Measured M87:226/0 across9 actual pure/auth/SQL/DOM probes; literal clocks and tiny
 raster protocol fixtures, not real chart screenshots. Prior execution260/0 and
-routine321/0; exact ledger132=90done/3partial/39TODO. M88/M89 remain open. Prepared
+routine321/0; historical M87 ledger132=90done/3partial/39TODO (M88/M89 then open; now applied). Prepared
 parent/current native Bots205/1 both (20 synthetic parity fills,0 mismatches;
 inherited>20 sample floor), negatives kept rather than padded. Whole-app smoke
 22/22 conditional DOM views,0 style/console,8 canvas limits, observed exit0; not
@@ -411,7 +452,7 @@ instruction to resize/change strategy. No older completion is fabricated.
 
 M108 is **partial**: this mandatory routine timer is not the full Sanctuary presets,
 ambient audio, intention, toolkit or independent session-log/progress feature.
-M89 capture provenance, M106 fresh in-session questions, M111 fail-closed news and
+M89 app-timed self-report provenance is separate from this routine. M106 fresh in-session questions, M111 fail-closed news and
 M112 allowed hours remain open. See [docs/GUARDRAILS.md](docs/GUARDRAILS.md) and
 [docs/API.md](docs/API.md#pre-market-routine).
 
