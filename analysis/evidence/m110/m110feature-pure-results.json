@@ -1,0 +1,172 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 41,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the policy names TWO settings with distinct bounds and says a single knob does not exist",
+      "passed": true
+    },
+    {
+      "label": "the pre-release default is 15 and the post-release default is 45",
+      "passed": true
+    },
+    {
+      "label": "the settle floor is 30 minutes and the block floor is 1",
+      "passed": true
+    },
+    {
+      "label": "the recommendation is labelled a recommendation, not a floor, for the block",
+      "passed": true
+    },
+    {
+      "label": "the doctrine is quoted (15 default, \"at least 15\", the 30–60 settle, the 5/10/30/60 options)",
+      "passed": true
+    },
+    {
+      "label": "the basis states the two clocks, labels the numbers as recommendations and names the one enforced floor",
+      "passed": true
+    },
+    {
+      "label": "the module exports no write path at all",
+      "passed": true
+    },
+    {
+      "label": "both settings are accepted at their bounds (block 60, settle 30)",
+      "passed": true
+    },
+    {
+      "label": "the values he demonstrates are all storable: 5, 10, 15, 30, 60",
+      "passed": true
+    },
+    {
+      "label": "a settle below the 30-minute floor is REFUSED, not silently stored, and says why",
+      "passed": true
+    },
+    {
+      "label": "the refusal message says the two sides are separate, so shortening one cannot shorten the other",
+      "passed": true
+    },
+    {
+      "label": "the old single knob is REFUSED with its own code rather than split for the caller",
+      "passed": true
+    },
+    {
+      "label": "hostile shapes are refused: true, arrays, objects, blanks, 1.5, 0, 241, 1e9",
+      "passed": true
+    },
+    {
+      "label": "a string integer is accepted as that integer, the way the app already reads numeric settings",
+      "passed": true
+    },
+    {
+      "label": "a block below 15 is stored WITH a named warning quoting his recommendation",
+      "passed": true
+    },
+    {
+      "label": "that warning does not touch the settle: the other side is unchanged by it",
+      "passed": true
+    },
+    {
+      "label": "a row stored below the settle floor is CLAMPED UP to 30 on read, never used as stored",
+      "passed": true
+    },
+    {
+      "label": "a row stored below the block minimum is clamped to 1 and both clamps are reported by field",
+      "passed": true
+    },
+    {
+      "label": "each clamp names the stored value, the value used and the reason",
+      "passed": true
+    },
+    {
+      "label": "a missing/legacy row falls back to the episode defaults 15/45 and says so in its sources",
+      "passed": true
+    },
+    {
+      "label": "an unreadable stored value falls back to the default and is reported as a clamp, not guessed",
+      "passed": true
+    },
+    {
+      "label": "a stored value above the maximum is clamped down to 240 on both sides",
+      "passed": true
+    },
+    {
+      "label": "a per-request research pair is honoured only inside the same bounds",
+      "passed": true
+    },
+    {
+      "label": "a release 46–100 minutes in the past is CLEAR (outside the 45-minute settle)",
+      "passed": true
+    },
+    {
+      "label": "a release 1–45 minutes in the past is BLOCKED, on the after side, with the settle window",
+      "passed": true
+    },
+    {
+      "label": "a release due in 1–15 minutes is BLOCKED on the before side with the 15-minute block",
+      "passed": true
+    },
+    {
+      "label": "a release due in 16–100 minutes is CLEAR — the block is 15, not 45",
+      "passed": true
+    },
+    {
+      "label": "the moment of the release counts as blocked, on the before side",
+      "passed": true
+    },
+    {
+      "label": "the boundary is inclusive on both sides (exactly 15 before and exactly 45 after)",
+      "passed": true
+    },
+    {
+      "label": "a 5-minute block does NOT shorten the settle: a release 50 minutes ago is still blocked",
+      "passed": true
+    },
+    {
+      "label": "and the same 5-minute block does not stretch the before side: 6 minutes ahead is clear",
+      "passed": true
+    },
+    {
+      "label": "the recorded failure is now impossible: no plan can produce a 5-minute settle",
+      "passed": true
+    },
+    {
+      "label": "an unparseable date is not a hit and not a miss dressed up as a hit",
+      "passed": true
+    },
+    {
+      "label": "bots/index.js applies the pair through hit() and has no absolute-difference window test left in code",
+      "passed": true
+    },
+    {
+      "label": "bots/index.js has no windowMin identifier left in code (the comment quoting the old line is not a live test)",
+      "passed": true
+    },
+    {
+      "label": "the news check refuses a bare number for both sides and says so",
+      "passed": true
+    },
+    {
+      "label": "the owner module keeps the asymmetric comparison in exactly one exported function and uses no absolute distance",
+      "passed": true
+    },
+    {
+      "label": "the module documents that M111 (calendar failure) is NOT solved here",
+      "passed": true
+    },
+    {
+      "label": "the same stored row produces the same pair twice (deterministic, no clock, no randomness)",
+      "passed": true
+    },
+    {
+      "label": "the detail note interpolates the CONFIGURED numbers, so it cannot describe a window the app is not applying",
+      "passed": true
+    }
+  ],
+  "scope": "M110 module: two clocks, bounds, refusal of the single knob, clamp on read, asymmetry: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

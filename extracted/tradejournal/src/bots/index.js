@@ -31,6 +31,7 @@ const Predict = require('./predict');
 const Cor = require('./correction');
 const Guards = require('./guardrails');
 const StateGate = require('../state-gate');
+const NewsWindow = require('../news-window');   // M110 — two clocks, not one number
 
 /* -------------------------------------------------------------------------
  * M124 — THE ENTRY-SERIES DEPTH THE METHOD READS.
@@ -75,10 +76,20 @@ function currenciesOf(symbol) {
 }
 
 /**
- * High-impact releases inside ±windowMin of now for this symbol's currencies.
- * @returns {Promise<{blackout:string|null, events:Array, window_min:number}>}
+ * M110 — high-impact releases inside the news stand-down, judged ASYMMETRICALLY: a release
+ * that has not printed yet is measured against the pre-release block, one that has printed
+ * against the post-release settle. `NewsWindow.hit()` is the only test; there is no single
+ * `windowMin` here or anywhere else, and a bare number is refused rather than taken to mean
+ * "both sides" (that equivalence is the recorded defect).
+ *
+ * @param {string} symbol
+ * @param {object} pair `NewsWindow.plan()` output (or any `{before_min, after_min}` pair)
+ * @returns {Promise<{blackout:string|null, events:Array, windows:object}>}
  */
-async function newsCheck(symbol, windowMin = 45) {
+async function newsCheck(symbol, pair = NewsWindow.plan(null)) {
+  if (!pair || typeof pair !== 'object' || typeof pair.before_min !== 'number' || typeof pair.after_min !== 'number') {
+    throw NewsWindow.invalid('The news check takes a {before_min, after_min} pair from the account\u2019s two settings — never one number for both sides.', 'news_window_split_required');
+  }
   try {
     const cal = await M.getCalendar();
     const events = (cal && cal.events) || [];
@@ -89,18 +100,29 @@ async function newsCheck(symbol, windowMin = 45) {
       if (!/high/i.test(e.impact || '')) return false;
       const ccy = String(e.currency || '').toUpperCase();
       if (!ccys.some((c) => ccy.includes(c))) return false;
-      return Math.abs(new Date(e.date).getTime() - now) <= windowMin * 60000;
-    }).map((e) => ({ title: e.title, currency: e.currency, time: e.date, impact: e.impact, forecast: e.forecast, previous: e.previous }));
+      return !!NewsWindow.hit(new Date(e.date).getTime(), now, pair);
+    }).map((e) => {
+      const when = NewsWindow.hit(new Date(e.date).getTime(), now, pair);
+      return { title: e.title, currency: e.currency, time: e.date, impact: e.impact, forecast: e.forecast, previous: e.previous, side: when.side, offset_min: when.offset_min, window_min: when.window_min };
+    });
     const upcoming = events.filter((e) => e.date && /high/i.test(e.impact || '') && new Date(e.date).getTime() > now && new Date(e.date).getTime() - now < 6 * 3600e3)
       .filter((e) => ccys.some((c) => String(e.currency || '').toUpperCase().includes(c)))
       .slice(0, 4)
       .map((e) => ({ title: e.title, currency: e.currency, time: e.date, in_minutes: Math.round((new Date(e.date).getTime() - now) / 60000) }));
+    const sides = { before: pair.before_min, after: pair.after_min };
     return {
-      blackout: hits.length ? `${hits.map((h) => `${h.currency} ${h.title}`).join('; ')} — high-impact release inside ±${windowMin} min. Stand down until it prints.` : null,
-      events: hits, upcoming, currencies: ccys, window_min: windowMin,
+      // The numbers in the string are the account's own settings, interpolated rather than
+      // hardcoded, and the side each blocked release is on is named — so the note can never
+      // describe a window the app is not applying.
+      blackout: hits.length ? `${hits.map((h) => `${h.currency} ${h.title}${h.side === 'before' ? ` in ${h.offset_min} min` : ` printed ${h.offset_min} min ago`}`).join('; ')} — inside your news window (${sides.before} min before / ${sides.after} min after a release). ${hits.some((h) => h.side === 'before') ? 'Stand down until it prints.' : 'It has printed — stand down until the settle passes.'}` : null,
+      events: hits, upcoming, currencies: ccys,
+      windows: { before_min: sides.before, after_min: sides.after, source: pair.source || null, clamped: pair.clamped || [] },
     };
   } catch (e) {
-    return { blackout: null, events: [], upcoming: [], currencies: currenciesOf(symbol), window_min: windowMin, error: e.message };
+    // M111 is open and NOT solved here: this branch is unchanged in the one way that matters —
+    // it reports the failure, and `blackout: null` on this path is the fail-open behaviour the
+    // M111 row measures. The pair is echoed so the caller still knows which window was in force.
+    return { blackout: null, events: [], upcoming: [], currencies: currenciesOf(symbol), windows: { before_min: pair.before_min, after_min: pair.after_min, source: pair.source || null, clamped: [], unavailable: true }, error: e.message };
   }
 }
 
@@ -304,9 +326,15 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null };
   const replay = trim > 0 || cut.asOf ? cut : null;
 
+  // M110: the news pair comes from the account's TWO settings, so the account is read
+  // before the calendar check instead of after it (it used to be read lower down, which is
+  // part of why a hardcoded constant was doing the work of a setting).
+  const account = opts.userId ? await Cor.accountOf(opts.userId, opts.accountId) : null;
+  const newsPlan = NewsWindow.plan(account, opts);   // M110 — clamped on read, never one knob
+
   const [momentum, news] = await Promise.all([
     Momentum.analyse(sym, tf, { limit: 600, ...cut, minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.nowMs }),
-    newsCheck(sym, opts.newsWindowMin || 45),
+    newsCheck(sym, newsPlan),
   ]);
 
   // the setup model needs the raw trading-timeframe handle (zones, sweeps, indicators)
@@ -319,7 +347,6 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   const momentumEff = hyst
     ? { ...momentum, bias: hyst.bias, direction: hyst.bias > 0 ? 'bullish' : hyst.bias < 0 ? 'bearish' : 'neutral' }
     : momentum;
-  const account = opts.userId ? await Cor.accountOf(opts.userId, opts.accountId) : null;
   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
 
@@ -329,6 +356,9 @@ async function analyse(symbol, tf = '15m', opts = {}) {
     indicators: series.ind,
     balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
     newsBlackout: news.blackout, minRR: floorRR(opts.minRR),
+    // M62 (surviving half): the note states the windows this account is actually governed
+    // by, interpolated from the settings above, instead of naming no window or a stale one.
+    newsNote: NewsWindow.detail(newsPlan),
     topdown: momentum.topdown, useBreakers: !!opts.useBreakers,          // the method decides whether a side may be armed
     sessionPref: opts.sessionPref || null,   // M26 — the trader's one window
   });

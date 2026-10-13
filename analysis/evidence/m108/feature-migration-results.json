@@ -1,8 +1,8 @@
 {
   "app": "/home/user/Trader/extracted/tradejournal",
   "parent": "/tmp/m108-parent/app",
-  "pass": 21,
-  "fail": 0,
+  "pass": 19,
+  "fail": 2,
   "results": [
     {
       "label": "ACTUAL parent restart isolates inherited lazy M102 default strategy-v1 initialization",
@@ -18,7 +18,14 @@
     },
     {
       "label": "ONLY the practice tables/unique index/owner index/immutability trigger are added; old schema exact",
-      "passed": true
+      "passed": false,
+      "detail": [
+        "idx_practice_sessions_owner",
+        "sqlite_autoindex_practice_sessions_1",
+        "practice_sessions",
+        "practice_timers",
+        "practice_sessions_immutable"
+      ]
     },
     {
       "label": "NO trade column, account default or provenance backfill",
@@ -26,7 +33,10 @@
     },
     {
       "label": "ALL original finance/version/evidence/grade/gate/intention facts exact after the upgrade read",
-      "passed": true
+      "passed": false,
+      "detail": [
+        "accounts"
+      ]
     },
     {
       "label": "the M105 identity/M106 gate/M107 intention reads are byte-identical on the upgraded tree",

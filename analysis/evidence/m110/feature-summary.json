@@ -1,0 +1,119 @@
+{
+  "pass": 258,
+  "fail": 0,
+  "probes": 9,
+  "completed_nonzero": 0,
+  "timeout_no_exit": 0,
+  "summaryless": 0,
+  "scope": "REPORTED completed assertions; literal clocks/journals/DOM only. Two asymmetric news clocks over the app\u2019s own calendar parser, measured on the module, over HTTP, through the engine and its consumers, across a restart, through the settings dialog and through an upgrade of the committed M109 release. The sandbox has no market or calendar network, so the calendar is fed through the app\u2019s own fetch path by a shim and no live-feed, provider, broker, pixel or human proof is claimed. RAW failures/early aborts, DECLARED assumptions and every frozen milestone-only schema negative remain SEPARATE. No claim about what a release does to price.",
+  "runs": [
+    {
+      "name": "pure",
+      "script": "analysis/probe-m110-pure.js",
+      "pass": 41,
+      "fail": 0,
+      "expected_pass": 41,
+      "expected_fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "m110feature-pure.txt",
+      "scope": "M110 module: two clocks, bounds, refusal of the single knob, clamp on read, asymmetry: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+    },
+    {
+      "name": "api",
+      "script": "analysis/probe-m110-api.js",
+      "pass": 40,
+      "fail": 0,
+      "expected_pass": 40,
+      "expected_fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "m110feature-api.txt",
+      "scope": "M110 API: the two news settings, the settle floor, the refused single knob, per-account pair: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+    },
+    {
+      "name": "engine",
+      "script": "analysis/probe-m110-engine.js",
+      "pass": 25,
+      "fail": 0,
+      "expected_pass": 25,
+      "expected_fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "m110feature-engine.txt",
+      "scope": "M110 engine: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+    },
+    {
+      "name": "consumers",
+      "script": "analysis/probe-m110-consumers.js",
+      "pass": 22,
+      "fail": 0,
+      "expected_pass": 22,
+      "expected_fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "m110feature-consumers.txt",
+      "scope": "M110 consumers: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+    },
+    {
+      "name": "freshness",
+      "script": "analysis/probe-m110-freshness.js",
+      "pass": 17,
+      "fail": 0,
+      "expected_pass": 17,
+      "expected_fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "m110feature-freshness.txt",
+      "scope": "M110 freshness: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+    },
+    {
+      "name": "hardening",
+      "script": "analysis/probe-m110-hardening.js",
+      "pass": 40,
+      "fail": 0,
+      "expected_pass": 40,
+      "expected_fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "m110feature-hardening.txt",
+      "scope": "M110 hardening: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+    },
+    {
+      "name": "portable",
+      "script": "analysis/probe-m110-portable.js",
+      "pass": 17,
+      "fail": 0,
+      "expected_pass": 17,
+      "expected_fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "m110feature-portable.txt",
+      "scope": "M110 portability: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+    },
+    {
+      "name": "migration",
+      "script": "analysis/probe-m110-migration.js",
+      "pass": 33,
+      "fail": 0,
+      "expected_pass": 33,
+      "expected_fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "m110feature-migration.txt",
+      "scope": "ACTUAL145-file M109 release parent \u2192 delivered tree on the same database: exactly two added columns with their own CHECKs, every other schema object and inherited fact byte-identical, the parent\u2019s single knob refused rather than mapped, re-open a no-op; synthetic/local, not broker/real-money proof"
+    },
+    {
+      "name": "ui",
+      "script": "analysis/probe-m110-ui.js",
+      "pass": 23,
+      "fail": 0,
+      "expected_pass": 23,
+      "expected_fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "m110feature-ui.txt",
+      "scope": "M110 real DOM: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+    }
+  ]
+}

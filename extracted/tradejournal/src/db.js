@@ -143,6 +143,12 @@ CREATE TABLE IF NOT EXISTS accounts (
   routine_lead_minutes INTEGER NOT NULL DEFAULT 60 CHECK(routine_lead_minutes BETWEEN 1 AND 180),
   routine_order TEXT NOT NULL DEFAULT 'ep17' CHECK(routine_order IN ('ep17','meditation_first')),
   daily_profit_limit_pct REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100)), -- M81 optional, separate from lifetime profit target
+  -- M110: the news stand-down is TWO clocks. The pre-release block and the post-release
+  -- settle are separate settings with separate bounds (this comment carries no semicolon
+  -- on purpose — exec() splits the schema on them). Nothing in the app has a single number
+  -- that sets both, and the settle cannot be stored below its 30-minute floor.
+  news_block_before_min INTEGER NOT NULL DEFAULT 15 CHECK(news_block_before_min BETWEEN 1 AND 240 AND news_block_before_min=CAST(news_block_before_min AS INTEGER)),
+  news_settle_after_min INTEGER NOT NULL DEFAULT 45 CHECK(news_settle_after_min BETWEEN 30 AND 240 AND news_settle_after_min=CAST(news_settle_after_min AS INTEGER)),
   max_drawdown_pct REAL DEFAULT 10.0,
   profit_target_pct REAL DEFAULT 8.0,
   is_default INTEGER DEFAULT 0,
@@ -852,6 +858,11 @@ async function migrate() {
   const optionalProfit = 'REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100))';
   await add('accounts','daily_profit_limit_pct',optionalProfit);
   await add('accounts','max_session_minutes','INTEGER CHECK(max_session_minutes IS NULL OR (max_session_minutes BETWEEN 1 AND 1440 AND max_session_minutes=CAST(max_session_minutes AS INTEGER)))');
+  // M110: two clocks, not one. An existing account was being governed by the engine's
+  // hardcoded symmetric 45; it now gets the episode's own default pair (15 before, 45
+  // after), and the settle can never be migrated or stored below its floor.
+  await add('accounts','news_block_before_min','INTEGER NOT NULL DEFAULT 15 CHECK(news_block_before_min BETWEEN 1 AND 240 AND news_block_before_min=CAST(news_block_before_min AS INTEGER))');
+  await add('accounts','news_settle_after_min','INTEGER NOT NULL DEFAULT 45 CHECK(news_settle_after_min BETWEEN 30 AND 240 AND news_settle_after_min=CAST(news_settle_after_min AS INTEGER))');
   await add('guardrail_day_caps','daily_profit_limit_pct',optionalProfit);
   await add('guardrail_day_caps','profit_selected_at','TEXT');
   for (const table of ['trades','bot_signals']) {

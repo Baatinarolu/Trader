@@ -1,0 +1,350 @@
+{
+  "app": "/tmp/m110-parent/app",
+  "parent": "/tmp/m110-parent/app",
+  "pass": 10,
+  "fail": 23,
+  "results": [
+    {
+      "label": "the ACTUAL 145-file M109 parent is the previous milestone: one symmetric number applied by Math.abs, echoed as ?window=5 and as the 45 default, with no columns and no split",
+      "passed": true
+    },
+    {
+      "label": "the parent’s own source is the recorded defect, read on the parent tree: one windowMin constant and one Math.abs test for both sides of a release",
+      "passed": true
+    },
+    {
+      "label": "the parent produced owned history to inherit: three closed trades and one account row",
+      "passed": true
+    },
+    {
+      "label": "the parent’s own restart lazily creates its M102 default strategy snapshot and moves sqlite_sequence — recorded as inherited parent behaviour and isolated, not merged into the delta",
+      "passed": true
+    },
+    {
+      "label": "M110 adds exactly TWO columns to `accounts` — the asymmetric pair — and no other schema object appears, disappears or changes",
+      "passed": false,
+      "detail": {
+        "added": [],
+        "gone": [],
+        "differing": [],
+        "prefixOk": true,
+        "inserted": ")"
+      }
+    },
+    {
+      "label": "both columns are added NOT NULL with the documented defaults, and each carries its own CHECK in the stored schema text",
+      "passed": false,
+      "detail": {
+        "blockLine": [
+          ")"
+        ],
+        "settleLine": [
+          ")"
+        ]
+      }
+    },
+    {
+      "label": "every pre-existing account column keeps its name, declared type, nullability and default, and the two new columns are appended LAST",
+      "passed": false,
+      "detail": {
+        "parent": [
+          "id",
+          "user_id",
+          "name",
+          "broker",
+          "account_type",
+          "currency",
+          "starting_balance",
+          "current_balance",
+          "risk_per_trade_pct",
+          "risk_unlocked",
+          "max_trades_day",
+          "daily_loss_limit_pct",
+          "max_session_minutes",
+          "routine_window_start",
+          "routine_timezone",
+          "routine_lead_minutes",
+          "routine_order",
+          "daily_profit_limit_pct",
+          "max_drawdown_pct",
+          "profit_target_pct",
+          "is_default",
+          "archived",
+          "created_at",
+          "prop_preset",
+          "prop_rules"
+        ],
+        "up": [
+          "id",
+          "user_id",
+          "name",
+          "broker",
+          "account_type",
+          "currency",
+          "starting_balance",
+          "current_balance",
+          "risk_per_trade_pct",
+          "risk_unlocked",
+          "max_trades_day",
+          "daily_loss_limit_pct",
+          "max_session_minutes",
+          "routine_window_start",
+          "routine_timezone",
+          "routine_lead_minutes",
+          "routine_order",
+          "daily_profit_limit_pct",
+          "max_drawdown_pct",
+          "profit_target_pct",
+          "is_default",
+          "archived",
+          "created_at",
+          "prop_preset",
+          "prop_rules"
+        ]
+      }
+    },
+    {
+      "label": "the parent’s account row carried NO news key at all — its single number lived in the engine, not in the database",
+      "passed": true
+    },
+    {
+      "label": "no view or trigger anywhere in the upgraded schema mentions the old single knob, and the only object whose text mentions the pair is `accounts`",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "the inherited account reads at the documented 15/45 — the parent’s own 45 constant did NOT become the pre-release block, and 45/45 did NOT survive",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "every inherited fact outside `accounts` is byte-identical after the upgrade: trades, gate answers, intention, practice and the session rows",
+      "passed": true
+    },
+    {
+      "label": "the ONLY difference in the inherited `accounts` rows is the two new columns — id, name, balance and policy fields are untouched",
+      "passed": true
+    },
+    {
+      "label": "the upgraded tree reads the inherited account through its OWN API at 15/45, with no bare `window_min` anywhere in the row or the payload",
+      "passed": false,
+      "detail": {
+        "acct": [
+          null,
+          null
+        ],
+        "window_min": 45
+      }
+    },
+    {
+      "label": "its news payload carries the resolved pair (before/after + provenance), not the parent’s single knob",
+      "passed": false
+    },
+    {
+      "label": "the upgraded `/accounts` row carries exactly the two news keys and nothing else news-shaped",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "the parent’s own `?window=` call — which worked on this very database minutes earlier — is now a 400 `news_window_split_required`, and so is `?window_min=`",
+      "passed": false,
+      "detail": {
+        "legacy": {
+          "status": 200
+        },
+        "legacy2": {
+          "status": 200
+        }
+      }
+    },
+    {
+      "label": "a settle under the floor is refused on the inherited database (400 `news_settle_below_floor`), a legal settle is accepted, and a research pair is applied per request",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "hostile values written straight to SQLite are refused by the columns themselves: 0 and 241 out of the block’s bounds, a fractional 1.5 and a word on the block, and 0, 29, 241 and 30.5 on the settle",
+      "passed": true
+    },
+    {
+      "label": "a news read on the inherited database writes nothing at all: every table byte-identical, no object added",
+      "passed": true
+    },
+    {
+      "label": "a bundle from the parent era (no news keys at all) imports its trades onto this desk and cannot move the pair",
+      "passed": false,
+      "detail": {
+        "era": {
+          "step": "parent-era bundle",
+          "status": 200,
+          "pair": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "label": "a hostile bundle carrying its own news numbers in the account row AND at the root of the file imports its trade but leaves both clocks at the stored 15/45, creating no account",
+      "passed": false,
+      "detail": {
+        "imp": {
+          "step": "hostile bundle",
+          "status": 200,
+          "pair": [
+            null,
+            null
+          ],
+          "accounts": 1,
+          "trades": 9
+        },
+        "before": 3
+      }
+    },
+    {
+      "label": "an accepted account write answers with a structured `news_note` naming the pair it stored and its own bounds",
+      "passed": false,
+      "detail": {
+        "note": null
+      }
+    },
+    {
+      "label": "explicitly null or blank news values are refused (`news_window_invalid`) rather than coerced to a default, and the stored pair does not move",
+      "passed": false,
+      "detail": {
+        "step": "null/blank",
+        "codes": [
+          null,
+          null
+        ],
+        "pair": [
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "label": "the columns accept their own boundary values — block 1 and 240, settle 30 and 240 — each written and read back exactly",
+      "passed": false,
+      "detail": [
+        [
+          "news_block_before_min",
+          1,
+          200,
+          null
+        ],
+        [
+          "news_block_before_min",
+          240,
+          200,
+          null
+        ],
+        [
+          "news_settle_after_min",
+          30,
+          200,
+          null
+        ],
+        [
+          "news_settle_after_min",
+          240,
+          200,
+          null
+        ]
+      ]
+    },
+    {
+      "label": "a per-request research pair (`?before=60&after=120`) is answered but NOT stored: the account still reads 15/45 afterwards",
+      "passed": false,
+      "detail": {
+        "step": "research pair",
+        "status": 200,
+        "pair": [
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "label": "recording a trade (200) adds one row and does not touch the news pair or any other accounts fact",
+      "passed": true
+    },
+    {
+      "label": "the export carries both columns and NO key spelling the old single number, so a backup taken on the upgraded tree can be restored without inventing one",
+      "passed": false,
+      "detail": {
+        "news": [],
+        "legacy": []
+      }
+    },
+    {
+      "label": "after the whole battery the news endpoint still reads the same stored pair, and the pair is the one the trader set",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "a fresh database gets the SAME two definitions (type, NOT NULL, default) — and the same CHECKs — as an upgraded one, re-created from the DDL rather than inherited",
+      "passed": false,
+      "detail": {
+        "fresh": [
+          null,
+          null
+        ],
+        "up": [
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "label": "and the position difference is recorded instead of hidden: the inherited columns are appended LAST, the fresh DDL places them before the drawdown fields",
+      "passed": false,
+      "detail": {
+        "freshTail": [
+          "created_at",
+          "prop_preset",
+          "prop_rules"
+        ],
+        "upTail": [
+          "created_at",
+          "prop_preset",
+          "prop_rules"
+        ]
+      }
+    },
+    {
+      "label": "a brand-new delivered database reads its own account at 15/45 with no bare `window_min` column anywhere in the schema",
+      "passed": false,
+      "detail": {
+        "row": [
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "label": "a second open of the upgraded database is a no-op: same objects, same columns, same pair, same facts",
+      "passed": false,
+      "detail": {
+        "cols": [
+          "prop_preset",
+          "prop_rules"
+        ]
+      }
+    },
+    {
+      "label": "the change is additive in the strongest sense available here: the PARENT’s own code still reads the upgraded file and finds its history intact",
+      "passed": false,
+      "detail": {
+        "trades": 10,
+        "live": 10,
+        "expected": 10
+      }
+    }
+  ],
+  "scope": "ACTUAL145-file M109 release parent → delivered tree on the same database: exactly two added columns with their own CHECKs, every other schema object and inherited fact byte-identical, the parent’s single knob refused rather than mapped, re-open a no-op; synthetic/local, not broker/real-money proof"
+}

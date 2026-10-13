@@ -1,0 +1,41 @@
+ok this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)
+ok a hostile value (a word) is refused 400 with a documented code, never a 500 and never silently accepted
+ok a hostile value (an array) is refused 400 with a documented code, never a 500 and never silently accepted
+ok a hostile value (an empty value) is refused 400 with a documented code, never a 500 and never silently accepted
+ok a hostile value (whitespace) is refused 400 with a documented code, never a 500 and never silently accepted
+ok a hostile value (zero, below the 1-minute minimum) is refused 400 with a documented code, never a 500 and never silently accepted
+ok a hostile value (one minute under the floor) is refused 400 with a documented code, never a 500 and never silently accepted
+ok a hostile value (one minute over the maximum) is refused 400 with a documented code, never a 500 and never silently accepted
+ok a hostile value (a negative block) is refused 400 with a documented code, never a 500 and never silently accepted
+ok a hostile value (a fraction) is refused 400 with a documented code, never a 500 and never silently accepted
+ok a hostile value (a boolean) is refused 400 with a documented code, never a 500 and never silently accepted
+ok a hostile value (an object) is refused 400 with a documented code, never a 500 and never silently accepted
+ok an exotic numeric spelling is not silently reinterpreted differently from how it is reported: whatever it was read as is what the answer echoes
+ok and every response to the battery was 400 or 200 — no unhandled path, no 500, no stack
+ok the codes actually used are exactly the three documented ones, so a client can switch on them
+ok a hostile settle in the account body (a fraction) is refused on creation
+ok a hostile settle in the account body (a boolean) is refused on creation
+ok a hostile settle in the account body (an array) is refused on creation
+ok a hostile settle in the account body (an object) is refused on creation
+ok a hostile settle in the account body (a blank) is refused on creation
+ok a hostile settle in the account body (words) is refused on creation
+ok a hostile settle in the account body (null) is refused on creation
+ok and on an update: a hostile settle does not overwrite the stored pair
+ok a stored settle longer than the 30–60 he names is read AS STORED, with a warning, and never repaired to 45 behind the trader’s back
+ok and repeated reads do not drift it: the value is stable across reads, so a warning cannot turn into a rewrite
+ok the engine still reports where that number came from (stored, with the outside-range warning) instead of passing it off as the default
+ok a hand-built row outside the bounds is clamped on read to the shipped limits, with both clamps named — not crashed on and not accepted
+ok a bare number is refused in-process too (as a rejection carrying the code), so no caller can reintroduce the symmetric knob without an error
+ok a missing event instant or a missing clock yields no verdict rather than a verdict at zero offset
+ok a malformed pair yields no verdict at all rather than matching everything
+ok the state gate’s own 60-minute window is exactly where M102 left it: untouched by the news split
+ok a news key smuggled into a gate answer is REFUSED — that surface accepts answers and a revision and nothing else — and the pair is untouched
+ok and the gate’s own accepted path cannot carry a news setting either: answering it leaves both clocks exactly where they were
+ok the risk guardrail beside it still holds: a 5% request is clamped to the course maximum rather than stored, so M110 did not knock out an existing guard
+ok a nonsense symbol is answered without a crash rather than 500
+ok the symbol is case-insensitive, and both spellings see the same release
+ok after the whole battery — refusals, hostile bodies, clamps and reads — not one row of the trader’s data moved anywhere in the database
+ok and inside the account, the only field that moved is the one this probe deliberately set — the widened settle — with the risk request resolved to the guardrail instead of stored
+ok the block side was never touched by any of it, which is the point of two separate clocks
+FAIL no shipped file lost a guard it had: the settle floor is still enforced by the schema, the route and the module, in that order undefined
+M110 hardening: 39 passed, 1 failed

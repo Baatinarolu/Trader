@@ -24,6 +24,7 @@ const StateGate = require('../state-gate');
 const Intention = require('../intention');
 const Practice = require('../practice');
 const Ask = require('../ask');
+const NewsWindow = require('../news-window');   // M110 — the two news clocks
 const Opportunities = require('../opportunities');
 const ProcessOutcomes = require('../process-outcomes');
 const BehaviorDays = require('../behavior-days');
@@ -910,17 +911,24 @@ router.post('/accounts', requireAuth, async (req, res) => {
   try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes); }
   catch(e){return res.status(400).json({error:e.message});}
   let routineConfig;try{routineConfig=Routine.config(b);}catch(e){return res.status(400).json({error:e.message});}
+  // M110 — the news stand-down is two settings, parsed together by the owner module (which
+  // also refuses the old single-number shape rather than choosing a side for the caller).
+  let newsWindow;
+  try { newsWindow = NewsWindow.parsePair(b); }
+  catch (e) { return res.status(400).json({ error: e.message, code: e.code || 'news_window_invalid' }); }
   const unlocked = !!b.risk_unlocked;
   const riskPct = I.clampRiskPct(b.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked });
-  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes,routine_window_start,routine_timezone,routine_lead_minutes,routine_order)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes,routine_window_start,routine_timezone,routine_lead_minutes,routine_order,news_block_before_min,news_settle_after_min)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     req.user.id, b.name, b.broker || '', b.account_type || 'live', b.currency || 'USD',
     num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0, maxTrades,
-    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit,routineConfig.routine_window_start,routineConfig.routine_timezone,routineConfig.routine_lead_minutes,routineConfig.routine_order);
+    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit,routineConfig.routine_window_start,routineConfig.routine_timezone,routineConfig.routine_lead_minutes,routineConfig.routine_order,
+    newsWindow.before_min, newsWindow.after_min);
   res.json({
     ok: true,
     account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(info.lastInsertRowid),
     risk_note: I.riskGuardrailNote(b.risk_per_trade_pct, riskPct, { unlocked }),
+    news_note: NewsWindow.noteFor(newsWindow, newsWindow.warnings),
   });
 });
 router.put('/accounts/:id', requireAuth, async (req, res) => {
@@ -938,6 +946,13 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
   try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes === undefined ? cur.max_session_minutes : b.max_session_minutes); }
   catch(e){return res.status(400).json({error:e.message});}
   let routineConfig;try{routineConfig=Routine.config({...cur,...b});}catch(e){return res.status(400).json({error:e.message});}
+  // M110: only the fields THIS request supplies are parsed; an omitted field keeps the
+  // stored pair (already clamped by plan()), so an unrelated edit such as a rename cannot
+  // silently move the trader's news windows. A stored pair outside the bounds is clamped on
+  // READ by the engine as well, so this is defence in depth rather than the only guard.
+  let newsWindow;
+  try { newsWindow = NewsWindow.parsePair(b, NewsWindow.plan(cur)); }
+  catch (e) { return res.status(400).json({ error: e.message, code: e.code || 'news_window_invalid' }); }
   // M9: the same guardrail on the update path, which also stored the value via num() with no
   // clamp. Only a value THIS request supplies is clamped — a row stored above the guardrail
   // before the fix is left untouched here and clamped on READ (bots/index.js) instead, so an
@@ -949,6 +964,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
   await db.prepare(`UPDATE accounts SET name=@name, broker=@broker, account_type=@account_type, currency=@currency,
     starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, max_trades_day=@max_trades_day, daily_loss_limit_pct=@daily_loss_limit_pct,
     max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, max_session_minutes=@max_session_minutes,routine_window_start=@routine_window_start,routine_timezone=@routine_timezone,routine_lead_minutes=@routine_lead_minutes,routine_order=@routine_order, prop_preset=@prop_preset,
+    news_block_before_min=@news_block_before_min, news_settle_after_min=@news_settle_after_min,
     prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
     id, user_id: req.user.id,
     name: b.name !== undefined ? b.name : cur.name,
@@ -961,6 +977,8 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
     max_trades_day: maxTrades,
     daily_profit_limit_pct: profitLimit,
     max_session_minutes: sessionLimit,
+    news_block_before_min: newsWindow.before_min,
+    news_settle_after_min: newsWindow.after_min,
     ...routineConfig,
     daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
     max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
@@ -973,6 +991,7 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
     ok: true,
     account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(id),
     risk_note: b.risk_per_trade_pct !== undefined ? I.riskGuardrailNote(b.risk_per_trade_pct, riskPct, { unlocked }) : null,
+    news_note: NewsWindow.noteFor(newsWindow, newsWindow.warnings),
   });
 });
 router.delete('/accounts/:id', requireAuth, async (req, res) => {

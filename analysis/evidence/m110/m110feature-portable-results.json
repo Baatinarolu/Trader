@@ -1,0 +1,76 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 17,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the rule is a leaf module: it requires nothing at all, so it cannot pull in the app, a database or a test helper",
+      "passed": true
+    },
+    {
+      "label": "and it reads no environment, no filesystem, no absolute path and not even the clock: `now` is passed in, so its decision is reproducible from its arguments alone",
+      "passed": true
+    },
+    {
+      "label": "every shipped importer reaches it by a relative path inside the tree, so a copy of the tree needs nothing outside it",
+      "passed": true
+    },
+    {
+      "label": "no shipped file mentions this milestone’s harness, its shim or its probes: the tests measure the product, the product does not know about the tests",
+      "passed": true
+    },
+    {
+      "label": "copied out of the repository, the module produces byte-identical decisions — the rule is the file, not the checkout",
+      "passed": true
+    },
+    {
+      "label": "a backup carries the pair out, so a trader can see which window their own archive was taken under — as two columns, with no single knob beside them",
+      "passed": true
+    },
+    {
+      "label": "a foreign bundle imports (so the next result is a real import, not a refused request)",
+      "passed": true
+    },
+    {
+      "label": "and it CANNOT move the importing desk’s pair: a looser 1/240 in an archive does not become this trader’s window",
+      "passed": true
+    },
+    {
+      "label": "it also does not create an account from the bundle: an archive restores trades, never desks or their settings",
+      "passed": true
+    },
+    {
+      "label": "the imported trade was mapped onto the named desk, which is what makes the untouched pair a result rather than a no-op",
+      "passed": true
+    },
+    {
+      "label": "a bundle from the previous release (accounts with no news keys at all) imports without inventing one",
+      "passed": true
+    },
+    {
+      "label": "keys declared at the ROOT of a bundle are ignored rather than applied: the import surface has no news authority",
+      "passed": true
+    },
+    {
+      "label": "and the pair is nowhere in the bundle’s own vocabulary: no import code path writes the news columns",
+      "passed": true
+    },
+    {
+      "label": "a CSV import carries no settings of any kind and leaves the pair alone",
+      "passed": true
+    },
+    {
+      "label": "a desk with no stored pair is reported as `default` on both sides, so an unanswered setting is visible instead of passing as a stored one",
+      "passed": true
+    },
+    {
+      "label": "research overrides are per request and never written back: after a widened research call the stored pair is still the trader’s own",
+      "passed": true
+    }
+  ],
+  "scope": "M110 portability: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

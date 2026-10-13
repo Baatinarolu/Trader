@@ -11,6 +11,7 @@ const I = require('../instruments');
 const TV = require('../tradingview');
 const D = require('../db');
 const Opportunities = require('../opportunities');
+const NewsWindow = require('../news-window');   // M110
 
 function createBotsRouter({ requireAuth }) {
   const router = asyncRouter();
@@ -513,8 +514,33 @@ router.get('/markets', requireAuth, (req, res) => {
 
   /* ---------------------------------------------------------------- misc */
 
+  /* M110 — the news endpoint takes the SAME two settings the engine uses, never one number.
+   * `?before=` / `?after=` are per-request research overrides and go through the owner
+   * module's parser (so the settle floor applies here too); omitted fields fall back to the
+   * trader's own stored pair, resolved exactly the way the analyse path resolves its account.
+   * The old `?window=N` is REFUSED rather than silently split: choosing a side for the caller
+   * is how a 5-minute setting used to shorten the 30–60 minute settle. */
   router.get('/news/:symbol', requireAuth, wrap(async (req, res) => {
-    res.json({ ok: true, ...(await Bots.newsCheck(String(req.params.symbol).toUpperCase(), Math.min(num(req.query.window, 45), 240))) });
+    // Every spelling of the old single knob is refused here, not just `?window=`: a legacy client
+    // that still sends one number must be told the rule was split, not silently served the stored
+    // pair (which would make a 5-minute caller believe 5 minutes was applied).
+    if (NewsWindow.LEGACY_SINGLE.some((k) => req.query[k] !== undefined)) {
+      return res.status(400).json({
+        error: 'One number no longer sets both sides of the news rule. Use ?before= for the pre-release block and ?after= for the post-release settle (floor 30 minutes), or leave both out to use the account settings.',
+        code: 'news_window_split_required',
+      });
+    }
+    const account = await Bots.correction.accountOf(req.user.id, req.query.account_id ? Number(req.query.account_id) : null);
+    let pair;
+    try {
+      pair = NewsWindow.parsePair(
+        { news_block_before_min: req.query.before, news_settle_after_min: req.query.after },
+        NewsWindow.plan(account),
+      );
+    } catch (e) {
+      return res.status(e.status || 400).json({ error: e.message, code: e.code || 'news_window_invalid' });
+    }
+    res.json({ ok: true, ...(await Bots.newsCheck(String(req.params.symbol).toUpperCase(), pair)), settings: NewsWindow.noteFor(pair, pair.warnings) });
   }));
 
   router.get('/tv/links', requireAuth, (req, res) => {

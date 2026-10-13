@@ -647,11 +647,13 @@ function buildSetups(analysis, ctx = {}) {
 
     /* ---------------------------------------------------------------- 9. news */
     add('news', 'No high-impact news in the window', !blackout, 10,
-      // M4: the previous fallback asserted "the next 60 minutes", which was wrong twice —
-      // newsCheck() defaults to windowMin = 45 (bots/index.js), and the test is SYMMETRIC
-      // (±windowMin, both sides of the entry), not forward-only. State neither the number
-      // nor a direction, so the string cannot drift out of sync with the config again.
-      blackout ? blackout : 'No high-impact releases inside the news window (checked either side of the entry).');
+      // M4 fixed the old "the next 60 minutes" fallback, which was wrong twice (it named a
+      // hardcoded number and described a symmetric test as forward-only). M62's surviving
+      // half is closed by M110 here: the note does not stay silent about the window — it
+      // INTERPOLATES the two configured numbers, which are the account's own settings, so
+      // it cannot describe a rule the app is not applying. The fallback only applies to a
+      // caller that supplied neither (a research call with no account note).
+      blackout ? blackout : (ctx.newsNote || 'No high-impact releases inside the news window (checked either side of the entry).'));
 
     /* ------------------------------------------------------------- 10. volatility */
     const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
@@ -970,7 +972,10 @@ function buildSetups(analysis, ctx = {}) {
       vetoes.push('No defined valid stop — ' + (stopCheck ? stopCheck.detail : 'selected invalidation is unavailable.'));
     }
     if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
-    if (blackout) vetoes.push('High-impact news inside the window.');
+    // M110 — the veto names the release, the side it is on and the two configured windows
+    // (the blackout string is built from the account's settings), instead of a generic
+    // phrase that leaves the trader guessing which clock stopped the trade.
+    if (blackout) vetoes.push(blackout);
     // M8 — tested against the boolean, not truthiness: when analysis is the short-series
     // sentinel, `sessions` is {} and in_killzone is undefined, which must NOT veto.
     /* M26 — the specific-window veto. It SUPERSEDES the generic one when it applies,

@@ -1,7 +1,7 @@
 {
   "app": "/home/user/Trader/extracted/tradejournal",
-  "pass": 15,
-  "fail": 0,
+  "pass": 13,
+  "fail": 2,
   "results": [
     {
       "label": "ACTUAL parent restart isolates inherited lazy M102 default strategy-v1 initialization",
@@ -17,11 +17,15 @@
     },
     {
       "label": "M109 adds NO schema object of any kind: every table, index and trigger on the upgraded tree is byte-identical to the parent’s",
-      "passed": true
+      "passed": false,
+      "detail": []
     },
     {
       "label": "every inherited fact is byte-identical after the upgrade: trades, gate answers, intention and the practice receipt",
-      "passed": true
+      "passed": false,
+      "detail": [
+        "accounts"
+      ]
     },
     {
       "label": "the inherited practice receipt still reads as the parent recorded it, and the channel did not create the lazy timer row on upgrade",

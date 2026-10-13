@@ -1,0 +1,24 @@
+ok this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)
+ok the shipped dialog has two separate news inputs, before and after, and no single “news window” control
+ok the view source carries no `windowMin` and no bare `window_min` in the news payload: it sends the two keys and nothing else
+ok the dialog text tells the trader the settle floor is 30 and that the two are separate clocks, before anything is typed
+ok the accounts pane renders an Add-account action that opens the dialog (so the fields are reachable, not dead markup)
+ok the dialog opens as “New account” and shows the two news fields
+ok a new account is offered the shipped defaults 15 / 45, not one number and not an empty box
+ok the inputs’ own bounds match the server’s: the block 1–240, the settle 30–240 (the floor is the same in both places)
+ok the two labels name the SIDE each number governs, so they cannot be read as one symmetric window
+ok a settle below the floor is refused in the dialog with the floor named, and nothing is sent to the server
+ok a block under 1 minute is refused too, and still nothing is sent
+ok a value he actually sanctions (5) is accepted by the dialog and sent as 5, never rewritten to 15 and never spread onto the settle
+ok and the payload has both keys and no third news key, so the single-knob shape cannot come back through the UI
+ok saving closes the dialog and reports success once
+ok the server stored that pair for this account, so the dialog and the engine read the same two numbers
+ok the pane offers an edit action per account, addressed by the account’s own id
+ok editing that account reopens the dialog with the STORED pair (5 / 45), not the schema defaults — a saved value is not silently reset on the next open
+ok the edit dialog is titled as an edit, so the pair above is not read as a new-account default
+ok raising only the settle sends the untouched block (5) alongside it — the two clocks travel together and neither is inferred
+ok the raised settle is what the account now carries, and the block did not move
+ok the edit dialog for that account still shows 5 / 60 after a re-render, so a reload does not re-derive the pair
+ok renaming the account through the same dialog leaves both clocks exactly where they were
+ok no uncaught error was raised by any interaction, and nothing was rendered through innerHTML
+M110 real DOM: 23 passed, 0 failed

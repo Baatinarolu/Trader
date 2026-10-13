@@ -1,0 +1,96 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 22,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "exactly ONE shipped file builds the blackout sentence, so the rule has a single voice and no reader invents its own wording",
+      "passed": true
+    },
+    {
+      "label": "no shipped file reads a single `window_min` off a news payload any more: the removed knob has no dangling reader",
+      "passed": true
+    },
+    {
+      "label": "the three readers that DO exist each take the engine’s blackout rather than rebuilding it: the playlist guard, the headline and the setup payload",
+      "passed": true
+    },
+    {
+      "label": "no shipped client reads the new `windows` echo either, so the API’s provenance block cannot be mistaken for a control by an old page",
+      "passed": true
+    },
+    {
+      "label": "the served payload has no top-level `window_min` any more — the one-number field is gone, not deprecated",
+      "passed": true
+    },
+    {
+      "label": "each blocked release carries the window of ITS OWN side (the 45-minute settle, not the 5-minute block)",
+      "passed": true
+    },
+    {
+      "label": "the payload echoes the pair as provenance, with the source of each side, so a consumer can audit what was applied",
+      "passed": true
+    },
+    {
+      "label": "a genuinely empty week yields a clear payload that is distinguishable from a blocked one but not from an outage (that gap is M111, and this probe names it as such)",
+      "passed": true
+    },
+    {
+      "label": "the desk playlist renders the blackout as exactly one guard, quoted verbatim from the engine",
+      "passed": true
+    },
+    {
+      "label": "and it is a BLOCK-level guard, not a warning the trader can scroll past",
+      "passed": true
+    },
+    {
+      "label": "with a clear calendar the playlist adds no news guard at all: the “no releases in the window” statement lives in the setup row where the window can be named",
+      "passed": true
+    },
+    {
+      "label": "an M111 outage reaches this consumer as silence: no guard, no unavailable flag and no error on the payload — the failure is visible only at the market layer, which is exactly the gap M111 measures",
+      "passed": true
+    },
+    {
+      "label": "a release whose block has not started yet (20 minutes out, 5-minute block) produces no guard, and the payload says why",
+      "passed": true
+    },
+    {
+      "label": "the setup payload emits `news_blackout` inside its filters block, which is where a downstream alert reads the rule from",
+      "passed": true
+    },
+    {
+      "label": "with a blackout the setup payload carries it, and with none it is null rather than an empty string or a false",
+      "passed": true
+    },
+    {
+      "label": "the news check keeps its recorded weight and label: this milestone split a window, it did not retune the grade",
+      "passed": true
+    },
+    {
+      "label": "the advisory channel answers its calendar surface, and says it cannot fetch rather than inventing a window",
+      "passed": true
+    },
+    {
+      "label": "that answer names the surface it cannot read and cites where the fact comes from, so the silence is attributable rather than a quiet market",
+      "passed": true
+    },
+    {
+      "label": "and the channel’s own source declares it cannot fetch, so a later calendar change cannot quietly turn it into a news oracle",
+      "passed": true
+    },
+    {
+      "label": "the same calendar blocks this desk (5-minute block, 45 settle) and its different pair is reported per account, not once globally",
+      "passed": true
+    },
+    {
+      "label": "the blackout string a consumer quotes names THIS desk’s two numbers, so one trader’s guard can never describe another’s window",
+      "passed": true
+    }
+  ],
+  "scope": "M110 consumers: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

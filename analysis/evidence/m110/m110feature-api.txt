@@ -1,0 +1,41 @@
+ok this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)
+ok a new account stores the episode defaults: 15 minutes before, 45 minutes after
+ok the creation response carries the pair and the honest note about it
+ok the two fields are separate columns on the account row, not one knob
+ok both settings are storable at their bounds (block 60, settle 30)
+ok a 5-minute block is accepted (he demonstrates it) and the settle stays at its own default
+ok the creation response warns about the block, quoting his recommendation, without refusing it
+ok a settle below the 30-minute floor is refused 400 with its own code and nothing created
+ok the old single knob is refused on creation rather than split for the caller
+ok a hostile settle (booleans) is refused as invalid, not coerced
+ok a hostile settle (arrays) is refused as invalid, not coerced
+ok a hostile settle (objects) is refused as invalid, not coerced
+ok a hostile settle (blanks) is refused as invalid, not coerced
+ok a hostile settle (fractions) is refused as invalid, not coerced
+ok a hostile settle (zero) is refused as invalid, not coerced
+ok a hostile settle (above the maximum) is refused as invalid, not coerced
+ok a hostile settle (huge) is refused as invalid, not coerced
+ok an update that tries to shorten the settle to 5 is refused 400 and the stored row is untouched
+ok an update that shortens only the block succeeds and warns
+ok that update did NOT touch the settle: the two settings move independently
+ok an unrelated edit (a rename) leaves both news settings exactly as stored
+ok the old single knob is refused on update too, with nothing written
+ok the news endpoint refuses the old ?window= parameter instead of choosing a side for the caller
+ok every legacy spelling of the single knob is refused on the query (window): a legacy caller is told the rule was split, not silently served its own pair
+ok every legacy spelling of the single knob is refused on the query (window_min): a legacy caller is told the rule was split, not silently served its own pair
+ok every legacy spelling of the single knob is refused on the query (windowMin): a legacy caller is told the rule was split, not silently served its own pair
+ok every legacy spelling of the single knob is refused on the query (newsWindowMin): a legacy caller is told the rule was split, not silently served its own pair
+ok every legacy spelling of the single knob is refused on the query (news_window_min): a legacy caller is told the rule was split, not silently served its own pair
+ok a legacy knob smuggled in beside a valid pair is refused rather than ignored, and the stored pair is untouched
+ok with no query pair the endpoint uses that account’s stored pair (block 5 on this desk, settle 45)
+ok omitting account_id resolves the trader’s OWN default desk (15/45), never another account’s pair
+ok and reports the release 40 minutes ago as blocked on the after side while the 40-minute-ahead one is clear
+ok the settings note travels with the answer, names the same numbers, its sources and the models limit
+ok per-request research overrides are honoured, echoed, and their sources say they came from the request
+ok the wider research pair now blocks the release due in 40 minutes, on the before side
+ok the settle floor applies to research overrides too: ?after=5 is refused
+ok hostile query values are refused rather than coerced
+ok another trader sees only their own desk, and it carries the episode defaults rather than this one’s pair
+ok and their news endpoint reports the defaults 15/45, not the first desk’s 5/45
+ok another trader cannot edit this account’s news settings at all
+M110 API: the two news settings, the settle floor, the refused single knob, per-account pair: 40 passed, 0 failed

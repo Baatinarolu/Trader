@@ -1,0 +1,100 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 23,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the shipped dialog has two separate news inputs, before and after, and no single “news window” control",
+      "passed": true
+    },
+    {
+      "label": "the view source carries no `windowMin` and no bare `window_min` in the news payload: it sends the two keys and nothing else",
+      "passed": true
+    },
+    {
+      "label": "the dialog text tells the trader the settle floor is 30 and that the two are separate clocks, before anything is typed",
+      "passed": true
+    },
+    {
+      "label": "the accounts pane renders an Add-account action that opens the dialog (so the fields are reachable, not dead markup)",
+      "passed": true
+    },
+    {
+      "label": "the dialog opens as “New account” and shows the two news fields",
+      "passed": true
+    },
+    {
+      "label": "a new account is offered the shipped defaults 15 / 45, not one number and not an empty box",
+      "passed": true
+    },
+    {
+      "label": "the inputs’ own bounds match the server’s: the block 1–240, the settle 30–240 (the floor is the same in both places)",
+      "passed": true
+    },
+    {
+      "label": "the two labels name the SIDE each number governs, so they cannot be read as one symmetric window",
+      "passed": true
+    },
+    {
+      "label": "a settle below the floor is refused in the dialog with the floor named, and nothing is sent to the server",
+      "passed": true
+    },
+    {
+      "label": "a block under 1 minute is refused too, and still nothing is sent",
+      "passed": true
+    },
+    {
+      "label": "a value he actually sanctions (5) is accepted by the dialog and sent as 5, never rewritten to 15 and never spread onto the settle",
+      "passed": true
+    },
+    {
+      "label": "and the payload has both keys and no third news key, so the single-knob shape cannot come back through the UI",
+      "passed": true
+    },
+    {
+      "label": "saving closes the dialog and reports success once",
+      "passed": true
+    },
+    {
+      "label": "the server stored that pair for this account, so the dialog and the engine read the same two numbers",
+      "passed": true
+    },
+    {
+      "label": "the pane offers an edit action per account, addressed by the account’s own id",
+      "passed": true
+    },
+    {
+      "label": "editing that account reopens the dialog with the STORED pair (5 / 45), not the schema defaults — a saved value is not silently reset on the next open",
+      "passed": true
+    },
+    {
+      "label": "the edit dialog is titled as an edit, so the pair above is not read as a new-account default",
+      "passed": true
+    },
+    {
+      "label": "raising only the settle sends the untouched block (5) alongside it — the two clocks travel together and neither is inferred",
+      "passed": true
+    },
+    {
+      "label": "the raised settle is what the account now carries, and the block did not move",
+      "passed": true
+    },
+    {
+      "label": "the edit dialog for that account still shows 5 / 60 after a re-render, so a reload does not re-derive the pair",
+      "passed": true
+    },
+    {
+      "label": "renaming the account through the same dialog leaves both clocks exactly where they were",
+      "passed": true
+    },
+    {
+      "label": "no uncaught error was raised by any interaction, and nothing was rendered through innerHTML",
+      "passed": true
+    }
+  ],
+  "scope": "M110 real DOM: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

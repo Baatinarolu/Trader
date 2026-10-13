@@ -1,0 +1,18 @@
+ok this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)
+ok a release 20 minutes ahead is not reached by the 15-minute block when the feed is fetched
+ok ten minutes later the SAME cached feed blocks that same release on the before side, with the offset re-measured to 10
+ok so the window is applied at the check, not frozen at fetch time: the release crossed the 15-minute boundary while nothing about the feed changed
+ok twenty minutes after that same release printed, and after the app re-read the feed, it is STILL a blackout — now on the after side and judged by the 45-minute settle
+ok the blackout text says which side carried it and how long ago it printed
+ok a blackout is not “sticky”: the sentence is rebuilt from this check’s offsets rather than remembered
+ok fifty minutes after it printed the same release is clear at last, so the settle ends rather than accumulating
+ok under 15/45 a release that printed 100 minutes ago is clear
+ok the very next check uses the new pair, with no cache bust and no “applies tomorrow” freeze: 60/240 catches the 100-minute-old release
+ok and the answer says where the numbers came from — `current` (the pair in force, read from the account) when the request overrides nothing, `request` when it does
+ok nothing in the rule or its note claims a freeze, a next-day application or a per-day snapshot, because there is none
+ok the guardrail day snapshot has no news column and its module never mentions the pair, so a news pair can never be frozen by the mechanism that freezes the caps
+ok changing the trader’s display timezone changes nothing about the news verdict: same events, same offsets, same two numbers
+ok a UTC day boundary cannot move the window either: the rule takes a single instant plus an event instant and never a date
+ok planning and testing leave the account row exactly as it was: the read path cannot write back a “resolved” pair
+ok and every read of the same row yields the same pair twice in a row, with nothing cached inside the module
+M110 freshness: 17 passed, 0 failed

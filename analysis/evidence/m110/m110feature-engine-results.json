@@ -1,0 +1,108 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 25,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the app’s own calendar parser fed the rule: one synthetic release is in, one is out, and the parsed title/currency survive",
+      "passed": true
+    },
+    {
+      "label": "a planned release 40 minutes in the FUTURE is not a blackout under a 15-minute block, even though a 45 would have caught it",
+      "passed": true
+    },
+    {
+      "label": "a release 40 minutes AGO is a blackout under the 45-minute settle, labelled with the side that caught it",
+      "passed": true
+    },
+    {
+      "label": "the blackout names the release, the elapsed time and the two configured numbers, and says the settle still has to pass",
+      "passed": true
+    },
+    {
+      "label": "the payload echoes the pair it actually applied, so a caller never has to guess the window",
+      "passed": true
+    },
+    {
+      "label": "the symbol’s currencies come from the app’s own mapping: a JPY release cannot block EURUSD",
+      "passed": true
+    },
+    {
+      "label": "the recorded trap is now impossible: a 5-minute setting that silently collapsed the settle cannot clear a release that printed 10 minutes ago",
+      "passed": true
+    },
+    {
+      "label": "and the fix is not over-blocking: a release 55 minutes ahead is clear under the 15-minute block",
+      "passed": true
+    },
+    {
+      "label": "raising the BLOCK to 60 (his own option) catches the 55-minute-ahead release and leaves the settle at 45",
+      "passed": true
+    },
+    {
+      "label": "with no note supplied the news row still describes how the test was shaped and names NO number",
+      "passed": true
+    },
+    {
+      "label": "the account-sourced note replaces that fallback and names this account’s two numbers",
+      "passed": true
+    },
+    {
+      "label": "with a blackout the row fails and its detail IS the blackout text, not a second wording of it",
+      "passed": true
+    },
+    {
+      "label": "the blackout also lands in the no-trade veto list, and it is the engine’s own string",
+      "passed": true
+    },
+    {
+      "label": "and it is a real veto: the blackout adds a blocking reason to the same bars that were clean a moment ago",
+      "passed": true
+    },
+    {
+      "label": "the veto names both windows, so a NO TRADE can be audited against the settings that produced it",
+      "passed": true
+    },
+    {
+      "label": "the boundaries are inclusive in the engine too: exactly 15 ahead and exactly 45 ago are each blocked on their own side",
+      "passed": true
+    },
+    {
+      "label": "one minute outside either boundary is clear, so the window is never wider than it says",
+      "passed": true
+    },
+    {
+      "label": "a news check is a read: every table is byte-identical afterwards",
+      "passed": true
+    },
+    {
+      "label": "and it does not rewrite the account it read the pair from",
+      "passed": true
+    },
+    {
+      "label": "M111’s feed really does fail here (the shim is refusing the URL, not serving an empty week)",
+      "passed": true
+    },
+    {
+      "label": "M110 does not claim to fix M111: a failed calendar still reaches this rule as a QUIET one — blackout null and no unavailable flag",
+      "passed": true
+    },
+    {
+      "label": "a failure is not cached the way a success is, so the next check retries the feed instead of freezing the outage",
+      "passed": true
+    },
+    {
+      "label": "and the pair is still echoed on that path, so the outage can never be read as “45 minutes was applied and nothing was found”",
+      "passed": true
+    },
+    {
+      "label": "the engine source keeps the M111 marker at that exact branch, so closing M111 later cannot be mistaken for a regression",
+      "passed": true
+    }
+  ],
+  "scope": "M110 engine: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

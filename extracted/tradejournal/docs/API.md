@@ -187,7 +187,7 @@ curl -s -H "x-session: $TOKEN" "localhost:3000/api/analytics/monte-carlo?risk_pc
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/accounts` | includes per-account stats: net P&L, expectancy, drawdown vs limit, open risk, target progress |
-| POST/PUT/DELETE | `/accounts` · `/accounts/:id` | `{ name, broker, account_type, currency, starting_balance, risk_per_trade_pct, daily_loss_limit_pct, max_drawdown_pct, profit_target_pct, prop_preset, prop_rules }` — `prop_preset` applies a named challenge shape (see `/prop/presets`), `prop_rules` overrides it with your own numbers |
+| POST/PUT/DELETE | `/accounts` · `/accounts/:id` | `{ name, broker, account_type, currency, starting_balance, risk_per_trade_pct, daily_loss_limit_pct, max_drawdown_pct, profit_target_pct, prop_preset, prop_rules, news_block_before_min, news_settle_after_min }` — `prop_preset` applies a named challenge shape (see `/prop/presets`), `prop_rules` overrides it with your own numbers; the two news fields are the pre-release block (default 15, 1–240) and the post-release settle (**floor 30**, default 45, 30–240), and a response carries `news_note` |
 | GET | `/accounts/:id/challenge` | `{ preset, status: { ok, passed, checks[4], progress_pct, drawdown_pct } }` — daily loss, max drawdown, profit target and consistency checked against the account's own trades |
 | GET/POST/PUT/DELETE | `/strategies` · `/strategies/:id` | `{ name, description, market_conditions, timeframes, entry_rules[], exit_rules[], checklist[], risk_rules, target_r_multiple, colour, active }`; GET also returns per-strategy performance stats |
 | GET/POST/DELETE | `/instruments` · `/instruments/:id` | instrument spec: `{ symbol, name, asset_class, exchange, currency, tick_size, pip_size, value_per_point, unit }` |
@@ -265,7 +265,23 @@ the methodology, the weights and the honest limitations.
 | POST | `/bots/signals/resolve` | `{ limit }` | resolves pending alerts against real candles → `{ checked, results[], stats }` |
 | GET | `/bots/signals/stats` | — | win rate / expectancy of tracked alerts, by grade |
 | GET | `/bots/sessions` | — | session + killzone windows and the active one |
-| GET | `/bots/news/:symbol` | `window` (minutes) | high-impact releases inside the window |
+| GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, settings }`. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
+
+### The news stand-down — two clocks, not one (M110)
+
+`src/news-window.js` owns **both** windows and is the only rule the engine, the routes and the
+desk use. The pre-release **block** (`news_block_before_min`, default 15) and the post-release
+**settle** (`news_settle_after_min`, default 45, floor 30) are separate settings, applied by
+**signed offset**: a release that has not printed is judged by the block, one that has printed by
+the settle. His requirement notes a floor for the block (*"at least put it at 15 minutes before and
+after"*), so a block below 15 is **stored as set** with the warning
+`news_block_before_below_recommended` and never shortens the settle; the settle floor is a
+**refusal** (`news_settle_below_floor`), not a warning, because a shorter settle is the exact
+failure this pair of settings exists to prevent. The old single number is refused — one number can
+no longer set both sides — and `plan()` clamps on read while reporting which side was clamped and
+where each value came from. Unknown, legacy and imported inputs stay **separately labelled**:
+a stored value outside the bounds is corrected and told, an account with no value reads at the
+defaults with `source: default`, and no bundle import can move the pair at all.
 
 ### Choosing what to measure on `/bots/backtest`
 

@@ -1,0 +1,23 @@
+ok this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)
+ok exactly ONE shipped file builds the blackout sentence, so the rule has a single voice and no reader invents its own wording
+ok no shipped file reads a single `window_min` off a news payload any more: the removed knob has no dangling reader
+ok the three readers that DO exist each take the engine’s blackout rather than rebuilding it: the playlist guard, the headline and the setup payload
+ok no shipped client reads the new `windows` echo either, so the API’s provenance block cannot be mistaken for a control by an old page
+ok the served payload has no top-level `window_min` any more — the one-number field is gone, not deprecated
+ok each blocked release carries the window of ITS OWN side (the 45-minute settle, not the 5-minute block)
+ok the payload echoes the pair as provenance, with the source of each side, so a consumer can audit what was applied
+ok a genuinely empty week yields a clear payload that is distinguishable from a blocked one but not from an outage (that gap is M111, and this probe names it as such)
+ok the desk playlist renders the blackout as exactly one guard, quoted verbatim from the engine
+ok and it is a BLOCK-level guard, not a warning the trader can scroll past
+ok with a clear calendar the playlist adds no news guard at all: the “no releases in the window” statement lives in the setup row where the window can be named
+ok an M111 outage reaches this consumer as silence: no guard, no unavailable flag and no error on the payload — the failure is visible only at the market layer, which is exactly the gap M111 measures
+ok a release whose block has not started yet (20 minutes out, 5-minute block) produces no guard, and the payload says why
+ok the setup payload emits `news_blackout` inside its filters block, which is where a downstream alert reads the rule from
+ok with a blackout the setup payload carries it, and with none it is null rather than an empty string or a false
+ok the news check keeps its recorded weight and label: this milestone split a window, it did not retune the grade
+ok the advisory channel answers its calendar surface, and says it cannot fetch rather than inventing a window
+ok that answer names the surface it cannot read and cites where the fact comes from, so the silence is attributable rather than a quiet market
+ok and the channel’s own source declares it cannot fetch, so a later calendar change cannot quietly turn it into a news oracle
+ok the same calendar blocks this desk (5-minute block, 45 settle) and its different pair is reported per account, not once globally
+ok the blackout string a consumer quotes names THIS desk’s two numbers, so one trader’s guard can never describe another’s window
+M110 consumers: 22 passed, 0 failed

@@ -433,6 +433,8 @@
           <label class="field"><span>Currency</span><input id="a-ccy" value="${U.esc(v.currency)}" /></label>
           <label class="field"><span>Starting balance</span><input id="a-bal" type="number" step="any" value="${v.starting_balance}" /></label>
           <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /><div class="field-note">Default 0.5%; above it requires a deliberate manual unlock. The course maximum is 1%, never increased by a win/loss streak.</div></label>
+          <label class="field"><span>News block: minutes BEFORE a release</span><input id="a-news-before" type="number" min="1" max="240" step="1" value="${v.news_block_before_min ?? 15}" /><div class="field-note">Pre-release stand-down. He uses 15 as the default and recommends at least 15; 5, 10, 15, 30 and 60 are all settings he demonstrates, so a lower value is stored with a warning and never used to shorten the settle below.</div></label>
+          <label class="field"><span>News settle: minutes AFTER a release</span><input id="a-news-after" type="number" min="30" max="240" step="1" value="${v.news_settle_after_min ?? 45}" /><div class="field-note">Post-release settle. Default 45, inside the 30–60 minutes he names; 30 is the floor, because a shorter settle is the failure this pair of settings exists to prevent. It is a separate clock from the block above.</div></label>
           <label class="field"><span>Max trades per UTC day</span><input id="a-trades" type="number" min="1" max="100" step="1" value="${v.max_trades_day ?? 3}" /><div class="field-note">Course guidance: 3 intraday / 5 scalping. Frozen on the day's first guardrail check; changes then apply tomorrow. History never raises this cap.</div></label>
           <div class="field span2"><label class="row gap-8"><input id="a-session-enabled" type="checkbox" ${v.max_session_minutes != null ? 'checked' : ''} /><span>Optional manual session-duration warning</span></label><label for="a-session">Ceiling in minutes</label><input id="a-session" type="number" min="1" max="1440" step="1" value="${U.esc(v.max_session_minutes ?? 120)}" ${v.max_session_minutes == null ? 'disabled' : ''} /><div class="field-note">Off by default. Two hours is an example, not a universal ceiling. Start the marker yourself before the session; it measures only elapsed server time since that click, not broker/chart screen time. The selected duration freezes at start; edits do not reset it or other guardrails.</div></div>
           <label class="field"><span>Daily loss limit (%)</span><input id="a-daily" type="number" step="0.1" value="${v.daily_loss_limit_pct}" /></label>
@@ -457,6 +459,8 @@
                 max_drawdown_pct: U.$('#a-dd', body).value, profit_target_pct: U.$('#a-target', body).value,
                 daily_profit_limit_pct: profitEnabled.checked ? profitInput.value : null,
                 max_session_minutes: sessionEnabled.checked ? sessionInput.value : null,
+                news_block_before_min: U.$('#a-news-before', body).value,
+                news_settle_after_min: U.$('#a-news-after', body).value,
               };
               if(Views.routine){try{Object.assign(payload,Views.routine.collectSchedule(body));}catch(e){return global.App.toast(e.message,'err');}}
               if (!payload.name) return global.App.toast('Account needs a name', 'err');
@@ -464,6 +468,14 @@
                 return global.App.toast('Daily profit stop needs a positive percentage up to 100, or turn it off.', 'err');
               if (sessionEnabled.checked && (!Number.isInteger(Number(sessionInput.value)) || Number(sessionInput.value)<1 || Number(sessionInput.value)>1440))
                 return global.App.toast('Session ceiling needs whole minutes from 1 to 1440, or turn it off.','err');
+              // M110 — checked here for a fast message, enforced again on the server (and clamped
+              // on read), so the dialog is not the guard. The settle floor is the one bound the
+              // server refuses outright.
+              const newsBefore = U.$('#a-news-before', body).value, newsAfter = U.$('#a-news-after', body).value;
+              if (!Number.isInteger(Number(newsBefore)) || Number(newsBefore) < 1 || Number(newsBefore) > 240)
+                return global.App.toast('The news block before a release needs whole minutes from 1 to 240.', 'err');
+              if (!Number.isInteger(Number(newsAfter)) || Number(newsAfter) < 30 || Number(newsAfter) > 240)
+                return global.App.toast('The post-release settle needs whole minutes from 30 to 240 — 30 is the floor.','err');
               if (isNew) await API.post('/accounts', payload); else await API.put('/accounts/' + a.id, payload);
               await Store.reloadAll(); close(); global.App.toast('Account saved', 'ok'); global.App.refresh();
             },

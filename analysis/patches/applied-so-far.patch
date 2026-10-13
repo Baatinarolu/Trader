@@ -315,12 +315,65 @@ index 0000000..bd0e991
 +no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
 +Those four are what distinguish a working deploy from one that merely builds.
 diff --git a/README.md b/README.md
-index df9ae3c..56c8dbb 100644
+index df9ae3c..e0c2f3e 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,5 +1,553 @@
+@@ -1,5 +1,606 @@
  # TradeJournal Pro
  
++## M110 — the news stand-down is two clocks, not one (2026-10-13)
++
++Saved Ep 30 states **two** news stand-downs of different length: a **pre-release block** (*"you
++don't open new positions during that window where the news is coming out, like 15 minutes before
++and after news"*) and a **separate, longer post-release settle** (*"after the news came out, you
++want to wait for the volatility to settle, maybe 30 minutes to 60 minutes"*). The engine had
++**one** number applied symmetrically (`Math.abs(event − now) ≤ windowMin × 60000`), so the two
++periods were forced to be equal — and a block value he sanctions (*"you can set it to 5 minutes,
++10 minutes, 30 minutes, 60 minutes"*) silently collapsed the settle to the same number, **6–12×
++shorter than the 30–60 minutes he requires**. His own UI separates them: a block **window** plus a
++block **behaviour**.
++
++**Two settings, two columns, one asymmetric test.** `news_block_before_min` (default **15**,
++bounds 1–240) and `news_settle_after_min` (default **45**, **floor 30**, bounds 30–240) are separate
++`accounts` columns with their own CHECKs, read through **`src/news-window.js`** — a leaf module
++that requires nothing, reads no clock of its own, and answers identically when copied out of the
++tree. `hit(eventMs, nowMs, plan)` is the only rule: a release that has **not printed** is judged by
++the block, one that **has printed** by the settle, boundaries inclusive; `NaN`, `undefined` and
++malformed pairs match **nothing** rather than everything. Because his requirement is a
++**recommendation** and the settle floor is the only hard line, a block below 15 stores as set with
++`news_block_before_below_recommended` and **never** shortens the settle, while a settle under 30 is
++refused outright — **400 `news_settle_below_floor`** on create and on update.
++
++**A single number is refused, not split.** `window_min`, `windowMin`, `newsWindowMin`,
++`news_window_min` and the old `?window=` are all **400 `news_window_split_required`**, checked
++*before* the split fields so one cannot ride along beside a valid pair. `plan()` clamps on read and
++reports `source`/`clamped` per side, so an account stored outside the bounds is corrected and
++**told**, not silently changed. The blackout sentence interpolates the account's own two numbers
++and names the side that caught the release (`in X min` / `printed X min ago`), the top-level
++single `window_min` is **gone rather than deprecated**, and `setup.js`'s fallback states the two
++windows in his direction instead of the hardcoded, one-sided *"next 60 minutes"* — the surviving
++half of **M62**, closed here. This milestone **split a window; it did not retune a grade**: the
++news check keeps its weight and label, the state gate's own 60-minute `window_minutes` is
++untouched, and the risk guardrail still clamps beside it.
++
++**Measurement.** **M110 258/0 across 9 probes** (module 41, API 40, engine 25, consumers 22,
++freshness 17, hardening 40, portable 17, the actual **c09574e M109 release as the upgrade parent**
++33/0 — two additive columns, every inherited fact byte-identical, re-opening a no-op — and
++real-DOM settings-dialog 23/0). **M109 166/2, M108 257/2, M107 230/2, M106 316/2, M105 140/2**
++re-run on this tree, where every extra failure is the same **declared negative**: a frozen
++migration probe asserting its milestone added *only* its own schema objects, plus an
++inherited-facts comparison that covers `accounts`, now legitimately carrying M110's two columns.
++The pre-hardening runtime — the loose module and route where one number still sets both sides — was
++measured by the *unchanged* probes at **31/9** and **39/1**, and is 40/0 and 40/0 after the
++hardening stage. The **calendar is fed through the app's own fetch path and parser** in every
++probe, and no market provider is reachable from this sandbox, so the engine probe drives declared
++synthetic structure and **no live-market or provider claim is made**. **M111 is not solved here**
++and is stated as such: a calendar that cannot be fetched still arrives as a quiet week (null
++blackout, no `unavailable` flag). Ledger **132 = 105 done / 2 partial / 25 TODO**. Report
++`analysis/M110-NEWS-WINDOW.md` in the ZIP. Next **M111** (the fail-open) and **M112**; no 70 %
++win-rate, causal/predictive edge, broker/provider/human/mental-state/pixel/production claim, and
++no predictor of any kind.
++
 +## M109 — the advisory channel: ask the journal, deterministically (2026-10-13)
 +
 +Saved Ep 29 argues for AI by **speed of feedback** — closing the gap between *confusion and
@@ -372,7 +425,7 @@ index df9ae3c..56c8dbb 100644
 +by the *unchanged* probes at 14/3 and 28/3 before the fix and is 17/0 and 31/0 after it. Smoke
 +21/21 views, 0 style failures, 0 console errors on both the delivered tree and its parent.
 +Ledger **132 = 103 done / 2 partial / 27 TODO**. Report
-+`analysis/M109-ADVISORY-CHANNEL.md` in the ZIP. Next M110–M112; no 70 % win-rate,
++`analysis/M109-ADVISORY-CHANNEL.md` in the ZIP. Next M111/M112 (M110 was delivered separately); no 70 % win-rate,
 +causal/predictive edge, broker/provider/mental-state/human/pixel/production claim, and no
 +predictor of any kind.
 +
@@ -872,7 +925,7 @@ index df9ae3c..56c8dbb 100644
  A **multi-asset trading journal, analytics engine, behavioural coach, SMC bot desk and TradingView-integrated
  pre-trade assistant**. No subscription, no broker login, no sign-in wall — a Node server, one libSQL database
  (a local file by default), and the whole thing deployable free to Vercel + Turso.
-@@ -11,6 +559,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -11,6 +612,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  
  ---
  
@@ -911,7 +964,7 @@ index df9ae3c..56c8dbb 100644
  ## What it does
  
  | Area | What you get |
-@@ -18,8 +598,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -18,8 +651,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  | **Journal** | 40+ fields per trade — thesis, execution notes, emotions, confidence, rule-adherence score, mistake tags, screenshots, MAE/MFE, planned R, **scale-out legs** (closes at the pct-weighted price). Works for FX, futures, stocks, ETFs, crypto, index CFDs and options. |
  | **Analytics** | Expectancy ($ and R), win rate, profit factor, payoff, SQN, Sharpe, Sortino, Calmar, recovery factor, Kelly, max drawdown, streaks, R-distribution, MAE/MFE capture efficiency, time-of-day and weekday grids, hold-time buckets, 10+ segment tables. |
  | **Coach** | 20+ deterministic behavioural tests on your own rows — losing setups, bad hours, revenge entries, post-loss trading, overtrading days, size creep, early exits, tight stops, cost of each mistake tag — each with the numbers, the dollar impact and one concrete action. |
@@ -922,7 +975,7 @@ index df9ae3c..56c8dbb 100644
  | **Data** | CSV import with automatic column detection, CSV export, full JSON backup & restore, multi-account (including prop-firm drawdown rules), instrument library. |
  | **Options** | Black-Scholes calculator (price, delta/gamma/theta/vega, break-even, ITM/OTM), premium-based position sizing, and a plan that warns instead of printing a fake R:R when your target premium is below the entry. 7 option presets (100× multiplier). *IV is yours to type — there is no options feed.* |
  | **Prop challenge** | Named challenge shapes (5 %/10 %, 6 %/6 %, instant…) applied to an account, then a live tracker over 4 checks — daily loss, max drawdown, profit target, consistency — with progress %. |
-@@ -263,6 +843,51 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
+@@ -263,6 +896,51 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
  
  Guides: [docs/BOTS.md](docs/BOTS.md) · [docs/PLAYLIST-CURRICULUM.md](docs/PLAYLIST-CURRICULUM.md)
  
@@ -975,7 +1028,7 @@ index df9ae3c..56c8dbb 100644
  
  * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.
 diff --git a/docs/API.md b/docs/API.md
-index 4475db3..8d2185a 100644
+index 4475db3..7e85eb5 100644
 --- a/docs/API.md
 +++ b/docs/API.md
 @@ -1,5 +1,91 @@
@@ -1070,7 +1123,41 @@ index 4475db3..8d2185a 100644
  Base URL: `http://localhost:3000/api`
  Auth: session cookie (`tj_session`) **or** an `x-session: <token>` header. There is **no sign-in wall**:
  `POST /auth/local` hands the caller a workspace (reusing the database's existing one locally, minting a
-@@ -383,3 +469,848 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
+@@ -101,7 +187,7 @@ curl -s -H "x-session: $TOKEN" "localhost:3000/api/analytics/monte-carlo?risk_pc
+ | Method | Path | Notes |
+ |---|---|---|
+ | GET | `/accounts` | includes per-account stats: net P&L, expectancy, drawdown vs limit, open risk, target progress |
+-| POST/PUT/DELETE | `/accounts` · `/accounts/:id` | `{ name, broker, account_type, currency, starting_balance, risk_per_trade_pct, daily_loss_limit_pct, max_drawdown_pct, profit_target_pct, prop_preset, prop_rules }` — `prop_preset` applies a named challenge shape (see `/prop/presets`), `prop_rules` overrides it with your own numbers |
++| POST/PUT/DELETE | `/accounts` · `/accounts/:id` | `{ name, broker, account_type, currency, starting_balance, risk_per_trade_pct, daily_loss_limit_pct, max_drawdown_pct, profit_target_pct, prop_preset, prop_rules, news_block_before_min, news_settle_after_min }` — `prop_preset` applies a named challenge shape (see `/prop/presets`), `prop_rules` overrides it with your own numbers; the two news fields are the pre-release block (default 15, 1–240) and the post-release settle (**floor 30**, default 45, 30–240), and a response carries `news_note` |
+ | GET | `/accounts/:id/challenge` | `{ preset, status: { ok, passed, checks[4], progress_pct, drawdown_pct } }` — daily loss, max drawdown, profit target and consistency checked against the account's own trades |
+ | GET/POST/PUT/DELETE | `/strategies` · `/strategies/:id` | `{ name, description, market_conditions, timeframes, entry_rules[], exit_rules[], checklist[], risk_rules, target_r_multiple, colour, active }`; GET also returns per-strategy performance stats |
+ | GET/POST/DELETE | `/instruments` · `/instruments/:id` | instrument spec: `{ symbol, name, asset_class, exchange, currency, tick_size, pip_size, value_per_point, unit }` |
+@@ -179,7 +265,23 @@ the methodology, the weights and the honest limitations.
+ | POST | `/bots/signals/resolve` | `{ limit }` | resolves pending alerts against real candles → `{ checked, results[], stats }` |
+ | GET | `/bots/signals/stats` | — | win rate / expectancy of tracked alerts, by grade |
+ | GET | `/bots/sessions` | — | session + killzone windows and the active one |
+-| GET | `/bots/news/:symbol` | `window` (minutes) | high-impact releases inside the window |
++| GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, settings }`. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
++
++### The news stand-down — two clocks, not one (M110)
++
++`src/news-window.js` owns **both** windows and is the only rule the engine, the routes and the
++desk use. The pre-release **block** (`news_block_before_min`, default 15) and the post-release
++**settle** (`news_settle_after_min`, default 45, floor 30) are separate settings, applied by
++**signed offset**: a release that has not printed is judged by the block, one that has printed by
++the settle. His requirement notes a floor for the block (*"at least put it at 15 minutes before and
++after"*), so a block below 15 is **stored as set** with the warning
++`news_block_before_below_recommended` and never shortens the settle; the settle floor is a
++**refusal** (`news_settle_below_floor`), not a warning, because a shorter settle is the exact
++failure this pair of settings exists to prevent. The old single number is refused — one number can
++no longer set both sides — and `plan()` clamps on read while reporting which side was clamped and
++where each value came from. Unknown, legacy and imported inputs stay **separately labelled**:
++a stored value outside the bounds is corrected and told, an account with no value reads at the
++defaults with `source: default`, and no bundle import can move the pair at all.
+ 
+ ### Choosing what to measure on `/bots/backtest`
+ 
+@@ -383,3 +485,848 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
  | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
  | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
  | `DELETE /api/chart/drawings?symbol=…&tf=…` | clears that market |
@@ -4954,7 +5041,7 @@ index 0000000..061ffe4
 +  };
 +})(window);
 diff --git a/public/js/views/settings.js b/public/js/views/settings.js
-index b72afdb..0835e30 100644
+index b72afdb..7d97a16 100644
 --- a/public/js/views/settings.js
 +++ b/public/js/views/settings.js
 @@ -31,6 +31,8 @@
@@ -5078,12 +5165,14 @@ index b72afdb..0835e30 100644
          const body = U.h('div');
          body.innerHTML = `<div class="form-grid" style="grid-template-columns:1fr 1fr">
            <label class="field span2"><span>Account name</span><input id="a-name" value="${U.esc(v.name)}" placeholder="e.g. FTMO 100k Challenge" /></label>
-@@ -394,12 +432,20 @@
+@@ -394,12 +432,22 @@
            <label class="field"><span>Type</span><select id="a-type">${['live', 'demo', 'prop'].map((t) => `<option value="${t}" ${v.account_type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
            <label class="field"><span>Currency</span><input id="a-ccy" value="${U.esc(v.currency)}" /></label>
            <label class="field"><span>Starting balance</span><input id="a-bal" type="number" step="any" value="${v.starting_balance}" /></label>
 -          <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /></label>
 +          <label class="field"><span>Risk per trade (%)</span><input id="a-risk" type="number" step="0.05" value="${v.risk_per_trade_pct}" /><div class="field-note">Default 0.5%; above it requires a deliberate manual unlock. The course maximum is 1%, never increased by a win/loss streak.</div></label>
++          <label class="field"><span>News block: minutes BEFORE a release</span><input id="a-news-before" type="number" min="1" max="240" step="1" value="${v.news_block_before_min ?? 15}" /><div class="field-note">Pre-release stand-down. He uses 15 as the default and recommends at least 15; 5, 10, 15, 30 and 60 are all settings he demonstrates, so a lower value is stored with a warning and never used to shorten the settle below.</div></label>
++          <label class="field"><span>News settle: minutes AFTER a release</span><input id="a-news-after" type="number" min="30" max="240" step="1" value="${v.news_settle_after_min ?? 45}" /><div class="field-note">Post-release settle. Default 45, inside the 30–60 minutes he names; 30 is the floor, because a shorter settle is the failure this pair of settings exists to prevent. It is a separate clock from the block above.</div></label>
 +          <label class="field"><span>Max trades per UTC day</span><input id="a-trades" type="number" min="1" max="100" step="1" value="${v.max_trades_day ?? 3}" /><div class="field-note">Course guidance: 3 intraday / 5 scalping. Frozen on the day's first guardrail check; changes then apply tomorrow. History never raises this cap.</div></label>
 +          <div class="field span2"><label class="row gap-8"><input id="a-session-enabled" type="checkbox" ${v.max_session_minutes != null ? 'checked' : ''} /><span>Optional manual session-duration warning</span></label><label for="a-session">Ceiling in minutes</label><input id="a-session" type="number" min="1" max="1440" step="1" value="${U.esc(v.max_session_minutes ?? 120)}" ${v.max_session_minutes == null ? 'disabled' : ''} /><div class="field-note">Off by default. Two hours is an example, not a universal ceiling. Start the marker yourself before the session; it measures only elapsed server time since that click, not broker/chart screen time. The selected duration freezes at start; edits do not reset it or other guardrails.</div></div>
            <label class="field"><span>Daily loss limit (%)</span><input id="a-daily" type="number" step="0.1" value="${v.daily_loss_limit_pct}" /></label>
@@ -5101,7 +5190,7 @@ index b72afdb..0835e30 100644
          global.App.modal({
            title: isNew ? 'New account' : 'Edit account', body, small: true,
            actions: [{ label: 'Cancel', ghost: true }, {
-@@ -407,10 +453,17 @@
+@@ -407,10 +455,27 @@
                const payload = {
                  name: U.$('#a-name', body).value, broker: U.$('#a-broker', body).value, account_type: U.$('#a-type', body).value,
                  currency: U.$('#a-ccy', body).value, starting_balance: U.$('#a-bal', body).value,
@@ -5110,6 +5199,8 @@ index b72afdb..0835e30 100644
                  max_drawdown_pct: U.$('#a-dd', body).value, profit_target_pct: U.$('#a-target', body).value,
 +                daily_profit_limit_pct: profitEnabled.checked ? profitInput.value : null,
 +                max_session_minutes: sessionEnabled.checked ? sessionInput.value : null,
++                news_block_before_min: U.$('#a-news-before', body).value,
++                news_settle_after_min: U.$('#a-news-after', body).value,
                };
 +              if(Views.routine){try{Object.assign(payload,Views.routine.collectSchedule(body));}catch(e){return global.App.toast(e.message,'err');}}
                if (!payload.name) return global.App.toast('Account needs a name', 'err');
@@ -5117,6 +5208,14 @@ index b72afdb..0835e30 100644
 +                return global.App.toast('Daily profit stop needs a positive percentage up to 100, or turn it off.', 'err');
 +              if (sessionEnabled.checked && (!Number.isInteger(Number(sessionInput.value)) || Number(sessionInput.value)<1 || Number(sessionInput.value)>1440))
 +                return global.App.toast('Session ceiling needs whole minutes from 1 to 1440, or turn it off.','err');
++              // M110 — checked here for a fast message, enforced again on the server (and clamped
++              // on read), so the dialog is not the guard. The settle floor is the one bound the
++              // server refuses outright.
++              const newsBefore = U.$('#a-news-before', body).value, newsAfter = U.$('#a-news-after', body).value;
++              if (!Number.isInteger(Number(newsBefore)) || Number(newsBefore) < 1 || Number(newsBefore) > 240)
++                return global.App.toast('The news block before a release needs whole minutes from 1 to 240.', 'err');
++              if (!Number.isInteger(Number(newsAfter)) || Number(newsAfter) < 30 || Number(newsAfter) > 240)
++                return global.App.toast('The post-release settle needs whole minutes from 30 to 240 — 30 is the floor.','err');
                if (isNew) await API.post('/accounts', payload); else await API.put('/accounts/' + a.id, payload);
                await Store.reloadAll(); close(); global.App.toast('Account saved', 'ok'); global.App.refresh();
              },
@@ -7944,10 +8043,10 @@ index 0000000..dd6a036
 +module.exports = { parseProfitLimit, inputError, retainedState, retainState, DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
 +  evaluate, unavailable, isBlocked, applyToSetups, admissionError, admit, observe, snapshotFields, logEvent, eventsForDay, record, overrideReason, actionPermission };
 diff --git a/src/bots/index.js b/src/bots/index.js
-index 0007b01..489a513 100644
+index 0007b01..18a8fd6 100644
 --- a/src/bots/index.js
 +++ b/src/bots/index.js
-@@ -16,16 +16,43 @@
+@@ -16,16 +16,44 @@
   *      so the bot's own hit rate is on the record (no vibes, no cherry-picking).
   */
  
@@ -7967,6 +8066,7 @@ index 0007b01..489a513 100644
  const Cor = require('./correction');
 +const Guards = require('./guardrails');
 +const StateGate = require('../state-gate');
++const NewsWindow = require('../news-window');   // M110 — two clocks, not one number
 +
 +/* -------------------------------------------------------------------------
 + * M124 — THE ENTRY-SERIES DEPTH THE METHOD READS.
@@ -7992,7 +8092,66 @@ index 0007b01..489a513 100644
  
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-@@ -97,6 +124,175 @@ function specOf(symbol) {
+@@ -48,10 +76,20 @@ function currenciesOf(symbol) {
+ }
+ 
+ /**
+- * High-impact releases inside ±windowMin of now for this symbol's currencies.
+- * @returns {Promise<{blackout:string|null, events:Array, window_min:number}>}
++ * M110 — high-impact releases inside the news stand-down, judged ASYMMETRICALLY: a release
++ * that has not printed yet is measured against the pre-release block, one that has printed
++ * against the post-release settle. `NewsWindow.hit()` is the only test; there is no single
++ * `windowMin` here or anywhere else, and a bare number is refused rather than taken to mean
++ * "both sides" (that equivalence is the recorded defect).
++ *
++ * @param {string} symbol
++ * @param {object} pair `NewsWindow.plan()` output (or any `{before_min, after_min}` pair)
++ * @returns {Promise<{blackout:string|null, events:Array, windows:object}>}
+  */
+-async function newsCheck(symbol, windowMin = 45) {
++async function newsCheck(symbol, pair = NewsWindow.plan(null)) {
++  if (!pair || typeof pair !== 'object' || typeof pair.before_min !== 'number' || typeof pair.after_min !== 'number') {
++    throw NewsWindow.invalid('The news check takes a {before_min, after_min} pair from the account\u2019s two settings — never one number for both sides.', 'news_window_split_required');
++  }
+   try {
+     const cal = await M.getCalendar();
+     const events = (cal && cal.events) || [];
+@@ -62,18 +100,29 @@ async function newsCheck(symbol, windowMin = 45) {
+       if (!/high/i.test(e.impact || '')) return false;
+       const ccy = String(e.currency || '').toUpperCase();
+       if (!ccys.some((c) => ccy.includes(c))) return false;
+-      return Math.abs(new Date(e.date).getTime() - now) <= windowMin * 60000;
+-    }).map((e) => ({ title: e.title, currency: e.currency, time: e.date, impact: e.impact, forecast: e.forecast, previous: e.previous }));
++      return !!NewsWindow.hit(new Date(e.date).getTime(), now, pair);
++    }).map((e) => {
++      const when = NewsWindow.hit(new Date(e.date).getTime(), now, pair);
++      return { title: e.title, currency: e.currency, time: e.date, impact: e.impact, forecast: e.forecast, previous: e.previous, side: when.side, offset_min: when.offset_min, window_min: when.window_min };
++    });
+     const upcoming = events.filter((e) => e.date && /high/i.test(e.impact || '') && new Date(e.date).getTime() > now && new Date(e.date).getTime() - now < 6 * 3600e3)
+       .filter((e) => ccys.some((c) => String(e.currency || '').toUpperCase().includes(c)))
+       .slice(0, 4)
+       .map((e) => ({ title: e.title, currency: e.currency, time: e.date, in_minutes: Math.round((new Date(e.date).getTime() - now) / 60000) }));
++    const sides = { before: pair.before_min, after: pair.after_min };
+     return {
+-      blackout: hits.length ? `${hits.map((h) => `${h.currency} ${h.title}`).join('; ')} — high-impact release inside ±${windowMin} min. Stand down until it prints.` : null,
+-      events: hits, upcoming, currencies: ccys, window_min: windowMin,
++      // The numbers in the string are the account's own settings, interpolated rather than
++      // hardcoded, and the side each blocked release is on is named — so the note can never
++      // describe a window the app is not applying.
++      blackout: hits.length ? `${hits.map((h) => `${h.currency} ${h.title}${h.side === 'before' ? ` in ${h.offset_min} min` : ` printed ${h.offset_min} min ago`}`).join('; ')} — inside your news window (${sides.before} min before / ${sides.after} min after a release). ${hits.some((h) => h.side === 'before') ? 'Stand down until it prints.' : 'It has printed — stand down until the settle passes.'}` : null,
++      events: hits, upcoming, currencies: ccys,
++      windows: { before_min: sides.before, after_min: sides.after, source: pair.source || null, clamped: pair.clamped || [] },
+     };
+   } catch (e) {
+-    return { blackout: null, events: [], upcoming: [], currencies: currenciesOf(symbol), window_min: windowMin, error: e.message };
++    // M111 is open and NOT solved here: this branch is unchanged in the one way that matters —
++    // it reports the failure, and `blackout: null` on this path is the fail-open behaviour the
++    // M111 row measures. The pair is echoed so the caller still knows which window was in force.
++    return { blackout: null, events: [], upcoming: [], currencies: currenciesOf(symbol), windows: { before_min: pair.before_min, after_min: pair.after_min, source: pair.source || null, clamped: [], unavailable: true }, error: e.message };
+   }
+ }
+ 
+@@ -97,6 +146,175 @@ function specOf(symbol) {
  const floorRR = (v) => (Number(v) > 0 ? Number(v) : 1);   // the trader's minimum R:R
  const runRR = (v) => Math.max(2, floorRR(v));              // the setup model's 1:2 runway
  
@@ -8168,17 +8327,26 @@ index 0007b01..489a513 100644
  async function analyse(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const spec = specOf(sym);
-@@ -109,23 +305,32 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -108,24 +326,41 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null };
    const replay = trim > 0 || cut.asOf ? cut : null;
  
++  // M110: the news pair comes from the account's TWO settings, so the account is read
++  // before the calendar check instead of after it (it used to be read lower down, which is
++  // part of why a hardcoded constant was doing the work of a setting).
++  const account = opts.userId ? await Cor.accountOf(opts.userId, opts.accountId) : null;
++  const newsPlan = NewsWindow.plan(account, opts);   // M110 — clamped on read, never one knob
++
    const [momentum, news] = await Promise.all([
 -    Momentum.analyse(sym, tf, { limit: 600, ...cut, minRR: floorRR(opts.minRR) }),
+-    newsCheck(sym, opts.newsWindowMin || 45),
 +    Momentum.analyse(sym, tf, { limit: 600, ...cut, minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.nowMs }),
-     newsCheck(sym, opts.newsWindowMin || 45),
++    newsCheck(sym, newsPlan),
    ]);
  
    // the setup model needs the raw trading-timeframe handle (zones, sweeps, indicators)
 -  const series = await Momentum.series(sym, tf, 600, cut);
+-  const account = opts.userId ? await Cor.accountOf(opts.userId, opts.accountId) : null;
 +  const series = await Momentum.series(sym, tf, METHOD_ENTRY_BARS, cut);   // M124: shared with chart()
 +
 +  // M50. Skipped during a bar replay on purpose: a replay reconstructs what the bot would have
@@ -8188,7 +8356,6 @@ index 0007b01..489a513 100644
 +  const momentumEff = hyst
 +    ? { ...momentum, bias: hyst.bias, direction: hyst.bias > 0 ? 'bullish' : hyst.bias < 0 ? 'bearish' : 'neutral' }
 +    : momentum;
-   const account = opts.userId ? await Cor.accountOf(opts.userId, opts.accountId) : null;
    const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
 -  const riskPct = account ? Number(account.risk_per_trade_pct || 1) : Number(opts.riskPct || 1);
 +  const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
@@ -8204,12 +8371,15 @@ index 0007b01..489a513 100644
 +    balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
      newsBlackout: news.blackout, minRR: floorRR(opts.minRR),
 -    topdown: momentum.topdown,          // the method decides whether a side may be armed
++    // M62 (surviving half): the note states the windows this account is actually governed
++    // by, interpolated from the settings above, instead of naming no window or a stale one.
++    newsNote: NewsWindow.detail(newsPlan),
 +    topdown: momentum.topdown, useBreakers: !!opts.useBreakers,          // the method decides whether a side may be armed
 +    sessionPref: opts.sessionPref || null,   // M26 — the trader's one window
    });
  
    let prediction = null;
-@@ -137,23 +342,39 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -137,23 +372,39 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      }
    }
  
@@ -8255,7 +8425,7 @@ index 0007b01..489a513 100644
      headline: td.headline || null,
      conviction: td.conviction || null,
      pending_step: (td.steps || []).find((s) => !s.done) || null,
-@@ -168,8 +389,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -168,8 +419,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      // build the *untrimmed* read as well, so a replay can say what happened after
      const L2 = Momentum.topdown.layersFor(tf);
      const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
@@ -8266,7 +8436,7 @@ index 0007b01..489a513 100644
      replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
    }
    const now = Now.build({
-@@ -189,7 +410,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -189,7 +440,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      method_verdict: methodVerdict,
      topdown: td,
      momentum: {
@@ -8282,7 +8452,7 @@ index 0007b01..489a513 100644
        alignment: momentum.alignment, mechanics: momentum.mechanics,
        narrative: momentum.narrative, conflicts: momentum.conflicts,
        htf: momentum.htf, quote: momentum.quote, series: momentum.series,
-@@ -213,6 +441,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -213,6 +471,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
        direction: prediction.direction, setups: prediction.setups, buy: prediction.buy, sell: prediction.sell,
        model: prediction.model, backtest: prediction.backtest, summary: prediction.summary,
        current: predRow || null, error: prediction.error || null,
@@ -8290,7 +8460,7 @@ index 0007b01..489a513 100644
      } : null,
      news,
      daily,
-@@ -227,8 +456,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -227,8 +486,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
    parts.push(`${sym} ${tf}: ${v.action}${v.grade && v.grade !== 'no-trade' ? ` (${v.grade}, ${v.score}/100)` : ''} — ${v.headline}`);
    if (td.headline) parts.push(`${td.status === 'confirmed' ? 'Method: confirmed' : 'Method: waiting'} — ${td.headline}`);
    if (td.playbook && td.playbook.length) parts.push(`Next: ${td.playbook[0]}`);
@@ -8301,7 +8471,7 @@ index 0007b01..489a513 100644
    if (news.blackout) parts.push(`NEWS BLACKOUT: ${news.blackout}`);
    if (daily && daily.status !== 'clear') parts.push(`Personal guardrail: ${daily.message}`);
    if (momentum.conflicts.length) parts.push(`Caution: ${momentum.conflicts.join(' ')}`);
-@@ -266,6 +495,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -266,6 +525,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
   * @param {string} tf
   * @param {{bars?:number, userId?:number, accountId?:number, minRR?:number, balance?:number, riskPct?:number}} opts
   */
@@ -8309,7 +8479,7 @@ index 0007b01..489a513 100644
  async function chart(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const bars = Math.min(Math.max(Number(opts.bars) || 400, 80), 1200);
-@@ -279,44 +509,56 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -279,44 +539,56 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // never disagree about the same market (they did once: the chart asked for 200
    // higher-timeframe candles and the method read a different range from them).
    const [entry, bias, triggerRaw] = await Promise.all([
@@ -8383,7 +8553,7 @@ index 0007b01..489a513 100644
        entry_status: td.status === 'confirmed' ? 'confirmed' : td.status,
        alternatives: { aggressive: crt.aggressive, safer: crt.safer },
        management: {
-@@ -325,9 +567,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -325,9 +597,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
        },
        note: `${crt.side} after the ${crt.sweep.level} sweep failed to hold · ${crt.target_note}`,
      };
@@ -8395,7 +8565,7 @@ index 0007b01..489a513 100644
        ...best.levels,
        entry_status: best.levels.entry_status,
      };
-@@ -335,7 +577,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -335,7 +607,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const smc = {
      price: entry.smc.price, atr: entry.smc.atr, counts: entry.smc.counts,
@@ -8404,7 +8574,7 @@ index 0007b01..489a513 100644
      premium_discount: entry.smc.premium_discount, sessions: entry.smc.sessions,
      order_blocks: entry.smc.order_blocks.slice(0, 8), fvgs: entry.smc.fvgs.slice(0, 8),
      sweeps: entry.smc.sweeps.slice(0, 6), displacement: entry.smc.displacement.slice(0, 4),
-@@ -349,7 +591,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -349,7 +621,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const stack = {
      bias: {
@@ -8413,7 +8583,7 @@ index 0007b01..489a513 100644
        structure: bias.smc.structure ? bias.smc.structure.trend : null,
        state: td.layers.bias.state,
        level: td.layers.bias.range ? { low: td.layers.bias.range.low, high: td.layers.bias.range.high, label: 'CRT range' } : null,
-@@ -370,7 +612,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -370,7 +642,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // the same single answer the analysis strip shows, so the chart and the words
    // on screen can never disagree about what to do
    const now = Now.build({
@@ -8422,7 +8592,7 @@ index 0007b01..489a513 100644
      replay: cut.trim || cut.asOf ? { trim: cut.trim || null, since: null } : null,
      nowMs: opts.nowMs,
      minRR: opts.minRR,
-@@ -380,24 +622,36 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -380,24 +652,36 @@ async function chart(symbol, tf = '15m', opts = {}) {
      ok: true, symbol: sym, timeframe: tf, instrument: spec,
      generated_at: new Date().toISOString(),
      replay: cut.trim || cut.asOf ? { trim: cut.trim || null, as_of: cut.asOf ? new Date(cut.asOf).toISOString() : null } : null,
@@ -8464,7 +8634,7 @@ index 0007b01..489a513 100644
    const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
    const rows = [];
    let cursor = 0;
-@@ -406,13 +660,22 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -406,13 +690,22 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
        const sym = list[cursor++];
        try {
          const [momentum, series] = await Promise.all([
@@ -8491,7 +8661,7 @@ index 0007b01..489a513 100644
          // one row per market: the side the method permits (a scan that lists both
          // a buy and a sell for the same symbol is not a scan, it is a coin toss)
          const best = (momentum.topdown && momentum.topdown.direction
-@@ -421,10 +684,21 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -421,10 +714,21 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
          rows.push({
            symbol: sym, timeframe: tf, ok: true,
            price: series.price, atr: series.atr,
@@ -8516,7 +8686,7 @@ index 0007b01..489a513 100644
            entry_status: best && best.levels ? best.levels.entry_status : null,
            entry: best && best.levels ? best.levels.entry : null,
            stop: best && best.levels ? best.levels.stop : null,
-@@ -469,6 +743,7 @@ async function ensureSignalsTable() {
+@@ -469,6 +773,7 @@ async function ensureSignalsTable() {
      rr_primary REAL, rr_final REAL,
      mechanics REAL,
      sentiment TEXT,           -- the read-aloud headline at the time
@@ -8524,7 +8694,7 @@ index 0007b01..489a513 100644
      entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf
      mtf_tf TEXT,
      risk_atr REAL,
-@@ -486,7 +761,8 @@ async function ensureSignalsTable() {
+@@ -486,7 +791,8 @@ async function ensureSignalsTable() {
    const cols = await db.prepare('PRAGMA table_info(bot_signals)').all();
    const have = new Set((cols || []).map((c) => c.name));
    for (const [name, type] of [['entry_mode', 'TEXT'], ['mtf_tf', 'TEXT'], ['risk_atr', 'REAL'],
@@ -8534,7 +8704,7 @@ index 0007b01..489a513 100644
      if (!have.has(name)) await db.exec(`ALTER TABLE bot_signals ADD COLUMN ${name} ${type}`);
    }
  }
-@@ -497,55 +773,70 @@ async function ensureSignalsTable() {
+@@ -497,55 +803,70 @@ async function ensureSignalsTable() {
   * re-derive anything from a fresh analysis — it stores exactly what the
   * trader was shown, so the bot can be graded on it later.
   */
@@ -8620,7 +8790,7 @@ index 0007b01..489a513 100644
      const info = await ins.run(
        userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
        predRow ? predRow.p_win : null,
-@@ -553,8 +844,10 @@ async function saveSignals(userId, payload) {
+@@ -553,8 +874,10 @@ async function saveSignals(userId, payload) {
        L.targets.length > 1 ? L.targets[L.targets.length - 1].price : null,
        L.rr_primary, L.rr_final,
        payload.momentum ? payload.momentum.mechanics.score : null,
@@ -8632,7 +8802,7 @@ index 0007b01..489a513 100644
      );
      out.push(info.lastInsertRowid);
      saved++;
-@@ -562,6 +855,33 @@ async function saveSignals(userId, payload) {
+@@ -562,6 +885,33 @@ async function saveSignals(userId, payload) {
    return { saved, ids: out };
  }
  
@@ -8666,7 +8836,7 @@ index 0007b01..489a513 100644
  async function listSignals(userId, { status = null, limit = 50 } = {}) {
    await ensureSignalsTable();
    const rows = status
-@@ -633,9 +953,13 @@ async function signalStats(userId) {
+@@ -633,9 +983,13 @@ async function signalStats(userId) {
    const resolved = all.filter((s) => ['win', 'loss', 'expired'].includes(s.status));
    const wins = resolved.filter((s) => s.status === 'win');
    const byGrade = {};
@@ -8680,7 +8850,7 @@ index 0007b01..489a513 100644
    }
    return {
      total: all.length,
-@@ -646,6 +970,8 @@ async function signalStats(userId) {
+@@ -646,6 +1000,8 @@ async function signalStats(userId) {
      win_rate: resolved.length ? r2((wins.length / resolved.length) * 100) : null,
      total_r: r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0)),
      expectancy_r: resolved.length ? r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0) / resolved.length) : null,
@@ -9420,7 +9590,7 @@ index 0000000..f43d8e2
 +}
 +module.exports = { discover, scope, forSweep, annotate, unknown, TF_MS, number, samePrice };
 diff --git a/src/bots/setup.js b/src/bots/setup.js
-index 138beb4..bfcba0f 100644
+index 138beb4..4606b4d 100644
 --- a/src/bots/setup.js
 +++ b/src/bots/setup.js
 @@ -15,13 +15,27 @@
@@ -10044,7 +10214,7 @@ index 138beb4..bfcba0f 100644
      if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
  
      /* ------------------------------------------------------------- 6. higher-timeframe bias */
-@@ -155,12 +642,16 @@ function buildSetups(analysis, ctx = {}) {
+@@ -155,12 +642,18 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      /* ------------------------------------------------------- 8. session / killzone */
@@ -10055,15 +10225,17 @@ index 138beb4..bfcba0f 100644
      /* ---------------------------------------------------------------- 9. news */
      add('news', 'No high-impact news in the window', !blackout, 10,
 -      blackout ? blackout : 'No high-impact releases due in the next 60 minutes.');
-+      // M4: the previous fallback asserted "the next 60 minutes", which was wrong twice —
-+      // newsCheck() defaults to windowMin = 45 (bots/index.js), and the test is SYMMETRIC
-+      // (±windowMin, both sides of the entry), not forward-only. State neither the number
-+      // nor a direction, so the string cannot drift out of sync with the config again.
-+      blackout ? blackout : 'No high-impact releases inside the news window (checked either side of the entry).');
++      // M4 fixed the old "the next 60 minutes" fallback, which was wrong twice (it named a
++      // hardcoded number and described a symmetric test as forward-only). M62's surviving
++      // half is closed by M110 here: the note does not stay silent about the window — it
++      // INTERPOLATES the two configured numbers, which are the account's own settings, so
++      // it cannot describe a rule the app is not applying. The fallback only applies to a
++      // caller that supplied neither (a research call with no account note).
++      blackout ? blackout : (ctx.newsNote || 'No high-impact releases inside the news window (checked either side of the entry).'));
  
      /* ------------------------------------------------------------- 10. volatility */
      const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
-@@ -169,22 +660,68 @@ function buildSetups(analysis, ctx = {}) {
+@@ -169,22 +662,68 @@ function buildSetups(analysis, ctx = {}) {
  
      /* --------------------------------------------------------- 11. liquidity runway */
      let levels = null;
@@ -10141,7 +10313,7 @@ index 138beb4..bfcba0f 100644
          const extreme = long ? pd.range_high : pd.range_low;
          const reward = Math.abs(extreme - entry);
          if (reward > 0) {
-@@ -194,28 +731,63 @@ function buildSetups(analysis, ctx = {}) {
+@@ -194,28 +733,63 @@ function buildSetups(analysis, ctx = {}) {
            }
          }
        }
@@ -10222,7 +10394,7 @@ index 138beb4..bfcba0f 100644
  
        // entry status: are we at the zone, or chasing?
        let entryStatus, entryNote;
-@@ -230,38 +802,88 @@ function buildSetups(analysis, ctx = {}) {
+@@ -230,38 +804,88 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
@@ -10326,7 +10498,7 @@ index 138beb4..bfcba0f 100644
        };
      } else {
        add('runway', 'Open runway to opposing liquidity', false, 14, 'No zone, so no defined risk — the model needs a level to trade against.');
-@@ -271,37 +893,187 @@ function buildSetups(analysis, ctx = {}) {
+@@ -271,37 +895,190 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -10410,7 +10582,10 @@ index 138beb4..bfcba0f 100644
 +      vetoes.push('No defined valid stop — ' + (stopCheck ? stopCheck.detail : 'selected invalidation is unavailable.'));
 +    }
 +    if (levels && levels.entry_status === 'invalid') vetoes.push('The level is invalidated — remove it and re-map.');
-+    if (blackout) vetoes.push('High-impact news inside the window.');
++    // M110 — the veto names the release, the side it is on and the two configured windows
++    // (the blackout string is built from the account's settings), instead of a generic
++    // phrase that leaves the trader guessing which clock stopped the trade.
++    if (blackout) vetoes.push(blackout);
 +    // M8 — tested against the boolean, not truthiness: when analysis is the short-series
 +    // sentinel, `sessions` is {} and in_killzone is undefined, which must NOT veto.
 +    /* M26 — the specific-window veto. It SUPERSEDES the generic one when it applies,
@@ -10521,7 +10696,7 @@ index 138beb4..bfcba0f 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +1083,60 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +1088,60 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -10588,7 +10763,7 @@ index 138beb4..bfcba0f 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -331,7 +1145,11 @@ function buildSetups(analysis, ctx = {}) {
+@@ -331,7 +1150,11 @@ function buildSetups(analysis, ctx = {}) {
    candidates.sort((a, b) => b.score - a.score);
  
    /* --------------------------------------------------------------- top verdict */
@@ -10601,7 +10776,7 @@ index 138beb4..bfcba0f 100644
    const buy = candidates.find((c) => c.dir === 1);
    const sell = candidates.find((c) => c.dir === -1);
  
-@@ -350,8 +1168,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -350,8 +1173,7 @@ function buildSetups(analysis, ctx = {}) {
      const aligned = candidates.find((c) => c.dir === td.direction);
      if (aligned) best = aligned;                    // the higher timeframe chooses the side
    }
@@ -10611,7 +10786,7 @@ index 138beb4..bfcba0f 100644
    const methodBlocked = !!(td && (td.blocked || (td.direction !== 0 && (!best || best.dir !== td.direction))));
  
    let verdict;
-@@ -367,20 +1184,22 @@ function buildSetups(analysis, ctx = {}) {
+@@ -367,20 +1189,22 @@ function buildSetups(analysis, ctx = {}) {
        detail: `${why}${pendingStep(td)}`,
        next_trigger: [td.playbook && td.playbook.length ? td.playbook[0] : null, nextTriggerHint(analysis)].filter(Boolean),
        source: 'topdown-gate', method, setup_action: setupAction,
@@ -10639,7 +10814,7 @@ index 138beb4..bfcba0f 100644
        : `${best.grade} ${best.side} setup`;
      const methodOk = !td ? null : (td.direction !== 0 && td.direction === best.dir);
      verdict = {
-@@ -399,7 +1218,52 @@ function buildSetups(analysis, ctx = {}) {
+@@ -399,7 +1223,52 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -10692,7 +10867,7 @@ index 138beb4..bfcba0f 100644
        news_blackout: blackout || null,
        min_rr: minRR,
      },
-@@ -430,4 +1294,8 @@ function pendingStep(td) {
+@@ -430,4 +1299,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  
@@ -13106,7 +13281,7 @@ index 0000000..5d2e9d9
 +}
 +module.exports={key,labels,invalid,info,optional,owned,recordOn,attachOn,read,change,vocabulary,portableVocabulary,vocabularyOn,aggregate};
 diff --git a/src/db.js b/src/db.js
-index 7e2fd68..f011903 100644
+index 7e2fd68..d4f1752 100644
 --- a/src/db.js
 +++ b/src/db.js
 @@ -97,12 +97,26 @@ async function tx(fn) {
@@ -13137,7 +13312,7 @@ index 7e2fd68..f011903 100644
  };
  
  /* ------------------------------------------------------------------ schema */
-@@ -117,14 +131,91 @@ CREATE TABLE IF NOT EXISTS accounts (
+@@ -117,14 +131,97 @@ CREATE TABLE IF NOT EXISTS accounts (
    currency TEXT DEFAULT 'USD',
    starting_balance REAL DEFAULT 10000,
    current_balance REAL DEFAULT 10000,
@@ -13154,6 +13329,12 @@ index 7e2fd68..f011903 100644
 +  routine_lead_minutes INTEGER NOT NULL DEFAULT 60 CHECK(routine_lead_minutes BETWEEN 1 AND 180),
 +  routine_order TEXT NOT NULL DEFAULT 'ep17' CHECK(routine_order IN ('ep17','meditation_first')),
 +  daily_profit_limit_pct REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100)), -- M81 optional, separate from lifetime profit target
++  -- M110: the news stand-down is TWO clocks. The pre-release block and the post-release
++  -- settle are separate settings with separate bounds (this comment carries no semicolon
++  -- on purpose — exec() splits the schema on them). Nothing in the app has a single number
++  -- that sets both, and the settle cannot be stored below its 30-minute floor.
++  news_block_before_min INTEGER NOT NULL DEFAULT 15 CHECK(news_block_before_min BETWEEN 1 AND 240 AND news_block_before_min=CAST(news_block_before_min AS INTEGER)),
++  news_settle_after_min INTEGER NOT NULL DEFAULT 45 CHECK(news_settle_after_min BETWEEN 30 AND 240 AND news_settle_after_min=CAST(news_settle_after_min AS INTEGER)),
    max_drawdown_pct REAL DEFAULT 10.0,
    profit_target_pct REAL DEFAULT 8.0,
    is_default INTEGER DEFAULT 0,
@@ -13230,7 +13411,7 @@ index 7e2fd68..f011903 100644
  CREATE TABLE IF NOT EXISTS bot_signals (
      id INTEGER PRIMARY KEY AUTOINCREMENT,
      user_id INTEGER NOT NULL,
-@@ -139,6 +230,7 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+@@ -139,6 +236,7 @@ CREATE TABLE IF NOT EXISTS bot_signals (
      rr_primary REAL, rr_final REAL,
      mechanics REAL,
      sentiment TEXT,           -- the read-aloud headline at the time
@@ -13238,7 +13419,7 @@ index 7e2fd68..f011903 100644
      entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf  (how this plan was anchored)
      mtf_tf TEXT,              -- the lower timeframe that confirmed an mtf plan
      risk_atr REAL,            -- stop distance in ATR at plan time
-@@ -148,6 +240,238 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+@@ -148,6 +246,238 @@ CREATE TABLE IF NOT EXISTS bot_signals (
      created_at TEXT NOT NULL DEFAULT (datetime('now')),
      resolved_at TEXT
    );
@@ -13477,7 +13658,7 @@ index 7e2fd68..f011903 100644
  CREATE TABLE IF NOT EXISTS goals (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -173,6 +497,102 @@ CREATE TABLE IF NOT EXISTS instruments (
+@@ -173,6 +503,102 @@ CREATE TABLE IF NOT EXISTS instruments (
    unit TEXT DEFAULT 'units',
    UNIQUE(user_id, symbol)
  );
@@ -13580,7 +13761,7 @@ index 7e2fd68..f011903 100644
  CREATE TABLE IF NOT EXISTS journal_entries (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -186,7 +606,17 @@ CREATE TABLE IF NOT EXISTS journal_entries (
+@@ -186,7 +612,17 @@ CREATE TABLE IF NOT EXISTS journal_entries (
    review TEXT DEFAULT '',
    lessons TEXT DEFAULT '',
    tomorrow TEXT DEFAULT '',
@@ -13598,7 +13779,7 @@ index 7e2fd68..f011903 100644
    created_at TEXT NOT NULL DEFAULT (datetime('now')),
    UNIQUE(user_id, entry_date)
  );
-@@ -232,6 +662,33 @@ CREATE TABLE IF NOT EXISTS strategies (
+@@ -232,6 +668,33 @@ CREATE TABLE IF NOT EXISTS strategies (
    active INTEGER DEFAULT 1,
    created_at TEXT NOT NULL DEFAULT (datetime('now'))
  );
@@ -13632,7 +13813,7 @@ index 7e2fd68..f011903 100644
  CREATE TABLE IF NOT EXISTS trades (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -256,18 +713,28 @@ CREATE TABLE IF NOT EXISTS trades (
+@@ -256,18 +719,28 @@ CREATE TABLE IF NOT EXISTS trades (
    mae_r REAL,                                 -- worst excursion in R (negative number)
    mfe_r REAL,                                 -- best excursion in R (positive number)
    stop_moved INTEGER DEFAULT 0,
@@ -13662,7 +13843,7 @@ index 7e2fd68..f011903 100644
    tags TEXT DEFAULT '',                       -- comma separated
    thesis TEXT DEFAULT '',
    lesson TEXT DEFAULT '',
-@@ -369,11 +836,219 @@ async function migrate() {
+@@ -369,11 +842,224 @@ async function migrate() {
      if (!(cols || []).some((c) => c.name === col)) await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
    };
    await add('trades', 'legs', 'TEXT');
@@ -13682,6 +13863,11 @@ index 7e2fd68..f011903 100644
 +  const optionalProfit = 'REAL CHECK(daily_profit_limit_pct IS NULL OR (daily_profit_limit_pct > 0 AND daily_profit_limit_pct <= 100))';
 +  await add('accounts','daily_profit_limit_pct',optionalProfit);
 +  await add('accounts','max_session_minutes','INTEGER CHECK(max_session_minutes IS NULL OR (max_session_minutes BETWEEN 1 AND 1440 AND max_session_minutes=CAST(max_session_minutes AS INTEGER)))');
++  // M110: two clocks, not one. An existing account was being governed by the engine's
++  // hardcoded symmetric 45; it now gets the episode's own default pair (15 before, 45
++  // after), and the settle can never be migrated or stored below its floor.
++  await add('accounts','news_block_before_min','INTEGER NOT NULL DEFAULT 15 CHECK(news_block_before_min BETWEEN 1 AND 240 AND news_block_before_min=CAST(news_block_before_min AS INTEGER))');
++  await add('accounts','news_settle_after_min','INTEGER NOT NULL DEFAULT 45 CHECK(news_settle_after_min BETWEEN 30 AND 240 AND news_settle_after_min=CAST(news_settle_after_min AS INTEGER))');
 +  await add('guardrail_day_caps','daily_profit_limit_pct',optionalProfit);
 +  await add('guardrail_day_caps','profit_selected_at','TEXT');
 +  for (const table of ['trades','bot_signals']) {
@@ -13882,7 +14068,7 @@ index 7e2fd68..f011903 100644
  /* ------------------------------------------------------------------- meta */
  
  async function getMeta(k) {
-@@ -553,10 +1228,25 @@ async function userFromWebhookToken(token) {
+@@ -553,10 +1239,25 @@ async function userFromWebhookToken(token) {
  
  /** Wipe every table for a workspace (used by the "fresh workspace" flow). */
  async function clearWorkspace(userId) {
@@ -13912,7 +14098,7 @@ index 7e2fd68..f011903 100644
  }
  
  module.exports = {
-@@ -564,7 +1254,9 @@ module.exports = {
+@@ -564,7 +1265,9 @@ module.exports = {
    client, db, prepare, exec, batch, tx, ready,
    DB_URL, DB_PATH, REMOTE, DATA_DIR, SCHEMA_VERSION,
    getMeta, setMeta, seedGlobalInstruments, createUser, hashPassword, verifyPassword,
@@ -14683,6 +14869,227 @@ index 0000000..36e58eb
 +  });
 +}
 +module.exports={invalid,text,reviewFields,fingerprint,knownNet,info,summary,days,reviewTrade,syncLosses,reflectionsForDay,reflectLoss};
+diff --git a/src/news-window.js b/src/news-window.js
+new file mode 100644
+index 0000000..318045e
+--- /dev/null
++++ b/src/news-window.js
+@@ -0,0 +1,215 @@
++'use strict';
++/**
++ * ─────────────────────────────────────────────────────────────────────────────
++ *  M110 — THE NEWS STAND-DOWN IS TWO RULES, NOT ONE NUMBER.
++ *
++ * Ep 30 gives the news block **two distinct stand-down periods** and the audit
++ * recorded them as one knob:
++ *
++ *   pre-release block  "you don't open new positions during that window where the
++ *                       news is coming out, like 15 minutes before and after news"
++ *   post-release settle "after the news came out, you want to wait for the volatility
++ *                       to settle, maybe 30 minutes to 60 minutes after the high impact
++ *                       news comes out. Once the structure start becoming much more
++ *                       clearer, this is where you can continue trading."
++ *
++ * `bots/index.js` applied ONE number symmetrically
++ * (`Math.abs(event - now) <= windowMin * 60000`). At the default of 45 that happened to
++ * comply (45 ≥ 15 before; 45 is inside 30–60 after) — the recorded gap is that it could
++ * not comply at every value he offers: 5, 10, 15, 30 and 60 are all sanctioned settings,
++ * so a 5-minute window silently shortened the post-news settle to 5 minutes, 6–12× below
++ * the range he states, with nothing said about it.
++ *
++ * The fix is structural, not a better default: there is no single knob anywhere in this
++ * delivery. `parse()` and `plan()` deal only in a pair, `hit()` is the ONE place the
++ * asymmetric test lives (so the two sides cannot drift back into one), and a bare number
++ * is refused rather than reinterpreted as "both sides".
++ *
++ * LIMITS, STATED SO THIS IS NOT OVER-READ.
++ *   - The numbers are the episode's own: 15 is his stated default for the block and his
++ *     recommended minimum, 30–60 is the settle range he names. This module treats 30 as
++ *     the settle FLOOR and refuses to store less, because a shorter settle is the exact
++ *     failure the finding recorded. It does not claim his range is a law of trading and
++ *     it does not grade, score or override anything: the blackout is still the same
++ *     veto it was, applied to the same analyse path.
++ *   - Nothing here fetches a calendar. `hit()` is pure arithmetic over whatever
++ *     `M.getCalendar()` returned; a calendar that cannot be read is a separate finding
++ *     (M111) and is NOT solved here.
++ *   - No provider/broker/pixel/human proof, and no claim about volatility, spreads or
++ *     what a release will do to price: the rule is a stand-down clock, nothing else.
++ * ────────────────────────────────────────────────────────────────────────────*/
++
++const VERSION = 'news-window-v1';
++
++/** The two settings, each with the role it plays and the bounds this app enforces. */
++const BEFORE = {
++  field: 'news_block_before_min',
++  role: 'pre-release block',
++  default: 15,
++  min: 1,
++  max: 240,
++  recommended_min: 15,   // his "at least 15 minutes before and after" — advisory, not a floor:
++                         // he also demonstrates 5 and 10 as settings, so a lower value is stored
++                         // with a named warning instead of being refused.
++};
++const AFTER = {
++  field: 'news_settle_after_min',
++  role: 'post-release settle',
++  default: 45,
++  min: 30,               // the FLOOR: his own stated settle range starts at 30 minutes
++  max: 240,
++  recommended_min: 30,
++  recommended_max: 60,
++};
++
++const BASIS = 'The news stand-down is two clocks, not one setting: a short pre-release block ' +
++  '(default 15 min, his stated default and recommended minimum) and a longer post-release settle ' +
++  '(default 45 min, floor 30 min, inside the 30–60 min range he names). Both are compared against ' +
++  'signed offsets from the release time, and the pre-release block is never used to shorten the ' +
++  'settle. Recommendations are labelled as recommendations: only the 30-minute settle floor is ' +
++  'enforced, because a shorter settle is the recorded failure this milestone fixes.';
++
++/** The episode's own words, quoted rather than paraphrased, as the reason for each bound. */
++const DOCTRINE = {
++  pre: 'You don’t open new positions during that window where the news is coming out, like 15 minutes before and after news.',
++  settle: 'After the news came out, you want to wait for the volatility to settle, maybe 30 minutes to 60 minutes after the high impact news comes out. Once the structure start becoming much more clearer, this is where you can continue trading.',
++  at_least: 'I would recommend you to at least put it at 15 minutes before and after.',
++  options: 'The default state is probably like 15 minutes, right? But you can set it to 5 minutes, 10 minutes, 30 minutes, 60 minutes.',
++};
++
++function invalid(message, code, status = 400) {
++  return Object.assign(new Error(message), { code: code || 'news_window_invalid', status });
++}
++
++/** One side, as an integer inside its own bounds. Never coerced from booleans/arrays. */
++function parse(bounds, value, label) {
++  if (value == null || value === '' || typeof value === 'boolean' || Array.isArray(value) || typeof value === 'object') {
++    throw invalid(`${label} must be a whole number of minutes (${bounds.min}–${bounds.max}).`, 'news_window_invalid');
++  }
++  const n = Number(value);
++  if (!Number.isInteger(n) || n < bounds.min || n > bounds.max) {
++    if (bounds.field === AFTER.field && Number.isInteger(n) && n >= 1 && n < AFTER.min) {
++      throw invalid(`The post-release settle cannot be set below ${AFTER.min} minutes. He waits "maybe 30 minutes to 60 minutes" after a high-impact release; a shorter settle is the recorded failure this setting exists to prevent — and it is a separate setting from the pre-release block, so shortening one cannot shorten the other.`, 'news_settle_below_floor');
++    }
++    throw invalid(`${label} must be a whole number of minutes from ${bounds.min} to ${bounds.max}.`, 'news_window_invalid');
++  }
++  return n;
++}
++
++/**
++ * Read a request pair. Only the fields the request actually supplies are parsed; an
++ * omitted field keeps `current` (itself already clamped by `plan()`).
++ * @returns {{before_min:number, after_min:number, warnings:Array}}
++ */
++/** The spellings the single symmetric knob has been known by: `window_min`/`newsWindowMin` in a
++ *  request body, `window`/`windowMin` in a query. Any of them means "one number for both sides",
++ *  which is the recorded defect, so all of them are refused with the same code. */
++const LEGACY_SINGLE = ['window_min', 'windowMin', 'newsWindowMin', 'news_window_min', 'window'];
++
++function parsePair(input = {}, current = {}) {
++  const cur = { before_min: current.before_min === undefined ? BEFORE.default : current.before_min, after_min: current.after_min === undefined ? AFTER.default : current.after_min };
++  const warnings = [];
++  let before_min = cur.before_min;
++  let after_min = cur.after_min;
++  const beforeFromRequest = input[BEFORE.field] !== undefined;
++  const afterFromRequest = input[AFTER.field] !== undefined;
++  // The old single knob, refused rather than reinterpreted — and refused FIRST, so it cannot be
++  // smuggled in beside a valid pair and quietly ignored. Silently choosing a side for the caller
++  // is precisely how a 5-minute setting shortened a 30–60 minute settle.
++  if (LEGACY_SINGLE.some((k) => input[k] !== undefined)) {
++    throw invalid('One number can no longer set both sides of the news rule. Set news_block_before_min (pre-release block) and news_settle_after_min (post-release settle, floor 30) separately.', 'news_window_split_required');
++  }
++  if (beforeFromRequest) before_min = parse(BEFORE, input[BEFORE.field], 'news_block_before_min');
++  if (afterFromRequest) after_min = parse(AFTER, input[AFTER.field], 'news_settle_after_min');
++  if (before_min < BEFORE.recommended_min) {
++    warnings.push({
++      code: 'news_block_before_below_recommended',
++      message: `The pre-release block is ${before_min} minute${before_min === 1 ? '' : 's'}, below the 15 minutes he recommends ("${DOCTRINE.at_least}"). It is stored as you set it — that is your setting, not an error — and it does not shorten the post-release settle.`,
++      cites: [DOCTRINE.at_least],
++    });
++  }
++  return {
++    before_min, after_min, warnings,
++    source: [`${BEFORE.field}:${beforeFromRequest ? 'request' : 'current'}`, `${AFTER.field}:${afterFromRequest ? 'request' : 'current'}`],
++    clamped: current.clamped || [],
++  };
++}
++
++/**
++ * The effective pair for one account, CLAMPED ON READ (the M9 pattern): a row stored by a
++ * path that bypasses the API can never shorten the settle below its floor or push either
++ * side past its maximum. Missing/unreadable values fall back to the episode's defaults and
++ * say so in `source`.
++ */
++function plan(account = null, opts = {}) {
++  const clamped = [];
++  const source = [];
++  const read = (bounds, raw) => {
++    if (raw === undefined || raw === null || raw === '') { source.push(`${bounds.field}:default`); return bounds.default; }
++    const n = Number(raw);
++    if (!Number.isInteger(n)) { clamped.push({ field: bounds.field, from: String(raw), to: bounds.default, because: 'the stored value is not a whole number of minutes' }); source.push(`${bounds.field}:default`); return bounds.default; }
++    const v = Math.min(Math.max(n, bounds.min), bounds.max);
++    if (v !== n) { clamped.push({ field: bounds.field, from: n, to: v, because: `${bounds.field} is bounded ${bounds.min}–${bounds.max}` }); source.push(`${bounds.field}:clamped`); return v; }
++    source.push(`${bounds.field}:stored`);
++    return v;
++  };
++  // A per-request pair is research input, and is still put through the same bounds.
++  const request = opts.newsWindow && typeof opts.newsWindow === 'object' ? opts.newsWindow : null;
++  const before_min = request && request.before_min !== undefined ? parse(BEFORE, request.before_min, 'news_block_before_min') : read(BEFORE, account ? account[BEFORE.field] : undefined);
++  const after_min = request && request.after_min !== undefined ? parse(AFTER, request.after_min, 'news_settle_after_min') : read(AFTER, account ? account[AFTER.field] : undefined);
++  const warnings = before_min < BEFORE.recommended_min && !(request && request.before_min !== undefined)
++    ? [{ code: 'news_block_before_below_recommended', message: `The stored pre-release block is ${before_min} minute${before_min === 1 ? '' : 's'}, below the 15 minutes he recommends. It is used as stored and does not shorten the settle.`, cites: [DOCTRINE.at_least] }]
++    : [];
++  if (after_min < AFTER.recommended_min || after_min > AFTER.recommended_max) {
++    warnings.push({ code: 'news_settle_outside_stated_range', message: `The post-release settle is ${after_min} minutes, outside the 30–60 minutes he names for the settle. It is a longer stand-down than his range, which suppresses trades rather than permitting them, so it is stored and reported rather than refused.`, cites: [DOCTRINE.settle] });
++  }
++  return { version: VERSION, before_min, after_min, source, clamped, warnings, policy: policy() };
++}
++
++/**
++ * THE asymmetric test — the only place a release is judged against the window.
++ * A release that has not printed yet is judged against the pre-release block; one that has
++ * printed is judged against the settle. They are separate comparisons, never one absolute
++ * difference.
++ * @returns {null|{side:'before'|'after', offset_min:number, window_min:number}}
++ */
++function hit(eventMs, nowMs, pair) {
++  if (!Number.isFinite(eventMs) || !Number.isFinite(nowMs)) return null;
++  const offsetMs = eventMs - nowMs;
++  const minutes = (ms) => Math.round(ms / 60000);
++  if (offsetMs >= 0) return offsetMs <= pair.before_min * 60000 ? { side: 'before', offset_min: minutes(offsetMs), window_min: pair.before_min } : null;
++  const elapsed = -offsetMs;
++  return elapsed <= pair.after_min * 60000 ? { side: 'after', offset_min: minutes(elapsed), window_min: pair.after_min } : null;
++}
++
++/** The honest description of the rule in force — with the configured numbers interpolated,
++ *  so a note can never describe a window the app is not applying (M62's surviving half). */
++function detail(pair) {
++  return `No high-impact releases inside your news window: ${pair.before_min} min before and ${pair.after_min} min after a release (checked either side of the entry, from this account's settings).`;
++}
++
++function noteFor(pair, warnings = []) {
++  return {
++    before_min: pair.before_min, after_min: pair.after_min,
++    basis: BASIS,
++    range: { before: `${BEFORE.min}–${BEFORE.max}`, after: `${AFTER.min}–${AFTER.max}`, settle_floor: AFTER.min },
++    recommended: { before_min: BEFORE.recommended_min, settle: `${AFTER.recommended_min}–${AFTER.recommended_max}` },
++    sources: pair.source || [], clamped: pair.clamped || [],
++    warnings: warnings.concat(pair.warnings || []).filter((w, i, a) => a.findIndex((x) => x.code === w.code) === i),
++    models: 'two separate clocks over the same stored calendar, applied asymmetrically; no model, no prediction and no claim about what a release will do to price',
++    broker_verified: false,
++  };
++}
++
++function policy() {
++  return {
++    version: VERSION,
++    before: { field: BEFORE.field, default: BEFORE.default, min: BEFORE.min, max: BEFORE.max, recommended_min: BEFORE.recommended_min },
++    after: { field: AFTER.field, default: AFTER.default, min: AFTER.min, max: AFTER.max, recommended_min: AFTER.recommended_min, recommended_max: AFTER.recommended_max },
++    single_knob: false,
++    doctrine: DOCTRINE,
++    basis: BASIS,
++  };
++}
++
++module.exports = { VERSION, BEFORE, AFTER, BASIS, DOCTRINE, parse, parsePair, plan, hit, detail, noteFor, policy, invalid, LEGACY_SINGLE };
 diff --git a/src/opportunities.js b/src/opportunities.js
 new file mode 100644
 index 0000000..3c6cd1b
@@ -15322,10 +15729,10 @@ index 0000000..bf173ca
 +function withCoach(data,review){const warning=insight(review);return {...data,process_review:review,insights:warning?[...(data.insights||[]),warning]:data.insights};}
 +module.exports={BASIS,invalid,dateKey,clock,evaluate,insight,inspect,optional,unavailable,withCoach};
 diff --git a/src/routes/api.js b/src/routes/api.js
-index 0bb768c..e45aec3 100644
+index 0bb768c..c3ca3b9 100644
 --- a/src/routes/api.js
 +++ b/src/routes/api.js
-@@ -1,12 +1,33 @@
+@@ -1,12 +1,34 @@
  'use strict';
  const { asyncRouter } = require('./async-router');
 -const { db, createUser, verifyPassword, createSession, userFromToken, destroySession, getMeta, DEFAULT_CHECKLIST } = require('../db');
@@ -15353,6 +15760,7 @@ index 0bb768c..e45aec3 100644
 +const Intention = require('../intention');
 +const Practice = require('../practice');
 +const Ask = require('../ask');
++const NewsWindow = require('../news-window');   // M110 — the two news clocks
 +const Opportunities = require('../opportunities');
 +const ProcessOutcomes = require('../process-outcomes');
 +const BehaviorDays = require('../behavior-days');
@@ -15360,7 +15768,7 @@ index 0bb768c..e45aec3 100644
  const O = require('../options');
  const Exp = require('../exposure');
  const Prop = require('../prop');
-@@ -14,6 +35,13 @@ const N = require('../notify');
+@@ -14,6 +36,13 @@ const N = require('../notify');
  const createBotsRouter = require('./bots');
  
  const router = asyncRouter();
@@ -15374,7 +15782,7 @@ index 0bb768c..e45aec3 100644
  const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  
-@@ -40,7 +68,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
+@@ -40,7 +69,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
  async function requireAuth(req, res, next) {
    try {
      const user = await userFromToken(readToken(req));
@@ -15402,7 +15810,7 @@ index 0bb768c..e45aec3 100644
      req.user = user;
      next();
    } catch (e) { next(e); }
-@@ -237,6 +284,7 @@ function tradeFilters(req) {
+@@ -237,6 +285,7 @@ function tradeFilters(req) {
      status: req.query.status && req.query.status !== 'all' ? req.query.status : null,
      symbol: req.query.symbol || null,
      strategy_id: req.query.strategy_id || null,
@@ -15410,7 +15818,7 @@ index 0bb768c..e45aec3 100644
      from: req.query.from || null, to: req.query.to || null,
      asset_class: req.query.asset_class || null,
      tag: req.query.tag || null,
-@@ -278,32 +326,81 @@ router.get('/trades', requireAuth, async (req, res) => {
+@@ -278,32 +327,81 @@ router.get('/trades', requireAuth, async (req, res) => {
        .some((v) => String(v || '').toLowerCase().includes(q)));
    }
    const total = (await db.prepare(`SELECT COUNT(*) n FROM trades WHERE ${where}`).get({ ...params, user_id: req.user.id })).n;
@@ -15498,7 +15906,7 @@ index 0bb768c..e45aec3 100644
  router.put('/trades/:id', requireAuth, async (req, res) => {
    const id = Number(req.params.id);
    const existing = await db.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id, req.user.id);
-@@ -311,14 +408,64 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+@@ -311,14 +409,64 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
    const instruments = await instrumentMap(req.user.id);
    const merged = { ...existing, ...req.body };
    const spec = instruments[String(merged.symbol || '').toUpperCase()] || null;
@@ -15566,7 +15974,7 @@ index 0bb768c..e45aec3 100644
  });
  
  router.post('/trades/:id/close', requireAuth, async (req, res) => {
-@@ -341,29 +488,92 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+@@ -341,29 +489,92 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
    };
    const instruments = await instrumentMap(req.user.id);
    const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
@@ -15664,7 +16072,7 @@ index 0bb768c..e45aec3 100644
  router.get('/analytics', requireAuth, async (req, res) => {
    const tz = (await settingsOf(req)).timezone;
    const f = tradeFilters(req);
-@@ -374,14 +584,20 @@ router.get('/analytics', requireAuth, async (req, res) => {
+@@ -374,14 +585,20 @@ router.get('/analytics', requireAuth, async (req, res) => {
      const want = String(f.tag).toLowerCase();
      rows = rows.filter((t) => String(t.tags || '').toLowerCase().split(',').map((x) => x.trim()).includes(want));
    }
@@ -15686,7 +16094,7 @@ index 0bb768c..e45aec3 100644
    res.json(analytics);
  });
  
-@@ -393,9 +609,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+@@ -393,9 +610,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const rs = rows.map((t) => num(t.r_multiple));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
@@ -15705,7 +16113,7 @@ index 0bb768c..e45aec3 100644
    res.json({
      monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
      optimal_risk: P.optimalRisk(rs),
-@@ -411,7 +634,9 @@ router.get('/coach', requireAuth, async (req, res) => {
+@@ -411,7 +635,9 @@ router.get('/coach', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
      || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
@@ -15716,7 +16124,7 @@ index 0bb768c..e45aec3 100644
  });
  
  router.get('/briefing', requireAuth, wrap(async (req, res) => {
-@@ -419,45 +644,163 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+@@ -419,45 +645,163 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
    const tz = settings.timezone;
    const acc = await accountOr404(req, res);
    if (!acc) return;
@@ -15892,7 +16300,7 @@ index 0bb768c..e45aec3 100644
  });
  router.delete('/journal/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM journal_entries WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -470,46 +813,56 @@ router.get('/strategies', requireAuth, async (req, res) => {
+@@ -470,46 +814,56 @@ router.get('/strategies', requireAuth, async (req, res) => {
    const stats = {};
    const tz = (await settingsOf(req)).timezone;
    const rows = (await db.prepare("SELECT * FROM trades WHERE user_id=? AND status='closed'").all(req.user.id)).map((t) => P.decorate(t, tz));
@@ -15980,7 +16388,7 @@ index 0bb768c..e45aec3 100644
  });
  router.delete('/strategies/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM strategies WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -541,21 +894,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
+@@ -541,21 +895,76 @@ router.get('/accounts', requireAuth, async (req, res) => {
  router.post('/accounts', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.name) return res.status(400).json({ error: 'Account name is required' });
@@ -16002,20 +16410,27 @@ index 0bb768c..e45aec3 100644
 +  try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes); }
 +  catch(e){return res.status(400).json({error:e.message});}
 +  let routineConfig;try{routineConfig=Routine.config(b);}catch(e){return res.status(400).json({error:e.message});}
++  // M110 — the news stand-down is two settings, parsed together by the owner module (which
++  // also refuses the old single-number shape rather than choosing a side for the caller).
++  let newsWindow;
++  try { newsWindow = NewsWindow.parsePair(b); }
++  catch (e) { return res.status(400).json({ error: e.message, code: e.code || 'news_window_invalid' }); }
 +  const unlocked = !!b.risk_unlocked;
 +  const riskPct = I.clampRiskPct(b.risk_per_trade_pct, { fallback: I.RISK_GUARDRAIL.default_pct, unlocked });
-+  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes,routine_window_start,routine_timezone,routine_lead_minutes,routine_order)
-+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
++  const info = await db.prepare(`INSERT INTO accounts (user_id,name,broker,account_type,currency,starting_balance,current_balance,risk_per_trade_pct,risk_unlocked,max_trades_day,daily_loss_limit_pct,max_drawdown_pct,profit_target_pct,daily_profit_limit_pct,max_session_minutes,routine_window_start,routine_timezone,routine_lead_minutes,routine_order,news_block_before_min,news_settle_after_min)
++    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
      req.user.id, b.name, b.broker || '', b.account_type || 'live', b.currency || 'USD',
 -    num(b.starting_balance, 10000), num(b.starting_balance, 10000), num(b.risk_per_trade_pct, 1),
 -    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8));
 -  res.json({ ok: true, account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(info.lastInsertRowid) });
 +    num(b.starting_balance, 10000), num(b.starting_balance, 10000), riskPct, unlocked ? 1 : 0, maxTrades,
-+    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit,routineConfig.routine_window_start,routineConfig.routine_timezone,routineConfig.routine_lead_minutes,routineConfig.routine_order);
++    num(b.daily_loss_limit_pct, 3), num(b.max_drawdown_pct, 10), num(b.profit_target_pct, 8), profitLimit, sessionLimit,routineConfig.routine_window_start,routineConfig.routine_timezone,routineConfig.routine_lead_minutes,routineConfig.routine_order,
++    newsWindow.before_min, newsWindow.after_min);
 +  res.json({
 +    ok: true,
 +    account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(info.lastInsertRowid),
 +    risk_note: I.riskGuardrailNote(b.risk_per_trade_pct, riskPct, { unlocked }),
++    news_note: NewsWindow.noteFor(newsWindow, newsWindow.warnings),
 +  });
  });
  router.put('/accounts/:id', requireAuth, async (req, res) => {
@@ -16033,6 +16448,13 @@ index 0bb768c..e45aec3 100644
 +  try { sessionLimit = SessionTime.parseLimit(b.max_session_minutes === undefined ? cur.max_session_minutes : b.max_session_minutes); }
 +  catch(e){return res.status(400).json({error:e.message});}
 +  let routineConfig;try{routineConfig=Routine.config({...cur,...b});}catch(e){return res.status(400).json({error:e.message});}
++  // M110: only the fields THIS request supplies are parsed; an omitted field keeps the
++  // stored pair (already clamped by plan()), so an unrelated edit such as a rename cannot
++  // silently move the trader's news windows. A stored pair outside the bounds is clamped on
++  // READ by the engine as well, so this is defence in depth rather than the only guard.
++  let newsWindow;
++  try { newsWindow = NewsWindow.parsePair(b, NewsWindow.plan(cur)); }
++  catch (e) { return res.status(400).json({ error: e.message, code: e.code || 'news_window_invalid' }); }
 +  // M9: the same guardrail on the update path, which also stored the value via num() with no
 +  // clamp. Only a value THIS request supplies is clamped — a row stored above the guardrail
 +  // before the fix is left untouched here and clamped on READ (bots/index.js) instead, so an
@@ -16046,10 +16468,11 @@ index 0bb768c..e45aec3 100644
 -    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, prop_preset=@prop_preset,
 +    starting_balance=@starting_balance, risk_per_trade_pct=@risk_per_trade_pct, risk_unlocked=@risk_unlocked, max_trades_day=@max_trades_day, daily_loss_limit_pct=@daily_loss_limit_pct,
 +    max_drawdown_pct=@max_drawdown_pct, profit_target_pct=@profit_target_pct, daily_profit_limit_pct=@daily_profit_limit_pct, max_session_minutes=@max_session_minutes,routine_window_start=@routine_window_start,routine_timezone=@routine_timezone,routine_lead_minutes=@routine_lead_minutes,routine_order=@routine_order, prop_preset=@prop_preset,
++    news_block_before_min=@news_block_before_min, news_settle_after_min=@news_settle_after_min,
      prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
      id, user_id: req.user.id,
      name: b.name !== undefined ? b.name : cur.name,
-@@ -563,7 +956,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -563,7 +972,14 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
      currency: b.currency !== undefined ? b.currency : cur.currency,
      starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
@@ -16059,11 +16482,13 @@ index 0bb768c..e45aec3 100644
 +    max_trades_day: maxTrades,
 +    daily_profit_limit_pct: profitLimit,
 +    max_session_minutes: sessionLimit,
++    news_block_before_min: newsWindow.before_min,
++    news_settle_after_min: newsWindow.after_min,
 +    ...routineConfig,
      daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
      max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
      prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
-@@ -571,7 +969,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -571,7 +987,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
      archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
    });
@@ -16072,11 +16497,12 @@ index 0bb768c..e45aec3 100644
 +    ok: true,
 +    account: await db.prepare('SELECT * FROM accounts WHERE id=?').get(id),
 +    risk_note: b.risk_per_trade_pct !== undefined ? I.riskGuardrailNote(b.risk_per_trade_pct, riskPct, { unlocked }) : null,
++    news_note: NewsWindow.noteFor(newsWindow, newsWindow.warnings),
 +  });
  });
  router.delete('/accounts/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -708,7 +1110,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -708,7 +1129,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
    const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
    const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
    const balance = num(b.balance, acc ? acc.current_balance : 10000);
@@ -16097,7 +16523,7 @@ index 0bb768c..e45aec3 100644
    const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
    const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
    const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
-@@ -722,6 +1136,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -722,6 +1155,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
      pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
      pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
      percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,
@@ -16108,7 +16534,7 @@ index 0bb768c..e45aec3 100644
    });
  });
  
-@@ -775,15 +1193,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
+@@ -775,15 +1212,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
  }));
  
  /* ------------------------------------------------------- import / export */
@@ -16129,7 +16555,7 @@ index 0bb768c..e45aec3 100644
    const esc = (v) => {
      const s = v === null || v === undefined ? '' : String(v);
      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-@@ -792,17 +1211,25 @@ router.get('/export/csv', requireAuth, async (req, res) => {
+@@ -792,17 +1230,25 @@ router.get('/export/csv', requireAuth, async (req, res) => {
    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
    res.setHeader('Content-Disposition', `attachment; filename="trades-${new Date().toISOString().slice(0, 10)}.csv"`);
    res.send(csv);
@@ -16158,7 +16584,7 @@ index 0bb768c..e45aec3 100644
      journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
      goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
      watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
-@@ -810,7 +1237,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
+@@ -810,7 +1256,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
    res.setHeader('Content-Type', 'application/json');
    res.setHeader('Content-Disposition', `attachment; filename="tradejournal-backup-${new Date().toISOString().slice(0, 10)}.json"`);
    res.send(JSON.stringify(data, null, 2));
@@ -16167,7 +16593,7 @@ index 0bb768c..e45aec3 100644
  
  /** Import from CSV — auto-detects the usual broker column names. */
  router.post('/import/csv', requireAuth, async (req, res) => {
-@@ -831,13 +1258,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -831,13 +1277,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
      opened: findCol(['opened_at', 'open_time', 'entry_time', 'date', 'datetime', 'open_date', 'time_open', 'opened']),
      closed: findCol(['closed_at', 'close_time', 'exit_time', 'close_date', 'time_close', 'closed']),
      fees: findCol(['fees', 'commission', 'fee', 'cost', 'swap']),
@@ -16185,7 +16611,7 @@ index 0bb768c..e45aec3 100644
    const instruments = await instrumentMap(req.user.id);
    const tz = (await settingsOf(req)).timezone;
    let inserted = 0, skipped = 0;
-@@ -864,11 +1294,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -864,11 +1313,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
            closed_at: map.closed > -1 ? r[map.closed] : null,
            fees: map.fees > -1 ? r[map.fees] : 0,
            strategy_name: map.strategy > -1 ? r[map.strategy] : '',
@@ -16202,7 +16628,7 @@ index 0bb768c..e45aec3 100644
          if (map.net > -1 && String(r[map.net] || '').trim() && !isNaN(Number(String(r[map.net]).replace(/[^0-9.\-]/g, '')))) {
            const net = Number(String(r[map.net]).replace(/[^0-9.\-]/g, ''));
            if (net !== 0) {
-@@ -877,18 +1312,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -877,18 +1331,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
              if (trade.risk_amount > 0) trade.r_multiple = Math.round((net / trade.risk_amount) * 10000) / 10000;
            }
          }
@@ -16234,7 +16660,7 @@ index 0bb768c..e45aec3 100644
  function parseCsv(text) {
    const rows = [];
    let row = [], field = '', inQuotes = false;
-@@ -912,10 +1357,15 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -912,10 +1376,15 @@ router.post('/import/json', requireAuth, async (req, res) => {
    const data = req.body && req.body.data ? req.body.data : req.body;
    if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
    const userId = req.user.id;
@@ -16252,7 +16678,7 @@ index 0bb768c..e45aec3 100644
    try {
      // reads happen before the write batch (libSQL never interleaves them)
      const myAccounts = await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId);
-@@ -925,14 +1375,17 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -925,14 +1394,17 @@ router.post('/import/json', requireAuth, async (req, res) => {
        accountMap[a.id] = match ? match.id : (def ? def.id : null);
      }
      const existingStrategies = new Set((await db.prepare('SELECT name FROM strategies WHERE user_id=?').all(userId)).map((r) => r.name));
@@ -16272,7 +16698,7 @@ index 0bb768c..e45aec3 100644
        inserted++;
      }
      for (const s of (data.strategies || [])) {
-@@ -953,9 +1406,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -953,9 +1425,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
            j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
        });
      }
@@ -16284,7 +16710,7 @@ index 0bb768c..e45aec3 100644
  });
  
  /* ---------------------------------------------------------------- settings */
-@@ -971,6 +1424,16 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -971,6 +1443,16 @@ router.put('/settings', requireAuth, async (req, res) => {
      risk_defaults: b.risk_defaults || cur.risk_defaults || { risk_pct: 1, daily_limit_pct: 3, max_trades: 5 },
      // the floor every plan is judged against: below it a plan may still be shown,
      // but it is labelled and never reads as a plain order
@@ -16301,7 +16727,7 @@ index 0bb768c..e45aec3 100644
      min_rr: Number.isFinite(Number(b.min_rr)) && Number(b.min_rr) > 0
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
-@@ -982,7 +1445,7 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -982,7 +1464,7 @@ router.put('/settings', requireAuth, async (req, res) => {
  router.post('/demo/seed', requireAuth, async (req, res) => {
    const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
    const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
@@ -16311,14 +16737,15 @@ index 0bb768c..e45aec3 100644
  
  /**
 diff --git a/src/routes/bots.js b/src/routes/bots.js
-index 2c6ff6c..446474a 100644
+index 2c6ff6c..29af849 100644
 --- a/src/routes/bots.js
 +++ b/src/routes/bots.js
-@@ -10,12 +10,16 @@ const C = require('../candles');
+@@ -10,12 +10,17 @@ const C = require('../candles');
  const I = require('../instruments');
  const TV = require('../tradingview');
  const D = require('../db');
 +const Opportunities = require('../opportunities');
++const NewsWindow = require('../news-window');   // M110
  
  function createBotsRouter({ requireAuth }) {
    const router = asyncRouter();
@@ -16331,7 +16758,7 @@ index 2c6ff6c..446474a 100644
      res.status(500).json({ error: err.message || 'Bot error' });
    });
    const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));
-@@ -28,11 +32,26 @@ function createBotsRouter({ requireAuth }) {
+@@ -28,11 +33,26 @@ function createBotsRouter({ requireAuth }) {
   * scenario". `?min_rr=` overrides it for a single request so a probe or a test
   * can measure the same plan against a different floor.
   */
@@ -16359,7 +16786,7 @@ index 2c6ff6c..446474a 100644
      const set = row && row.settings ? JSON.parse(row.settings) : {};
      const v = Number(set.min_rr);
      if (Number.isFinite(v) && v > 0) return Math.min(Math.max(v, 0.1), 10);
-@@ -88,12 +107,13 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -88,12 +108,13 @@ router.get('/markets', requireAuth, (req, res) => {
        predictionBars: Math.min(Math.max(num(req.query.bars, 1200), 300), 3000),
        step: Math.min(Math.max(num(req.query.step, 2), 1), 6),
        minRR: await floorOf(req),
@@ -16374,7 +16801,7 @@ index 2c6ff6c..446474a 100644
      res.json({ ...payload, saved });
    }));
  
-@@ -113,6 +133,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -113,6 +134,7 @@ router.get('/markets', requireAuth, (req, res) => {
        userId: req.user.id,
        accountId: req.query.account_id ? Number(req.query.account_id) : null,
        minRR: await floorOf(req),
@@ -16382,7 +16809,7 @@ index 2c6ff6c..446474a 100644
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),
        as_of: req.query.as_of || null,
      });
-@@ -128,6 +149,8 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -128,6 +150,8 @@ router.get('/markets', requireAuth, (req, res) => {
      const tf = String(req.query.tf || '15m');
      const out = await Bots.chart(symbol, tf, {
        bars: Math.min(Math.max(num(req.query.bars, 300), 80), 900), userId: req.user.id,
@@ -16391,7 +16818,7 @@ index 2c6ff6c..446474a 100644
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
      });
      res.json({
-@@ -137,8 +160,8 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -137,8 +161,8 @@ router.get('/markets', requireAuth, (req, res) => {
        checks: out.topdown.checks, score: out.topdown.score, grade: out.topdown.grade,
        status: out.topdown.status, direction: out.topdown.direction,
        headline: out.topdown.headline, playbook: out.topdown.playbook,
@@ -16402,7 +16829,7 @@ index 2c6ff6c..446474a 100644
        verdict: out.setups.verdict, meta: out.meta,
      });
    }));
-@@ -150,7 +173,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -150,7 +174,7 @@ router.get('/markets', requireAuth, (req, res) => {
        .split(',').map((s) => s.trim()).filter(Boolean);
      if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
      const tf = String(req.query.tf || '15m');
@@ -16411,7 +16838,7 @@ index 2c6ff6c..446474a 100644
      res.json(out);
    }));
  
-@@ -211,18 +234,22 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -211,18 +235,22 @@ router.get('/markets', requireAuth, (req, res) => {
        days: Math.min(Math.max(num(req.query.days, 365), 7), 2000),
        backfill: req.query.backfill === '1',
      });
@@ -16437,7 +16864,7 @@ index 2c6ff6c..446474a 100644
      res.json({ ok: true, guardrails: g.guardrails, stats: g.stats, evidence: g.evidence, daily });
    }));
  
-@@ -240,7 +267,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -240,7 +268,7 @@ router.get('/markets', requireAuth, (req, res) => {
  
    router.get('/signals', requireAuth, wrap(async (req, res) => {
      const status = req.query.status ? String(req.query.status) : null;
@@ -16446,7 +16873,7 @@ index 2c6ff6c..446474a 100644
    }));
  
    router.post('/signals/save', requireAuth, wrap(async (req, res) => {
-@@ -252,8 +279,9 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -252,8 +280,9 @@ router.get('/markets', requireAuth, (req, res) => {
        accountId: (req.body && req.body.account_id) || null,
        includePrediction: req.body && req.body.prediction !== false,
      });
@@ -16458,7 +16885,7 @@ index 2c6ff6c..446474a 100644
    }));
  
    /**
-@@ -262,12 +290,30 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -262,12 +291,30 @@ router.get('/markets', requireAuth, (req, res) => {
     */
    router.post('/signals/save-plan', requireAuth, wrap(async (req, res) => {
      const b = req.body || {};
@@ -16491,7 +16918,7 @@ index 2c6ff6c..446474a 100644
    }));
  
    router.post('/signals/resolve', requireAuth, wrap(async (req, res) => {
-@@ -393,6 +439,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -393,6 +440,7 @@ router.get('/markets', requireAuth, (req, res) => {
          plan = summarise(payload, parsed);
          if (user.autocreate && payload.setups && payload.setups.verdict && payload.setups.verdict.action !== 'NO TRADE') {
            const saved = await Bots.saveSignals(user.id, payload);
@@ -16499,6 +16926,41 @@ index 2c6ff6c..446474a 100644
            signal = saved && saved.saved ? saved.saved[0] : (Array.isArray(saved) ? saved[0] : saved);
          }
        } catch (e) { error = e.message; }
+@@ -466,8 +514,33 @@ router.get('/markets', requireAuth, (req, res) => {
+ 
+   /* ---------------------------------------------------------------- misc */
+ 
++  /* M110 — the news endpoint takes the SAME two settings the engine uses, never one number.
++   * `?before=` / `?after=` are per-request research overrides and go through the owner
++   * module's parser (so the settle floor applies here too); omitted fields fall back to the
++   * trader's own stored pair, resolved exactly the way the analyse path resolves its account.
++   * The old `?window=N` is REFUSED rather than silently split: choosing a side for the caller
++   * is how a 5-minute setting used to shorten the 30–60 minute settle. */
+   router.get('/news/:symbol', requireAuth, wrap(async (req, res) => {
+-    res.json({ ok: true, ...(await Bots.newsCheck(String(req.params.symbol).toUpperCase(), Math.min(num(req.query.window, 45), 240))) });
++    // Every spelling of the old single knob is refused here, not just `?window=`: a legacy client
++    // that still sends one number must be told the rule was split, not silently served the stored
++    // pair (which would make a 5-minute caller believe 5 minutes was applied).
++    if (NewsWindow.LEGACY_SINGLE.some((k) => req.query[k] !== undefined)) {
++      return res.status(400).json({
++        error: 'One number no longer sets both sides of the news rule. Use ?before= for the pre-release block and ?after= for the post-release settle (floor 30 minutes), or leave both out to use the account settings.',
++        code: 'news_window_split_required',
++      });
++    }
++    const account = await Bots.correction.accountOf(req.user.id, req.query.account_id ? Number(req.query.account_id) : null);
++    let pair;
++    try {
++      pair = NewsWindow.parsePair(
++        { news_block_before_min: req.query.before, news_settle_after_min: req.query.after },
++        NewsWindow.plan(account),
++      );
++    } catch (e) {
++      return res.status(e.status || 400).json({ error: e.message, code: e.code || 'news_window_invalid' });
++    }
++    res.json({ ok: true, ...(await Bots.newsCheck(String(req.params.symbol).toUpperCase(), pair)), settings: NewsWindow.noteFor(pair, pair.warnings) });
+   }));
+ 
+   router.get('/tv/links', requireAuth, (req, res) => {
 diff --git a/src/routine-records.js b/src/routine-records.js
 new file mode 100644
 index 0000000..cff4507

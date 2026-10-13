@@ -1,6 +1,103 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M109 — the advisory channel: ask the journal, deterministically — 2026-10-13
+## Current M110 — the news stand-down is two clocks, not one — 2026-10-13
+
+**132:105 done /2 partial /25 TODO /0 no-action**, exact eight groups. Saved Ep30 states **two**
+news stand-downs of different length, not one: a **pre-release block** — *"you don't open new
+positions during that window where the news is coming out, like 15 minutes before and after
+news"* — and a **separate, longer post-release settle** — *"after the news came out, you want to
+wait for the volatility to settle, maybe 30 minutes to 60 minutes after the high impact news comes
+out. Once the structure start becoming much more clearer, this is where you can continue
+trading."* The engine had **one** number applied **symmetrically** (`Math.abs(event − now) ≤
+windowMin × 60000`, `src/bots/index.js:92`), so the two periods were forced to be equal, and a
+block value he sanctions (*"you can set it to 5 minutes, 10 minutes, 30 minutes, 60 minutes"*)
+silently collapsed the settle to the same number — **6–12× below the 30–60 minutes he
+requires** — with no warning. The **M62 correction stands**: 45 was never the defect, the single
+knob was, and the default is **not** lowered.
+
+`src/news-window.js` (`news-window-v1`) owns **both** clocks and is a **leaf**: no requires, no
+env, no filesystem, no path and **no clock of its own** (`now` is passed in), so it answers
+identically when copied out of the tree. `news_block_before_min` (**default 15**, bounds 1–240) and
+`news_settle_after_min` (**default 45, floor 30**, bounds 30–240) are two `accounts` columns with
+their own CHECKs (bounds **and** an integer-cast test) plus two additive migrations; an inherited
+account reads **15/45**, never the parent's 45 constant as a block and never a 45/45 pair.
+`hit(eventMs, nowMs, plan)` is the only rule and it is **asymmetric by signed offset**: a release
+that has **not printed** is judged by the block, one that **has printed** by the settle, boundaries
+inclusive, and `NaN`/`undefined`/malformed pairs match **nothing** rather than everything. `plan()`
+clamps on read and reports `source`/`clamped` per side; a block below the recommended 15 stores as
+set with `news_block_before_below_recommended` and **never shortens the settle**; a settle under 30
+is refused outright — **400 `news_settle_below_floor`** on create and on update; a settle beyond
+the named 30–60 range is stored and reported with `news_settle_outside_stated_range` rather than
+repaired. **A single number is refused, never split**: `window_min`, `windowMin`, `newsWindowMin`,
+`news_window_min` and `?window=` are all **400 `news_window_split_required`**, checked **before**
+the split fields so a knob cannot ride along beside a valid pair. The top-level `window_min` is
+**gone rather than deprecated**, every blocked event carries its own `side`/`offset_min`/
+`window_min`, the blackout sentence interpolates the account's own two numbers, and `setup.js`'s
+fallback states the two windows in his direction instead of the hardcoded one-sided *"next 60
+minutes"* (the surviving M62 half, closed here). **It split a window; it did not retune a grade**:
+the news check keeps its weight and label, the state gate's own **60-minute** `window_minutes` is
+untouched, the risk guardrail still clamps beside it, and no fill padding, sample floor, clock,
+target, risk or grade moved.
+
+**Measured.** M110 **258/0 across 9 probes** (pure 41, api 40, engine 25, consumers 22, freshness
+17, hardening 40, portable 17, migration **33/0**, real-DOM ui 23). The migration probe records the
+**actual c09574e 145-file M109 release** first (its own `?window=5` and default call echoing one
+number on that very database), then upgrades it in place: **exactly two columns added**, the
+parent's schema text an **unbroken prefix** of the upgraded text with the two definitions inserted,
+every other schema object and every inherited fact outside `accounts` **byte-identical**, a
+**second open a no-op**, the parent's single knob now a 400, hostile direct SQL (0/1.5/29/241/30.5)
+refused by the columns themselves, null/blank refused rather than coerced, the four column
+boundaries writing and reading back exactly, a per-request research pair answered but never stored,
+a **parent-era bundle** and a **hostile bundle** (news numbers in the account row *and* at the
+root) each importing their trades without moving the pair, the export carrying both columns and
+**no old spelling**, and the **parent's own code still opening the upgraded file**. Six
+constructed runtime stages (policy → api → engine → hardening → ui → documentation), each replayed
+forward **and** reversed with **0 byte differences** against its frozen guard. **Parent control** =
+the committed M109 release: eight probes **0/1**, migration **10/23** (the ten passes are what the
+parent can still answer about itself), every exit 1. **Pre-hardening control** = the engine stage
+(loose module + pass-through route, asserted identical, never copied twice): **api 31/9**,
+**hardening 39/1**. Cohorts re-run on this tree: **M109 166/2, M108 257/2, M107 230/2, M106 316/2,
+M105 140/2** — every extra failure is the **same declared negative**: a frozen migration probe
+asserting *its* milestone added ONLY its own schema objects, plus an inherited-facts comparison
+covering `accounts`, which now legitimately carries M110's two columns; nothing was edited to make
+a frozen assert pass, and each failing label is preserved in `analysis/evidence/*/…-migration.txt`.
+RAW **596/156**, DECLARED **824/4** and the live-provider arm **70/1** were **re-run on this tree
+this session** and reproduce the committed records exactly (all three need no market provider);
+the native API/bots arms need one this sandbox cannot reach and stay **inherited, asserted as
+inherited**. Smoke exit 0, **22/22 conditional DOM views**, 0 style / 0 console, with the
+**same-sample M109 parent control also 22/22**; `grep -ci news` = 0 in both smoke outputs, so the
+two settings fields' coverage is `analysis/probe-m110-ui.js` (23/0), not the smoke. Ledger
+**132 = 105 done / 2 partial / 25 TODO** (M110 applied, M62's surviving wording half closed with
+it). Six runtime stages + docs, actual c09574e/pristine forward/reverse byte proofs, deterministic
+**146-source** ZIP: `build-m110-news-window-artifacts.py`, `patches/M110-NEWS-WINDOW-STAGES.json`,
+excluded archive SHA companion. [Full report](M110-NEWS-WINDOW.md). Arm servers stopped; `/tmp` DBs
+synthetic/offline, scheduler OFF, not preserved real data.
+
+**Workspace note for the next session (this session ran from a restored snapshot).** The local git
+checkout arrived at the session's branch point, so the first action was `git fetch origin` +
+`git reset --mixed origin/arena/b411452d-trader` (**c09574e**) — the working tree already held the
+M110 work, and after the reset the diff against c09574e is exactly the 9-file changed set plus
+`src/news-window.js`. `node_modules` is snapshot-excluded and was **reinstalled with `npm ci`**
+(package-lock unchanged, so the copy is valid), and every `/tmp` tree was **rebuilt from git**
+(`/tmp/m110-parent/app` from **c09574e**, digest re-asserted against the frozen
+`analysis/evidence/m110/parent-source.json`; stage trees rebuilt by `capture-m110-stages.py`, which
+asserts the pre-hardening tree **is** the engine stage). The M110 migration probe was re-derived in
+this session against that rebuilt parent and is now **33/0**.
+
+**Next M111 (the calendar fail-open), then M112.** M110 is NOT a fix for M111 and says so on every
+probe: a calendar that cannot be fetched still reaches this rule as a **quiet** one — `blackout:
+null`, no `unavailable` flag, no error on the payload — so an outage is still indistinguishable
+from a clean week at this boundary; the pair *is* echoed on that path and a failure is **not**
+cached, but the fail-open itself is M111's to fix. All 132 IDs / eight groups retained; session
+fixed to **arena/b411452d-trader**, older counts/branches/next-steps below historical.
+
+### Current remaining IDs — no omissions
+
+Partials **M30,M103**. TODO25: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M65,M66,M67,M72,M73,M74,M111,M112,M115,M117,M125**.
+PROGRESS asserts exact132/eight-group partition. Earlier lists are historical milestones,
+not the current remaining work.
+
+## Historical M109 — the advisory channel: ask the journal, deterministically — 2026-10-13
 
 **132:103 done /2 partial /27 TODO /0 no-action**, exact eight groups. Saved Ep29 (Flow AI):
 *"the real edge of AI is speed. It helps you close the gap faster between confusion and
@@ -69,7 +166,7 @@ M30/M103 partial. All
 132 IDs/eight groups retained; session fixed to **arena/b411452d-trader**, older
 counts/branches/next-steps below historical.
 
-### Current remaining IDs — no omissions
+### Remaining IDs as recorded at M109
 
 Partials **M30,M103**. TODO27: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M62,M65,M66,M67,M72,M73,M74,M110,M111,M112,M115,M117,M125**.
 PROGRESS asserts exact132/eight-group partition. Earlier lists are historical milestones,

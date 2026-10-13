@@ -1,0 +1,20 @@
+{
+  "api": {
+    "tree": "the delivered runtime with the pre-hardening module and route (the engine stage itself)",
+    "script": "analysis/probe-m110-api.js",
+    "pass": 31,
+    "fail": 9,
+    "exit_code": 1,
+    "output": "pre-hardening-api.txt",
+    "scope": "The unchanged M110 probes on the pre-hardening runtime: one number still sets both sides with the settle floor not applied to it, and the legacy query is passed through instead of refused. The hardening stage closed both and the same probes are green on the delivered tree."
+  },
+  "hardening": {
+    "tree": "the delivered runtime with the pre-hardening module and route (the engine stage itself)",
+    "script": "analysis/probe-m110-hardening.js",
+    "pass": 39,
+    "fail": 1,
+    "exit_code": 1,
+    "output": "pre-hardening-hardening.txt",
+    "scope": "The unchanged M110 probes on the pre-hardening runtime: one number still sets both sides with the settle floor not applied to it, and the legacy query is passed through instead of refused. The hardening stage closed both and the same probes are green on the delivered tree."
+  }
+}

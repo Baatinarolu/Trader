@@ -1,9 +1,9 @@
 ok ACTUAL parent restart isolates inherited lazy M102 default strategy-v1 initialization
 ok the M107 parent141 has its own intention module/tables but no practice module, tables or practice key
 ok the parent really produced owned finance/evidence/gate/intention records to inherit
-ok ONLY the practice tables/unique index/owner index/immutability trigger are added; old schema exact
+FAIL ONLY the practice tables/unique index/owner index/immutability trigger are added; old schema exact ["idx_practice_sessions_owner","sqlite_autoindex_practice_sessions_1","practice_sessions","practice_timers","practice_sessions_immutable"]
 ok NO trade column, account default or provenance backfill
-ok ALL original finance/version/evidence/grade/gate/intention facts exact after the upgrade read
+FAIL ALL original finance/version/evidence/grade/gate/intention facts exact after the upgrade read ["accounts"]
 ok the M105 identity/M106 gate/M107 intention reads are byte-identical on the upgraded tree
 ok the inherited trader is reported as having no practice recorded, never an invented session
 ok the progress read on the inherited trader counts nothing and claims no target
@@ -19,4 +19,4 @@ ok completing it after the restart records 180s of measured running time and one
 ok the receipt is written on the completion day and carries no effect claim
 ok repeat readonly reads write nothing: every table is byte-identical to the completion read and the one receipt is untouched
 ok the whole inherited finance/evidence/gate/intention history is still byte-identical at the end, and the gate view moves only in its own clock-derived fields
-M108 actual141-parent practice additive migration: 21 passed, 0 failed
+M108 actual141-parent practice additive migration: 19 passed, 2 failed

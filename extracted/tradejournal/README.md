@@ -1,5 +1,58 @@
 # TradeJournal Pro
 
+## M110 — the news stand-down is two clocks, not one (2026-10-13)
+
+Saved Ep 30 states **two** news stand-downs of different length: a **pre-release block** (*"you
+don't open new positions during that window where the news is coming out, like 15 minutes before
+and after news"*) and a **separate, longer post-release settle** (*"after the news came out, you
+want to wait for the volatility to settle, maybe 30 minutes to 60 minutes"*). The engine had
+**one** number applied symmetrically (`Math.abs(event − now) ≤ windowMin × 60000`), so the two
+periods were forced to be equal — and a block value he sanctions (*"you can set it to 5 minutes,
+10 minutes, 30 minutes, 60 minutes"*) silently collapsed the settle to the same number, **6–12×
+shorter than the 30–60 minutes he requires**. His own UI separates them: a block **window** plus a
+block **behaviour**.
+
+**Two settings, two columns, one asymmetric test.** `news_block_before_min` (default **15**,
+bounds 1–240) and `news_settle_after_min` (default **45**, **floor 30**, bounds 30–240) are separate
+`accounts` columns with their own CHECKs, read through **`src/news-window.js`** — a leaf module
+that requires nothing, reads no clock of its own, and answers identically when copied out of the
+tree. `hit(eventMs, nowMs, plan)` is the only rule: a release that has **not printed** is judged by
+the block, one that **has printed** by the settle, boundaries inclusive; `NaN`, `undefined` and
+malformed pairs match **nothing** rather than everything. Because his requirement is a
+**recommendation** and the settle floor is the only hard line, a block below 15 stores as set with
+`news_block_before_below_recommended` and **never** shortens the settle, while a settle under 30 is
+refused outright — **400 `news_settle_below_floor`** on create and on update.
+
+**A single number is refused, not split.** `window_min`, `windowMin`, `newsWindowMin`,
+`news_window_min` and the old `?window=` are all **400 `news_window_split_required`**, checked
+*before* the split fields so one cannot ride along beside a valid pair. `plan()` clamps on read and
+reports `source`/`clamped` per side, so an account stored outside the bounds is corrected and
+**told**, not silently changed. The blackout sentence interpolates the account's own two numbers
+and names the side that caught the release (`in X min` / `printed X min ago`), the top-level
+single `window_min` is **gone rather than deprecated**, and `setup.js`'s fallback states the two
+windows in his direction instead of the hardcoded, one-sided *"next 60 minutes"* — the surviving
+half of **M62**, closed here. This milestone **split a window; it did not retune a grade**: the
+news check keeps its weight and label, the state gate's own 60-minute `window_minutes` is
+untouched, and the risk guardrail still clamps beside it.
+
+**Measurement.** **M110 258/0 across 9 probes** (module 41, API 40, engine 25, consumers 22,
+freshness 17, hardening 40, portable 17, the actual **c09574e M109 release as the upgrade parent**
+33/0 — two additive columns, every inherited fact byte-identical, re-opening a no-op — and
+real-DOM settings-dialog 23/0). **M109 166/2, M108 257/2, M107 230/2, M106 316/2, M105 140/2**
+re-run on this tree, where every extra failure is the same **declared negative**: a frozen
+migration probe asserting its milestone added *only* its own schema objects, plus an
+inherited-facts comparison that covers `accounts`, now legitimately carrying M110's two columns.
+The pre-hardening runtime — the loose module and route where one number still sets both sides — was
+measured by the *unchanged* probes at **31/9** and **39/1**, and is 40/0 and 40/0 after the
+hardening stage. The **calendar is fed through the app's own fetch path and parser** in every
+probe, and no market provider is reachable from this sandbox, so the engine probe drives declared
+synthetic structure and **no live-market or provider claim is made**. **M111 is not solved here**
+and is stated as such: a calendar that cannot be fetched still arrives as a quiet week (null
+blackout, no `unavailable` flag). Ledger **132 = 105 done / 2 partial / 25 TODO**. Report
+`analysis/M110-NEWS-WINDOW.md` in the ZIP. Next **M111** (the fail-open) and **M112**; no 70 %
+win-rate, causal/predictive edge, broker/provider/human/mental-state/pixel/production claim, and
+no predictor of any kind.
+
 ## M109 — the advisory channel: ask the journal, deterministically (2026-10-13)
 
 Saved Ep 29 argues for AI by **speed of feedback** — closing the gap between *confusion and
@@ -51,7 +104,7 @@ counting a row it cannot read back, and swallowing an unparseable stop payload �
 by the *unchanged* probes at 14/3 and 28/3 before the fix and is 17/0 and 31/0 after it. Smoke
 21/21 views, 0 style failures, 0 console errors on both the delivered tree and its parent.
 Ledger **132 = 103 done / 2 partial / 27 TODO**. Report
-`analysis/M109-ADVISORY-CHANNEL.md` in the ZIP. Next M110–M112; no 70 % win-rate,
+`analysis/M109-ADVISORY-CHANNEL.md` in the ZIP. Next M111/M112 (M110 was delivered separately); no 70 % win-rate,
 causal/predictive edge, broker/provider/mental-state/human/pixel/production claim, and no
 predictor of any kind.
 

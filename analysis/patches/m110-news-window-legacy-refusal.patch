@@ -1,0 +1,55 @@
+diff --git a/src/news-window.js b/src/news-window.js
+index faa84ff..318045e 100644
+--- a/src/news-window.js
++++ b/src/news-window.js
+@@ -113,16 +113,11 @@ function parsePair(input = {}, current = {}) {
+   let after_min = cur.after_min;
+   const beforeFromRequest = input[BEFORE.field] !== undefined;
+   const afterFromRequest = input[AFTER.field] !== undefined;
+-  // PRE-HARDENING (staged fault): the old single knob still sets BOTH sides and the settle floor
+-  // is not applied to it, which is the recorded 6–12x collapse this milestone exists to remove.
++  // The old single knob, refused rather than reinterpreted — and refused FIRST, so it cannot be
++  // smuggled in beside a valid pair and quietly ignored. Silently choosing a side for the caller
++  // is precisely how a 5-minute setting shortened a 30–60 minute settle.
+   if (LEGACY_SINGLE.some((k) => input[k] !== undefined)) {
+-    const one = Number(input.window_min ?? input.windowMin ?? input.newsWindowMin ?? input.news_window_min ?? input.window);
+-    if (!Number.isInteger(one)) throw invalid('The news window needs whole minutes.', 'news_window_invalid');
+-    return {
+-      before_min: Math.min(Math.max(one, BEFORE.min), BEFORE.max),
+-      after_min: Math.max(1, Math.min(AFTER.max, one)),
+-      warnings: [], source: ['legacy_window:request', 'legacy_window:request'], clamped: [],
+-    };
++    throw invalid('One number can no longer set both sides of the news rule. Set news_block_before_min (pre-release block) and news_settle_after_min (post-release settle, floor 30) separately.', 'news_window_split_required');
+   }
+   if (beforeFromRequest) before_min = parse(BEFORE, input[BEFORE.field], 'news_block_before_min');
+   if (afterFromRequest) after_min = parse(AFTER, input[AFTER.field], 'news_settle_after_min');
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 232464c..29af849 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -521,15 +521,20 @@ router.get('/markets', requireAuth, (req, res) => {
+    * The old `?window=N` is REFUSED rather than silently split: choosing a side for the caller
+    * is how a 5-minute setting used to shorten the 30–60 minute settle. */
+   router.get('/news/:symbol', requireAuth, wrap(async (req, res) => {
+-    // PRE-HARDENING (staged fault): the legacy query is passed straight through to the module,
+-    // which still lets one number set both sides.
+-    const legacyWindow = ['window', 'window_min', 'windowMin', 'newsWindowMin', 'news_window_min']
+-      .reduce((v, k) => (v === undefined ? req.query[k] : v), undefined);
++    // Every spelling of the old single knob is refused here, not just `?window=`: a legacy client
++    // that still sends one number must be told the rule was split, not silently served the stored
++    // pair (which would make a 5-minute caller believe 5 minutes was applied).
++    if (NewsWindow.LEGACY_SINGLE.some((k) => req.query[k] !== undefined)) {
++      return res.status(400).json({
++        error: 'One number no longer sets both sides of the news rule. Use ?before= for the pre-release block and ?after= for the post-release settle (floor 30 minutes), or leave both out to use the account settings.',
++        code: 'news_window_split_required',
++      });
++    }
+     const account = await Bots.correction.accountOf(req.user.id, req.query.account_id ? Number(req.query.account_id) : null);
+     let pair;
+     try {
+       pair = NewsWindow.parsePair(
+-        { news_block_before_min: req.query.before, news_settle_after_min: req.query.after, window: legacyWindow },
++        { news_block_before_min: req.query.before, news_settle_after_min: req.query.after },
+         NewsWindow.plan(account),
+       );
+     } catch (e) {

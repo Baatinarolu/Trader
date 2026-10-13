@@ -1,0 +1,168 @@
+{
+  "app": "/tmp/m110-pre-hardening/app",
+  "pass": 39,
+  "fail": 1,
+  "results": [
+    {
+      "label": "this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (a word) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (an array) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (an empty value) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (whitespace) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (zero, below the 1-minute minimum) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (one minute under the floor) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (one minute over the maximum) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (a negative block) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (a fraction) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (a boolean) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "a hostile value (an object) is refused 400 with a documented code, never a 500 and never silently accepted",
+      "passed": true
+    },
+    {
+      "label": "an exotic numeric spelling is not silently reinterpreted differently from how it is reported: whatever it was read as is what the answer echoes",
+      "passed": true
+    },
+    {
+      "label": "and every response to the battery was 400 or 200 — no unhandled path, no 500, no stack",
+      "passed": true
+    },
+    {
+      "label": "the codes actually used are exactly the three documented ones, so a client can switch on them",
+      "passed": true
+    },
+    {
+      "label": "a hostile settle in the account body (a fraction) is refused on creation",
+      "passed": true
+    },
+    {
+      "label": "a hostile settle in the account body (a boolean) is refused on creation",
+      "passed": true
+    },
+    {
+      "label": "a hostile settle in the account body (an array) is refused on creation",
+      "passed": true
+    },
+    {
+      "label": "a hostile settle in the account body (an object) is refused on creation",
+      "passed": true
+    },
+    {
+      "label": "a hostile settle in the account body (a blank) is refused on creation",
+      "passed": true
+    },
+    {
+      "label": "a hostile settle in the account body (words) is refused on creation",
+      "passed": true
+    },
+    {
+      "label": "a hostile settle in the account body (null) is refused on creation",
+      "passed": true
+    },
+    {
+      "label": "and on an update: a hostile settle does not overwrite the stored pair",
+      "passed": true
+    },
+    {
+      "label": "a stored settle longer than the 30–60 he names is read AS STORED, with a warning, and never repaired to 45 behind the trader’s back",
+      "passed": true
+    },
+    {
+      "label": "and repeated reads do not drift it: the value is stable across reads, so a warning cannot turn into a rewrite",
+      "passed": true
+    },
+    {
+      "label": "the engine still reports where that number came from (stored, with the outside-range warning) instead of passing it off as the default",
+      "passed": true
+    },
+    {
+      "label": "a hand-built row outside the bounds is clamped on read to the shipped limits, with both clamps named — not crashed on and not accepted",
+      "passed": true
+    },
+    {
+      "label": "a bare number is refused in-process too (as a rejection carrying the code), so no caller can reintroduce the symmetric knob without an error",
+      "passed": true
+    },
+    {
+      "label": "a missing event instant or a missing clock yields no verdict rather than a verdict at zero offset",
+      "passed": true
+    },
+    {
+      "label": "a malformed pair yields no verdict at all rather than matching everything",
+      "passed": true
+    },
+    {
+      "label": "the state gate’s own 60-minute window is exactly where M102 left it: untouched by the news split",
+      "passed": true
+    },
+    {
+      "label": "a news key smuggled into a gate answer is REFUSED — that surface accepts answers and a revision and nothing else — and the pair is untouched",
+      "passed": true
+    },
+    {
+      "label": "and the gate’s own accepted path cannot carry a news setting either: answering it leaves both clocks exactly where they were",
+      "passed": true
+    },
+    {
+      "label": "the risk guardrail beside it still holds: a 5% request is clamped to the course maximum rather than stored, so M110 did not knock out an existing guard",
+      "passed": true
+    },
+    {
+      "label": "a nonsense symbol is answered without a crash rather than 500",
+      "passed": true
+    },
+    {
+      "label": "the symbol is case-insensitive, and both spellings see the same release",
+      "passed": true
+    },
+    {
+      "label": "after the whole battery — refusals, hostile bodies, clamps and reads — not one row of the trader’s data moved anywhere in the database",
+      "passed": true
+    },
+    {
+      "label": "and inside the account, the only field that moved is the one this probe deliberately set — the widened settle — with the risk request resolved to the guardrail instead of stored",
+      "passed": true
+    },
+    {
+      "label": "the block side was never touched by any of it, which is the point of two separate clocks",
+      "passed": true
+    },
+    {
+      "label": "no shipped file lost a guard it had: the settle floor is still enforced by the schema, the route and the module, in that order",
+      "passed": false
+    }
+  ],
+  "scope": "M110 hardening: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
+}
