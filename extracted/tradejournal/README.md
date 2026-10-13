@@ -1,5 +1,46 @@
 # TradeJournal Pro
 
+## M105 — chosen self-description / separate quarterly theme (2026-10-13)
+
+**Dashboard** and owned **day review** now show optional declared words: a persistent
+self-description and a separate ~90-day calendar-quarter theme. Edit/explicitly
+reset either; old versions/receipts and the theme's original identity reference
+are retained. No “professional” default or copy from notes, profit, emotion, plan
+or the saved next-period action focus. These are words you choose, not psychology,
+self-worth, broker/action proof, trading readiness or a discipline score.
+
+The daily card's plan-following tally uses **current acknowledged human execution
+reviews** on UTC ENTRY day: followed/violated with known denominator, unreviewed,
+partial known violations, open/imported/unassigned separately. Unknown share is
+Unavailable, not clean100/0. Equal green/red process has the same counts; no P&L/
+model/grade/identity score. A historical day can't borrow words received later.
+
+New quarterly review snapshots retain the exact received self-description/theme
+version/reference, distinct from M101's action focus. Later edits do not rewrite
+its baseline;409 needs reload. The editor/readonly own history preserves original
+words, escaped markup, and account/user/token/superseded/fault guards.503 never
+claims saved or refunds a cap/routine/core/loss obligation. Themes use UTC APP
+calendar quarters—roughly90days, not exactly90/broker hours. M106 fresh readiness
+and M107 daily intention remain separate open findings.
+
+Full JSON backup includes declaration history; restores get destination ownership,
+new receiving receipts/imported-unverified INACTIVE archive status. Original words/
+clock/reference remain declarations, not original mental state, human commitment
+or plan-vote authority. Explicit later human adoption is a new declaration. Missing
+store still permits finance backup with unavailable marker; malformed optional
+history warns, actual import-store failure atomically rolls back that request.
+Settings warnings/read-only imported/orphan histories visible, no auto-refresh
+hiding omissions. Trade CSV does not carry standalone declared-word history.
+
+APP limits500single-line chars,500portable records/8KBunverified reference +existing
+20MBfile/25MBbody; no NLP/semantic uniqueness or automatic dedupe. Score/grade/risk/
+entry/core/routine/geometry/stops/targets/RR/floor30/M103n>=5/B-C unchanged.
+**M105142/0 across10**, actual135-parent migration13/0. Ledger
+**132=99 done/3 partial/30TODO**. Native parent/current both204/2 on15syntheticfills/
+0mismatches (same original>20floor assertions), negatives retained—not padded.
+Report `analysis/M105-IDENTITY-QUARTER-THEME.md` in ZIP. NextM106. No70%, causal/
+predictive edge, broker/provider/mental/human/meditation/pixel/production claim.
+
 ## M104 — named quarterly rule-change discipline (2026-10-12)
 
 **Playbook** now shows UTC quarterly guidance across **all owned setups**. Editing a

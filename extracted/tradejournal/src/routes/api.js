@@ -19,6 +19,7 @@ const Confluences = require('../confluences');
 const Emotions = require('../emotions');
 const PeriodReviews = require('../period-reviews');
 const RuleChanges = require('../rule-changes');
+const Identity = require('../identity');
 const Opportunities = require('../opportunities');
 const ProcessOutcomes = require('../process-outcomes');
 const BehaviorDays = require('../behavior-days');
@@ -641,6 +642,7 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
   const capPolicy = await Guards.dailyCap(db, req.user.id, acc);
   const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
   briefing.risk_plan.trade_cap_policy = capPolicy;
+  briefing.identity_context=await Identity.optional(req.user.id,acc.id,Guards.dayKey(Date.now()));
   briefing.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
   briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
   // Briefing amounts are advice, NOT permission. Use the same close-day UTC
@@ -684,6 +686,14 @@ router.get('/reviews/:kind/:start',requireAuth,reviewRoute(req=>PeriodReviews.re
 router.post('/reviews/:kind/:start',requireAuth,reviewRoute(req=>PeriodReviews.save(req.user.id,req.query.account_id,req.params.kind,req.params.start,req.body,'draft')));
 for(const action of ['complete','amend'])router.post('/reviews/:kind/:start/'+action,requireAuth,reviewRoute(req=>PeriodReviews.save(req.user.id,req.query.account_id,req.params.kind,req.params.start,req.body,action)));
 
+const identityRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='identity_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Identity declaration/tally unavailable; no finance/core/permission state changed.'});}};
+router.get('/identity',requireAuth,identityRoute(req=>Identity.read(req.user.id,req.query.account_id,{quarterStart:req.query.quarter_start??null})));
+router.get('/identity/history',requireAuth,identityRoute(req=>Identity.history(req.user.id,req.query.account_id??null)));
+router.get('/identity/tally',requireAuth,identityRoute(async req=>({tally:await Identity.reportTally(req.user.id,req.query.account_id,{from:req.query.from??null,to:req.query.to??null})})));
+router.get('/identity/daily/:date',requireAuth,identityRoute(req=>Identity.daily(req.user.id,req.query.account_id,req.params.date)));
+router.put('/identity/statement',requireAuth,identityRoute(req=>Identity.save(req.user.id,req.query.account_id,'identity','',req.body)));
+router.put('/identity/theme/:start',requireAuth,identityRoute(req=>Identity.save(req.user.id,req.query.account_id,'theme',req.params.start,req.body)));
+
 router.get('/journal', requireAuth, async (req, res) => {
   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
@@ -722,7 +732,7 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
   const accountId=account.id;
   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
-  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
+  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
 });
 router.post('/journal', requireAuth, async (req, res) => {
   const b = req.body || {};
@@ -1169,6 +1179,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
     confluence_labels:(await Confluences.vocabulary(userId)).labels,
     period_reviews:await PeriodReviews.exportOwned(userId),
     strategy_rule_changes:await RuleChanges.exportOwned(userId),
+    identity_declarations:await Identity.exportOwned(userId),
     opportunity_history:await Opportunities.exportOwned(userId),
     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
@@ -1274,9 +1285,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
 // Actual transaction insert IDs (never raw backup IDs), with optional media
 // warnings separate from financial parsing. Storage failure rolls back together.
 function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
-async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
   for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);return n;
+  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);return n;
 });}
 
 function parseCsv(text) {
@@ -1302,7 +1313,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
   const data = req.body && req.body.data ? req.body.data : req.body;
   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
   const userId = req.user.id;
-  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes);
+  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations);
   const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
   const accountMap = Object.create(null);
   const instruments = await instrumentMap(userId);
@@ -1349,9 +1360,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
       });
     }
-    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,opportunity_warnings:opportunities.warnings });
+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,opportunity_warnings:opportunities.warnings });
 });
 
 /* ---------------------------------------------------------------- settings */

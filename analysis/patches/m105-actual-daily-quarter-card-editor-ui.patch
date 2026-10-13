@@ -1,0 +1,99 @@
+diff --git a/public/index.html b/public/index.html
+index 8c1efda..afae9c2 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -25,6 +25,7 @@
+ <script src="/js/api.js?v={{V}}"></script>
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
++<script src="/js/views/identity.js?v={{V}}"></script>
+ <script src="/js/views/rule-changes.js?v={{V}}"></script>
+ <script src="/js/views/period-reviews.js?v={{V}}"></script>
+ <script src="/js/views/opportunities.js?v={{V}}"></script>
+diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
+index f81408b..34936cd 100644
+--- a/public/js/views/dashboard.js
++++ b/public/js/views/dashboard.js
+@@ -1,7 +1,7 @@
+ /* views/dashboard.js — the daily cockpit */
+ (function (global) {
+   'use strict';
+-  const Views = global.Views = global.Views || {};
++  const Views = global.Views = global.Views || {};let identityRenderEpoch=0;
+ 
+   // Shared with Corrections: explicit server marker, not broker time/permission.
+   Views.sessionTimeCard = function(session = {}) {
+@@ -26,13 +26,16 @@
+   Views.dashboard = {
+     title: 'Dashboard',
+     async render(root) {
++      const identityContext=Views.identity?.ctx(),epoch=++identityRenderEpoch;
+       const params = Store.queryParams();
+-      const [an, coach, briefing, tradesRes] = await Promise.all([
++      const [an, coach, briefing, tradesRes,identityDay] = await Promise.all([
+         Store.fetch('/analytics', params, 15000),
+         Store.fetch('/coach', params, 15000),
+         API.get('/briefing', params).catch(() => null),
+         API.get('/trades', { ...params, limit: 12 }),
++        API.get('/identity/daily/'+Store.isoToday(),{account_id:Store.accountId}).catch(()=>({state:'unavailable'})),
+       ]);
++      if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;
+       const k = an.kpis;
+       const acc = an.account || Store.account() || {};
+       root.innerHTML = '';
+@@ -70,6 +73,7 @@
+         go('first-bots', () => global.App.go('bots'));
+       }
+ 
++      if(Views.identity)root.appendChild(Views.identity.card(identityDay));
+       root.appendChild(Views.sessionTimeCard(briefing?.daily?.session_time || {}));
+       if(Views.lossWritingCard)root.appendChild(Views.lossWritingCard(briefing?.daily?.post_loss_journal || {}));
+ 
+diff --git a/public/js/views/identity.js b/public/js/views/identity.js
+new file mode 100644
+index 0000000..f946878
+--- /dev/null
++++ b/public/js/views/identity.js
+@@ -0,0 +1,18 @@
++/* M105 optional self-description/theme. Never readiness, score or authority. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U;let serial=0;
++ const ctx=()=>({user:global.Store.user?.id,account:global.Store.accountId,token:global.API.getToken()}),same=c=>c.user===global.Store.user?.id&&c.account===global.Store.accountId&&c.token===global.API.getToken(),finite=n=>typeof n==='number'&&Number.isFinite(n);
++ const P=Views.identity={ctx,same,
++  card(v){const node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{identityCard:'true'}}),context=ctx();node.appendChild(U.h('h3',{text:'Declared self-description / quarterly theme'}));node.appendChild(U.h('p',{class:'field-note',text:'Optional chosen words, not a readiness gate, identity/self-worth score, actual mental-state or broker/action proof. No financial, grade, risk, trade permission, core writing or routine completion. A ~90-day calendar theme is not the saved action focus or a daily intention.'}));if(v?.state==='unavailable'||!v?.identity||!v?.theme){node.appendChild(U.h('p',{class:'sticky-note warn',text:'Identity/theme context unavailable, not inferred from old notes, profit or adherence. No default professional/clean identity.'}));return node;}
++   for(const [kind,label]of [['identity','Persistent self-description'],['theme','Quarterly theme']]){const d=v[kind];node.appendChild(U.h('p',{class:'small',text:`${label}: ${d.statement??'Unknown / not recorded'}`}));node.appendChild(U.h('p',{class:'tiny muted',text:`${d.state||'unavailable'} · ${d.source||'unrecorded'} · server receipt ${d.recorded_at||'not recorded'}${d.period_start?' · quarter '+d.period_start+' to '+d.period_end:''}. Receipt is not original mental-state/action proof.`}));}
++   if(v.theme_identity_changed)node.appendChild(U.h('p',{class:'sticky-note warn',text:'Current self-description changed after this theme was chosen. Its original identity reference/words/receipt stay retained, not silently rebound.'}));if(v.tally){const t=v.tally;node.appendChild(U.h('h4',{text:'Current reported plan-following — not an identity score'}));node.appendChild(U.h('p',{class:'small',text:`${t.known_reports} known reports · ${t.followed} followed · ${t.violated} violated · ${t.unreviewed} unreviewed · ${t.known_partial_violations} known partial violations · ${t.open} open · ${t.imported_reports} imported/unverified · ${t.unassigned} unassigned. Followed share (known reports only): ${finite(t.followed_percent)?U.pct(t.followed_percent,1):'Unavailable'}.`}));node.appendChild(U.h('p',{class:'tiny muted',text:t.basis}));}
++   node.appendChild(U.h('p',{class:'tiny muted',text:v.basis}));const button=(kind,label,data)=>U.h('button',{class:'btn sm ghost',type:'button',dataset:data,text:label,onclick:()=>{if(!same(context))return global.App.toast('Workspace/account/session changed; reopen its own declaration.','err');return P.edit(kind,kind==='theme'?v.quarter.start:null);}});node.appendChild(button('identity','Edit CURRENT declared self-description',{identityEdit:'true'}));node.appendChild(button('theme','Edit separate quarterly theme',{identityThemeEdit:'true'}));return node;
++  },
++  async edit(kind='identity',quarterStart=null){const context=ctx(),number=++serial;let view;try{view=await global.API.get('/identity',{account_id:context.account,quarter_start:quarterStart||undefined});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');return;}if(!same(context)||number!==serial||view.account_id!==Number(context.account))return;const body=U.h('div');let alive=true,busy=false,stale=false;const valid=()=>alive&&same(context)&&number===serial&&body.isConnected;function draw(){body.replaceChildren();const d=view[kind];body.appendChild(U.h('p',{class:'field-note',text:`${kind==='theme'?'Quarterly theme':'Persistent self-description'} · account #${view.account_id} · ${view.quarter.start} to ${view.quarter.end}. ${view.quarter.basis}. These chosen words are not a readiness gate, action focus, daily intention or a score of your worth. No trade/risk/grade/permission/core completion.`}));body.appendChild(U.h('p',{class:'small',text:`Saved ${d.state} · ${d.source} · server receipt ${d.recorded_at||'not recorded'}. Original words/history retained; later changes are new declarations, not original mental-state proof.`}));const input=U.h('input',{type:'text',maxlength:500,dataset:{identityStatement:'true'},value:d.statement||'',placeholder:'Choose honest words, not a guaranteed financial result'}),unknown=U.h('input',{type:'checkbox',dataset:{identityUnknown:'true'}});body.appendChild(U.h('label',{class:'field'},U.h('span',{text:kind==='theme'?'One quarter theme (not the next-period action focus)':'Your chosen self-description'}),input));body.appendChild(U.h('label',{class:'row gap-8'},unknown,U.h('span',{text:'Explicitly unknown / no declared statement now (retain original history)'})));unknown.addEventListener('change',()=>{input.disabled=unknown.checked;});body.appendChild(U.h('p',{class:'tiny muted',text:'Optional example, not a default: “I’m the type of trader who shuts down after a max loss.” Free text is your declaration; no NLP or psychological verification is performed.'}));
++    const button=U.h('button',{class:'btn sm primary',type:'button',dataset:{identitySave:'true'},text:'Record this declaration (no permission)',onclick:async()=>{if(!valid()||busy)return global.App.toast('Workspace/account/session/editor changed; reopen.','err');const statement=unknown.checked?null:input.value;busy=true;disable();try{const endpoint=kind==='identity'?'/identity/statement':'/identity/theme/'+view.quarter.start;const out=await global.API.put(endpoint+'?account_id='+context.account,{statement,revision:view.revision});if(!valid())return;view=out;stale=false;draw();global.Store.invalidate();global.App.toast('Declaration recorded; finance/grades/routine/core/permission unchanged.','ok');}catch(e){if(valid()){stale=e.status===409;global.App.toast(e.message,'err');}}finally{busy=false;if(valid())disable();}}});body.appendChild(button);body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{identityReload:'true'},text:'Reload current declarations (discard unsaved text)',onclick:async()=>{if(!valid()||busy)return;busy=true;disable();try{const out=await global.API.get('/identity',{account_id:context.account,quarter_start:view.quarter.start});if(!valid())return;view=out;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message,'err');}finally{busy=false;if(valid())disable();}}}));const history=U.h('details');history.appendChild(U.h('summary',{text:'Retained original declaration history'}));for(const d of view.history[kind]||[])history.appendChild(U.h('pre',{class:'tiny',text:JSON.stringify(d,null,2)}));body.appendChild(history);
++   }
++   function disable(){body.querySelector('[data-identity-save]').disabled=busy||stale;body.querySelector('[data-identity-reload]').disabled=busy;}
++   draw();const modal=global.App.modal({title:kind==='theme'?'Quarterly theme':'Declared self-description',body,wide:true,onClose:()=>{alive=false;},actions:[{label:'Close — no readiness/permission inferred',ghost:true}]});disable();return modal;
++  }
++ };
++})(window);
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 8d198ac..8ac5d15 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -179,6 +179,7 @@
+         <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+     if(Views.behaviorDays)body.prepend(Views.behaviorDays.card(day.behavior_days));
++    if(Views.identity)body.prepend(Views.identity.card(day.identity_context));
+     if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+diff --git a/public/js/views/period-reviews.js b/public/js/views/period-reviews.js
+index 4a28cc8..cf8722f 100644
+--- a/public/js/views/period-reviews.js
++++ b/public/js/views/period-reviews.js
+@@ -7,6 +7,7 @@
+   async open(kind,start){const context=ctx(),number=++serial,url='/reviews/'+encodeURIComponent(kind)+'/'+encodeURIComponent(start);let view;try{view=await global.API.get(url,{account_id:context.account});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');return;}if(!same(context)||number!==serial||view.account_id!==Number(context.account))return;const body=U.h('div');let alive=true,busy=false,stale=false,amending=false,modal;const valid=()=>alive&&same(context)&&number===serial&&body.isConnected;
+    function draw(){body.replaceChildren();const last=view.latest,locked=last?.status==='completed'&&!amending,data=last?.metrics||view.preview,f=data?.financial||{};body.appendChild(U.h('p',{class:'small',text:`${view.template.title} · account #${view.account_id} · ${view.period.start} inclusive to ${view.period.end} exclusive · ${last?last.status+' revision '+last.version:'Unsaved draft'}. ${view.period.basis}`}));body.appendChild(U.h('p',{class:'field-note',text:view.template.policy+' Review completion is not trading permission, evidence of human/broker execution or core/day journal completion. No weekly/monthly plan-apply or automatic annual goal rewrite.'}));body.appendChild(U.h('p',{class:'tiny muted',text:'Question basis: '+view.template.question_basis+(kind==='year'?' · APP-guided annual prompts; not a full quoted course template.':'')}));body.appendChild(U.h('p',{class:'small',text:`${last?'Saved snapshot':'Live preview'}: Known outcomes ${f.known_net_count??'unknown'} / ${f.closed_trades??'unknown'} · Net ${finite(f.net)?U.moneySign(f.net):'Unavailable'} · Win % ${finite(f.win_rate)?U.pct(f.win_rate,1):'Unavailable'} · Mean R ${finite(f.mean_r)?U.R(f.mean_r):'Unavailable'} · ${f.sample_ready?'30+ recorded; not edge proof':'Below30; do not tweak the system'}. Financial snapshot alone does not certify missed/impulse setups; opportunity evidence is separate below.`}));if(Views.opportunities)body.appendChild(Views.opportunities.summary(data?.opportunity_review));
+     if(last)body.appendChild(U.h('p',{class:'tiny',text:`Saved source ${last.source} · server receipt ${last.recorded_at||'unavailable'} · first and amended revisions retained; receipt is not original entry-time proof.`}));if(view.context_matches===false)body.appendChild(U.h('p',{class:'sticky-note warn',text:'Saved financial/strategy context is prior. Original snapshot retained; current live preview differs. Explicitly reload/amend, never overwrite the original baseline.'}));if(!view.preview.policy.period_finished)body.appendChild(U.h('p',{class:'sticky-note warn',text:'Calendar period still in progress: a completed answer record is an early review, not a fully elapsed period.'}));
++    if(kind==='quarter'&&Views.identity){body.appendChild(Views.identity.card(data.identity_context));body.appendChild(U.h('p',{class:'field-note',text:'Saved snapshot identity/theme words are the declarations received when this review was captured, not the separate next-period action focus or proof of your identity then. Editing theme separately keeps your review draft but requires explicit reload of its changed baseline.'}));}
+     if(kind==='quarter'&&Views.ruleChanges){body.appendChild(Views.ruleChanges.card(data.quarter_rule_changes?.report));body.appendChild(U.h('p',{class:'field-note',text:'This quarter discipline is the saved baseline when shown under Saved snapshot. Later rule edits do not rewrite its counters/definitions. No plan, trade or risk permission is applied by a review.'}));}
+     for(const q of view.template.questions){const el=U.h('textarea',{maxlength:4000,dataset:{periodAnswer:q.id},value:last?.answers?.[q.id]||''});el.setAttribute('data-period-answer-'+q.id,'true');el.value=last?.answers?.[q.id]||'';el.disabled=locked;body.appendChild(U.h('label',{class:'field'},U.h('span',{text:q.label}),el));}
+     const focus=U.h('input',{type:'text',maxlength:300,dataset:{periodFocus:'true'},value:last?.focus||'',disabled:locked});body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'One chosen focus for the next period (no automatic recommendation)'}),focus));const previous=view.previous_focus;if(previous){body.appendChild(U.h('p',{class:'small',text:`Prior adjacent ${kind} focus #${previous.review_id} revision ${previous.version}: ${previous.focus} · ${previous.source} · original server receipt ${previous.recorded_at}. This is a commitment record, not proof you acted.`}));const select=U.h('select',{dataset:{periodActed:'true'},disabled:locked});for(const [value,label]of [['missing','Choose explicitly'],['yes','Yes — my self-report'],['no','No — my self-report'],['unknown','Unknown / not recorded']])select.appendChild(U.h('option',{value,text:label}));const follow=last?.follow_up;if(follow?.previous_review_id===previous.review_id)select.value=follow.acted_on_focus===null?'unknown':follow.acted_on_focus?'yes':'no';const reflection=U.h('textarea',{maxlength:2000,dataset:{periodFollowReflection:'true'},value:follow?.reflection||'',disabled:locked});reflection.value=follow?.reflection||'';body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Did you act on that exact prior focus?'}),select));body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Your evidence/reflection, not a completion claim'}),reflection));if(view.previous_focus_changed_since_saved)body.appendChild(U.h('p',{class:'sticky-note warn',text:'The current prior-period commitment changed after this saved answer. The earlier follow-up still references the original focus/version; deliberately review before amending.'}));}else body.appendChild(U.h('p',{class:'muted small',text:'No adjacent completed prior focus recorded. Do not infer acted/failed from missing history.'}));

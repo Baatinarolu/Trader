@@ -1,0 +1,41 @@
+DECLARED M64 prerequisite isolation: routine held fulfilled, new first-entry routine capture not exercised. NOT full current policy proof. Original runs/negatives retained.
+ok additive account schema exposes nullable optional time selection
+ok existing/new account defaults OFF, never a universal120-minute rule
+ok real owned inspection accurately reports OFF/advisory only
+ok cannot silently start an unconfigured time ceiling
+ok invalid session-minute input is400/no selection write: 0
+ok invalid session-minute input is400/no selection write: -1
+ok invalid session-minute input is400/no selection write: 1441
+ok invalid session-minute input is400/no selection write: 1.5
+ok invalid session-minute input is400/no selection write: true
+ok invalid session-minute input is400/no selection write: []
+ok invalid session-minute input is400/no selection write: {}
+ok invalid session-minute input is400/no selection write: "0x78"
+ok invalid session-minute input is400/no selection write: "bad"
+ok valid scalar session selection roundtrips: 1
+ok valid scalar session selection roundtrips: "120"
+ok valid scalar session selection roundtrips: 1440
+ok valid scalar session selection roundtrips: null
+ok valid scalar session selection roundtrips: ""
+ok unrelated account edit retains chosen120 minutes
+ok selected but unstarted marker is not zero minutes of proven chart time
+ok manual start records SERVER clock and freezes chosen120 minutes
+ok duplicate start is idempotent, not a way to replenish time
+ok saved future duration240 cannot extend active frozen120
+ok exact120-minute inclusive boundary gives elapsed warning
+ok settings OFF cannot erase active time observation
+ok time warning never creates an execution veto or changes other cap/risk rules
+ok manual end uses server time and retains original elapsed warning
+ok end retry cannot rewrite prior end timestamp
+ok end/start on same UTC start-day does not reset frozen marker
+ok another owner cannot inspect marker/config404
+ok another owner cannot write marker404
+ok marker endpoint requires actual authentication401
+ok next UTC start-day permits a genuinely new server marker
+ok active marker crosses midnight without inventing a reset
+ok overnight marker still warns at selected two-hour boundary
+ok new UTC day cannot silently replace an ongoing overnight marker
+ok after explicit overnight end, today can start its own selected marker
+ok marker table is real durable SQL, not localStorage-only decoration
+ok completed markers retain their frozen start/duration/end bytes
+M84 session time: 39 passed, 0 failed

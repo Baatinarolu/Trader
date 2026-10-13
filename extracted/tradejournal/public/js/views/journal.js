@@ -179,6 +179,7 @@
         <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
     if(Views.behaviorDays)body.prepend(Views.behaviorDays.card(day.behavior_days));
+    if(Views.identity)body.prepend(Views.identity.card(day.identity_context));
     if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
     let routineDirty=false;

@@ -1,0 +1,492 @@
+diff --git a/README.md b/README.md
+index 2960aa4..a5d9bcd 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,46 @@
+ # TradeJournal Pro
+ 
++## M105 — chosen self-description / separate quarterly theme (2026-10-13)
++
++**Dashboard** and owned **day review** now show optional declared words: a persistent
++self-description and a separate ~90-day calendar-quarter theme. Edit/explicitly
++reset either; old versions/receipts and the theme's original identity reference
++are retained. No “professional” default or copy from notes, profit, emotion, plan
++or the saved next-period action focus. These are words you choose, not psychology,
++self-worth, broker/action proof, trading readiness or a discipline score.
++
++The daily card's plan-following tally uses **current acknowledged human execution
++reviews** on UTC ENTRY day: followed/violated with known denominator, unreviewed,
++partial known violations, open/imported/unassigned separately. Unknown share is
++Unavailable, not clean100/0. Equal green/red process has the same counts; no P&L/
++model/grade/identity score. A historical day can't borrow words received later.
++
++New quarterly review snapshots retain the exact received self-description/theme
++version/reference, distinct from M101's action focus. Later edits do not rewrite
++its baseline;409 needs reload. The editor/readonly own history preserves original
++words, escaped markup, and account/user/token/superseded/fault guards.503 never
++claims saved or refunds a cap/routine/core/loss obligation. Themes use UTC APP
++calendar quarters—roughly90days, not exactly90/broker hours. M106 fresh readiness
++and M107 daily intention remain separate open findings.
++
++Full JSON backup includes declaration history; restores get destination ownership,
++new receiving receipts/imported-unverified INACTIVE archive status. Original words/
++clock/reference remain declarations, not original mental state, human commitment
++or plan-vote authority. Explicit later human adoption is a new declaration. Missing
++store still permits finance backup with unavailable marker; malformed optional
++history warns, actual import-store failure atomically rolls back that request.
++Settings warnings/read-only imported/orphan histories visible, no auto-refresh
++hiding omissions. Trade CSV does not carry standalone declared-word history.
++
++APP limits500single-line chars,500portable records/8KBunverified reference +existing
++20MBfile/25MBbody; no NLP/semantic uniqueness or automatic dedupe. Score/grade/risk/
++entry/core/routine/geometry/stops/targets/RR/floor30/M103n>=5/B-C unchanged.
++**M105142/0 across10**, actual135-parent migration13/0. Ledger
++**132=99 done/3 partial/30TODO**. Native parent/current both204/2 on15syntheticfills/
++0mismatches (same original>20floor assertions), negatives retained—not padded.
++Report `analysis/M105-IDENTITY-QUARTER-THEME.md` in ZIP. NextM106. No70%, causal/
++predictive edge, broker/provider/mental/human/meditation/pixel/production claim.
++
+ ## M104 — named quarterly rule-change discipline (2026-10-12)
+ 
+ **Playbook** now shows UTC quarterly guidance across **all owned setups**. Editing a
+diff --git a/docs/API.md b/docs/API.md
+index 2fd05a2..911a052 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -1046,3 +1046,75 @@ APP input budgets500lines/5000chars each,10000versions/events,500portable record
+ score/core/routine/cap/loss/admission/financial-winner/trade-grade/weights/risk/factor/
+ geometry/stop/target/RR mutation. Floor30/M103n>=5/B-C unchanged. No causal/predictive
+ edge/70%/broker/provider/human/mental/meditation/pixel/production proof. M105 next.
++
++
++## M105 — optional declared identity / separate quarter theme
++
++Additive `identity_declarations` immutable account/kind/quarter revision history,
++not account/trade defaults. `identity` persistent emptyperiod key; `theme` canonical
++UTC APP calendar quarter (~90, not exactly90days/broker hours). Owner deletion
++cascades; account deletion SET NULL retains original readonly own history, never
++foreign reattachment. UPDATE facts immutable except FK nullification. Not sealed
++against database-admin tampering. No notes/focus/adherence/profit history backfill.
++
++- `GET /identity?account_id=&quarter_start=` live editor view: account,quarter,
++  identity,theme,original theme identity_reference/change warning,history,archives,
++  displayed revision,basis,broker_verified:false. Human/source declaration only;
++  imported records not activated. Optional canonical quarter_start selects theme;
++  persistent current self-description remains separate lifetime.
++- `GET /identity/daily/:date?account_id=` declarations with actual receipt <=selected
++  historical UTC day end/now, plus same-date current reported ENTRY-day plan tally.
++  Later words not borrowed as old state. Future selected days not observed. A
++  retrospective declaration is not original mental-state/action proof.
++- `GET /identity/tally?account_id=&from=&to=` owned current acknowledged plan count.
++- `GET /identity/history?account_id=` readonly original declarations. Omitted account
++  means all own accounts/orphaned/imported copies, not another user's words.
++- `PUT /identity/statement?account_id=` only `{statement,revision}`.
++- `PUT /identity/theme/:start?account_id=` only `{statement,revision}`.
++
++Canonical positive owned account; foreign/missing/alias404, invalid date/quarter400,
++auth401. Nonblank single-line string<=500chars or explicit null unknown reset;
++blank/array/bool/control-character coercions reject400. NFC/outer trim. No caller
++user/source/clock/reference/eligibility input. Revision covers selected-quarter
++current declaration history. Stale409 explicit reload, identicalretry receipt
++preserved, actualstore503 rollback new words only—not earlier finance/core/entry.
++Theme saves original identity ID/version/text/source/receipt snapshot; later identity
++change visible, not silent rebind. Null/reset history retained independently.
++
++Primary tally: current complete acknowledged M86 execution-quality source
++self_reported, valid owner/date/hash/stop/adherence/chronology/clocks. Equal green/
++red process same counts; no P&L/entrygrade/score/identity-worth/psychological input.
++Plan followed vs violated definition is M86's, not an invented adherence5-only gate.
++Unknown/stale/default/legacy/open/unassigned records unreviewed, imported current
++reports separately unverified. Known violation in incomplete review separately
++visible, not denominator double-counted. Ratio followed/known_reports only;NULL
++with no known evidence. ENTRY-day basis, not profit CLOSE-day attribution. Counts
++not broker/action/mental-state fulfilment or proof the words caused behaviour.
++
++Actual Dashboard/day/quarter card/editor/readonlyhistory, escaped words and
++account/user/token/serial/closed/stale/current-versus-obsolete fault guards.
++Actual409 keeps draft/disables save untilreload;503 cannotclaim recorded.
++M99 quarter new snapshot `identity_context` keeps exact received declarations;
++current change invalidates displayed context revision but original snapshot and
++M101 actionfocus immutable. Nonquarter null. Editing theme independently doesn't
++complete/save the review or silently discard local text; deliberate reload needed.
++
++JSON backup `identity_declarations:{version:1,records:[...]}`; imports destination
++owner/account/new revision/ID/source imported_unverified/new receipt. Original
++kind/statement/clock/reference/source in historical unverified metadata; imported
++inactive readonly archives, no human commitment/action/plan-vote replay. Re-export/
++restore retains original declaration clock; invalid/future omitted with warning.
++Explicit later human adoption is a NEW declaration, not origin proof. Optional
++badhistory `identity_warnings` while finance legal; realstore failure rollsback
++finance/declarations import atomically. Missingstore backup financelegal with
++unavailable marker; restore warns, no loststatement inferred. Settings warnings
++stay visible/no auto-refresh, readonly own archive/orphan records accessible.
++Trade CSV does not transport standalone declared words. Repeat import appends,
++not automatic upsert/dedupe.500records/8KBunverified reference and unchanged
++20MBfile/25MBbody APP budgets, not course laws; no silent clipping.
++
++No identity score/tier/self-worth judgement, NLP process/money intention judge,
++M106 freshstate gate or M107 daily intention. No grade/risk/cap/routine/loss/core/
++admission/model/weights/factors/geometry/stops/targets/RR change. Course30/M103n>=5/
++B-C unchanged. No70%/causal/predictive/mental/broker/provider/human/meditation/pixel/
++production proof. M106 next; M111/M112 open, M30/M103/M108 partial.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index cae737d..f200197 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -595,3 +595,40 @@ marker. APP limits500lines/5000chars,10000history,500portable/256KBpair +existin
+ Current132=98done/3partial/31TODO, nextM105. M106/M111/M112 open; M30/M103/M108
+ partial. No causal attribution, win-rate/edge/70%, actual broker/provider/mental/
+ human/meditation/pixel/production validation from this descriptive discipline.
++
++
++## M105 — optional self-description/theme are not readiness or worth
++
++Chosen persistent self-description +distinct calendar-quarter (~90day) theme,
++account-owned versioned receipts/ref snapshots/nullreset. No professional/clean
++label/default, no inference from profit/notes/plan/focus/emotion/legacy adherence.
++Historical daily view bounded by actual receipt—not then mental-state or action
++proof and not later words copied backward. UTC calendar APPpolicy, not exactly90
++or broker/traderhours. Theme original identity reference retained after new words;
++quarter snapshots preserve exact declared versions and separate M101 actionfocus.
++
++Current acknowledged human plan reports followed/violated counts, known denominator
++only; raw/default/stale/open/imported/unassigned/invalidchronology unreviewed or
++unverified. Partial known violation visible without claiming fully-known review.
++Unknown ratioNULL/notclean100. Same green/red process same tally. Not an identity/
++self-worth/mental/causal score or daily/window rubric rewrite; no forced-trade quota.
++M106 fresh readiness and M107 daily process intention separateTODO, not hidden gates.
++
++Strict owner/date/revision/text API;500single-line chars or explicitnull. Actor/
++account/token/serial/closed/current-versus-obsolete faults guarded, original text
++escaped and immutable,409 draft retained/reload,503 no false receipt. No core/loss
++writing, cap/cooldown/routine/admission/risk/grade/frame/geometry/RR authority.
++Quarter view edits declaration independently, no plan applied or localreviewauto-save.
++
++Full JSON receiving/destination-owned imported-unverified INACTIVE archive; original
++words/clock/reference declared history only, no humancommitment/action/tally replay.
++Badoptionalhistory warns while financelegal, realstore failure atomicrollback that
++import, missingstore stillpermits financialbackup marker. Settings warning success
++not silentlyrefreshaway; ownreadonly archive/orphan history retained, no foreign
++reattachment or sealed/admin-proof vault.500portable/8KBreference APPbudgets and
++existing20MBfile/25MBbody limits, no silent clipping/automaticdedupe/NLP uniqueness.
++
++Current132=99done/3partial/30TODO. NextM106, M107/M111/M112 open, M30/M103/M108
++partial. Existing execution/daily/window scores/grades/weights/default risk/factors/
++entrymodels/checklists/stops/targets/RR/floor30/M103n>=5/B-C unchanged. No70%/causal/
++predictive edge/broker/provider/actual mental/human/meditation/pixels/production proof.
+diff --git a/public/index.html b/public/index.html
+index 8c1efda..afae9c2 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -25,6 +25,7 @@
+ <script src="/js/api.js?v={{V}}"></script>
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
++<script src="/js/views/identity.js?v={{V}}"></script>
+ <script src="/js/views/rule-changes.js?v={{V}}"></script>
+ <script src="/js/views/period-reviews.js?v={{V}}"></script>
+ <script src="/js/views/opportunities.js?v={{V}}"></script>
+diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
+index f81408b..2352d8e 100644
+--- a/public/js/views/dashboard.js
++++ b/public/js/views/dashboard.js
+@@ -1,7 +1,7 @@
+ /* views/dashboard.js — the daily cockpit */
+ (function (global) {
+   'use strict';
+-  const Views = global.Views = global.Views || {};
++  const Views = global.Views = global.Views || {};let identityRenderEpoch=0;
+ 
+   // Shared with Corrections: explicit server marker, not broker time/permission.
+   Views.sessionTimeCard = function(session = {}) {
+@@ -26,13 +26,16 @@
+   Views.dashboard = {
+     title: 'Dashboard',
+     async render(root) {
++      const identityContext=Views.identity?.ctx(),epoch=++identityRenderEpoch;
+       const params = Store.queryParams();
+-      const [an, coach, briefing, tradesRes] = await Promise.all([
++      let identityResult;try{identityResult = await Promise.all([
+         Store.fetch('/analytics', params, 15000),
+         Store.fetch('/coach', params, 15000),
+         API.get('/briefing', params).catch(() => null),
+         API.get('/trades', { ...params, limit: 12 }),
+-      ]);
++        API.get('/identity/daily/'+Store.isoToday(),{account_id:Store.accountId}).catch(()=>({state:'unavailable'})),
++      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay]=identityResult;
++      if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;
+       const k = an.kpis;
+       const acc = an.account || Store.account() || {};
+       root.innerHTML = '';
+@@ -70,6 +73,7 @@
+         go('first-bots', () => global.App.go('bots'));
+       }
+ 
++      if(Views.identity)root.appendChild(Views.identity.card(identityDay));
+       root.appendChild(Views.sessionTimeCard(briefing?.daily?.session_time || {}));
+       if(Views.lossWritingCard)root.appendChild(Views.lossWritingCard(briefing?.daily?.post_loss_journal || {}));
+ 
+diff --git a/public/js/views/identity.js b/public/js/views/identity.js
+new file mode 100644
+index 0000000..ef12ef0
+--- /dev/null
++++ b/public/js/views/identity.js
+@@ -0,0 +1,19 @@
++/* M105 optional self-description/theme. Never readiness, score or authority. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U;let serial=0;
++ const ctx=()=>({user:global.Store.user?.id,account:global.Store.accountId,token:global.API.getToken()}),same=c=>c.user===global.Store.user?.id&&c.account===global.Store.accountId&&c.token===global.API.getToken(),finite=n=>typeof n==='number'&&Number.isFinite(n);
++ const P=Views.identity={ctx,same,feedback(out){if(!out.identity_warnings?.length)return null;return U.h('section',{class:'sticky-note warn'},U.h('strong',{text:'Optional identity/theme declaration history'}),...out.identity_warnings.map(text=>U.h('p',{class:'tiny',text})));},
++  async history(){const context=ctx(),number=++serial;try{const out=await global.API.get('/identity/history');if(!same(context)||number!==serial)return;const body=U.h('div');body.appendChild(U.h('h3',{text:'Readonly declaration history — own accounts / orphaned / imported copies'}));body.appendChild(U.h('p',{class:'field-note',text:'Original keys/clock/words retained. Imported copies remain unverified and inactive; orphaned originals never attach a new account or grant permission.'}));for(const record of out.records||[])body.appendChild(U.h('pre',{class:'tiny',text:JSON.stringify(record,null,2)}));return global.App.modal({title:'Readonly declaration history',body,wide:true,actions:[{label:'Close readonly history',ghost:true}]});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');}},
++  card(v){const node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{identityCard:'true'}}),context=ctx();node.appendChild(U.h('h3',{text:'Declared self-description / quarterly theme'}));node.appendChild(U.h('p',{class:'field-note',text:'Optional chosen words, not a readiness gate, identity/self-worth score, actual mental-state or broker/action proof. No financial, grade, risk, trade permission, core writing or routine completion. A ~90-day calendar theme is not the saved action focus or a daily intention.'}));if(v?.state==='unavailable'||!v?.identity||!v?.theme){node.appendChild(U.h('p',{class:'sticky-note warn',text:'Identity/theme context unavailable, not inferred from old notes, profit or adherence. No default professional/clean identity.'}));return node;}
++   for(const [kind,label]of [['identity','Persistent self-description'],['theme','Quarterly theme']]){const d=v[kind];node.appendChild(U.h('p',{class:'small',text:`${label}: ${d.statement??'Unknown / not recorded'}`}));node.appendChild(U.h('p',{class:'tiny muted',text:`${d.state||'unavailable'} · ${d.source||'unrecorded'} · server receipt ${d.recorded_at||'not recorded'}${d.period_start?' · quarter '+d.period_start+' to '+d.period_end:''}. Receipt is not original mental-state/action proof.`}));}
++   if(v.theme_identity_changed)node.appendChild(U.h('p',{class:'sticky-note warn',text:'Current self-description changed after this theme was chosen. Its original identity reference/words/receipt stay retained, not silently rebound.'}));if(v.tally){const t=v.tally;node.appendChild(U.h('h4',{text:'Current reported plan-following — not an identity score'}));node.appendChild(U.h('p',{class:'small',text:`${t.known_reports} known reports · ${t.followed} followed · ${t.violated} violated · ${t.unreviewed} unreviewed · ${t.known_partial_violations} known partial violations · ${t.open} open · ${t.imported_reports} imported/unverified · ${t.unassigned} unassigned. Followed share (known reports only): ${finite(t.followed_percent)?U.pct(t.followed_percent,1):'Unavailable'}.`}));node.appendChild(U.h('p',{class:'tiny muted',text:t.basis}));}
++   node.appendChild(U.h('p',{class:'tiny muted',text:v.basis}));const button=(kind,label,data)=>U.h('button',{class:'btn sm ghost',type:'button',dataset:data,text:label,onclick:()=>{if(!same(context))return global.App.toast('Workspace/account/session changed; reopen its own declaration.','err');return P.edit(kind,kind==='theme'?v.quarter.start:null);}});node.appendChild(button('identity','Edit CURRENT declared self-description',{identityEdit:'true'}));node.appendChild(button('theme','Edit separate quarterly theme',{identityThemeEdit:'true'}));node.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{identityHistory:'true'},text:'Review readonly declaration history',onclick:()=>{if(!same(context))return;return P.history();}}));return node;
++  },
++  async edit(kind='identity',quarterStart=null){const context=ctx(),number=++serial;let view;try{view=await global.API.get('/identity',{account_id:context.account,quarter_start:quarterStart||undefined});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');return;}if(!same(context)||number!==serial||view.account_id!==Number(context.account))return;const body=U.h('div');let alive=true,busy=false,stale=false;const valid=()=>alive&&same(context)&&number===serial&&body.isConnected;function draw(){body.replaceChildren();const d=view[kind];body.appendChild(U.h('p',{class:'field-note',text:`${kind==='theme'?'Quarterly theme':'Persistent self-description'} · account #${view.account_id} · ${view.quarter.start} to ${view.quarter.end}. ${view.quarter.basis}. These chosen words are not a readiness gate, action focus, daily intention or a score of your worth. No trade/risk/grade/permission/core completion.`}));body.appendChild(U.h('p',{class:'small',text:`Saved ${d.state} · ${d.source} · server receipt ${d.recorded_at||'not recorded'}. Original words/history retained; later changes are new declarations, not original mental-state proof.`}));const input=U.h('input',{type:'text',maxlength:500,dataset:{identityStatement:'true'},value:d.statement||'',placeholder:'Choose honest words, not a guaranteed financial result'}),unknown=U.h('input',{type:'checkbox',dataset:{identityUnknown:'true'}});body.appendChild(U.h('label',{class:'field'},U.h('span',{text:kind==='theme'?'One quarter theme (not the next-period action focus)':'Your chosen self-description'}),input));body.appendChild(U.h('label',{class:'row gap-8'},unknown,U.h('span',{text:'Explicitly unknown / no declared statement now (retain original history)'})));unknown.addEventListener('change',()=>{input.disabled=unknown.checked;});body.appendChild(U.h('p',{class:'tiny muted',text:'Optional example, not a default: “I’m the type of trader who shuts down after a max loss.” Free text is your declaration; no NLP or psychological verification is performed.'}));
++    const button=U.h('button',{class:'btn sm primary',type:'button',dataset:{identitySave:'true'},text:'Record this declaration (no permission)',onclick:async()=>{if(!valid()||busy)return global.App.toast('Workspace/account/session/editor changed; reopen.','err');const statement=unknown.checked?null:input.value;busy=true;disable();try{const endpoint=kind==='identity'?'/identity/statement':'/identity/theme/'+view.quarter.start;const out=await global.API.put(endpoint+'?account_id='+context.account,{statement,revision:view.revision});if(!valid())return;view=out;stale=false;draw();global.Store.invalidate();global.App.toast('Declaration recorded; finance/grades/routine/core/permission unchanged.','ok');}catch(e){if(valid()){stale=e.status===409;global.App.toast(e.message,'err');}}finally{busy=false;if(valid())disable();}}});body.appendChild(button);body.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{identityReload:'true'},text:'Reload current declarations (discard unsaved text)',onclick:async()=>{if(!valid()||busy)return;busy=true;disable();try{const out=await global.API.get('/identity',{account_id:context.account,quarter_start:view.quarter.start});if(!valid())return;view=out;stale=false;draw();}catch(e){if(valid())global.App.toast(e.message,'err');}finally{busy=false;if(valid())disable();}}}));const history=U.h('details');history.appendChild(U.h('summary',{text:'Retained original declaration history'}));for(const d of view.history[kind]||[])history.appendChild(U.h('pre',{class:'tiny',text:JSON.stringify(d,null,2)}));body.appendChild(history);if(view.archives?.length){const archive=U.h('details',{dataset:{identityArchives:'true'}});archive.appendChild(U.h('summary',{text:'Imported unverified declarations — not active human statements/themes'}));for(const d of view.archives)archive.appendChild(U.h('pre',{class:'tiny',text:JSON.stringify(d,null,2)}));body.appendChild(archive);}
++   }
++   function disable(){body.querySelector('[data-identity-save]').disabled=busy||stale;body.querySelector('[data-identity-reload]').disabled=busy;}
++   draw();const modal=global.App.modal({title:kind==='theme'?'Quarterly theme':'Declared self-description',body,wide:true,onClose:()=>{alive=false;},actions:[{label:'Close — no readiness/permission inferred',ghost:true}]});disable();return modal;
++  }
++ };
++})(window);
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 8d198ac..8ac5d15 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -179,6 +179,7 @@
+         <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+     if(Views.behaviorDays)body.prepend(Views.behaviorDays.card(day.behavior_days));
++    if(Views.identity)body.prepend(Views.identity.card(day.identity_context));
+     if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+     let routineDirty=false;
+diff --git a/public/js/views/period-reviews.js b/public/js/views/period-reviews.js
+index 4a28cc8..cf8722f 100644
+--- a/public/js/views/period-reviews.js
++++ b/public/js/views/period-reviews.js
+@@ -7,6 +7,7 @@
+   async open(kind,start){const context=ctx(),number=++serial,url='/reviews/'+encodeURIComponent(kind)+'/'+encodeURIComponent(start);let view;try{view=await global.API.get(url,{account_id:context.account});}catch(e){if(same(context)&&number===serial)global.App.toast(e.message,'err');return;}if(!same(context)||number!==serial||view.account_id!==Number(context.account))return;const body=U.h('div');let alive=true,busy=false,stale=false,amending=false,modal;const valid=()=>alive&&same(context)&&number===serial&&body.isConnected;
+    function draw(){body.replaceChildren();const last=view.latest,locked=last?.status==='completed'&&!amending,data=last?.metrics||view.preview,f=data?.financial||{};body.appendChild(U.h('p',{class:'small',text:`${view.template.title} · account #${view.account_id} · ${view.period.start} inclusive to ${view.period.end} exclusive · ${last?last.status+' revision '+last.version:'Unsaved draft'}. ${view.period.basis}`}));body.appendChild(U.h('p',{class:'field-note',text:view.template.policy+' Review completion is not trading permission, evidence of human/broker execution or core/day journal completion. No weekly/monthly plan-apply or automatic annual goal rewrite.'}));body.appendChild(U.h('p',{class:'tiny muted',text:'Question basis: '+view.template.question_basis+(kind==='year'?' · APP-guided annual prompts; not a full quoted course template.':'')}));body.appendChild(U.h('p',{class:'small',text:`${last?'Saved snapshot':'Live preview'}: Known outcomes ${f.known_net_count??'unknown'} / ${f.closed_trades??'unknown'} · Net ${finite(f.net)?U.moneySign(f.net):'Unavailable'} · Win % ${finite(f.win_rate)?U.pct(f.win_rate,1):'Unavailable'} · Mean R ${finite(f.mean_r)?U.R(f.mean_r):'Unavailable'} · ${f.sample_ready?'30+ recorded; not edge proof':'Below30; do not tweak the system'}. Financial snapshot alone does not certify missed/impulse setups; opportunity evidence is separate below.`}));if(Views.opportunities)body.appendChild(Views.opportunities.summary(data?.opportunity_review));
+     if(last)body.appendChild(U.h('p',{class:'tiny',text:`Saved source ${last.source} · server receipt ${last.recorded_at||'unavailable'} · first and amended revisions retained; receipt is not original entry-time proof.`}));if(view.context_matches===false)body.appendChild(U.h('p',{class:'sticky-note warn',text:'Saved financial/strategy context is prior. Original snapshot retained; current live preview differs. Explicitly reload/amend, never overwrite the original baseline.'}));if(!view.preview.policy.period_finished)body.appendChild(U.h('p',{class:'sticky-note warn',text:'Calendar period still in progress: a completed answer record is an early review, not a fully elapsed period.'}));
++    if(kind==='quarter'&&Views.identity){body.appendChild(Views.identity.card(data.identity_context));body.appendChild(U.h('p',{class:'field-note',text:'Saved snapshot identity/theme words are the declarations received when this review was captured, not the separate next-period action focus or proof of your identity then. Editing theme separately keeps your review draft but requires explicit reload of its changed baseline.'}));}
+     if(kind==='quarter'&&Views.ruleChanges){body.appendChild(Views.ruleChanges.card(data.quarter_rule_changes?.report));body.appendChild(U.h('p',{class:'field-note',text:'This quarter discipline is the saved baseline when shown under Saved snapshot. Later rule edits do not rewrite its counters/definitions. No plan, trade or risk permission is applied by a review.'}));}
+     for(const q of view.template.questions){const el=U.h('textarea',{maxlength:4000,dataset:{periodAnswer:q.id},value:last?.answers?.[q.id]||''});el.setAttribute('data-period-answer-'+q.id,'true');el.value=last?.answers?.[q.id]||'';el.disabled=locked;body.appendChild(U.h('label',{class:'field'},U.h('span',{text:q.label}),el));}
+     const focus=U.h('input',{type:'text',maxlength:300,dataset:{periodFocus:'true'},value:last?.focus||'',disabled:locked});body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'One chosen focus for the next period (no automatic recommendation)'}),focus));const previous=view.previous_focus;if(previous){body.appendChild(U.h('p',{class:'small',text:`Prior adjacent ${kind} focus #${previous.review_id} revision ${previous.version}: ${previous.focus} · ${previous.source} · original server receipt ${previous.recorded_at}. This is a commitment record, not proof you acted.`}));const select=U.h('select',{dataset:{periodActed:'true'},disabled:locked});for(const [value,label]of [['missing','Choose explicitly'],['yes','Yes — my self-report'],['no','No — my self-report'],['unknown','Unknown / not recorded']])select.appendChild(U.h('option',{value,text:label}));const follow=last?.follow_up;if(follow?.previous_review_id===previous.review_id)select.value=follow.acted_on_focus===null?'unknown':follow.acted_on_focus?'yes':'no';const reflection=U.h('textarea',{maxlength:2000,dataset:{periodFollowReflection:'true'},value:follow?.reflection||'',disabled:locked});reflection.value=follow?.reflection||'';body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Did you act on that exact prior focus?'}),select));body.appendChild(U.h('label',{class:'field'},U.h('span',{text:'Your evidence/reflection, not a completion claim'}),reflection));if(view.previous_focus_changed_since_saved)body.appendChild(U.h('p',{class:'sticky-note warn',text:'The current prior-period commitment changed after this saved answer. The earlier follow-up still references the original focus/version; deliberately review before amending.'}));}else body.appendChild(U.h('p',{class:'muted small',text:'No adjacent completed prior focus recorded. Do not infer acted/failed from missing history.'}));
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index b0b3750..3d8e250 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -151,8 +151,8 @@
+               const d = await API.post('/import/csv', { csv, account_id: U.$('#im-account', w).value });
+               if(!currentMediaPane())return;
+               out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
+-              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)out.appendChild(identityHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
++              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           });
+           const file = U.$('#im-file', w);
+@@ -176,8 +176,8 @@
+                 const d = await API.post('/import/json', { data });
+                 if(!currentMediaPane()||attempt!==jsonRead)return;
+                 U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
+-                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length&&!d.review_warnings?.length&&!d.opportunity_warnings?.length&&!d.rule_change_warnings?.length)global.App.refresh();
++                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)U.$('#ex-out',w).appendChild(identityHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
++                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length&&!d.review_warnings?.length&&!d.opportunity_warnings?.length&&!d.rule_change_warnings?.length&&!d.identity_warnings?.length)global.App.refresh();
+               } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+             };
+             r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
+diff --git a/src/db.js b/src/db.js
+index 06f948a..0006ddc 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -375,6 +375,25 @@ CREATE TABLE IF NOT EXISTS strategy_rule_changes (
+  UNIQUE(user_id,strategy_key,to_version,source)
+ );
+ CREATE INDEX IF NOT EXISTS idx_strategy_rule_changes_owner ON strategy_rule_changes(user_id,quarter_start,id);
++-- M105 optional declared words, not readiness/permission or identity scoring.
++CREATE TABLE IF NOT EXISTS identity_declarations (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
++ account_key INTEGER NOT NULL,
++ kind TEXT NOT NULL CHECK(kind IN ('identity','theme')),
++ period_start TEXT NOT NULL,
++ period_end TEXT,
++ version INTEGER NOT NULL,
++ statement TEXT,
++ identity_snapshot_json TEXT,
++ source TEXT NOT NULL,
++ recorded_at TEXT NOT NULL,
++ historical_json TEXT,
++ schema_version TEXT NOT NULL,
++ UNIQUE(user_id,account_key,kind,period_start,version)
++);
++CREATE INDEX IF NOT EXISTS idx_identity_declarations_owner ON identity_declarations(user_id,account_key,kind,period_start,id);
+ CREATE TABLE IF NOT EXISTS goals (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -799,6 +818,8 @@ async function migrate() {
+   await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_links_immutable BEFORE UPDATE ON opportunity_trade_links WHEN NOT (NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.opportunity_id IS OLD.opportunity_id AND NEW.trade_key IS OLD.trade_key AND NEW.opened_at IS OLD.opened_at AND NEW.action IS OLD.action AND NEW.source IS OLD.source AND NEW.note IS OLD.note AND NEW.recorded_at IS OLD.recorded_at AND NEW.trade_snapshot IS OLD.trade_snapshot AND NEW.trade_hash IS OLD.trade_hash AND NEW.trade_id IS NULL AND NOT EXISTS(SELECT 1 FROM trades WHERE id=OLD.trade_id)) BEGIN SELECT RAISE(ABORT,'Opportunity link facts are immutable'); END`).run();
+   await db.prepare(`CREATE TRIGGER IF NOT EXISTS strategy_rule_changes_immutable BEFORE UPDATE ON strategy_rule_changes WHEN NOT (NEW.strategy_id IS NULL AND OLD.strategy_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM strategies WHERE id=OLD.strategy_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.strategy_key IS OLD.strategy_key AND NEW.strategy_name IS OLD.strategy_name AND NEW.from_version IS OLD.from_version AND NEW.to_version IS OLD.to_version AND NEW.before_json IS OLD.before_json AND NEW.after_json IS OLD.after_json AND NEW.delta_json IS OLD.delta_json AND NEW.units IS OLD.units AND NEW.quarter_start IS OLD.quarter_start AND NEW.recorded_at IS OLD.recorded_at AND NEW.rubric_version IS OLD.rubric_version AND NEW.source IS OLD.source AND NEW.context_hash IS OLD.context_hash AND NEW.historical_json IS OLD.historical_json) BEGIN SELECT RAISE(ABORT,'Recorded strategy rule change facts immutable'); END`).run();
+ 
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS identity_declarations_immutable BEFORE UPDATE ON identity_declarations WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.kind IS OLD.kind AND NEW.period_start IS OLD.period_start AND NEW.period_end IS OLD.period_end AND NEW.version IS OLD.version AND NEW.statement IS OLD.statement AND NEW.identity_snapshot_json IS OLD.identity_snapshot_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Original identity/theme declaration facts immutable'); END`).run();
++
+   /* M102 backfill. Every strategy that has no version history gets an immutable v1
+    * snapshot of the rule set it currently holds, and every trade already linked to it is
+    * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in
+diff --git a/src/identity.js b/src/identity.js
+new file mode 100644
+index 0000000..718f121
+--- /dev/null
++++ b/src/identity.js
+@@ -0,0 +1,42 @@
++'use strict';
++/** M105 optional declared identity +quarter theme; not readiness or grade. */
++const crypto=require('crypto');
++const BASIS='Optional owned declared self-description and quarter theme; not mental-state, not self-worth, not causal psychology/edge/broker/action fulfilment proof. No entry, risk, grade, core-writing, routine or permission authority. Current reported-plan counts are not an identity score.';
++const VERSION='identity-v1';
++const id=n=>Number.isSafeInteger(n)&&n>0,hash=v=>crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'identity_invalid',status});}
++function text(value){if(value===null)return null;if(typeof value!=='string'||!value.trim()||value.length>500||/[\x00-\x1f\x7f]/.test(value))throw invalid('Write one single-line declaration up to500 characters, or explicitly choose unknown/null.');return value.normalize('NFC').trim();}
++function dateKey(value){try{return require('./process-outcomes').dateKey(value);}catch{throw invalid('Use a valid UTC calendar date.');}}
++function quarter(value){dateKey(value);const q=require('./rule-changes').quarter(Date.parse(value));return {...q,basis:'APP UTC calendar quarter, roughly90days but not exactly90 days or a course/broker timezone rule.'};}
++function input(body){if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['statement','revision'].includes(k))||!Object.hasOwn(body,'statement')||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision))throw invalid('Use displayed revision and explicit statement/null only; no caller source/clock/owner authority.');return {statement:text(body.statement),revision:body.revision};}
++
++
++function tally(rows,account,{from=null,to=null,nowMs=Date.now()}={}){
++ if(from!==null)dateKey(from);if(to!==null)dateKey(to);if(from&&to&&from>to)throw invalid('Identity tally UTC range is reversed.');const E=require('./execution-review'),Clock=require('./process-outcomes').clock,out={state:'available',account_id:account.id,from,to,date_basis:'utc_recorded_entry_day',records:0,followed:0,violated:0,known_reports:0,unreviewed:0,known_partial_violations:0,open:0,imported_reports:0,unassigned:0,followed_percent:null,broker_verified:false,basis:'Current acknowledged human execution-quality self-reports on UTC recorded ENTRY day, not identity, self-worth or actual mental-state/action proof. Known denominator only, no P&L/grade/identity score or permission.'};
++ for(const t of rows){if(t.user_id!==account.user_id||t.account_id!==account.id)continue;const at=Clock(t.opened_at,{now:nowMs});if(at===null){out.unassigned++;continue;}const day=new Date(at).toISOString().slice(0,10);if(from&&day<from||to&&day>to)continue;out.records++;if(t.status==='open'){out.open++;continue;}const closed=Clock(t.closed_at,{now:nowMs});if(t.status!=='closed'||closed===null||closed<at){out.unreviewed++;continue;}const x=E.review(t,{nowMs});if(x.state==='reviewed'&&t.stop_honoured_source==='imported_self_report'){out.imported_reports++;continue;}if(x.state==='reviewed'&&t.stop_honoured_source==='self_reported'&&['plan_followed','plan_violated'].includes(x.execution_quality)){out.known_reports++;out[x.execution_quality==='plan_followed'?'followed':'violated']++;}else{out.unreviewed++;if(t.stop_honoured_source==='self_reported'&&x.execution_quality==='known_violation_in_incomplete_review')out.known_partial_violations++;}}
++ if(out.known_reports)out.followed_percent=Number((out.followed*100/out.known_reports).toFixed(2));return out;
++}
++
++
++async function owned(store,userId,accountId){if(!['string','number'].includes(typeof accountId)||typeof accountId==='string'&&!/^[1-9]\d*$/.test(accountId)||!id(Number(accountId)))throw invalid('Account not found.',404);const a=await store.prepare('SELECT * FROM accounts WHERE user_id=? AND id=?').get(userId,Number(accountId));if(!a)throw invalid('Account not found.',404);return a;}
++const empty=kind=>({state:'unrecorded',kind,statement:null,source:'unrecorded',recorded_at:null,version:null,broker_verified:false});
++function publicRow(row){if(!row)return null;try{const Clock=require('./process-outcomes').clock;if(!['identity','theme'].includes(row.kind)||row.schema_version!==VERSION||!id(row.account_key)||row.account_id!==null&&row.account_id!==row.account_key||!id(row.version)||!['human_declared','imported_unverified'].includes(row.source)||Clock(row.recorded_at,{canonical:true})===null)throw invalid('Unavailable declaration.');const value=text(row.statement),ref=row.identity_snapshot_json?JSON.parse(row.identity_snapshot_json):null;if(ref!==null&&(!id(ref.id)||!id(ref.version)||!['human_declared','imported_unverified'].includes(ref.source)||Clock(ref.recorded_at,{canonical:true})===null||text(ref.statement)!==ref.statement||ref.broker_verified!==false))throw invalid('Linked identity reference unavailable.');if(row.kind==='theme'){const q=quarter(row.period_start);if(q.start!==row.period_start||q.end!==row.period_end)throw invalid('Unavailable quarter.');}else if(row.period_start!==''||row.period_end!==null)throw invalid('Unavailable persistent declaration.');return {id:row.id,account_id:row.account_id,account_key:row.account_key,kind:row.kind,period_start:row.period_start,period_end:row.period_end,version:row.version,state:row.source==='imported_unverified'?'imported_unverified':value===null?'unknown':'declared',statement:value,identity_reference:ref,source:row.source,recorded_at:row.recorded_at,historical:row.historical_json?JSON.parse(row.historical_json):null,broker_verified:false};}catch{return {id:row.id,account_key:row.account_key,kind:row.kind,state:'unavailable',statement:null,source:'unavailable',recorded_at:null,broker_verified:false};}}
++async function rowsOn(store,userId,accountId){return store.prepare('SELECT * FROM identity_declarations WHERE user_id=? AND account_key=? ORDER BY id').all(userId,accountId);}
++async function viewOn(store,userId,accountId,{quarterStart=null,date=null,daily=false}={}){const a=await owned(store,userId,accountId),today=new Date().toISOString().slice(0,10);if(date!==null)dateKey(date);const q=quarter(quarterStart||date||today);if(quarterStart!==null&&q.start!==quarterStart)throw invalid('Use a canonical calendar-quarter start.');const rows=await rowsOn(store,userId,a.id);let cutoff=Date.now();if(daily){const end=Date.parse((date||today)+'T00:00:00.000Z')+86400000-1;cutoff=Math.min(end,cutoff);}const future=daily&&(date||today)>today,select=(kind,start)=>rows.filter(r=>r.source==='human_declared'&&r.kind===kind&&r.period_start===start&&(!daily||!future&&require('./process-outcomes').clock(r.recorded_at,{canonical:true,now:cutoff})!==null));const identity=publicRow(select('identity','').at(-1))||empty('identity'),theme=publicRow(select('theme',q.start).at(-1))||empty('theme');const history=daily?{identity:select('identity','').map(publicRow),theme:select('theme',q.start).map(publicRow)}:{identity:rows.filter(r=>r.source==='human_declared'&&r.kind==='identity').map(publicRow),theme:rows.filter(r=>r.source==='human_declared'&&r.kind==='theme'&&r.period_start===q.start).map(publicRow)};
++ return {account_id:a.id,quarter:q,date:date||today,identity,theme,theme_identity_changed:theme.identity_reference!=null&&theme.identity_reference.id!==identity.id,history,archives:daily?[]:rows.filter(r=>r.source==='imported_unverified').map(publicRow),revision:hash([userId,a.id,q,rows]),broker_verified:false,basis:daily?'Current declaration receipt bounded by selected historical UTC day end; not original mental-state/identity/action proof. Future days not observed. '+BASIS:BASIS};}
++async function read(userId,accountId,options){const {db}=require('./db');return db.tx(async tx=>viewOn(db.transactionStore(tx),userId,accountId,options));}
++async function save(userId,accountId,kind,start,body){if(!['identity','theme'].includes(kind))throw invalid('Unknown declaration kind.');const fields=input(body),q=kind==='theme'?quarter(start):null;if(q&&q.start!==start)throw invalid('Use a canonical quarter start.');const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),v=await viewOn(store,userId,accountId,{quarterStart:q?.start??null}),last=kind==='identity'?v.identity:v.theme,reference=kind==='theme'&&v.identity.id?{id:v.identity.id,version:v.identity.version,statement:v.identity.statement,source:v.identity.source,recorded_at:v.identity.recorded_at,broker_verified:false}:null;
++  if(last.source==='human_declared'&&last.statement===fields.statement&&JSON.stringify(last.identity_reference||null)===JSON.stringify(reference))return v;if(fields.revision!==v.revision)throw invalid('Identity, theme or account declaration changed. Explicitly reload before saving.',409);const version=(await store.prepare('SELECT MAX(version) v FROM identity_declarations WHERE user_id=? AND account_key=? AND kind=? AND period_start=?').get(userId,v.account_id,kind,q?.start||'')).v||0;
++  await store.prepare('INSERT INTO identity_declarations(user_id,account_id,account_key,kind,period_start,period_end,version,statement,identity_snapshot_json,source,recorded_at,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(userId,v.account_id,v.account_id,kind,q?.start||'',q?.end||null,version+1,fields.statement,reference?JSON.stringify(reference):null,'human_declared',new Date().toISOString(),VERSION);return viewOn(store,userId,accountId,{quarterStart:q?.start??null});
++ });}
++async function reportTally(userId,accountId,options={}){const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),a=await owned(store,userId,accountId),rows=await store.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY opened_at,id').all(userId,a.id);return tally(rows,a,options);});}
++async function daily(userId,accountId,date){const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx),v=await viewOn(store,userId,accountId,{date,daily:true}),a=await owned(store,userId,accountId),rows=await store.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY opened_at,id').all(userId,a.id);return {...v,tally:tally(rows,a,{from:v.date,to:v.date})};});}
++function unavailable(){return {identity:empty('identity'),theme:empty('theme'),state:'unavailable',tally:null,broker_verified:false,basis:'Identity/theme/tally unavailable—not clean, professional, none or permission. '+BASIS};}
++async function optional(userId,accountId,date=null,{store=null,quarterStart=null}={}){try{if(store)return viewOn(store,userId,accountId,{date,quarterStart});return await daily(userId,accountId,date||new Date().toISOString().slice(0,10));}catch{return unavailable();}}
++async function history(userId,accountId=null){const {db}=require('./db');if(accountId!==null)await owned(db,userId,accountId);const rows=await db.prepare('SELECT * FROM identity_declarations WHERE user_id=?'+(accountId===null?'':' AND account_key=?')+' ORDER BY id').all(...(accountId===null?[userId]:[userId,Number(accountId)]));return {records:rows.map(publicRow),readonly:true,broker_verified:false,basis:BASIS};}
++
++
++function portable(raw){const out={records:[],warnings:[]};if(raw==null)return out;try{if(!raw||raw.version!==1||!Array.isArray(raw.records)||raw.records.length>500)throw invalid('Optional identity/theme history requires version1 and at most500 records.');if(raw.unavailable||raw.unavailable_records>0)out.warnings.push('Original identity history unavailable/omitted; no declaration or identity score inferred.');for(const r of raw.records){try{if(!r||!['identity','theme'].includes(r.kind))throw invalid('Invalid optional declaration kind.');const statement=text(r.statement),q=r.kind==='theme'?quarter(r.period_start):null;if(q&&q.start!==r.period_start)throw invalid('Invalid original quarter anchor.');const original=r.historical||{},oldClock=original.recorded_at??r.recorded_at;let declaredClock=oldClock;if(oldClock!=null&&require('./process-outcomes').clock(oldClock,{canonical:true})===null){out.warnings.push('Invalid/future original identity/theme clock omitted, not receiving or mental-state proof.');declaredClock=null;}const reference=original.identity_reference??r.identity_reference??null;if(reference!==null&&(!reference||typeof reference!=='object'||Array.isArray(reference)||JSON.stringify(reference).length>8000))throw invalid('Unverified identity reference omitted: invalidshape/APP8KB budget.');out.records.push({kind:r.kind,statement,start:q?.start||'',end:q?.end||null,account_id:r.account_id??r.account_key,historical:{source:original.source||r.source||null,recorded_at:declaredClock,original_version:original.original_version??r.version??null,original_id:original.original_id??r.id??null,identity_reference:reference}});}catch(e){out.warnings.push(e.message||'Invalid optional identity declaration omitted.');}}}catch(e){out.warnings.push(e.message||'Optional identity history omitted.');}out.warnings=out.warnings.slice(0,20);return out;}
++async function exportOwned(userId){try{const {db}=require('./db'),rows=await db.prepare('SELECT * FROM identity_declarations WHERE user_id=? ORDER BY id').all(userId),records=rows.map(publicRow).filter(p=>p.state!=='unavailable');return {version:1,records,unavailable_records:rows.length-records.length};}catch{return {version:1,records:[],unavailable:true};}}
++async function importOn(store,userId,parsed,map={},fallback=null){for(const p of parsed.records){const accountId=map[p.account_id]||fallback;await owned(store,userId,accountId);const version=(await store.prepare('SELECT MAX(version) v FROM identity_declarations WHERE user_id=? AND account_key=? AND kind=? AND period_start=?').get(userId,accountId,p.kind,p.start)).v||0;await store.prepare('INSERT INTO identity_declarations(user_id,account_id,account_key,kind,period_start,period_end,version,statement,identity_snapshot_json,source,recorded_at,historical_json,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(userId,accountId,accountId,p.kind,p.start,p.end,version+1,p.statement,null,'imported_unverified',new Date().toISOString(),JSON.stringify(p.historical),VERSION);}}
++module.exports={VERSION,BASIS,id,hash,invalid,text,dateKey,quarter,input,tally,owned,publicRow,viewOn,read,save,reportTally,daily,optional,unavailable,history,portable,exportOwned,importOn};
+diff --git a/src/period-reviews.js b/src/period-reviews.js
+index d02f639..e577e96 100644
+--- a/src/period-reviews.js
++++ b/src/period-reviews.js
+@@ -48,9 +48,10 @@ async function snapshotOn(store,userId,a,range){
+  for(const plan of strategies.filter(s=>!versions.some(v=>v.strategy_id===s.id)))baseline.push({...plan,strategy_id:plan.id,version:null,closed_trades:null,source:'current_unversioned_not_original_entry_rules'});
+  const execution=require('./execution-review').summary(selected,{accountId:a.id,timezone:'UTC'}),process=await require('./process-outcomes').optional(userId,{accountId:a.id,from:range.start,to:range.last_day,store}),behavior=await require('./behavior-days').optional(userId,{accountId:a.id,from:range.start,to:range.last_day,store});
+  const quarterChanges=range.kind==='quarter'?await require('./rule-changes').inspectOn(store,userId,null,range.start).catch(()=>({report:{state:'unavailable',total_units:null,known_units:null,warning:'Quarter change history unavailable, not a verified zero/within-limit experiment.'},revision:null})):null;
+- const data={version:VERSION,quarter_rule_changes:quarterChanges,period:range,account:{id:a.id,name:a.name,currency:a.currency,starting_balance:a.starting_balance},financial:money,execution,process_review:process,behavior_review:behavior,checklist_compliance:{known_trades:knownChecks.length,unreviewed_trades:selected.length-knownChecks.length,percent:knownChecks.length?round(knownChecks.reduce((n,r)=>n+rate(r),0)/knownChecks.length):null,basis:'Current declared checkbox compliance; absent checks not automatic plan adherence.'},strategy_baselines:baseline,strategy_version_unavailable:selected.filter(t=>!versions.some(v=>v.strategy_id===t.strategy_id&&v.version===t.strategy_version)).length,policy:{sample_floor:30,sample_ready:money.sample_ready,period_finished:range.end<=new Date().toISOString().slice(0,10),plan_applied:false,permission_granted:false,grade_or_core_completed:false,basis:'Review completion is an artifact acknowledgement, not full elapsed period, edge, strategy-change permission or execution proof.'}};
++ const identityContext=range.kind==='quarter'?await require('./identity').optional(userId,a.id,null,{store,quarterStart:range.start}):null;
++ const data={version:VERSION,identity_context:identityContext,quarter_rule_changes:quarterChanges,period:range,account:{id:a.id,name:a.name,currency:a.currency,starting_balance:a.starting_balance},financial:money,execution,process_review:process,behavior_review:behavior,checklist_compliance:{known_trades:knownChecks.length,unreviewed_trades:selected.length-knownChecks.length,percent:knownChecks.length?round(knownChecks.reduce((n,r)=>n+rate(r),0)/knownChecks.length):null,basis:'Current declared checkbox compliance; absent checks not automatic plan adherence.'},strategy_baselines:baseline,strategy_version_unavailable:selected.filter(t=>!versions.some(v=>v.strategy_id===t.strategy_id&&v.version===t.strategy_version)).length,policy:{sample_floor:30,sample_ready:money.sample_ready,period_finished:range.end<=new Date().toISOString().slice(0,10),plan_applied:false,permission_granted:false,grade_or_core_completed:false,basis:'Review completion is an artifact acknowledgement, not full elapsed period, edge, strategy-change permission or execution proof.'}};
+  data.opportunity_review=await require('./opportunities').optional(userId,{accountId:a.id,from:range.start,to:range.last_day,store});
+- const context=hash([a,range,rows,checks,versions,strategies,admissions,events,money,data.policy.period_finished,data.opportunity_review]);return {data,context};
++ const context=hash([a,range,rows,checks,versions,strategies,admissions,events,money,data.policy.period_finished,data.opportunity_review,quarterChanges?.revision,identityContext?.revision]);return {data,context};
+ }
+ async function rowsOn(store,userId,account,range){return store.prepare('SELECT * FROM period_reviews WHERE user_id=? AND account_key=? AND period_kind=? AND period_start=? ORDER BY version').all(userId,account,range.kind,range.start);}
+ async function previousOn(store,userId,account,range){const row=await store.prepare("SELECT * FROM period_reviews WHERE user_id=? AND account_key=? AND period_kind=? AND period_start=? AND (status='completed' OR status='imported' AND json_extract(historical_json,'$.status')='completed') ORDER BY version DESC LIMIT 1").get(userId,account,range.kind,range.previous_start);if(!row)return null;const p=publicRow(row);if(p.status==='unavailable'||typeof p.focus!=='string'||!p.focus.trim()||!Number.isFinite(Date.parse(p.recorded_at))||Date.parse(p.recorded_at)>Date.now())throw invalid('Previous-period focus unavailable; no missing/acted history inferred.',503);return {review_id:p.id,version:p.version,focus:p.focus,recorded_at:p.recorded_at,source:p.source,period_start:p.period_start,broker_verified:false};}
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 1e95877..35c65e4 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -19,6 +19,7 @@ const Confluences = require('../confluences');
+ const Emotions = require('../emotions');
+ const PeriodReviews = require('../period-reviews');
+ const RuleChanges = require('../rule-changes');
++const Identity = require('../identity');
+ const Opportunities = require('../opportunities');
+ const ProcessOutcomes = require('../process-outcomes');
+ const BehaviorDays = require('../behavior-days');
+@@ -641,6 +642,7 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+   const capPolicy = await Guards.dailyCap(db, req.user.id, acc);
+   const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
+   briefing.risk_plan.trade_cap_policy = capPolicy;
++  briefing.identity_context=await Identity.optional(req.user.id,acc.id,Guards.dayKey(Date.now()));
+   briefing.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
+   briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
+   // Briefing amounts are advice, NOT permission. Use the same close-day UTC
+@@ -684,6 +686,14 @@ router.get('/reviews/:kind/:start',requireAuth,reviewRoute(req=>PeriodReviews.re
+ router.post('/reviews/:kind/:start',requireAuth,reviewRoute(req=>PeriodReviews.save(req.user.id,req.query.account_id,req.params.kind,req.params.start,req.body,'draft')));
+ for(const action of ['complete','amend'])router.post('/reviews/:kind/:start/'+action,requireAuth,reviewRoute(req=>PeriodReviews.save(req.user.id,req.query.account_id,req.params.kind,req.params.start,req.body,action)));
+ 
++const identityRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='identity_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Identity declaration/tally unavailable; no finance/core/permission state changed.'});}};
++router.get('/identity',requireAuth,identityRoute(req=>Identity.read(req.user.id,req.query.account_id,{quarterStart:req.query.quarter_start??null})));
++router.get('/identity/history',requireAuth,identityRoute(req=>Identity.history(req.user.id,req.query.account_id??null)));
++router.get('/identity/tally',requireAuth,identityRoute(async req=>({tally:await Identity.reportTally(req.user.id,req.query.account_id,{from:req.query.from??null,to:req.query.to??null})})));
++router.get('/identity/daily/:date',requireAuth,identityRoute(req=>Identity.daily(req.user.id,req.query.account_id,req.params.date)));
++router.put('/identity/statement',requireAuth,identityRoute(req=>Identity.save(req.user.id,req.query.account_id,'identity','',req.body)));
++router.put('/identity/theme/:start',requireAuth,identityRoute(req=>Identity.save(req.user.id,req.query.account_id,'theme',req.params.start,req.body)));
++
+ router.get('/journal', requireAuth, async (req, res) => {
+   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
+   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
+@@ -722,7 +732,7 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
+   const accountId=account.id;
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
+-  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+@@ -1169,6 +1179,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
+     confluence_labels:(await Confluences.vocabulary(userId)).labels,
+     period_reviews:await PeriodReviews.exportOwned(userId),
+     strategy_rule_changes:await RuleChanges.exportOwned(userId),
++    identity_declarations:await Identity.exportOwned(userId),
+     opportunity_history:await Opportunities.exportOwned(userId),
+     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
+     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
+@@ -1274,9 +1285,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+ // Actual transaction insert IDs (never raw backup IDs), with optional media
+ // warnings separate from financial parsing. Storage failure rolls back together.
+ function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+-async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+   for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
+-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);return n;
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);return n;
+ });}
+ 
+ function parseCsv(text) {
+@@ -1302,7 +1313,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
+   const data = req.body && req.body.data ? req.body.data : req.body;
+   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
+   const userId = req.user.id;
+-  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes);
++  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations);
+   const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
+   const accountMap = Object.create(null);
+   const instruments = await instrumentMap(userId);
+@@ -1349,9 +1360,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
+       });
+     }
+-    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
+-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,opportunity_warnings:opportunities.warnings });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,opportunity_warnings:opportunities.warnings });
+ });
+ 
+ /* ---------------------------------------------------------------- settings */

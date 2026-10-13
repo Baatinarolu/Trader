@@ -1,0 +1,18 @@
+diff --git a/src/identity.js b/src/identity.js
+new file mode 100644
+index 0000000..402cad8
+--- /dev/null
++++ b/src/identity.js
+@@ -0,0 +1,12 @@
++'use strict';
++/** M105 optional declared identity +quarter theme; not readiness or grade. */
++const crypto=require('crypto');
++const BASIS='Optional owned declared self-description and quarter theme; not mental-state, not self-worth, not causal psychology/edge/broker/action fulfilment proof. No entry, risk, grade, core-writing, routine or permission authority. Current reported-plan counts are not an identity score.';
++const VERSION='identity-v1';
++const id=n=>Number.isSafeInteger(n)&&n>0,hash=v=>crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
++function invalid(message,status=400){return Object.assign(new Error(message),{code:'identity_invalid',status});}
++function text(value){if(value===null)return null;if(typeof value!=='string'||!value.trim()||value.length>500||/[\x00-\x1f\x7f]/.test(value))throw invalid('Write one single-line declaration up to500 characters, or explicitly choose unknown/null.');return value.normalize('NFC').trim();}
++function dateKey(value){try{return require('./process-outcomes').dateKey(value);}catch{throw invalid('Use a valid UTC calendar date.');}}
++function quarter(value){dateKey(value);const q=require('./rule-changes').quarter(Date.parse(value));return {...q,basis:'APP UTC calendar quarter, roughly90days but not exactly90 days or a course/broker timezone rule.'};}
++function input(body){if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['statement','revision'].includes(k))||!Object.hasOwn(body,'statement')||typeof body.revision!=='string'||!/^[a-f0-9]{64}$/.test(body.revision))throw invalid('Use displayed revision and explicit statement/null only; no caller source/clock/owner authority.');return {statement:text(body.statement),revision:body.revision};}
++module.exports={VERSION,BASIS,id,hash,invalid,text,dateKey,quarter,input};

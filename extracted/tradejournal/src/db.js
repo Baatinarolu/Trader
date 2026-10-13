@@ -375,6 +375,25 @@ CREATE TABLE IF NOT EXISTS strategy_rule_changes (
  UNIQUE(user_id,strategy_key,to_version,source)
 );
 CREATE INDEX IF NOT EXISTS idx_strategy_rule_changes_owner ON strategy_rule_changes(user_id,quarter_start,id);
+-- M105 optional declared words, not readiness/permission or identity scoring.
+CREATE TABLE IF NOT EXISTS identity_declarations (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+ account_key INTEGER NOT NULL,
+ kind TEXT NOT NULL CHECK(kind IN ('identity','theme')),
+ period_start TEXT NOT NULL,
+ period_end TEXT,
+ version INTEGER NOT NULL,
+ statement TEXT,
+ identity_snapshot_json TEXT,
+ source TEXT NOT NULL,
+ recorded_at TEXT NOT NULL,
+ historical_json TEXT,
+ schema_version TEXT NOT NULL,
+ UNIQUE(user_id,account_key,kind,period_start,version)
+);
+CREATE INDEX IF NOT EXISTS idx_identity_declarations_owner ON identity_declarations(user_id,account_key,kind,period_start,id);
 CREATE TABLE IF NOT EXISTS goals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -798,6 +817,8 @@ async function migrate() {
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_capture_immutable BEFORE UPDATE ON signal_opportunities WHEN NOT (NEW.user_id IS OLD.user_id AND NEW.id IS OLD.id AND NEW.signal_key IS OLD.signal_key AND NEW.record_key IS OLD.record_key AND NEW.account_key IS OLD.account_key AND NEW.source IS OLD.source AND NEW.observed_at IS OLD.observed_at AND NEW.signal_snapshot IS OLD.signal_snapshot AND NEW.signal_hash IS OLD.signal_hash AND NEW.personal_json IS OLD.personal_json AND NEW.historical_json IS OLD.historical_json AND (NEW.account_id IS OLD.account_id OR NEW.account_id IS NULL AND NOT EXISTS(SELECT 1 FROM accounts WHERE id=OLD.account_id)) AND (NEW.signal_id IS OLD.signal_id OR NEW.signal_id IS NULL AND NOT EXISTS(SELECT 1 FROM bot_signals WHERE id=OLD.signal_id))) BEGIN SELECT RAISE(ABORT,'Opportunity capture facts are immutable'); END`).run();
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS opportunity_links_immutable BEFORE UPDATE ON opportunity_trade_links WHEN NOT (NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.opportunity_id IS OLD.opportunity_id AND NEW.trade_key IS OLD.trade_key AND NEW.opened_at IS OLD.opened_at AND NEW.action IS OLD.action AND NEW.source IS OLD.source AND NEW.note IS OLD.note AND NEW.recorded_at IS OLD.recorded_at AND NEW.trade_snapshot IS OLD.trade_snapshot AND NEW.trade_hash IS OLD.trade_hash AND NEW.trade_id IS NULL AND NOT EXISTS(SELECT 1 FROM trades WHERE id=OLD.trade_id)) BEGIN SELECT RAISE(ABORT,'Opportunity link facts are immutable'); END`).run();
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS strategy_rule_changes_immutable BEFORE UPDATE ON strategy_rule_changes WHEN NOT (NEW.strategy_id IS NULL AND OLD.strategy_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM strategies WHERE id=OLD.strategy_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.strategy_key IS OLD.strategy_key AND NEW.strategy_name IS OLD.strategy_name AND NEW.from_version IS OLD.from_version AND NEW.to_version IS OLD.to_version AND NEW.before_json IS OLD.before_json AND NEW.after_json IS OLD.after_json AND NEW.delta_json IS OLD.delta_json AND NEW.units IS OLD.units AND NEW.quarter_start IS OLD.quarter_start AND NEW.recorded_at IS OLD.recorded_at AND NEW.rubric_version IS OLD.rubric_version AND NEW.source IS OLD.source AND NEW.context_hash IS OLD.context_hash AND NEW.historical_json IS OLD.historical_json) BEGIN SELECT RAISE(ABORT,'Recorded strategy rule change facts immutable'); END`).run();
+
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS identity_declarations_immutable BEFORE UPDATE ON identity_declarations WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.kind IS OLD.kind AND NEW.period_start IS OLD.period_start AND NEW.period_end IS OLD.period_end AND NEW.version IS OLD.version AND NEW.statement IS OLD.statement AND NEW.identity_snapshot_json IS OLD.identity_snapshot_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Original identity/theme declaration facts immutable'); END`).run();
 
   /* M102 backfill. Every strategy that has no version history gets an immutable v1
    * snapshot of the rule set it currently holds, and every trade already linked to it is

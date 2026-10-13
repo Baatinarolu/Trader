@@ -1,0 +1,60 @@
+diff --git a/src/identity.js b/src/identity.js
+index 2191400..718f121 100644
+--- a/src/identity.js
++++ b/src/identity.js
+@@ -34,4 +34,9 @@ async function daily(userId,accountId,date){const {db}=require('./db');return db
+ function unavailable(){return {identity:empty('identity'),theme:empty('theme'),state:'unavailable',tally:null,broker_verified:false,basis:'Identity/theme/tally unavailable—not clean, professional, none or permission. '+BASIS};}
+ async function optional(userId,accountId,date=null,{store=null,quarterStart=null}={}){try{if(store)return viewOn(store,userId,accountId,{date,quarterStart});return await daily(userId,accountId,date||new Date().toISOString().slice(0,10));}catch{return unavailable();}}
+ async function history(userId,accountId=null){const {db}=require('./db');if(accountId!==null)await owned(db,userId,accountId);const rows=await db.prepare('SELECT * FROM identity_declarations WHERE user_id=?'+(accountId===null?'':' AND account_key=?')+' ORDER BY id').all(...(accountId===null?[userId]:[userId,Number(accountId)]));return {records:rows.map(publicRow),readonly:true,broker_verified:false,basis:BASIS};}
+-module.exports={VERSION,BASIS,id,hash,invalid,text,dateKey,quarter,input,tally,owned,publicRow,viewOn,read,save,reportTally,daily,optional,unavailable,history};
++
++
++function portable(raw){const out={records:[],warnings:[]};if(raw==null)return out;try{if(!raw||raw.version!==1||!Array.isArray(raw.records)||raw.records.length>500)throw invalid('Optional identity/theme history requires version1 and at most500 records.');if(raw.unavailable||raw.unavailable_records>0)out.warnings.push('Original identity history unavailable/omitted; no declaration or identity score inferred.');for(const r of raw.records){try{if(!r||!['identity','theme'].includes(r.kind))throw invalid('Invalid optional declaration kind.');const statement=text(r.statement),q=r.kind==='theme'?quarter(r.period_start):null;if(q&&q.start!==r.period_start)throw invalid('Invalid original quarter anchor.');const original=r.historical||{},oldClock=original.recorded_at??r.recorded_at;let declaredClock=oldClock;if(oldClock!=null&&require('./process-outcomes').clock(oldClock,{canonical:true})===null){out.warnings.push('Invalid/future original identity/theme clock omitted, not receiving or mental-state proof.');declaredClock=null;}const reference=original.identity_reference??r.identity_reference??null;if(reference!==null&&(!reference||typeof reference!=='object'||Array.isArray(reference)||JSON.stringify(reference).length>8000))throw invalid('Unverified identity reference omitted: invalidshape/APP8KB budget.');out.records.push({kind:r.kind,statement,start:q?.start||'',end:q?.end||null,account_id:r.account_id??r.account_key,historical:{source:original.source||r.source||null,recorded_at:declaredClock,original_version:original.original_version??r.version??null,original_id:original.original_id??r.id??null,identity_reference:reference}});}catch(e){out.warnings.push(e.message||'Invalid optional identity declaration omitted.');}}}catch(e){out.warnings.push(e.message||'Optional identity history omitted.');}out.warnings=out.warnings.slice(0,20);return out;}
++async function exportOwned(userId){try{const {db}=require('./db'),rows=await db.prepare('SELECT * FROM identity_declarations WHERE user_id=? ORDER BY id').all(userId),records=rows.map(publicRow).filter(p=>p.state!=='unavailable');return {version:1,records,unavailable_records:rows.length-records.length};}catch{return {version:1,records:[],unavailable:true};}}
++async function importOn(store,userId,parsed,map={},fallback=null){for(const p of parsed.records){const accountId=map[p.account_id]||fallback;await owned(store,userId,accountId);const version=(await store.prepare('SELECT MAX(version) v FROM identity_declarations WHERE user_id=? AND account_key=? AND kind=? AND period_start=?').get(userId,accountId,p.kind,p.start)).v||0;await store.prepare('INSERT INTO identity_declarations(user_id,account_id,account_key,kind,period_start,period_end,version,statement,identity_snapshot_json,source,recorded_at,historical_json,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(userId,accountId,accountId,p.kind,p.start,p.end,version+1,p.statement,null,'imported_unverified',new Date().toISOString(),JSON.stringify(p.historical),VERSION);}}
++module.exports={VERSION,BASIS,id,hash,invalid,text,dateKey,quarter,input,tally,owned,publicRow,viewOn,read,save,reportTally,daily,optional,unavailable,history,portable,exportOwned,importOn};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 188ba61..35c65e4 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -1179,6 +1179,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
+     confluence_labels:(await Confluences.vocabulary(userId)).labels,
+     period_reviews:await PeriodReviews.exportOwned(userId),
+     strategy_rule_changes:await RuleChanges.exportOwned(userId),
++    identity_declarations:await Identity.exportOwned(userId),
+     opportunity_history:await Opportunities.exportOwned(userId),
+     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
+     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
+@@ -1284,9 +1285,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+ // Actual transaction insert IDs (never raw backup IDs), with optional media
+ // warnings separate from financial parsing. Storage failure rolls back together.
+ function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+-async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+   for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
+-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);return n;
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);return n;
+ });}
+ 
+ function parseCsv(text) {
+@@ -1312,7 +1313,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
+   const data = req.body && req.body.data ? req.body.data : req.body;
+   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
+   const userId = req.user.id;
+-  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes);
++  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations);
+   const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
+   const accountMap = Object.create(null);
+   const instruments = await instrumentMap(userId);
+@@ -1359,9 +1360,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
+       });
+     }
+-    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
+-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,opportunity_warnings:opportunities.warnings });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,opportunity_warnings:opportunities.warnings });
+ });
+ 
+ /* ---------------------------------------------------------------- settings */

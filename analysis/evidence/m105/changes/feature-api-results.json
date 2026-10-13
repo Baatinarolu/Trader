@@ -1,0 +1,84 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 19,
+  "fail": 0,
+  "results": [
+    {
+      "label": "actual own discipline view exists with currentversion/revision/quarter",
+      "passed": true
+    },
+    {
+      "label": "actual preview names4 proposedruleunits/above3 without strategyupdate",
+      "passed": true
+    },
+    {
+      "label": "actual save advicewarnsabove3 but stays legal/nottechnicalorcapital veto",
+      "passed": true
+    },
+    {
+      "label": "actual save recordsall deltafields and units, not just firstchanged",
+      "passed": true
+    },
+    {
+      "label": "owned append-only server fact has originalbefore/after/version/UTCclock",
+      "passed": true
+    },
+    {
+      "label": "original strategy version1 body still immutable/equivalent",
+      "passed": true
+    },
+    {
+      "label": "cosmeticpause/rename no newversion or editunits, previousguidance still4",
+      "passed": true
+    },
+    {
+      "label": "M104 reads/edits never alters financial tradeversion/model/grade/risk or accountcontrols",
+      "passed": true
+    },
+    {
+      "label": "legacy directPUT no newrevision stayslegal but actualresponse includeswarning/count",
+      "passed": true
+    },
+    {
+      "label": "quarterbudgetglobal ownstrategies, not evadeby another setup",
+      "passed": true
+    },
+    {
+      "label": "foreign owner cannot readrules/deltas/reasons404",
+      "passed": true
+    },
+    {
+      "label": "real auth required401",
+      "passed": true
+    },
+    {
+      "label": "noncanonicalID alias404",
+      "passed": true
+    },
+    {
+      "label": "strict previewno caller authority400",
+      "passed": true
+    },
+    {
+      "label": "globalquarter/strategycontext changedunseen ->409, no silentoverwrite",
+      "passed": true
+    },
+    {
+      "label": "reversionis another controlled savededit, not resetquota or relabeloldtrade",
+      "passed": true
+    },
+    {
+      "label": "deliberate strategydeletion cannoterasecaptured quarterlycounts/oldname/rules",
+      "passed": true
+    },
+    {
+      "label": "SQL originalcaptured changefact UPDATE immutable",
+      "passed": true
+    },
+    {
+      "label": "actual change-store503 rollsback CURRENT rules+new version/fact together",
+      "passed": true
+    }
+  ],
+  "scope": "M104 actual owned discipline/atomic counter/CAS APIs: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

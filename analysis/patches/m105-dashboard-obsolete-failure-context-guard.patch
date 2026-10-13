@@ -1,0 +1,20 @@
+diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
+index 34936cd..2352d8e 100644
+--- a/public/js/views/dashboard.js
++++ b/public/js/views/dashboard.js
+@@ -28,13 +28,13 @@
+     async render(root) {
+       const identityContext=Views.identity?.ctx(),epoch=++identityRenderEpoch;
+       const params = Store.queryParams();
+-      const [an, coach, briefing, tradesRes,identityDay] = await Promise.all([
++      let identityResult;try{identityResult = await Promise.all([
+         Store.fetch('/analytics', params, 15000),
+         Store.fetch('/coach', params, 15000),
+         API.get('/briefing', params).catch(() => null),
+         API.get('/trades', { ...params, limit: 12 }),
+         API.get('/identity/daily/'+Store.isoToday(),{account_id:Store.accountId}).catch(()=>({state:'unavailable'})),
+-      ]);
++      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay]=identityResult;
+       if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;
+       const k = an.kpis;
+       const acc = an.account || Store.account() || {};

@@ -1,0 +1,38 @@
+ok positive complete UTC account-day with saved trade exception flagged
+ok admission+event same action NOT two exceptions
+ok reason/rule/server clock retained; broker verified alwaysfalse
+ok stop merely observed NOT rewarded rule-breaking proof
+ok attempt blocked/no trade NOT rewarded rule-breaking proof
+ok research saved under stop NOT rewarded rule-breaking proof
+ok record-only history NOT rewarded rule-breaking proof
+ok net -100 cannot be coerced into profitable flagged day
+ok net 0 cannot be coerced into profitable flagged day
+ok net null cannot be coerced into profitable flagged day
+ok net 100 cannot be coerced into profitable flagged day
+ok net NaN cannot be coerced into profitable flagged day
+ok full account loss not converted to positive winning-symbol slice
+ok unknown constituent => unknown whole-day net, not zero/breakeven or positive
+ok floating/open P&L excluded, even if journal has number
+ok future close clock unavailable, not profit proof
+ok unassigned closed clock does not get guessed opening-day or let day look fully positive
+ok realised close day, not open day, supplies day financial total
+ok overnight previous entry exception not attributed to profitable close day
+ok foreign owner/account finance and proof never mixed
+ok different same-user account profit cannot reward account3 exception
+ok corrupt JSON unavailable, not known clean or rewarded
+ok clock/date alias unavailable, not known clean or rewarded
+ok future event clock unavailable, not known clean or rewarded
+ok forged allowed state unavailable, not known clean or rewarded
+ok empty rules unavailable, not known clean or rewarded
+ok wrong snapshot account unavailable, not known clean or rewarded
+ok missing reason unavailable, not known clean or rewarded
+ok legacy/imported/caller trade provenance cannot create proof
+ok valid M90-only older saved-trade exception retained as event provenance
+ok canonical date slice excludes other UTC calendar day
+ok invalid date filter rejected, never silently broadens scope {"from":"2026-02-30"}
+ok invalid date filter rejected, never silently broadens scope {"to":["2026-10-12"]}
+ok invalid date filter rejected, never silently broadens scope {"from":"2026-10-13","to":"2026-10-12"}
+ok pure read leaves ALL input financial/process facts unchanged
+ok distinct rewarded_breach descriptive warning, no grade/permission/sizing or causal cost
+ok missing/none absence never a verified clean-process certificate
+M91 pure account-day process/outcome distinctions: 37 passed, 0 failed

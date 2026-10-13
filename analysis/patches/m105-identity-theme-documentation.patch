@@ -1,0 +1,176 @@
+diff --git a/README.md b/README.md
+index 2960aa4..a5d9bcd 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,46 @@
+ # TradeJournal Pro
+ 
++## M105 — chosen self-description / separate quarterly theme (2026-10-13)
++
++**Dashboard** and owned **day review** now show optional declared words: a persistent
++self-description and a separate ~90-day calendar-quarter theme. Edit/explicitly
++reset either; old versions/receipts and the theme's original identity reference
++are retained. No “professional” default or copy from notes, profit, emotion, plan
++or the saved next-period action focus. These are words you choose, not psychology,
++self-worth, broker/action proof, trading readiness or a discipline score.
++
++The daily card's plan-following tally uses **current acknowledged human execution
++reviews** on UTC ENTRY day: followed/violated with known denominator, unreviewed,
++partial known violations, open/imported/unassigned separately. Unknown share is
++Unavailable, not clean100/0. Equal green/red process has the same counts; no P&L/
++model/grade/identity score. A historical day can't borrow words received later.
++
++New quarterly review snapshots retain the exact received self-description/theme
++version/reference, distinct from M101's action focus. Later edits do not rewrite
++its baseline;409 needs reload. The editor/readonly own history preserves original
++words, escaped markup, and account/user/token/superseded/fault guards.503 never
++claims saved or refunds a cap/routine/core/loss obligation. Themes use UTC APP
++calendar quarters—roughly90days, not exactly90/broker hours. M106 fresh readiness
++and M107 daily intention remain separate open findings.
++
++Full JSON backup includes declaration history; restores get destination ownership,
++new receiving receipts/imported-unverified INACTIVE archive status. Original words/
++clock/reference remain declarations, not original mental state, human commitment
++or plan-vote authority. Explicit later human adoption is a new declaration. Missing
++store still permits finance backup with unavailable marker; malformed optional
++history warns, actual import-store failure atomically rolls back that request.
++Settings warnings/read-only imported/orphan histories visible, no auto-refresh
++hiding omissions. Trade CSV does not carry standalone declared-word history.
++
++APP limits500single-line chars,500portable records/8KBunverified reference +existing
++20MBfile/25MBbody; no NLP/semantic uniqueness or automatic dedupe. Score/grade/risk/
++entry/core/routine/geometry/stops/targets/RR/floor30/M103n>=5/B-C unchanged.
++**M105142/0 across10**, actual135-parent migration13/0. Ledger
++**132=99 done/3 partial/30TODO**. Native parent/current both204/2 on15syntheticfills/
++0mismatches (same original>20floor assertions), negatives retained—not padded.
++Report `analysis/M105-IDENTITY-QUARTER-THEME.md` in ZIP. NextM106. No70%, causal/
++predictive edge, broker/provider/mental/human/meditation/pixel/production claim.
++
+ ## M104 — named quarterly rule-change discipline (2026-10-12)
+ 
+ **Playbook** now shows UTC quarterly guidance across **all owned setups**. Editing a
+diff --git a/docs/API.md b/docs/API.md
+index 2fd05a2..911a052 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -1046,3 +1046,75 @@ APP input budgets500lines/5000chars each,10000versions/events,500portable record
+ score/core/routine/cap/loss/admission/financial-winner/trade-grade/weights/risk/factor/
+ geometry/stop/target/RR mutation. Floor30/M103n>=5/B-C unchanged. No causal/predictive
+ edge/70%/broker/provider/human/mental/meditation/pixel/production proof. M105 next.
++
++
++## M105 — optional declared identity / separate quarter theme
++
++Additive `identity_declarations` immutable account/kind/quarter revision history,
++not account/trade defaults. `identity` persistent emptyperiod key; `theme` canonical
++UTC APP calendar quarter (~90, not exactly90days/broker hours). Owner deletion
++cascades; account deletion SET NULL retains original readonly own history, never
++foreign reattachment. UPDATE facts immutable except FK nullification. Not sealed
++against database-admin tampering. No notes/focus/adherence/profit history backfill.
++
++- `GET /identity?account_id=&quarter_start=` live editor view: account,quarter,
++  identity,theme,original theme identity_reference/change warning,history,archives,
++  displayed revision,basis,broker_verified:false. Human/source declaration only;
++  imported records not activated. Optional canonical quarter_start selects theme;
++  persistent current self-description remains separate lifetime.
++- `GET /identity/daily/:date?account_id=` declarations with actual receipt <=selected
++  historical UTC day end/now, plus same-date current reported ENTRY-day plan tally.
++  Later words not borrowed as old state. Future selected days not observed. A
++  retrospective declaration is not original mental-state/action proof.
++- `GET /identity/tally?account_id=&from=&to=` owned current acknowledged plan count.
++- `GET /identity/history?account_id=` readonly original declarations. Omitted account
++  means all own accounts/orphaned/imported copies, not another user's words.
++- `PUT /identity/statement?account_id=` only `{statement,revision}`.
++- `PUT /identity/theme/:start?account_id=` only `{statement,revision}`.
++
++Canonical positive owned account; foreign/missing/alias404, invalid date/quarter400,
++auth401. Nonblank single-line string<=500chars or explicit null unknown reset;
++blank/array/bool/control-character coercions reject400. NFC/outer trim. No caller
++user/source/clock/reference/eligibility input. Revision covers selected-quarter
++current declaration history. Stale409 explicit reload, identicalretry receipt
++preserved, actualstore503 rollback new words only—not earlier finance/core/entry.
++Theme saves original identity ID/version/text/source/receipt snapshot; later identity
++change visible, not silent rebind. Null/reset history retained independently.
++
++Primary tally: current complete acknowledged M86 execution-quality source
++self_reported, valid owner/date/hash/stop/adherence/chronology/clocks. Equal green/
++red process same counts; no P&L/entrygrade/score/identity-worth/psychological input.
++Plan followed vs violated definition is M86's, not an invented adherence5-only gate.
++Unknown/stale/default/legacy/open/unassigned records unreviewed, imported current
++reports separately unverified. Known violation in incomplete review separately
++visible, not denominator double-counted. Ratio followed/known_reports only;NULL
++with no known evidence. ENTRY-day basis, not profit CLOSE-day attribution. Counts
++not broker/action/mental-state fulfilment or proof the words caused behaviour.
++
++Actual Dashboard/day/quarter card/editor/readonlyhistory, escaped words and
++account/user/token/serial/closed/stale/current-versus-obsolete fault guards.
++Actual409 keeps draft/disables save untilreload;503 cannotclaim recorded.
++M99 quarter new snapshot `identity_context` keeps exact received declarations;
++current change invalidates displayed context revision but original snapshot and
++M101 actionfocus immutable. Nonquarter null. Editing theme independently doesn't
++complete/save the review or silently discard local text; deliberate reload needed.
++
++JSON backup `identity_declarations:{version:1,records:[...]}`; imports destination
++owner/account/new revision/ID/source imported_unverified/new receipt. Original
++kind/statement/clock/reference/source in historical unverified metadata; imported
++inactive readonly archives, no human commitment/action/plan-vote replay. Re-export/
++restore retains original declaration clock; invalid/future omitted with warning.
++Explicit later human adoption is a NEW declaration, not origin proof. Optional
++badhistory `identity_warnings` while finance legal; realstore failure rollsback
++finance/declarations import atomically. Missingstore backup financelegal with
++unavailable marker; restore warns, no loststatement inferred. Settings warnings
++stay visible/no auto-refresh, readonly own archive/orphan records accessible.
++Trade CSV does not transport standalone declared words. Repeat import appends,
++not automatic upsert/dedupe.500records/8KBunverified reference and unchanged
++20MBfile/25MBbody APP budgets, not course laws; no silent clipping.
++
++No identity score/tier/self-worth judgement, NLP process/money intention judge,
++M106 freshstate gate or M107 daily intention. No grade/risk/cap/routine/loss/core/
++admission/model/weights/factors/geometry/stops/targets/RR change. Course30/M103n>=5/
++B-C unchanged. No70%/causal/predictive/mental/broker/provider/human/meditation/pixel/
++production proof. M106 next; M111/M112 open, M30/M103/M108 partial.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index cae737d..f200197 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -595,3 +595,40 @@ marker. APP limits500lines/5000chars,10000history,500portable/256KBpair +existin
+ Current132=98done/3partial/31TODO, nextM105. M106/M111/M112 open; M30/M103/M108
+ partial. No causal attribution, win-rate/edge/70%, actual broker/provider/mental/
+ human/meditation/pixel/production validation from this descriptive discipline.
++
++
++## M105 — optional self-description/theme are not readiness or worth
++
++Chosen persistent self-description +distinct calendar-quarter (~90day) theme,
++account-owned versioned receipts/ref snapshots/nullreset. No professional/clean
++label/default, no inference from profit/notes/plan/focus/emotion/legacy adherence.
++Historical daily view bounded by actual receipt—not then mental-state or action
++proof and not later words copied backward. UTC calendar APPpolicy, not exactly90
++or broker/traderhours. Theme original identity reference retained after new words;
++quarter snapshots preserve exact declared versions and separate M101 actionfocus.
++
++Current acknowledged human plan reports followed/violated counts, known denominator
++only; raw/default/stale/open/imported/unassigned/invalidchronology unreviewed or
++unverified. Partial known violation visible without claiming fully-known review.
++Unknown ratioNULL/notclean100. Same green/red process same tally. Not an identity/
++self-worth/mental/causal score or daily/window rubric rewrite; no forced-trade quota.
++M106 fresh readiness and M107 daily process intention separateTODO, not hidden gates.
++
++Strict owner/date/revision/text API;500single-line chars or explicitnull. Actor/
++account/token/serial/closed/current-versus-obsolete faults guarded, original text
++escaped and immutable,409 draft retained/reload,503 no false receipt. No core/loss
++writing, cap/cooldown/routine/admission/risk/grade/frame/geometry/RR authority.
++Quarter view edits declaration independently, no plan applied or localreviewauto-save.
++
++Full JSON receiving/destination-owned imported-unverified INACTIVE archive; original
++words/clock/reference declared history only, no humancommitment/action/tally replay.
++Badoptionalhistory warns while financelegal, realstore failure atomicrollback that
++import, missingstore stillpermits financialbackup marker. Settings warning success
++not silentlyrefreshaway; ownreadonly archive/orphan history retained, no foreign
++reattachment or sealed/admin-proof vault.500portable/8KBreference APPbudgets and
++existing20MBfile/25MBbody limits, no silent clipping/automaticdedupe/NLP uniqueness.
++
++Current132=99done/3partial/30TODO. NextM106, M107/M111/M112 open, M30/M103/M108
++partial. Existing execution/daily/window scores/grades/weights/default risk/factors/
++entrymodels/checklists/stops/targets/RR/floor30/M103n>=5/B-C unchanged. No70%/causal/
++predictive edge/broker/provider/actual mental/human/meditation/pixels/production proof.

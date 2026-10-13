@@ -1,6 +1,48 @@
 # Full-playlist episode audit — running ledger
 
-## Current M104 — recorded quarterly rule-change discipline — 2026-10-12
+## Current M105 — declared identity, separate quarter theme — 2026-10-13
+
+**132:99 done /3 partial /30 TODO /0 no-action**, exact eight groups. Optional
+owned persistent self-description +distinct calendar-quarter theme, append-only
+receipts/history/reference, explicitnullreset/no default/profit/note/actionfocus copy.
+~90-day UTC APP quarters not precisely90days/brokerhours. Historical requested daily
+view bounded to actual declaration receipts, not borrowing later words as oldstate.
+Current acknowledged self_reported plan-followed/violated tally with known denominator;
+legacy/stale/open/imported/unassigned/partial/chronology unknown separate, ratioNULL
+notclean100. No P&L/grade/self-worth/identity score, psychological/causal/broker proof.
+
+Actual Dashboard/day/quarter sharedcard/editor/history, escaped text, owner/account/
+token/serial/closed/stale/fault guards. Separate M101 actionfocus/M107 intention/
+M106 readiness; no admission/risk/core/routine changes. New quarter review snapshot
+preserves received statement/theme/ref versions, unseen changes409/reload; old metrics
+never rewritten. JSON restore forced ownreceiving/imported-inactive archive, original
+words/clock/reference unverified, no humancommitment/acted/tally authority replay;
+invalidoptionalwarning/financelegal/realimportfailure atomic/missingstorebackup marker.
+Ownreadonly imported/orphan histories and Settings omissions visible, noautorefresh.
+
+**Final142/0 across10 probes**, actual135-parent additive/restarts13/0. Original
+M104152/1, M100144/1, M99/M101159/1, M93113/2, M91106/2, M87223/3 unchanged
+shape negatives kept; only4new identityobjects, old63cols/alloriginalfacts exact.
+Emotion170/0, reasons160/0, execution260/0, routine321/0. RAW596/156+90stimeout
+vsDECLARED824/4 inherited mock/date failures. Offline178/0, declared market325/0,
+live70/1 with6nonzero/5summaryless. Prepared actual-parent/current API121/0 each;
+Bots204/2each, same15syntheticfills/0mismatch, both original>20sample conditions
+fail. No fillpadding/floor/clock/targetretune. RawAPIexit2/no summary/Bots200/6.
+Smoke22/22conditionalDOM,0style/console,8canvaslimits,observedexit0; measured-view
+switch conditional. Exact original served-source smoke/exits/canvaslimits in
+`evidence/m105/smoke-exit.json`, not pixels/broker/human/production proof.
+
+Nine successful measured runtime stages+docs, actual903/pristine forward/reverse
+byteproofs, deterministic **137-source** ZIP: `build-m105-identity-artifacts.py`,
+`patches/M105-IDENTITY-STAGES.json`, excluded archive SHA companion.
+[Full report](M105-IDENTITY-QUARTER-THEME.md). Preview3000 temporary synthetic
+`/tmp/m105-preview.db`, offline/schedulerOFF/blank remotes, not preserved realdata.
+
+**Next M106 — fresh in-session four-question state gate.** M107 separateintention,
+M111/M112 stillTODO; M30/M103/M108 partial. All132IDs/eightgroups retained; session
+fixed to **arena/762c0295-trader**, older counts/branches/nextsteps below historical.
+
+## Historical M104 — recorded quarterly rule-change discipline — 2026-10-12
 
 **132:98 done /3 partial /31 TODO /0 no-action**, exact eight groups. Full named
 APP edit-unit delta across all8 M102fields: paired rule-line add/remove replacements,

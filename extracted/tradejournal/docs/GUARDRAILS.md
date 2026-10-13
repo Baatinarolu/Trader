@@ -595,3 +595,40 @@ marker. APP limits500lines/5000chars,10000history,500portable/256KBpair +existin
 Current132=98done/3partial/31TODO, nextM105. M106/M111/M112 open; M30/M103/M108
 partial. No causal attribution, win-rate/edge/70%, actual broker/provider/mental/
 human/meditation/pixel/production validation from this descriptive discipline.
+
+
+## M105 — optional self-description/theme are not readiness or worth
+
+Chosen persistent self-description +distinct calendar-quarter (~90day) theme,
+account-owned versioned receipts/ref snapshots/nullreset. No professional/clean
+label/default, no inference from profit/notes/plan/focus/emotion/legacy adherence.
+Historical daily view bounded by actual receipt—not then mental-state or action
+proof and not later words copied backward. UTC calendar APPpolicy, not exactly90
+or broker/traderhours. Theme original identity reference retained after new words;
+quarter snapshots preserve exact declared versions and separate M101 actionfocus.
+
+Current acknowledged human plan reports followed/violated counts, known denominator
+only; raw/default/stale/open/imported/unassigned/invalidchronology unreviewed or
+unverified. Partial known violation visible without claiming fully-known review.
+Unknown ratioNULL/notclean100. Same green/red process same tally. Not an identity/
+self-worth/mental/causal score or daily/window rubric rewrite; no forced-trade quota.
+M106 fresh readiness and M107 daily process intention separateTODO, not hidden gates.
+
+Strict owner/date/revision/text API;500single-line chars or explicitnull. Actor/
+account/token/serial/closed/current-versus-obsolete faults guarded, original text
+escaped and immutable,409 draft retained/reload,503 no false receipt. No core/loss
+writing, cap/cooldown/routine/admission/risk/grade/frame/geometry/RR authority.
+Quarter view edits declaration independently, no plan applied or localreviewauto-save.
+
+Full JSON receiving/destination-owned imported-unverified INACTIVE archive; original
+words/clock/reference declared history only, no humancommitment/action/tally replay.
+Badoptionalhistory warns while financelegal, realstore failure atomicrollback that
+import, missingstore stillpermits financialbackup marker. Settings warning success
+not silentlyrefreshaway; ownreadonly archive/orphan history retained, no foreign
+reattachment or sealed/admin-proof vault.500portable/8KBreference APPbudgets and
+existing20MBfile/25MBbody limits, no silent clipping/automaticdedupe/NLP uniqueness.
+
+Current132=99done/3partial/30TODO. NextM106, M107/M111/M112 open, M30/M103/M108
+partial. Existing execution/daily/window scores/grades/weights/default risk/factors/
+entrymodels/checklists/stops/targets/RR/floor30/M103n>=5/B-C unchanged. No70%/causal/
+predictive edge/broker/provider/actual mental/human/meditation/pixels/production proof.
