@@ -1,0 +1,104 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 24,
+  "fail": 0,
+  "results": [
+    {
+      "label": "a fresh account is not_adopted with a revision to write against",
+      "passed": true
+    },
+    {
+      "label": "recording four honest yes answers is a fresh pass",
+      "passed": true
+    },
+    {
+      "label": "the pass carries the APP window and an expiry, not an unbounded permission",
+      "passed": true
+    },
+    {
+      "label": "the recorded answers come back as given, with no sentiment or score added",
+      "passed": true
+    },
+    {
+      "label": "the revision returned by a write is the one the next write may use",
+      "passed": true
+    },
+    {
+      "label": "a write from a superseded displayed revision is refused 409 and stores nothing",
+      "passed": true
+    },
+    {
+      "label": "both versions are retained with server receipts, none deleted or rewritten",
+      "passed": true
+    },
+    {
+      "label": "a stored answer set cannot be rewritten in place",
+      "passed": true
+    },
+    {
+      "label": "explicit unknown is recorded as version 3 and is not a pass",
+      "passed": true
+    },
+    {
+      "label": "an explicit unknown keeps the account adopted, so the gate cannot be un-adopted by erasing an answer",
+      "passed": true
+    },
+    {
+      "label": "history is readonly own-account, newest last, with receipts",
+      "passed": true
+    },
+    {
+      "label": "history without an account still returns only the owner’s own rows",
+      "passed": true
+    },
+    {
+      "label": "another owner’s account id is a 404, not a cross-account read",
+      "passed": true
+    },
+    {
+      "label": "the other session cannot read this account’s gate",
+      "passed": true
+    },
+    {
+      "label": "a non-numeric account id is refused",
+      "passed": true
+    },
+    {
+      "label": "unauthenticated reads are 401",
+      "passed": true
+    },
+    {
+      "label": "a write carrying caller authority fields is refused 400 with nothing stored",
+      "passed": true
+    },
+    {
+      "label": "a partial answer set is refused rather than defaulted",
+      "passed": true
+    },
+    {
+      "label": "the refused writes stored nothing",
+      "passed": true
+    },
+    {
+      "label": "a second owned account reaches its own pass independently",
+      "passed": true
+    },
+    {
+      "label": "the first account’s state is untouched by the second account",
+      "passed": true
+    },
+    {
+      "label": "the briefing carries the gate for the desk, not a claim of readiness",
+      "passed": true
+    },
+    {
+      "label": "the owned day view carries the same gate object",
+      "passed": true
+    },
+    {
+      "label": "the full backup carries the answer history for portability",
+      "passed": true
+    }
+  ],
+  "scope": "M106 owned four-question answers over real HTTP/auth/SQL: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

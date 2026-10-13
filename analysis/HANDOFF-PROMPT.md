@@ -1,6 +1,74 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M106 — fresh in-session four-question state gate — 2026-10-13
+## Current M107 — one process intention for the day — 2026-10-13
+
+**132:101 done /3 partial /28 TODO /0 no-action**, exact eight groups. Saved Ep28 rule:
+one clear rule for the day, one simple sentence, process-oriented, behavioral, within your
+control — *"Today I'm going to make $5,000 from the market"* is an outcome goal outside
+your control. `grep -rni intention src/` returned 0 hits and `journal_entries.tomorrow`
+(`db.js:188`) is a next-day focus, not a same-day commitment. Additive append-only
+`daily_intentions` (`human_declared` + `imported_unverified`, UPDATE facts immutable,
+owner cascade, account SET NULL retained readonly), same-day-only writes pinned to the
+server's own UTC day, revisioned CAS409/503rollback, no caller clock/day/source/owner/
+authority, nothing backfilled/defaulted/carried over. The four curated Ep28 examples are
+the **only** thing labelled process_template; free text is stored **exactly as written**
+and explicitly unverified with the bounded classifier's own cues
+(sentences/amounts/outcome/prediction/control/chars) and named warnings.
+
+Only the episode's own anti-example is refused: an amount and an outcome **asserted in the
+same non-negated sentence** -> `intention_outcome_target`400, nothing written, process
+alternative named. Everything else records: "have a green day" is stored and flagged as
+reading like an outcome; "I will not turn a $500 loss into a revenge trade" is stored with
+no refusal (the app does not run sentiment analysis). States are
+unrecorded/recorded/unavailable — never "failed", never a borrowed word; `last_recorded`
+is history only. **No authority by design**: no score, percentage, adherence tally,
+readiness, gate or permission over entries/signals/risk/cap/routine/core/grades/history,
+journal text never rewritten, `journal_entries.tomorrow` keeps its meaning, and M64/M89/
+M105/M106 stay separate mechanisms.
+
+Actual Dashboard + owned Journal day + Settings share one card/editor/readonly-history;
+today-only editor (saved example vs your own words, no preselected default), reload
+discards an unsaved pick, 409 keeps the draft, past days readonly, escaped text, no
+score/percentage/gate rendering. Backup/restore transports `daily_intentions` as
+`imported_unverified` archives with the original day/clock/version/id as history that can
+never become the receiver's recorded day; malformed optional history warns while finance
+stays legal.
+
+**Final232/0 across9 probes**, actual139-parent additive/restart18/0 (parent control6/2).
+Every prior cohort reproduces M106 exactly — 16 suites identical, **0 per-script
+differences across162 scripts**: m105feature141/1, screenshots223/3, changes152/1,
+opportunities144/1, reviews159/1, behavior113/2, process106/2, emotions170/0,
+confluences160/0, execution260/0, routine321/0, offline178/0, market325/0, RAW596/156,
+DECLARED824/4, pure70/1. Two **declared milestone-scoped negatives kept**: frozen M106
+migration17/1 and frozen M105 migration12/1 (each whole-schema assertion meeting M107's
+four new objects). Pre-hardening api stage = the loose-dated runtime, measured
+**15/3** by the unchanged freshness probe (a future day read as "nothing recorded", a
+malformed day not refused) and **18/0** after the hardening stage; `loose-date-source.json`
+asserts the control tree is that stage.
+
+Native three arms: parent(prepared fixture)**API121/0/Bots204/2**, current same, RAW
+**APIexit2/no summary/Bots200/6**, all 19syntheticfills/0mismatch (the fill count moves
+with the wall clock; 15 at the M106 delivery); both original>20 sample conditions still
+fail, no fillpadding/floor/clock/targetretune. Smoke exit0 21/21conditional DOM,0style/
+0console,8canvaslimits,95.0s — with the **same-time unchanged M106 parent control also
+21/21** (harness condition: the measured "full" chip is not a `.chip` at this sample).
+Four runtime stages+docs, actual4d13078/pristine forward/reverse byteproofs, deterministic
+**141-source** ZIP: `build-m107-intention-artifacts.py`,
+`patches/M107-DAILY-INTENTION-STAGES.json`, excluded archive SHA companion.
+[Full report](M107-DAILY-INTENTION.md). Preview/arm servers stopped; `/tmp` DBs synthetic/
+offline, schedulerOFF, not preserved realdata.
+
+**Next M108 (partial — meditation).** M109/M110/M111/M112 and the older TODO rows still
+open; M30/M103/M108 partial. All132IDs/eightgroups retained; session fixed to
+**arena/b411452d-trader**, older counts/branches/nextsteps below historical.
+
+### Current remaining IDs — no omissions
+
+Partials **M30,M103,M108**. TODO28: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M62,M65,M66,M67,M72,M73,M74,M109,M110,M111,M112,M115,M117,M125**.
+PROGRESS asserts exact132/eightgroup partition. Earlier lists are historical milestones,
+not the current remaining work.
+
+## Historical M106 — fresh in-session four-question state gate — 2026-10-13
 
 **132:100 done /3 partial /29 TODO /0 no-action**, exact eight groups. Saved Ep28 rule
 after an emotional spike: calm / clear / following the trade plan / would take it if

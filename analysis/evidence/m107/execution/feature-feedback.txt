@@ -1,0 +1,25 @@
+ok legacy backfill compatibility now READ-ONLY, no setup_grade overwrite
+ok derived review evaluated selected own4 closed rows, unknown separately labelled
+ok known execution grade vs deliberately opposite pre-entry grade never overwrites
+ok repeated derived refresh remains idempotent/read-only
+BOT API error on POST /api/bots/correction/backfill: Account not found
+ok foreign account cannot trigger another cohort refresh404
+ok malformed selected account is400 no coercion/write [1]
+ok malformed selected account is400 no coercion/write 0
+ok malformed selected account is400 no coercion/write -1
+ok malformed selected account is400 no coercion/write 1.1
+ok malformed selected account is400 no coercion/write "1e0"
+ok malformed selected account is400 no coercion/write "oops"
+ok actual correction table exposes execution grades not entry setup quality
+ok entry setup-grade analytics remain separate/current (no empty-grade guesses)
+ok samplefloor30/behaviour/routine/old loss-writing gate still independent
+ok legacy GET backfill has same read-only semantics/current grades
+ok actual feedback clean losing trade is good by owner plan/stop, not negative R size
+ok actual feedback profitable rule breaker D, never textbook/repeat praise
+ok actual feedback winning explicit stop violation remains D
+ok unknown legacy stop stays unreviewed/no punitive claim or invented0 score
+ok recorded protective stop move is not falsely described as moved-away loss cause
+ok large slippage-like loss does not itself prove missed stop or grade penalty
+ok foreign feedback retains real owner404
+ok metadata grading never refunds entry caps/admissions or completes loss reflection writing
+M86 derived grade and feedback: 23 passed, 0 failed

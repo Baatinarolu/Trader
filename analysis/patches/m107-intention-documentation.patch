@@ -1,0 +1,109 @@
+diff --git a/README.md b/README.md
+index eb31ace..7d601de 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,44 @@
+ # TradeJournal Pro
+ 
++## M107 — one process intention for the day (2026-10-13)
++
++**Dashboard**, the owned **day review** and **Settings** now carry the saved rule from
++the course: *one clear rule for the day — one simple sentence, process-oriented,
++behavioral, within your control.* You pick one of four saved examples (*Today I follow my
++plan*, *Today I will take only A+ setups*, *Today I will journal every trade*, *Today I
++will not revenge trade*) or write your own words. The saved example is the only thing the
++app labels **process-oriented**; your own words are stored **exactly as written** and
++explicitly **unverified**, with the cues the bounded, explainable classifier found
++(sentence count, amounts, outcome/prediction/control wording, length) shown next to them.
++
++The one thing refused is the episode's own anti-example: an **amount and an outcome
++asserted in the same sentence** — *“Today I’m going to make $5,000 from the market”*, *“I
++will make 5% today”* — is refused with a message naming the process alternative, and
++**nothing is stored**. Everything else is recorded as written: *“have a green day”* is
++stored and labelled as reading like an outcome, and *“I will not turn a $500 loss into a
++revenge trade”* is stored with no refusal, because the app does not run sentiment
++analysis and will not pretend to judge your words.
++
++An intention is a **same-day commitment**, never permission: it does not admit, refuse or
++size a trade, does not change risk, caps, routine, the core, grades or history, is never
++scored or tallied for adherence, and is never proof that it was followed. Today only —
++yesterday and tomorrow cannot be written or rewritten, no intention is carried over from
++an earlier day, an identical repeat is a no-op, and a stale displayed revision 409s with
++nothing written. Imported copies are `imported_unverified` archives keeping their original
++day, clock and version as history; they are never the receiving account's recorded
++intention and never displace it. M28's `journal_entries.tomorrow`, M64's morning
++check-in, M89 emotion capture, M105's self-description and M106's fresh in-session gate
++remain separate features.
++
++**M107 232/0 across 9 probes**, actual139-parent additive/restart migration 18/0; every
++prior M106 cohort re-run unchanged (317/1 with one declared M106-only schema negative,
++M105 142/0-equivalent cohorts, changes152/1, opportunities144/1, reviews159/1, behavior113/2,
++process106/2, screenshots223/3, emotions170/0, confluences160/0, execution260/0,
++routine321/0, offline178/0, market325/0, RAW596/156, DECLARED824/4). Ledger
++**132=101 done/3 partial/28 TODO**. Report `analysis/M107-DAILY-INTENTION.md` in the ZIP.
++Next M108/M111/M112; no 70 %, causal/predictive edge, broker/provider/mental/human/
++meditation/pixel/production claim.
++
+ ## M106 — fresh in-session four-question state gate (2026-10-13)
+ 
+ **Dashboard** and the owned **day review** now carry the saved pre-entry check: *Am I
+diff --git a/docs/API.md b/docs/API.md
+index 2f0917f..a62bfac 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -1168,3 +1168,55 @@ block the receiving trader. Invalid optional history warns while the financial i
+ stays legal; a real import-store failure rolls that request back atomically; a missing
+ answer store leaves the financial backup legal with an unavailable marker. Settings
+ surfaces the warnings instead of hiding omissions.
++
++## M107 — one process intention for the day
++
++Additive `daily_intentions` append-only revision series: `human_declared` first-party
++rows and `imported_unverified` archives. UPDATE facts immutable (FK nullification the
++only exception); owner deletion cascades, account deletion SET NULL retains the row for
++the owner's own readonly history and never re-attaches it to another account. Not sealed
++against database-admin tampering. Nothing is backfilled from notes, profit, adherence,
++`journal_entries.tomorrow` or legacy journal text, and no intention is ever defaulted or
++carried over to another day.
++
++- `GET /intention?account_id=&date=` live view: account, day (`YYYY-MM-DD`, server UTC),
++  `today`, `same_day`, state (`unrecorded`|`recorded`|`unavailable`), `template`, words,
++  framing (`process_template`|`unverified_free_text`|`outcome_language`), the bounded
++  classifier's own cues, warnings, server `receipt`, `version`, displayed `revision`, the
++  four saved process examples, `char_max`, `imported_archives`, `last_recorded` (history
++  only — never today's intention), `authority:'none'`, `broker_verified:false`, `basis`.
++- `GET /intention/history?account_id=&date=` readonly own rows including detached orphans
++  and imported archives. Omitted account means all own accounts, never another user's.
++- `PUT /intention?account_id=` writes **today only**: `{template}` (one of the four saved
++  examples) or `{intention}` free text, plus the displayed `revision`. No caller
++  clock/day/source/owner/authority is accepted. An identical repeat is a no-op, a stale
++  revision409s with nothing written, and a store failure503s without claiming a receipt.
++  Yesterday and tomorrow cannot be written or rewritten (`dayKey` refuses malformed and
++  future days). Reads embedded in other surfaces (`GET /journal/:date`,
++  `GET /briefing`) carry the same object but answer `unavailable` for a day that cannot
++  be read instead of failing the host surface.
++
++The classifier is bounded and explainable, not an NLP judge: an amount and an outcome
++asserted in the same non-negated sentence (`make $5,000 today`, `make 5%`, `win $1,000`)
++is refused `intention_outcome_target` with **nothing stored** — the episode's own
++anti-example. Other outcome/prediction wording, more than one sentence, over-length text
++and unknown phrasing are stored **exactly as written** with the cues the app found and
++are never labelled process-oriented. The four saved examples
++(`follow_plan`,`a_plus_only`,`journal_every_trade`,`no_revenge`) are the only thing
++labelled `process_template`. An amount inside a negation ("I will not turn a $500 loss
++into a revenge trade") is stored, not refused: the app does not run sentiment analysis.
++
++This is a same-day commitment, not a permission: the module holds no score, percentage,
++adherence tally, readiness or gate over entries/signals/risk/cap/routine/core/grades/
++history, and it never rewrites journal text. M28's `journal_entries.tomorrow` stays the
++next-day reflection field; M64's morning check-in, M89 emotion capture, M105's
++self-description and M106's fresh in-session gate stay separate mechanisms.
++
++Full JSON backup carries `daily_intentions`; restore labels every copy
++`imported_unverified` with the original day/clock/version/id retained as history, so
++restored words never become the receiving account's recorded intention for a day and can
++never displace it. Invalid optional history warns while the financial import stays legal;
++a backup with no intention field is no warning at all; a
++`{version:1,records:[],unavailable:true}` marker warns instead of inventing days. Settings
++surfaces the warnings; the Journal day and the Dashboard briefing render the same object
++the editor writes.

@@ -1,0 +1,302 @@
+{
+  "app": "/tmp/m107-loose-date/app",
+  "pass": 15,
+  "fail": 3,
+  "results": [
+    {
+      "label": "the day is the server’s UTC day of the receipt",
+      "passed": true
+    },
+    {
+      "label": "a late-evening intention is recorded for that day",
+      "passed": true
+    },
+    {
+      "label": "the next UTC day starts with no intention, not yesterday’s",
+      "passed": true
+    },
+    {
+      "label": "yesterday’s words are reported as history only, never as today’s",
+      "passed": true
+    },
+    {
+      "label": "the show-history pointer grants nothing and carries no permission field",
+      "passed": true
+    },
+    {
+      "label": "choosing the same words on the new day is a new day-scoped record, not a carry-over",
+      "passed": true
+    },
+    {
+      "label": "the new day’s record keeps its own later receipt",
+      "passed": true
+    },
+    {
+      "label": "the earlier day still reads exactly what was recorded then, readonly",
+      "passed": true
+    },
+    {
+      "label": "a day with no record stays genuinely unrecorded",
+      "passed": true
+    },
+    {
+      "label": "a day that has not happened is refused, never rendered as blank history",
+      "passed": false,
+      "detail": {
+        "account_id": 1,
+        "schema": "intention-v1",
+        "day": "2026-10-14",
+        "today": "2026-10-14",
+        "same_day": true,
+        "state": "unavailable",
+        "template": null,
+        "text": null,
+        "framing": null,
+        "cues": null,
+        "warnings": [],
+        "receipt": null,
+        "version": null,
+        "templates": [
+          {
+            "id": "follow_plan",
+            "text": "Today I follow my plan",
+            "label": "Follow my plan"
+          },
+          {
+            "id": "a_plus_only",
+            "text": "Today I will take only A+ setups",
+            "label": "A+ setups only"
+          },
+          {
+            "id": "journal_every_trade",
+            "text": "Today I will journal every trade",
+            "label": "Journal every trade"
+          },
+          {
+            "id": "no_revenge",
+            "text": "Today I will not revenge trade",
+            "label": "No revenge trade"
+          }
+        ],
+        "char_max": 120,
+        "authority": "none",
+        "imported_archives": 0,
+        "last_recorded": null,
+        "broker_verified": false,
+        "service": "intention-v1",
+        "basis": "One same-day process intention recorded by the trader: a curated saved example or free text kept UNVERIFIED with the cues the bounded classifier found. Not a readiness gate, not verified discipline or plan adherence, no score, no permission over entries/signals/risk/grade/core, and never proof that the intention was followed. A money/profit target is refused here; the app does not judge free text in general.",
+        "message": "Invalid requested date.",
+        "history": [
+          {
+            "id": 2,
+            "account_id": 1,
+            "account_key": 1,
+            "day": "2026-10-14",
+            "version": 1,
+            "state": "recorded",
+            "template": "no_revenge",
+            "text": "Today I will not revenge trade",
+            "framing": "process_template",
+            "cues": {
+              "sentences": 1,
+              "money_target_sentences": 0,
+              "outcome_language": false,
+              "prediction_language": false,
+              "control_language": true,
+              "chars": 30
+            },
+            "warnings": [],
+            "source": "human_declared",
+            "recorded_at": "2026-10-14T00:20:00.000Z",
+            "historical": null,
+            "authority": "none",
+            "broker_verified": false
+          }
+        ],
+        "archives": [],
+        "revision": "79a1ee2a5bb932f2ded9ccad3034116ba0dc900a8d8eb73e881a4298c4a219bd"
+      }
+    },
+    {
+      "label": "a malformed day is refused",
+      "passed": false,
+      "detail": {
+        "account_id": 1,
+        "schema": "intention-v1",
+        "day": "2026-10-14",
+        "today": "2026-10-14",
+        "same_day": true,
+        "state": "unavailable",
+        "template": null,
+        "text": null,
+        "framing": null,
+        "cues": null,
+        "warnings": [],
+        "receipt": null,
+        "version": null,
+        "templates": [
+          {
+            "id": "follow_plan",
+            "text": "Today I follow my plan",
+            "label": "Follow my plan"
+          },
+          {
+            "id": "a_plus_only",
+            "text": "Today I will take only A+ setups",
+            "label": "A+ setups only"
+          },
+          {
+            "id": "journal_every_trade",
+            "text": "Today I will journal every trade",
+            "label": "Journal every trade"
+          },
+          {
+            "id": "no_revenge",
+            "text": "Today I will not revenge trade",
+            "label": "No revenge trade"
+          }
+        ],
+        "char_max": 120,
+        "authority": "none",
+        "imported_archives": 0,
+        "last_recorded": null,
+        "broker_verified": false,
+        "service": "intention-v1",
+        "basis": "One same-day process intention recorded by the trader: a curated saved example or free text kept UNVERIFIED with the cues the bounded classifier found. Not a readiness gate, not verified discipline or plan adherence, no score, no permission over entries/signals/risk/grade/core, and never proof that the intention was followed. A money/profit target is refused here; the app does not judge free text in general.",
+        "message": "Invalid requested date.",
+        "history": [
+          {
+            "id": 2,
+            "account_id": 1,
+            "account_key": 1,
+            "day": "2026-10-14",
+            "version": 1,
+            "state": "recorded",
+            "template": "no_revenge",
+            "text": "Today I will not revenge trade",
+            "framing": "process_template",
+            "cues": {
+              "sentences": 1,
+              "money_target_sentences": 0,
+              "outcome_language": false,
+              "prediction_language": false,
+              "control_language": true,
+              "chars": 30
+            },
+            "warnings": [],
+            "source": "human_declared",
+            "recorded_at": "2026-10-14T00:20:00.000Z",
+            "historical": null,
+            "authority": "none",
+            "broker_verified": false
+          }
+        ],
+        "archives": [],
+        "revision": "79a1ee2a5bb932f2ded9ccad3034116ba0dc900a8d8eb73e881a4298c4a219bd"
+      }
+    },
+    {
+      "label": "a timestamp is not accepted where a day belongs",
+      "passed": false,
+      "detail": {
+        "account_id": 1,
+        "schema": "intention-v1",
+        "day": "2026-10-14",
+        "today": "2026-10-14",
+        "same_day": true,
+        "state": "unavailable",
+        "template": null,
+        "text": null,
+        "framing": null,
+        "cues": null,
+        "warnings": [],
+        "receipt": null,
+        "version": null,
+        "templates": [
+          {
+            "id": "follow_plan",
+            "text": "Today I follow my plan",
+            "label": "Follow my plan"
+          },
+          {
+            "id": "a_plus_only",
+            "text": "Today I will take only A+ setups",
+            "label": "A+ setups only"
+          },
+          {
+            "id": "journal_every_trade",
+            "text": "Today I will journal every trade",
+            "label": "Journal every trade"
+          },
+          {
+            "id": "no_revenge",
+            "text": "Today I will not revenge trade",
+            "label": "No revenge trade"
+          }
+        ],
+        "char_max": 120,
+        "authority": "none",
+        "imported_archives": 0,
+        "last_recorded": null,
+        "broker_verified": false,
+        "service": "intention-v1",
+        "basis": "One same-day process intention recorded by the trader: a curated saved example or free text kept UNVERIFIED with the cues the bounded classifier found. Not a readiness gate, not verified discipline or plan adherence, no score, no permission over entries/signals/risk/grade/core, and never proof that the intention was followed. A money/profit target is refused here; the app does not judge free text in general.",
+        "message": "Invalid requested date.",
+        "history": [
+          {
+            "id": 2,
+            "account_id": 1,
+            "account_key": 1,
+            "day": "2026-10-14",
+            "version": 1,
+            "state": "recorded",
+            "template": "no_revenge",
+            "text": "Today I will not revenge trade",
+            "framing": "process_template",
+            "cues": {
+              "sentences": 1,
+              "money_target_sentences": 0,
+              "outcome_language": false,
+              "prediction_language": false,
+              "control_language": true,
+              "chars": 30
+            },
+            "warnings": [],
+            "source": "human_declared",
+            "recorded_at": "2026-10-14T00:20:00.000Z",
+            "historical": null,
+            "authority": "none",
+            "broker_verified": false
+          }
+        ],
+        "archives": [],
+        "revision": "79a1ee2a5bb932f2ded9ccad3034116ba0dc900a8d8eb73e881a4298c4a219bd"
+      }
+    },
+    {
+      "label": "every recorded row is pinned to a real UTC day with its own version series",
+      "passed": true
+    },
+    {
+      "label": "the human rows are never given a receipt outside their own day",
+      "passed": true
+    },
+    {
+      "label": "a corrupt/future receipt marks the day unavailable rather than claiming a record",
+      "passed": true
+    },
+    {
+      "label": "removing the corrupt row restores the honest record of that day",
+      "passed": true
+    },
+    {
+      "label": "read-only views never wrote another revision",
+      "passed": true
+    },
+    {
+      "label": "with no rows at all the day is unrecorded, not failed or unavailable",
+      "passed": true
+    }
+  ],
+  "scope": "M107 same-day intention boundary and rollover: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

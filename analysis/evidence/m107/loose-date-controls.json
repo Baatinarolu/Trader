@@ -1,0 +1,11 @@
+{
+  "freshness": {
+    "tree": "the delivered runtime with the pre-hardening date policy",
+    "script": "analysis/probe-m107-freshness.js",
+    "pass": 15,
+    "fail": 3,
+    "exit_code": 1,
+    "output": "loose-date-freshness.txt",
+    "scope": "The unchanged M107 probe on the pre-date-hardening runtime: a day that has not happened was read as \"nothing recorded\" and a malformed day was not refused at the day surfaces. The next stage made both measurable refusals."
+  }
+}

@@ -1,0 +1,7 @@
+FAIL actual HTML loads the intention view before the dashboard and journal that render it undefined
+FAIL ui probe completed without an uncaught error "Cannot read properties of undefined (reading 'card')"
+TypeError: Cannot read properties of undefined (reading 'card')
+    at /home/user/Trader/analysis/probe-m107-ui.js:39:18
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async finish (/home/user/Trader/analysis/m107-test-support.js:9:50)
+M107 real DOM: the one-rule card, the strict editor and the readonly history: 0 passed, 2 failed

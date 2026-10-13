@@ -1,0 +1,35 @@
+ok actual prospective entry requires explicit named emotional input400
+ok invalid live-entry emotion type/length is400: true
+ok invalid live-entry emotion type/length is400: {}
+ok invalid live-entry emotion type/length is400: []
+ok invalid live-entry emotion type/length is400: " "
+ok invalid live-entry emotion type/length is400: "xxxxxxxxxxxxxxxxxxx
+FAIL named emotion is capture input, not inferred calm-state permission 409
+ok truthful closed loss accepted before reflection is completed
+ok expired cooldown alone is insufficient: observed current-day loss has pending writing stop
+ok actual next entry409 cannot bypass missing post-loss writing
+ok existing known-stop single-action exception stays explicitly journaled
+ok one-action exception does not mark reflection complete or unlock further entries
+ok truthful deletion allowed but cannot erase observed pending reflection
+ok deleted-loss next entry still409, not an admission reset
+ok deleted-loss review still requires rule/mistake OR explicit none400
+ok actual retained-loss endpoint accepts three-line writing after row deletion
+ok reflection endpoint creates no invented trade or admission
+FAIL completed writing resolves its own pending stop without rewriting historical stop capture {"pending_count":0,"pending":[],"completed_count":1,"timezone":"UTC","rule_date":"2026-10-11","scope":"Observed current-day known losses, required writing; not a broker-time entry violation or all historical incomplete journals"}
+ok completion retry does not rewrite first saved writing/timestamp
+ok truthful loss→win correction does not erase observed writing obligation
+FAIL explicit core review can acknowledge same corrected record and resolve its observed obligation {"pending_count":0,"pending":[],"completed_count":1,"timezone":"UTC","rule_date":"2026-10-11","scope":"Observed current-day known losses, required writing; not a broker-time entry violation or all historical incomplete journals"}
+ok reflection never waives original30-minute/full-next-candle rules
+ok two completed reflections never clear a durable consecutive-loss day STOP
+FAIL past-day incomplete loss is visible backlog, not today reflection permission breach "stop"
+FAIL future close is not prematurely counted as actual current-day loss "stop"
+FAIL next UTC day has no prior-day pending breach, with old capture retained "stop"
+ok past-day pending record remains inspectable, never fabricated complete
+FAIL reflection stop is owned-account scoped, not a cross-account global lock "stop"
+ok foreign account cannot read pending/completed writing captures404
+ok retained writing captures require auth401
+ok six concurrent missing-reflection admissions all409/zero writes
+ok failure to persist reflection rolls back core review fields/acknowledgement
+ok unknown current-day realised result remains unavailable and unwaivable
+ok unavailable reflection/read state still allows honest already-executed record-only truth
+M85 loss reflection: 27 passed, 7 failed

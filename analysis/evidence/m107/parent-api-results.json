@@ -1,0 +1,113 @@
+{
+  "app": "/tmp/m107-policy-stage/app",
+  "pass": 2,
+  "fail": 23,
+  "results": [
+    {
+      "label": "a fresh account has no intention for today, not a failure",
+      "passed": false
+    },
+    {
+      "label": "the view publishes authority none and the saved templates",
+      "passed": false
+    },
+    {
+      "label": "the displayed revision is a 64-hex server receipt",
+      "passed": false
+    },
+    {
+      "label": "recording a saved example is the day’s process intention",
+      "passed": false
+    },
+    {
+      "label": "the record carries a server receipt and no score/percentage/permission",
+      "passed": false
+    },
+    {
+      "label": "the day view keeps this day’s history rows",
+      "passed": false
+    },
+    {
+      "label": "recording the identical choice again is a no-op, not a new version",
+      "passed": false,
+      "detail": true
+    },
+    {
+      "label": "free text is stored verbatim and labelled unverified",
+      "passed": false
+    },
+    {
+      "label": "free text keeps the app’s own cue warnings, not a verdict",
+      "passed": false
+    },
+    {
+      "label": "a money target is refused with its own code and nothing written",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/intention</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "the refused target left the recorded intention untouched",
+      "passed": false
+    },
+    {
+      "label": "write contract refuses template and text together with intention_invalid",
+      "passed": false
+    },
+    {
+      "label": "write contract refuses neither with intention_invalid",
+      "passed": false
+    },
+    {
+      "label": "write contract refuses unknown template with intention_invalid",
+      "passed": false
+    },
+    {
+      "label": "write contract refuses missing revision with intention_invalid",
+      "passed": false
+    },
+    {
+      "label": "write contract refuses caller day with intention_invalid",
+      "passed": false
+    },
+    {
+      "label": "a stale displayed revision is 409 with nothing written",
+      "passed": false,
+      "detail": 404
+    },
+    {
+      "label": "reloading the displayed revision then saving succeeds",
+      "passed": false
+    },
+    {
+      "label": "another account id is not readable without its owner",
+      "passed": true
+    },
+    {
+      "label": "a foreign account cannot be written with this session",
+      "passed": true
+    },
+    {
+      "label": "a past day is readonly and shows nothing was recorded then",
+      "passed": false
+    },
+    {
+      "label": "the past day points at nothing earlier and carries no later words",
+      "passed": false
+    },
+    {
+      "label": "a future day is refused rather than faked as unrecorded",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/intention</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "a malformed date is refused",
+      "passed": false
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "Cannot read properties of undefined (reading 'length')"
+    }
+  ],
+  "scope": "M107 owned daily intention over actual HTTP/auth/SQL: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

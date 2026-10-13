@@ -1168,3 +1168,55 @@ block the receiving trader. Invalid optional history warns while the financial i
 stays legal; a real import-store failure rolls that request back atomically; a missing
 answer store leaves the financial backup legal with an unavailable marker. Settings
 surfaces the warnings instead of hiding omissions.
+
+## M107 — one process intention for the day
+
+Additive `daily_intentions` append-only revision series: `human_declared` first-party
+rows and `imported_unverified` archives. UPDATE facts immutable (FK nullification the
+only exception); owner deletion cascades, account deletion SET NULL retains the row for
+the owner's own readonly history and never re-attaches it to another account. Not sealed
+against database-admin tampering. Nothing is backfilled from notes, profit, adherence,
+`journal_entries.tomorrow` or legacy journal text, and no intention is ever defaulted or
+carried over to another day.
+
+- `GET /intention?account_id=&date=` live view: account, day (`YYYY-MM-DD`, server UTC),
+  `today`, `same_day`, state (`unrecorded`|`recorded`|`unavailable`), `template`, words,
+  framing (`process_template`|`unverified_free_text`|`outcome_language`), the bounded
+  classifier's own cues, warnings, server `receipt`, `version`, displayed `revision`, the
+  four saved process examples, `char_max`, `imported_archives`, `last_recorded` (history
+  only — never today's intention), `authority:'none'`, `broker_verified:false`, `basis`.
+- `GET /intention/history?account_id=&date=` readonly own rows including detached orphans
+  and imported archives. Omitted account means all own accounts, never another user's.
+- `PUT /intention?account_id=` writes **today only**: `{template}` (one of the four saved
+  examples) or `{intention}` free text, plus the displayed `revision`. No caller
+  clock/day/source/owner/authority is accepted. An identical repeat is a no-op, a stale
+  revision409s with nothing written, and a store failure503s without claiming a receipt.
+  Yesterday and tomorrow cannot be written or rewritten (`dayKey` refuses malformed and
+  future days). Reads embedded in other surfaces (`GET /journal/:date`,
+  `GET /briefing`) carry the same object but answer `unavailable` for a day that cannot
+  be read instead of failing the host surface.
+
+The classifier is bounded and explainable, not an NLP judge: an amount and an outcome
+asserted in the same non-negated sentence (`make $5,000 today`, `make 5%`, `win $1,000`)
+is refused `intention_outcome_target` with **nothing stored** — the episode's own
+anti-example. Other outcome/prediction wording, more than one sentence, over-length text
+and unknown phrasing are stored **exactly as written** with the cues the app found and
+are never labelled process-oriented. The four saved examples
+(`follow_plan`,`a_plus_only`,`journal_every_trade`,`no_revenge`) are the only thing
+labelled `process_template`. An amount inside a negation ("I will not turn a $500 loss
+into a revenge trade") is stored, not refused: the app does not run sentiment analysis.
+
+This is a same-day commitment, not a permission: the module holds no score, percentage,
+adherence tally, readiness or gate over entries/signals/risk/cap/routine/core/grades/
+history, and it never rewrites journal text. M28's `journal_entries.tomorrow` stays the
+next-day reflection field; M64's morning check-in, M89 emotion capture, M105's
+self-description and M106's fresh in-session gate stay separate mechanisms.
+
+Full JSON backup carries `daily_intentions`; restore labels every copy
+`imported_unverified` with the original day/clock/version/id retained as history, so
+restored words never become the receiving account's recorded intention for a day and can
+never displace it. Invalid optional history warns while the financial import stays legal;
+a backup with no intention field is no warning at all; a
+`{version:1,records:[],unavailable:true}` marker warns instead of inventing days. Settings
+surfaces the warnings; the Journal day and the Dashboard briefing render the same object
+the editor writes.

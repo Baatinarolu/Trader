@@ -1,0 +1,292 @@
+diff --git a/src/db.js b/src/db.js
+index bef10ce..4d4448c 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -409,6 +409,25 @@ CREATE TABLE IF NOT EXISTS state_gate_answers (
+  UNIQUE(user_id,account_key,version)
+ );
+ CREATE INDEX IF NOT EXISTS idx_state_gate_answers_owner ON state_gate_answers(user_id,account_key,id);
++-- M107 the day's one process intention. Append-only revisions, same-day commitment.
++CREATE TABLE IF NOT EXISTS daily_intentions (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
++ account_key INTEGER NOT NULL,
++ day TEXT NOT NULL DEFAULT '',
++ version INTEGER NOT NULL,
++ template_id TEXT,
++ text TEXT NOT NULL,
++ framing TEXT NOT NULL,
++ cues_json TEXT,
++ source TEXT NOT NULL,
++ recorded_at TEXT NOT NULL,
++ historical_json TEXT,
++ schema_version TEXT NOT NULL,
++ UNIQUE(user_id,account_key,day,version)
++);
++CREATE INDEX IF NOT EXISTS idx_daily_intentions_owner ON daily_intentions(user_id,account_key,day,id);
+ CREATE TABLE IF NOT EXISTS goals (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -837,6 +856,8 @@ async function migrate() {
+ 
+   await db.prepare(`CREATE TRIGGER IF NOT EXISTS state_gate_answers_immutable BEFORE UPDATE ON state_gate_answers WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.version IS OLD.version AND NEW.answers_json IS OLD.answers_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded state-gate answers are immutable'); END`).run();
+ 
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS daily_intentions_immutable BEFORE UPDATE ON daily_intentions WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.day IS OLD.day AND NEW.version IS OLD.version AND NEW.template_id IS OLD.template_id AND NEW.text IS OLD.text AND NEW.framing IS OLD.framing AND NEW.cues_json IS OLD.cues_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded daily intentions are immutable'); END`).run();
++
+   /* M102 backfill. Every strategy that has no version history gets an immutable v1
+    * snapshot of the rule set it currently holds, and every trade already linked to it is
+    * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in
+diff --git a/src/intention.js b/src/intention.js
+new file mode 100644
+index 0000000..5ea5845
+--- /dev/null
++++ b/src/intention.js
+@@ -0,0 +1,247 @@
++'use strict';
++/**
++ * M107 — the day's ONE process intention.
++ *
++ * Saved Ep28: "you can set one clear rule for the day ... keep it as one simple sentence,
++ * and you want to make it process-oriented. You want to make it behavioral. You want to
++ * make it so that it's within your control. You can't say stupid stuff like 'Today, I'm
++ * going to make $5,000 from the market.' No, that's outside of your control ... that's an
++ * outcome-focused goal, which only happens as a byproduct of you following the process."
++ * Worked examples: "Today I follow my plan", "Today I will take only A+ setups", "Today I
++ * will journal every trade", "Today I will not revenge trade."
++ *
++ * The app cannot judge whether free text is process-oriented, so it does not pretend to.
++ * A curated template is labelled as the saved example it is; free text is stored as
++ * UNVERIFIED with the cues a bounded classifier actually found; and a money/profit target
++ * (an amount AND an outcome verb in the same sentence) is REFUSED, because the episode is
++ * unambiguous that it is worse than no intention at all: it sets an outcome target that
++ * pressures sizing. This module has NO permission authority — it never admits, refuses,
++ * scores or gates a trade, and it never rewrites journal text. Absence is never a failure
++ * and a recorded intention is never evidence that it was followed.
++ */
++const crypto = require('crypto');
++const VERSION = 'intention-v1';
++const CHAR_MAX = 120;
++/** The four worked examples from the episode, kept verbatim as curated choices. */
++const TEMPLATES = [
++  { id: 'follow_plan', text: 'Today I follow my plan', label: 'Follow my plan' },
++  { id: 'a_plus_only', text: 'Today I will take only A+ setups', label: 'A+ setups only' },
++  { id: 'journal_every_trade', text: 'Today I will journal every trade', label: 'Journal every trade' },
++  { id: 'no_revenge', text: 'Today I will not revenge trade', label: 'No revenge trade' },
++];
++const BASIS = 'One same-day process intention recorded by the trader: a curated saved example or free text kept UNVERIFIED with the cues the bounded classifier found. Not a readiness gate, not verified discipline or plan adherence, no score, no permission over entries/signals/risk/grade/core, and never proof that the intention was followed. A money/profit target is refused here; the app does not judge free text in general.';
++
++/* A bounded, explainable classifier. These are the app's own cues, not a reading of the
++ * trader's mind: an amount and an outcome verb in the SAME sentence is the one pairing the
++ * episode names, so that is the one refusal. Everything else is a label, never a verdict. */
++const AMOUNT = /(?:[$€£]\s?\d[\d,.]*)|(?:\b\d[\d,.]*\s?(?:usd|eur|gbp|dollars?|euros?|pounds?|naira|k)\b)|(?:\b\d+(?:\.\d+)?\s?%)/i;
++const OUTCOME_VERB = /\b(make|made|earn|earned|win|won|winnings?|gain|gains|bank|profit|profits|profit(?:ing)?|hit|hits|reach|reaches|turn\s+\S+\s+into|finish|end)\b/i;
++const OUTCOME_LANGUAGE = /\b(green day|red day|win rate|winrate|profitable day|beat the market|market will|price will|will go up|will go down|guaranteed|predict|prediction|expect\s+to\s+make)\b/i;
++const PREDICTION = /\b(will\s+(?:go|rise|fall|drop|moon|pump)|is\s+going\s+to\s+(?:go|rise|fall|drop)|market\s+will|price\s+will)\b/i;
++const CONTROL_LANGUAGE = /\b(calm|patient|disciplined|focused|no\s+fomo|not\s+revenge|follow\s+my\s+plan|journal|wait|only\s+a\+|respect\s+my\s+stop|risk\s+only)\b/i;
++const sentences = (t) => t.split(/[.!?]+/).map((s) => s.trim()).filter(Boolean);
++
++function invalid(message, status = 400) { return Object.assign(new Error(message), { code: 'intention_invalid', status }); }
++
++/** One single-line sentence, bounded; the episode asks for "one simple sentence". */
++function text(value) {
++  if (value === null) return null;
++  if (typeof value !== 'string' || !value.trim() || value.length > CHAR_MAX || /[\x00-\x1f\x7f]/.test(value)) throw invalid(`Write one single-line intention up to ${CHAR_MAX} characters.`);
++  return value.normalize('NFC').trim();
++}
++
++/** Deterministic classification: what the app actually found, nothing more. */
++function classify(value) {
++  const t = typeof value === 'string' ? value : '';
++  const parts = sentences(t);
++  /* Only an ASSERTED target is refused. A sentence that negates the outcome (“I will not
++   * turn a $500 loss into a revenge trade”) is process language and is only warned about,
++   * so the one refusal stays the case the episode actually names. */
++  const asserted = (s) => AMOUNT.test(s) && OUTCOME_VERB.test(s) && !/\b(not|never|avoid|without|n't)\b/i.test(s);
++  const moneyTargets = parts.filter(asserted).length;
++  const cues = {
++    sentences: parts.length,
++    money_target_sentences: moneyTargets,
++    outcome_language: OUTCOME_LANGUAGE.test(t),
++    prediction_language: PREDICTION.test(t),
++    control_language: CONTROL_LANGUAGE.test(t),
++    chars: t.length,
++  };
++  const warnings = [];
++  if (moneyTargets) throw Object.assign(invalid('That is an outcome goal: it names an amount and an outcome in the same sentence. The saved rule asks for one process, behavioral rule within your control — “Today I follow my plan”, “Today I will take only A+ setups”, “Today I will journal every trade”, “Today I will not revenge trade”. The app will not store a money target as your intention (journal text is untouched).'), { code: 'intention_outcome_target' });
++  const framing = cues.outcome_language || cues.prediction_language ? 'outcome_language' : 'unverified_free_text';
++  if (cues.outcome_language) warnings.push('outcome_language: this reads as an outcome rather than a behavior. Outcomes are a byproduct of the process; the app stores your words as unverified.');
++  if (cues.prediction_language) warnings.push('prediction_language: the app does not verify market predictions or treat them as a plan.');
++  if (cues.sentences > 1) warnings.push('multiple_sentences: the saved rule asks for ONE simple sentence for the day.');
++  if (cues.chars > 90) warnings.push('long_text: kept as written, but a one-line rule is easier to hold to.');
++  if (framing === 'unverified_free_text') warnings.push('not_process_verified: free text is not machine-checkable, so the app does not label it process-oriented — only the saved templates carry that label.');
++  return { framing, cues, warnings };
++}
++function warningsFor(framing, cues) {
++  const out = [];
++  if (!cues || typeof cues !== 'object') return ['cues_unavailable: the recorded cues cannot be read back, so nothing is inferred.'];
++  if (framing === 'outcome_language') out.push('outcome_language: this reads as an outcome rather than a behavior. Outcomes are a byproduct of the process; the app stores your words as unverified.');
++  if (cues.prediction_language) out.push('prediction_language: the app does not verify market predictions or treat them as a plan.');
++  if (cues.sentences > 1) out.push('multiple_sentences: the saved rule asks for ONE simple sentence for the day.');
++  if (cues.chars > 90) out.push('long_text: kept as written, but a one-line rule is easier to hold to.');
++  if (framing === 'unverified_free_text') out.push('not_process_verified: free text is not machine-checkable, so the app does not label it process-oriented — only the saved templates carry that label.');
++  return out;
++}
++const templateById = (id) => TEMPLATES.find((t) => t.id === id) || null;
++
++/** Body is exactly one of a template id or free text, plus the displayed revision. */
++function input(body) {
++  const allowed = ['template', 'intention', 'revision'];
++  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some((k) => !allowed.includes(k)) || typeof body.revision !== 'string' || !/^[a-f0-9]{64}$/.test(body.revision)) throw invalid('Send the displayed revision and either a saved template id or your own one-line intention; no caller clock, day, source or owner authority is accepted.');
++  const hasTemplate = Object.hasOwn(body, 'template') && body.template !== null;
++  const hasText = Object.hasOwn(body, 'intention') && body.intention !== null;
++  if (hasTemplate === hasText) throw invalid('Choose ONE saved template or write your own intention — not both, and not neither.');
++  if (hasTemplate) {
++    const t = templateById(body.template);
++    if (!t) throw invalid('Unknown saved template.');
++    const c = classify(t.text);
++    return { template: t.id, text: t.text, framing: 'process_template', cues: c.cues, revision: body.revision };
++  }
++  const value = text(body.intention);
++  const c = classify(value);
++  return { template: null, text: value, framing: c.framing === 'process_template' ? 'unverified_free_text' : c.framing, cues: c.cues, revision: body.revision };
++}
++
++const id = (n) => Number.isSafeInteger(n) && n > 0;
++const hash = (v) => crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
++const Clock = (s, o) => require('./process-outcomes').clock(s, o);
++const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
++function dateKey(value) {
++  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Clock(value + 'T00:00:00.000Z', { canonical: true }) === null) throw invalid('Use a valid UTC calendar date.');
++  return value;
++}
++function dayKey(value) {
++  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Clock(value + 'T00:00:00.000Z', { canonical: true }) === null) throw invalid('Use a valid UTC calendar date (YYYY-MM-DD).');
++  return value;
++}
++function publicRow(row) {
++  if (!row) return null;
++  try {
++    if (!['human_declared', 'imported_unverified'].includes(row.source) || row.schema_version !== VERSION || !id(row.account_key) || (row.account_id !== null && row.account_id !== row.account_key) || !id(row.version) || Clock(row.recorded_at, { canonical: true }) === null || typeof row.day !== 'string') throw invalid('Unavailable daily intention record.');
++    const value = text(row.text);
++    const tpl = row.template_id ? templateById(row.template_id) : null;
++    if (row.framing === 'process_template' && (!tpl || tpl.text !== value)) throw invalid('Unavailable template intent.');
++    if (!['process_template', 'unverified_free_text', 'outcome_language'].includes(row.framing)) throw invalid('Unavailable intention framing.');
++    let cues = null; try { cues = row.cues_json ? JSON.parse(row.cues_json) : null; } catch { cues = null; }
++    return { id: row.id, account_id: row.account_id, account_key: row.account_key, day: row.day || null, version: Number(row.version), state: row.source === 'imported_unverified' ? 'imported_unverified' : 'recorded', template: tpl ? tpl.id : null, text: value, framing: row.framing, cues, warnings: row.source === 'imported_unverified' ? ['imported_unverified: restored from a backup file, so it is an archive of someone\'s words, never a recorded commitment of this account.'] : warningsFor(row.framing, cues), source: row.source, recorded_at: row.recorded_at, historical: row.historical_json ? JSON.parse(row.historical_json) : null, authority: 'none', broker_verified: false };
++  } catch { return { id: row.id, account_key: row.account_key, day: row.day || null, version: null, state: 'unavailable', template: null, text: null, framing: null, cues: null, warnings: ['unavailable: the stored intention cannot be read back, so nothing is inferred.'], source: 'unavailable', recorded_at: null, authority: 'none', broker_verified: false }; }
++}
++async function owned(store, userId, accountId) {
++  if (!['string', 'number'].includes(typeof accountId) || (typeof accountId === 'string' && !/^[1-9]\d*$/.test(accountId)) || !id(Number(accountId))) throw invalid('Account not found.', 404);
++  const a = await store.prepare('SELECT * FROM accounts WHERE user_id=? AND id=?').get(userId, Number(accountId));
++  if (!a) throw invalid('Account not found.', 404);
++  return a;
++}
++const rowsOn = (store, userId, accountId) => store.prepare('SELECT * FROM daily_intentions WHERE user_id=? AND account_key=? ORDER BY id').all(userId, accountId);
++
++function evaluate(rows, accountId, { nowMs = Date.now(), date = null } = {}) {
++  const today = utcDay(nowMs);
++  let day = today;
++  if (date !== null) {
++    try { dateKey(date); } catch { return { ...empty(accountId, today, today), state: 'unavailable', message: 'Invalid requested date.' }; }
++    day = date;
++  }
++  const all = (rows || []).filter((r) => r && typeof r === 'object');
++  const archives = all.filter((r) => r.source === 'imported_unverified');
++  const human = all.filter((r) => r.source === 'human_declared');
++  const onDay = human.filter((r) => r.day === day);
++  const before = human.filter((r) => typeof r.day === 'string' && r.day !== '' && r.day < day).slice(-1)[0] || null;
++  const base = {
++    schema: VERSION, account_id: accountId, day, today, same_day: day === today, state: 'unrecorded', template: null, text: null,
++    framing: null, cues: null, warnings: [], receipt: null, version: null, templates: TEMPLATES, char_max: CHAR_MAX,
++    authority: 'none', imported_archives: archives.length, last_recorded: before ? publicRow(before) : null,
++    broker_verified: false, service: VERSION, basis: BASIS,
++  };
++  const last = onDay.slice(-1)[0];
++  if (!last) return { ...base, message: day === today ? 'No intention recorded for today. Nothing is carried over from an earlier day, and an unrecorded day is not a failure.' : `No intention was recorded on ${day}. Later words are not copied backwards.` };
++  const receipt = Clock(last.recorded_at, { canonical: true, now: nowMs });
++  if (receipt === null || receipt > nowMs) return { ...base, state: 'unavailable', message: 'The recorded intention receipt cannot be trusted, so nothing is claimed about that day.' };
++  const pub = publicRow(last);
++  if (pub.state === 'unavailable') return { ...base, state: 'unavailable', message: 'The recorded intention cannot be read back, so nothing is claimed about that day.' };
++  return { ...base, state: 'recorded', template: pub.template, text: pub.text, framing: pub.framing, cues: pub.cues, warnings: pub.warnings, receipt: new Date(receipt).toISOString(), version: pub.version, message: pub.framing === 'process_template' ? 'Recorded saved process example for this day.' : 'Recorded free text: unverified, not labelled process-oriented.' };
++}
++const empty = (accountId, day, today) => ({ schema: VERSION, account_id: accountId, day, today, same_day: day === today, state: 'unrecorded', template: null, text: null, framing: null, cues: null, warnings: [], receipt: null, version: null, templates: TEMPLATES, char_max: CHAR_MAX, authority: 'none', imported_archives: 0, last_recorded: null, broker_verified: false, service: VERSION, basis: BASIS });
++
++async function viewOn(store, userId, accountId, { nowMs = Date.now(), date = null } = {}) {
++  const a = await owned(store, userId, accountId), rows = await rowsOn(store, userId, a.id);
++  const v = evaluate(rows, a.id, { nowMs, date });
++  return { account_id: a.id, ...v, history: rows.filter((r) => r.day === v.day).map(publicRow), archives: rows.filter((r) => r.source === 'imported_unverified').map(publicRow), revision: hash([userId, a.id, rows]) };
++}
++async function read(userId, accountId, options) { const { db } = require('./db'); return db.tx(async (tx) => viewOn(db.transactionStore(tx), userId, accountId, options)); }
++async function save(userId, accountId, body, { nowMs = Date.now() } = {}) {
++  const fields = input(body), day = utcDay(nowMs), { db } = require('./db');
++  return db.tx(async (tx) => {
++    const store = db.transactionStore(tx), v = await viewOn(store, userId, accountId, { nowMs, date: day });
++    /* Same-day commitment: the write path pins the server's current UTC day, so an
++     * intention cannot be pre-written for tomorrow or rewritten for yesterday. A
++     * repeated identical choice is a no-op, not a new version. */
++    if (v.state === 'recorded' && v.template === fields.template && v.text === fields.text) return v;
++    if (fields.revision !== v.revision) throw invalid('Day, history or another write changed. Explicitly reload before recording your intention.', 409);
++    const next = (await store.prepare('SELECT MAX(version) v FROM daily_intentions WHERE user_id=? AND account_key=? AND day=?').get(userId, v.account_id, day)).v || 0;
++    await store.prepare('INSERT INTO daily_intentions(user_id,account_id,account_key,day,version,template_id,text,framing,cues_json,source,recorded_at,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
++      .run(userId, v.account_id, v.account_id, day, Number(next) + 1, fields.template, fields.text, fields.framing, JSON.stringify(fields.cues), 'human_declared', new Date(nowMs).toISOString(), VERSION);
++    return viewOn(store, userId, accountId, { nowMs, date: day });
++  });
++}
++async function history(userId, accountId = null, { date = null } = {}) {
++  const { db } = require('./db');
++  if (accountId !== null) await owned(db, userId, accountId);
++  if (date !== null) dayKey(date);
++  const rows = await db.prepare('SELECT * FROM daily_intentions WHERE user_id=?' + (accountId === null ? '' : ' AND account_key=?') + (date === null ? '' : ' AND day=?') + ' ORDER BY day,id').all(...(accountId === null ? [userId] : [userId, Number(accountId)]).concat(date === null ? [] : [date]));
++  return { records: rows.map(publicRow), readonly: true, authority: 'none', broker_verified: false, basis: BASIS };
++}
++/** Readonly day view for the Journal/day surfaces: a historical day shows exactly what was
++ * recorded that day (or that nothing was), never today's words retro-fitted. */
++async function day(userId, accountId, date) { return read(userId, accountId, { date }); }
++function unavailable(reason = 'Daily intention unavailable — not recorded, not inferred, and not a block.') { return { schema: VERSION, account_id: null, day: null, today: utcDay(Date.now()), same_day: false, state: 'unavailable', template: null, text: null, framing: null, cues: null, warnings: ['unavailable: no intention could be read, so nothing is inferred.'], receipt: null, version: null, templates: TEMPLATES, char_max: CHAR_MAX, authority: 'none', imported_archives: 0, last_recorded: null, broker_verified: false, service: VERSION, message: reason, basis: BASIS }; }
++async function optional(userId, accountId, { nowMs = Date.now(), store = null, date = null } = {}) {
++  try { return store ? await viewOn(store, userId, accountId, { nowMs, date }) : await read(userId, accountId, { nowMs, date }); }
++  catch { return unavailable(date === null ? undefined : `No intention can be read for the requested day (${date}): it is not a past-or-today UTC calendar day, so nothing is inferred for it.`); }
++}
++function portable(raw) {
++  const out = { records: [], warnings: [] };
++  if (raw == null) return out;
++  try {
++    if (!raw || raw.version !== 1 || !Array.isArray(raw.records) || raw.records.length > 500) throw invalid('Optional intention history requires version 1 and at most 500 records.');
++    if (raw.unavailable || raw.unavailable_records > 0) out.warnings.push('Original intention history unavailable/omitted; nothing is inferred about those days.');
++    for (const r of raw.records) {
++      try {
++        const original = r.historical || {}, oldClock = original.recorded_at ?? r.recorded_at, oldDay = original.day ?? r.day ?? null;
++        let declared = oldClock;
++        if (oldClock != null && Clock(oldClock, { canonical: true }) === null) { out.warnings.push('Invalid/future original intention receipt omitted, not receiving-clock proof.'); declared = null; }
++        let day = null;
++        if (typeof oldDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(oldDay) && Clock(oldDay + 'T00:00:00.000Z', { canonical: true }) !== null) day = oldDay;
++        else out.warnings.push('Original intention day unknown; the archive is kept without claiming a day.');
++        const value = text(r.intention ?? r.text ?? null);
++        const tpl = r.template ? templateById(r.template) : null;
++        const framing = tpl ? 'process_template' : (r.framing === 'outcome_language' ? 'outcome_language' : (r.framing === 'unverified_free_text' || value ? 'unverified_free_text' : null));
++        if (value === null || framing === null) throw invalid('Empty or unlabelled intention record omitted.');
++        out.records.push({ day, template: tpl ? tpl.id : null, text: tpl ? tpl.text : value, framing, historical: { source: original.source || r.source || null, recorded_at: declared, day, original_version: original.original_version ?? r.version ?? null, original_id: original.original_id ?? r.id ?? null } });
++      } catch (e) { out.warnings.push(e.message || 'Invalid optional intention record omitted.'); }
++    }
++  } catch (e) { out.warnings.push(e.message || 'Optional intention history omitted.'); }
++  out.warnings = out.warnings.slice(0, 20);
++  return out;
++}
++async function exportOwned(userId) {
++  try { const { db } = require('./db'), rows = await db.prepare('SELECT * FROM daily_intentions WHERE user_id=? ORDER BY day,id').all(userId), records = rows.map(publicRow).filter((p) => p.state !== 'unavailable'); return { version: 1, records, unavailable_records: rows.length - records.length }; }
++  catch { return { version: 1, records: [], unavailable: true }; }
++}
++async function importOn(store, userId, parsed, map = {}, fallback = null) {
++  for (const p of parsed.records) {
++    const accountId = map[p.account_id] || fallback;
++    await owned(store, userId, accountId);
++    const next = (await store.prepare('SELECT MAX(version) v FROM daily_intentions WHERE user_id=? AND account_key=? AND day=?').get(userId, accountId, p.day || '')).v || 0;
++    await store.prepare('INSERT INTO daily_intentions(user_id,account_id,account_key,day,version,template_id,text,framing,cues_json,source,recorded_at,historical_json,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
++      .run(userId, accountId, accountId, p.day || '', Number(next) + 1, p.template, p.text, p.framing, JSON.stringify(classifySafe(p.text, p.template)), 'imported_unverified', new Date().toISOString(), JSON.stringify(p.historical), VERSION);
++  }
++}
++function classifySafe(value, templateId) {
++  try { const t = templateId ? templateById(templateId) : null; return classify(t ? t.text : value).cues; } catch { return null; }
++}
++module.exports = { VERSION, CHAR_MAX, TEMPLATES, BASIS, classify, warningsFor, templateById, input, text, id, hash, invalid, dateKey, dayKey, utcDay, publicRow, evaluate, viewOn, read, save, history, day, optional, unavailable, portable, exportOwned, importOn, owned };

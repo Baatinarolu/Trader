@@ -409,6 +409,25 @@ CREATE TABLE IF NOT EXISTS state_gate_answers (
  UNIQUE(user_id,account_key,version)
 );
 CREATE INDEX IF NOT EXISTS idx_state_gate_answers_owner ON state_gate_answers(user_id,account_key,id);
+-- M107 the day's one process intention. Append-only revisions, same-day commitment.
+CREATE TABLE IF NOT EXISTS daily_intentions (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+ account_key INTEGER NOT NULL,
+ day TEXT NOT NULL DEFAULT '',
+ version INTEGER NOT NULL,
+ template_id TEXT,
+ text TEXT NOT NULL,
+ framing TEXT NOT NULL,
+ cues_json TEXT,
+ source TEXT NOT NULL,
+ recorded_at TEXT NOT NULL,
+ historical_json TEXT,
+ schema_version TEXT NOT NULL,
+ UNIQUE(user_id,account_key,day,version)
+);
+CREATE INDEX IF NOT EXISTS idx_daily_intentions_owner ON daily_intentions(user_id,account_key,day,id);
 CREATE TABLE IF NOT EXISTS goals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -836,6 +855,8 @@ async function migrate() {
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS identity_declarations_immutable BEFORE UPDATE ON identity_declarations WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.kind IS OLD.kind AND NEW.period_start IS OLD.period_start AND NEW.period_end IS OLD.period_end AND NEW.version IS OLD.version AND NEW.statement IS OLD.statement AND NEW.identity_snapshot_json IS OLD.identity_snapshot_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Original identity/theme declaration facts immutable'); END`).run();
 
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS state_gate_answers_immutable BEFORE UPDATE ON state_gate_answers WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.version IS OLD.version AND NEW.answers_json IS OLD.answers_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded state-gate answers are immutable'); END`).run();
+
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS daily_intentions_immutable BEFORE UPDATE ON daily_intentions WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.day IS OLD.day AND NEW.version IS OLD.version AND NEW.template_id IS OLD.template_id AND NEW.text IS OLD.text AND NEW.framing IS OLD.framing AND NEW.cues_json IS OLD.cues_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded daily intentions are immutable'); END`).run();
 
   /* M102 backfill. Every strategy that has no version history gets an immutable v1
    * snapshot of the rule set it currently holds, and every trade already linked to it is

@@ -1,5 +1,44 @@
 # TradeJournal Pro
 
+## M107 — one process intention for the day (2026-10-13)
+
+**Dashboard**, the owned **day review** and **Settings** now carry the saved rule from
+the course: *one clear rule for the day — one simple sentence, process-oriented,
+behavioral, within your control.* You pick one of four saved examples (*Today I follow my
+plan*, *Today I will take only A+ setups*, *Today I will journal every trade*, *Today I
+will not revenge trade*) or write your own words. The saved example is the only thing the
+app labels **process-oriented**; your own words are stored **exactly as written** and
+explicitly **unverified**, with the cues the bounded, explainable classifier found
+(sentence count, amounts, outcome/prediction/control wording, length) shown next to them.
+
+The one thing refused is the episode's own anti-example: an **amount and an outcome
+asserted in the same sentence** — *“Today I’m going to make $5,000 from the market”*, *“I
+will make 5% today”* — is refused with a message naming the process alternative, and
+**nothing is stored**. Everything else is recorded as written: *“have a green day”* is
+stored and labelled as reading like an outcome, and *“I will not turn a $500 loss into a
+revenge trade”* is stored with no refusal, because the app does not run sentiment
+analysis and will not pretend to judge your words.
+
+An intention is a **same-day commitment**, never permission: it does not admit, refuse or
+size a trade, does not change risk, caps, routine, the core, grades or history, is never
+scored or tallied for adherence, and is never proof that it was followed. Today only —
+yesterday and tomorrow cannot be written or rewritten, no intention is carried over from
+an earlier day, an identical repeat is a no-op, and a stale displayed revision 409s with
+nothing written. Imported copies are `imported_unverified` archives keeping their original
+day, clock and version as history; they are never the receiving account's recorded
+intention and never displace it. M28's `journal_entries.tomorrow`, M64's morning
+check-in, M89 emotion capture, M105's self-description and M106's fresh in-session gate
+remain separate features.
+
+**M107 232/0 across 9 probes**, actual139-parent additive/restart migration 18/0; every
+prior M106 cohort re-run unchanged (317/1 with one declared M106-only schema negative,
+M105 142/0-equivalent cohorts, changes152/1, opportunities144/1, reviews159/1, behavior113/2,
+process106/2, screenshots223/3, emotions170/0, confluences160/0, execution260/0,
+routine321/0, offline178/0, market325/0, RAW596/156, DECLARED824/4). Ledger
+**132=101 done/3 partial/28 TODO**. Report `analysis/M107-DAILY-INTENTION.md` in the ZIP.
+Next M108/M111/M112; no 70 %, causal/predictive edge, broker/provider/mental/human/
+meditation/pixel/production claim.
+
 ## M106 — fresh in-session four-question state gate (2026-10-13)
 
 **Dashboard** and the owned **day review** now carry the saved pre-entry check: *Am I

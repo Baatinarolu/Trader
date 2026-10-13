@@ -1,0 +1,30 @@
+ok identical plan0, known source rather than missingmoduledefault0
+ok cosmetic/name/pause not experimentunit {"name":"Rename"}
+ok cosmetic/name/pause not experimentunit {"colour":"#abcdef"}
+ok cosmetic/name/pause not experimentunit {"active":0}
+ok cosmetic/name/pause not experimentunit {"name":"Rename","colour":"#abcdef","active":0}
+ok all deltas/named units entry_rules 1
+ok all deltas/named units entry_rules 1
+ok all deltas/named units entry_rules 2
+ok all deltas/named units entry_rules 3
+ok all deltas/named units entry_rules 1
+ok all deltas/named units entry_rules 1
+ok all deltas/named units exit_rules 4
+ok all deltas/named units checklist 2
+ok all deltas/named units risk_rules 1
+ok all deltas/named units risk_rules 3
+ok all deltas/named units description 2
+ok all deltas/named units market_conditions 1
+ok all deltas/named units timeframes 1
+ok all deltas/named units target_r_multiple 1
+ok formatting only/numeric equivalent no new APP unit, not semantic aliasing
+ok simultaneous different fields ALL counted, not just M102 firstchangedfield
+ok malformed source/appbudget unavail, never guessed0 {"entry_rules":"{broken"}
+ok malformed source/appbudget unavail, never guessed0 {"entry_rules":{"x":1}}
+ok malformed source/appbudget unavail, never guessed0 {"entry_rules":[{}]}
+ok malformed source/appbudget unavail, never guessed0 {"entry_rules":["not clipped","not clipped","not c
+ok malformed source/appbudget unavail, never guessed0 {"target_r_multiple":null}
+ok malformed source/appbudget unavail, never guessed0 {"target_r_multiple":"NaN"}
+ok pure diff never mutates strategy rules/defaults/grades/risk
+ok basis clearly APP edit units, not verified independent causal variables
+M104 deterministic rule edit units/cosmetic boundaries: 29 passed, 0 failed

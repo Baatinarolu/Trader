@@ -1,0 +1,19 @@
+DECLARED M64 prerequisite isolation: routine held fulfilled, new first-entry routine capture not exercised. NOT full current policy proof. Original runs/negatives retained.
+ok migration control truly uses prior shipped schema without review/time fields
+ok additive upgrade preserves every original account field
+ok additive upgrade preserves every original trade/price/P&L/emotion field
+ok legacy account time ceiling defaults NULL/OFF, never120
+ok legacy populated review notes remain unacknowledged/NULL, no invented completion
+ok existing caps remain byte-equal on schema upgrade
+ok existing states remain byte-equal on schema upgrade
+ok existing events remain byte-equal on schema upgrade
+ok existing admissions remain byte-equal on schema upgrade
+ok upgrade alone fabricates no manual marker or historical writing violation
+ok second fresh process migration is byte-idempotent for all captured tables
+ok first new-feature read captures actual pending loss NOW, not past entry time
+ok observation does not fabricate journal acknowledgement or entry permission
+ok actual module selects manual marker120/server clock after upgrade
+ok separate restart retains marker/pending writing/original journal byte-for-byte
+ok real second-process restart after deletion still requires captured writing
+ok separate restart remembers explicit writing resolution, with no recreated trade
+M84/M85 migration: 17 passed, 0 failed

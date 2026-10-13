@@ -1,0 +1,64 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 14,
+  "fail": 0,
+  "results": [
+    {
+      "label": "actual owned GET provides record revision even when review unknown",
+      "passed": true
+    },
+    {
+      "label": "actual shown current record is acknowledged atomically",
+      "passed": true
+    },
+    {
+      "label": "financial edit after display gives409, cannot stamp unseen record",
+      "passed": true
+    },
+    {
+      "label": "fresh read exposes changed financial facts/revision and withheld stale review",
+      "passed": true
+    },
+    {
+      "label": "reopened current screen can truthfully review new record",
+      "passed": true
+    },
+    {
+      "label": "later adherence edit cannot reuse earlier displayed version",
+      "passed": true
+    },
+    {
+      "label": "current bad execution inputs cannot retain old good label",
+      "passed": true
+    },
+    {
+      "label": "irrelevant note update does not falsely change execution context revision",
+      "passed": true
+    },
+    {
+      "label": "missing/malformed/stale revision unwaivable no mutation undefined",
+      "passed": true
+    },
+    {
+      "label": "missing/malformed/stale revision unwaivable no mutation null",
+      "passed": true
+    },
+    {
+      "label": "missing/malformed/stale revision unwaivable no mutation []",
+      "passed": true
+    },
+    {
+      "label": "missing/malformed/stale revision unwaivable no mutation 1",
+      "passed": true
+    },
+    {
+      "label": "missing/malformed/stale revision unwaivable no mutation \"short\"",
+      "passed": true
+    },
+    {
+      "label": "missing/malformed/stale revision unwaivable no mutation \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"",
+      "passed": true
+    }
+  ],
+  "scope": "M86 displayed-record freshness: real auth/HTTP/SQL on literal/fixedUTC journals, no legacy/native routine adapter, broker/provider/real-human/pixel/outcome or financial retune proof"
+}

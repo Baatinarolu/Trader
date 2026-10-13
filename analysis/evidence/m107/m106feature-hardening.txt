@@ -1,0 +1,27 @@
+ok two writers holding the same displayed revision produce exactly one record and one 409
+ok the 409 tells the trader to reload rather than silently overwriting the other answer
+ok only one version exists after the race
+ok the immutability guard is declared BEFORE UPDATE only, so declared account deletion still detaches rows
+ok a trader (or a bug) cannot rewrite a recorded answer set or its receipt in place
+ok deleting an account detaches its answers (account_id null) and never deletes the record
+ok a detached account id is a 404 with no invented answers
+ok the retained orphan row is still visible readonly in the owner’s own history
+ok an orphaned row never leaks into another owner’s history or gate
+ok a stored row from an unknown schema version is unavailable, not a pass
+ok the unavailable gate refuses a live entry and claims no pass
+ok removing the foreign row restores the honest reading, which was never rewritten
+ok a store failure during a write is a 503 that claims no receipt and no changed state
+ok the failed write stored nothing and left the previous answers intact
+ok an unreadable store is 503 rather than a fabricated not_adopted/pass
+ok while the store is unreadable the app refuses the live entry instead of claiming a clear state
+ok when the store comes back the honest stored answers are the state again
+ok export publishes owned answers with receipts, keeps detached history and claims no verification
+ok re-importing an owned backup appends copies instead of rewriting the originals
+ok every imported copy is labelled imported_unverified and keeps the original clock as history
+ok imported copies never grant a pass: the state still comes from the trader’s own rows
+ok the trader can record an explicit "not answered now" as the newest row
+ok with archives and an explicit null the account stays adopted and unanswered — never a pass
+ok that adopted-but-unanswered account cannot open a live entry
+ok the journal-only path is still legal for the same account, so history is never held hostage
+ok the whole run left every recorded row intact and append-only
+M106 concurrency/immutability/orphan/store-failure hardening: 26 passed, 0 failed

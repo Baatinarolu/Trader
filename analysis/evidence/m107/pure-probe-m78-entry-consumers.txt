@@ -1,0 +1,106 @@
+ ok   -1 market_shift: selected protected stop is actual candidate/Now/chart source, not a stale wider zone
+ ok   -1 market_shift: immutable entry evidence stores that SAME selected institutional stop
+ ok   -1 market_shift: analyse retains actual 5m target source through Momentum's forwarding
+ ok   -1 market_shift: final candidate, Now, chart plan and chart Now use exactly the same geometry/TF
+ ok   -1 market_shift: scan does not relabel its smaller execution/exit as the 15m request or 4h bias
+ ok   -1 market_shift: revised target geometry never inherits old 99% live probabilities
+Error: Stand down: Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.
+    at admissionError (/home/user/Trader/extracted/tradejournal/src/bots/guardrails.js:280:13)
+    at Object.admit (/home/user/Trader/extracted/tradejournal/src/bots/guardrails.js:318:27)
+    at async /home/user/Trader/analysis/probe-m78-entry-consumers.js:64:19 {
+  status: 409,
+  code: 'guardrail_stop',
+  daily: {
+    date: '2026-10-13',
+    timezone: 'UTC',
+    evaluated_at: '2026-10-13T10:24:20.918Z',
+    account_id: 1,
+    guardrails: {
+      max_risk_pct: 1,
+      max_trades_day: 3,
+      cooldown_min: 30,
+      max_consecutive_losses: 2,
+      daily_profit_limit_pct: null,
+      daily_loss_limit_pct: 3,
+      trade_cap_policy: [Object],
+      size_cap_note: null,
+      basis: 'Default risk rules and the preselected account trade cap (not enough personal data yet).',
+      guardrails: [Object],
+      stats: null,
+      user: [Object],
+      sample_sufficient: false,
+      min_trades_for_personal_guardrails: 30
+    },
+    today: {
+      trades: 0,
+      closed: 0,
+      realised: 0,
+      r_sum: 0,
+      avg_r: 0,
+      loss_streak: 0,
+      balance: 10000,
+      loss_limit: 300,
+      balance_basis: 'day-start realised journal equity'
+    },
+    profit_stop: {
+      enabled: false,
+      limit_pct: null,
+      limit_amount: null,
+      realised_amount: 0,
+      selected_at: '2026-10-13T10:24:20.918Z',
+      balance_basis: 'day-start realised journal equity',
+      timezone: 'UTC'
+    },
+    persistence: {
+      entry_count_basis: 'monotonic observed journal entries plus server admissions, not inferred historical permission',
+      journal_entries: 0,
+      retained_stops: []
+    },
+    breaches: [ [Object] ],
+    status: 'stop',
+    remaining_trades: 3,
+    post_loss: {
+      last_loss_trade_id: null,
+      last_loss_at: null,
+      entry_tf: '5m',
+      entry_tf_required: false,
+      cooldown_until: null,
+      next_candle_until: null
+    },
+    message: 'Stand down: Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.',
+    permission: { allowed: false, can_override: true, state: 'stopped' },
+    session_time: {
+      account_id: 1,
+      advisory: true,
+      evaluated_at: '2026-10-13T10:24:20.918Z',
+      timezone: 'UTC',
+      saved_limit_minutes: null,
+      scope: 'Manual marker only, not measured broker/chart screen time or execution permission',
+      state: 'off',
+      limit_minutes: null,
+      elapsed_minutes: null,
+      started_at: null,
+      ended_at: null,
+      message: 'Session-duration warning is Off (optional).'
+    },
+    post_loss_journal: {
+      pending_count: 0,
+      pending: [],
+      completed_count: 0,
+      timezone: 'UTC',
+      rule_date: '2026-10-13',
+      scope: 'Observed current-day known losses, required writing; not a broker-time entry violation or all historical incomplete journals'
+    },
+    routine: {
+      account_id: 1,
+      state: 'setup_required',
+      complete: false,
+      cycle: null,
+      order: [Array],
+      steps: [],
+      next_step: 'setup',
+      message: 'Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.',
+      scope: 'Personal preparation requirement, not broker-hours or market permission'
+    }
+  }
+}

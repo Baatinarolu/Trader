@@ -1,0 +1,670 @@
+diff --git a/README.md b/README.md
+index eb31ace..7d601de 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,44 @@
+ # TradeJournal Pro
+ 
++## M107 — one process intention for the day (2026-10-13)
++
++**Dashboard**, the owned **day review** and **Settings** now carry the saved rule from
++the course: *one clear rule for the day — one simple sentence, process-oriented,
++behavioral, within your control.* You pick one of four saved examples (*Today I follow my
++plan*, *Today I will take only A+ setups*, *Today I will journal every trade*, *Today I
++will not revenge trade*) or write your own words. The saved example is the only thing the
++app labels **process-oriented**; your own words are stored **exactly as written** and
++explicitly **unverified**, with the cues the bounded, explainable classifier found
++(sentence count, amounts, outcome/prediction/control wording, length) shown next to them.
++
++The one thing refused is the episode's own anti-example: an **amount and an outcome
++asserted in the same sentence** — *“Today I’m going to make $5,000 from the market”*, *“I
++will make 5% today”* — is refused with a message naming the process alternative, and
++**nothing is stored**. Everything else is recorded as written: *“have a green day”* is
++stored and labelled as reading like an outcome, and *“I will not turn a $500 loss into a
++revenge trade”* is stored with no refusal, because the app does not run sentiment
++analysis and will not pretend to judge your words.
++
++An intention is a **same-day commitment**, never permission: it does not admit, refuse or
++size a trade, does not change risk, caps, routine, the core, grades or history, is never
++scored or tallied for adherence, and is never proof that it was followed. Today only —
++yesterday and tomorrow cannot be written or rewritten, no intention is carried over from
++an earlier day, an identical repeat is a no-op, and a stale displayed revision 409s with
++nothing written. Imported copies are `imported_unverified` archives keeping their original
++day, clock and version as history; they are never the receiving account's recorded
++intention and never displace it. M28's `journal_entries.tomorrow`, M64's morning
++check-in, M89 emotion capture, M105's self-description and M106's fresh in-session gate
++remain separate features.
++
++**M107 232/0 across 9 probes**, actual139-parent additive/restart migration 18/0; every
++prior M106 cohort re-run unchanged (317/1 with one declared M106-only schema negative,
++M105 142/0-equivalent cohorts, changes152/1, opportunities144/1, reviews159/1, behavior113/2,
++process106/2, screenshots223/3, emotions170/0, confluences160/0, execution260/0,
++routine321/0, offline178/0, market325/0, RAW596/156, DECLARED824/4). Ledger
++**132=101 done/3 partial/28 TODO**. Report `analysis/M107-DAILY-INTENTION.md` in the ZIP.
++Next M108/M111/M112; no 70 %, causal/predictive edge, broker/provider/mental/human/
++meditation/pixel/production claim.
++
+ ## M106 — fresh in-session four-question state gate (2026-10-13)
+ 
+ **Dashboard** and the owned **day review** now carry the saved pre-entry check: *Am I
+diff --git a/docs/API.md b/docs/API.md
+index 2f0917f..a62bfac 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -1168,3 +1168,55 @@ block the receiving trader. Invalid optional history warns while the financial i
+ stays legal; a real import-store failure rolls that request back atomically; a missing
+ answer store leaves the financial backup legal with an unavailable marker. Settings
+ surfaces the warnings instead of hiding omissions.
++
++## M107 — one process intention for the day
++
++Additive `daily_intentions` append-only revision series: `human_declared` first-party
++rows and `imported_unverified` archives. UPDATE facts immutable (FK nullification the
++only exception); owner deletion cascades, account deletion SET NULL retains the row for
++the owner's own readonly history and never re-attaches it to another account. Not sealed
++against database-admin tampering. Nothing is backfilled from notes, profit, adherence,
++`journal_entries.tomorrow` or legacy journal text, and no intention is ever defaulted or
++carried over to another day.
++
++- `GET /intention?account_id=&date=` live view: account, day (`YYYY-MM-DD`, server UTC),
++  `today`, `same_day`, state (`unrecorded`|`recorded`|`unavailable`), `template`, words,
++  framing (`process_template`|`unverified_free_text`|`outcome_language`), the bounded
++  classifier's own cues, warnings, server `receipt`, `version`, displayed `revision`, the
++  four saved process examples, `char_max`, `imported_archives`, `last_recorded` (history
++  only — never today's intention), `authority:'none'`, `broker_verified:false`, `basis`.
++- `GET /intention/history?account_id=&date=` readonly own rows including detached orphans
++  and imported archives. Omitted account means all own accounts, never another user's.
++- `PUT /intention?account_id=` writes **today only**: `{template}` (one of the four saved
++  examples) or `{intention}` free text, plus the displayed `revision`. No caller
++  clock/day/source/owner/authority is accepted. An identical repeat is a no-op, a stale
++  revision409s with nothing written, and a store failure503s without claiming a receipt.
++  Yesterday and tomorrow cannot be written or rewritten (`dayKey` refuses malformed and
++  future days). Reads embedded in other surfaces (`GET /journal/:date`,
++  `GET /briefing`) carry the same object but answer `unavailable` for a day that cannot
++  be read instead of failing the host surface.
++
++The classifier is bounded and explainable, not an NLP judge: an amount and an outcome
++asserted in the same non-negated sentence (`make $5,000 today`, `make 5%`, `win $1,000`)
++is refused `intention_outcome_target` with **nothing stored** — the episode's own
++anti-example. Other outcome/prediction wording, more than one sentence, over-length text
++and unknown phrasing are stored **exactly as written** with the cues the app found and
++are never labelled process-oriented. The four saved examples
++(`follow_plan`,`a_plus_only`,`journal_every_trade`,`no_revenge`) are the only thing
++labelled `process_template`. An amount inside a negation ("I will not turn a $500 loss
++into a revenge trade") is stored, not refused: the app does not run sentiment analysis.
++
++This is a same-day commitment, not a permission: the module holds no score, percentage,
++adherence tally, readiness or gate over entries/signals/risk/cap/routine/core/grades/
++history, and it never rewrites journal text. M28's `journal_entries.tomorrow` stays the
++next-day reflection field; M64's morning check-in, M89 emotion capture, M105's
++self-description and M106's fresh in-session gate stay separate mechanisms.
++
++Full JSON backup carries `daily_intentions`; restore labels every copy
++`imported_unverified` with the original day/clock/version/id retained as history, so
++restored words never become the receiving account's recorded intention for a day and can
++never displace it. Invalid optional history warns while the financial import stays legal;
++a backup with no intention field is no warning at all; a
++`{version:1,records:[],unavailable:true}` marker warns instead of inventing days. Settings
++surfaces the warnings; the Journal day and the Dashboard briefing render the same object
++the editor writes.
+diff --git a/public/index.html b/public/index.html
+index e402254..07cb606 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -27,6 +27,7 @@
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/identity.js?v={{V}}"></script>
+ <script src="/js/views/state-gate.js?v={{V}}"></script>
++<script src="/js/views/intention.js?v={{V}}"></script>
+ <script src="/js/views/rule-changes.js?v={{V}}"></script>
+ <script src="/js/views/period-reviews.js?v={{V}}"></script>
+ <script src="/js/views/opportunities.js?v={{V}}"></script>
+diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
+index d5e1743..986fcf1 100644
+--- a/public/js/views/dashboard.js
++++ b/public/js/views/dashboard.js
+@@ -35,7 +35,8 @@
+         API.get('/trades', { ...params, limit: 12 }),
+         API.get('/identity/daily/'+Store.isoToday(),{account_id:Store.accountId}).catch(()=>({state:'unavailable'})),
+         API.get('/state-gate',{account_id:Store.accountId}).catch(()=>({state:'unavailable',account_id:null})),
+-      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay,stateGateView]=identityResult;
++        API.get('/intention',{account_id:Store.accountId}).catch(()=>({state:'unavailable',account_id:null})),
++      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay,stateGateView,intentionView]=identityResult;
+       if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;
+       const k = an.kpis;
+       const acc = an.account || Store.account() || {};
+@@ -75,6 +76,7 @@
+       }
+ 
+       if(Views.stateGate)root.appendChild(Views.stateGate.card(stateGateView));
++      if(Views.intention)root.appendChild(Views.intention.card(intentionView));
+       if(Views.identity)root.appendChild(Views.identity.card(identityDay));
+       root.appendChild(Views.sessionTimeCard(briefing?.daily?.session_time || {}));
+       if(Views.lossWritingCard)root.appendChild(Views.lossWritingCard(briefing?.daily?.post_loss_journal || {}));
+diff --git a/public/js/views/intention.js b/public/js/views/intention.js
+new file mode 100644
+index 0000000..5d9b9d1
+--- /dev/null
++++ b/public/js/views/intention.js
+@@ -0,0 +1,105 @@
++/* views/intention.js — M107 the day's ONE process intention.
++ * A same-day commitment the trader writes down: a saved process example or free text
++ * kept explicitly unverified. Never a readiness gate, a score, permission for a trade,
++ * and never proof the intention was followed. */
++(function (global) {
++  'use strict';
++  const Views = global.Views = global.Views || {}, U = global.U;
++  let serial = 0;
++  const ctx = () => ({ user: global.Store.user?.id, account: global.Store.accountId, token: global.API.getToken() });
++  const same = (c) => c.user === global.Store.user?.id && c.account === global.Store.accountId && c.token === global.API.getToken();
++  const FRAMING = { process_template: 'Saved process example', unverified_free_text: 'Your own words — unverified free text', outcome_language: 'Reads as an outcome — recorded as unverified' };
++  const TEMPLATE_LABEL = (id) => (Views.intention.templates().find((t) => t.id === id) || {}).label || id;
++
++  const P = Views.intention = {
++    ctx, same,
++    /** The saved examples. Kept in the view so a stale server cannot blank the labels. */
++    templates() { return P._templates || [{ id: 'follow_plan', text: 'Today I follow my plan', label: 'Follow my plan' }, { id: 'a_plus_only', text: 'Today I will take only A+ setups', label: 'A+ setups only' }, { id: 'journal_every_trade', text: 'Today I will journal every trade', label: 'Journal every trade' }, { id: 'no_revenge', text: 'Today I will not revenge trade', label: 'No revenge trade' }]; },
++    feedback(out) { if (!out?.intention_warnings?.length) return null; return U.h('section', { class: 'sticky-note warn' }, U.h('strong', { text: 'Optional intention history' }), ...out.intention_warnings.map((text) => U.h('p', { class: 'tiny', text }))); },
++    async history(accountId, date) {
++      const context = ctx(), number = ++serial;
++      try {
++        const out = await global.API.get('/intention/history', { account_id: accountId, date: date || undefined });
++        if (!same(context) || number !== serial) return;
++        const body = U.h('div');
++        body.appendChild(U.h('h3', { text: 'Readonly daily-intention history' }));
++        body.appendChild(U.h('p', { class: 'field-note', text: 'Original days, words and receipts retained. Imported copies stay unverified archives and are never this account’s recorded intention for a day; orphaned originals are never re-attached to another account. Nothing here is a score or a judgement of whether you followed it.' }));
++        for (const record of out.records || []) body.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(record, null, 2) }));
++        return global.App.modal({ title: 'Readonly intention history', body, wide: true, actions: [{ label: 'Close readonly history', ghost: true }] });
++      } catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); }
++    },
++    card(v) {
++      const node = U.h('section', { class: 'card', style: 'margin-top:14px', dataset: { intentionCard: 'true' } }), context = ctx();
++      node.appendChild(U.h('h3', { text: 'Today’s process intention — one rule for the day' }));
++      node.appendChild(U.h('p', { class: 'field-note', text: 'Saved rule: make it one simple sentence, process-oriented, behavioral and within your control — “Today I’m going to make $5,000” is an outcome goal, and outcomes only arrive as a byproduct of the process. The app refuses a money target here and never labels free text as process-oriented; it cannot verify that you followed it.' }));
++      if (!v || (v.state === 'unavailable' && v.account_id === null)) { node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'Intention context unavailable — not treated as recorded, failed or carried over. Nothing is inferred from older days, profit or adherence.' })); return node; }
++      const label = v.state === 'recorded' ? (v.framing === 'process_template' ? 'Recorded saved example: “' + v.text + '”' : 'Recorded: “' + v.text + '”') : v.state === 'unavailable' ? 'Recorded words unreadable — nothing claimed for that day' : v.same_day ? 'Not recorded yet today' : 'Nothing was recorded on that day';
++      node.appendChild(U.h('p', { class: 'small', text: 'Current: ' + label + (v.receipt ? ' · server receipt ' + v.receipt : '') + ' · day ' + v.day + ' (UTC)' }));
++      if (v.state === 'recorded') {
++        node.appendChild(U.h('p', { class: 'tiny', text: 'Framing: ' + (FRAMING[v.framing] || v.framing) + (v.template ? ' · template ' + TEMPLATE_LABEL(v.template) : ' · your own words were stored exactly as written') }));
++        for (const w of v.warnings || []) node.appendChild(U.h('p', { class: 'tiny muted', text: '· ' + w }));
++      }
++      if (v.state === 'unrecorded') node.appendChild(U.h('p', { class: 'tiny muted', text: v.same_day ? 'A day with no intention recorded is not a failure, and today’s words are never copied from an earlier day.' : v.message }));
++      if (v.last_recorded) node.appendChild(U.h('p', { class: 'tiny muted', text: `Last recorded intention: ${v.last_recorded.day} — “${v.last_recorded.text}”. Shown as history only; it is NOT today’s intention and is never carried over.` }));
++      if (v.imported_archives) node.appendChild(U.h('p', { class: 'tiny muted', text: `${v.imported_archives} imported intention record(s) restored as unverified archives; they never count as this account’s recorded day.` }));
++      node.appendChild(U.h('p', { class: 'tiny muted', text: 'Authority: none. This intention does not admit, refuse or size a trade, does not change risk/grades/core and is never proof that it was followed.' }));
++      if (v.state === 'recorded' && v.day === v.today) node.appendChild(U.h('button', { class: 'btn sm primary', type: 'button', dataset: { intentionEdit: 'true' }, text: 'Change today’s intention', onclick: () => { if (!same(context)) return global.App.toast('Workspace/account/session changed; reopen this account’s own intention.', 'err'); return P.edit(); } }));
++      else if (v.day === v.today) node.appendChild(U.h('button', { class: 'btn sm primary', type: 'button', dataset: { intentionEdit: 'true' }, text: v.state === 'recorded' ? 'Change today’s intention' : 'Record today’s intention', onclick: () => { if (!same(context)) return global.App.toast('Workspace/account/session changed; reopen this account’s own intention.', 'err'); return P.edit(); } }));
++      else node.appendChild(U.h('p', { class: 'tiny muted', text: 'A past day is readonly: an intention is a same-day commitment and cannot be written for yesterday or tomorrow.' }));
++      node.appendChild(U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { intentionHistory: 'true' }, text: 'Review readonly intention history', onclick: () => { if (!same(context)) return; return P.history(context.account, null); } }));
++      return node;
++    },
++    async edit() {
++      const context = ctx(), number = ++serial; let view;
++      try { view = await global.API.get('/intention', { account_id: context.account }); }
++      catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); return; }
++      if (!same(context) || number !== serial || view.account_id !== Number(context.account)) return;
++      P._templates = view.templates || P.templates();
++      const body = U.h('div'); let alive = true, busy = false, stale = false;
++      const valid = () => alive && same(context) && number === serial && body.isConnected;
++      let pick = view.state === 'recorded' && view.template ? view.template : '';
++      function draw() {
++        body.replaceChildren();
++        body.appendChild(U.h('p', { class: 'field-note', text: `Account #${view.account_id} · day ${view.day} (UTC, server-pinned) · ${view.state === 'recorded' ? 'recorded' : 'not recorded yet'}. Today only: an intention cannot be pre-written for tomorrow or rewritten for an earlier day, and these words never change finance, risk, grades, routine or the core.` }));
++        for (const t of P.templates()) {
++          const radio = U.h('input', { type: 'radio', name: 'intention-pick', dataset: { intentionTemplate: t.id }, value: t.id });
++          if (pick === t.id) radio.checked = true;
++          radio.addEventListener('change', () => { pick = t.id; input.disabled = true; refresh(); });
++          body.appendChild(U.h('label', { class: 'row gap-8' }, radio, U.h('span', { text: '“' + t.text + '” (saved example)' })));
++        }
++        const custom = U.h('input', { type: 'radio', name: 'intention-pick', dataset: { intentionCustom: 'true' } });
++        if (pick === '') custom.checked = true;
++        body.appendChild(U.h('label', { class: 'row gap-8' }, custom, U.h('span', { text: 'My own words (stored unverified — the app will not call them process-oriented)' })));
++        const input = U.h('input', { type: 'text', maxlength: view.char_max || 120, dataset: { intentionText: 'true' }, value: pick === '' ? (view.text || '') : '', placeholder: 'One simple sentence, within your control' });
++        custom.addEventListener('change', () => { if (custom.checked) { pick = ''; input.disabled = false; input.focus(); } });
++        input.disabled = pick !== '';
++        body.appendChild(U.h('label', { class: 'field' }, U.h('span', { text: 'One sentence for today' }), input));
++        body.appendChild(U.h('p', { class: 'tiny muted', text: 'Refused here by design: an amount and an outcome in the same sentence (“make $5,000 today”, “win 5%”). Journal text is untouched — this is only the intention field. Everything else is stored as written, with the cues the app found, and never as a score.' }));
++        const save = U.h('button', { class: 'btn sm primary', type: 'button', dataset: { intentionSave: 'true' }, text: 'Record today’s intention', onclick: async () => {
++          if (!valid() || busy) return global.App.toast('Workspace/account/session/editor changed; reopen.', 'err');
++          const payload = pick ? { template: pick, revision: view.revision } : { intention: input.value, revision: view.revision };
++          busy = true; disable();
++          try { const out = await global.API.put('/intention?account_id=' + context.account, payload); if (!valid()) return; view = out; stale = false; pick = out.template || ''; draw(); global.Store.invalidate(); global.App.toast('Intention recorded for today. No trade permission, risk or grade changed.', 'ok'); }
++          catch (e) { if (valid()) { stale = e.status === 409; global.App.toast(e.message, 'err'); } }
++          finally { busy = false; if (valid()) disable(); }
++        } });
++        const reload = U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { intentionReload: 'true' }, text: 'Reload today’s record (discard unsaved pick)', onclick: async () => {
++          if (!valid() || busy) return; busy = true; disable();
++          try { const out = await global.API.get('/intention', { account_id: context.account }); if (!valid()) return; view = out; P._templates = out.templates || P._templates; pick = out.template || ''; stale = false; draw(); }
++          catch (e) { if (valid()) global.App.toast(e.message, 'err'); }
++          finally { busy = false; if (valid()) disable(); }
++        } });
++        body.appendChild(save); body.appendChild(reload);
++        const details = U.h('details'); details.appendChild(U.h('summary', { text: 'Retained records for this day' }));
++        for (const d of view.history || []) details.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(d, null, 2) }));
++        body.appendChild(details);
++      }
++      function disable() { body.querySelector('[data-intention-save]').disabled = busy || stale; body.querySelector('[data-intention-reload]').disabled = busy; }
++      function refresh() { if (valid()) disable(); }
++      draw();
++      const modal = global.App.modal({ title: 'Today’s process intention', body, wide: true, onClose: () => { alive = false; }, actions: [{ label: 'Close — no permission inferred', ghost: true }] });
++      disable();
++      return modal;
++    },
++  };
++})(window);
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 1135f22..905f5bd 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -180,6 +180,7 @@
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+     if(Views.behaviorDays)body.prepend(Views.behaviorDays.card(day.behavior_days));
+     if(Views.stateGate)body.prepend(Views.stateGate.card(day.state_gate));
++    if(Views.intention)body.prepend(Views.intention.card(day.daily_intention));
+     if(Views.identity)body.prepend(Views.identity.card(day.identity_context));
+     if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index f6cc7ee..b0ea72a 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -151,7 +151,7 @@
+               const d = await API.post('/import/csv', { csv, account_id: U.$('#im-account', w).value });
+               if(!currentMediaPane())return;
+               out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)out.appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)out.appendChild(gateHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)out.appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)out.appendChild(gateHistory);const intentionHistory=Views.intention?.feedback(d);if(intentionHistory)out.appendChild(intentionHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
+               Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length||d.state_gate_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           });
+@@ -176,7 +176,7 @@
+                 const d = await API.post('/import/json', { data });
+                 if(!currentMediaPane()||attempt!==jsonRead)return;
+                 U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)U.$('#ex-out',w).appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)U.$('#ex-out',w).appendChild(gateHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
++                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)U.$('#ex-out',w).appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)U.$('#ex-out',w).appendChild(gateHistory);const intentionHistory=Views.intention?.feedback(d);if(intentionHistory)U.$('#ex-out',w).appendChild(intentionHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
+                 await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length||d.state_gate_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length&&!d.review_warnings?.length&&!d.opportunity_warnings?.length&&!d.rule_change_warnings?.length&&!d.identity_warnings?.length&&!d.state_gate_warnings?.length)global.App.refresh();
+               } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+             };
+diff --git a/src/db.js b/src/db.js
+index bef10ce..4d4448c 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -409,6 +409,25 @@ CREATE TABLE IF NOT EXISTS state_gate_answers (
+  UNIQUE(user_id,account_key,version)
+ );
+ CREATE INDEX IF NOT EXISTS idx_state_gate_answers_owner ON state_gate_answers(user_id,account_key,id);
++-- M107 the day's one process intention. Append-only revisions, same-day commitment.
++CREATE TABLE IF NOT EXISTS daily_intentions (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
++ account_key INTEGER NOT NULL,
++ day TEXT NOT NULL DEFAULT '',
++ version INTEGER NOT NULL,
++ template_id TEXT,
++ text TEXT NOT NULL,
++ framing TEXT NOT NULL,
++ cues_json TEXT,
++ source TEXT NOT NULL,
++ recorded_at TEXT NOT NULL,
++ historical_json TEXT,
++ schema_version TEXT NOT NULL,
++ UNIQUE(user_id,account_key,day,version)
++);
++CREATE INDEX IF NOT EXISTS idx_daily_intentions_owner ON daily_intentions(user_id,account_key,day,id);
+ CREATE TABLE IF NOT EXISTS goals (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -837,6 +856,8 @@ async function migrate() {
+ 
+   await db.prepare(`CREATE TRIGGER IF NOT EXISTS state_gate_answers_immutable BEFORE UPDATE ON state_gate_answers WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.version IS OLD.version AND NEW.answers_json IS OLD.answers_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded state-gate answers are immutable'); END`).run();
+ 
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS daily_intentions_immutable BEFORE UPDATE ON daily_intentions WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.day IS OLD.day AND NEW.version IS OLD.version AND NEW.template_id IS OLD.template_id AND NEW.text IS OLD.text AND NEW.framing IS OLD.framing AND NEW.cues_json IS OLD.cues_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded daily intentions are immutable'); END`).run();
++
+   /* M102 backfill. Every strategy that has no version history gets an immutable v1
+    * snapshot of the rule set it currently holds, and every trade already linked to it is
+    * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in
+diff --git a/src/intention.js b/src/intention.js
+new file mode 100644
+index 0000000..3bbf5b9
+--- /dev/null
++++ b/src/intention.js
+@@ -0,0 +1,256 @@
++'use strict';
++/**
++ * M107 — the day's ONE process intention.
++ *
++ * Saved Ep28: "you can set one clear rule for the day ... keep it as one simple sentence,
++ * and you want to make it process-oriented. You want to make it behavioral. You want to
++ * make it so that it's within your control. You can't say stupid stuff like 'Today, I'm
++ * going to make $5,000 from the market.' No, that's outside of your control ... that's an
++ * outcome-focused goal, which only happens as a byproduct of you following the process."
++ * Worked examples: "Today I follow my plan", "Today I will take only A+ setups", "Today I
++ * will journal every trade", "Today I will not revenge trade."
++ *
++ * The app cannot judge whether free text is process-oriented, so it does not pretend to.
++ * A curated template is labelled as the saved example it is; free text is stored as
++ * UNVERIFIED with the cues a bounded classifier actually found; and a money/profit target
++ * (an amount AND an outcome verb in the same sentence) is REFUSED, because the episode is
++ * unambiguous that it is worse than no intention at all: it sets an outcome target that
++ * pressures sizing. This module has NO permission authority — it never admits, refuses,
++ * scores or gates a trade, and it never rewrites journal text. Absence is never a failure
++ * and a recorded intention is never evidence that it was followed.
++ */
++const crypto = require('crypto');
++const VERSION = 'intention-v1';
++const CHAR_MAX = 120;
++/** The four worked examples from the episode, kept verbatim as curated choices. */
++const TEMPLATES = [
++  { id: 'follow_plan', text: 'Today I follow my plan', label: 'Follow my plan' },
++  { id: 'a_plus_only', text: 'Today I will take only A+ setups', label: 'A+ setups only' },
++  { id: 'journal_every_trade', text: 'Today I will journal every trade', label: 'Journal every trade' },
++  { id: 'no_revenge', text: 'Today I will not revenge trade', label: 'No revenge trade' },
++];
++const BASIS = 'One same-day process intention recorded by the trader: a curated saved example or free text kept UNVERIFIED with the cues the bounded classifier found. Not a readiness gate, not verified discipline or plan adherence, no score, no permission over entries/signals/risk/grade/core, and never proof that the intention was followed. A money/profit target is refused here; the app does not judge free text in general.';
++
++/* A bounded, explainable classifier. These are the app's own cues, not a reading of the
++ * trader's mind: an amount and an outcome verb in the SAME sentence is the one pairing the
++ * episode names, so that is the one refusal. Everything else is a label, never a verdict. */
++const AMOUNT = /(?:[$€£]\s?\d[\d,.]*)|(?:\b\d[\d,.]*\s?(?:usd|eur|gbp|dollars?|euros?|pounds?|naira|k)\b)|(?:\b\d+(?:\.\d+)?\s?%)/i;
++const OUTCOME_VERB = /\b(make|made|earn|earned|win|won|winnings?|gain|gains|bank|profit|profits|profit(?:ing)?|hit|hits|reach|reaches|turn\s+\S+\s+into|finish|end)\b/i;
++const OUTCOME_LANGUAGE = /\b(green day|red day|win rate|winrate|profitable day|beat the market|market will|price will|will go up|will go down|guaranteed|predict|prediction|expect\s+to\s+make)\b/i;
++const PREDICTION = /\b(will\s+(?:go|rise|fall|drop|moon|pump)|is\s+going\s+to\s+(?:go|rise|fall|drop)|market\s+will|price\s+will)\b/i;
++const CONTROL_LANGUAGE = /\b(calm|patient|disciplined|focused|no\s+fomo|not\s+revenge|follow\s+my\s+plan|journal|wait|only\s+a\+|respect\s+my\s+stop|risk\s+only)\b/i;
++const sentences = (t) => t.split(/[.!?]+/).map((s) => s.trim()).filter(Boolean);
++
++function invalid(message, status = 400) { return Object.assign(new Error(message), { code: 'intention_invalid', status }); }
++
++/** One single-line sentence, bounded; the episode asks for "one simple sentence". */
++function text(value) {
++  if (value === null) return null;
++  if (typeof value !== 'string' || !value.trim() || value.length > CHAR_MAX || /[\x00-\x1f\x7f]/.test(value)) throw invalid(`Write one single-line intention up to ${CHAR_MAX} characters.`);
++  return value.normalize('NFC').trim();
++}
++
++/** Deterministic classification: what the app actually found, nothing more. */
++function classify(value) {
++  const t = typeof value === 'string' ? value : '';
++  const parts = sentences(t);
++  /* Only an ASSERTED target is refused. A sentence that negates the outcome (“I will not
++   * turn a $500 loss into a revenge trade”) is process language and is only warned about,
++   * so the one refusal stays the case the episode actually names. */
++  const asserted = (s) => AMOUNT.test(s) && OUTCOME_VERB.test(s) && !/\b(not|never|avoid|without|n't)\b/i.test(s);
++  const moneyTargets = parts.filter(asserted).length;
++  const cues = {
++    sentences: parts.length,
++    money_target_sentences: moneyTargets,
++    outcome_language: OUTCOME_LANGUAGE.test(t),
++    prediction_language: PREDICTION.test(t),
++    control_language: CONTROL_LANGUAGE.test(t),
++    chars: t.length,
++  };
++  const warnings = [];
++  if (moneyTargets) throw Object.assign(invalid('That is an outcome goal: it names an amount and an outcome in the same sentence. The saved rule asks for one process, behavioral rule within your control — “Today I follow my plan”, “Today I will take only A+ setups”, “Today I will journal every trade”, “Today I will not revenge trade”. The app will not store a money target as your intention (journal text is untouched).'), { code: 'intention_outcome_target' });
++  const framing = cues.outcome_language || cues.prediction_language ? 'outcome_language' : 'unverified_free_text';
++  if (cues.outcome_language) warnings.push('outcome_language: this reads as an outcome rather than a behavior. Outcomes are a byproduct of the process; the app stores your words as unverified.');
++  if (cues.prediction_language) warnings.push('prediction_language: the app does not verify market predictions or treat them as a plan.');
++  if (cues.sentences > 1) warnings.push('multiple_sentences: the saved rule asks for ONE simple sentence for the day.');
++  if (cues.chars > 90) warnings.push('long_text: kept as written, but a one-line rule is easier to hold to.');
++  if (framing === 'unverified_free_text') warnings.push('not_process_verified: free text is not machine-checkable, so the app does not label it process-oriented — only the saved templates carry that label.');
++  return { framing, cues, warnings };
++}
++function warningsFor(framing, cues) {
++  const out = [];
++  if (!cues || typeof cues !== 'object') return ['cues_unavailable: the recorded cues cannot be read back, so nothing is inferred.'];
++  if (framing === 'outcome_language') out.push('outcome_language: this reads as an outcome rather than a behavior. Outcomes are a byproduct of the process; the app stores your words as unverified.');
++  if (cues.prediction_language) out.push('prediction_language: the app does not verify market predictions or treat them as a plan.');
++  if (cues.sentences > 1) out.push('multiple_sentences: the saved rule asks for ONE simple sentence for the day.');
++  if (cues.chars > 90) out.push('long_text: kept as written, but a one-line rule is easier to hold to.');
++  if (framing === 'unverified_free_text') out.push('not_process_verified: free text is not machine-checkable, so the app does not label it process-oriented — only the saved templates carry that label.');
++  return out;
++}
++const templateById = (id) => TEMPLATES.find((t) => t.id === id) || null;
++
++/** Body is exactly one of a template id or free text, plus the displayed revision. */
++function input(body) {
++  const allowed = ['template', 'intention', 'revision'];
++  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some((k) => !allowed.includes(k)) || typeof body.revision !== 'string' || !/^[a-f0-9]{64}$/.test(body.revision)) throw invalid('Send the displayed revision and either a saved template id or your own one-line intention; no caller clock, day, source or owner authority is accepted.');
++  const hasTemplate = Object.hasOwn(body, 'template') && body.template !== null;
++  const hasText = Object.hasOwn(body, 'intention') && body.intention !== null;
++  if (hasTemplate === hasText) throw invalid('Choose ONE saved template or write your own intention — not both, and not neither.');
++  if (hasTemplate) {
++    const t = templateById(body.template);
++    if (!t) throw invalid('Unknown saved template.');
++    const c = classify(t.text);
++    return { template: t.id, text: t.text, framing: 'process_template', cues: c.cues, revision: body.revision };
++  }
++  const value = text(body.intention);
++  const c = classify(value);
++  return { template: null, text: value, framing: c.framing === 'process_template' ? 'unverified_free_text' : c.framing, cues: c.cues, revision: body.revision };
++}
++
++const id = (n) => Number.isSafeInteger(n) && n > 0;
++const hash = (v) => crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
++const Clock = (s, o) => require('./process-outcomes').clock(s, o);
++const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
++function dateKey(value) {
++  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Clock(value + 'T00:00:00.000Z', { canonical: true }) === null) throw invalid('Use a valid UTC calendar date.');
++  return value;
++}
++/** A requested day is the app's own input. Malformed days and days that have not happened
++ * are refused outright rather than rendered as "nothing recorded". */
++function dayKey(value, { nowMs = Date.now() } = {}) {
++  const shaped = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
++  if (shaped && value > utcDay(nowMs)) throw invalid('A future UTC day cannot be read as a day that happened.');
++  if (!shaped || Clock(value + 'T00:00:00.000Z', { canonical: true }) === null) throw invalid('Use a valid past-or-today UTC calendar date (YYYY-MM-DD).');
++  return value;
++}
++function publicRow(row) {
++  if (!row) return null;
++  try {
++    if (!['human_declared', 'imported_unverified'].includes(row.source) || row.schema_version !== VERSION || !id(row.account_key) || (row.account_id !== null && row.account_id !== row.account_key) || !id(row.version) || Clock(row.recorded_at, { canonical: true }) === null || typeof row.day !== 'string') throw invalid('Unavailable daily intention record.');
++    const value = text(row.text);
++    const tpl = row.template_id ? templateById(row.template_id) : null;
++    if (row.framing === 'process_template' && (!tpl || tpl.text !== value)) throw invalid('Unavailable template intent.');
++    if (!['process_template', 'unverified_free_text', 'outcome_language'].includes(row.framing)) throw invalid('Unavailable intention framing.');
++    let cues = null; try { cues = row.cues_json ? JSON.parse(row.cues_json) : null; } catch { cues = null; }
++    return { id: row.id, account_id: row.account_id, account_key: row.account_key, day: row.day || null, version: Number(row.version), state: row.source === 'imported_unverified' ? 'imported_unverified' : 'recorded', template: tpl ? tpl.id : null, text: value, framing: row.framing, cues, warnings: row.source === 'imported_unverified' ? ['imported_unverified: restored from a backup file, so it is an archive of someone\'s words, never a recorded commitment of this account.'] : warningsFor(row.framing, cues), source: row.source, recorded_at: row.recorded_at, historical: row.historical_json ? JSON.parse(row.historical_json) : null, authority: 'none', broker_verified: false };
++  } catch { return { id: row.id, account_key: row.account_key, day: row.day || null, version: null, state: 'unavailable', template: null, text: null, framing: null, cues: null, warnings: ['unavailable: the stored intention cannot be read back, so nothing is inferred.'], source: 'unavailable', recorded_at: null, authority: 'none', broker_verified: false }; }
++}
++async function owned(store, userId, accountId) {
++  if (!['string', 'number'].includes(typeof accountId) || (typeof accountId === 'string' && !/^[1-9]\d*$/.test(accountId)) || !id(Number(accountId))) throw invalid('Account not found.', 404);
++  const a = await store.prepare('SELECT * FROM accounts WHERE user_id=? AND id=?').get(userId, Number(accountId));
++  if (!a) throw invalid('Account not found.', 404);
++  return a;
++}
++const rowsOn = (store, userId, accountId) => store.prepare('SELECT * FROM daily_intentions WHERE user_id=? AND account_key=? ORDER BY id').all(userId, accountId);
++
++function evaluate(rows, accountId, { nowMs = Date.now(), date = null } = {}) {
++  const today = utcDay(nowMs);
++  let day = today;
++  if (date !== null) {
++    const shaped = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date);
++    if (shaped && date > today) return { ...empty(accountId, date, today), state: 'unavailable', message: 'A future UTC day cannot be read as a day that happened.' };
++    try { dateKey(date); } catch { return { ...empty(accountId, today, today), state: 'unavailable', message: 'Invalid requested date.' }; }
++    day = date;
++  }
++  const all = (rows || []).filter((r) => r && typeof r === 'object');
++  const archives = all.filter((r) => r.source === 'imported_unverified');
++  const human = all.filter((r) => r.source === 'human_declared');
++  const onDay = human.filter((r) => r.day === day);
++  const before = human.filter((r) => typeof r.day === 'string' && r.day !== '' && r.day < day).slice(-1)[0] || null;
++  const base = {
++    schema: VERSION, account_id: accountId, day, today, same_day: day === today, state: 'unrecorded', template: null, text: null,
++    framing: null, cues: null, warnings: [], receipt: null, version: null, templates: TEMPLATES, char_max: CHAR_MAX,
++    authority: 'none', imported_archives: archives.length, last_recorded: before ? publicRow(before) : null,
++    broker_verified: false, service: VERSION, basis: BASIS,
++  };
++  const last = onDay.slice(-1)[0];
++  if (!last) return { ...base, message: day === today ? 'No intention recorded for today. Nothing is carried over from an earlier day, and an unrecorded day is not a failure.' : `No intention was recorded on ${day}. Later words are not copied backwards.` };
++  const receipt = Clock(last.recorded_at, { canonical: true, now: nowMs });
++  if (receipt === null || receipt > nowMs) return { ...base, state: 'unavailable', message: 'The recorded intention receipt cannot be trusted, so nothing is claimed about that day.' };
++  const pub = publicRow(last);
++  if (pub.state === 'unavailable') return { ...base, state: 'unavailable', message: 'The recorded intention cannot be read back, so nothing is claimed about that day.' };
++  return { ...base, state: 'recorded', template: pub.template, text: pub.text, framing: pub.framing, cues: pub.cues, warnings: pub.warnings, receipt: new Date(receipt).toISOString(), version: pub.version, message: pub.framing === 'process_template' ? 'Recorded saved process example for this day.' : 'Recorded free text: unverified, not labelled process-oriented.' };
++}
++const empty = (accountId, day, today) => ({ schema: VERSION, account_id: accountId, day, today, same_day: day === today, state: 'unrecorded', template: null, text: null, framing: null, cues: null, warnings: [], receipt: null, version: null, templates: TEMPLATES, char_max: CHAR_MAX, authority: 'none', imported_archives: 0, last_recorded: null, broker_verified: false, service: VERSION, basis: BASIS });
++
++async function viewOn(store, userId, accountId, { nowMs = Date.now(), date = null } = {}) {
++  /* A requested day is the app's own input: a malformed one is refused here rather than
++   * being dressed up as a day with nothing recorded. */
++  if (date !== null) dayKey(date, { nowMs });
++  const a = await owned(store, userId, accountId), rows = await rowsOn(store, userId, a.id);
++  const v = evaluate(rows, a.id, { nowMs, date });
++  return { account_id: a.id, ...v, history: rows.filter((r) => r.day === v.day).map(publicRow), archives: rows.filter((r) => r.source === 'imported_unverified').map(publicRow), revision: hash([userId, a.id, rows]) };
++}
++async function read(userId, accountId, options) { const { db } = require('./db'); return db.tx(async (tx) => viewOn(db.transactionStore(tx), userId, accountId, options)); }
++async function save(userId, accountId, body, { nowMs = Date.now() } = {}) {
++  const fields = input(body), day = utcDay(nowMs), { db } = require('./db');
++  return db.tx(async (tx) => {
++    const store = db.transactionStore(tx), v = await viewOn(store, userId, accountId, { nowMs, date: day });
++    /* Same-day commitment: the write path pins the server's current UTC day, so an
++     * intention cannot be pre-written for tomorrow or rewritten for yesterday. A
++     * repeated identical choice is a no-op, not a new version. */
++    if (v.state === 'recorded' && v.template === fields.template && v.text === fields.text) return v;
++    if (fields.revision !== v.revision) throw invalid('Day, history or another write changed. Explicitly reload before recording your intention.', 409);
++    const next = (await store.prepare('SELECT MAX(version) v FROM daily_intentions WHERE user_id=? AND account_key=? AND day=?').get(userId, v.account_id, day)).v || 0;
++    await store.prepare('INSERT INTO daily_intentions(user_id,account_id,account_key,day,version,template_id,text,framing,cues_json,source,recorded_at,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
++      .run(userId, v.account_id, v.account_id, day, Number(next) + 1, fields.template, fields.text, fields.framing, JSON.stringify(fields.cues), 'human_declared', new Date(nowMs).toISOString(), VERSION);
++    return viewOn(store, userId, accountId, { nowMs, date: day });
++  });
++}
++async function history(userId, accountId = null, { date = null } = {}) {
++  const { db } = require('./db');
++  if (accountId !== null) await owned(db, userId, accountId);
++  if (date !== null) dayKey(date);
++  const rows = await db.prepare('SELECT * FROM daily_intentions WHERE user_id=?' + (accountId === null ? '' : ' AND account_key=?') + (date === null ? '' : ' AND day=?') + ' ORDER BY day,id').all(...(accountId === null ? [userId] : [userId, Number(accountId)]).concat(date === null ? [] : [date]));
++  return { records: rows.map(publicRow), readonly: true, authority: 'none', broker_verified: false, basis: BASIS };
++}
++/** Readonly day view for the Journal/day surfaces: a historical day shows exactly what was
++ * recorded that day (or that nothing was), never today's words retro-fitted. */
++async function day(userId, accountId, date) { return read(userId, accountId, { date }); }
++function unavailable(reason = 'Daily intention unavailable — not recorded, not inferred, and not a block.') { return { schema: VERSION, account_id: null, day: null, today: utcDay(Date.now()), same_day: false, state: 'unavailable', template: null, text: null, framing: null, cues: null, warnings: ['unavailable: no intention could be read, so nothing is inferred.'], receipt: null, version: null, templates: TEMPLATES, char_max: CHAR_MAX, authority: 'none', imported_archives: 0, last_recorded: null, broker_verified: false, service: VERSION, message: reason, basis: BASIS }; }
++async function optional(userId, accountId, { nowMs = Date.now(), store = null, date = null } = {}) {
++  try { return store ? await viewOn(store, userId, accountId, { nowMs, date }) : await read(userId, accountId, { nowMs, date }); }
++  catch { return unavailable(date === null ? undefined : `No intention can be read for the requested day (${date}): it is not a past-or-today UTC calendar day, so nothing is inferred for it.`); }
++}
++function portable(raw) {
++  const out = { records: [], warnings: [] };
++  if (raw == null) return out;
++  try {
++    if (!raw || raw.version !== 1 || !Array.isArray(raw.records) || raw.records.length > 500) throw invalid('Optional intention history requires version 1 and at most 500 records.');
++    if (raw.unavailable || raw.unavailable_records > 0) out.warnings.push('Original intention history unavailable/omitted; nothing is inferred about those days.');
++    for (const r of raw.records) {
++      try {
++        const original = r.historical || {}, oldClock = original.recorded_at ?? r.recorded_at, oldDay = original.day ?? r.day ?? null;
++        let declared = oldClock;
++        if (oldClock != null && Clock(oldClock, { canonical: true }) === null) { out.warnings.push('Invalid/future original intention receipt omitted, not receiving-clock proof.'); declared = null; }
++        let day = null;
++        if (typeof oldDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(oldDay) && Clock(oldDay + 'T00:00:00.000Z', { canonical: true }) !== null) day = oldDay;
++        else out.warnings.push('Original intention day unknown; the archive is kept without claiming a day.');
++        const value = text(r.intention ?? r.text ?? null);
++        const tpl = r.template ? templateById(r.template) : null;
++        const framing = tpl ? 'process_template' : (r.framing === 'outcome_language' ? 'outcome_language' : (r.framing === 'unverified_free_text' || value ? 'unverified_free_text' : null));
++        if (value === null || framing === null) throw invalid('Empty or unlabelled intention record omitted.');
++        out.records.push({ day, template: tpl ? tpl.id : null, text: tpl ? tpl.text : value, framing, historical: { source: original.source || r.source || null, recorded_at: declared, day, original_version: original.original_version ?? r.version ?? null, original_id: original.original_id ?? r.id ?? null } });
++      } catch (e) { out.warnings.push(e.message || 'Invalid optional intention record omitted.'); }
++    }
++  } catch (e) { out.warnings.push(e.message || 'Optional intention history omitted.'); }
++  out.warnings = out.warnings.slice(0, 20);
++  return out;
++}
++async function exportOwned(userId) {
++  try { const { db } = require('./db'), rows = await db.prepare('SELECT * FROM daily_intentions WHERE user_id=? ORDER BY day,id').all(userId), records = rows.map(publicRow).filter((p) => p.state !== 'unavailable'); return { version: 1, records, unavailable_records: rows.length - records.length }; }
++  catch { return { version: 1, records: [], unavailable: true }; }
++}
++async function importOn(store, userId, parsed, map = {}, fallback = null) {
++  for (const p of parsed.records) {
++    const accountId = map[p.account_id] || fallback;
++    await owned(store, userId, accountId);
++    const next = (await store.prepare('SELECT MAX(version) v FROM daily_intentions WHERE user_id=? AND account_key=? AND day=?').get(userId, accountId, p.day || '')).v || 0;
++    await store.prepare('INSERT INTO daily_intentions(user_id,account_id,account_key,day,version,template_id,text,framing,cues_json,source,recorded_at,historical_json,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
++      .run(userId, accountId, accountId, p.day || '', Number(next) + 1, p.template, p.text, p.framing, JSON.stringify(classifySafe(p.text, p.template)), 'imported_unverified', new Date().toISOString(), JSON.stringify(p.historical), VERSION);
++  }
++}
++function classifySafe(value, templateId) {
++  try { const t = templateId ? templateById(templateId) : null; return classify(t ? t.text : value).cues; } catch { return null; }
++}
++module.exports = { VERSION, CHAR_MAX, TEMPLATES, BASIS, classify, warningsFor, templateById, input, text, id, hash, invalid, dateKey, dayKey, utcDay, publicRow, evaluate, viewOn, read, save, history, day, optional, unavailable, portable, exportOwned, importOn, owned };
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 229f685..defa9dc 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -21,6 +21,7 @@ const PeriodReviews = require('../period-reviews');
+ const RuleChanges = require('../rule-changes');
+ const Identity = require('../identity');
+ const StateGate = require('../state-gate');
++const Intention = require('../intention');
+ const Opportunities = require('../opportunities');
+ const ProcessOutcomes = require('../process-outcomes');
+ const BehaviorDays = require('../behavior-days');
+@@ -653,6 +654,7 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+   briefing.risk_plan.trade_cap_policy = capPolicy;
+   briefing.identity_context=await Identity.optional(req.user.id,acc.id,Guards.dayKey(Date.now()));
+   briefing.state_gate=await StateGate.optional(req.user.id,acc.id);
++  briefing.intention=await Intention.optional(req.user.id,acc.id);
+   briefing.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
+   briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
+   // Briefing amounts are advice, NOT permission. Use the same close-day UTC
+@@ -709,6 +711,11 @@ router.get('/state-gate',requireAuth,stateGateRoute(req=>StateGate.read(req.user
+ router.get('/state-gate/history',requireAuth,stateGateRoute(req=>StateGate.history(req.user.id,req.query.account_id??null)));
+ router.put('/state-gate',requireAuth,stateGateRoute(req=>StateGate.save(req.user.id,req.query.account_id,req.body)));
+ 
++const intentionRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='intention_invalid'||e.code==='intention_outcome_target')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Daily intention unavailable; no finance/permission state changed.'});}};
++router.get('/intention',requireAuth,intentionRoute(req=>Intention.read(req.user.id,req.query.account_id,{date:req.query.date??null})));
++router.get('/intention/history',requireAuth,intentionRoute(req=>Intention.history(req.user.id,req.query.account_id??null,{date:req.query.date??null})));
++router.put('/intention',requireAuth,intentionRoute(req=>Intention.save(req.user.id,req.query.account_id,req.body)));
++
+ router.get('/journal', requireAuth, async (req, res) => {
+   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
+   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
+@@ -747,7 +754,7 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
+   const accountId=account.id;
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
+-  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),state_gate:await StateGate.optional(req.user.id,accountId),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),state_gate:await StateGate.optional(req.user.id,accountId),daily_intention:await Intention.optional(req.user.id,accountId,{date:req.params.date}),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+@@ -1196,6 +1203,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
+     strategy_rule_changes:await RuleChanges.exportOwned(userId),
+     identity_declarations:await Identity.exportOwned(userId),
+     state_gate_answers:await StateGate.exportOwned(userId),
++    daily_intentions:await Intention.exportOwned(userId),
+     opportunity_history:await Opportunities.exportOwned(userId),
+     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
+     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
+@@ -1301,9 +1309,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+ // Actual transaction insert IDs (never raw backup IDs), with optional media
+ // warnings separate from financial parsing. Storage failure rolls back together.
+ function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+-async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null,stateGate=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null,stateGate=null,intentions=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+   for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
+-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);if(stateGate)await StateGate.importOn(store,userId,stateGate,reviewAccounts,reviewFallback);return n;
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);if(stateGate)await StateGate.importOn(store,userId,stateGate,reviewAccounts,reviewFallback);if(intentions)await Intention.importOn(store,userId,intentions,reviewAccounts,reviewFallback);return n;
+ });}
+ 
+ function parseCsv(text) {
+@@ -1330,6 +1338,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
+   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
+   const userId = req.user.id;
+   const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations),stateGate=StateGate.portable(data.state_gate_answers);
++  const intentions=Intention.portable(data.daily_intentions);
+   const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
+   const accountMap = Object.create(null);
+   const instruments = await instrumentMap(userId);
+@@ -1376,9 +1385,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
+       });
+     }
+-    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities,stateGate);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities,stateGate,intentions);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
+-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,state_gate_warnings:stateGate.warnings,opportunity_warnings:opportunities.warnings });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,state_gate_warnings:stateGate.warnings,intention_warnings:intentions.warnings,opportunity_warnings:opportunities.warnings });
+ });
+ 
+ /* ---------------------------------------------------------------- settings */

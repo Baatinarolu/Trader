@@ -1,0 +1,156 @@
+{
+  "app": "/tmp/m107-loose-date/app",
+  "pass": 37,
+  "fail": 0,
+  "results": [
+    {
+      "label": "a first record is version 1 on the server day",
+      "passed": true
+    },
+    {
+      "label": "a recorded intention cannot be edited in place",
+      "passed": true
+    },
+    {
+      "label": "a recorded intention cannot be re-dated to another day",
+      "passed": true
+    },
+    {
+      "label": "two revisions of one day cannot share a version number",
+      "passed": true
+    },
+    {
+      "label": "a second record for the day is version 2 and keeps both rows",
+      "passed": true
+    },
+    {
+      "label": "recording an intention writes nothing else: no trade, journal entry or signal",
+      "passed": true
+    },
+    {
+      "label": "two writers holding one revision produce exactly one record and one refusal",
+      "passed": true
+    },
+    {
+      "label": "the day now has exactly three revisions with the winner newest",
+      "passed": true
+    },
+    {
+      "label": "the refused writer changed nothing",
+      "passed": true
+    },
+    {
+      "label": "a stale revision after a refresh is 409, not silently appended",
+      "passed": true
+    },
+    {
+      "label": "the write contract refuses caller score",
+      "passed": true
+    },
+    {
+      "label": "the write contract refuses caller source",
+      "passed": true
+    },
+    {
+      "label": "the write contract refuses caller owner",
+      "passed": true
+    },
+    {
+      "label": "the write contract refuses caller receipt",
+      "passed": true
+    },
+    {
+      "label": "a 120-character single sentence is accepted",
+      "passed": true
+    },
+    {
+      "label": "121 characters is refused rather than clipped",
+      "passed": true
+    },
+    {
+      "label": "a multi-line intention is refused rather than folded into one sentence",
+      "passed": true
+    },
+    {
+      "label": "another owner’s row is never shown for this account",
+      "passed": true
+    },
+    {
+      "label": "another owner sees only their own rows, never this account’s day",
+      "passed": true
+    },
+    {
+      "label": "a row with a foreign schema version is unavailable, not an invented intention",
+      "passed": true
+    },
+    {
+      "label": "the same row is reported unavailable in the readonly history",
+      "passed": true
+    },
+    {
+      "label": "a row with an unreadable text value is unavailable, not an invented intention",
+      "passed": true
+    },
+    {
+      "label": "the same row is reported unavailable in the readonly history",
+      "passed": true
+    },
+    {
+      "label": "a row with a template whose text was tampered with is unavailable, not an invented intention",
+      "passed": true
+    },
+    {
+      "label": "the same row is reported unavailable in the readonly history",
+      "passed": true
+    },
+    {
+      "label": "a row with an unknown framing is unavailable, not an invented intention",
+      "passed": true
+    },
+    {
+      "label": "the same row is reported unavailable in the readonly history",
+      "passed": true
+    },
+    {
+      "label": "a row with a receipt from the future is unavailable, not an invented intention",
+      "passed": true
+    },
+    {
+      "label": "the same row is reported unavailable in the readonly history",
+      "passed": true
+    },
+    {
+      "label": "removing the corrupt rows restores the honest newest record",
+      "passed": true
+    },
+    {
+      "label": "an imported archive never becomes the account’s recorded intention",
+      "passed": true
+    },
+    {
+      "label": "the imported archive is visible as such in the readonly history",
+      "passed": true
+    },
+    {
+      "label": "a long day keeps every revision and reports the newest",
+      "passed": true
+    },
+    {
+      "label": "the newest revision is the day’s answer even at 20+ records",
+      "passed": true
+    },
+    {
+      "label": "deleting the account detaches the rows instead of destroying the record",
+      "passed": true
+    },
+    {
+      "label": "the owner keeps a readonly own history of the detached rows",
+      "passed": true
+    },
+    {
+      "label": "a detached account can no longer be read as a live account, and nothing is re-attached",
+      "passed": true
+    }
+  ],
+  "scope": "M107 intention hardening: immutability, retention, isolation, CAS: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

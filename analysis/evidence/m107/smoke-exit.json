@@ -1,0 +1,13 @@
+{
+  "exit_code": 0,
+  "status": "completed",
+  "duration_seconds": 95.0,
+  "views_passed": 21,
+  "conditional_views_offered": 21,
+  "parent_control": {
+    "file": "smoke-parent-control.txt",
+    "views_passed": 21,
+    "exit_code": 0,
+    "why": "The unchanged M106 parent app, served and measured at the same wall-clock moment, also offered 21 conditional view/deep-dive entries instead of the 22 recorded earlier: the harness only clicks the measured \"full\" filter when that chip exists as a #content .chip, and at this sample (full sample=12) it is rendered as a non-chip label. Same time, same harness, same 21/21 with 0 style/0 console failures \u2014 a harness condition, not an M107 view failure."
+  }
+}

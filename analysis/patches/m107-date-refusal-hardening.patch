@@ -1,0 +1,38 @@
+diff --git a/src/intention.js b/src/intention.js
+index 5ea5845..3bbf5b9 100644
+--- a/src/intention.js
++++ b/src/intention.js
+@@ -115,8 +115,12 @@ function dateKey(value) {
+   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Clock(value + 'T00:00:00.000Z', { canonical: true }) === null) throw invalid('Use a valid UTC calendar date.');
+   return value;
+ }
+-function dayKey(value) {
+-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Clock(value + 'T00:00:00.000Z', { canonical: true }) === null) throw invalid('Use a valid UTC calendar date (YYYY-MM-DD).');
++/** A requested day is the app's own input. Malformed days and days that have not happened
++ * are refused outright rather than rendered as "nothing recorded". */
++function dayKey(value, { nowMs = Date.now() } = {}) {
++  const shaped = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
++  if (shaped && value > utcDay(nowMs)) throw invalid('A future UTC day cannot be read as a day that happened.');
++  if (!shaped || Clock(value + 'T00:00:00.000Z', { canonical: true }) === null) throw invalid('Use a valid past-or-today UTC calendar date (YYYY-MM-DD).');
+   return value;
+ }
+ function publicRow(row) {
+@@ -143,6 +147,8 @@ function evaluate(rows, accountId, { nowMs = Date.now(), date = null } = {}) {
+   const today = utcDay(nowMs);
+   let day = today;
+   if (date !== null) {
++    const shaped = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date);
++    if (shaped && date > today) return { ...empty(accountId, date, today), state: 'unavailable', message: 'A future UTC day cannot be read as a day that happened.' };
+     try { dateKey(date); } catch { return { ...empty(accountId, today, today), state: 'unavailable', message: 'Invalid requested date.' }; }
+     day = date;
+   }
+@@ -168,6 +174,9 @@ function evaluate(rows, accountId, { nowMs = Date.now(), date = null } = {}) {
+ const empty = (accountId, day, today) => ({ schema: VERSION, account_id: accountId, day, today, same_day: day === today, state: 'unrecorded', template: null, text: null, framing: null, cues: null, warnings: [], receipt: null, version: null, templates: TEMPLATES, char_max: CHAR_MAX, authority: 'none', imported_archives: 0, last_recorded: null, broker_verified: false, service: VERSION, basis: BASIS });
+ 
+ async function viewOn(store, userId, accountId, { nowMs = Date.now(), date = null } = {}) {
++  /* A requested day is the app's own input: a malformed one is refused here rather than
++   * being dressed up as a day with nothing recorded. */
++  if (date !== null) dayKey(date, { nowMs });
+   const a = await owned(store, userId, accountId), rows = await rowsOn(store, userId, a.id);
+   const v = evaluate(rows, a.id, { nowMs, date });
+   return { account_id: a.id, ...v, history: rows.filter((r) => r.day === v.day).map(publicRow), archives: rows.filter((r) => r.source === 'imported_unverified').map(publicRow), revision: hash([userId, a.id, rows]) };

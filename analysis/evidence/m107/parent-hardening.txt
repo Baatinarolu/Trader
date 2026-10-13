@@ -1,0 +1,7 @@
+FAIL a first record is version 1 on the server day undefined
+LibsqlError: SQLITE_ERROR: no such table: daily_intentions
+    at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)
+    at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)
+    at Sqlite3Client.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:268:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+M107 intention hardening: immutability, retention, isolation, CAS: 0 passed, 2 failed

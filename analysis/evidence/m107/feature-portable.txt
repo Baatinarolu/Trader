@@ -1,0 +1,26 @@
+ok the backup carries every recorded day with its framing, cues and receipt
+ok the backup does not pretend the days were followed or scored
+ok restoring into another owner keeps the finance side legal and returns intention warnings
+ok restored words never become the receiving account’s intention for today
+ok the archive count is disclosed without any permission field
+ok every restored row is labelled imported_unverified and owned by the receiving account
+ok the original days and receipts survive as history, not as borrowed evidence
+ok an imported archive carries no template authority either
+ok the source account keeps its own two recorded days untouched by the restore
+ok the receiving trader’s own record for the day is the only thing that fills it
+ok the imported archives stay archives beside the trader’s own words
+ok a received a boolean instead of a versioned object warns instead of breaking the finance import
+ok a received an unknown version warns instead of breaking the finance import
+ok a received records that are not a list warns instead of breaking the finance import
+ok a received a record with no words warns instead of breaking the finance import
+ok a received a record with no day warns instead of breaking the finance import
+ok a received a record with a future receipt warns instead of breaking the finance import
+ok a received a record with an invalid day warns instead of breaking the finance import
+ok a received more than the portable cap warns instead of breaking the finance import
+ok the malformed restores never displace the receiving trader’s own recorded day
+ok a record whose original day is unknown is kept without claiming a day
+ok a backup with no intention history at all is not an error or a warning
+ok a missing/omitted original history is reported as unavailable, not as days that never happened
+ok every restored row is stored as an archive and the trader’s own row as human-declared
+ok the source account has exactly its own two human rows
+M107 intention portability without a borrowed commitment: 25 passed, 0 failed

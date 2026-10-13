@@ -1,0 +1,24 @@
+ok the source account ends on a recorded no with the exact receipt retained
+ok the backup carries all three versions with receipts and no verification claim
+ok restoring into another owner keeps the finance import legal while the gate history becomes archives
+ok imported answers never become a pass on the receiving account
+ok the receiving account is told how many unverified archives it holds
+ok every restored row is labelled imported_unverified and owned by the receiving account
+ok the original receipts survive as history, not as borrowed evidence of the receiving trader
+ok an imported all-no history does not block the receiving trader either
+ok the source account keeps its own recorded no and its own history untouched by the restore
+ok the receiving trader’s own fresh answers are the only thing that can pass their own account
+ok the receiving trader’s live entry is then admitted normally
+ok malformed/unavailable optional history only warns while the financial import stays legal: not an object
+ok malformed/unavailable optional history only warns while the financial import stays legal: wrong version
+ok malformed/unavailable optional history only warns while the financial import stays legal: records not a list
+ok malformed/unavailable optional history only warns while the financial import stays legal: more than 500 records
+ok malformed/unavailable optional history only warns while the financial import stays legal: three of four answers
+ok malformed/unavailable optional history only warns while the financial import stays legal: non-boolean answers
+ok malformed/unavailable optional history only warns while the financial import stays legal: future original clock
+ok malformed/unavailable optional history only warns while the financial import stays legal: marked unavailable
+ok no malformed payload can change the receiving trader’s own state or their first-party history
+ok a future original receipt is archived without a clock, never relabelled with the receiving clock
+ok every stored row is either a first-party answer or a labelled archive
+ok a missing optional history is not an error at all
+M106 answer-history portability without permission transfer: 23 passed, 0 failed

@@ -1,0 +1,104 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 24,
+  "fail": 0,
+  "results": [
+    {
+      "label": "an account that never answered the gate can still record a live entry — no invented rule",
+      "passed": true
+    },
+    {
+      "label": "the admitted entry snapshot says the gate was not adopted, never that it passed",
+      "passed": true
+    },
+    {
+      "label": "the inherited rule still requires a named entry emotion before the gate is even consulted",
+      "passed": true
+    },
+    {
+      "label": "a recorded no fails the gate for this account",
+      "passed": true
+    },
+    {
+      "label": "a new live entry is refused 409 with the gate code while the gate is failed",
+      "passed": true
+    },
+    {
+      "label": "the refusal names the trader’s own no and the way back",
+      "passed": true
+    },
+    {
+      "label": "nothing financial was written by the refused entry",
+      "passed": true
+    },
+    {
+      "label": "the account balance is untouched by the refusal",
+      "passed": true
+    },
+    {
+      "label": "the signal-save endpoint never stores a signal while the gate records a no",
+      "passed": true
+    },
+    {
+      "label": "the refusal is visible on the endpoint’s own headline/verdict, not hidden",
+      "passed": true
+    },
+    {
+      "label": "the plan-save endpoint refuses through the same gate with its own code",
+      "passed": true
+    },
+    {
+      "label": "neither refused save wrote a signal row or a trade",
+      "passed": true
+    },
+    {
+      "label": "recording an already-executed entry as journal history stays legal at a failed gate",
+      "passed": true
+    },
+    {
+      "label": "recording a closed trade is never gated by an in-session check",
+      "passed": true
+    },
+    {
+      "label": "reopening a closed trade into a live position is refused while the gate is failed",
+      "passed": true
+    },
+    {
+      "label": "explicit unknown is recorded",
+      "passed": true
+    },
+    {
+      "label": "an adopted account with no fresh check refuses the new live entry as unanswered",
+      "passed": true
+    },
+    {
+      "label": "the unanswered refusal still wrote nothing",
+      "passed": true
+    },
+    {
+      "label": "answering all four yes is a fresh pass",
+      "passed": true
+    },
+    {
+      "label": "a fresh pass admits the live entry through the normal guardrail path",
+      "passed": true
+    },
+    {
+      "label": "the admitted snapshot records the pass as the trader’s own answers, not verified calm",
+      "passed": true
+    },
+    {
+      "label": "the pass wrote exactly one additional trade",
+      "passed": true
+    },
+    {
+      "label": "the pass does not change account equity",
+      "passed": true
+    },
+    {
+      "label": "with the same market and a passed gate the state-gate refusal is gone",
+      "passed": true
+    }
+  ],
+  "scope": "M106 prospective entry against an adopted four-question gate: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

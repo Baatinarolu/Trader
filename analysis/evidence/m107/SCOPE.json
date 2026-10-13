@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-13",
+  "parent": "4d1307881ea4ac400047a58675f8ba4c52f82dd7",
+  "finding": "M107 only",
+  "ledger_before": [
+    132,
+    100,
+    3,
+    29,
+    0,
+    8
+  ],
+  "ledger_after": [
+    132,
+    101,
+    3,
+    28,
+    0,
+    8
+  ],
+  "course": "Saved Ep28: set ONE clear rule for the day, one simple sentence, process-oriented, behavioral, within your control - \"Today I'm going to make $5,000 from the market\" is an outcome goal, outside your control, which only arrives as a byproduct of the process. Examples quoted: Today I follow my plan / Today I will take only A+ setups / Today I will journal every trade / Today I will not revenge trade. `grep -rni intention src/` returned 0 hits; the nearest analogue `journal_entries.tomorrow` (db.js:188) is a next-day focus, not a same-day commitment. No new fetch/timestamp/full transcript.",
+  "design": [
+    "Additive owned `daily_intentions` append-only revision series: human_declared rows + imported_unverified archives, immutable UPDATE facts, owner cascade / account SET NULL orphan retained readonly, no backfill or default and no carry-over between days",
+    "Four curated Ep28 process examples are the ONLY thing labelled process_template; free text is stored exactly as written and explicitly unverified with the bounded classifier's own explainable cues",
+    "Only an asserted money/outcome target is refused (amount + outcome in the same non-negated sentence -> 400 intention_outcome_target, nothing written). Other outcome/prediction wording, multi-sentence, over-length and unknown phrasing are stored with named warnings and never labelled process-oriented; an amount inside a negation is stored, because the app does not run sentiment analysis",
+    "Same-day commitment only: the write pins the server's own UTC day, yesterday/tomorrow are refused by dayKey, an identical repeat is a no-op, a stale displayed revision 409s with nothing written, a store failure 503s without a receipt; reads embedded in the briefing and the journal day answer unavailable for a day that cannot be read instead of failing the host surface",
+    "No authority: no score, percentage, adherence tally, readiness, gate or permission over entries/signals/risk/cap/routine/core/grades/history; journal text is never rewritten and journal_entries.tomorrow keeps its meaning",
+    "Actual Dashboard + owned Journal day + Settings surfaces share one card/editor/history object; escaped text, readonly past days, retained-record detail, reload/409 handling; M105 identity/quarter, M106 in-session four-question gate, M64 morning check-in and M89 emotion capture stay separate",
+    "Full JSON backup/restore transports daily_intentions as imported_unverified archives with original day/clock/version/id retained as history; malformed optional history warns while finance stays legal, a missing field is no warning, an unavailable marker warns instead of inventing days",
+    "M30/M103/M108 remain partial; M108/M111/M112 are open. No70% win-rate, causal, predictive, broker, human, mental-state, meditation, provider, pixel or production claim"
+  ]
+}
