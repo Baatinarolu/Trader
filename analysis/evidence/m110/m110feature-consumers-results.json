@@ -1,7 +1,7 @@
 {
   "app": "/home/user/Trader/extracted/tradejournal",
-  "pass": 19,
-  "fail": 3,
+  "pass": 18,
+  "fail": 4,
   "results": [
     {
       "label": "this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)",
@@ -21,7 +21,10 @@
     },
     {
       "label": "no shipped client reads the new `windows` echo either, so the API’s provenance block cannot be mistaken for a control by an old page",
-      "passed": true
+      "passed": false,
+      "detail": [
+        "public/js/views/rule-breaks.js"
+      ]
     },
     {
       "label": "the served payload has no top-level `window_min` any more — the one-number field is gone, not deprecated",

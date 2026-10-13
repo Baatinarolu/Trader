@@ -1,0 +1,13 @@
+ok this tree ships the M12 rule-break tally (the committed parent does not, and that absence is this probe's control)
+ok the parent tree IS the committed 67f2ed2 M112 release: it has the guardrail audit and the trading-window columns, but no rule-break tally at all
+ok the delivered tree creates exactly the parent’s schema: every table, index and trigger is byte-identical DDL, so M12 adds no schema object of any kind
+ok and on the same fixture every table is byte-identical, the audit table included — the tally stores nothing new
+ok the audit table the tally reads carries exactly the columns the parent declared, in order — none added, none moved
+ok the delivered tree reads a file the parent created and wrote, and counts the parent’s OWN audit row: one prevented attempt on the rule the parent named
+ok reading the tally on that file changes NOTHING: every table’s digest is identical before and after the read
+ok and reading it twice is idempotent — the second read is the same tally, with no counter and no audit row added
+ok the tally’s limits are the ones a review needs: read-only, zero writes, no grade/cap/permission/guardrail-decision influence
+ok the parent’s own code still opens the file afterwards and sees exactly the rows it left: one user, one account and its one audit row
+ok nothing is read into the parent’s digests by the tally: the parent’s view of its own file is unchanged after the delivered tree read it
+ok the delivered tree ships the tally in exactly two files — the module and the route that serves it — so no guardrail decision path can require it
+M12 migration: no schema object added, and the parent’s own file is read untouched: 12 passed, 0 failed

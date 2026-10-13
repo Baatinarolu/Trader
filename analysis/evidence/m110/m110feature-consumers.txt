@@ -2,7 +2,7 @@ ok this tree ships the M110 news-window module (the committed parent does not, a
 ok exactly ONE shipped file builds the blackout sentence, so the rule has a single voice and no reader invents its own wording
 ok no shipped file reads a single `window_min` off a news payload any more: the removed knob has no dangling reader
 ok the three readers that DO exist each take the engine’s blackout rather than rebuilding it: the playlist guard, the headline and the setup payload
-ok no shipped client reads the new `windows` echo either, so the API’s provenance block cannot be mistaken for a control by an old page
+FAIL no shipped client reads the new `windows` echo either, so the API’s provenance block cannot be mistaken for a control by an old page ["public/js/views/rule-breaks.js"]
 FAIL the served payload has no top-level `window_min` any more — the one-number field is gone, not deprecated ["blackout","events","upcoming","currencies","state","windows"]
 ok each blocked release carries the window of ITS OWN side (the 45-minute settle, not the 5-minute block)
 ok the payload echoes the pair as provenance, with the source of each side, so a consumer can audit what was applied
@@ -20,4 +20,4 @@ ok that answer names the surface it cannot read and cites where the fact comes f
 ok and the channel’s own source declares it cannot fetch, so a later calendar change cannot quietly turn it into a news oracle
 ok the same calendar blocks this desk (5-minute block, 45 settle) and its different pair is reported per account, not once globally
 ok the blackout string a consumer quotes names THIS desk’s two numbers, so one trader’s guard can never describe another’s window
-M110 consumers: 19 passed, 3 failed
+M110 consumers: 18 passed, 4 failed

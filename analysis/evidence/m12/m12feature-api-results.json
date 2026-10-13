@@ -1,0 +1,100 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 23,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M12 rule-break tally (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the analytics payload carries the tally beside the other read-only aggregates",
+      "passed": true
+    },
+    {
+      "label": "an empty but readable audit is a real ZERO with its own shape — not the unavailable shape",
+      "passed": true
+    },
+    {
+      "label": "the tally reports the account scope it used, so the review can state what it covers",
+      "passed": true
+    },
+    {
+      "label": "the endpoint publishes its limits: read-only, no writes, no grade/cap/permission/decision influence, no causal claim",
+      "passed": true
+    },
+    {
+      "label": "reading the tally twice writes NOTHING: every table is byte-identical, including the audit it reads",
+      "passed": true
+    },
+    {
+      "label": "the tally counts what the endpoint’s own account recorded: three attempts (two prevented, one accepted override) and one observed stop",
+      "passed": true
+    },
+    {
+      "label": "the rules are NAMED, so the review can say which one fired",
+      "passed": true
+    },
+    {
+      "label": "another account of the same trader is NOT folded in: the second desk’s blocked attempt on the news rule is absent here",
+      "passed": true
+    },
+    {
+      "label": "and that other account reports its own tally when it is the account being reviewed",
+      "passed": true
+    },
+    {
+      "label": "the default (no account_id) review scopes the tally to the account IT resolved, so the payload never disagrees with itself",
+      "passed": true
+    },
+    {
+      "label": "another trader’s audit rows are excluded from every number the endpoint returns",
+      "passed": true
+    },
+    {
+      "label": "the window the caller asked for is applied to the audit’s own days",
+      "passed": true
+    },
+    {
+      "label": "seeding rule breaks changes NO performance number in the same payload: the whole statistics block is byte-identical with and without them",
+      "passed": true
+    },
+    {
+      "label": "and so is the account block: the tally cannot move a balance, a cap or a policy field",
+      "passed": true
+    },
+    {
+      "label": "no grade, score or permission is derived from the tally anywhere in its own payload",
+      "passed": true
+    },
+    {
+      "label": "a reversed range is UNKNOWN, not zero and not a clean week, and the rest of the review still answers with a 200",
+      "passed": true
+    },
+    {
+      "label": "an account the trader does not own is never read: the payload falls back to their own desk and the foreign id appears in no scope",
+      "passed": true
+    },
+    {
+      "label": "the tally is not readable without a session, like the rest of the payload",
+      "passed": true
+    },
+    {
+      "label": "a bounded read takes the MOST RECENT events (the newest two are a legal record and an observed stop, so they are what must come back) and reports the truncation instead of hiding rows",
+      "passed": true
+    },
+    {
+      "label": "one more row of budget reaches the newest attempt, so the bound is a window and not a filter",
+      "passed": true
+    },
+    {
+      "label": "an unreadable store is UNKNOWN for the endpoint too: the failure is not reported as zero breaks",
+      "passed": true
+    },
+    {
+      "label": "the audit rows the probe seeded are still exactly what it wrote: seeding is the app’s own shape, not a probe fiction",
+      "passed": true
+    }
+  ],
+  "scope": "M12 api: recorded rule breaks, scoped and read-only: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

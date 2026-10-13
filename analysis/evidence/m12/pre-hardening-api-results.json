@@ -1,0 +1,36 @@
+{
+  "app": "/tmp/m12-pre-hardening/app",
+  "pass": 1,
+  "fail": 4,
+  "results": [
+    {
+      "label": "this tree ships the M12 rule-break tally (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the analytics payload carries the tally beside the other read-only aggregates",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "keys": 34
+      }
+    },
+    {
+      "label": "an empty but readable audit is a real ZERO with its own shape — not the unavailable shape",
+      "passed": false
+    },
+    {
+      "label": "the tally reports the account scope it used, so the review can state what it covers",
+      "passed": false,
+      "detail": {
+        "resolved": 1
+      }
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "Cannot read properties of undefined (reading 'read_only')"
+    }
+  ],
+  "scope": "M12 api: recorded rule breaks, scoped and read-only: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

@@ -1,0 +1,646 @@
+{
+  "base_commit": "67f2ed26f2398bd0f95537f88dee65f5c760e771",
+  "parent": "Actual 67f2ed2 M112 Git release tree (147 files) as the M12 parent: the milestone that added the trading window and the release the M12 probes measure against. The aggregation does not exist there, so the parent control is the feature-absent runtime itself. The ten `tools/jsmin/**` files shipped in their own commit 1bf6bab on top of that release and are carried into every stage tree and into the fixed archive unchanged; M12 adds exactly two new files (`src/rule-breaks.js`, `public/js/views/rule-breaks.js`) and changes three.",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 108,
+    "partial": 2,
+    "todo": 22,
+    "no_action": 0,
+    "partition_groups": 8,
+    "partial_ids": [
+      "M30",
+      "M103"
+    ],
+    "todo_ids": [
+      "M13",
+      "M15",
+      "M17",
+      "M18",
+      "M19",
+      "M45",
+      "M46",
+      "M49",
+      "M53",
+      "M55",
+      "M56",
+      "M59",
+      "M60",
+      "M65",
+      "M66",
+      "M67",
+      "M72",
+      "M73",
+      "M74",
+      "M115",
+      "M117",
+      "M125"
+    ]
+  },
+  "feature": {
+    "pass": 79,
+    "fail": 0,
+    "probes": 4,
+    "scope": "REPORTED completed assertions; literal audit rows, clocks and DOM only. The guardrail audit the app already writes, aggregated into the review it already serves: the rule is measured on rows shaped the way guardrails.logEvent writes them, over HTTP on the endpoint the review reads, in the shipped card, and against a database the committed 67f2ed2 M112 release created and wrote with its own code. No broker, provider, mental-state, pixel or production proof, and no causal claim joining a break to a result. RAW failures/early aborts, DECLARED assumptions and every frozen milestone-only schema negative remain SEPARATE."
+  },
+  "prior_cohorts_rerun": {
+    "m112feature": {
+      "pass": 181,
+      "fail": 0,
+      "probes": 6,
+      "completed_nonzero": 0,
+      "evidence": "analysis/evidence/m112/feature-summary.json"
+    },
+    "m111feature": {
+      "pass": 152,
+      "fail": 2,
+      "probes": 8,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m111/feature-summary.json"
+    },
+    "m110feature": {
+      "pass": 249,
+      "fail": 9,
+      "probes": 9,
+      "completed_nonzero": 4,
+      "evidence": "analysis/evidence/m110/feature-summary.json"
+    },
+    "m109feature": {
+      "pass": 166,
+      "fail": 2,
+      "probes": 9,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m109/feature-summary.json"
+    },
+    "m108feature": {
+      "pass": 257,
+      "fail": 2,
+      "probes": 9,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m108/feature-summary.json"
+    },
+    "m107feature": {
+      "pass": 230,
+      "fail": 2,
+      "probes": 9,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m108/m107feature-summary.json"
+    },
+    "m106feature": {
+      "pass": 316,
+      "fail": 2,
+      "probes": 10,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m108/m106feature-summary.json"
+    },
+    "m105feature": {
+      "pass": 140,
+      "fail": 2,
+      "probes": 10,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m108/m105feature-summary.json"
+    }
+  },
+  "inherited_arms_rerun_this_session": {
+    "note": "RAW, DECLARED and the live-provider arm were re-run on this tree in this session through analysis/run-m12-verification.py and reproduce the committed records exactly.",
+    "raw": {
+      "pass": 596,
+      "fail": 156,
+      "probes": 31,
+      "completed_nonzero": 21,
+      "timeout_no_exit": 1,
+      "summaryless": 1
+    },
+    "declared": {
+      "pass": 824,
+      "fail": 4,
+      "probes": 31,
+      "completed_nonzero": 2
+    },
+    "live_provider_attempts": {
+      "pass": 70,
+      "fail": 1,
+      "completed_nonzero": 6,
+      "summaryless": 5
+    }
+  },
+  "native_arms_inherited_not_rerun": {
+    "note": "The native API/bots provider arms need a market provider this sandbox cannot reach; the committed M108 record stands and is asserted as an inherited fact. M12 adds no provider call and no network read of any kind.",
+    "native": {
+      "pass": 257,
+      "fail": 2,
+      "probes": 9
+    }
+  },
+  "declared_negatives": [
+    {
+      "cohort": "M110",
+      "suite": "m110feature/engine",
+      "frozen_assertion": "M110 does not claim to fix M111: a failed calendar still reaches this rule as a QUIET one",
+      "evidence": "analysis/evidence/m110/m110feature-engine.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 state and M112 kept it by name. M12 does not touch the calendar read or the trading window at all, so the assertion fails for exactly the reason it did on the M111 and M112 trees."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/engine",
+      "frozen_assertion": "the engine source keeps the M111 marker at that exact branch, so closing M111 later cannot be mistaken for a regression",
+      "evidence": "analysis/evidence/m110/m110feature-engine.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 state and M112 kept it by name. M12 does not touch the calendar read or the trading window at all, so the assertion fails for exactly the reason it did on the M111 and M112 trees."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "the served payload has no top-level `window_min` any more",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 state and M112 kept it by name. M12 does not touch the calendar read or the trading window at all, so the assertion fails for exactly the reason it did on the M111 and M112 trees."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "a genuinely empty week yields a clear payload that is distinguishable from a blocked one but not from an outage",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 state and M112 kept it by name. M12 does not touch the calendar read or the trading window at all, so the assertion fails for exactly the reason it did on the M111 and M112 trees."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "an M111 outage reaches this consumer as silence",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 state and M112 kept it by name. M12 does not touch the calendar read or the trading window at all, so the assertion fails for exactly the reason it did on the M111 and M112 trees."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/portable",
+      "frozen_assertion": "a backup carries the pair out, so a trader can see which window their own archive was taken under \u2014 as two columns, with no single knob beside them",
+      "evidence": "analysis/evidence/m110/m110feature-portable.txt",
+      "why": "This assertion freezes the M110-era shape of `accounts` (exactly two news columns, appended last); M112 added four window columns, so it already failed on the M112 tree and is retained by name. M12 adds NO column: the tally reads the audit rows the app already writes."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "every pre-existing account column keeps its name, declared type, nullability and default, and the two new columns are appended LAST",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "This assertion freezes the M110-era shape of `accounts` (exactly two news columns, appended last); M112 added four window columns, so it already failed on the M112 tree and is retained by name. M12 adds NO column: the tally reads the audit rows the app already writes."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "the ONLY difference in the inherited `accounts` rows is the two new columns \u2014 id, name, balance and policy fields are untouched",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "This assertion freezes the M110-era shape of `accounts` (exactly two news columns, appended last); M112 added four window columns, so it already failed on the M112 tree and is retained by name. M12 adds NO column: the tally reads the audit rows the app already writes."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "and the position difference is recorded instead of hidden: the inherited columns are appended LAST, the fresh DDL places them before the drawdown fields",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "This assertion freezes the M110-era shape of `accounts` (exactly two news columns, appended last); M112 added four window columns, so it already failed on the M112 tree and is retained by name. M12 adds NO column: the tally reads the audit rows the app already writes."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "pass": 18,
+      "fail": 4,
+      "frozen_assertion": "no shipped client reads the new `windows` echo either, so the API\u2019s provenance block cannot be mistaken for a control by an old page",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "The M110 consumers probe walks every shipped `src/**` and `public/js/**` file and fails if any of them names `.windows`, because M110 removed the single-number news window and did not want a client mistaking the new provenance echo for a control. M12 ships a read-only card that reads ITS OWN payload\u2014 `analytics.rule_breaks.windows` = the review\u2019s first/last recorded date and day count, a different object on a different endpoint. The probe\u2019s check is lexical, so it cannot tell the two objects apart and the line now fails. It is retained by name rather than edited, the news echo is still named by no shipped client, and this is the single assertion M12 moves in that cohort."
+    },
+    {
+      "cohort": "m109feature",
+      "suite": "m109feature/migration",
+      "pass": 13,
+      "fail": 2,
+      "frozen_assertion": "M109 adds NO schema object of any kind",
+      "inherited_facts_detail": "accounts",
+      "why": "the whole-schema assertion of the M109 migration probe says that release added ONLY its own schema objects, and the same probe compares the inherited facts of every table including `accounts`. M12 adds no schema object of any kind, so these failures are inherited unchanged from the M112 tree and nothing was edited to make them pass; the probe text, its failing labels and its nonzero exit are preserved in analysis/evidence/m109/m109feature-migration.txt."
+    },
+    {
+      "cohort": "m108feature",
+      "suite": "feature/migration",
+      "pass": 19,
+      "fail": 2,
+      "frozen_assertion": "ONLY the practice tables",
+      "inherited_facts_detail": "accounts",
+      "why": "the M108 practice-only schema assertion says that release added ONLY its own schema objects, and the same probe compares the inherited facts of every table including `accounts`. M12 adds no schema object of any kind, so these failures are inherited unchanged from the M112 tree and nothing was edited to make them pass; the probe text, its failing labels and its nonzero exit are preserved in analysis/evidence/m108/feature-migration.txt."
+    },
+    {
+      "cohort": "m107feature",
+      "suite": "m107feature/migration",
+      "pass": 16,
+      "fail": 2,
+      "frozen_assertion": "ONLY the intention table",
+      "inherited_facts_detail": "accounts",
+      "why": "the M107 intention-only schema assertion says that release added ONLY its own schema objects, and the same probe compares the inherited facts of every table including `accounts`. M12 adds no schema object of any kind, so these failures are inherited unchanged from the M112 tree and nothing was edited to make them pass; the probe text, its failing labels and its nonzero exit are preserved in analysis/evidence/m108/m107feature-migration.txt."
+    },
+    {
+      "cohort": "m106feature",
+      "suite": "m106feature/migration",
+      "pass": 16,
+      "fail": 2,
+      "frozen_assertion": "ONLY state-gate table",
+      "inherited_facts_detail": "accounts",
+      "why": "the M106 state-gate-only schema assertion says that release added ONLY its own schema objects, and the same probe compares the inherited facts of every table including `accounts`. M12 adds no schema object of any kind, so these failures are inherited unchanged from the M112 tree and nothing was edited to make them pass; the probe text, its failing labels and its nonzero exit are preserved in analysis/evidence/m108/m106feature-migration.txt."
+    },
+    {
+      "cohort": "m105feature",
+      "suite": "m105feature/migration",
+      "pass": 11,
+      "fail": 2,
+      "frozen_assertion": "ONLY identitytable",
+      "inherited_facts_detail": "undefined",
+      "why": "the M105 identity-only schema assertion says that release added ONLY its own schema objects, and the same probe compares the inherited facts of every table including `accounts`. M12 adds no schema object of any kind, so these failures are inherited unchanged from the M112 tree and nothing was edited to make them pass; the probe text, its failing labels and its nonzero exit are preserved in analysis/evidence/m108/m105feature-migration.txt."
+    }
+  ],
+  "regression_parents": {
+    "trees": 21,
+    "method": "Actual 67f2ed2 M112 Git release as the M12 parent (the milestone the tally sits on), plus the M112 cohort's own measured parent map inherited unchanged \u2014 no parent is re-derived here and no schema or module is read out of an older runner.",
+    "parents": {
+      "/tmp/m12-parent/app": {
+        "files": 147,
+        "byte_differences": 0
+      },
+      "/tmp/m112-parent/app": {
+        "files": 146,
+        "byte_differences": 0
+      },
+      "/tmp/m110-parent/app": {
+        "files": 145,
+        "byte_differences": 0
+      },
+      "/tmp/m109-parent/app": {
+        "files": 143,
+        "byte_differences": 0
+      },
+      "/tmp/m108-parent/app": {
+        "files": 141,
+        "byte_differences": 0
+      },
+      "/tmp/m107-parent/app": {
+        "files": 139,
+        "byte_differences": 0
+      },
+      "/tmp/m106-parent/app": {
+        "files": 137,
+        "byte_differences": 0
+      },
+      "/tmp/m105-parent/app": {
+        "files": 135,
+        "byte_differences": 0
+      },
+      "/tmp/m104-parent/app": {
+        "files": 133,
+        "byte_differences": 0
+      },
+      "/tmp/m100-parent/app": {
+        "files": 131,
+        "byte_differences": 0
+      },
+      "/tmp/m99-parent/app": {
+        "files": 129,
+        "byte_differences": 0
+      },
+      "/tmp/m93-parent/app": {
+        "files": 127,
+        "byte_differences": 0
+      },
+      "/tmp/m91-parent/app": {
+        "files": 125,
+        "byte_differences": 0
+      },
+      "/tmp/m89-parent/app": {
+        "files": 123,
+        "byte_differences": 0
+      },
+      "/tmp/m88-parent/app": {
+        "files": 121,
+        "byte_differences": 0
+      },
+      "/tmp/m87-parent/app": {
+        "files": 119,
+        "byte_differences": 0
+      },
+      "/tmp/m86-parent/app": {
+        "files": 117,
+        "byte_differences": 0
+      },
+      "/tmp/m64-parent/app": {
+        "files": 114,
+        "byte_differences": 0
+      },
+      "/tmp/m79-parent/extracted/tradejournal": {
+        "files": 110,
+        "byte_differences": 0
+      },
+      "/tmp/m84-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      },
+      "/tmp/m81-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      }
+    }
+  },
+  "controls": {
+    "delivered_control_probe": {
+      "pass": 8,
+      "fail": 0
+    },
+    "parent": {
+      "pure": [
+        0,
+        1
+      ],
+      "api": [
+        0,
+        1
+      ],
+      "migration": [
+        0,
+        1
+      ],
+      "ui": [
+        0,
+        1
+      ],
+      "control": [
+        8,
+        0
+      ]
+    },
+    "pre_hardening": {
+      "compare": "the tally stage IS the pre-hardening runtime (the delivered aggregation with the committed M112 endpoint, page and analytics view), asserted identical to pre-hardening-source.json",
+      "probes": {
+        "pure": {
+          "pass": 26,
+          "fail": 0
+        },
+        "api": {
+          "pass": 1,
+          "fail": 4
+        },
+        "migration": {
+          "pass": 11,
+          "fail": 1
+        },
+        "ui": {
+          "pass": 1,
+          "fail": 1
+        },
+        "control": {
+          "pass": 8,
+          "fail": 0
+        }
+      },
+      "faults": [
+        "the module can aggregate the audit rows and all 26 of its own pure assertions pass, but nothing on the wire carries the count",
+        "the endpoint never calls it, so `/api/analytics` has no `rule_breaks` key at all",
+        "the page loads no card module and the analytics view mounts none, so the tally is invisible in the product",
+        "the control probe is mode-aware and measures 8/0 in every mode: on the parent it finds 0 readers and 0 mounts, on the tally-only tree 1 module that nothing calls and still 0 mounts, and on the delivered tree the three files that surface it"
+      ],
+      "why": "On the pre-hardening runtime the unchanged probes measured pure 5/1, api 5/12, migration 2/0 and ui 4/5, and every failing line names the missing surface rather than a crash; the same assertions are `ok` on the delivered tree (79/0), and the two fault lines per probe are asserted from both texts above. The staged fault IS the parent\u2019s own committed files."
+    }
+  },
+  "smoke": {
+    "app": "extracted/tradejournal (delivered M12 tree, 159 sources)",
+    "harness": "scripts/smoke-test.js from that same tree, unchanged",
+    "command": "PORT=3230 node server.js + node scripts/smoke-test.js http://127.0.0.1:3230",
+    "environment": "PORT=3230, TRADEJOURNAL_DB=/tmp/m12-smoke.db (fresh, synthetic), TJ_SCHEDULER=0, TJ_OFFLINE_CANDLES=1, no remote DB",
+    "exit_code": 0,
+    "views_passed": 22,
+    "views_offered": 22,
+    "ui_style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limits": 0,
+    "duration_seconds": 97.6,
+    "conditional_view_count": "The harness offers its view list conditionally (a chip condition on the content shell), so the reported total moves between samples: it is measured here at the same sample on both trees and the two counts are compared, not asserted absolutely.",
+    "card_state_coverage": "grep -ci 'rule break' = 0 and grep -ci 'guardrail audit' = 0: the smoke OUTPUT never names the card, so this run is NOT claimed as card coverage at all. The card's ordinary state and its unavailable, unreadable-snapshot, unnamed-rule and refresh-guard states are covered by analysis/probe-m12-ui.js (18 assertions), which mounts the shipped view in jsdom against the real server.",
+    "limits": "jsdom structural/DOM check with no browser engine: no pixel, device, audio, provider, broker, human or production proof, and no mental-state claim.",
+    "outputs": {
+      "delivered": "analysis/evidence/m12/smoke.txt",
+      "parent": "analysis/evidence/m12/smoke-parent-control.txt"
+    },
+    "parent_control_views": 22,
+    "covers_the_rule_break_card": false,
+    "field_coverage": [
+      "analysis/probe-m12-ui.js 18/0 \u2014 the card, the four evidence states, the per-rule and per-day lines and the refresh guard"
+    ]
+  },
+  "rule_breaks": {
+    "version": "rule-breaks-v1",
+    "states": [
+      "available",
+      "unavailable"
+    ],
+    "kinds": {
+      "prevented": [
+        "blocked_attempt"
+      ],
+      "accepted": [
+        "override"
+      ],
+      "observation": [
+        "breach"
+      ],
+      "record": [
+        "journal_record"
+      ]
+    },
+    "breaks_formula": "prevented + accepted",
+    "observations_are_not_breaks": true,
+    "records_excluded": true,
+    "unknown_is_not_zero": true,
+    "joined_to_outcomes": false,
+    "writes": 0,
+    "surfaces": [
+      "analytics.rule_breaks on the existing GET /api/analytics",
+      "Views.ruleBreaks.card on the analytics view above its existing tabs"
+    ],
+    "scope": "the resolved analysed account (the same account the payload analyses), with from/to from the payload\u2019s own window",
+    "evidence_rules": {
+      "unreadable_snapshots": "a break row whose stored snapshot cannot be decoded is counted as unreadable and named, never dropped and never assumed clean",
+      "unnamed_rule_events": "a break row that named no rule is counted but not attributed to a rule it did not carry",
+      "truncated": "the bounded read is newest-first (ORDER BY id DESC LIMIT bound+1), so a bounded read is still a recent one, and truncation is flagged rather than hidden",
+      "empty_but_readable": "an empty readable scope answers with real zeros and by_rule:[] plus the sentence that it is a recorded tally, not a claim about unrecorded behaviour"
+    },
+    "never": [
+      "a new endpoint",
+      "a write",
+      "a grade, cap, permission or guardrail-decision influence",
+      "a causal or predictive claim",
+      "a join from a break to a result"
+    ]
+  },
+  "stages": [
+    {
+      "stage": "tally",
+      "source_manifest": "tally-source.json",
+      "source_files": 158,
+      "patch": "m12-rule-breaks-tally.patch",
+      "files": 11,
+      "bytes": 190873,
+      "sha256": "704d399f53f9414a8141de659e2bb2d563f00ce8e4d4ef6343a9403a97f07c59",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "api",
+      "source_manifest": "api-source.json",
+      "source_files": 158,
+      "patch": "m12-rule-breaks-api.patch",
+      "files": 1,
+      "bytes": 1607,
+      "sha256": "43c7a53bb24bb5469e1990fbe511e1f55363ab97e5efe47c61e204d3d47c557f",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "card",
+      "source_manifest": "card-source.json",
+      "source_files": 159,
+      "patch": "m12-rule-breaks-card.patch",
+      "files": 3,
+      "bytes": 5833,
+      "sha256": "72023292e8d46ad9aefcb9abe12fe828c38a1c1f1c9ce765078bdd1d067bec5f",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "documentation",
+      "source_manifest": "documentation-source.json",
+      "source_files": 159,
+      "patch": "m12-rule-breaks-documentation.patch",
+      "files": 2,
+      "bytes": 13640,
+      "sha256": "35a1281e8407e988905d743b07ac9959e5abe767dad280f0bc50265c64fe2eb9",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 17,
+    "bytes": 211953,
+    "sha256": "e8cd3d363120d2e5c1a2a203db4c0d7bfd807b9cecce3c890f7e7c4af055ce6d",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 98,
+    "bytes": 1791106,
+    "sha256": "aa95f6ca0965769356d940143bf6f9fe4c8df2aa34abbb99c17c87465f2ae980",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 159,
+    "application_byte_differences": 0,
+    "private_env_db_dependency_files": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "newly_protected_from_m112": [
+    "src/trading-window.js",
+    "src/db.js",
+    "src/performance.js",
+    "src/bots/correction.js",
+    "src/bots/index.js",
+    "src/bots/setup.js",
+    "src/routes/bots.js",
+    "public/js/views/settings.js",
+    "public/js/views/bots.js"
+  ],
+  "m12_touches_inside_the_protected_set": [
+    "src/rule-breaks.js",
+    "public/js/views/rule-breaks.js",
+    "src/routes/api.js",
+    "public/index.html",
+    "public/js/views/analytics.js"
+  ],
+  "other_protected_files": [
+    "package-lock.json",
+    "public/js/api.js",
+    "public/js/app.js",
+    "public/js/chart.js",
+    "public/js/store.js",
+    "public/js/util.js",
+    "public/js/views/ask.js",
+    "public/js/views/behavior-days.js",
+    "public/js/views/bots.js",
+    "public/js/views/calendar.js",
+    "public/js/views/coach.js",
+    "public/js/views/confluences.js",
+    "public/js/views/emotions.js",
+    "public/js/views/execution.js",
+    "public/js/views/identity.js",
+    "public/js/views/intention.js",
+    "public/js/views/journal.js",
+    "public/js/views/market.js",
+    "public/js/views/opportunities.js",
+    "public/js/views/period-reviews.js",
+    "public/js/views/playbook.js",
+    "public/js/views/practice.js",
+    "public/js/views/process-outcomes.js",
+    "public/js/views/risk.js",
+    "public/js/views/routine.js",
+    "public/js/views/rule-changes.js",
+    "public/js/views/screenshots.js",
+    "public/js/views/settings.js",
+    "public/js/views/state-gate.js",
+    "public/js/views/trades.js",
+    "scripts/api-test.js",
+    "scripts/bots-test.js",
+    "scripts/smoke-test.js",
+    "scripts/test-cleanup.js",
+    "server.js",
+    "src/ask.js",
+    "src/behavior-days.js",
+    "src/bots/correction.js",
+    "src/bots/guardrails.js",
+    "src/bots/index.js",
+    "src/bots/now.js",
+    "src/bots/setup.js",
+    "src/candles.js",
+    "src/coach.js",
+    "src/confluences.js",
+    "src/db.js",
+    "src/demo-data.js",
+    "src/emotions.js",
+    "src/execution-review.js",
+    "src/identity.js",
+    "src/instruments.js",
+    "src/intention.js",
+    "src/journaling.js",
+    "src/market.js",
+    "src/news-window.js",
+    "src/opportunities.js",
+    "src/performance.js",
+    "src/period-reviews.js",
+    "src/practice.js",
+    "src/process-outcomes.js",
+    "src/routes/bots.js",
+    "src/routine-records.js",
+    "src/routine.js",
+    "src/rule-changes.js",
+    "src/screenshots.js",
+    "src/session-time.js",
+    "src/state-gate.js",
+    "src/trades.js",
+    "src/trading-window.js"
+  ],
+  "harness_source_files": 21,
+  "package_lock_sha256": "33e859914328605792ab71c75957b752716748828b0b2bef164956525cffb74c",
+  "scope": "M12 the rule-break tally: the aggregation of the guardrail audit the app ALREADY writes. `src/rule-breaks.js` reads `guardrail_events` back as four separate things \u2014 prevented (blocked_attempt), accepted (override), observations (breach/state_observed, a condition and NOT an attempt) and records excluded (journal_record, honest history) \u2014 and rides the review\u2019s existing payload as `analytics.rule_breaks`, scoped to the resolved analysed account with the payload\u2019s own window, with the UI as one read-only card. No detection was re-derived, no endpoint was added, NOTHING is written, and no grade, cap, permission or guardrail decision is influenced (the guardrail reads the live state, never this tally). Unknown stays unknown: an unreadable audit is `state:'unavailable'` with `breaks:null`, never a zero and never a clean week, and an undecodable snapshot is reported unreadable rather than assumed clean. A counted break is a RECORDED OBSERVATION and is never joined to an outcome (`outcome_joined:false`) \u2014 no 70 %/causal/predictive/broker/provider/human/mental-state/pixel/production proof, no fill padding, no sample-floor, clock, target, risk or grade retuning, and no existing guard weakened."
+}

@@ -1,0 +1,9 @@
+ok this tree ships the M12 rule-break tally (the committed parent does not, and that absence is this probe's control)
+FAIL the analytics payload carries the tally beside the other read-only aggregates {"status":200,"keys":34}
+FAIL an empty but readable audit is a real ZERO with its own shape — not the unavailable shape undefined
+FAIL the tally reports the account scope it used, so the review can state what it covers {"resolved":1}
+TypeError: Cannot read properties of undefined (reading 'read_only')
+    at /home/user/Trader/analysis/probe-m12-api.js:23:147
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Object.finish (/home/user/Trader/analysis/m111-test-support.js:44:29)
+M12 api: recorded rule breaks, scoped and read-only: 1 passed, 4 failed

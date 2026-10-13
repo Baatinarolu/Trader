@@ -1,0 +1,9 @@
+ok the tree ships the rule-break tally module itself
+ok the analytics payload the review reads carries `rule_breaks` exactly when the tree serves it
+ok a carried tally is attached for the account actually being analysed, and it counted the written row
+ok the review can DISPLAY it: the card exists, the page loads it and the analytics view mounts it (three separate facts, all required)
+ok the per-rule tally is a vocabulary this milestone introduces: no shipped source of the parent has `by_rule`, and the delivered tree has it in exactly the module
+ok no served file names a rule-break tally on the parent, and the delivered tree names it in exactly the three files that surface it (card, mount, page load)
+ok the rows are already read as process evidence by named modules — the gap is the per-rule tally, not the storage
+ok the control writes its own audit row through the app’s own SQL shape and the tree reads it back unchanged
+M12 control (delivered): the fault the delivered tree closes: 8 passed, 0 failed

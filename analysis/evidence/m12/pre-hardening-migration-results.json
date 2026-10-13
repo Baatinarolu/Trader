@@ -1,0 +1,57 @@
+{
+  "app": "/tmp/m12-pre-hardening/app",
+  "pass": 11,
+  "fail": 1,
+  "results": [
+    {
+      "label": "this tree ships the M12 rule-break tally (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the parent tree IS the committed 67f2ed2 M112 release: it has the guardrail audit and the trading-window columns, but no rule-break tally at all",
+      "passed": true
+    },
+    {
+      "label": "the delivered tree creates exactly the parent’s schema: every table, index and trigger is byte-identical DDL, so M12 adds no schema object of any kind",
+      "passed": true
+    },
+    {
+      "label": "and on the same fixture every table is byte-identical, the audit table included — the tally stores nothing new",
+      "passed": true
+    },
+    {
+      "label": "the audit table the tally reads carries exactly the columns the parent declared, in order — none added, none moved",
+      "passed": true
+    },
+    {
+      "label": "the delivered tree reads a file the parent created and wrote, and counts the parent’s OWN audit row: one prevented attempt on the rule the parent named",
+      "passed": true
+    },
+    {
+      "label": "reading the tally on that file changes NOTHING: every table’s digest is identical before and after the read",
+      "passed": true
+    },
+    {
+      "label": "and reading it twice is idempotent — the second read is the same tally, with no counter and no audit row added",
+      "passed": true
+    },
+    {
+      "label": "the tally’s limits are the ones a review needs: read-only, zero writes, no grade/cap/permission/guardrail-decision influence",
+      "passed": true
+    },
+    {
+      "label": "the parent’s own code still opens the file afterwards and sees exactly the rows it left: one user, one account and its one audit row",
+      "passed": true
+    },
+    {
+      "label": "nothing is read into the parent’s digests by the tally: the parent’s view of its own file is unchanged after the delivered tree read it",
+      "passed": true
+    },
+    {
+      "label": "the delivered tree ships the tally in exactly two files — the module and the route that serves it — so no guardrail decision path can require it",
+      "passed": false,
+      "detail": null
+    }
+  ],
+  "scope": "M12 migration: no schema object added, and the parent’s own file is read untouched: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

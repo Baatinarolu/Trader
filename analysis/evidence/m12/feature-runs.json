@@ -1,0 +1,50 @@
+[
+  {
+    "name": "pure",
+    "script": "analysis/probe-m12-pure.js",
+    "pass": 26,
+    "fail": 0,
+    "expected_pass": 26,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m12feature-pure.txt",
+    "scope": "M12 pure: the guardrail audit, aggregated without inflating it: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "api",
+    "script": "analysis/probe-m12-api.js",
+    "pass": 23,
+    "fail": 0,
+    "expected_pass": 23,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m12feature-api.txt",
+    "scope": "M12 api: recorded rule breaks, scoped and read-only: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "migration",
+    "script": "analysis/probe-m12-migration.js",
+    "pass": 12,
+    "fail": 0,
+    "expected_pass": 12,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m12feature-migration.txt",
+    "scope": "M12 migration: no schema object added, and the parent\u2019s own file is read untouched: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "ui",
+    "script": "analysis/probe-m12-ui.js",
+    "pass": 18,
+    "fail": 0,
+    "expected_pass": 18,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m12feature-ui.txt",
+    "scope": "M12 real DOM: the rule-break card the review reads: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  }
+]

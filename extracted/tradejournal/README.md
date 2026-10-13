@@ -1,5 +1,92 @@
 # TradeJournal Pro
 
+## M12 — the rule breaks the app already recorded, tallied for the review that reads them (2026-10-13)
+
+Ep 26 lists **rule breaks** among the metrics a weekly review tracks. They were produced and never
+surfaced: `correction.dailyState()` derived **named breaches**, and the guardrail audit had been
+writing every observation and every attempt into `guardrail_events` since M64 — while
+`performance.js` contained **zero** references to a rule break. So the review could show P&L,
+session, grade and mistake segments and still not answer *"how many times did my own rules stop me
+this week, and which rule was it?"*
+
+**The gap was aggregation, not detection.** `src/rule-breaks.js` (`rule-breaks-v1`) is a **read-only**
+tally of the rows the app already writes, and it deliberately splits them by what actually happened,
+because collapsing them into one number would overstate it:
+
+| recorded kind | what it is | in the tally |
+| --- | --- | --- |
+| `blocked_attempt` | an entry attempted while a personal stop was live, refused by the guardrail (**prevented**) | a break |
+| `override` | an overridable stop crossed with a stated reason (**accepted**) | a break |
+| `breach` / `state_observed` | the daily state observed with a live stop — a **condition**, not an attempt | reported **separately**, never counted as a break |
+| `journal_record` | legal records and closes during a stop | **excluded** on purpose: honest history is not misconduct |
+
+Both counted kinds break down **by the rule the audit itself named** (parsed from the stored
+snapshot), so the review says *which* rule fired, not just how often — and per day, newest first.
+
+**Four honesty rules are in the payload, not only in the docs.**
+
+* **Unknown is not clean.** A read failure returns `state:'unavailable'` with `breaks:null` — not
+  zero — and the card renders *"Guardrail audit evidence unavailable. This is unknown, not a clean
+  week and not zero rule breaks."* A reversed date range is refused as `unavailable`, not silently
+  widened.
+* **A prevented attempt is not an outcome.** `broken_attempt` events are counts of what the app
+  refused; that is why they are reported as *prevented*, beside *accepted*, and never summed with
+  P&L.
+* **An observed condition is not an attempt.** `observations` is its own figure, so a state that was
+  merely seen cannot inflate the break count.
+* **A break is never joined to a result.** `outcome_joined:false` rides the payload with the sentence
+  that says why: *"a counted break is a recorded observation, and saying what it cost would be a
+  causal claim this journal has not measured."* An event whose snapshot cannot be decoded is counted
+  as `unreadable_snapshots` and named, never dropped and never assumed clean; a break row that names
+  no rule is `unnamed_rule_events` — counted, but not attributed to a rule it did not carry.
+
+**Delivery shape:** the tally rides the **existing** `GET /api/analytics` payload as
+`analytics.rule_breaks`, scoped to the **resolved analysed account** (not every desk the trader owns)
+with `from`/`to` taken from the payload's own window, and the UI is one read-only card,
+`Views.ruleBreaks.card`, on the analytics view above its existing tabs. **No new endpoint, no writes,
+no influence on any grade, cap, permission or guardrail decision** — the guardrail reads the live
+state and never this tally.
+
+**Measured:** **79/0 across 4 probes** (module 26, API 23, migration 12, UI 18) — the module against
+audit rows shaped exactly the way `guardrails.logEvent()` writes them, the endpoint over real HTTP,
+the card in the shipped DOM, and the database the committed M112 release created and wrote with its
+own code. Two reads of the same scope are byte-identical. The **pre-hardening control** is the
+delivered tally with the committed M112 endpoint, page and view: the count exists and nothing can
+reach it (the control probe's own measure is 5/3 there, 8/0 delivered).
+
+---
+
+## The minifier — `tools/jsmin/` (2026-10-13)
+
+The front end ships as readable source on purpose, and it now also ships the tool that can compress it:
+a dependency-free JavaScript compressor with **its own parser, its own printer and its own Source Map
+v3 generator** — no `package.json`, nothing to install, no build step, no external tool.
+
+```sh
+node tools/jsmin/cli.js public/js/util.js -o /tmp/util.min.js --source-map /tmp/util.min.js.map --rename-locals
+```
+
+Measured on this tree (`python3 analysis/run-jsmin-verification.py --suite feature`): **113 assertions
+across six probes, 0 failures** — every JavaScript file the app ships parses, prints, re-parses and
+prints to the same bytes, V8 itself accepts all of them (`node --check`), and every one of the 66
+behavioural snippets behaves identically before and after compression. Compressing the tree costs
+**2,045,043 → 1,447,184 bytes (70.8 %)** across 85 files, with **200,299 mappings** written while
+printing.
+
+What it refuses to do is the point: no call, `new`, property read, `delete`, `instanceof` or tagged
+template is ever removed; property names are never mangled; no parameter is ever dropped (`fn.length`
+and `arguments` are observable); nothing is renamed in a file that contains `eval`, the `Function`
+constructor or a `with`; and a name that appears anywhere as text is never reused. The two differences
+it does make are stated rather than hidden — a `debugger` statement is dropped by default, and
+`fn.toString()` returns the printed text. Two documented exceptions, a measured depth limit, and every
+pass with its count and its reason are written into the report the tool emits.
+
+* `tools/jsmin/README.md` — how to run it, what it guarantees, what it does not
+* `analysis/JSMIN.md` — the verification: six probes, the control that measures the naive approaches
+  breaking, and the ten defects the probes found while it was being written
+
+---
+
 ## M112 — the trading window is a hard block, not a penalty (2026-10-13)
 
 Ep31 names the guardrail and where it must come from: *"for a trading window, you only want to set

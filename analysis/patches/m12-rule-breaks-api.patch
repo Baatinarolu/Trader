@@ -1,0 +1,23 @@
+diff --git a/src/routes/api.js b/src/routes/api.js
+index c3ca3b9..f4f3166 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -17,6 +17,7 @@ const Execution = require('../execution-review');
+ const Screenshots = require('../screenshots');
+ const Confluences = require('../confluences');
+ const Emotions = require('../emotions');
++const RuleBreaks = require('../rule-breaks');   // M12 — the guardrail audit, aggregated for the review
+ const PeriodReviews = require('../period-reviews');
+ const RuleChanges = require('../rule-changes');
+ const Identity = require('../identity');
+@@ -599,6 +600,10 @@ router.get('/analytics', requireAuth, async (req, res) => {
+   analytics.opportunity_review=await Opportunities.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
+   analytics.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
+   analytics.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:req.query.account_id??null,from:req.query.from??null,to:req.query.to??null});
++  /* M12 — the audit tally is scoped to the SAME account this payload analyses (the resolved
++   * account, not every account the trader owns), so the review cannot read one desk's performance
++   * beside another desk's rule breaks. `from`/`to` are the payload's own window when given. */
++  analytics.rule_breaks=await RuleBreaks.optional(req.user.id,{accountId:acc.id??null,from:req.query.from??null,to:req.query.to??null});
+   res.json(analytics);
+ });
+ 

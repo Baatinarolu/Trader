@@ -1,0 +1,44 @@
+{
+  "item": "M12 — the rule breaks the app already recorded, tallied for the review that reads them",
+  "parent": "67f2ed26f2398bd0f95537f88dee65f5c760e771",
+  "parent_short": "67f2ed2",
+  "ledger_before": [132, 107, 2, 23, 0, 8],
+  "ledger_after": [132, 108, 2, 22, 0, 8],
+  "issue": "Rule breaks were produced and never surfaced: correction.dailyState() derived named breaches and guardrails.logEvent() had been writing blocked_attempt/override/breach/journal_record rows into guardrail_events since M64, while performance.js contained zero references to a rule break — so the weekly review could show P&L, session, grade and mistake segments and never answer \u201chow many times did my own rules stop me this week, and which rule was it?\u201d. The ledger's direction is aggregate, not detect.",
+  "owned_surfaces": {
+    "module": "src/rule-breaks.js (rule-breaks-v1): a pure evaluate() over already-read audit rows plus an inspect() that reads the trader's own accounts only, newest-first and bounded; prevented = blocked_attempt, accepted = override, observations = breach/state_observed (a CONDITION, not an attempt), records excluded = journal_record (honest history), all four kept apart on purpose",
+    "endpoint": "analytics.rule_breaks on the EXISTING GET /api/analytics \u2014 no new route, scoped to the resolved analysed account (not every desk the trader owns) with from/to from the payload's own window",
+    "card": "public/js/views/rule-breaks.js (Views.ruleBreaks.card) mounted in public/js/views/analytics.js above its existing tabs and loaded by public/index.html after behavior-days.js",
+    "docs": "extracted/tradejournal/README.md, docs/API.md"
+  },
+  "framing_rules": [
+    "an unknown read is `unavailable` with breaks:null \u2014 never zero and never a clean week; a reversed from/to range answers the same way rather than being silently widened",
+    "a prevented attempt is a refusal the app issued, an accepted override is a break that was allowed with a stated reason, and the two are counted as breaks \u2014 separately from each other",
+    "an observed live-stop CONDITION is not an attempt and is never added to the break count",
+    "legal records and closes during a stop are excluded from the count because honest history is not misconduct",
+    "a break is never joined to a result: outcome_joined:false carries the sentence saying why, and the payload carries no P&L beside the count",
+    "a row whose snapshot cannot be decoded is counted as unreadable and named; a row that named no rule is counted but not attributed to a rule it did not carry",
+    "read-only: no write, no new endpoint, and no influence on any grade, cap, permission or guardrail decision \u2014 the guardrail reads the live state, never this tally",
+    "an empty-but-readable scope answers with real zeros and by_rule:[] plus the sentence that it is a recorded tally, not a claim about unrecorded behaviour",
+    "no 70 %/causal/predictive/broker/human/mental-state/provider/production claim; nothing retuned; no existing guard weakened"
+  ],
+  "deliverables": {
+    "module": "extracted/tradejournal/src/rule-breaks.js",
+    "route": "extracted/tradejournal/src/routes/api.js (analytics.rule_breaks)",
+    "views": "extracted/tradejournal/public/js/views/rule-breaks.js, public/js/views/analytics.js, public/index.html",
+    "docs": "extracted/tradejournal/README.md, docs/API.md",
+    "probes": "analysis/probe-m12-{pure,api,migration,ui,control}.js",
+    "runner": "analysis/run-m12-verification.py",
+    "smoke": "analysis/run-m12-smoke.py",
+    "capture": "analysis/capture-m12-stages.py",
+    "builder": "analysis/build-m12-rule-breaks-artifacts.py",
+    "report": "analysis/M12-RULE-BREAKS.md"
+  },
+  "carried_not_owned": {
+    "files": ["tools/jsmin/README.md", "tools/jsmin/ast.js", "tools/jsmin/cli.js", "tools/jsmin/compress.js", "tools/jsmin/emit.js", "tools/jsmin/index.js", "tools/jsmin/lexer.js", "tools/jsmin/parse.js", "tools/jsmin/scope.js", "tools/jsmin/sourcemap.js"],
+    "why": "The dependency-free minifier was delivered in its own commit (1bf6bab) on top of the M112 release, before this milestone. It is carried unchanged into every M12 stage tree and into the fixed archive so a stage measures M12's own fault rather than the absence of an unrelated tool, and its own apparatus stays frozen under analysis/evidence/jsmin/ (113/0 across six probes)."
+  },
+  "cohort_before_control_arms": {
+    "note": "Written before the delivered tree's final runs; the builder asserts the measured numbers from analysis/evidence/m12/feature-summary.json and each probe's own results file, so this file is the scope statement, not the evidence."
+  }
+}

@@ -157,7 +157,7 @@ they are converted using the stop distance.
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/analytics` | Full payload: `kpis`, `equity[]`, `daily{}`, `monthly{}`, `distribution[]`, `points[]` (per-trade R/MAE/MFE/risk), segment tables (`by_strategy`, `by_symbol`, `by_session`, `by_timing`, `by_emotion`, `by_mistake`, `by_tag`, `by_hold`, `by_adherence`, …), `time{}` grids. Accepts all trade filters. |
+| GET | `/analytics` | Full payload: `kpis`, `equity[]`, `daily{}`, `monthly{}`, `distribution[]`, `points[]` (per-trade R/MAE/MFE/risk), segment tables (`by_strategy`, `by_symbol`, `by_session`, `by_timing`, `by_emotion`, `by_mistake`, `by_tag`, `by_hold`, `by_adherence`, …), `time{}` grids, and `rule_breaks` (M12) — the **read-only tally of the guardrail audit** for the **same resolved account** this payload analyses, with `from`/`to` taken from the payload’s own window (see [the rule-break tally](#the-rule-break-tally--recorded-never-joined-to-a-result-m12)). Accepts all trade filters. |
 | GET | `/analytics/monte-carlo` | `?risk_pct=1&horizon=100&sims=2000&start_equity=10000&ruin=50` → `monte_carlo` percentiles + `optimal_risk` (Kelly / half / quarter) |
 | GET | `/coach` | `{ insights:[{ id, severity, title, detail, impact, evidence[], action }], score:{score,grade}, summary }` |
 | GET | `/briefing` | pre-session plan: market context, risk multiplier and reasoning, performance snapshot, open positions, focus items, checklist |
@@ -268,6 +268,49 @@ the methodology, the weights and the honest limitations.
 | GET | `/bots/window` | `account_id` (optional) | the trader's own trading window: `{ state, block, reason, window{ start, end, timezone, source, span_minutes, local_time }, in_window, until_minutes, owned_timezone, suggestion, settings, basis, limits }`. `state` is `unset` \| `inside` \| `outside` \| `unavailable` (M112); **`unset` blocks nothing** and **`unavailable` refuses** with its repair action. The suggestion is derived from the trader's own recorded `by_session` history, labelled `from_session_history`, refused below the 30-trade review floor, and never applied by the server. |
 | PUT | `/bots/window` | `{ account_id?, window_start, window_end, accept_suggestion? }` | set, accept or clear the window. Both sides of an `HH:MM` pair in the account's owned IANA zone, or both blank/null to clear. `accept_suggestion: true` applies the current derived candidate (409 `trading_window_suggestion_unavailable` when it is refused). `source` is recorded as `from_session_history` only when the submitted pair is exactly the current candidate, otherwise `manual`. |
 | GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ state, blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, unavailable?, unavailable_note?, error? }`. `state` is `blocked` \| `clear` \| `unknown` (M111): `clear` means the calendar **was read** and nothing is inside its clock; a read that failed is `unknown`, which carries `unavailable` (the reason), `unavailable_note` (the sentence to display) and `windows.unavailable: true`. An `unknown` read still echoes the pair, so a client can name the windows that were **not** checked — it is never an all-clear. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
+
+### The rule-break tally — recorded, never joined to a result (M12)
+
+Ep 26 lists **rule breaks** among the metrics a weekly review tracks. The app already produced them
+(`correction.dailyState()` names the breaches) and already persisted them (`guardrails.logEvent()`
+writes `blocked_attempt`, `override`, `breach`/`state_observed` and `journal_record` rows into
+`guardrail_events`), but nothing read them back: `performance.js` had zero references to a rule
+break, so the review could never answer *"how many times did my own rules stop me this week, and
+which rule was it?"*. `src/rule-breaks.js` (`rule-breaks-v1`) is that aggregation and nothing else —
+**no new endpoint, no writes, no detection**.
+
+`GET /api/analytics` now carries `analytics.rule_breaks`, scoped to the **resolved analysed account**
+(not every desk the trader owns) with `from`/`to` from the same query. The object is either
+`{state: "unavailable", reason, breaks: null, …}` or `{state: "available", …}` with:
+
+| field | meaning |
+| --- | --- |
+| `breaks` | `prevented + accepted` — the counted rule breaks, and the only figure that is a break |
+| `prevented` | `blocked_attempt` rows: an entry attempted while a personal stop was live and refused |
+| `accepted` | `override` rows: an overridable stop crossed with a **stated reason**, kept as history |
+| `observations` | `breach`/`state_observed` rows: a live stop state **observed** — a condition, **not an attempt**, reported separately so it cannot inflate the count |
+| `records_excluded` | `journal_record` rows (legal records, closes during a stop) — excluded on purpose, because honest history is not misconduct |
+| `by_rule[]` | `{rule, breaks, prevented, accepted, last_at, days[]}` — the rule names the audit itself stored in the day snapshot, so the review says *which* rule fired |
+| `by_day[]` | newest first, with `breaks` and `observations` per day |
+| `unreadable_snapshots` | break rows whose stored snapshot could not be decoded — counted as such, **never dropped and never assumed clean** |
+| `unnamed_rule_events` | break rows that named no rule — counted, but **not attributed** to a rule they did not carry |
+| `account_ids` | the account(s) the tally **covered**, including a zero-break account: the scope is what was asked for, not only what happened to appear in a row |
+| `windows` | `first_date`, `last_date`, `days`; `truncated: true` when the bounded read hit its bound (the read is newest-first, so a bounded read is still a recent one) |
+| `outcome_joined` | always `false`, with `outcome_note` saying why: a counted break is a recorded observation, and saying what it cost would be a causal claim this journal has not measured |
+| `limits` | `read_only: true`, `writes: 0`, `grades_influence`, `permission_influence`, `caps_influence`, `guardrail_decisions_influence`, `predicts`, `causal`, `broker_verified` all `false` |
+
+**Four states of evidence, kept apart.** An **unknown** read is `unavailable` with `breaks: null` —
+not zero and not a clean week (a reversed `from`/`to` range answers the same way rather than being
+silently widened). A **prevented** attempt is a refusal the app issued, not an outcome. An
+**observed** condition is not an attempt. And a counted break is **never joined to results**: the
+payload carries no P&L beside it, and `analytics.rule_breaks` changes no grade, cap, permission or
+guardrail decision — the guardrail reads the live state, never this tally. An empty-but-readable
+scope answers with **real zeros** and `by_rule: []` plus the sentence that it is a recorded tally,
+not a claim about unrecorded behaviour.
+
+Two reads of the same scope are byte-identical. The card is `Views.ruleBreaks.card` on the analytics
+view above its existing tabs; it renders the total, the per-rule and per-day lines, the two warning
+lines for unreadable and unnamed rows, and the module's own `basis`/`scope` sentences.
 
 ### The trading window — a hard block, not a penalty (M112)
 

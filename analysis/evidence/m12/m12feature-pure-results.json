@@ -1,0 +1,112 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 26,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M12 rule-break tally (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the vocabulary is the audit’s own kinds: a prevented attempt, an accepted override, an observed condition, a legal record",
+      "passed": true
+    },
+    {
+      "label": "breaks are the ATTEMPTS: five prevented entries and one accepted override, not the conditions",
+      "passed": true
+    },
+    {
+      "label": "a live stop state is reported SEPARATELY as an observation and is never counted as a break",
+      "passed": true
+    },
+    {
+      "label": "a legal record during a stop is excluded from the break count on purpose — honest history is not misconduct",
+      "passed": true
+    },
+    {
+      "label": "rules are named from the stored snapshot, so the review says WHICH rule fired",
+      "passed": true
+    },
+    {
+      "label": "prevented and accepted are kept apart PER RULE, so an unwaivable block is not blurred with an override",
+      "passed": true
+    },
+    {
+      "label": "a snapshot this app cannot decode is COUNTED as a break and REPORTED unreadable — never dropped, never attributed",
+      "passed": true
+    },
+    {
+      "label": "a decodable snapshot that names no rule is counted but left UNNAMED rather than attributed to a rule it never carried",
+      "passed": true
+    },
+    {
+      "label": "another trader’s audit rows are excluded from every number in the payload",
+      "passed": true
+    },
+    {
+      "label": "an unreadable snapshot is still a break event: the total counts what happened, the rule list counts what could be named",
+      "passed": true
+    },
+    {
+      "label": "the window filters on the audit’s own day, not on the clock of the read",
+      "passed": true
+    },
+    {
+      "label": "each day carries its own split and the rules that fired on it, and days are newest-first",
+      "passed": true
+    },
+    {
+      "label": "the window it actually used is reported, so a review can state the period it covers",
+      "passed": true
+    },
+    {
+      "label": "reading the tally twice is identical: it is a function of the recorded rows, not of when it was read",
+      "passed": true
+    },
+    {
+      "label": "a range that is reversed is refused with the module’s own code rather than answered backwards",
+      "passed": true
+    },
+    {
+      "label": "a date that is not a real UTC day is refused, so a window cannot silently become a different one",
+      "passed": true
+    },
+    {
+      "label": "an owned user is required: an unowned or absent id is refused rather than answered",
+      "passed": true
+    },
+    {
+      "label": "the payload refuses to join a break to an outcome, and says why in its own words",
+      "passed": true
+    },
+    {
+      "label": "the tally cannot influence a grade, a cap, a permission or a guardrail decision, and writes nothing",
+      "passed": true
+    },
+    {
+      "label": "the basis and scope sentences say what a counted break is and is not, including that an unrecorded break is invisible",
+      "passed": true
+    },
+    {
+      "label": "an unreadable audit is UNKNOWN, not zero and not a clean week: every count is null and the rule list is empty",
+      "passed": true
+    },
+    {
+      "label": "an empty but readable audit is a real ZERO with its own shape — distinguishable from the unreadable case above",
+      "passed": true
+    },
+    {
+      "label": "the same rows give the same answer whether they arrive as a slice or as the whole audit (no hidden global)",
+      "passed": true
+    },
+    {
+      "label": "the rule parser reads the audit’s stored breach list (and a bare list), deduplicating names within one snapshot",
+      "passed": true
+    },
+    {
+      "label": "the module is a leaf about the DECISION: neither the guardrail nor the correction bot requires it, so no rule can be crossed because a tally was stale",
+      "passed": true
+    }
+  ],
+  "scope": "M12 pure: the guardrail audit, aggregated without inflating it: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

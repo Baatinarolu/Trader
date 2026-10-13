@@ -1,0 +1,24 @@
+ok this tree ships the M12 rule-break tally (the committed parent does not, and that absence is this probe's control)
+ok the analytics payload carries the tally beside the other read-only aggregates
+ok an empty but readable audit is a real ZERO with its own shape — not the unavailable shape
+ok the tally reports the account scope it used, so the review can state what it covers
+ok the endpoint publishes its limits: read-only, no writes, no grade/cap/permission/decision influence, no causal claim
+ok reading the tally twice writes NOTHING: every table is byte-identical, including the audit it reads
+ok the tally counts what the endpoint’s own account recorded: three attempts (two prevented, one accepted override) and one observed stop
+ok the rules are NAMED, so the review can say which one fired
+ok another account of the same trader is NOT folded in: the second desk’s blocked attempt on the news rule is absent here
+ok and that other account reports its own tally when it is the account being reviewed
+ok the default (no account_id) review scopes the tally to the account IT resolved, so the payload never disagrees with itself
+ok another trader’s audit rows are excluded from every number the endpoint returns
+ok the window the caller asked for is applied to the audit’s own days
+ok seeding rule breaks changes NO performance number in the same payload: the whole statistics block is byte-identical with and without them
+ok and so is the account block: the tally cannot move a balance, a cap or a policy field
+ok no grade, score or permission is derived from the tally anywhere in its own payload
+ok a reversed range is UNKNOWN, not zero and not a clean week, and the rest of the review still answers with a 200
+ok an account the trader does not own is never read: the payload falls back to their own desk and the foreign id appears in no scope
+ok the tally is not readable without a session, like the rest of the payload
+ok a bounded read takes the MOST RECENT events (the newest two are a legal record and an observed stop, so they are what must come back) and reports the truncation instead of hiding rows
+ok one more row of budget reaches the newest attempt, so the bound is a window and not a filter
+ok an unreadable store is UNKNOWN for the endpoint too: the failure is not reported as zero breaks
+ok the audit rows the probe seeded are still exactly what it wrote: seeding is the app’s own shape, not a probe fiction
+M12 api: recorded rule breaks, scoped and read-only: 23 passed, 0 failed

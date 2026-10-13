@@ -56,10 +56,10 @@
  ok   four 15m bars fold into one 1h bar (2 built)
  ok   and the buckets are anchored to the clock, not to the first bar fetched
  ok   the aggregate carries the right high/low
-TOP-DOWN TEST CRASH: Error: No candles for EURUSD 4h (aggregate: No candles for EURUSD 1h (Yahoo: Yahoo EURUSD=X [1h/1y]: query2: fetch failed (ECONNRESET) | query1: fetch failed (ECONNRESET)) [network: every provider failed at the transport layer, so the data hosts were unreachable from this machine. That is a connectivity problem, not a bad symbol, an unsupported interval, or an empty dataset — no data source replied at all.]) [network: every provider failed at the transport layer, so the data hosts were unreachable from this machine. That is a connectivity problem, not a bad symbol, an unsupported interval, or an empty dataset — no data source replied at all.]
+TOP-DOWN TEST CRASH: Error: No candles for EURUSD 15m (Yahoo: Yahoo EURUSD=X [15m/1mo]: query2: fetch failed (ECONNRESET) | query1: fetch failed (ECONNRESET)) [network: every provider failed at the transport layer, so the data hosts were unreachable from this machine. That is a connectivity problem, not a bad symbol, an unsupported interval, or an empty dataset — no data source replied at all.]
     at Object.getCandles (/home/user/Trader/extracted/tradejournal/src/candles.js:607:11)
     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
     at async series (/home/user/Trader/extracted/tradejournal/src/bots/momentum.js:58:27)
-    at async Promise.all (index 0)
+    at async Promise.all (index 1)
     at async Object.analyse (/home/user/Trader/extracted/tradejournal/src/bots/momentum.js:531:30)
     at async /home/user/Trader/extracted/tradejournal/scripts/topdown-test.js:255:16

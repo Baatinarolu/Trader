@@ -1,0 +1,17 @@
+{
+  "app": "/tmp/m12-pre-hardening/app",
+  "pass": 1,
+  "fail": 1,
+  "results": [
+    {
+      "label": "this tree ships the M12 rule-break tally (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "ENOENT: no such file or directory, open '/tmp/m12-pre-hardening/app/public/js/views/rule-breaks.js'"
+    }
+  ],
+  "scope": "M12 real DOM: the rule-break card the review reads: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

@@ -1,0 +1,27 @@
+ok this tree ships the M12 rule-break tally (the committed parent does not, and that absence is this probe's control)
+ok the vocabulary is the audit’s own kinds: a prevented attempt, an accepted override, an observed condition, a legal record
+ok breaks are the ATTEMPTS: five prevented entries and one accepted override, not the conditions
+ok a live stop state is reported SEPARATELY as an observation and is never counted as a break
+ok a legal record during a stop is excluded from the break count on purpose — honest history is not misconduct
+ok rules are named from the stored snapshot, so the review says WHICH rule fired
+ok prevented and accepted are kept apart PER RULE, so an unwaivable block is not blurred with an override
+ok a snapshot this app cannot decode is COUNTED as a break and REPORTED unreadable — never dropped, never attributed
+ok a decodable snapshot that names no rule is counted but left UNNAMED rather than attributed to a rule it never carried
+ok another trader’s audit rows are excluded from every number in the payload
+ok an unreadable snapshot is still a break event: the total counts what happened, the rule list counts what could be named
+ok the window filters on the audit’s own day, not on the clock of the read
+ok each day carries its own split and the rules that fired on it, and days are newest-first
+ok the window it actually used is reported, so a review can state the period it covers
+ok reading the tally twice is identical: it is a function of the recorded rows, not of when it was read
+ok a range that is reversed is refused with the module’s own code rather than answered backwards
+ok a date that is not a real UTC day is refused, so a window cannot silently become a different one
+ok an owned user is required: an unowned or absent id is refused rather than answered
+ok the payload refuses to join a break to an outcome, and says why in its own words
+ok the tally cannot influence a grade, a cap, a permission or a guardrail decision, and writes nothing
+ok the basis and scope sentences say what a counted break is and is not, including that an unrecorded break is invisible
+ok an unreadable audit is UNKNOWN, not zero and not a clean week: every count is null and the rule list is empty
+ok an empty but readable audit is a real ZERO with its own shape — distinguishable from the unreadable case above
+ok the same rows give the same answer whether they arrive as a slice or as the whole audit (no hidden global)
+ok the rule parser reads the audit’s stored breach list (and a bare list), deduplicating names within one snapshot
+ok the module is a leaf about the DECISION: neither the guardrail nor the correction bot requires it, so no rule can be crossed because a tally was stale
+M12 pure: the guardrail audit, aggregated without inflating it: 26 passed, 0 failed
