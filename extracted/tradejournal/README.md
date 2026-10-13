@@ -1,5 +1,82 @@
 # TradeJournal Pro
 
+## M112 — the trading window is a hard block, not a penalty (2026-10-13)
+
+Ep31 names the guardrail and where it must come from: *"for a trading window, you only want to set
+your **best session window**… **on data, based on historical performance**, what is the time window
+that you tend to perform the best in?"* His own answer is a window on a named clock — *"based on my
+data, I figured out that my trades tend to work out really really well during the London Q-Zone…
+7:00 a.m. UTC to around 10:00 a.m. UTC"* — and he uses it as an overtrading control: *"Edge Flow
+fixes that with max trades per day **and a shorter trading window**. So, you're only trading your
+best hours."* `ixmTrvUB1Ks` settles the shape: *"you can select a **window** in which you want to be
+trading within… if you try to trade outside of this window, **the guardrail will prevent you from
+doing so**."* The codebase had **no such setting** (`grep -rniE 'trading_window|window_start'
+src/` returned 0 hits) even though `performance.js` already computed `by_session`.
+
+**Four states, and they are not interchangeable.** `src/trading-window.js` (`trading-window-v1`) is
+a **leaf** — no requires, no environment, no filesystem, no clock of its own — and owns **`unset`**
+(no window selected: **nothing is blocked on one**), **`inside`**, **`outside`** (the guardrail
+refuses the entry) and **`unavailable`** (the stored window could not be read: also a refusal, with
+the repair action named). Collapsing `unset` into `outside` would invent a boundary, and collapsing
+`unavailable` into `inside` would open a gate the trader asked to close. Boundaries are half-open
+`[start, end)` on the trader's own local clock — the start minute is inside, the end minute is
+outside, a start later than the end runs through midnight — the pair is **both sides or neither**,
+an equal pair is refused, and a window cannot exist without the **IANA zone** it was authored in
+(the account's owned routine timezone). If that timezone changes later, the window is reported
+`unavailable` **naming both zones** instead of being silently reinterpreted on a new clock: a hard
+boundary must not move because another setting moved.
+
+**Four additive columns, and the constraints are the schema's own.** `window_start`, `window_end`,
+`window_timezone` and `window_source` are NULL by default (**no window is invented for an existing
+account**), with column CHECKs that refuse a malformed clock, one side without the other, two equal
+sides, a window without a zone, and a source outside `manual`/`from_session_history` — declared
+identically on the fresh table and in the migration, so an upgraded database carries the same text
+as a new one.
+
+**The derived default is a suggestion the trader accepts, never something the app writes.** `GET
+/api/bots/window` returns the trader's best recorded `by_session` bucket and, inside it, the middle
+50 % of their own recorded entry **hours** rounded outward to whole hours (the band is computed on a
+circle, so a session around midnight is one band, and a band wider than half the clock is refused
+rather than stretched). It is labelled `from_session_history` with a `basis` stating it describes
+recorded journal outcomes and is **not a prediction, a market edge or permission**; it is **refused
+entirely below the course's own 30-trade review floor**; and `PUT /api/bots/window` records
+`from_session_history` **only** when the submitted pair is exactly the candidate the account derives
+at that moment — otherwise `manual`. Clearing writes four NULLs and blocks nothing.
+
+**How it blocks.** The window is merged into the desk's personal state in the same shape the state
+gate uses, so `Guards.applyToSetups`, the **entry-admission path** (`POST /trades`, reopen), the Now
+playlist and every scan row refuse a signal outside it, and `setup.js` carries the refusal as a
+**veto** beside the other non-negotiables with `setups.filters.trading_window` beside
+`filters.news_state`. It is **not** a scored penalty and **not** a grade: the existing weight-8
+session/killzone row, the risk guardrail, every cap, target, clock and sample floor are untouched,
+and an existing stop is never hidden by it — the window appends a breach and can only make a refusal
+stricter (`can_override: false`). The settings dialog shows the two fields, the owned zone, the
+sentence in force and the labelled suggestion with its own "use this" button.
+
+**Measured.** M112 **181/0 across 6 probes** (module 36, engine 18, consumers 32, API 49, migration
+16, real-DOM UI 30). The actual **4791809 M111 release** — the direct parent — was measured at
+**0/1 on all six probes**: the module, the four columns and the endpoint do not exist there, and
+that absence IS the control. The **pre-hardening runtime** (the delivered rule and columns with the
+committed M111 engine, endpoints and views: a window can be stored and nothing consults it),
+measured by the **unchanged** probes, gave engine **4/14**, consumers **7/25**, API **7/42** and UI
+**3/27**, with every failing line naming the missing enforcement rather than a crash and the same
+assertions `ok` here. The deliverable is re-derived from four saved stage patches and stacked onto
+the pristine archive: **147 sources**, application byte difference 0, and the ZIP rebuilt from those
+patches is byte-identical. Smoke (the shipped `scripts/smoke-test.js`) is **21/21 views, 0
+UI-style failures, 0 console errors** on this tree **and** on the parent at the same sample — the
+smoke run does not open the window dialog, and that coverage is named as
+`analysis/probe-m112-ui.js` instead of being claimed. On this tree the M111 cohort re-runs at
+**152/2** and M110 at **249/9**: every failure is one of those releases' own frozen schema-shape
+assertions (M111 proved it added no schema object; M110 froze the exact M110-era `accounts` shape),
+retained by name in `analysis/evidence/` because M112 adds four additive `accounts` columns on
+purpose. Older cohorts keep their own declared negatives (M109 166/2, M108 257/2, M107 230/2, M106
+316/2, M105 140/2); RAW 596/156, DECLARED 824/4 and the live-provider arm 70/1 re-run identical;
+the native provider arms stay inherited. The sandbox has no market, broker or calendar provider, so
+the entry engine is fed the probes' own synthetic series, the pre-market routine is completed
+through the app's own endpoints, and **no live-feed, provider, broker, pixel, human or production
+proof is claimed** — nothing here says an hour will be profitable. Ledger **132 = 107 done / 2
+partial / 23 TODO**. Report `analysis/M112-TRADING-WINDOW.md` in the ZIP.
+
 ## M111 — an unreadable calendar is UNKNOWN, not clear (2026-10-13)
 
 Ep 30 frames the news block as a **safety** mechanism, not a preference — *"it prevent you from
@@ -32,11 +109,13 @@ false. A caller that consulted no calendar at all — the chart and scan surface
 unchanged: this fix is about the read that **failed**, not about every surface that does not read.
 The state is derived on every check and **never stored**: no column, no settings key, no write.
 
-**Measured.** M111 **158/0 across 8 probes** (module 26, engine 21, consumers 20, API 14, freshness
-11, hardening 36, portable 15, migration 16/0 against the actual **b39d9ef M110 release** — no
+**Measured.** M111 **154/0 across 8 probes** (module 26, engine 21, consumers 20, API 14, freshness
+11, hardening 36, portable 10, migration 16/0 against the actual **b39d9ef M110 release** — no
 schema object added or changed, every inherited fact byte-identical, and the *same failing read*
 answers `unknown` on the delivered tree where the parent answered with a quiet payload that had no
-state at all). M110's own cohort re-runs at **253/5**, and those five failures are this milestone's
+state at all). M110's own cohort re-ran at **253/5 on the M111 tree** (the M112 tree adds four
+additive `accounts` columns, which moves four more of that probe's frozen shape assertions — see the
+top of this file), and those five failures are this milestone's
 **declared negatives**: three assertions in the M110 engine/consumers probes that measure the
 pre-M111 silence on purpose (including its "M111 is open and NOT solved here" marker, which exists
 so closing M111 cannot be mistaken for a regression) and two that assert the blocked payload's
@@ -48,9 +127,9 @@ The calendar is fed through the app's own fetch path and parser in every probe a
 calendar provider is reachable from this sandbox, so **no live-feed, provider, broker, pixel or
 human proof is claimed**, and nothing here says what a release will do to price. Ledger
 **132 = 106 done / 2 partial / 24 TODO**. Report `analysis/M111-CALENDAR-UNKNOWN.md` in the ZIP.
-Next **M112** (a trading window derived from `by_session` history — a hard block, not a scored
-penalty); no 70 % win-rate, causal/predictive edge, broker/provider/human/mental-state/pixel/
-production claim, and no predictor of any kind.
+M112 followed — a trading window derived from `by_session` history as a **hard block, not a scored
+penalty** (see the top of this file); no 70 % win-rate, causal/predictive edge,
+broker/provider/human/mental-state/pixel/production claim, and no predictor of any kind.
 
 ## M110 — the news stand-down is two clocks, not one (2026-10-13)
 

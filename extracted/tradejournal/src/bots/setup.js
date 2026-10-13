@@ -985,6 +985,13 @@ function buildSetups(analysis, ctx = {}) {
     // (the blackout string is built from the account's settings), instead of a generic
     // phrase that leaves the trader guessing which clock stopped the trade.
     if (blackout) vetoes.push(blackout);
+    /* M112 — the trading window is the trader's OWN boundary and the episode settles it as a hard
+     * block: "if you try to trade outside of this window, the guardrail will prevent you from doing
+     * so." It is therefore a veto beside the other non-negotiables, not a penalty inside the score,
+     * and the sentence carries their window, their zone, the local time and the minutes until it
+     * opens. `unset` never reaches here as a block: no window selected blocks nothing, and an
+     * unreadable one is the module's own repair sentence rather than a silent pass. */
+    if (ctx.tradingWindow && ctx.tradingWindow.block) vetoes.push(ctx.tradingWindow.detail);
     // M8 — tested against the boolean, not truthiness: when analysis is the short-series
     // sentinel, `sessions` is {} and in_killzone is undefined, which must NOT veto.
     /* M26 — the specific-window veto. It SUPERSEDES the generic one when it applies,
@@ -1232,6 +1239,14 @@ function buildSetups(analysis, ctx = {}) {
     grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
     filters: {
       killzone: sessions.killzone || 'outside killzone',
+      /* M112 — the trading window the trader owns, stated as a filter beside the killzone rather
+       * than only as a refusal, so a client can render "your window is 07:00-10:00 Africa/Lagos and
+       * it is 13:41 there" without re-deriving it from the veto string. `not_selected` is its own
+       * token: this app never defaults one. */
+      trading_window: ctx.tradingWindow ? { state: ctx.tradingWindow.state, start: (ctx.tradingWindow.window || {}).start || null,
+        end: (ctx.tradingWindow.window || {}).end || null, timezone: (ctx.tradingWindow.window || {}).timezone || null,
+        source: (ctx.tradingWindow.window || {}).source || null, local_time: (ctx.tradingWindow.window || {}).local_time || null,
+        block: !!ctx.tradingWindow.block, reason: ctx.tradingWindow.reason || null } : { state: 'not_consulted', block: false },
       /* M10 — the stand-down POLICY and its inputs, which are facts about this bar and
        * this configuration, so they belong at the top level. Whether a given setup was
        * actually demoted is a fact about that setup and lives on the candidate instead;

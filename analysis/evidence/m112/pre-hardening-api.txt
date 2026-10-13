@@ -1,0 +1,50 @@
+ok this tree ships the M112 trading-window rule (the committed parent does not, and that absence is this probe's control)
+FAIL a desk with no window reports `unset` and says nothing is blocked on one — not an empty pass and not a guessed boundary {}
+FAIL and it offers the suggestion as the trader’s own journal with nothing to derive yet, rather than a default window undefined
+FAIL the endpoint states its own limits: read-only, no writes, no permission granted, no prediction, no inferred window undefined
+FAIL and it carries the module’s basis and his own words, so the UI does not paraphrase the rule 0
+FAIL no zone is owned yet, and the endpoint says so rather than assuming one undefined
+ok another trader’s window is not served: an unknown id and a FOREIGN trader’s account are both a 404, never an empty window
+ok and neither can a foreign trader’s window be written
+FAIL refuses a clock that is not HH:MM with its own code, at the status the app already uses for that class {"status":404,"error":"undefined"}
+FAIL refuses one side alone with its own code, at the status the app already uses for that class {"status":404,"error":"undefined"}
+FAIL refuses two equal sides with its own code, at the status the app already uses for that class {"status":404,"error":"undefined"}
+FAIL refuses a window before any zone is owned with its own code, at the status the app already uses for that class {"status":404,"error":"undefined"}
+FAIL refuses a window before any zone is owned, even with a zone supplied with its own code, at the status the app already uses for that class {"status":404,"error":"undefined"}
+FAIL and a refused write changes nothing: the desk still has no window after all five undefined
+ok the trader’s own zone is set through the account they already edit, and the window then has a clock to live on
+FAIL an offset is refused once a zone IS owned: `+01:00` follows no daylight-saving rule, so it is not the trader’s own clock {"status":404}
+FAIL a window the trader types is saved as `manual` and is NOT labelled as derived from the journal {"status":404}
+FAIL and the saved window is evaluated immediately: outside its own hours the state is `outside` and it blocks undefined
+FAIL the trader may re-save a window, and the second save replaces the first without ever creating a second one {}
+FAIL a window on a zone the desk does not own is refused, naming the zone it does own {"status":404}
+FAIL and that refusal did not move the stored boundary either {}
+ok before the routine is complete the entry is refused by the routine, so the window is not what stopped it yet
+FAIL with the routine complete and the window outside, the entry is REFUSED by the window: 409, the guardrail code, and the window’s own rule in the breach list {"status":200,"breaches":[]}
+FAIL and the refusal is the module sentence, naming the window, the zone and the local time there undefined
+FAIL no trade was written: a hard block refuses the entry rather than recording it as a mistake {"before":0,"after":1}
+FAIL and the permission the app answers with cannot be overridden from the client undefined
+FAIL the guardrails read is a 200 with the stop in it, not a 503: a blocked desk is a readable state, not a broken service {"status":200,"state":"clear"}
+FAIL the SAME entry is admitted as soon as the clock is inside the window — the boundary, not the entry, is what refused it {"status":200,"trade":2}
+FAIL clearing the window writes four NULLs and reports `unset` again — nothing is blocked on a window the trader removed {}
+ok and an entry that arrives after the clear is admitted, which is what "blocks nothing" has to mean
+ok the clear left no empty-window residue: all four columns are NULL, so an upgrade and a new desk look the same
+FAIL an unrelated account edit (a rename, a cap change) cannot move a hard boundary: the window columns come back byte-identical {"name":"M112 window desk (renamed)","max_trades_day":4,"window_start":null,"window_end":null,"window_timezone":null,"window_source":null}
+FAIL with 34 closed trades the desk now has a suggestion, labelled as the trader’s own recorded journal undefined
+FAIL the suggestion names the session, the count and the floor it cleared, rather than presenting a band as a finding undefined
+FAIL and the band is the middle of those entries’ own local hours, rounded outward to whole hours {}
+FAIL the served suggestion IS the module’s computation over the same rows — the route adds no second derivation null
+FAIL a window the trader edits away from the candidate is recorded as `manual`, even with the suggestion available {}
+FAIL accepting the suggestion stores exactly the candidate pair and records `from_session_history` — the trader accepted it, the app did not apply it {"status":404,"window":{}}
+FAIL and a GET afterwards reports the same stored pair with its source, so the label survives the round trip {}
+FAIL a desk with no owned zone cannot accept a suggestion either: the refusal says which fact is missing {"status":404}
+FAIL below the 30-trade review floor the suggestion is WITHHELD, not presented as a smaller window undefined
+FAIL and accepting it is refused with the reason, so a below-floor band can never become the trader’s boundary by one click {"status":404}
+FAIL a stored zone the runtime cannot resolve is reported as `unavailable` with the repair action — a 200 read, never a 500 {"status":404}
+FAIL and it BLOCKS the entry with its own rule: an unreadable window refuses rather than opening the gate 409
+FAIL reading the broken window never repairs it behind the trader’s back: the stored row is exactly what was stored {"window_start":null,"window_end":null,"window_timezone":null,"window_source":null}
+FAIL an account edit cannot repair a window either: the boundary belongs to the window endpoint, so no unrelated write silently rewrites it {"status":200}
+FAIL and the repair is the one the sentence named — re-saving the window in the owned zone — after which the state is readable and inside its hours again {}
+FAIL changing the owned zone does NOT move the boundary: the window reports `unavailable` and names both clocks undefined
+FAIL so an entry cannot slip through on the new clock either — the same pair is refused until the trader re-saves it 409
+M112 api: the boundary over HTTP, and the entry it refuses: 7 passed, 42 failed

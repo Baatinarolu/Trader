@@ -1,0 +1,254 @@
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 0651896..a112c8e 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -179,11 +179,23 @@
+     /* It rides in `filters`, beside stand_down / killzone_quality / min_rr: the restriction
+      * is gate configuration, not a per-candidate field. */
+     const sp = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.session_pref) || null;
+-    const winNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:440px', text: !sp ? ''
++    /* M112 — the trader's OWN trading window, beside the killzone preference above and distinct
++     * from it: the preference restricts which killzone may arm a setup, while this boundary is the
++     * hours they selected (or accepted from their own journal) and outside it the guardrail refuses
++     * the entry. `unset` says so rather than reading like a pass, and an unreadable window is its
++     * own sentence from the module. */
++    const tw = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.trading_window) || null;
++    const twNote = !tw || tw.state === 'not_consulted' ? '' : tw.block
++      ? (tw.state === 'outside' ? `Outside your trading window (${tw.start}\u2013${tw.end} ${tw.timezone}) — signals are refused, not downgraded.`
++        : 'Your trading window could not be read — the guardrail refuses the entry until it is repaired.')
++      : tw.state === 'inside' ? `Inside your trading window (${tw.start}\u2013${tw.end} ${tw.timezone}).`
++      : tw.state === 'unset' ? 'No trading window selected — nothing is blocked on one.' : '';
++    const winNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:440px', text: (!sp ? ''
+       : sp.error ? sp.note
+       : sp.conflict ? sp.conflict
+       : sp.blocked_now ? `Outside your window (${sp.label}) — ${sp.open_now || 'no killzone open now'}; signals are refused.`
+-      : `Restricted to ${sp.label}${sp.phase ? ` · phase ${sp.phase}` : ''}${sp.phase_note ? ` — ${sp.phase_note}` : ''}` });
++      : `Restricted to ${sp.label}${sp.phase ? ` · phase ${sp.phase}` : ''}${sp.phase_note ? ` — ${sp.phase_note}` : ''}`)
++      + (twNote ? (sp ? ' · ' : '') + twNote : '') });
+     const predChk = h('label', { class: 'row gap-4 muted', style: 'align-items:center' });
+     const predBox = h('input', { type: 'checkbox', checked: B.prediction ? 'checked' : null });
+     predChk.appendChild(predBox); predChk.appendChild(document.createTextNode('prediction'));
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index 7d97a16..360d5c4 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -33,6 +33,7 @@
+                 <span class="mono ${U.cls(st.net_pnl)}" style="font-size:1.05rem">${U.moneySign(st.net_pnl)}</span></div>
+               <div class="tiny muted" style="margin-top:8px">Saved daily realised profit stop: ${a.daily_profit_limit_pct == null ? 'Off (optional)' : U.esc(a.daily_profit_limit_pct) + '%'} · UTC choice; edits after the first check apply tomorrow.</div>
+               <div class="tiny muted" style="margin-top:6px">Routine schedule: ${a.routine_window_start?U.esc(a.routine_window_start)+' '+U.esc(a.routine_timezone)+' · '+U.esc(a.routine_lead_minutes)+'m lead · '+U.esc(a.routine_order):'Setup required (no window inferred)'}. Active cycle keeps its saved policy until reset.</div>
++              <div class="tiny muted" style="margin-top:6px">Trading window: ${a.window_start?U.esc(a.window_start)+'–'+U.esc(a.window_end)+' '+U.esc(a.window_timezone||'')+(a.window_source==='from_session_history'?' (accepted from your recorded journal)':' (set by you)')+', enforced as a hard block outside it.':'None selected — nothing is blocked on one. Your own best hours can be derived from your recorded journal.'}</div>
+               <div class="sep"></div>
+               <div class="stats grid g4" style="gap:8px">
+                 <div><div class="k-label">Equity</div><div class="mono">${U.money(st.equity)}</div></div>
+@@ -47,6 +48,7 @@
+               ${st.open_trades ? `<div class="tiny warn" style="margin-top:8px">${st.open_trades} open position(s) risking ${U.money(st.open_risk)}</div>` : ''}
+               <div class="row" style="gap:6px;margin-top:12px">
+                 <button class="btn xs ghost" data-aedit="${a.id}">Edit rules</button>
++                <button class="btn xs ghost" data-awindow="${a.id}">Trading window</button>
+                 <button class="btn xs ghost" data-adefault="${a.id}">Set default</button>
+                 <button class="btn xs ghost danger" data-adel="${a.id}" style="margin-left:auto">Delete</button>
+               </div>`;
+@@ -57,6 +59,7 @@
+           grid.addEventListener('click', async (e) => {
+             const b = e.target.closest('button'); if (!b) return;
+             if (b.dataset.aedit) return accountDialog(accounts.accounts.find((a) => a.id === Number(b.dataset.aedit)));
++            if (b.dataset.awindow) return windowDialog(accounts.accounts.find((a) => a.id === Number(b.dataset.awindow)));
+             if (b.dataset.adel) {
+               if (!confirm('Delete this account and all of its trades?')) return;
+               await API.del('/accounts/' + b.dataset.adel); await Store.reloadAll(); global.App.refresh();
+@@ -422,6 +425,59 @@
+ 
+       draw();
+ 
++      /* M112 — the trading window dialog. The two sides are HH:MM on the trader's OWN local clock
++       * (the same explicit IANA zone the routine schedule owns), the derived suggestion is shown
++       * with the numbers behind it, and saving or clearing is an explicit act here: the app never
++       * writes a window on its own, and a suggestion below the course's 30-trade review floor is
++       * displayed as refused rather than rounded up. */
++      async function windowDialog(a) {
++        const body = U.h('div');
++        body.innerHTML = '<div class="tiny muted">Reading your recorded journal…</div>';
++        let state;
++        try { state = await API.get('/bots/window', { account_id: a.id }); }
++        catch (e) { return global.App.toast(e.message || 'The trading window could not be read.', 'err'); }
++        const sug = state.suggestion || {};
++        const w = state.window || {};
++        body.innerHTML = `
++          <div class="tiny muted">Zone: <b>${U.esc(state.owned_timezone || 'not selected')}</b> — the same local zone your routine schedule uses. A window is expressed in that one zone, and changing it later re-saves rather than silently moving your boundary.</div>
++          <div class="form-grid" style="grid-template-columns:1fr 1fr;margin-top:8px">
++            <label class="field"><span>Window start (HH:MM, my local time)</span><input id="w-start" type="time" value="${U.esc(w.start || '')}" /></label>
++            <label class="field"><span>Window end (HH:MM, my local time)</span><input id="w-end" type="time" value="${U.esc(w.end || '')}" /><div class="field-note">Half-open: the start minute is inside, the end minute is outside. A start later than the end runs through midnight.</div></label>
++          </div>
++          <div class="tiny" style="margin-top:6px">${U.esc(state.settings && state.settings.note ? state.settings.note : '')}</div>
++          <div class="sep"></div>
++          <div class="tiny"><b>Your recorded best session:</b> ${sug.available
++            ? U.esc(sug.detail || '')
++            : U.esc(sug.reason_detail || 'Nothing to derive yet.')}</div>
++          ${sug.available ? `<button class="btn xs ghost" id="w-accept" style="margin-top:6px">Use ${U.esc(sug.window.start)}–${U.esc(sug.window.end)} ${U.esc(sug.window.timezone)}</button>` : ''}
++          <div class="tiny muted" style="margin-top:8px">${U.esc(state.basis || '')}</div>`;
++        global.App.modal({
++          title: 'Trading window — ' + (state.state || 'unset'), body, small: false,
++          actions: [{ label: 'Cancel', ghost: true }, {
++            label: 'Clear window', onClick: async (close) => {
++              await API.put('/bots/window', { account_id: a.id, window_start: null, window_end: null });
++              await Store.reloadAll(); close(); global.App.toast('Trading window cleared — nothing is blocked on one.', 'ok'); global.App.refresh();
++            },
++          }, {
++            label: 'Save', primary: true, onClick: async (close) => {
++              const start = U.$('#w-start', body).value, end = U.$('#w-end', body).value;
++              if ((start && !end) || (!start && end)) return global.App.toast('A trading window needs both a start and an end, or neither.', 'err');
++              if (start && start === end) return global.App.toast('The start and end cannot be the same minute — that is not a window.', 'err');
++              try {
++                await API.put('/bots/window', { account_id: a.id, window_start: start || null, window_end: end || null });
++              } catch (e) { return global.App.toast(e.message || 'The trading window could not be saved.', 'err'); }
++              await Store.reloadAll(); close(); global.App.toast('Trading window saved', 'ok'); global.App.refresh();
++            },
++          }],
++        });
++        const accept = U.$('#w-accept', body);
++        if (accept) accept.addEventListener('click', async () => {
++          try { await API.put('/bots/window', { account_id: a.id, accept_suggestion: true }); }
++          catch (e) { return global.App.toast(e.message || 'The suggestion could not be applied.', 'err'); }
++          await Store.reloadAll(); global.App.toast('Window accepted from your recorded journal', 'ok'); global.App.refresh();
++        });
++      }
++
+       function accountDialog(a) {
+         const isNew = !a;
+         const v = a || { name: '', broker: '', account_type: 'live', currency: 'USD', starting_balance: 10000, risk_per_trade_pct: 0.5, daily_loss_limit_pct: 3, max_drawdown_pct: 10, profit_target_pct: 8 };
+diff --git a/src/performance.js b/src/performance.js
+index dab030d..da05a25 100644
+--- a/src/performance.js
++++ b/src/performance.js
+@@ -11,6 +11,7 @@
+ const Execution = require('./execution-review');
+ const Confluences = require('./confluences');
+ const Emotions = require('./emotions');
++const TradingWindow = require('./trading-window');   // M112
+ 
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+@@ -578,8 +579,33 @@ function fullAnalytics(trades, opts = {}) {
+ }
+ const sum = (a) => a.reduce((s, v) => s + (Number(v) || 0), 0);
+ 
++/** M112 — the trading window the data already implies, as ONE labelled candidate.
++ *
++ * This is the same read the analytics page presents (`by_session`, built on `sessionOf()` and
++ * `SESSION_LABEL`), reduced to a single suggestion: the trader's best recorded session by net
++ * result, and inside it the middle 50 % band of their own recorded entry HOURS, rounded outward to
++ * whole hours. The time arithmetic lives in `src/trading-window.js` so the boundary rule and the
++ * derivation obey one clock; this function only assembles the inputs from the journal it already
++ * decorates. Read-only: it writes nothing, stores nothing and applies nothing — accepting the
++ * suggestion is an explicit act by the trader (`PUT /api/bots/window`), and a suggestion refused
++ * for being below the course's own 30-trade review floor is reported as refused, never softened.
++ */
++function windowSuggestion(trades, { zone = null, floor = TradingWindow.FLOOR } = {}) {
++  const closed = (trades || []).filter((t) => t.status !== 'open');
++  const decorated = closed.map((t) => decorate(t, zone || undefined));
++  const rows = segment(decorated, (t) => t.session_label);
++  const best = rows.slice().sort((a, b) => (num(b.net) - num(a.net)) || (b.trades - a.trades))[0] || null;
++  if (!best) return TradingWindow.suggest({ bucket: null, rows: [], zone, floor });
++  const bucketRows = decorated.filter((t) => t.session_label === best.label);
++  return TradingWindow.suggest({
++    bucket: { label: best.label, trades: best.trades, net: num(best.net), win_rate: best.win_rate === undefined ? null : best.win_rate },
++    rows: bucketRows.map((t) => ({ hour: Number.isInteger(t.hour) ? t.hour : null, net_pnl: num(t.net_pnl) })),
++    zone, floor,
++  });
++}
++
+ module.exports = {
+   decorate, kpis, equityCurve, drawdownStats, dailySeries, monthlySeries, segment, rDistribution,
+   timeGrids, monteCarlo, optimalRisk, fullAnalytics, sessionOf, SESSION_LABEL, SESSIONS,
+-  localParts, localDateStr, holdBucket, mean, stdev, median, percentile, splitTags, deriveExitReason, r2, r4,
++  localParts, localDateStr, holdBucket, mean, stdev, median, percentile, splitTags, deriveExitReason, r2, r4, windowSuggestion,
+ };
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 29af849..9bc744b 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -12,6 +12,8 @@ const TV = require('../tradingview');
+ const D = require('../db');
+ const Opportunities = require('../opportunities');
+ const NewsWindow = require('../news-window');   // M110
++const TradingWindow = require('../trading-window');   // M112
++const Performance = require('../performance');   // M112 — the same by_session read the analytics page shows
+ 
+ function createBotsRouter({ requireAuth }) {
+   const router = asyncRouter();
+@@ -543,6 +545,75 @@ router.get('/markets', requireAuth, (req, res) => {
+     res.json({ ok: true, ...(await Bots.newsCheck(String(req.params.symbol).toUpperCase(), pair)), settings: NewsWindow.noteFor(pair, pair.warnings) });
+   }));
+ 
++  /* M112 — the trading window: the trader's own best-hours boundary, and the ONE derived
++   * suggestion the data implies. Both endpoints are read-only about the market and about the
++   * journal: nothing here touches a broker, a candle, a signal or another trader's desk. */
++  const windowNowMs = () => Date.now();
++  const windowStateFor = (account) => TradingWindow.safeState({ start: account.window_start, end: account.window_end,
++    timezone: account.window_timezone, ownedZone: account.routine_timezone, source: account.window_source, nowMs: windowNowMs() });
++  const windowSuggestionFor = async (account) => {
++    const rows = await D.db.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=?').all(account.user_id, account.id);
++    return Performance.windowSuggestion(rows, { zone: account.routine_timezone || null });
++  };
++
++  /** GET /api/bots/window — the stored window, the live state and the labelled suggestion. */
++  router.get('/window', requireAuth, wrap(async (req, res) => {
++    const account = await Bots.correction.accountOf(req.user.id, req.query.account_id ? Number(req.query.account_id) : null);
++    if (!account || !account.id) return res.status(404).json({ error: 'Account not found' });
++    const state = windowStateFor(account);
++    res.json({ ok: true, account_id: account.id, owned_timezone: account.routine_timezone || null,
++      ...state, suggestion: await windowSuggestionFor(account),
++      settings: TradingWindow.noteFor(state), doctrine: TradingWindow.DOCTRINE, basis: TradingWindow.BASIS,
++      limits: { read_only: true, writes: 0, grants_permission: false, predicts: false, infers_a_window: false } });
++  }));
++
++  /** PUT /api/bots/window — set, accept or clear the window. The trader is always the author:
++   * `from_session_history` is recorded ONLY when the submitted pair is exactly the candidate this
++   * account derives right now, so a derived window can never be mislabelled as typed (or the other
++   * way round). A clear writes four NULLs and blocks nothing. */
++  router.put('/window', requireAuth, wrap(async (req, res) => {
++    const b = req.body || {};
++    const account = await Bots.correction.accountOf(req.user.id, b.account_id !== undefined ? Number(b.account_id) : null);
++    if (!account || !account.id) return res.status(404).json({ error: 'Account not found' });
++    const ownedZone = account.routine_timezone || null;
++    let pair;
++    try { pair = TradingWindow.parsePair({ window_start: b.window_start, window_end: b.window_end, window_timezone: b.window_timezone === undefined ? ownedZone : b.window_timezone }); }
++    catch (e) { return res.status(e.status || 400).json({ error: e.message, code: e.code || 'trading_window_invalid' }); }
++    if (b.accept_suggestion) {
++      const suggestion = await windowSuggestionFor(account);
++      if (!suggestion.available) return res.status(409).json({ error: suggestion.reason_detail, code: 'trading_window_suggestion_unavailable', suggestion });
++      pair = TradingWindow.parsePair({ window_start: suggestion.window.start, window_end: suggestion.window.end, window_timezone: suggestion.window.timezone });
++    } else if (!pair.set) {
++      // An explicit clear. It is a real choice: no window selected blocks nothing, and it is
++      // reported as `unset` rather than as an empty window or a silent pass.
++      const at = new Date().toISOString();
++      await D.db.prepare('UPDATE accounts SET window_start=NULL, window_end=NULL, window_timezone=NULL, window_source=NULL WHERE id=? AND user_id=?').run(account.id, req.user.id);
++      const cleared = { ...account, window_start: null, window_end: null, window_timezone: null, window_source: null };
++      return res.json({ ok: true, account_id: account.id, cleared_at: at, ...windowStateFor(cleared), settings: TradingWindow.noteFor(windowStateFor(cleared)) });
++    }
++    // The account's OWN zone is the precondition: judged first, so a trader who has not selected
++    // one is told to select it (409, with the repair named) rather than being handed a complaint
++    // about the zone they did or did not type. Only then is the supplied zone itself validated.
++    if (pair.set && !ownedZone) {
++      return res.status(409).json({ error: 'Select your own local window/timezone first (routine schedule), then save the trading window. No zone is inferred from the server clock, a session label or an offset.', code: 'trading_window_zone_required' });
++    }
++    if (pair.set && !TradingWindow.zoneOk(pair.timezone)) {
++      return res.status(400).json({ error: 'Select a valid IANA timezone (for example Africa/Lagos) with the window. The app will not place your boundary on a zone it cannot resolve.', code: 'trading_window_zone_invalid' });
++    }
++    if (pair.set && pair.timezone !== ownedZone) {
++      return res.status(409).json({ error: `This account\u2019s selected local timezone is ${ownedZone}. A trading window is expressed in that one zone, so the boundary cannot sit on a different clock: change the routine timezone first, or set the window in ${ownedZone}.`, code: 'trading_window_zone_not_owned' });
++    }
++    const suggestion = await windowSuggestionFor(account);
++    const derived = !!suggestion.available && suggestion.window.start === pair.start && suggestion.window.end === pair.end && suggestion.window.timezone === pair.timezone;
++    const source = derived ? TradingWindow.SOURCES.FROM_HISTORY : TradingWindow.SOURCES.MANUAL;
++    await D.db.prepare('UPDATE accounts SET window_start=?, window_end=?, window_timezone=?, window_source=? WHERE id=? AND user_id=?')
++      .run(pair.start, pair.end, pair.timezone, source, account.id, req.user.id);
++    const saved = { ...account, window_start: pair.start, window_end: pair.end, window_timezone: pair.timezone, window_source: source };
++    const state = windowStateFor(saved);
++    res.json({ ok: true, account_id: account.id, saved_at: new Date().toISOString(), source, derived_current_suggestion: derived,
++      ...state, suggestion, settings: TradingWindow.noteFor(state), limits: { writes: 1, grants_permission: false, predicts: false } });
++  }));
++
+   router.get('/tv/links', requireAuth, (req, res) => {
+     const symbol = String(req.query.symbol || '').toUpperCase();
+     if (!symbol) return res.status(400).json({ error: 'symbol is required' });

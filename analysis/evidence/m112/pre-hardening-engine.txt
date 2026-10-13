@@ -1,0 +1,19 @@
+ok this tree ships the M112 trading-window rule (the committed parent does not, and that absence is this probe's control)
+FAIL a caller that consulted no window publishes `not_consulted` — its own token, never mapped onto unset or inside {}
+FAIL with no window selected the engine vetoes nothing and says so {"vetoes":2,"clean":2}
+FAIL inside the window the engine also vetoes nothing — the block is the boundary, not the feature {"inside":2,"clean":2}
+FAIL outside the window the candidate carries the refusal in its no-trade list — a veto, not a lower score ["No market shift — no structural break up in this window, so the shift long requires has not happened.","Price has not reached the point of interest yet — waiting for the retrace is not an entry."]
+FAIL the veto IS the module sentence, so the engine invents no second wording and cannot drift from the rule undefined
+FAIL and it is a real veto: the same bars carry one more blocking reason than they did a moment ago {"outside":2,"clean":2}
+FAIL the sentence names the trader’s own window, zone, local time and the wait — never a generic phrase undefined
+FAIL and it carries his rationale for calling the boundary a cheat code ""
+FAIL the filter states the window beside the killzone so a client renders it without parsing the veto {}
+FAIL an unreadable window is its OWN reason on the filter, so a client can offer the repair rather than a countdown {}
+FAIL and its veto is the module’s own repair sentence — the payload names the fix, it does not invent one ["No market shift — no structural break up in this window, so the shift long requires has not happened.","Price has not reached the point of interest yet — waiting for the retrace is not an entry."]
+FAIL a window authored on a zone the trader has since changed refuses as well, naming both clocks null
+ok the test rows and their weights are identical with and without the window — M112 adds a veto, it retunes nothing
+ok no candidate was silently converted to `ok` or to a better grade by the window either
+FAIL the window filter sits beside the killzone filter rather than replacing it ["killzone","stand_down","killzone_quality"]
+ok and the module is consulted, never mutated: the engine holds the state object it was given, with no write path on it
+FAIL the engine reads the window from its own ctx and does not go looking for an account row or a clock of its own null
+M112 engine: outside the window is a veto, unset is nothing: 4 passed, 14 failed

@@ -149,6 +149,16 @@ CREATE TABLE IF NOT EXISTS accounts (
   -- that sets both, and the settle cannot be stored below its 30-minute floor.
   news_block_before_min INTEGER NOT NULL DEFAULT 15 CHECK(news_block_before_min BETWEEN 1 AND 240 AND news_block_before_min=CAST(news_block_before_min AS INTEGER)),
   news_settle_after_min INTEGER NOT NULL DEFAULT 45 CHECK(news_settle_after_min BETWEEN 30 AND 240 AND news_settle_after_min=CAST(news_settle_after_min AS INTEGER)),
+  -- M112: the trading window is the trader's OWN best-hours boundary, and outside it the
+  -- guardrail refuses the entry instead of scoring it. Both sides or neither, an equal pair
+  -- is not a window, and a window cannot exist without the zone it was authored in (the same
+  -- point survives a later timezone change: the module compares the two rather than moving a
+  -- hard boundary on a new clock). The format checks are the schema's own ones and the IANA zone
+  -- is validated by the module and the routes, because SQLite cannot resolve a tz database.
+  window_start TEXT CHECK(window_start IS NULL OR (window_start GLOB '[0-2][0-9]:[0-5][0-9]' AND CAST(substr(window_start,1,2) AS INTEGER) BETWEEN 0 AND 23)),
+  window_end TEXT CHECK((window_end IS NULL)=(window_start IS NULL) AND (window_end IS NULL OR (window_end GLOB '[0-2][0-9]:[0-5][0-9]' AND CAST(substr(window_end,1,2) AS INTEGER) BETWEEN 0 AND 23 AND window_end<>window_start))),
+  window_timezone TEXT CHECK((window_timezone IS NULL)=(window_start IS NULL) AND (window_timezone IS NULL OR length(window_timezone) BETWEEN 1 AND 100)),
+  window_source TEXT CHECK((window_source IS NULL)=(window_start IS NULL) AND (window_source IS NULL OR window_source IN ('manual','from_session_history'))),
   max_drawdown_pct REAL DEFAULT 10.0,
   profit_target_pct REAL DEFAULT 8.0,
   is_default INTEGER DEFAULT 0,
@@ -882,6 +892,14 @@ async function migrate() {
   await add('trades','stop_honoured_recorded_at','TEXT');
   await add('trades','execution_review_hash','TEXT');
   // Single-statement triggers: exec splits semicolons, so use prepare for bodies.
+  // M112: four additive columns, no default window and no inferred hours. A NULL pair means
+  // "no window selected" — which blocks nothing — and it is distinct from an unreadable pair,
+  // which the module refuses. The CHECKs are declared exactly as the fresh DDL declares them,
+  // in the same order, so a fresh table and an upgraded one carry the same constraint text.
+  await add('accounts','window_start',"TEXT CHECK(window_start IS NULL OR (window_start GLOB '[0-2][0-9]:[0-5][0-9]' AND CAST(substr(window_start,1,2) AS INTEGER) BETWEEN 0 AND 23))");
+  await add('accounts','window_end',"TEXT CHECK((window_end IS NULL)=(window_start IS NULL) AND (window_end IS NULL OR (window_end GLOB '[0-2][0-9]:[0-5][0-9]' AND CAST(substr(window_end,1,2) AS INTEGER) BETWEEN 0 AND 23 AND window_end<>window_start)))");
+  await add('accounts','window_timezone','TEXT CHECK((window_timezone IS NULL)=(window_start IS NULL) AND (window_timezone IS NULL OR length(window_timezone) BETWEEN 1 AND 100))');
+  await add('accounts','window_source',"TEXT CHECK((window_source IS NULL)=(window_start IS NULL) AND (window_source IS NULL OR window_source IN ('manual','from_session_history')))");
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS emotion_events_immutable BEFORE UPDATE ON trade_emotion_events BEGIN SELECT RAISE(ABORT,'Emotion event facts are immutable'); END`).run();
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS emotion_responses_immutable BEFORE UPDATE ON trade_emotion_responses BEGIN SELECT RAISE(ABORT,'First emotion response is immutable'); END`).run();
   // M88 additive NULL, no inferred labels/source/entry-time history on old trades.

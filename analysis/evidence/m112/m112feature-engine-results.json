@@ -1,0 +1,80 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 18,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M112 trading-window rule (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "a caller that consulted no window publishes `not_consulted` — its own token, never mapped onto unset or inside",
+      "passed": true
+    },
+    {
+      "label": "with no window selected the engine vetoes nothing and says so",
+      "passed": true
+    },
+    {
+      "label": "inside the window the engine also vetoes nothing — the block is the boundary, not the feature",
+      "passed": true
+    },
+    {
+      "label": "outside the window the candidate carries the refusal in its no-trade list — a veto, not a lower score",
+      "passed": true
+    },
+    {
+      "label": "the veto IS the module sentence, so the engine invents no second wording and cannot drift from the rule",
+      "passed": true
+    },
+    {
+      "label": "and it is a real veto: the same bars carry one more blocking reason than they did a moment ago",
+      "passed": true
+    },
+    {
+      "label": "the sentence names the trader’s own window, zone, local time and the wait — never a generic phrase",
+      "passed": true
+    },
+    {
+      "label": "and it carries his rationale for calling the boundary a cheat code",
+      "passed": true
+    },
+    {
+      "label": "the filter states the window beside the killzone so a client renders it without parsing the veto",
+      "passed": true
+    },
+    {
+      "label": "an unreadable window is its OWN reason on the filter, so a client can offer the repair rather than a countdown",
+      "passed": true
+    },
+    {
+      "label": "and its veto is the module’s own repair sentence — the payload names the fix, it does not invent one",
+      "passed": true
+    },
+    {
+      "label": "a window authored on a zone the trader has since changed refuses as well, naming both clocks",
+      "passed": true
+    },
+    {
+      "label": "the test rows and their weights are identical with and without the window — M112 adds a veto, it retunes nothing",
+      "passed": true
+    },
+    {
+      "label": "no candidate was silently converted to `ok` or to a better grade by the window either",
+      "passed": true
+    },
+    {
+      "label": "the window filter sits beside the killzone filter rather than replacing it",
+      "passed": true
+    },
+    {
+      "label": "and the module is consulted, never mutated: the engine holds the state object it was given, with no write path on it",
+      "passed": true
+    },
+    {
+      "label": "the engine reads the window from its own ctx and does not go looking for an account row or a clock of its own",
+      "passed": true
+    }
+  ],
+  "scope": "M112 engine: outside the window is a veto, unset is nothing: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

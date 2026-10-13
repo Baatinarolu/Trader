@@ -179,11 +179,23 @@
     /* It rides in `filters`, beside stand_down / killzone_quality / min_rr: the restriction
      * is gate configuration, not a per-candidate field. */
     const sp = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.session_pref) || null;
-    const winNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:440px', text: !sp ? ''
+    /* M112 — the trader's OWN trading window, beside the killzone preference above and distinct
+     * from it: the preference restricts which killzone may arm a setup, while this boundary is the
+     * hours they selected (or accepted from their own journal) and outside it the guardrail refuses
+     * the entry. `unset` says so rather than reading like a pass, and an unreadable window is its
+     * own sentence from the module. */
+    const tw = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.trading_window) || null;
+    const twNote = !tw || tw.state === 'not_consulted' ? '' : tw.block
+      ? (tw.state === 'outside' ? `Outside your trading window (${tw.start}\u2013${tw.end} ${tw.timezone}) — signals are refused, not downgraded.`
+        : 'Your trading window could not be read — the guardrail refuses the entry until it is repaired.')
+      : tw.state === 'inside' ? `Inside your trading window (${tw.start}\u2013${tw.end} ${tw.timezone}).`
+      : tw.state === 'unset' ? 'No trading window selected — nothing is blocked on one.' : '';
+    const winNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:440px', text: (!sp ? ''
       : sp.error ? sp.note
       : sp.conflict ? sp.conflict
       : sp.blocked_now ? `Outside your window (${sp.label}) — ${sp.open_now || 'no killzone open now'}; signals are refused.`
-      : `Restricted to ${sp.label}${sp.phase ? ` · phase ${sp.phase}` : ''}${sp.phase_note ? ` — ${sp.phase_note}` : ''}` });
+      : `Restricted to ${sp.label}${sp.phase ? ` · phase ${sp.phase}` : ''}${sp.phase_note ? ` — ${sp.phase_note}` : ''}`)
+      + (twNote ? (sp ? ' · ' : '') + twNote : '') });
     const predChk = h('label', { class: 'row gap-4 muted', style: 'align-items:center' });
     const predBox = h('input', { type: 'checkbox', checked: B.prediction ? 'checked' : null });
     predChk.appendChild(predBox); predChk.appendChild(document.createTextNode('prediction'));

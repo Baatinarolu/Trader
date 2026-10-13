@@ -31,7 +31,8 @@ const Predict = require('./predict');
 const Cor = require('./correction');
 const Guards = require('./guardrails');
 const StateGate = require('../state-gate');
-const NewsWindow = require('../news-window');   // M110 — two clocks, not one number
+const NewsWindow = require('../news-window');
+const TradingWindow = require('../trading-window');   // M112   // M110 — two clocks, not one number
 
 /* -------------------------------------------------------------------------
  * M124 — THE ENTRY-SERIES DEPTH THE METHOD READS.
@@ -370,6 +371,15 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   // part of why a hardcoded constant was doing the work of a setting).
   const account = opts.userId ? await Cor.accountOf(opts.userId, opts.accountId) : null;
   const newsPlan = NewsWindow.plan(account, opts);   // M110 — clamped on read, never one knob
+  /* M112 — the trading window, read from the same account row. `TradingWindow.safeState` is pure
+   * and cannot throw: it is a function of the stored window and the clock, so this read and the one
+   * the personal state makes a moment later agree by construction, and `unset` (no window selected)
+   * is published as itself rather than being folded into either "inside" or "blocked". An explicit
+   * clock is honoured when a caller supplies one; otherwise this is the server clock, never a
+   * client's. */
+  const windowNow = Number.isFinite(Number(opts.nowMs)) ? Number(opts.nowMs) : Date.now();
+  const tradingWindow = TradingWindow.safeState({ start: account && account.window_start, end: account && account.window_end,
+    timezone: account && account.window_timezone, ownedZone: account && account.routine_timezone, source: account && account.window_source, nowMs: windowNow });
 
   const [momentum, news] = await Promise.all([
     Momentum.analyse(sym, tf, { limit: 600, ...cut, minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.nowMs }),
@@ -405,6 +415,10 @@ async function analyse(symbol, tf = '15m', opts = {}) {
     newsNote: news.state === NewsWindow.STATES.UNKNOWN ? news.unavailable_note : NewsWindow.detail(newsPlan),
     topdown: momentum.topdown, useBreakers: !!opts.useBreakers,          // the method decides whether a side may be armed
     sessionPref: opts.sessionPref || null,   // M26 — the trader's one window
+    // M112 — the trader's own best-hours window. The state travels into the setup model so the
+    // refusal names THEIR window (with the local time that produced it) next to the other
+    // non-negotiables, instead of arriving later as a generic personal stop.
+    tradingWindow,
   });
 
   let prediction = null;

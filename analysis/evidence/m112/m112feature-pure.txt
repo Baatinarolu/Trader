@@ -1,0 +1,37 @@
+ok this tree ships the M112 trading-window module (the committed parent does not, and that absence is this probe's control)
+ok the module names exactly four states, and `unset` is not one of the two refusals
+ok no window selected is `unset`, blocks nothing, and says so
+ok a window containing the trader’s local time is `inside` and blocks nothing
+ok a window that cannot contain it is `outside` and DOES block — the hard block, not a penalty
+ok the refusal names the window, the zone, the local time there and the minutes until it opens — never a generic phrase
+ok and it carries his own rationale for a boundary he calls a cheat code
+ok the start minute is INSIDE the window
+ok the end minute is OUTSIDE it — the window ends when the clock reaches its end
+ok a start later than the end runs through midnight on purpose (one Asia window, not two)
+ok and just before that wrapped start is inside it
+ok a malformed stored clock is `unavailable` — a refusal with a repair action, never a silent pass
+ok one side without the other is unreadable rather than half a window
+ok two equal times are refused rather than read as "all day"
+ok a window with no zone at all is unreadable, and the sentence says nothing is inferred from the server clock or a session label
+ok a missing server clock is unavailable too, not an assumed instant
+ok `safeState` cannot throw: even a stored row whose field explodes on read comes back as the module’s own refusal
+ok the time parser accepts exactly HH:MM and coerces nothing else (surrounding blanks are trimmed, the clock itself is not guessed)
+ok and blank means "not set" rather than invalid, so clearing a window is a real choice
+ok a window authored in a zone the trader has since changed is UNAVAILABLE, and both zones are named — a hard boundary never moves on a new clock
+ok an offset or abbreviation is not a zone: the module would not follow its daylight-saving rule
+ok the zone actually drives the answer: the same pair is outside at one instant and inside at another
+ok the suggestion is labelled as the trader’s own recorded journal, with the bucket, the count and the floor
+ok it is explicitly NOT a prediction, an edge or a permission, and it is not applied by the module
+ok below the course’s 30-trade review floor nothing is suggested at all — the description is withheld rather than presented as a window
+ok with no closed recorded session there is nothing to derive, and it says which fact is missing
+ok without the trader’s own zone the suggestion is refused rather than computed on another clock
+ok entries spread around the clock yield NO single band rather than a stretched one
+ok a band around midnight is ONE band on the clock, not a 0-width or inside-out pair
+ok the band is the middle 50 % of the recorded hours, rounded outward to whole hours
+ok a blocking window becomes the SAME kind of stop the personal guardrails produce, and it cannot be overridden
+ok an unreadable window blocks as its own rule, so a repair is named rather than a boundary invented
+ok `unset` is published and blocks nothing — the difference between "you selected none" and "it could not be read" survives the merge
+ok an existing stop is never hidden: the window appends its own breach and can only make the refusal stricter
+ok the module writes nothing: no store, no clock, no counter is touched by an evaluation
+ok and the settings note warns without repairing: a window covering most of the clock is reported, not shortened
+M112 portability: the rule is the file: 36 passed, 0 failed

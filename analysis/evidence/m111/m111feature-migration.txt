@@ -8,10 +8,10 @@ ok the parent still echoes its pair on that path, which is why the two payloads 
 ok ON THE DELIVERED TREE the identical read is `unknown`, with the reason and the sentence attached
 ok and everything else about the payload is unchanged: same pair, same currencies, same empty lists, no invented release
 ok the two payloads differ ONLY by the state and the failure it names, which is the whole change
-ok M111 adds NO schema object of any kind and changes none: every table, index and trigger is byte-identical to the parent's
-ok every inherited fact is byte-identical after the upgrade: a state that is derived on every read has nothing to store
+FAIL M111 adds NO schema object of any kind and changes none: every table, index and trigger is byte-identical to the parent's {"added":[],"gone":[],"changed":["accounts"]}
+FAIL every inherited fact is byte-identical after the upgrade: a state that is derived on every read has nothing to store ["accounts"]
 ok the pair the trader stored is still the pair the app applies, and the read did not move it
 ok a second open of the database is a no-op: same objects, same facts, same pair
 ok the change is additive in the strongest sense available here: the PARENT's own code still reads the file the delivered tree wrote, and still reports its own quiet shape there
 ok and there is nothing to migrate for it: no column anywhere stores a calendar state
-M111 migration: no schema change, and the same read answers differently: 16 passed, 0 failed
+M111 migration: no schema change, and the same read answers differently: 14 passed, 2 failed

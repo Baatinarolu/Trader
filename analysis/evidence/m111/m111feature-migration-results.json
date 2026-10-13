@@ -1,7 +1,7 @@
 {
   "app": "/home/user/Trader/extracted/tradejournal",
-  "pass": 16,
-  "fail": 0,
+  "pass": 14,
+  "fail": 2,
   "results": [
     {
       "label": "this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)",
@@ -45,11 +45,21 @@
     },
     {
       "label": "M111 adds NO schema object of any kind and changes none: every table, index and trigger is byte-identical to the parent's",
-      "passed": true
+      "passed": false,
+      "detail": {
+        "added": [],
+        "gone": [],
+        "changed": [
+          "accounts"
+        ]
+      }
     },
     {
       "label": "every inherited fact is byte-identical after the upgrade: a state that is derived on every read has nothing to store",
-      "passed": true
+      "passed": false,
+      "detail": [
+        "accounts"
+      ]
     },
     {
       "label": "the pair the trader stored is still the pair the app applies, and the read did not move it",

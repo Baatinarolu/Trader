@@ -1,0 +1,38 @@
+{
+  "item": "M112 — the trading window is a hard block, not a penalty",
+  "parent": "4791809b2cc757a8bfbd19a389207677dbbf7aff",
+  "parent_short": "4791809",
+  "ledger_before": [132, 106, 2, 24, 0, 8],
+  "ledger_after": [132, 107, 2, 23, 0, 8],
+  "issue": "No trading-window guardrail although performance.js already computed by_session and the episode settles the shape as a hard block (\"the guardrail will prevent you from doing so\").",
+  "owned_surfaces": {
+    "rule": "src/trading-window.js (trading-window-v1): unset/inside/outside/unavailable, half-open [start,end) on the trader's own local clock, strict HH:MM, explicit IANA zone, midnight wrap on purpose",
+    "storage": "accounts.window_start / window_end / window_timezone / window_source — four additive nullable columns with the schema's own CHECKs, declared identically on a fresh table and in the migration",
+    "suggestion": "performance.windowSuggestion() + GET /api/bots/window: the best recorded by_session bucket and the circular middle-50 % band of the trader's own recorded entry hours, labelled from_session_history, refused below the 30-trade floor, applied:false always",
+    "enforcement": "correction.dailyState merges the window into the personal state in the state gate's own shape; setup.js carries it as a veto with filters.trading_window; Guards.applyToSetups and the entry-admission path refuse through code that already existed",
+    "ownership": "PUT /api/bots/window — the trader is always the author; from_session_history only when the submitted pair is exactly the current candidate; an explicit clear writes four NULLs",
+    "surface": "public/js/views/settings.js window dialog + public/js/views/bots.js window line"
+  },
+  "framing_rules": [
+    "unset blocks nothing and is never mapped onto outside",
+    "unavailable refuses and is never mapped onto inside; the repair action is named",
+    "the derived suggestion is a description of the trader's own journal, labelled as such, and never applied by the app",
+    "a hard boundary does not move when another setting does (a zone change yields unavailable naming both clocks)",
+    "the window is a veto beside the non-negotiables — never a scored penalty, never a grade, never an override",
+    "no 70 %/causal/predictive/broker/human/mental-state/provider/production claim; nothing retuned; unknown/legacy/imported inputs stay explicitly separate"
+  ],
+  "deliverables": {
+    "module": "extracted/tradejournal/src/trading-window.js",
+    "routes": "extracted/tradejournal/src/routes/bots.js (GET/PUT /api/bots/window)",
+    "views": "extracted/tradejournal/public/js/views/settings.js, public/js/views/bots.js",
+    "docs": "extracted/tradejournal/README.md, docs/API.md",
+    "probes": "analysis/probe-m112-{pure,engine,consumers,api,migration,ui}.js",
+    "runner": "analysis/run-m112-verification.py",
+    "capture": "analysis/capture-m112-stages.py",
+    "builder": "analysis/build-m112-trading-window-artifacts.py",
+    "report": "analysis/M112-TRADING-WINDOW.md"
+  },
+  "cohort_before_control_arms": {
+    "note": "Written before the delivered tree's final runs; the builder asserts the measured numbers from analysis/evidence/m112/feature-summary.json and each probe's own results file, so this file is the scope statement, not the evidence."
+  }
+}

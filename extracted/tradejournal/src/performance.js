@@ -11,6 +11,7 @@
 const Execution = require('./execution-review');
 const Confluences = require('./confluences');
 const Emotions = require('./emotions');
+const TradingWindow = require('./trading-window');   // M112
 
 const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -578,8 +579,33 @@ function fullAnalytics(trades, opts = {}) {
 }
 const sum = (a) => a.reduce((s, v) => s + (Number(v) || 0), 0);
 
+/** M112 — the trading window the data already implies, as ONE labelled candidate.
+ *
+ * This is the same read the analytics page presents (`by_session`, built on `sessionOf()` and
+ * `SESSION_LABEL`), reduced to a single suggestion: the trader's best recorded session by net
+ * result, and inside it the middle 50 % band of their own recorded entry HOURS, rounded outward to
+ * whole hours. The time arithmetic lives in `src/trading-window.js` so the boundary rule and the
+ * derivation obey one clock; this function only assembles the inputs from the journal it already
+ * decorates. Read-only: it writes nothing, stores nothing and applies nothing — accepting the
+ * suggestion is an explicit act by the trader (`PUT /api/bots/window`), and a suggestion refused
+ * for being below the course's own 30-trade review floor is reported as refused, never softened.
+ */
+function windowSuggestion(trades, { zone = null, floor = TradingWindow.FLOOR } = {}) {
+  const closed = (trades || []).filter((t) => t.status !== 'open');
+  const decorated = closed.map((t) => decorate(t, zone || undefined));
+  const rows = segment(decorated, (t) => t.session_label);
+  const best = rows.slice().sort((a, b) => (num(b.net) - num(a.net)) || (b.trades - a.trades))[0] || null;
+  if (!best) return TradingWindow.suggest({ bucket: null, rows: [], zone, floor });
+  const bucketRows = decorated.filter((t) => t.session_label === best.label);
+  return TradingWindow.suggest({
+    bucket: { label: best.label, trades: best.trades, net: num(best.net), win_rate: best.win_rate === undefined ? null : best.win_rate },
+    rows: bucketRows.map((t) => ({ hour: Number.isInteger(t.hour) ? t.hour : null, net_pnl: num(t.net_pnl) })),
+    zone, floor,
+  });
+}
+
 module.exports = {
   decorate, kpis, equityCurve, drawdownStats, dailySeries, monthlySeries, segment, rDistribution,
   timeGrids, monteCarlo, optimalRisk, fullAnalytics, sessionOf, SESSION_LABEL, SESSIONS,
-  localParts, localDateStr, holdBucket, mean, stdev, median, percentile, splitTags, deriveExitReason, r2, r4,
+  localParts, localDateStr, holdBucket, mean, stdev, median, percentile, splitTags, deriveExitReason, r2, r4, windowSuggestion,
 };

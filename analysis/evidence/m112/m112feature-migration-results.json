@@ -1,0 +1,72 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 16,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M112 trading-window rule (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the parent tree IS the committed M111 release: it has no window module and its accounts table declares none of the four columns",
+      "passed": true
+    },
+    {
+      "label": "the parent’s own schema has no window column, and the account it wrote carries the routine zone it selected",
+      "passed": true
+    },
+    {
+      "label": "opening the parent’s file adds exactly the four window columns, and nothing else about the row changed",
+      "passed": true
+    },
+    {
+      "label": "no window is invented for a desk that never had one: all four columns are NULL, so the state is `unset` and it blocks nothing",
+      "passed": true
+    },
+    {
+      "label": "every inherited fact is preserved: the account row, the trades, the users and the guardrail state hash the same as the parent left them",
+      "passed": true
+    },
+    {
+      "label": "the parent’s own routine settings survive the upgrade untouched, so the window did not reopen a schedule",
+      "passed": true
+    },
+    {
+      "label": "the four columns an upgraded database inherits carry the SAME declared type, NOT NULL and default as the ones a fresh database is created with",
+      "passed": true
+    },
+    {
+      "label": "and the SAME CHECK on each of them, re-created from the DDL rather than inherited: both sides or neither, the format, the unequal pair, the zone with the pair, the source list",
+      "passed": true
+    },
+    {
+      "label": "the CHECKs are the ones that describe the rule, not placeholders",
+      "passed": true
+    },
+    {
+      "label": "and the position difference is RECORDED rather than hidden: an inherited table appends the four columns last, the fresh DDL places them before the prop fields",
+      "passed": true
+    },
+    {
+      "label": "the schema refuses half a window, two equal sides, a malformed clock and an hour the clock does not have",
+      "passed": true
+    },
+    {
+      "label": "and it refuses a pair with no zone as firmly as it refuses a source the app never writes",
+      "passed": true
+    },
+    {
+      "label": "while the real window IS accepted and stored exactly as written — the constraints refuse shapes, not the feature",
+      "passed": true
+    },
+    {
+      "label": "the parent’s OWN code still reads the upgraded file: its account row and its trades are there, and the extra columns are simply invisible to it",
+      "passed": true
+    },
+    {
+      "label": "reading it with the parent does not drop the window either: the delivered tree still sees the pair afterwards",
+      "passed": true
+    }
+  ],
+  "scope": "M112 migration: four additive columns, and no window invented for an existing desk: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

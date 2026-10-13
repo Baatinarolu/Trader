@@ -265,7 +265,44 @@ the methodology, the weights and the honest limitations.
 | POST | `/bots/signals/resolve` | `{ limit }` | resolves pending alerts against real candles → `{ checked, results[], stats }` |
 | GET | `/bots/signals/stats` | — | win rate / expectancy of tracked alerts, by grade |
 | GET | `/bots/sessions` | — | session + killzone windows and the active one |
+| GET | `/bots/window` | `account_id` (optional) | the trader's own trading window: `{ state, block, reason, window{ start, end, timezone, source, span_minutes, local_time }, in_window, until_minutes, owned_timezone, suggestion, settings, basis, limits }`. `state` is `unset` \| `inside` \| `outside` \| `unavailable` (M112); **`unset` blocks nothing** and **`unavailable` refuses** with its repair action. The suggestion is derived from the trader's own recorded `by_session` history, labelled `from_session_history`, refused below the 30-trade review floor, and never applied by the server. |
+| PUT | `/bots/window` | `{ account_id?, window_start, window_end, accept_suggestion? }` | set, accept or clear the window. Both sides of an `HH:MM` pair in the account's owned IANA zone, or both blank/null to clear. `accept_suggestion: true` applies the current derived candidate (409 `trading_window_suggestion_unavailable` when it is refused). `source` is recorded as `from_session_history` only when the submitted pair is exactly the current candidate, otherwise `manual`. |
 | GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ state, blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, unavailable?, unavailable_note?, error? }`. `state` is `blocked` \| `clear` \| `unknown` (M111): `clear` means the calendar **was read** and nothing is inside its clock; a read that failed is `unknown`, which carries `unavailable` (the reason), `unavailable_note` (the sentence to display) and `windows.unavailable: true`. An `unknown` read still echoes the pair, so a client can name the windows that were **not** checked — it is never an all-clear. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
+
+### The trading window — a hard block, not a penalty (M112)
+
+The window is the trader's **own** best-hours boundary, and `src/trading-window.js` owns its
+vocabulary: **`unset`** (no window selected — **nothing is blocked on one**), **`inside`**,
+**`outside`** (the guardrail refuses the entry) and **`unavailable`** (the stored window could not
+be evaluated — also a refusal, with the repair action named). Boundaries are half-open
+`[start, end)` on the trader's own local clock: the start minute is inside, the end minute is
+outside, and a start later than the end runs through midnight on purpose. The pair is **both sides
+or neither**, an equal pair is refused, and a window cannot exist without the **IANA zone** it was
+authored in — the account's owned routine timezone. If that timezone is later changed, the window is
+reported `unavailable` naming both zones rather than being silently reinterpreted on the new clock,
+because a hard boundary must not move when another setting does.
+
+`GET /api/bots/window` returns the stored window, the live state, the module's sentence and the
+labelled **suggestion**: the trader's best recorded `by_session` bucket, and inside it the middle
+50 % of their own recorded entry **hours**, rounded outward to whole hours. The suggestion is
+**read-only** and **labelled as such** (`source: "from_session_history"`, a `basis` that says it
+describes recorded journal outcomes and is not a prediction, a market edge or permission), it is
+**refused entirely below the course's 30-trade review floor** (`reason: "below_review_floor"`), and
+it is never applied by the app — `PUT /api/bots/window` records it only when the trader accepts it,
+and it records `manual` unless the submitted pair is **exactly** the candidate the account derives
+at that moment. `PUT` with both sides blank/null **clears** the window (four NULLs, nothing
+blocked); a window with no owned zone is `409 trading_window_zone_required`, a window in a zone
+other than the owned one is `409 trading_window_zone_not_owned`, and a malformed time is
+`400 trading_window_invalid` / `trading_window_incomplete` / `trading_window_degenerate`.
+
+**How it blocks.** The window is merged into the desk's personal state in the same shape the state
+gate uses, so `Guards.applyToSetups`, the entry-admission path, the Now playlist and every scan row
+refuse a signal **outside** it — a veto beside the other non-negotiables in `setup.js`, **not** a
+weighted penalty, and **not** a grade: the existing weight-8 session/killzone row is untouched.
+`setups.filters.trading_window` carries `{state, start, end, timezone, source, local_time, block,
+reason}` (or `state: "not_consulted"`), the refusal sentence names the window, the zone, the local
+time there and the minutes until it opens, and an existing stop is never hidden by it — the window
+appends a breach and can only make a refusal stricter (`can_override: false`).
 
 ### An unreadable calendar is UNKNOWN, not clear (M111)
 

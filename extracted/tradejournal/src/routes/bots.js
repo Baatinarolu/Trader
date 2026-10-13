@@ -12,6 +12,8 @@ const TV = require('../tradingview');
 const D = require('../db');
 const Opportunities = require('../opportunities');
 const NewsWindow = require('../news-window');   // M110
+const TradingWindow = require('../trading-window');   // M112
+const Performance = require('../performance');   // M112 — the same by_session read the analytics page shows
 
 function createBotsRouter({ requireAuth }) {
   const router = asyncRouter();
@@ -541,6 +543,75 @@ router.get('/markets', requireAuth, (req, res) => {
       return res.status(e.status || 400).json({ error: e.message, code: e.code || 'news_window_invalid' });
     }
     res.json({ ok: true, ...(await Bots.newsCheck(String(req.params.symbol).toUpperCase(), pair)), settings: NewsWindow.noteFor(pair, pair.warnings) });
+  }));
+
+  /* M112 — the trading window: the trader's own best-hours boundary, and the ONE derived
+   * suggestion the data implies. Both endpoints are read-only about the market and about the
+   * journal: nothing here touches a broker, a candle, a signal or another trader's desk. */
+  const windowNowMs = () => Date.now();
+  const windowStateFor = (account) => TradingWindow.safeState({ start: account.window_start, end: account.window_end,
+    timezone: account.window_timezone, ownedZone: account.routine_timezone, source: account.window_source, nowMs: windowNowMs() });
+  const windowSuggestionFor = async (account) => {
+    const rows = await D.db.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=?').all(account.user_id, account.id);
+    return Performance.windowSuggestion(rows, { zone: account.routine_timezone || null });
+  };
+
+  /** GET /api/bots/window — the stored window, the live state and the labelled suggestion. */
+  router.get('/window', requireAuth, wrap(async (req, res) => {
+    const account = await Bots.correction.accountOf(req.user.id, req.query.account_id ? Number(req.query.account_id) : null);
+    if (!account || !account.id) return res.status(404).json({ error: 'Account not found' });
+    const state = windowStateFor(account);
+    res.json({ ok: true, account_id: account.id, owned_timezone: account.routine_timezone || null,
+      ...state, suggestion: await windowSuggestionFor(account),
+      settings: TradingWindow.noteFor(state), doctrine: TradingWindow.DOCTRINE, basis: TradingWindow.BASIS,
+      limits: { read_only: true, writes: 0, grants_permission: false, predicts: false, infers_a_window: false } });
+  }));
+
+  /** PUT /api/bots/window — set, accept or clear the window. The trader is always the author:
+   * `from_session_history` is recorded ONLY when the submitted pair is exactly the candidate this
+   * account derives right now, so a derived window can never be mislabelled as typed (or the other
+   * way round). A clear writes four NULLs and blocks nothing. */
+  router.put('/window', requireAuth, wrap(async (req, res) => {
+    const b = req.body || {};
+    const account = await Bots.correction.accountOf(req.user.id, b.account_id !== undefined ? Number(b.account_id) : null);
+    if (!account || !account.id) return res.status(404).json({ error: 'Account not found' });
+    const ownedZone = account.routine_timezone || null;
+    let pair;
+    try { pair = TradingWindow.parsePair({ window_start: b.window_start, window_end: b.window_end, window_timezone: b.window_timezone === undefined ? ownedZone : b.window_timezone }); }
+    catch (e) { return res.status(e.status || 400).json({ error: e.message, code: e.code || 'trading_window_invalid' }); }
+    if (b.accept_suggestion) {
+      const suggestion = await windowSuggestionFor(account);
+      if (!suggestion.available) return res.status(409).json({ error: suggestion.reason_detail, code: 'trading_window_suggestion_unavailable', suggestion });
+      pair = TradingWindow.parsePair({ window_start: suggestion.window.start, window_end: suggestion.window.end, window_timezone: suggestion.window.timezone });
+    } else if (!pair.set) {
+      // An explicit clear. It is a real choice: no window selected blocks nothing, and it is
+      // reported as `unset` rather than as an empty window or a silent pass.
+      const at = new Date().toISOString();
+      await D.db.prepare('UPDATE accounts SET window_start=NULL, window_end=NULL, window_timezone=NULL, window_source=NULL WHERE id=? AND user_id=?').run(account.id, req.user.id);
+      const cleared = { ...account, window_start: null, window_end: null, window_timezone: null, window_source: null };
+      return res.json({ ok: true, account_id: account.id, cleared_at: at, ...windowStateFor(cleared), settings: TradingWindow.noteFor(windowStateFor(cleared)) });
+    }
+    // The account's OWN zone is the precondition: judged first, so a trader who has not selected
+    // one is told to select it (409, with the repair named) rather than being handed a complaint
+    // about the zone they did or did not type. Only then is the supplied zone itself validated.
+    if (pair.set && !ownedZone) {
+      return res.status(409).json({ error: 'Select your own local window/timezone first (routine schedule), then save the trading window. No zone is inferred from the server clock, a session label or an offset.', code: 'trading_window_zone_required' });
+    }
+    if (pair.set && !TradingWindow.zoneOk(pair.timezone)) {
+      return res.status(400).json({ error: 'Select a valid IANA timezone (for example Africa/Lagos) with the window. The app will not place your boundary on a zone it cannot resolve.', code: 'trading_window_zone_invalid' });
+    }
+    if (pair.set && pair.timezone !== ownedZone) {
+      return res.status(409).json({ error: `This account\u2019s selected local timezone is ${ownedZone}. A trading window is expressed in that one zone, so the boundary cannot sit on a different clock: change the routine timezone first, or set the window in ${ownedZone}.`, code: 'trading_window_zone_not_owned' });
+    }
+    const suggestion = await windowSuggestionFor(account);
+    const derived = !!suggestion.available && suggestion.window.start === pair.start && suggestion.window.end === pair.end && suggestion.window.timezone === pair.timezone;
+    const source = derived ? TradingWindow.SOURCES.FROM_HISTORY : TradingWindow.SOURCES.MANUAL;
+    await D.db.prepare('UPDATE accounts SET window_start=?, window_end=?, window_timezone=?, window_source=? WHERE id=? AND user_id=?')
+      .run(pair.start, pair.end, pair.timezone, source, account.id, req.user.id);
+    const saved = { ...account, window_start: pair.start, window_end: pair.end, window_timezone: pair.timezone, window_source: source };
+    const state = windowStateFor(saved);
+    res.json({ ok: true, account_id: account.id, saved_at: new Date().toISOString(), source, derived_current_suggestion: derived,
+      ...state, suggestion, settings: TradingWindow.noteFor(state), limits: { writes: 1, grants_permission: false, predicts: false } });
   }));
 
   router.get('/tv/links', requireAuth, (req, res) => {

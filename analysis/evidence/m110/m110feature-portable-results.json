@@ -1,7 +1,7 @@
 {
   "app": "/home/user/Trader/extracted/tradejournal",
-  "pass": 17,
-  "fail": 0,
+  "pass": 16,
+  "fail": 1,
   "results": [
     {
       "label": "this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)",
@@ -29,7 +29,16 @@
     },
     {
       "label": "a backup carries the pair out, so a trader can see which window their own archive was taken under — as two columns, with no single knob beside them",
-      "passed": true
+      "passed": false,
+      "detail": [
+        "routine_window_start",
+        "news_block_before_min",
+        "news_settle_after_min",
+        "window_start",
+        "window_end",
+        "window_timezone",
+        "window_source"
+      ]
     },
     {
       "label": "a foreign bundle imports (so the next result is a real import, not a refused request)",

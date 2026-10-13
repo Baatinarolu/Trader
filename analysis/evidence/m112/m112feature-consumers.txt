@@ -1,0 +1,33 @@
+ok this tree ships the M112 trading-window rule (the committed parent does not, and that absence is this probe's control)
+ok with the routine complete and no window selected the desk is clear — so every refusal below is the window
+ok a window that cannot contain the trader’s local time produces the SAME kind of stop the personal guardrails produce
+ok and the breach names the rule rather than a generic stand-down
+ok the state is published on the daily object every consumer already reads, beside the breaches
+ok the message is the module sentence, so the UI and the refusal cannot drift apart
+ok the entry-admission path REFUSES it: 409, the guardrail code, and the operation never runs (no trade is written)
+ok and an override reason cannot open it, because the window sets can_override false
+ok the refusal is AUDITED with the window in the snapshot, so the trader can see which boundary stopped which attempt
+ok a desk whose routine is incomplete is stopped by its own rule, and the window is not needed to explain it
+ok without a window that stop is overridable with a stated reason — the routine is a stop the trader may answer for
+ok with the window outside as well, BOTH rules are in the breach list — the window appends, it never replaces
+ok and the window is the stricter rule: an overridable routine stop becomes non-overridable once the boundary is crossed
+ok so the stated reason no longer admits the entry, and the refusal still names the routine as well as the window
+ok a window that CONTAINS the local time blocks nothing at all — it is a boundary, not a permission
+ok and the same call that was refused a moment ago now admits the entry
+ok the state is DERIVED from the stored window and the clock on every read: the same row is outside at 13:15 local and inside the wrap at 23:00 local
+ok and the wrapped window is ONE boundary: `inside` at 01:30 the far side of midnight, and the end minute is OUTSIDE it
+ok and reading it again at the frozen clock refuses again — nothing was cached and nothing decayed
+ok clearing the window (four NULLs) blocks nothing, and the daily is what it was before any window existed
+ok the scan path turns the same state into NO TRADE on the candidate, with the market read preserved beside it
+ok and it says WHY in the candidate’s own no-trade list, prefixed as a personal guardrail rather than a market fact
+ok the permission it publishes is the window’s own stop, so a client renders the personal state rather than re-deriving it
+ok and the action permission that accompanies a recorded action keeps its scope note, so nothing here is broker permission
+ok the desk playlist publishes the window’s own stop rather than a second opinion about it: the SAME input is allowed when the clock is inside and refused when it is outside
+ok and it SAYS it: the window adds exactly one block-level guard carrying the module’s sentence, and the headline names it too
+ok with no window selected the playlist is measurably what it was: no window sentence anywhere in it and permission unchanged
+ok a window authored in a zone the trader has since changed is `unavailable`, and BOTH zones are named in the sentence
+ok and it blocks: an unreadable window refuses the entry rather than opening the gate the trader asked to close
+ok reading the state twice is idempotent: the same breaches, the same window, no counter and no journal row moved
+ok the only tables two reads touch are the guardrail audit tables the existing observe path already writes (and the rowid counter beside them)
+ok no journal row, no account row, no setting and no trade moved: the window is read, not stored
+M112 consumers: the same stop, the same admission path: 32 passed, 0 failed

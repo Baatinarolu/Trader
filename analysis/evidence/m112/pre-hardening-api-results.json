@@ -1,0 +1,291 @@
+{
+  "app": "/tmp/m112-pre-hardening/app",
+  "pass": 7,
+  "fail": 42,
+  "results": [
+    {
+      "label": "this tree ships the M112 trading-window rule (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "a desk with no window reports `unset` and says nothing is blocked on one — not an empty pass and not a guessed boundary",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "and it offers the suggestion as the trader’s own journal with nothing to derive yet, rather than a default window",
+      "passed": false
+    },
+    {
+      "label": "the endpoint states its own limits: read-only, no writes, no permission granted, no prediction, no inferred window",
+      "passed": false
+    },
+    {
+      "label": "and it carries the module’s basis and his own words, so the UI does not paraphrase the rule",
+      "passed": false,
+      "detail": 0
+    },
+    {
+      "label": "no zone is owned yet, and the endpoint says so rather than assuming one",
+      "passed": false
+    },
+    {
+      "label": "another trader’s window is not served: an unknown id and a FOREIGN trader’s account are both a 404, never an empty window",
+      "passed": true
+    },
+    {
+      "label": "and neither can a foreign trader’s window be written",
+      "passed": true
+    },
+    {
+      "label": "refuses a clock that is not HH:MM with its own code, at the status the app already uses for that class",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "error": "undefined"
+      }
+    },
+    {
+      "label": "refuses one side alone with its own code, at the status the app already uses for that class",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "error": "undefined"
+      }
+    },
+    {
+      "label": "refuses two equal sides with its own code, at the status the app already uses for that class",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "error": "undefined"
+      }
+    },
+    {
+      "label": "refuses a window before any zone is owned with its own code, at the status the app already uses for that class",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "error": "undefined"
+      }
+    },
+    {
+      "label": "refuses a window before any zone is owned, even with a zone supplied with its own code, at the status the app already uses for that class",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "error": "undefined"
+      }
+    },
+    {
+      "label": "and a refused write changes nothing: the desk still has no window after all five",
+      "passed": false
+    },
+    {
+      "label": "the trader’s own zone is set through the account they already edit, and the window then has a clock to live on",
+      "passed": true
+    },
+    {
+      "label": "an offset is refused once a zone IS owned: `+01:00` follows no daylight-saving rule, so it is not the trader’s own clock",
+      "passed": false,
+      "detail": {
+        "status": 404
+      }
+    },
+    {
+      "label": "a window the trader types is saved as `manual` and is NOT labelled as derived from the journal",
+      "passed": false,
+      "detail": {
+        "status": 404
+      }
+    },
+    {
+      "label": "and the saved window is evaluated immediately: outside its own hours the state is `outside` and it blocks",
+      "passed": false
+    },
+    {
+      "label": "the trader may re-save a window, and the second save replaces the first without ever creating a second one",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "a window on a zone the desk does not own is refused, naming the zone it does own",
+      "passed": false,
+      "detail": {
+        "status": 404
+      }
+    },
+    {
+      "label": "and that refusal did not move the stored boundary either",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "before the routine is complete the entry is refused by the routine, so the window is not what stopped it yet",
+      "passed": true
+    },
+    {
+      "label": "with the routine complete and the window outside, the entry is REFUSED by the window: 409, the guardrail code, and the window’s own rule in the breach list",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "breaches": []
+      }
+    },
+    {
+      "label": "and the refusal is the module sentence, naming the window, the zone and the local time there",
+      "passed": false
+    },
+    {
+      "label": "no trade was written: a hard block refuses the entry rather than recording it as a mistake",
+      "passed": false,
+      "detail": {
+        "before": 0,
+        "after": 1
+      }
+    },
+    {
+      "label": "and the permission the app answers with cannot be overridden from the client",
+      "passed": false
+    },
+    {
+      "label": "the guardrails read is a 200 with the stop in it, not a 503: a blocked desk is a readable state, not a broken service",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "state": "clear"
+      }
+    },
+    {
+      "label": "the SAME entry is admitted as soon as the clock is inside the window — the boundary, not the entry, is what refused it",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "trade": 2
+      }
+    },
+    {
+      "label": "clearing the window writes four NULLs and reports `unset` again — nothing is blocked on a window the trader removed",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "and an entry that arrives after the clear is admitted, which is what \"blocks nothing\" has to mean",
+      "passed": true
+    },
+    {
+      "label": "the clear left no empty-window residue: all four columns are NULL, so an upgrade and a new desk look the same",
+      "passed": true
+    },
+    {
+      "label": "an unrelated account edit (a rename, a cap change) cannot move a hard boundary: the window columns come back byte-identical",
+      "passed": false,
+      "detail": {
+        "name": "M112 window desk (renamed)",
+        "max_trades_day": 4,
+        "window_start": null,
+        "window_end": null,
+        "window_timezone": null,
+        "window_source": null
+      }
+    },
+    {
+      "label": "with 34 closed trades the desk now has a suggestion, labelled as the trader’s own recorded journal",
+      "passed": false
+    },
+    {
+      "label": "the suggestion names the session, the count and the floor it cleared, rather than presenting a band as a finding",
+      "passed": false
+    },
+    {
+      "label": "and the band is the middle of those entries’ own local hours, rounded outward to whole hours",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "the served suggestion IS the module’s computation over the same rows — the route adds no second derivation",
+      "passed": false,
+      "detail": null
+    },
+    {
+      "label": "a window the trader edits away from the candidate is recorded as `manual`, even with the suggestion available",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "accepting the suggestion stores exactly the candidate pair and records `from_session_history` — the trader accepted it, the app did not apply it",
+      "passed": false,
+      "detail": {
+        "status": 404,
+        "window": {}
+      }
+    },
+    {
+      "label": "and a GET afterwards reports the same stored pair with its source, so the label survives the round trip",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "a desk with no owned zone cannot accept a suggestion either: the refusal says which fact is missing",
+      "passed": false,
+      "detail": {
+        "status": 404
+      }
+    },
+    {
+      "label": "below the 30-trade review floor the suggestion is WITHHELD, not presented as a smaller window",
+      "passed": false
+    },
+    {
+      "label": "and accepting it is refused with the reason, so a below-floor band can never become the trader’s boundary by one click",
+      "passed": false,
+      "detail": {
+        "status": 404
+      }
+    },
+    {
+      "label": "a stored zone the runtime cannot resolve is reported as `unavailable` with the repair action — a 200 read, never a 500",
+      "passed": false,
+      "detail": {
+        "status": 404
+      }
+    },
+    {
+      "label": "and it BLOCKS the entry with its own rule: an unreadable window refuses rather than opening the gate",
+      "passed": false,
+      "detail": 409
+    },
+    {
+      "label": "reading the broken window never repairs it behind the trader’s back: the stored row is exactly what was stored",
+      "passed": false,
+      "detail": {
+        "window_start": null,
+        "window_end": null,
+        "window_timezone": null,
+        "window_source": null
+      }
+    },
+    {
+      "label": "an account edit cannot repair a window either: the boundary belongs to the window endpoint, so no unrelated write silently rewrites it",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "and the repair is the one the sentence named — re-saving the window in the owned zone — after which the state is readable and inside its hours again",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "changing the owned zone does NOT move the boundary: the window reports `unavailable` and names both clocks",
+      "passed": false
+    },
+    {
+      "label": "so an entry cannot slip through on the new clock either — the same pair is refused until the trader re-saves it",
+      "passed": false,
+      "detail": 409
+    }
+  ],
+  "scope": "M112 api: the boundary over HTTP, and the entry it refuses: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

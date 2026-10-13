@@ -19,6 +19,7 @@
 const { db } = require('../db');
 const SMC = require('./smc');
 const Guards = require('./guardrails');
+const TradingWindow = require('../trading-window');   // M112
 const Execution = require('../execution-review');
 
 const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
@@ -502,9 +503,18 @@ async function dailyState(userId, { accountId = null, store = db, nowMs = Date.n
     daily.status='stop';daily.permission={allowed:false,can_override:true,state:'stopped'};
     daily.message='Stand down: '+daily.breaches.map(b=>b.detail).join(' ');
   }
-  await Guards.retainState(store,userId,daily);
-  await Guards.observe(store,userId,daily);
-  return daily;
+  /* M112 — the trading window rides the SAME personal-state object every surface already reads
+   * (the entry engine, the admission path, the Now playlist, the scans), so the hard block is one
+   * read rather than a per-caller check that a new caller can forget. The state is derived from the
+   * account's own stored window and the server clock: `unset` publishes and blocks nothing,
+   * `outside` (and every unreadable window) becomes the same kind of stop the personal guardrails
+   * produce, with its own sentence. Nothing is written and no counter is moved. */
+  const tradingWindow = TradingWindow.safeState({ start: account.window_start, end: account.window_end, timezone: account.window_timezone,
+    ownedZone: account.routine_timezone, source: account.window_source, nowMs });
+  const windowed = TradingWindow.apply({ ...daily, trading_window: tradingWindow }, tradingWindow);
+  await Guards.retainState(store,userId,windowed);
+  await Guards.observe(store,userId,windowed);
+  return windowed;
 }
 
 /* ═════════════════════════════════════════════════ 4. PER-TRADE FEEDBACK */

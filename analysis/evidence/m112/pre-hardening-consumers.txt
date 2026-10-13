@@ -1,0 +1,33 @@
+ok this tree ships the M112 trading-window rule (the committed parent does not, and that absence is this probe's control)
+FAIL with the routine complete and no window selected the desk is clear — so every refusal below is the window {"status":"clear"}
+FAIL a window that cannot contain the trader’s local time produces the SAME kind of stop the personal guardrails produce {"allowed":true,"can_override":false,"state":"clear"}
+FAIL and the breach names the rule rather than a generic stand-down []
+FAIL the state is published on the daily object every consumer already reads, beside the breaches undefined
+FAIL the message is the module sentence, so the UI and the refusal cannot drift apart "No personal stop. 3 entries remain under the preselected 3-entry cap. This is not market/setup approval."
+FAIL the entry-admission path REFUSES it: 409, the guardrail code, and the operation never runs (no trade is written) {"status":null,"code":null,"ran":1}
+FAIL and an override reason cannot open it, because the window sets can_override false {"code":null,"can_override":null,"ran":2}
+FAIL the refusal is AUDITED with the window in the snapshot, so the trader can see which boundary stopped which attempt 0
+ok a desk whose routine is incomplete is stopped by its own rule, and the window is not needed to explain it
+ok without a window that stop is overridable with a stated reason — the routine is a stop the trader may answer for
+FAIL with the window outside as well, BOTH rules are in the breach list — the window appends, it never replaces ["pre_market_routine"]
+FAIL and the window is the stricter rule: an overridable routine stop becomes non-overridable once the boundary is crossed {"allowed":false,"can_override":true,"state":"stopped"}
+FAIL so the stated reason no longer admits the entry, and the refusal still names the routine as well as the window null
+FAIL a window that CONTAINS the local time blocks nothing at all — it is a boundary, not a permission {"status":"clear"}
+FAIL and the same call that was refused a moment ago now admits the entry {"calls":4,"state":"admitted"}
+FAIL the state is DERIVED from the stored window and the clock on every read: the same row is outside at 13:15 local and inside the wrap at 23:00 local {"later_status":"clear"}
+FAIL and the wrapped window is ONE boundary: `inside` at 01:30 the far side of midnight, and the end minute is OUTSIDE it {}
+FAIL and reading it again at the frozen clock refuses again — nothing was cached and nothing decayed undefined
+FAIL clearing the window (four NULLs) blocks nothing, and the daily is what it was before any window existed {"status":"clear"}
+FAIL the scan path turns the same state into NO TRADE on the candidate, with the market read preserved beside it {"ok":true,"action":"BUY","grade":"A","market_ok":true,"action_market":"BUY","no_trade":[]}
+FAIL and it says WHY in the candidate’s own no-trade list, prefixed as a personal guardrail rather than a market fact []
+FAIL the permission it publishes is the window’s own stop, so a client renders the personal state rather than re-deriving it {"allowed":true,"can_override":false,"state":"clear","account_id":3,"evaluated_at":"2026-10-13T12:15:00.000Z","message":"No personal stop. 3 entries remain under the preselected 3-entry cap. This is not market/setup approval.","breaches":[]}
+FAIL and the action permission that accompanies a recorded action keeps its scope note, so nothing here is broker permission null
+FAIL the desk playlist publishes the window’s own stop rather than a second opinion about it: the SAME input is allowed when the clock is inside and refused when it is outside {"outside":{"allowed":true,"can_override":false,"state":"clear","account_id":3,"evaluated_at":"2026-10-13T12:15:00.000Z","breaches":[]},"inside":{"allowed":true,"can_override":false,"state":"clear","account_id":3,"evaluated_at":"2026-10-13T12:15:00.000Z","breaches":[]}}
+FAIL and it SAYS it: the window adds exactly one block-level guard carrying the module’s sentence, and the headline names it too {"outside":[],"inside":[],"headline":"EURUSD 15m: no directional read. The higher timeframe has not decided which side of the range it wants."}
+ok with no window selected the playlist is measurably what it was: no window sentence anywhere in it and permission unchanged
+FAIL a window authored in a zone the trader has since changed is `unavailable`, and BOTH zones are named in the sentence undefined
+FAIL and it blocks: an unreadable window refuses the entry rather than opening the gate the trader asked to close []
+ok reading the state twice is idempotent: the same breaches, the same window, no counter and no journal row moved
+ok the only tables two reads touch are the guardrail audit tables the existing observe path already writes (and the rowid counter beside them)
+ok no journal row, no account row, no setting and no trade moved: the window is read, not stored
+M112 consumers: the same stop, the same admission path: 7 passed, 25 failed

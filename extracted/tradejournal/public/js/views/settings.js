@@ -33,6 +33,7 @@
                 <span class="mono ${U.cls(st.net_pnl)}" style="font-size:1.05rem">${U.moneySign(st.net_pnl)}</span></div>
               <div class="tiny muted" style="margin-top:8px">Saved daily realised profit stop: ${a.daily_profit_limit_pct == null ? 'Off (optional)' : U.esc(a.daily_profit_limit_pct) + '%'} · UTC choice; edits after the first check apply tomorrow.</div>
               <div class="tiny muted" style="margin-top:6px">Routine schedule: ${a.routine_window_start?U.esc(a.routine_window_start)+' '+U.esc(a.routine_timezone)+' · '+U.esc(a.routine_lead_minutes)+'m lead · '+U.esc(a.routine_order):'Setup required (no window inferred)'}. Active cycle keeps its saved policy until reset.</div>
+              <div class="tiny muted" style="margin-top:6px">Trading window: ${a.window_start?U.esc(a.window_start)+'–'+U.esc(a.window_end)+' '+U.esc(a.window_timezone||'')+(a.window_source==='from_session_history'?' (accepted from your recorded journal)':' (set by you)')+', enforced as a hard block outside it.':'None selected — nothing is blocked on one. Your own best hours can be derived from your recorded journal.'}</div>
               <div class="sep"></div>
               <div class="stats grid g4" style="gap:8px">
                 <div><div class="k-label">Equity</div><div class="mono">${U.money(st.equity)}</div></div>
@@ -47,6 +48,7 @@
               ${st.open_trades ? `<div class="tiny warn" style="margin-top:8px">${st.open_trades} open position(s) risking ${U.money(st.open_risk)}</div>` : ''}
               <div class="row" style="gap:6px;margin-top:12px">
                 <button class="btn xs ghost" data-aedit="${a.id}">Edit rules</button>
+                <button class="btn xs ghost" data-awindow="${a.id}">Trading window</button>
                 <button class="btn xs ghost" data-adefault="${a.id}">Set default</button>
                 <button class="btn xs ghost danger" data-adel="${a.id}" style="margin-left:auto">Delete</button>
               </div>`;
@@ -57,6 +59,7 @@
           grid.addEventListener('click', async (e) => {
             const b = e.target.closest('button'); if (!b) return;
             if (b.dataset.aedit) return accountDialog(accounts.accounts.find((a) => a.id === Number(b.dataset.aedit)));
+            if (b.dataset.awindow) return windowDialog(accounts.accounts.find((a) => a.id === Number(b.dataset.awindow)));
             if (b.dataset.adel) {
               if (!confirm('Delete this account and all of its trades?')) return;
               await API.del('/accounts/' + b.dataset.adel); await Store.reloadAll(); global.App.refresh();
@@ -421,6 +424,59 @@
       };
 
       draw();
+
+      /* M112 — the trading window dialog. The two sides are HH:MM on the trader's OWN local clock
+       * (the same explicit IANA zone the routine schedule owns), the derived suggestion is shown
+       * with the numbers behind it, and saving or clearing is an explicit act here: the app never
+       * writes a window on its own, and a suggestion below the course's 30-trade review floor is
+       * displayed as refused rather than rounded up. */
+      async function windowDialog(a) {
+        const body = U.h('div');
+        body.innerHTML = '<div class="tiny muted">Reading your recorded journal…</div>';
+        let state;
+        try { state = await API.get('/bots/window', { account_id: a.id }); }
+        catch (e) { return global.App.toast(e.message || 'The trading window could not be read.', 'err'); }
+        const sug = state.suggestion || {};
+        const w = state.window || {};
+        body.innerHTML = `
+          <div class="tiny muted">Zone: <b>${U.esc(state.owned_timezone || 'not selected')}</b> — the same local zone your routine schedule uses. A window is expressed in that one zone, and changing it later re-saves rather than silently moving your boundary.</div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr;margin-top:8px">
+            <label class="field"><span>Window start (HH:MM, my local time)</span><input id="w-start" type="time" value="${U.esc(w.start || '')}" /></label>
+            <label class="field"><span>Window end (HH:MM, my local time)</span><input id="w-end" type="time" value="${U.esc(w.end || '')}" /><div class="field-note">Half-open: the start minute is inside, the end minute is outside. A start later than the end runs through midnight.</div></label>
+          </div>
+          <div class="tiny" style="margin-top:6px">${U.esc(state.settings && state.settings.note ? state.settings.note : '')}</div>
+          <div class="sep"></div>
+          <div class="tiny"><b>Your recorded best session:</b> ${sug.available
+            ? U.esc(sug.detail || '')
+            : U.esc(sug.reason_detail || 'Nothing to derive yet.')}</div>
+          ${sug.available ? `<button class="btn xs ghost" id="w-accept" style="margin-top:6px">Use ${U.esc(sug.window.start)}–${U.esc(sug.window.end)} ${U.esc(sug.window.timezone)}</button>` : ''}
+          <div class="tiny muted" style="margin-top:8px">${U.esc(state.basis || '')}</div>`;
+        global.App.modal({
+          title: 'Trading window — ' + (state.state || 'unset'), body, small: false,
+          actions: [{ label: 'Cancel', ghost: true }, {
+            label: 'Clear window', onClick: async (close) => {
+              await API.put('/bots/window', { account_id: a.id, window_start: null, window_end: null });
+              await Store.reloadAll(); close(); global.App.toast('Trading window cleared — nothing is blocked on one.', 'ok'); global.App.refresh();
+            },
+          }, {
+            label: 'Save', primary: true, onClick: async (close) => {
+              const start = U.$('#w-start', body).value, end = U.$('#w-end', body).value;
+              if ((start && !end) || (!start && end)) return global.App.toast('A trading window needs both a start and an end, or neither.', 'err');
+              if (start && start === end) return global.App.toast('The start and end cannot be the same minute — that is not a window.', 'err');
+              try {
+                await API.put('/bots/window', { account_id: a.id, window_start: start || null, window_end: end || null });
+              } catch (e) { return global.App.toast(e.message || 'The trading window could not be saved.', 'err'); }
+              await Store.reloadAll(); close(); global.App.toast('Trading window saved', 'ok'); global.App.refresh();
+            },
+          }],
+        });
+        const accept = U.$('#w-accept', body);
+        if (accept) accept.addEventListener('click', async () => {
+          try { await API.put('/bots/window', { account_id: a.id, accept_suggestion: true }); }
+          catch (e) { return global.App.toast(e.message || 'The suggestion could not be applied.', 'err'); }
+          await Store.reloadAll(); global.App.toast('Window accepted from your recorded journal', 'ok'); global.App.refresh();
+        });
+      }
 
       function accountDialog(a) {
         const isNew = !a;

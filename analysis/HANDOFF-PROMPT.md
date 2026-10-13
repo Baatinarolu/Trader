@@ -1,6 +1,87 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M111 — an unreadable calendar is UNKNOWN, not clear — 2026-10-13
+## Current M112 — the trading window is a hard block, not a penalty — 2026-10-13
+
+**132:107 done /2 partial /23 TODO /0 no-action**, exact eight groups. Ep31 names a **trading
+window** among the guardrails and says where it must come from — *"for a trading window, you only
+want to set your **best session window**… **on data, based on historical performance**, what is the
+time window that you tend to perform the best in?"* — and `ixmTrvUB1Ks` settles its shape: *"if you
+try to trade outside of this window, **the guardrail will prevent you from doing so**"*, with the
+rationale *"less screen time equal better trades"* and his own word for it, *"a **cheat code** if you
+struggle with impulse trades."* The codebase had **no such setting** (`grep -rniE
+'trading_window|window_start' src/` → 0 hits) although `performance.js` already computed
+`by_session`, and the only session rule in place was a **weight-8 scored item** — trading outside the
+best session cost 5.2 points and still graded A+.
+
+`src/trading-window.js` (`trading-window-v1`) is a **leaf** (no requires, no environment, no
+filesystem, no clock of its own) and owns **four** states that are never collapsed: **`unset`**
+(nothing selected — **nothing is blocked on one**), **`inside`**, **`outside`** (the guardrail
+refuses the entry) and **`unavailable`** (the stored window could not be read: also a refusal, with
+**one repair sentence**). Boundaries are **half-open `[start, end)`** on the trader's own local
+clock — the start minute is inside, the end minute is outside, and a start later than the end runs
+through midnight as one window — the pair is **both sides or neither**, an equal pair is refused as
+degenerate rather than read as all-day, the clock is strict `HH:MM` (`7:00`, `0700`, `24:00`,
+booleans → refusals), and the zone must be an explicit **IANA** name (an offset would move a hard
+boundary twice a year). **A hard boundary does not move when another setting does**: the window is
+authored in the account's owned routine timezone, and if that timezone changes the window becomes
+`unavailable` **naming both zones** and keeps blocking until the trader re-saves it.
+
+**Storage is four additive columns** — `accounts.window_start`, `window_end`, `window_timezone`,
+`window_source` — NULL by default, with the schema's own CHECKs (format, hour ≤ 23, `end<>start`,
+zone-with-pair and only with the pair, source in `manual`/`from_session_history`) declared
+**identically** on the fresh table and in the migration, so an upgraded desk carries the same text.
+An upgrade of the actual M111 release adds **exactly** those four columns, every inherited fact
+hash-identical and all four NULL — **no window is invented for a desk that never had one**, so its
+state is `unset` and it blocks nothing. The formatter/writer never guesses a boundary, and the
+`PUT /api/accounts/:id` column list does **not** include the four (asserted), so an unrelated edit
+cannot move one.
+
+**The derived default is a suggestion the trader accepts, and the app never writes it.** `GET
+/api/bots/window` returns the best recorded `by_session` bucket and, inside it, the **circular
+middle 50 %** of the trader's own recorded entry hours rounded outward to whole hours (23:00 and
+01:00 are neighbours, so a session around midnight is ONE band), labelled `from_session_history`
+with a `basis` saying it describes recorded journal outcomes and is **not a prediction, a market
+edge or a permission**; refused **entirely below the course's own 30-trade review floor**, refused
+when the entries are spread around the clock (`no_single_band`), and `applied:false` always.
+`PUT /api/bots/window` records `from_session_history` **only** when the submitted pair is exactly
+the candidate derived at that moment — otherwise `manual`; an explicit clear writes four NULLs.
+
+**How it blocks.** The window merges into the desk's **personal state** in the same shape the state
+gate uses, so the refusal rides code that was already measured: `Guards.applyToSetups`, the
+**entry-admission path** (`POST /trades`), the Now playlist and every scan row. It **adds** a stop
+and never removes one (an existing `pre_market_routine` breach survives beside the window's), it
+makes an overridable stop **non-overridable** (`can_override:false`) once the boundary is crossed,
+`setup.js` carries it as a **veto** with `setups.filters.trading_window` (`not_consulted` for a
+caller that read no window), and the engine's rows, weights, grades and candidates are
+**byte-identical** with and without it — no weight, grade, cap, clock, floor, target or risk setting
+was retuned. `src/bots/now.js` needed **no new line** because the merge lands on the object the
+playlist already reads: measured on the same input inside vs outside, it publishes the window's own
+stop, pushes exactly one block-level guard with the module's sentence, and withholds `full_risk`.
+
+**Measured.** M112 **181/0 across 6 probes** (module 36, engine 18, consumers 32, API 49,
+migration 16, real-DOM UI 30); the actual **4791809 M111 release** measured **0/1 on all six**
+(module, columns and endpoint absent — that absence IS the control); the **pre-hardening runtime**
+(the delivered rule and columns with the committed M111 engine, endpoints and views) measured by the
+**unchanged** probes at engine **4/14**, consumers **7/25**, API **7/42**, UI **3/27**, every fault
+line asserted from **both** texts. Cohort marks on this tree: **M111 152/2** and **M110 249/9** —
+those failures are those releases' own frozen schema-shape assertions (M111 proved it added no
+schema object; M110 froze the M110-era `accounts` shape), **retained by name in
+`analysis/evidence/` rather than edited**, because M112 adds four additive `accounts` columns on
+purpose; older cohorts keep their own declared negatives (M109 166/2, M108 257/2, M107 230/2, M106
+316/2, M105 140/2) and RAW 596/156, DECLARED 824/4, live-provider 70/1 re-run identical. Smoke
+21/21 views, 0 style failures, 0 console errors **on both trees at the same sample**, with the smoke
+run explicitly **not** claimed as dialog coverage (that is `analysis/probe-m112-ui.js`, 30
+assertions). Four constructed runtime stages (policy → engine → consumers → documentation) replay
+forward and reverse with 0 byte differences; 147 sources; `tradingpro-fixed.zip` 17 493 034 bytes
+sha256 `a4c5d6e0…`, rebuilt from the saved patches byte-identical. **M111's README measured line was
+wrong** (`158/0 … portable 15`) and is corrected here to the measured **154/0 / portable 10**.
+Ledger: 132 = **107** done / 2 partial / 23 TODO. Sandbox limits: no market, broker or calendar
+provider — synthetic series, the routine completed through the app's own endpoints, a jsdom DOM
+check; **no live-feed, provider, broker, pixel, human or production proof**, and no claim an hour
+will be profitable. Next in the TODO: M12, M13, M15, M17, M18, M19, M45, M46, M49, M53, M55, M56,
+M59, M60, M65, M66, M67, M72, M73, M74, M115, M117, M125 (plus M30/M103 partial).
+
+## Previous M111 — an unreadable calendar is UNKNOWN, not clear — 2026-10-13
 
 **132:106 done /2 partial /24 TODO /0 no-action**, exact eight groups. `newsCheck` **failed open**:
 the market layer reports a calendar it could not read as `{ok:false, error, events:[]}` rather than

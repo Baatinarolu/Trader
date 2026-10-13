@@ -1,0 +1,74 @@
+[
+  {
+    "name": "pure",
+    "script": "analysis/probe-m112-pure.js",
+    "pass": 36,
+    "fail": 0,
+    "expected_pass": 36,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m112feature-pure.txt",
+    "scope": "M112 portability: the rule is the file: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "engine",
+    "script": "analysis/probe-m112-engine.js",
+    "pass": 18,
+    "fail": 0,
+    "expected_pass": 18,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m112feature-engine.txt",
+    "scope": "M112 engine: outside the window is a veto, unset is nothing: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "consumers",
+    "script": "analysis/probe-m112-consumers.js",
+    "pass": 32,
+    "fail": 0,
+    "expected_pass": 32,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m112feature-consumers.txt",
+    "scope": "M112 consumers: the same stop, the same admission path: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "api",
+    "script": "analysis/probe-m112-api.js",
+    "pass": 49,
+    "fail": 0,
+    "expected_pass": 49,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m112feature-api.txt",
+    "scope": "M112 api: the boundary over HTTP, and the entry it refuses: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "migration",
+    "script": "analysis/probe-m112-migration.js",
+    "pass": 16,
+    "fail": 0,
+    "expected_pass": 16,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m112feature-migration.txt",
+    "scope": "M112 migration: four additive columns, and no window invented for an existing desk: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "ui",
+    "script": "analysis/probe-m112-ui.js",
+    "pass": 30,
+    "fail": 0,
+    "expected_pass": 30,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m112feature-ui.txt",
+    "scope": "M112 real DOM: the dialog the trader owns the window with: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  }
+]

@@ -4,7 +4,7 @@ ok and it reads no environment, no filesystem, no absolute path and not even the
 ok every shipped importer reaches it by a relative path inside the tree, so a copy of the tree needs nothing outside it
 ok no shipped file mentions this milestone’s harness, its shim or its probes: the tests measure the product, the product does not know about the tests
 ok copied out of the repository, the module produces byte-identical decisions — the rule is the file, not the checkout
-ok a backup carries the pair out, so a trader can see which window their own archive was taken under — as two columns, with no single knob beside them
+FAIL a backup carries the pair out, so a trader can see which window their own archive was taken under — as two columns, with no single knob beside them ["routine_window_start","news_block_before_min","news_settle_after_min","window_start","window_end","window_timezone","window_source"]
 ok a foreign bundle imports (so the next result is a real import, not a refused request)
 ok and it CANNOT move the importing desk’s pair: a looser 1/240 in an archive does not become this trader’s window
 ok it also does not create an account from the bundle: an archive restores trades, never desks or their settings
@@ -15,4 +15,4 @@ ok and the pair is nowhere in the bundle’s own vocabulary: no import code path
 ok a CSV import carries no settings of any kind and leaves the pair alone
 ok a desk with no stored pair is reported as `default` on both sides, so an unanswered setting is visible instead of passing as a stored one
 ok research overrides are per request and never written back: after a widened research call the stored pair is still the trader’s own
-M110 portability: 17 passed, 0 failed
+M110 portability: 16 passed, 1 failed

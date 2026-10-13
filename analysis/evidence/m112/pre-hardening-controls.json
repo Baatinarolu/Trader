@@ -1,0 +1,38 @@
+{
+  "engine": {
+    "tree": "the delivered rule and the four columns with the engine, the endpoints and the views still the committed M111 files (the policy stage itself)",
+    "script": "analysis/probe-m112-engine.js",
+    "pass": 4,
+    "fail": 14,
+    "exit_code": 1,
+    "output": "pre-hardening-engine.txt",
+    "scope": "The unchanged M112 probes on the pre-hardening runtime: a window can be stored and evaluated, but nothing enforces it \u2014 the veto, the filters key, the endpoints and the dialog are absent, so the assertions that need them measure the missing enforcement rather than a crash."
+  },
+  "consumers": {
+    "tree": "the delivered rule and the four columns with the engine, the endpoints and the views still the committed M111 files (the policy stage itself)",
+    "script": "analysis/probe-m112-consumers.js",
+    "pass": 7,
+    "fail": 25,
+    "exit_code": 1,
+    "output": "pre-hardening-consumers.txt",
+    "scope": "The unchanged M112 probes on the pre-hardening runtime: a window can be stored and evaluated, but nothing enforces it \u2014 the veto, the filters key, the endpoints and the dialog are absent, so the assertions that need them measure the missing enforcement rather than a crash."
+  },
+  "api": {
+    "tree": "the delivered rule and the four columns with the engine, the endpoints and the views still the committed M111 files (the policy stage itself)",
+    "script": "analysis/probe-m112-api.js",
+    "pass": 7,
+    "fail": 42,
+    "exit_code": 1,
+    "output": "pre-hardening-api.txt",
+    "scope": "The unchanged M112 probes on the pre-hardening runtime: a window can be stored and evaluated, but nothing enforces it \u2014 the veto, the filters key, the endpoints and the dialog are absent, so the assertions that need them measure the missing enforcement rather than a crash."
+  },
+  "ui": {
+    "tree": "the delivered rule and the four columns with the engine, the endpoints and the views still the committed M111 files (the policy stage itself)",
+    "script": "analysis/probe-m112-ui.js",
+    "pass": 3,
+    "fail": 27,
+    "exit_code": 1,
+    "output": "pre-hardening-ui.txt",
+    "scope": "The unchanged M112 probes on the pre-hardening runtime: a window can be stored and evaluated, but nothing enforces it \u2014 the veto, the filters key, the endpoints and the dialog are absent, so the assertions that need them measure the missing enforcement rather than a crash."
+  }
+}

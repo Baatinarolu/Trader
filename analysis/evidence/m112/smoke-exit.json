@@ -1,0 +1,33 @@
+{
+  "app": "extracted/tradejournal (delivered M112 tree, 147 sources)",
+  "harness": "scripts/smoke-test.js from that same tree, unchanged",
+  "command": "PORT=3220 node server.js + node scripts/smoke-test.js http://127.0.0.1:3220",
+  "environment": "PORT=3220, TRADEJOURNAL_DB=/tmp/m112-smoke.db (fresh, synthetic), TJ_SCHEDULER=0, TJ_OFFLINE_CANDLES=1, no remote DB",
+  "exit_code": 0,
+  "views_passed": 21,
+  "views_offered": 21,
+  "ui_style_failures": 0,
+  "console_errors": 0,
+  "canvas_environment_limits": 0,
+  "duration_seconds": 93.5,
+  "conditional_view_count": "The harness offers its view list conditionally (a chip condition on the content shell), so the reported total moves between samples: it is measured here at the same sample on both trees and the two counts are compared, not asserted absolutely.",
+  "window_dialog_coverage": "grep -ci 'trading window' = 0 and grep -ci 'settings' = 2: the smoke run does NOT open the trading-window dialog. M112 ships that dialog in public/js/views/settings.js, and its coverage is analysis/probe-m112-ui.js (30 assertions) \u2014 the smoke run is not claimed as dialog coverage.",
+  "parent_control": {
+    "tree": "/tmp/m112-parent/app \u2014 the actual 4791809 M111 release, byte-identical to its frozen 147-file guard",
+    "command": "PORT=3221 node server.js + node scripts/smoke-test.js http://127.0.0.1:3221",
+    "exit_code": 0,
+    "views_passed": 21,
+    "views_offered": 21,
+    "ui_style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limits": 0,
+    "duration_seconds": 95.0,
+    "output": "analysis/evidence/m112/smoke-parent-control.txt",
+    "why": "The unchanged parent reports the same view count at the same sample, so M112 neither loses nor gains a view in the harness."
+  },
+  "limits": "jsdom structural/DOM check with no browser engine: no pixel, device, audio, provider, broker, human or production proof, and no mental-state claim.",
+  "outputs": {
+    "delivered": "analysis/evidence/m112/smoke.txt",
+    "parent": "analysis/evidence/m112/smoke-parent-control.txt"
+  }
+}

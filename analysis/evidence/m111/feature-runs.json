@@ -86,11 +86,11 @@
   {
     "name": "migration",
     "script": "analysis/probe-m111-migration.js",
-    "pass": 16,
-    "fail": 0,
+    "pass": 14,
+    "fail": 2,
     "expected_pass": 16,
     "expected_fail": 0,
-    "exit_code": 0,
+    "exit_code": 1,
     "status": "completed",
     "output": "m111feature-migration.txt",
     "scope": "M111 migration: no schema change, and the same read answers differently: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"

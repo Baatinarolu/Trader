@@ -13,7 +13,7 @@ Error: Stand down: Select your own local window/timezone, then complete the pre-
   daily: {
     date: '2026-10-13',
     timezone: 'UTC',
-    evaluated_at: '2026-10-13T15:15:54.807Z',
+    evaluated_at: '2026-10-13T16:03:00.125Z',
     account_id: 1,
     guardrails: {
       max_risk_pct: 1,
@@ -47,7 +47,7 @@ Error: Stand down: Select your own local window/timezone, then complete the pre-
       limit_pct: null,
       limit_amount: null,
       realised_amount: 0,
-      selected_at: '2026-10-13T15:15:54.807Z',
+      selected_at: '2026-10-13T16:03:00.125Z',
       balance_basis: 'day-start realised journal equity',
       timezone: 'UTC'
     },
@@ -72,7 +72,7 @@ Error: Stand down: Select your own local window/timezone, then complete the pre-
     session_time: {
       account_id: 1,
       advisory: true,
-      evaluated_at: '2026-10-13T15:15:54.807Z',
+      evaluated_at: '2026-10-13T16:03:00.125Z',
       timezone: 'UTC',
       saved_limit_minutes: null,
       scope: 'Manual marker only, not measured broker/chart screen time or execution permission',
@@ -101,6 +101,17 @@ Error: Stand down: Select your own local window/timezone, then complete the pre-
       next_step: 'setup',
       message: 'Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred.',
       scope: 'Personal preparation requirement, not broker-hours or market permission'
+    },
+    trading_window: {
+      version: 'trading-window-v1',
+      window: [Object],
+      in_window: null,
+      until: null,
+      state: 'unset',
+      block: false,
+      reason: 'no_window_selected',
+      detail: 'No trading window is selected, so this app blocks nothing on one. Your own best hours can come from your recorded journal — the suggestion is labelled as such, and only you can accept it.',
+      suggestion_available: true
     }
   }
 }

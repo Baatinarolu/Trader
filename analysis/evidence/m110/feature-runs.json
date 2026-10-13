@@ -74,11 +74,11 @@
   {
     "name": "portable",
     "script": "analysis/probe-m110-portable.js",
-    "pass": 17,
-    "fail": 0,
+    "pass": 16,
+    "fail": 1,
     "expected_pass": 17,
     "expected_fail": 0,
-    "exit_code": 0,
+    "exit_code": 1,
     "status": "completed",
     "output": "m110feature-portable.txt",
     "scope": "M110 portability: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
@@ -86,11 +86,11 @@
   {
     "name": "migration",
     "script": "analysis/probe-m110-migration.js",
-    "pass": 33,
-    "fail": 0,
+    "pass": 30,
+    "fail": 3,
     "expected_pass": 33,
     "expected_fail": 0,
-    "exit_code": 0,
+    "exit_code": 1,
     "status": "completed",
     "output": "m110feature-migration.txt",
     "scope": "ACTUAL145-file M109 release parent \u2192 delivered tree on the same database: exactly two added columns with their own CHECKs, every other schema object and inherited fact byte-identical, the parent\u2019s single knob refused rather than mapped, re-open a no-op; synthetic/local, not broker/real-money proof"

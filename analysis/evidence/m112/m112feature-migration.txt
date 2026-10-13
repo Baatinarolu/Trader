@@ -1,0 +1,17 @@
+ok this tree ships the M112 trading-window rule (the committed parent does not, and that absence is this probe's control)
+ok the parent tree IS the committed M111 release: it has no window module and its accounts table declares none of the four columns
+ok the parent’s own schema has no window column, and the account it wrote carries the routine zone it selected
+ok opening the parent’s file adds exactly the four window columns, and nothing else about the row changed
+ok no window is invented for a desk that never had one: all four columns are NULL, so the state is `unset` and it blocks nothing
+ok every inherited fact is preserved: the account row, the trades, the users and the guardrail state hash the same as the parent left them
+ok the parent’s own routine settings survive the upgrade untouched, so the window did not reopen a schedule
+ok the four columns an upgraded database inherits carry the SAME declared type, NOT NULL and default as the ones a fresh database is created with
+ok and the SAME CHECK on each of them, re-created from the DDL rather than inherited: both sides or neither, the format, the unequal pair, the zone with the pair, the source list
+ok the CHECKs are the ones that describe the rule, not placeholders
+ok and the position difference is RECORDED rather than hidden: an inherited table appends the four columns last, the fresh DDL places them before the prop fields
+ok the schema refuses half a window, two equal sides, a malformed clock and an hour the clock does not have
+ok and it refuses a pair with no zone as firmly as it refuses a source the app never writes
+ok while the real window IS accepted and stored exactly as written — the constraints refuse shapes, not the feature
+ok the parent’s OWN code still reads the upgraded file: its account row and its trades are there, and the extra columns are simply invisible to it
+ok reading it with the parent does not drop the window either: the delivered tree still sees the pair afterwards
+M112 migration: four additive columns, and no window invented for an existing desk: 16 passed, 0 failed
