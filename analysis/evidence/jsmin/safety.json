@@ -1,0 +1,139 @@
+{
+  "pass": 33,
+  "fail": 0,
+  "results": [
+    {
+      "label": "a direct `eval` still reads the same names: renaming is switched off for the whole file (and the report says so)",
+      "passed": true
+    },
+    {
+      "label": "with `eval` present nothing is renamed and nothing is removed, and the report names the hazard that blocked renaming",
+      "passed": true
+    },
+    {
+      "label": "inside a `with` block the name `undefined` is NOT re-spelled as `void 0` — it may be a property of the object, and the trap is measured",
+      "passed": true
+    },
+    {
+      "label": "the printed `with` body still says `undefined` (a `void 0` there would have returned nothing instead of the property)",
+      "passed": true
+    },
+    {
+      "label": "a binding read or written inside a `with` body keeps its name: the lookup is by name at run time",
+      "passed": true
+    },
+    {
+      "label": "the report says the binding was left alone because a `with` block makes the name dynamic",
+      "passed": true
+    },
+    {
+      "label": "the `Function` constructor also switches renaming off",
+      "passed": true
+    },
+    {
+      "label": "a name that appears inside a string is never reused as a different name",
+      "passed": true
+    },
+    {
+      "label": "the binding whose name appears in a string keeps that name, and the report says why",
+      "passed": true
+    },
+    {
+      "label": "with nothing in the way, short names are handed out (renaming is not simply disabled everywhere)",
+      "passed": true
+    },
+    {
+      "label": "an anonymous function assigned to a binding keeps the binding name, so `fn.name` is unchanged",
+      "passed": true
+    },
+    {
+      "label": "the report lists that binding as skipped with the reason (it is not silently renamed)",
+      "passed": true
+    },
+    {
+      "label": "arity is not touched: `fn.length` and `arguments.length` are the same before and after",
+      "passed": true
+    },
+    {
+      "label": "no parameter was dropped from the printed signature",
+      "passed": true
+    },
+    {
+      "label": "property names are never mangled: `.name`, `[\"name\"]` and the key in an object literal all survive",
+      "passed": true
+    },
+    {
+      "label": "a property read whose value is unused is still performed (a getter is not a no-op)",
+      "passed": true
+    },
+    {
+      "label": "the read survives as its own statement rather than being deleted with the unused binding",
+      "passed": true
+    },
+    {
+      "label": "a read through a Proxy still runs the trap even when the value goes nowhere",
+      "passed": true
+    },
+    {
+      "label": "`delete`, `instanceof`, a tagged template and `new` all survive compression",
+      "passed": true
+    },
+    {
+      "label": "the compressor reports `pure()` as false for every one of those shapes, so no pass can delete them",
+      "passed": true
+    },
+    {
+      "label": "a directive-looking string with an escape in it is NOT a directive, and stays spelled exactly as written",
+      "passed": true
+    },
+    {
+      "label": "a real prologue stays first and stays strict",
+      "passed": true
+    },
+    {
+      "label": "a local binding named `undefined` keeps its meaning (the parameter shadows the global)",
+      "passed": true
+    },
+    {
+      "label": "a hole in an array stays a hole",
+      "passed": true
+    },
+    {
+      "label": "a nested hole in a destructuring pattern stays a hole",
+      "passed": true
+    },
+    {
+      "label": "the tool requires nothing from outside itself and nothing but the node built-ins (16 require calls in 9 files)",
+      "passed": true
+    },
+    {
+      "label": "no socket, no subprocess and no dynamic evaluation anywhere in the tool (the two mentions in scope.js are detections, not uses)",
+      "passed": true
+    },
+    {
+      "label": "no package manifest was added: the tool has no dependencies to install and no build step to run",
+      "passed": true
+    },
+    {
+      "label": "every file of the tool is valid JavaScript on its own (node --check on 9 files)",
+      "passed": true
+    },
+    {
+      "label": "`fn.toString()` is NOT preserved: the printed text is what a caller gets (a documented non-guarantee, asserted rather than hidden)",
+      "passed": true
+    },
+    {
+      "label": "with an output file the CLI writes the code and its map (a map is the default, as --help says) and nothing else",
+      "passed": true
+    },
+    {
+      "label": "with --no-source-map exactly one file is written",
+      "passed": true
+    },
+    {
+      "label": "the input file is not modified",
+      "passed": true
+    }
+  ],
+  "scope": "the negatives, measured by running code: eval/with/Function switch renaming off, text-in-strings blocks a name, fn.name and arity are untouched, property names and observable reads survive, directives and shadowed `undefined` keep their meaning, and the tool has no dependency, no socket and no subprocess. The one documented difference (fn.toString) is asserted as a difference."
+}

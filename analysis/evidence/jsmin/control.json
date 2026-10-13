@@ -1,0 +1,71 @@
+{
+  "pass": 16,
+  "fail": 0,
+  "results": [
+    {
+      "label": "a regex stripper removes the newline that ASI needs: `return\\n1` becomes `return1`, and the program stops doing what it did",
+      "passed": true
+    },
+    {
+      "label": "a regex stripper cuts a string that contains `//` and the result is no longer a program",
+      "passed": true
+    },
+    {
+      "label": "a regex stripper cuts a template that contains `/*`",
+      "passed": true
+    },
+    {
+      "label": "a regex stripper turns a division followed by a regular expression into `//` and cuts the rest of the line",
+      "passed": true
+    },
+    {
+      "label": "the tool handles all four of those cases: 4/4 behave identically after compression (the regex stripper: 0/4)",
+      "passed": true
+    },
+    {
+      "label": "a blind renamer rewrites the name inside a string and the program prints something different",
+      "passed": true
+    },
+    {
+      "label": "a blind renamer walks straight into `eval` and the value disappears (the name it builds at run time no longer exists)",
+      "passed": true
+    },
+    {
+      "label": "a blind renamer changes `fn.name`, which other code can read",
+      "passed": true
+    },
+    {
+      "label": "the tool leaves all three alone: the string, the eval file and the function name all behave identically (renaming is 0 in the eval and fn.name cases, and blocked by the word in the string)",
+      "passed": true
+    },
+    {
+      "label": "a blind unused-variable remover deletes the call: \"side effect happened\" stops being logged",
+      "passed": true
+    },
+    {
+      "label": "a blind unused-variable remover deletes a property read that advances a getter",
+      "passed": true
+    },
+    {
+      "label": "the tool keeps the call and keeps the getter read, and says how many initialisers it kept as statements",
+      "passed": true
+    },
+    {
+      "label": "the naive output has no map, so its stack frame can only be read against the minified text",
+      "passed": true
+    },
+    {
+      "label": "the tool's output carries a map, and the frame resolves to the original line that actually threw",
+      "passed": true
+    },
+    {
+      "label": "the application ships 85 readable JavaScript files, 2044343 bytes, 0 minified and 0 with a source map — the state before this tool is run",
+      "passed": true
+    },
+    {
+      "label": "running the tool over that tree produces a number the tool is judged by: it prints the tree in fewer bytes and maps every position back",
+      "passed": true
+    }
+  ],
+  "scope": "the control: a regex stripper, a blind renamer and a blind unused-variable remover, each implemented here and each measured breaking a program that the tool handles correctly, plus the no-map baseline and the application tree's measurable state before the tool runs."
+}

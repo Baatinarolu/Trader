@@ -1,0 +1,31 @@
+{
+  "pass": 6,
+  "fail": 0,
+  "results": [
+    {
+      "label": "every one of the 66 snippets behaves identically before and after compression, with and without renaming",
+      "passed": true
+    },
+    {
+      "label": "a `debugger` statement is dropped by default and kept with --keep-debugger (the ONLY statement the tool removes that has no effect on a program without a debugger attached)",
+      "passed": true
+    },
+    {
+      "label": "a binding that holds a function keeps its name, so `fn.name` is not silently changed (the binding is reported as skipped)",
+      "passed": true
+    },
+    {
+      "label": "the same file renamed with the unsafe flag DOES change `fn.name`, and the report says the rename happened",
+      "passed": true
+    },
+    {
+      "label": "every shipped JavaScript file of the app compresses, re-parses and is stable on a second pass (94 files)",
+      "passed": true
+    },
+    {
+      "label": "the compressed app is smaller than the source, and renaming removes more bytes than compressing alone",
+      "passed": true
+    }
+  ],
+  "scope": "differential execution in V8 of a curated corpus plus every shipped app file: behaviour compared before/after compression, with assertions for the two documented exceptions (debugger removal, fn.name under an explicit unsafe rename). Not a proof over all programs and not a claim about performance."
+}

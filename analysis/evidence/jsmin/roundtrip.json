@@ -1,0 +1,80 @@
+{
+  "pass": 14,
+  "fail": 0,
+  "measured_depth_limits": {
+    "parens": {
+      "parses_up_to": 1000,
+      "refused_at": 1500,
+      "refused_with": "SyntaxError: analysis: input nests too deeply for this tool: Maximum call stack siz"
+    },
+    "blocks": {
+      "parses_up_to": 1000,
+      "refused_at": 1500,
+      "refused_with": "SyntaxError: analysis: input nests too deeply for this tool: Maximum call stack siz"
+    },
+    "chain": {
+      "parses_up_to": 1000,
+      "refused_at": 1500,
+      "refused_with": "SyntaxError: analysis: input nests too deeply for this tool: Maximum call stack siz"
+    }
+  },
+  "results": [
+    {
+      "label": "every JavaScript file the app ships parses and prints twice to the same bytes (94 files)",
+      "passed": true
+    },
+    {
+      "label": "printing never makes a file longer than it was",
+      "passed": true
+    },
+    {
+      "label": "the whole corpus gets smaller, and the probe reports by how much",
+      "passed": true
+    },
+    {
+      "label": "every printed file is accepted by V8 itself (node --check on all 94 outputs)",
+      "passed": true
+    },
+    {
+      "label": "the syntax corpus parses and re-prints stably (34 constructs)",
+      "passed": true
+    },
+    {
+      "label": "an unused import becomes a side-effect import (`import \"./s.js\"`) instead of being deleted, so importing still runs the module",
+      "passed": true
+    },
+    {
+      "label": "a module keeps its import and export forms through printing and through compression, an exported name is never renamed, and V8 accepts the result as a module",
+      "passed": true
+    },
+    {
+      "label": "every invalid program is refused with a SyntaxError carrying a line and a column and a message (18 cases)",
+      "passed": true
+    },
+    {
+      "label": "the position points at the offending token on the right line, 1-based in the message and 0-based in the object",
+      "passed": true
+    },
+    {
+      "label": "a tree too deep for V8's stack is refused in words (a SyntaxError that says it nests too deeply), never as a raw RangeError",
+      "passed": true
+    },
+    {
+      "label": "the depth a hand-written file could plausibly reach is handled: 500 nested parentheses, 500 nested blocks and a 500-term chain all compress",
+      "passed": true
+    },
+    {
+      "label": "large but plausible input completes inside its time budget and is stable on a second pass",
+      "passed": true
+    },
+    {
+      "label": "a BOM, CRLF, escaped identifiers, astral characters and $/_ names all survive a round trip",
+      "passed": true
+    },
+    {
+      "label": "the source map counts CRLF input as two lines, not one, so its original lines are right",
+      "passed": true
+    }
+  ],
+  "scope": "the parser and the printer on their own: every shipped file, a curated syntax corpus, eighteen invalid programs that must be refused with a position, deep and huge input, and the awkward characters (BOM, CRLF, astral, escaped identifiers). Behavioural equivalence is the differential probe's job, not this one's."
+}

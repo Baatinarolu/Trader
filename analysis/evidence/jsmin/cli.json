@@ -1,0 +1,111 @@
+{
+  "pass": 26,
+  "fail": 0,
+  "results": [
+    {
+      "label": "a file compresses to an output, a map and a report, and the run exits 0",
+      "passed": true
+    },
+    {
+      "label": "the output re-parses as a program",
+      "passed": true
+    },
+    {
+      "label": "the output ends with a sourceMappingURL comment naming the map it was written next to",
+      "passed": true
+    },
+    {
+      "label": "the report says the output was re-parsed and that a second pass is byte-identical — the check ran, it is not skipped by default",
+      "passed": true
+    },
+    {
+      "label": "the report names every pass with a count and a sentence, and the file that was written",
+      "passed": true
+    },
+    {
+      "label": "the map is Source Map v3 with the original embedded",
+      "passed": true
+    },
+    {
+      "label": "the output is smaller than the input by the bytes the report claims",
+      "passed": true
+    },
+    {
+      "label": "renaming actually renamed something: the report counts renames and the output contains names the input never had",
+      "passed": true
+    },
+    {
+      "label": "the directive prologue is printed first and unchanged",
+      "passed": true
+    },
+    {
+      "label": "the compressed file still runs in strict mode: a bare call sees `undefined`, not the global object",
+      "passed": true
+    },
+    {
+      "label": "the compressed module exports the same values as the original (a 4-element average and a 2-key object)",
+      "passed": true
+    },
+    {
+      "label": "a file that does not parse exits 1 and the message carries the line and column",
+      "passed": true
+    },
+    {
+      "label": "a file that does not parse does not overwrite an existing output",
+      "passed": true
+    },
+    {
+      "label": "an unknown option exits 2 and says which one",
+      "passed": true
+    },
+    {
+      "label": "a missing value for an option exits 2",
+      "passed": true
+    },
+    {
+      "label": "two input files exit 2",
+      "passed": true
+    },
+    {
+      "label": "--help exits 0 and documents all four exit codes",
+      "passed": true
+    },
+    {
+      "label": "--check parses only: ok for a good file and a line and column for a bad one",
+      "passed": true
+    },
+    {
+      "label": "an unreachable --target-bytes exits 3, says by how much, and still writes a valid output",
+      "passed": true
+    },
+    {
+      "label": "the report records the goal and the gap rather than pretending it was met",
+      "passed": true
+    },
+    {
+      "label": "a reachable --target-bytes exits 0",
+      "passed": true
+    },
+    {
+      "label": "--stdin reads the source and writes the code to stdout, keeping `debugger` when asked",
+      "passed": true
+    },
+    {
+      "label": "without --keep-debugger the debugger statement is gone and the report says how many were removed",
+      "passed": true
+    },
+    {
+      "label": "--stats writes a JSON report to stderr and leaves stdout empty",
+      "passed": true
+    },
+    {
+      "label": "the app's own rule-breaks.js compresses through the CLI, with and without renaming, smaller each time and verified each time",
+      "passed": true
+    },
+    {
+      "label": "the help text states the limits rather than implying them (no evaluation, no network, no property mangling, no arity change, no speed claim)",
+      "passed": true
+    }
+  ],
+  "scope": "the command line run as a child process: exit codes 0/1/2/3, files written and refused, the map and report on disk, the output re-parsed and executed, strict mode kept, and the two documented ways to ask for something this tool will not silently give (a kept debugger, a missed byte target)."
+}

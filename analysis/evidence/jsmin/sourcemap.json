@@ -1,0 +1,79 @@
+{
+  "pass": 18,
+  "fail": 0,
+  "results": [
+    {
+      "label": "every VLQ value round-trips through the encoder and the decoder, including the 5-bit continuation boundaries",
+      "passed": true
+    },
+    {
+      "label": "a VLQ group with several values decodes to those values in order",
+      "passed": true
+    },
+    {
+      "label": "an invalid base64 character is reported as a SyntaxError rather than silently skipped",
+      "passed": true
+    },
+    {
+      "label": "whole mapping sets round-trip, including empty lines and a name index",
+      "passed": true
+    },
+    {
+      "label": "the map is Source Map v3 with this file as its source and no other source",
+      "passed": true
+    },
+    {
+      "label": "the original text is embedded, byte-identical to the input",
+      "passed": true
+    },
+    {
+      "label": "the map has no more generated lines than the code has",
+      "passed": true
+    },
+    {
+      "label": "every mapping lands inside the generated text",
+      "passed": true
+    },
+    {
+      "label": "the file produces a non-zero number of mappings",
+      "passed": true
+    },
+    {
+      "label": "for every generated column the \"greatest mapping not past the column\" rule returns that mapping",
+      "passed": true
+    },
+    {
+      "label": "every identifier in the generated file maps to a source position that really holds its name (1418 identifiers checked: 840 renamed references whose original name is in the map, 23 re-spelled on purpose)",
+      "passed": true
+    },
+    {
+      "label": "renamed bindings are named in the map, so a reader can see what a short name used to be",
+      "passed": true
+    },
+    {
+      "label": "a real stack trace from the minified file maps back to the original throw site",
+      "passed": true
+    },
+    {
+      "label": "every mapping in every shipped file resolves inside that file — a line that exists and a column inside it (217884 mappings over 94 files)",
+      "passed": true
+    },
+    {
+      "label": "no node was left unmapped for want of a source position (the guard has nothing to report)",
+      "passed": true
+    },
+    {
+      "label": "with the map turned off there is no map object at all, rather than an empty one",
+      "passed": true
+    },
+    {
+      "label": "with `includeContent:false` the map carries no original text and says so by being empty",
+      "passed": true
+    },
+    {
+      "label": "two runs of the same file produce byte-identical code, map and names (the map is deterministic)",
+      "passed": true
+    }
+  ],
+  "scope": "the source map, checked with its own decoder: VLQ boundaries, whole-set round trips, mapping bounds, the spec lookup rule, truth of identifier positions, and a real stack trace mapped back to the original throw. Not validated against a third-party consumer: the tool is dependency free by design."
+}

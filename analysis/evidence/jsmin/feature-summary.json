@@ -1,0 +1,563 @@
+{
+  "suite": "feature",
+  "probes": 6,
+  "pass": 113,
+  "fail": 0,
+  "ok": true,
+  "completed_nonzero": 0,
+  "tool_absent_from_parent": true,
+  "probes_absent_from_parent": true,
+  "parent_commit": "67f2ed26f2398bd0f95537f88dee65f5c760e771",
+  "runs": [
+    {
+      "probe": "probe-jsmin-roundtrip.js",
+      "expected_pass": 14,
+      "expected_fail": 0,
+      "pass": 14,
+      "fail": 0,
+      "exit": 0,
+      "seconds": 7.1,
+      "counts_ok": true,
+      "results": [
+        {
+          "label": "every JavaScript file the app ships parses and prints twice to the same bytes (94 files)",
+          "passed": true
+        },
+        {
+          "label": "printing never makes a file longer than it was",
+          "passed": true
+        },
+        {
+          "label": "the whole corpus gets smaller, and the probe reports by how much",
+          "passed": true
+        },
+        {
+          "label": "every printed file is accepted by V8 itself (node --check on all 94 outputs)",
+          "passed": true
+        },
+        {
+          "label": "the syntax corpus parses and re-prints stably (34 constructs)",
+          "passed": true
+        },
+        {
+          "label": "an unused import becomes a side-effect import (`import \"./s.js\"`) instead of being deleted, so importing still runs the module",
+          "passed": true
+        },
+        {
+          "label": "a module keeps its import and export forms through printing and through compression, an exported name is never renamed, and V8 accepts the result as a module",
+          "passed": true
+        },
+        {
+          "label": "every invalid program is refused with a SyntaxError carrying a line and a column and a message (18 cases)",
+          "passed": true
+        },
+        {
+          "label": "the position points at the offending token on the right line, 1-based in the message and 0-based in the object",
+          "passed": true
+        },
+        {
+          "label": "a tree too deep for V8's stack is refused in words (a SyntaxError that says it nests too deeply), never as a raw RangeError",
+          "passed": true
+        },
+        {
+          "label": "the depth a hand-written file could plausibly reach is handled: 500 nested parentheses, 500 nested blocks and a 500-term chain all compress",
+          "passed": true
+        },
+        {
+          "label": "large but plausible input completes inside its time budget and is stable on a second pass",
+          "passed": true
+        },
+        {
+          "label": "a BOM, CRLF, escaped identifiers, astral characters and $/_ names all survive a round trip",
+          "passed": true
+        },
+        {
+          "label": "the source map counts CRLF input as two lines, not one, so its original lines are right",
+          "passed": true
+        }
+      ],
+      "scope": "the parser and the printer on their own: every shipped file, a curated syntax corpus, eighteen invalid programs that must be refused with a position, deep and huge input, and the awkward characters (BOM, CRLF, astral, escaped identifiers). Behavioural equivalence is the differential probe's job, not this one's."
+    },
+    {
+      "probe": "probe-jsmin-differential.js",
+      "expected_pass": 6,
+      "expected_fail": 0,
+      "pass": 6,
+      "fail": 0,
+      "exit": 0,
+      "seconds": 6.5,
+      "counts_ok": true,
+      "results": [
+        {
+          "label": "every one of the 66 snippets behaves identically before and after compression, with and without renaming",
+          "passed": true
+        },
+        {
+          "label": "a `debugger` statement is dropped by default and kept with --keep-debugger (the ONLY statement the tool removes that has no effect on a program without a debugger attached)",
+          "passed": true
+        },
+        {
+          "label": "a binding that holds a function keeps its name, so `fn.name` is not silently changed (the binding is reported as skipped)",
+          "passed": true
+        },
+        {
+          "label": "the same file renamed with the unsafe flag DOES change `fn.name`, and the report says the rename happened",
+          "passed": true
+        },
+        {
+          "label": "every shipped JavaScript file of the app compresses, re-parses and is stable on a second pass (94 files)",
+          "passed": true
+        },
+        {
+          "label": "the compressed app is smaller than the source, and renaming removes more bytes than compressing alone",
+          "passed": true
+        }
+      ],
+      "scope": "differential execution in V8 of a curated corpus plus every shipped app file: behaviour compared before/after compression, with assertions for the two documented exceptions (debugger removal, fn.name under an explicit unsafe rename). Not a proof over all programs and not a claim about performance."
+    },
+    {
+      "probe": "probe-jsmin-sourcemap.js",
+      "expected_pass": 18,
+      "expected_fail": 0,
+      "pass": 18,
+      "fail": 0,
+      "exit": 0,
+      "seconds": 3.2,
+      "counts_ok": true,
+      "results": [
+        {
+          "label": "every VLQ value round-trips through the encoder and the decoder, including the 5-bit continuation boundaries",
+          "passed": true
+        },
+        {
+          "label": "a VLQ group with several values decodes to those values in order",
+          "passed": true
+        },
+        {
+          "label": "an invalid base64 character is reported as a SyntaxError rather than silently skipped",
+          "passed": true
+        },
+        {
+          "label": "whole mapping sets round-trip, including empty lines and a name index",
+          "passed": true
+        },
+        {
+          "label": "the map is Source Map v3 with this file as its source and no other source",
+          "passed": true
+        },
+        {
+          "label": "the original text is embedded, byte-identical to the input",
+          "passed": true
+        },
+        {
+          "label": "the map has no more generated lines than the code has",
+          "passed": true
+        },
+        {
+          "label": "every mapping lands inside the generated text",
+          "passed": true
+        },
+        {
+          "label": "the file produces a non-zero number of mappings",
+          "passed": true
+        },
+        {
+          "label": "for every generated column the \"greatest mapping not past the column\" rule returns that mapping",
+          "passed": true
+        },
+        {
+          "label": "every identifier in the generated file maps to a source position that really holds its name (1418 identifiers checked: 840 renamed references whose original name is in the map, 23 re-spelled on purpose)",
+          "passed": true
+        },
+        {
+          "label": "renamed bindings are named in the map, so a reader can see what a short name used to be",
+          "passed": true
+        },
+        {
+          "label": "a real stack trace from the minified file maps back to the original throw site",
+          "passed": true
+        },
+        {
+          "label": "every mapping in every shipped file resolves inside that file \u2014 a line that exists and a column inside it (217884 mappings over 94 files)",
+          "passed": true
+        },
+        {
+          "label": "no node was left unmapped for want of a source position (the guard has nothing to report)",
+          "passed": true
+        },
+        {
+          "label": "with the map turned off there is no map object at all, rather than an empty one",
+          "passed": true
+        },
+        {
+          "label": "with `includeContent:false` the map carries no original text and says so by being empty",
+          "passed": true
+        },
+        {
+          "label": "two runs of the same file produce byte-identical code, map and names (the map is deterministic)",
+          "passed": true
+        }
+      ],
+      "scope": "the source map, checked with its own decoder: VLQ boundaries, whole-set round trips, mapping bounds, the spec lookup rule, truth of identifier positions, and a real stack trace mapped back to the original throw. Not validated against a third-party consumer: the tool is dependency free by design."
+    },
+    {
+      "probe": "probe-jsmin-cli.js",
+      "expected_pass": 26,
+      "expected_fail": 0,
+      "pass": 26,
+      "fail": 0,
+      "exit": 0,
+      "seconds": 1.2,
+      "counts_ok": true,
+      "results": [
+        {
+          "label": "a file compresses to an output, a map and a report, and the run exits 0",
+          "passed": true
+        },
+        {
+          "label": "the output re-parses as a program",
+          "passed": true
+        },
+        {
+          "label": "the output ends with a sourceMappingURL comment naming the map it was written next to",
+          "passed": true
+        },
+        {
+          "label": "the report says the output was re-parsed and that a second pass is byte-identical \u2014 the check ran, it is not skipped by default",
+          "passed": true
+        },
+        {
+          "label": "the report names every pass with a count and a sentence, and the file that was written",
+          "passed": true
+        },
+        {
+          "label": "the map is Source Map v3 with the original embedded",
+          "passed": true
+        },
+        {
+          "label": "the output is smaller than the input by the bytes the report claims",
+          "passed": true
+        },
+        {
+          "label": "renaming actually renamed something: the report counts renames and the output contains names the input never had",
+          "passed": true
+        },
+        {
+          "label": "the directive prologue is printed first and unchanged",
+          "passed": true
+        },
+        {
+          "label": "the compressed file still runs in strict mode: a bare call sees `undefined`, not the global object",
+          "passed": true
+        },
+        {
+          "label": "the compressed module exports the same values as the original (a 4-element average and a 2-key object)",
+          "passed": true
+        },
+        {
+          "label": "a file that does not parse exits 1 and the message carries the line and column",
+          "passed": true
+        },
+        {
+          "label": "a file that does not parse does not overwrite an existing output",
+          "passed": true
+        },
+        {
+          "label": "an unknown option exits 2 and says which one",
+          "passed": true
+        },
+        {
+          "label": "a missing value for an option exits 2",
+          "passed": true
+        },
+        {
+          "label": "two input files exit 2",
+          "passed": true
+        },
+        {
+          "label": "--help exits 0 and documents all four exit codes",
+          "passed": true
+        },
+        {
+          "label": "--check parses only: ok for a good file and a line and column for a bad one",
+          "passed": true
+        },
+        {
+          "label": "an unreachable --target-bytes exits 3, says by how much, and still writes a valid output",
+          "passed": true
+        },
+        {
+          "label": "the report records the goal and the gap rather than pretending it was met",
+          "passed": true
+        },
+        {
+          "label": "a reachable --target-bytes exits 0",
+          "passed": true
+        },
+        {
+          "label": "--stdin reads the source and writes the code to stdout, keeping `debugger` when asked",
+          "passed": true
+        },
+        {
+          "label": "without --keep-debugger the debugger statement is gone and the report says how many were removed",
+          "passed": true
+        },
+        {
+          "label": "--stats writes a JSON report to stderr and leaves stdout empty",
+          "passed": true
+        },
+        {
+          "label": "the app's own rule-breaks.js compresses through the CLI, with and without renaming, smaller each time and verified each time",
+          "passed": true
+        },
+        {
+          "label": "the help text states the limits rather than implying them (no evaluation, no network, no property mangling, no arity change, no speed claim)",
+          "passed": true
+        }
+      ],
+      "scope": "the command line run as a child process: exit codes 0/1/2/3, files written and refused, the map and report on disk, the output re-parsed and executed, strict mode kept, and the two documented ways to ask for something this tool will not silently give (a kept debugger, a missed byte target)."
+    },
+    {
+      "probe": "probe-jsmin-safety.js",
+      "expected_pass": 33,
+      "expected_fail": 0,
+      "pass": 33,
+      "fail": 0,
+      "exit": 0,
+      "seconds": 0.8,
+      "counts_ok": true,
+      "results": [
+        {
+          "label": "a direct `eval` still reads the same names: renaming is switched off for the whole file (and the report says so)",
+          "passed": true
+        },
+        {
+          "label": "with `eval` present nothing is renamed and nothing is removed, and the report names the hazard that blocked renaming",
+          "passed": true
+        },
+        {
+          "label": "inside a `with` block the name `undefined` is NOT re-spelled as `void 0` \u2014 it may be a property of the object, and the trap is measured",
+          "passed": true
+        },
+        {
+          "label": "the printed `with` body still says `undefined` (a `void 0` there would have returned nothing instead of the property)",
+          "passed": true
+        },
+        {
+          "label": "a binding read or written inside a `with` body keeps its name: the lookup is by name at run time",
+          "passed": true
+        },
+        {
+          "label": "the report says the binding was left alone because a `with` block makes the name dynamic",
+          "passed": true
+        },
+        {
+          "label": "the `Function` constructor also switches renaming off",
+          "passed": true
+        },
+        {
+          "label": "a name that appears inside a string is never reused as a different name",
+          "passed": true
+        },
+        {
+          "label": "the binding whose name appears in a string keeps that name, and the report says why",
+          "passed": true
+        },
+        {
+          "label": "with nothing in the way, short names are handed out (renaming is not simply disabled everywhere)",
+          "passed": true
+        },
+        {
+          "label": "an anonymous function assigned to a binding keeps the binding name, so `fn.name` is unchanged",
+          "passed": true
+        },
+        {
+          "label": "the report lists that binding as skipped with the reason (it is not silently renamed)",
+          "passed": true
+        },
+        {
+          "label": "arity is not touched: `fn.length` and `arguments.length` are the same before and after",
+          "passed": true
+        },
+        {
+          "label": "no parameter was dropped from the printed signature",
+          "passed": true
+        },
+        {
+          "label": "property names are never mangled: `.name`, `[\"name\"]` and the key in an object literal all survive",
+          "passed": true
+        },
+        {
+          "label": "a property read whose value is unused is still performed (a getter is not a no-op)",
+          "passed": true
+        },
+        {
+          "label": "the read survives as its own statement rather than being deleted with the unused binding",
+          "passed": true
+        },
+        {
+          "label": "a read through a Proxy still runs the trap even when the value goes nowhere",
+          "passed": true
+        },
+        {
+          "label": "`delete`, `instanceof`, a tagged template and `new` all survive compression",
+          "passed": true
+        },
+        {
+          "label": "the compressor reports `pure()` as false for every one of those shapes, so no pass can delete them",
+          "passed": true
+        },
+        {
+          "label": "a directive-looking string with an escape in it is NOT a directive, and stays spelled exactly as written",
+          "passed": true
+        },
+        {
+          "label": "a real prologue stays first and stays strict",
+          "passed": true
+        },
+        {
+          "label": "a local binding named `undefined` keeps its meaning (the parameter shadows the global)",
+          "passed": true
+        },
+        {
+          "label": "a hole in an array stays a hole",
+          "passed": true
+        },
+        {
+          "label": "a nested hole in a destructuring pattern stays a hole",
+          "passed": true
+        },
+        {
+          "label": "the tool requires nothing from outside itself and nothing but the node built-ins (16 require calls in 9 files)",
+          "passed": true
+        },
+        {
+          "label": "no socket, no subprocess and no dynamic evaluation anywhere in the tool (the two mentions in scope.js are detections, not uses)",
+          "passed": true
+        },
+        {
+          "label": "no package manifest was added: the tool has no dependencies to install and no build step to run",
+          "passed": true
+        },
+        {
+          "label": "every file of the tool is valid JavaScript on its own (node --check on 9 files)",
+          "passed": true
+        },
+        {
+          "label": "`fn.toString()` is NOT preserved: the printed text is what a caller gets (a documented non-guarantee, asserted rather than hidden)",
+          "passed": true
+        },
+        {
+          "label": "with an output file the CLI writes the code and its map (a map is the default, as --help says) and nothing else",
+          "passed": true
+        },
+        {
+          "label": "with --no-source-map exactly one file is written",
+          "passed": true
+        },
+        {
+          "label": "the input file is not modified",
+          "passed": true
+        }
+      ],
+      "scope": "the negatives, measured by running code: eval/with/Function switch renaming off, text-in-strings blocks a name, fn.name and arity are untouched, property names and observable reads survive, directives and shadowed `undefined` keep their meaning, and the tool has no dependency, no socket and no subprocess. The one documented difference (fn.toString) is asserted as a difference."
+    },
+    {
+      "probe": "probe-jsmin-control.js",
+      "expected_pass": 16,
+      "expected_fail": 0,
+      "pass": 16,
+      "fail": 0,
+      "exit": 0,
+      "seconds": 2.9,
+      "counts_ok": true,
+      "results": [
+        {
+          "label": "a regex stripper removes the newline that ASI needs: `return\\n1` becomes `return1`, and the program stops doing what it did",
+          "passed": true
+        },
+        {
+          "label": "a regex stripper cuts a string that contains `//` and the result is no longer a program",
+          "passed": true
+        },
+        {
+          "label": "a regex stripper cuts a template that contains `/*`",
+          "passed": true
+        },
+        {
+          "label": "a regex stripper turns a division followed by a regular expression into `//` and cuts the rest of the line",
+          "passed": true
+        },
+        {
+          "label": "the tool handles all four of those cases: 4/4 behave identically after compression (the regex stripper: 0/4)",
+          "passed": true
+        },
+        {
+          "label": "a blind renamer rewrites the name inside a string and the program prints something different",
+          "passed": true
+        },
+        {
+          "label": "a blind renamer walks straight into `eval` and the value disappears (the name it builds at run time no longer exists)",
+          "passed": true
+        },
+        {
+          "label": "a blind renamer changes `fn.name`, which other code can read",
+          "passed": true
+        },
+        {
+          "label": "the tool leaves all three alone: the string, the eval file and the function name all behave identically (renaming is 0 in the eval and fn.name cases, and blocked by the word in the string)",
+          "passed": true
+        },
+        {
+          "label": "a blind unused-variable remover deletes the call: \"side effect happened\" stops being logged",
+          "passed": true
+        },
+        {
+          "label": "a blind unused-variable remover deletes a property read that advances a getter",
+          "passed": true
+        },
+        {
+          "label": "the tool keeps the call and keeps the getter read, and says how many initialisers it kept as statements",
+          "passed": true
+        },
+        {
+          "label": "the naive output has no map, so its stack frame can only be read against the minified text",
+          "passed": true
+        },
+        {
+          "label": "the tool's output carries a map, and the frame resolves to the original line that actually threw",
+          "passed": true
+        },
+        {
+          "label": "the application ships 85 readable JavaScript files, 2044343 bytes, 0 minified and 0 with a source map \u2014 the state before this tool is run",
+          "passed": true
+        },
+        {
+          "label": "running the tool over that tree produces a number the tool is judged by: it prints the tree in fewer bytes and maps every position back",
+          "passed": true
+        }
+      ],
+      "scope": "the control: a regex stripper, a blind renamer and a blind unused-variable remover, each implemented here and each measured breaking a program that the tool handles correctly, plus the no-map baseline and the application tree's measurable state before the tool runs."
+    }
+  ],
+  "files": {
+    "extracted/tradejournal/tools/jsmin/README.md": "d2aee328870b9e8d243084d7e5cf22e55bc7a1dbc7a1f812f7e4e5e1844500f4",
+    "extracted/tradejournal/tools/jsmin/ast.js": "d67220a3e569b1caee9e5f925b77e1d3a084274e49deb50e29716fed57156241",
+    "extracted/tradejournal/tools/jsmin/cli.js": "9db31539d1cc3077bad1d454da42bd95718805073f5a30f05de42d8ed6a1d468",
+    "extracted/tradejournal/tools/jsmin/compress.js": "135cb1b4a428db4ae080c0a8bc7584765c76a14f8f2ea30e2e4fe3e10144280a",
+    "extracted/tradejournal/tools/jsmin/emit.js": "8401a12a52ea7c6039cd596f79a917e5b0bbb7d684ac15c87efac098f11206f9",
+    "extracted/tradejournal/tools/jsmin/index.js": "71fb8d9bbb7794e536592b4661d59e5c770470662b5b98d129371ebd9e1d91e4",
+    "extracted/tradejournal/tools/jsmin/lexer.js": "79dacca010cf2dbd9c716bac3efc7310843084868190126090087ae0f2eae6d1",
+    "extracted/tradejournal/tools/jsmin/parse.js": "3a17dd6124c59bf4f2ba0ba17070b779a4fd0749028166b7f32fb6a5dd1f3e6e",
+    "extracted/tradejournal/tools/jsmin/scope.js": "e6696d643f529b4106d848300c90f541bd8187decaf97211e63e77592d4489de",
+    "extracted/tradejournal/tools/jsmin/sourcemap.js": "56da83fd69c10608a88053be2728b17ed9288ed360d03ed5a0e80a47e7a14f02",
+    "analysis/probe-jsmin-cli.js": "ad61e42a88430fe0158e7587e3f7a81ece30df1c093a3b3dd8ca09ad76341896",
+    "analysis/probe-jsmin-control.js": "d63d0b528ac4465f12c8c99f474f34df003ae7e58a7b23272c4feb9317cb180d",
+    "analysis/probe-jsmin-differential.js": "62af5511922d7de63da2fa496bdbac1ad8417ddde8feac8c0a30f2d295f8e9ce",
+    "analysis/probe-jsmin-roundtrip.js": "e01db71aae016a56ee32f3401917facd0266994366ed111aeb7489b09f7be93b",
+    "analysis/probe-jsmin-safety.js": "b1ec1a47c2638b0192961a623325b42f4fe83c7d2210dd0813b73c7166bcc0a2",
+    "analysis/probe-jsmin-sourcemap.js": "70a96ca95938117c923d9a18a9acdb1dde56e2f2ca0950b9895c06e721e8fbb9",
+    "analysis/run-jsmin-verification.py": "acbdff3ae25e13c342a01bb651ffb1a23e86162b852f805a59904fa64f075ea8"
+  },
+  "scope": "The minifier is verified on the tree it ships with: parser/printer fidelity on every file the app itself ships plus a curated syntax corpus, behavioural equivalence in V8 before and after compression, the source map decoded and used to resolve a real stack trace, the command line as a script uses it, the negatives the tool promises, and a control that measures the naive approaches breaking. Not measured: performance claims, obfuscation, or behaviour of code the repository does not contain."
+}
