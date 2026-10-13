@@ -1,0 +1,228 @@
+/* views/practice.js — M108 the regulation layer: a personal practice log.
+ * Server-measured RUNNING time only. The app does not verify that anyone meditated, does
+ * not play or ship ambient audio, and claims no calming, focus or performance effect. No
+ * score, streak pressure, goal or permission: a missing or short session is not a failure. */
+(function (global) {
+  'use strict';
+  const Views = global.Views = global.Views || {}, U = global.U;
+  let serial = 0, ticker = null;
+  /* Personal, not desk-scoped: the workspace user is the whole context, and no account id
+   * is ever sent — a practice record cannot be attributed to a desk. */
+  const ctx = () => ({ user: global.Store.user?.id, token: global.API.getToken() });
+  const same = (c) => c.user === global.Store.user?.id && c.token === global.API.getToken();
+  const mmss = (ms) => { const total = Math.max(0, Math.floor((ms || 0) / 1000)); return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0'); };
+  const GROUP_LABEL = { reboot: 'Reboot', rewire: 'Rewire', recovery: 'Recovery' };
+  const DEFAULT_KIT = [
+    { id: 'box_breathing', group: 'reboot', label: 'Box breathing', steps: ['Breathe in for a count of four.', 'Hold for four.', 'Breathe out for four.', 'Hold for four, then repeat at your own pace.'], note: 'The episode names box breathing as one way to reset before the session; the app times nothing here and verifies no bodily effect.' },
+    { id: 'sixty_second_reboot', group: 'reboot', label: '60-second reboot', steps: ['Stop looking at the chart for one minute.', 'Breathe out longer than you breathe in — four in, six out.', 'Then ask the four state questions before touching the mouse.'], note: 'The episode describes this as settling the parasympathetic system; this app cannot verify that and does not claim it. The four state questions live in the M106 state gate, not here.' },
+    { id: 'short_sit', group: 'reboot', label: 'Short sit (5–10 minutes)', steps: ['Start the timer at 5 or 10 minutes.', 'Sit still; the timer measures running time only.'], note: 'Recorded as a practice session like any other. Nothing about attention, calm or focus is measured.' },
+    { id: 'detach_after_loss', group: 'rewire', label: 'Detach from the last trade', steps: ['Name the fact: the last outcome does not change the odds of the next one.', 'Write nothing in the journal you do not mean.', 'Return to the process, not to the outcome.'], note: 'The episode’s randomness doctrine is his claim, quoted here as text; the app verifies nothing about odds or about how you feel.' },
+    { id: 'review_the_process', group: 'rewire', label: 'Rewire on the process', steps: ['Mark the trade against your own plan.', 'Keep the plan; change nothing mid-session.'], note: 'Curated app text. It points at surfaces the app already owns (journal, execution review) rather than judging your state.' },
+    { id: 'name_the_state', group: 'recovery', label: 'Name the state', steps: ['Answer in your own words what you are walking into the market as.', 'If you want that kept, record it in the emotion capture — not here.'], note: 'The episode says naming the state matters; the app does not read your words back to you as a diagnosis, and this text is not your emotion record.' },
+    { id: 'step_away', group: 'recovery', label: 'Step away', steps: ['Close the platform.', 'Do something that is not the market.', 'Come back only when you can answer the four state questions honestly.'], note: 'Curated app text with no timer and no measurement; the app cannot see what you do away from it.' },
+  ];
+  const PRESETS = [{ id: 'p5', seconds: 300, label: '5 minutes' }, { id: 'p10', seconds: 600, label: '10 minutes' }, { id: 'p15', seconds: 900, label: '15 minutes' }, { id: 'p30', seconds: 1800, label: '30 minutes' }, { id: 'p60', seconds: 3600, label: '60 minutes' }];
+  const AMBIENCE = ['none', 'rain', 'ocean', 'forest', 'fireplace', 'white_noise'];
+  const BELLS = [0, 60, 120, 300, 600];
+  const stateLabel = (t) => t?.state === 'running' ? 'running' : t?.state === 'paused' ? 'paused' : t?.state === 'idle' ? 'no session open' : 'unavailable';
+
+  /** A locally generated marker tone for the elapsed-time bells. No asset, no network. */
+  function chime() {
+    try {
+      const C = global.AudioContext || global.webkitAudioContext;
+      if (!C) return false;
+      const audio = new C(), osc = audio.createOscillator(), gain = audio.createGain();
+      osc.type = 'sine'; osc.frequency.value = 528; gain.gain.value = 0.05;
+      osc.connect(gain); gain.connect(audio.destination); osc.start();
+      osc.stop(audio.currentTime + 0.4);
+      setTimeout(() => { try { audio.close(); } catch { /* ignore */ } }, 700);
+      return true;
+    } catch { return false; }
+  }
+
+  const P = Views.practice = {
+    ctx, same, chime, mmss,
+    toolkit() { return P._toolkit || DEFAULT_KIT; },
+    presets() { return P._presets || PRESETS; },
+    /** Import feedback for Settings: restored practice archives are counted separately. */
+    feedback(out) { if (!out?.practice_warnings?.length) return null; return U.h('section', { class: 'sticky-note warn' }, U.h('strong', { text: 'Optional practice history' }), ...out.practice_warnings.map((text) => U.h('p', { class: 'tiny', text }))); },
+    kit() {
+      const node = U.h('div', { dataset: { practiceToolkit: 'true' } });
+      node.appendChild(U.h('h3', { text: 'Mental toolkit — curated practice text' }));
+      node.appendChild(U.h('p', { class: 'field-note', text: 'Grouped as the episode groups them. Every item is either a saved example or plain app text: no item measures you, and no physiological, emotional or performance effect is claimed. It is not your emotion record and not the M106 state gate.' }));
+      for (const group of ['reboot', 'rewire', 'recovery']) {
+        node.appendChild(U.h('h4', { text: GROUP_LABEL[group] }));
+        for (const item of P.toolkit().filter((i) => i.group === group)) {
+          const box = U.h('div', { class: 'card', dataset: { practiceItem: item.id } });
+          box.appendChild(U.h('strong', { text: item.label }));
+          for (const step of item.steps || []) box.appendChild(U.h('p', { class: 'small', text: '· ' + step }));
+          if (item.note) box.appendChild(U.h('p', { class: 'tiny muted', text: item.note }));
+          box.appendChild(U.h('p', { class: 'tiny muted', text: 'Source: ' + (item.source === 'episode_example' ? 'saved example from the episode' : 'curated app text') }));
+          node.appendChild(box);
+        }
+      }
+      return node;
+    },
+    /** The day card: what was recorded today, the open timer, and the two doors. */
+    card(v) {
+      const node = U.h('section', { class: 'card', style: 'margin-top:14px', dataset: { practiceCard: 'true' } }), context = ctx();
+      node.appendChild(U.h('h3', { text: 'Practice — reset between trades, not a gate' }));
+      node.appendChild(U.h('p', { class: 'field-note', text: 'Saved rule: the guardrails stop you mechanically, and the regulation layer is meant to deal with the state behind the override. This log records only server-measured running time. It does not verify a meditation, does not play or ship any ambient audio, and claims no calming, focus or performance effect.' }));
+      if (!v) { node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'Practice log unavailable — nothing read, nothing inferred, and nothing blocked.' })); return node; }
+      const t = v.timer || {};
+      node.appendChild(U.h('p', { class: 'small', dataset: { practiceToday: 'true' }, text: `Today (${v.day} UTC): ${v.sessions_count} recorded session(s) · ${v.recorded_seconds}s of measured running time · timer ${stateLabel(t)}${t.state === 'running' || t.state === 'paused' ? ' · ' + mmss(t.elapsed_ms) + ' elapsed' : ''}` }));
+      if (v.imported_count) node.appendChild(U.h('p', { class: 'tiny muted', text: `${v.imported_count} imported practice record(s) for this day: archives kept separate, never this account’s recorded session.` }));
+      node.appendChild(U.h('p', { class: 'tiny muted', text: 'Authority: none. No score, streak to protect, goal, target, readiness or permission. A day with no practice recorded is not a failure, and nothing here gates entries, signals, risk, caps, routine, grades or the core.' }));
+      node.appendChild(U.h('button', { class: 'btn sm primary', type: 'button', dataset: { practiceOpen: 'true' }, text: t.state === 'running' || t.state === 'paused' ? 'Return to the open session' : 'Open the practice timer', onclick: () => { if (!same(context)) return global.App.toast('Workspace/session changed; reopen your own practice log.', 'err'); return P.timer(); } }));
+      node.appendChild(U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { practiceProgress: 'true' }, text: 'Progress (records, not results)', onclick: () => { if (!same(context)) return; return P.progress(); } }));
+      const details = U.h('details'); details.appendChild(U.h('summary', { text: 'Mental toolkit — reboot / rewire / recovery' })); details.appendChild(P.kit());
+      node.appendChild(details);
+      if (v.state === 'recorded') {
+        const hist = U.h('details'); hist.appendChild(U.h('summary', { text: `Retained records for ${v.day}` }));
+        for (const s of v.sessions) hist.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(s, null, 2) }));
+        node.appendChild(hist);
+      }
+      return node;
+    },
+    async history(date) {
+      const context = ctx(), number = ++serial;
+      try {
+        const out = await global.API.get('/practice/history', { date: date || undefined });
+        if (!same(context) || number !== serial) return;
+        const body = U.h('div');
+        body.appendChild(U.h('h3', { text: 'Readonly practice history' }));
+        body.appendChild(U.h('p', { class: 'field-note', text: 'Original sessions, days and measured running times retained as recorded. Imported copies stay unverified archives and are never this account’s recorded session; nothing here is a score, a streak or a judgement.' }));
+        for (const record of out.records || []) body.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(record, null, 2) }));
+        return global.App.modal({ title: 'Readonly practice history', body, wide: true, actions: [{ label: 'Close readonly history', ghost: true }] });
+      } catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); }
+    },
+    async progress() {
+      const context = ctx(), number = ++serial;
+      const today = new Date().toISOString().slice(0, 10), from = new Date(Date.now() - 27 * 86400000).toISOString().slice(0, 10);
+      try {
+        const out = await global.API.get('/practice/progress', { from, to: today });
+        if (!same(context) || number !== serial) return;
+        const body = U.h('div', { dataset: { practiceProgressBody: 'true' } });
+        body.appendChild(U.h('p', { class: 'field-note', text: `Period ${out.from} → ${out.to} (UTC). These are counts of RECORDS, not results: recorded sessions and their server-measured running time. Not a streak to protect, not a goal, not adherence, and not evidence of calm, focus, discipline or any effect.` }));
+        body.appendChild(U.h('p', { class: 'small', dataset: { practiceProgressLine: 'true' }, text: `${out.sessions_count} recorded session(s) · ${out.recorded_seconds}s measured running time · ${out.days_with_recorded_session} day(s) with a recorded session · ${out.consecutive_days_with_a_recorded_session_ending_on_to} consecutive day(s) ending ${out.to}` }));
+        if (out.imported_count) body.appendChild(U.h('p', { class: 'tiny muted', text: `${out.imported_count} imported record(s) in this period: counted separately, never merged into your own practice.` }));
+        for (const w of out.warnings || []) body.appendChild(U.h('p', { class: 'tiny muted', text: '· ' + w }));
+        body.appendChild(U.h('p', { class: 'tiny muted', text: 'Target: none. Score: none. Authority: none.' }));
+        return global.App.modal({ title: 'Practice progress — records, not results', body, wide: true, actions: [{ label: 'Close — no target, no score', ghost: true }] });
+      } catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); }
+    },
+    /** The timer: start / pause / resume / complete / cancel, all server-measured. */
+    async timer() {
+      const context = ctx(), number = ++serial; let view;
+      try { view = await global.API.get('/practice'); }
+      catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); return; }
+      if (!same(context) || number !== serial) return;
+      P._toolkit = view.toolkit || P._toolkit; P._presets = view.presets || P._presets;
+      /* Nothing is preselected: every open starts with no length chosen. */
+      P._chosen = null; P._custom = null;
+      const body = U.h('div', { dataset: { practiceTimerBody: 'true' } });
+      let alive = true, busy = false, stale = false, chimed = 0, shown = view.timer?.elapsed_ms || 0;
+      let bell = view.timer?.bell_interval_seconds || 0;
+      const initialState = view.timer?.state || 'unavailable';
+      const valid = () => alive && same(context) && number === serial && body.isConnected;
+      const clearTick = () => { if (ticker) { clearInterval(ticker); ticker = null; } };
+      const presetOf = (id) => P.presets().find((p) => p.id === id) || null;
+      function draw() {
+        body.replaceChildren();
+        body.appendChild(U.h('p', { class: 'field-note', text: 'Server-measured RUNNING time only: a paused gap does not count, and nothing here verifies that a meditation happened or that anything changed. Bells are elapsed-time markers; ambience is your own declaration and is never played by this app.' }));
+        const t = view.timer || {};
+        body.appendChild(U.h('p', { class: 'small', dataset: { practiceState: 'true' }, text: `Timer: ${stateLabel(t)} · ${mmss(shown)} elapsed${t.state === 'running' || t.state === 'paused' ? ' (server-' + t.elapsed_source + ')' : ''}${t.target_seconds ? ' · chosen length ' + t.target_seconds + 's' : ''}${t.bell_interval_seconds ? ' · marker every ' + t.bell_interval_seconds + 's' : ''}` }));
+        const draft = P._draft = P._draft || { intention: '', bell: null, ambience: 'none' };
+        if (t.state === 'idle') {
+          const picks = U.h('div', { class: 'row gap-8', dataset: { practicePicks: 'true' } });
+          picks.appendChild(U.h('span', { class: 'tiny', text: 'Length:' }));
+          for (const p of P.presets()) picks.appendChild(U.h('button', { class: 'btn sm', type: 'button', dataset: { practicePreset: p.id }, text: p.label, onclick: () => { P._chosen = p.id; P._custom = null; draw(); } }));
+          body.appendChild(picks);
+          const custom = U.h('details', { open: !!P._custom, dataset: { practiceCustomPanel: 'true' } });
+          custom.appendChild(U.h('summary', { text: 'Custom length (h / m / s)' }));
+          const hours = U.h('input', { type: 'number', min: '0', max: '2', value: P._custom ? String(P._custom.hours) : '', dataset: { practiceHours: 'true' }, placeholder: 'h' });
+          const minutes = U.h('input', { type: 'number', min: '0', max: '120', value: P._custom ? String(P._custom.minutes) : '', dataset: { practiceMinutes: 'true' }, placeholder: 'm' });
+          const seconds = U.h('input', { type: 'number', min: '0', max: '59', value: P._custom ? String(P._custom.seconds) : '', dataset: { practiceSeconds: 'true' }, placeholder: 's' });
+          const read = () => { const h = parseInt(hours.value || '0', 10), m = parseInt(minutes.value || '0', 10), s = parseInt(seconds.value || '0', 10); if (![h, m, s].every((v) => Number.isSafeInteger(v) && v >= 0)) return null; P._chosen = null; P._custom = { hours: h, minutes: m, seconds: s }; label.textContent = `Chosen: ${h}h ${m}m ${s}s (your own length)`; };
+          for (const el of [hours, minutes, seconds]) el.addEventListener('input', read);
+          custom.appendChild(U.h('div', { class: 'row gap-8' }, hours, minutes, seconds, U.h('span', { class: 'tiny', text: '1 minute to 2 hours' })));
+          body.appendChild(custom);
+          const chosen = P._custom ? `${P._custom.hours}h ${P._custom.minutes}m ${P._custom.seconds}s (your own length)` : (presetOf(P._chosen) ? presetOf(P._chosen).label + ' (saved preset)' : null);
+          const label = body.appendChild(U.h('p', { class: 'tiny muted', dataset: { practicePick: 'true' }, text: chosen ? 'Chosen: ' + chosen : 'Chosen: none yet — pick a saved preset or your own h/m/s. Nothing is preselected.' }));
+          const bellSel = U.h('select', { dataset: { practiceBell: 'true' } }, ...BELLS.map((b) => U.h('option', { value: String(b), text: b ? 'marker every ' + b + 's' : 'no bell marker', ...(b === (draft.bell ?? bell) ? { selected: 'selected' } : {}) })));
+          bellSel.addEventListener('change', () => { bell = Number(bellSel.value); draft.bell = bell; });
+          const ambSel = U.h('select', { dataset: { practiceAmbience: 'true' } }, ...AMBIENCE.map((a) => U.h('option', { value: a, text: a.replace('_', ' '), ...(a === draft.ambience ? { selected: 'selected' } : {}) })));
+          ambSel.addEventListener('change', () => { draft.ambience = ambSel.value; });
+          body.appendChild(U.h('label', { class: 'field' }, U.h('span', { text: 'Bell markers (elapsed time only)' }), bellSel));
+          body.appendChild(U.h('label', { class: 'field' }, U.h('span', { text: 'Ambience (recorded as your declaration; not played here)' }), ambSel));
+          body.appendChild(U.h('p', { class: 'tiny muted', text: 'Only the saved presets and your own h/m/s are offered; nothing is preselected and no length is carried over from an earlier session.' }));
+          const intent = U.h('input', { type: 'text', maxlength: view.char_max || 120, dataset: { practiceIntention: 'true' }, value: draft.intention, placeholder: 'Optional: one behaviour for this session (not your trading-day intention)' });
+          intent.addEventListener('input', () => { draft.intention = intent.value; });
+          body.appendChild(U.h('label', { class: 'field' }, U.h('span', { text: 'Practice intention (optional, unverified, never your M107 day intention)' }), intent));
+          body.appendChild(U.h('p', { class: 'tiny muted', text: 'Free text is kept exactly as written and labelled unverified. An amount and an outcome in the same sentence is refused here for the same reason M107 refuses it as a daily rule.' }));
+          const start = U.h('button', { class: 'btn sm primary', type: 'button', dataset: { practiceStart: 'true' }, text: 'Start', onclick: () => {
+            const chosenNow = P._custom || (P._chosen ? { preset: P._chosen } : null);
+            if (!chosenNow) return global.App.toast('Pick a saved preset or your own h/m/s first — nothing is preselected.', 'err');
+            return act('start', { ...chosenNow, bell_interval_seconds: bell, ambience: ambSel.value, intention: intent.value });
+          } });
+          body.appendChild(U.h('div', { class: 'row gap-8' }, start, U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { practiceReload: 'true' }, text: 'Reload the server state', onclick: reload })));
+        } else {
+          if (t.intention) body.appendChild(U.h('p', { class: 'tiny', dataset: { practiceIntentionShown: 'true' }, text: 'Intention: “' + t.intention + '” (' + (t.framing || '') + ', unverified)' }));
+          const note = U.h('textarea', { dataset: { practiceNote: 'true' }, rows: '2', placeholder: 'Optional post-session note (kept as yours; not an emotion record)' });
+          body.appendChild(U.h('label', { class: 'field' }, U.h('span', { text: 'Post-session note (optional, saved when you complete)' }), note));
+          const actions = U.h('div', { class: 'row gap-8' });
+          if (t.state === 'running') actions.appendChild(U.h('button', { class: 'btn sm primary', type: 'button', dataset: { practicePause: 'true' }, text: 'Pause', onclick: () => act('pause') }));
+          if (t.state === 'paused') actions.appendChild(U.h('button', { class: 'btn sm primary', type: 'button', dataset: { practiceResume: 'true' }, text: 'Resume', onclick: () => act('resume') }));
+          actions.appendChild(U.h('button', { class: 'btn sm', type: 'button', dataset: { practiceComplete: 'true' }, text: 'Complete and record', onclick: () => act('complete', { note: note.value }) }));
+          actions.appendChild(U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { practiceCancel: 'true' }, text: 'Cancel (writes nothing)', onclick: () => act('cancel') }));
+          actions.appendChild(U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { practiceReload: 'true' }, text: 'Reload the server state', onclick: reload }));
+          body.appendChild(actions);
+          if (!t.reached_target) body.appendChild(U.h('p', { class: 'tiny muted', text: 'Shorter than the chosen length. Completing early is recorded as it happened — not a failure, and no judgement about it is stored.' }));
+        }
+        const nextMark = t.state !== 'idle' && bell > 0 ? Math.floor((shown / 1000) / bell) : null;
+        if (nextMark !== null && (chimed || 0) < nextMark) body.appendChild(U.h('p', { class: 'tiny muted', dataset: { practiceBellDue: 'true' }, text: `Bell marker ${nextMark} due at ${mmss(nextMark * bell * 1000)}. The tone is generated in this browser (no asset, no network) and the app does not verify that you heard it.` }));
+        body.appendChild(U.h('p', { class: 'tiny muted', text: 'Client display only: the recorded number is the server’s measured running time, never this ticker.' }));
+        const kit = U.h('details'); kit.appendChild(U.h('summary', { text: 'Mental toolkit — reboot / rewire / recovery' })); kit.appendChild(P.kit());
+        body.appendChild(kit);
+        const hist = U.h('details'); hist.appendChild(U.h('summary', { text: `Retained records for ${view.day}` }));
+        for (const s of view.sessions || []) hist.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(s, null, 2) }));
+        body.appendChild(hist);
+      }
+      async function act(action, extra = {}) {
+        if (!valid() || busy) return global.App.toast('Workspace/session/editor changed; reopen.', 'err');
+        busy = true; disable();
+        try {
+          const out = await global.API.post('/practice/timer', { action, revision: view.revision, ...extra });
+          if (!valid()) return;
+          view = out; stale = false; shown = out.timer?.elapsed_ms || 0; chimed = 0; bell = out.timer?.bell_interval_seconds || bell;
+          if (action === 'complete') global.App.toast('Session recorded with the server-measured running time. No score, no target, no permission changed.', 'ok');
+          if (action === 'cancel') global.App.toast('Timer cancelled. Nothing was written and no elapsed time is claimed.', 'ok');
+          P._chosen = null; P._custom = null; P._draft = { intention: '', bell: null, ambience: 'none' };
+          global.Store.invalidate(); draw();
+        } catch (e) { if (valid()) { stale = e.status === 409; global.App.toast(e.message, 'err'); } }
+        finally { busy = false; if (valid()) disable(); }
+      }
+      async function reload() {
+        if (!valid() || busy) return; busy = true; disable();
+        try { const out = await global.API.get('/practice'); if (!valid()) return; view = out; shown = out.timer?.elapsed_ms || 0; chimed = 0; bell = out.timer?.bell_interval_seconds || 0; stale = false; P._chosen = null; P._custom = null; draw(); }
+        catch (e) { if (valid()) global.App.toast(e.message, 'err'); }
+        finally { busy = false; if (valid()) disable(); }
+      }
+      function disable() { for (const b of body.querySelectorAll('button')) b.disabled = busy || stale; }
+      draw();
+      clearTick();
+      if (initialState === 'running') {
+        ticker = setInterval(() => {
+          if (!valid()) return clearTick();
+          if (view.timer?.state !== 'running') return;
+          shown += 1000;
+          const due = bell > 0 ? Math.floor((shown / 1000) / bell) : 0;
+          if (due > chimed) { chimed += 1; P.chime(); }
+        }, 1000);
+      }
+      const modal = global.App.modal({ title: 'Practice timer — running time only', body, wide: true, onClose: () => { alive = false; clearTick(); }, actions: [{ label: 'Close — no permission inferred', ghost: true }] });
+      disable();
+      return modal;
+    },
+  };
+})(window);

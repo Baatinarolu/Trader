@@ -1,0 +1,61 @@
+{
+  "app": "/tmp/m108-parent/app",
+  "pass": 0,
+  "fail": 12,
+  "results": [
+    {
+      "label": "every action refuses an unknown or missing revision before any write",
+      "passed": false
+    },
+    {
+      "label": "the pause action on an idle timer is a conflict and writes nothing",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/practice/timer</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "the resume action on an idle timer is a conflict and writes nothing",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/practice/timer</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "the complete action on an idle timer is a conflict and writes nothing",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/practice/timer</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "the cancel action on an idle timer is a conflict and writes nothing",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/practice/timer</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "start refuses an unlisted bell interval, an unlisted ambience and a mixed length",
+      "passed": false
+    },
+    {
+      "label": "start refuses an intention over the character cap or with control characters",
+      "passed": false
+    },
+    {
+      "label": "a valid start is accepted once",
+      "passed": false
+    },
+    {
+      "label": "a write replayed with a consumed revision is a conflict, never a second write",
+      "passed": false
+    },
+    {
+      "label": "a paused timer refuses a second pause and a resume starts from paused",
+      "passed": false
+    },
+    {
+      "label": "a running timer refuses a second resume",
+      "passed": false
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "SQLITE_ERROR: no such table: practice_timers"
+    }
+  ],
+  "scope": "M108 practice hardening, rollback and no-authority proof: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

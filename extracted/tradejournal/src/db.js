@@ -428,6 +428,50 @@ CREATE TABLE IF NOT EXISTS daily_intentions (
  UNIQUE(user_id,account_key,day,version)
 );
 CREATE INDEX IF NOT EXISTS idx_daily_intentions_owner ON daily_intentions(user_id,account_key,day,id);
+-- M108 personal practice log (the regulation layer). Server-measured RUNNING time only:
+-- nothing here records or verifies a mental state, and no audio is shipped or played.
+CREATE TABLE IF NOT EXISTS practice_sessions (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ day TEXT NOT NULL DEFAULT '',
+ version INTEGER NOT NULL,
+ preset TEXT NOT NULL CHECK(preset IN ('p5','p10','p15','p30','p60','custom')),
+ target_seconds INTEGER NOT NULL CHECK(target_seconds BETWEEN 60 AND 7200),
+ elapsed_ms INTEGER NOT NULL CHECK(elapsed_ms>=0),
+ pause_count INTEGER NOT NULL DEFAULT 0 CHECK(pause_count>=0),
+ bell_interval_seconds INTEGER NOT NULL DEFAULT 0 CHECK(bell_interval_seconds IN (0,60,120,300,600)),
+ bell_marks_json TEXT,
+ ambience TEXT NOT NULL DEFAULT 'none' CHECK(ambience IN ('none','rain','ocean','forest','fireplace','white_noise')),
+ intention TEXT,
+ intention_framing TEXT CHECK(intention_framing IS NULL OR intention_framing IN ('unverified_free_text','outcome_language')),
+ intention_cues_json TEXT,
+ note TEXT,
+ source TEXT NOT NULL,
+ recorded_at TEXT NOT NULL,
+ historical_json TEXT,
+ schema_version TEXT NOT NULL,
+ UNIQUE(user_id,day,version)
+);
+CREATE INDEX IF NOT EXISTS idx_practice_sessions_owner ON practice_sessions(user_id,day,id);
+-- M108 the one mutable row per trader: the open timer. Completing it writes the immutable
+-- receipt above and resets this row to idle, and settings and text are never carried over.
+CREATE TABLE IF NOT EXISTS practice_timers (
+ user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+ state TEXT NOT NULL CHECK(state IN ('idle','running','paused')),
+ preset TEXT CHECK(preset IS NULL OR preset IN ('p5','p10','p15','p30','p60','custom')),
+ target_seconds INTEGER CHECK(target_seconds IS NULL OR target_seconds BETWEEN 60 AND 7200),
+ bell_interval_seconds INTEGER CHECK(bell_interval_seconds IS NULL OR bell_interval_seconds IN (0,60,120,300,600)),
+ ambience TEXT CHECK(ambience IS NULL OR ambience IN ('none','rain','ocean','forest','fireplace','white_noise')),
+ intention TEXT,
+ intention_framing TEXT,
+ intention_cues_json TEXT,
+ accumulated_ms INTEGER NOT NULL DEFAULT 0 CHECK(accumulated_ms>=0),
+ pause_count INTEGER NOT NULL DEFAULT 0 CHECK(pause_count>=0),
+ started_at TEXT,
+ updated_at TEXT NOT NULL,
+ version INTEGER NOT NULL DEFAULT 0,
+ schema_version TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS goals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -857,6 +901,10 @@ async function migrate() {
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS state_gate_answers_immutable BEFORE UPDATE ON state_gate_answers WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.version IS OLD.version AND NEW.answers_json IS OLD.answers_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded state-gate answers are immutable'); END`).run();
 
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS daily_intentions_immutable BEFORE UPDATE ON daily_intentions WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.day IS OLD.day AND NEW.version IS OLD.version AND NEW.template_id IS OLD.template_id AND NEW.text IS OLD.text AND NEW.framing IS OLD.framing AND NEW.cues_json IS OLD.cues_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded daily intentions are immutable'); END`).run();
+
+  // M108 a completed practice session is a receipt: it is never edited, reinterpreted or
+  // re-dated. The open timer row is the only mutable row in this layer.
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS practice_sessions_immutable BEFORE UPDATE ON practice_sessions BEGIN SELECT RAISE(ABORT,'Recorded practice sessions are immutable'); END`).run();
 
   /* M102 backfill. Every strategy that has no version history gets an immutable v1
    * snapshot of the rule set it currently holds, and every trade already linked to it is

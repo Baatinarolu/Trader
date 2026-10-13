@@ -1,0 +1,80 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 18,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the day is the server’s UTC day of the receipt",
+      "passed": true
+    },
+    {
+      "label": "a late-evening intention is recorded for that day",
+      "passed": true
+    },
+    {
+      "label": "the next UTC day starts with no intention, not yesterday’s",
+      "passed": true
+    },
+    {
+      "label": "yesterday’s words are reported as history only, never as today’s",
+      "passed": true
+    },
+    {
+      "label": "the show-history pointer grants nothing and carries no permission field",
+      "passed": true
+    },
+    {
+      "label": "choosing the same words on the new day is a new day-scoped record, not a carry-over",
+      "passed": true
+    },
+    {
+      "label": "the new day’s record keeps its own later receipt",
+      "passed": true
+    },
+    {
+      "label": "the earlier day still reads exactly what was recorded then, readonly",
+      "passed": true
+    },
+    {
+      "label": "a day with no record stays genuinely unrecorded",
+      "passed": true
+    },
+    {
+      "label": "a day that has not happened is refused, never rendered as blank history",
+      "passed": true
+    },
+    {
+      "label": "a malformed day is refused",
+      "passed": true
+    },
+    {
+      "label": "a timestamp is not accepted where a day belongs",
+      "passed": true
+    },
+    {
+      "label": "every recorded row is pinned to a real UTC day with its own version series",
+      "passed": true
+    },
+    {
+      "label": "the human rows are never given a receipt outside their own day",
+      "passed": true
+    },
+    {
+      "label": "a corrupt/future receipt marks the day unavailable rather than claiming a record",
+      "passed": true
+    },
+    {
+      "label": "removing the corrupt row restores the honest record of that day",
+      "passed": true
+    },
+    {
+      "label": "read-only views never wrote another revision",
+      "passed": true
+    },
+    {
+      "label": "with no rows at all the day is unrecorded, not failed or unavailable",
+      "passed": true
+    }
+  ],
+  "scope": "M107 same-day intention boundary and rollover: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

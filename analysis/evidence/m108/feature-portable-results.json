@@ -1,0 +1,72 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 16,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the backup carries a versioned practice bundle and nothing more",
+      "passed": true
+    },
+    {
+      "label": "the exported records carry no score, streak or summary field",
+      "passed": true
+    },
+    {
+      "label": "the export keeps the measured running time and the trader’s own words",
+      "passed": true
+    },
+    {
+      "label": "a well-formed archive is accepted",
+      "passed": true
+    },
+    {
+      "label": "the restored session is labelled imported, never recorded",
+      "passed": true
+    },
+    {
+      "label": "the restored session keeps its original clock and version as history",
+      "passed": true
+    },
+    {
+      "label": "restoring never touches the trader’s own recorded day",
+      "passed": true
+    },
+    {
+      "label": "progress counts the archive separately and never merges it",
+      "passed": true
+    },
+    {
+      "label": "importing the same archive twice adds a second archive rather than editing the first",
+      "passed": true
+    },
+    {
+      "label": "malformed archives warn instead of pretending to restore",
+      "passed": true
+    },
+    {
+      "label": "a record with no readable day is kept without claiming a day",
+      "passed": true
+    },
+    {
+      "label": "a record with an unusable duration or preset is omitted, not repaired",
+      "passed": true
+    },
+    {
+      "label": "a record with an unlisted ambience falls back to none rather than inventing a sound",
+      "passed": true
+    },
+    {
+      "label": "a foreign trader importing the same bundle keeps their own archive counts",
+      "passed": true
+    },
+    {
+      "label": "the export of the receiver still carries their own records only",
+      "passed": true
+    },
+    {
+      "label": "deleting the trader removes their archives with them",
+      "passed": true
+    }
+  ],
+  "scope": "M108 practice backup and restore: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

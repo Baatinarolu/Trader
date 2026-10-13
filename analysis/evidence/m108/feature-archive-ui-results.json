@@ -1,0 +1,68 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 15,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the restore is accepted with warnings for the record that cannot be trusted",
+      "passed": true
+    },
+    {
+      "label": "today’s card counts the recorded sessions and claims no archive that belongs to another day",
+      "passed": true
+    },
+    {
+      "label": "the archive is visible only on its own day, counted separately from recorded sessions",
+      "passed": true
+    },
+    {
+      "label": "the archive is not shown inside the recorded-session list",
+      "passed": true
+    },
+    {
+      "label": "the readonly history modal explains what an archive is",
+      "passed": true
+    },
+    {
+      "label": "every stored record is shown verbatim, archive and recorded side by side",
+      "passed": true
+    },
+    {
+      "label": "the restored archive keeps its own original day and clock, not the receiver’s",
+      "passed": true
+    },
+    {
+      "label": "the archive that could not be trusted was dropped with a warning, not invented",
+      "passed": true
+    },
+    {
+      "label": "the unreadable row is shown as unavailable rather than repaired or counted",
+      "passed": true
+    },
+    {
+      "label": "the readonly modal offers no editing control for any record",
+      "passed": true
+    },
+    {
+      "label": "the settings import feedback carries every restore warning",
+      "passed": true
+    },
+    {
+      "label": "nothing claims a restored archive is the trader’s own practice",
+      "passed": true
+    },
+    {
+      "label": "progress counts the archive separately in the period too",
+      "passed": true
+    },
+    {
+      "label": "progress still refuses any target or score reading",
+      "passed": true
+    },
+    {
+      "label": "no uncaught error reached the window during the archive flow",
+      "passed": true
+    }
+  ],
+  "scope": "M108 real DOM: restored archives and unreadable rows stay readonly and separate: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

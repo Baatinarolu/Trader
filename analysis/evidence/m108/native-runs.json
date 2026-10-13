@@ -1,0 +1,58 @@
+[
+  {
+    "arm": "parent",
+    "suite": "api",
+    "server_app": "/tmp/m108-parent/app",
+    "scripts_unchanged": true,
+    "pass": null,
+    "fail": null,
+    "exit_code": 2,
+    "status": "completed",
+    "output": "native-parent-api.txt",
+    "parity_fills": null,
+    "parity_mismatches": null,
+    "scope": "Unchanged api-test on a FRESH database: a live entry is refused by the mandatory pre-market routine (no selected window on a new account), so the run aborts with exit 2 and no summary \u2014 identically on the M107 parent tree and on the delivered tree. The inherited M107 record 121/0 came from that session\u2019s declared prepared workspace and is not reproducible from a fresh database on either tree; it is left as committed, never rewritten. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+  },
+  {
+    "arm": "parent",
+    "suite": "bots",
+    "server_app": "/tmp/m108-parent/app",
+    "scripts_unchanged": true,
+    "pass": 198,
+    "fail": 8,
+    "exit_code": 1,
+    "status": "completed",
+    "output": "native-parent-bots.txt",
+    "parity_fills": 15,
+    "parity_mismatches": 0,
+    "scope": "Unchanged bots-test on a FRESH database: the mandatory-routine negatives are retained and the synthetic random-walk fill parity count moves with the wall clock (15 here, 19 in the M107 record, 15 at the M106 delivery) with 0 mismatches \u2014 identical numbers on the M107 parent tree and on the delivered tree. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+  },
+  {
+    "arm": "raw",
+    "suite": "api",
+    "server_app": "/home/user/Trader/extracted/tradejournal",
+    "scripts_unchanged": true,
+    "pass": null,
+    "fail": null,
+    "exit_code": 2,
+    "status": "completed",
+    "output": "native-raw-api.txt",
+    "parity_fills": null,
+    "parity_mismatches": null,
+    "scope": "Unchanged api-test on a FRESH database: a live entry is refused by the mandatory pre-market routine (no selected window on a new account), so the run aborts with exit 2 and no summary \u2014 identically on the M107 parent tree and on the delivered tree. The inherited M107 record 121/0 came from that session\u2019s declared prepared workspace and is not reproducible from a fresh database on either tree; it is left as committed, never rewritten. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+  },
+  {
+    "arm": "raw",
+    "suite": "bots",
+    "server_app": "/home/user/Trader/extracted/tradejournal",
+    "scripts_unchanged": true,
+    "pass": 198,
+    "fail": 8,
+    "exit_code": 1,
+    "status": "completed",
+    "output": "native-raw-bots.txt",
+    "parity_fills": 15,
+    "parity_mismatches": 0,
+    "scope": "Unchanged bots-test on a FRESH database: the mandatory-routine negatives are retained and the synthetic random-walk fill parity count moves with the wall clock (15 here, 19 in the M107 record, 15 at the M106 delivery) with 0 mismatches \u2014 identical numbers on the M107 parent tree and on the delivered tree. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+  }
+]

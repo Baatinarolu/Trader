@@ -1,0 +1,22 @@
+{
+  "app": "/tmp/m108-policy-stage/app",
+  "pass": 0,
+  "fail": 3,
+  "results": [
+    {
+      "label": "the practice surface answers with the saved options and an idle timer",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/practice</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "an empty day is unrecorded and is not a failure",
+      "passed": false
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "Cannot read properties of undefined (reading 'preset')"
+    }
+  ],
+  "scope": "M108 practice API and server-measured timer: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

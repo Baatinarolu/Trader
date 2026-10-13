@@ -1,0 +1,25 @@
+ok actual HTML loads the intention view before the dashboard and journal that render it
+ok the card states the saved rule and names the episode’s own anti-example
+ok a day with nothing recorded is not a failure and offers no score
+ok the card offers the editor and the readonly history and states authority:none
+ok no intention is ever carried over or defaulted into today
+ok a past day is readonly: no editor button and no back-filling
+ok a past day keeps its own empty answer rather than borrowing today’s words
+ok the editor offers exactly the four saved process examples
+ok no saved example is preselected — there is no default intention
+ok the neutral state is the trader’s own words with an empty box — no saved example is chosen for them
+ok picking a saved example disables free text and keeps the check the trader made
+ok recording a saved example reports the record and what did NOT change
+ok the recorded day comes back as the saved example with its framing and receipt
+ok choosing your own words re-enables the box and clears every saved example in this editor
+ok the editor refuses a money target in the same sentence and says so
+ok the refused write changed nothing — the saved example is still the day
+ok free text is stored as written and labelled unverified, never process-oriented
+ok the stored free text keeps the trader’s wording, framing and its own warnings
+ok the editor shows the retained records for the day rather than hiding them
+ok reload discards the unsaved draft and re-reads the day from the server
+ok the readonly history modal lists the day’s versions with receipts and says it is not a score
+ok the history modal renders every retained record as data, not as executable markup
+ok the server stored the markup as words and the card renders them as escaped text
+ok no uncaught DOM error was recorded while rendering the real views
+M107 real DOM: the one-rule card, the strict editor and the readonly history: 24 passed, 0 failed

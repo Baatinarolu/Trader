@@ -1,6 +1,82 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M107 — one process intention for the day — 2026-10-13
+## Current M108 — the regulation layer: a personal practice log — 2026-10-13
+
+**132:102 done /2 partial /28 TODO /0 no-action**, exact eight groups. Saved Ep28 sanctuary
+half: *"The guardrails in Edge Flow stop you mechanically. It's the hard wall… But
+sanctuary fixes the emotional cause."* Sanctuary itself is an Edge Flow product feature
+(meditation timer + ambient sound + video library); `grep -rniE 'sanctuary|meditat|
+breathing|mindfulness' src/` returned 0 hits before this milestone, and the delivery is
+scoped to what the app can honestly own and prove. **A timer proves elapsed running time
+only.**
+
+Additive owned `practice_timers` (one row per user: idle/running/paused, accumulated_ms,
+pause_count, version) + append-only `practice_sessions` (human_declared receipts +
+imported_unverified archives, UPDATE facts immutable, owner cascade,
+UNIQUE(user_id,day,version)) + owner index + immutability trigger. **No `/practice` route
+accepts an account_id**: the log is personal, can never be attributed to a desk, and cannot
+bind M64/M107. Presets 300/600/900/1800/3600s or your own h/m/s (60–7200s, ≤2h); bell
+markers 0/60/120/300/600 with a locally generated tone (no audio asset, nothing fetched);
+ambience recorded as your own declaration with `ambience_played_by_this_app:false`; toolkit
+reboot/rewire/recovery with per-item attribution and the unverifiable effects disclaimed;
+note ≤2000; optional one-line intention ≤120 reusing M107's classifier (free text
+unverified, asserted money target 400 `practice_outcome_target`, blank line = no intention).
+
+Elapsed = **server running time only**, pause gaps excluded; >24h open cannot be completed
+(409 cancel-instead); every action compare-and-sets the displayed 64-hex revision inside one
+transaction (stale/unknown/malformed/wrong-state 409, nothing written) with an explicit
+reload. Completing writes ONE immutable receipt recorded as it happened — a short or
+early-completed session is not a failure. Day/history/progress count **readable
+state:'recorded' rows only**: an unreadable row is `unavailable`, never counted, never
+repaired, never invented. Progress is records not results (`counts_are_records_only:true`,
+`target:null`, `score:null`, no streak language, only "consecutive days with a recorded
+session"). **No authority at all**: no score/percentage/adherence/gate/permission and no
+change to admission/risk/caps/routine/core/grades/history; briefing + owned journal day
+carry the same object, a foreign trader sees nothing, and M64's routine timer / M106's four
+questions / M107's intention stay separate.
+
+Actual Dashboard + owned Journal day day-card + Settings archive warning; timer modal
+(presets/custom, bells, ambience, toolkit, intention), start/pause/resume/complete/cancel/
+reload, readonly history and the progress view. Typed state lives in module-level draft
+state so a preset redraw cannot discard a typed intention or a chosen bell/ambience; the
+draft clears when a session is recorded. Backup/restore transports `practice_sessions` as
+imported_unverified archives keeping the original day/clock/elapsed/id as history.
+
+**Final259/0 across9 probes**, actual141-parent additive/restart21/0 (parent control6/2).
+Every prior cohort reproduces exactly — **17 suites/162 scripts, 0 per-script differences**:
+m107feature231/1, m106feature317/1, m105feature141/1, screenshots223/3, changes152/1,
+opportunities144/1, reviews159/1, behavior113/2, process106/2, emotions170/0,
+confluences160/0, execution260/0, routine321/0, offline178/0, market325/0, RAW596/156,
+DECLARED824/4, live-provider70/1. **Three declared milestone-scoped negatives kept**: frozen
+M107 migration17/1, frozen M106 migration17/1, frozen M105 migration12/1. Pre-hardening api
+stage = the pre-fix runtime (asserted identical to `pre-hardening-source.json`), measured
+**hardening27/1 + pure70/1** by the unchanged probes (an unreadable receipt counted as a
+recorded session; a blank optional intention refused as an error) and **28/0 + 71/0** after
+the hardening stage.
+
+Native two arms on fresh DBs: parent/current **API exit2 no summary** and **Bots198/8 exit1**
+in both, 15 synthetic parity fills/0 mismatches (the count moves with the wall clock; 19 in
+the M107 record) — identical trees, so no M108 regression; the inherited M107 parent/fixture
+API121/0 came from that session's prepared workspace and is not reproducible from a fresh DB
+on either tree, so it is left as committed. Smoke exit0 **22/22 conditional DOM**,0style/
+0console,8canvas limits,99.4s, with the **same-sample unchanged M107 parent control also
+22/22**. Four runtime stages+docs, actual8a2cfd5/pristine forward/reverse byte proofs,
+deterministic **143-source** ZIP: `build-m108-practice-artifacts.py`,
+`patches/M108-PRACTICE-STAGES.json`, excluded archive SHA companion.
+[Full report](M108-SANCTUARY-PRACTICE.md). Preview/arm servers stopped; `/tmp` DBs synthetic/
+offline, scheduler OFF, not preserved real data.
+
+**Next M111/M112.** M109/M110 and the older TODO rows still open; M30/M103 partial. All
+132 IDs/eight groups retained; session fixed to **arena/b411452d-trader**, older
+counts/branches/next-steps below historical.
+
+### Current remaining IDs — no omissions
+
+Partials **M30,M103**. TODO28: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M62,M65,M66,M67,M72,M73,M74,M109,M110,M111,M112,M115,M117,M125**.
+PROGRESS asserts exact132/eight-group partition. Earlier lists are historical milestones,
+not the current remaining work.
+
+## Historical M107 — one process intention for the day — 2026-10-13
 
 **132:101 done /3 partial /28 TODO /0 no-action**, exact eight groups. Saved Ep28 rule:
 one clear rule for the day, one simple sentence, process-oriented, behavioral, within your

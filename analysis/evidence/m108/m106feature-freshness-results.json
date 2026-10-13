@@ -1,0 +1,96 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 22,
+  "fail": 0,
+  "results": [
+    {
+      "label": "a brand-new account is not_adopted with no receipt at all, so nothing is implied about the trader",
+      "passed": true
+    },
+    {
+      "label": "the published shape names the questions, window and basis even before any answer",
+      "passed": true
+    },
+    {
+      "label": "an answer recorded now is a pass at age 0 with an expiry one window ahead",
+      "passed": true
+    },
+    {
+      "label": "a fresh pass admits a live entry",
+      "passed": true
+    },
+    {
+      "label": "inside the window the same answers still stand",
+      "passed": true
+    },
+    {
+      "label": "inside the window the live entry is admitted",
+      "passed": true
+    },
+    {
+      "label": "one minute past the window the answers are stale, not permission",
+      "passed": true
+    },
+    {
+      "label": "past the window a live entry is refused as unanswered with nothing written",
+      "passed": true
+    },
+    {
+      "label": "the stale refusal states the age instead of pretending the trader failed a question",
+      "passed": true
+    },
+    {
+      "label": "no trade row was created by the refused entry",
+      "passed": true
+    },
+    {
+      "label": "answering fresh after a stale window is allowed and supersedes nothing already recorded",
+      "passed": true
+    },
+    {
+      "label": "the refreshed in-session answer re-admits the live entry",
+      "passed": true
+    },
+    {
+      "label": "a late-evening answer is a pass while it is still inside the window",
+      "passed": true
+    },
+    {
+      "label": "crossing UTC midnight expires it 50 minutes later even though the window has not closed",
+      "passed": true
+    },
+    {
+      "label": "a live entry on the next UTC day is refused until the trader answers again",
+      "passed": true
+    },
+    {
+      "label": "a future/corrupt receipt is unavailable and cannot be a pass",
+      "passed": true
+    },
+    {
+      "label": "a future receipt refuses the live entry instead of granting it",
+      "passed": true
+    },
+    {
+      "label": "after the corrupt row is removed the honest history is the state again, unchanged",
+      "passed": true
+    },
+    {
+      "label": "history is a readonly record of what was written, retained across every transition",
+      "passed": true
+    },
+    {
+      "label": "the fresh window never touches finance: equity is unchanged by every refusal above",
+      "passed": true
+    },
+    {
+      "label": "reading the gate never writes a row",
+      "passed": true
+    },
+    {
+      "label": "the revision changes with the stored rows, so a stale display cannot write",
+      "passed": true
+    }
+  ],
+  "scope": "M106 four-question freshness window and receipt canonicality: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

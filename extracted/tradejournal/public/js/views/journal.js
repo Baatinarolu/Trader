@@ -181,6 +181,7 @@
     if(Views.behaviorDays)body.prepend(Views.behaviorDays.card(day.behavior_days));
     if(Views.stateGate)body.prepend(Views.stateGate.card(day.state_gate));
     if(Views.intention)body.prepend(Views.intention.card(day.daily_intention));
+    if(Views.practice)body.prepend(Views.practice.card(day.practice));
     if(Views.identity)body.prepend(Views.identity.card(day.identity_context));
     if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));

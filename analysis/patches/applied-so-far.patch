@@ -315,12 +315,63 @@ index 0000000..bd0e991
 +no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
 +Those four are what distinguish a working deploy from one that merely builds.
 diff --git a/README.md b/README.md
-index df9ae3c..7d601de 100644
+index df9ae3c..6d24b0d 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,5 +1,447 @@
+@@ -1,5 +1,498 @@
  # TradeJournal Pro
  
++## M108 — the regulation layer: a personal practice log (2026-10-13)
++
++The other half of Ep 28's *sanctuary* — the meditation timer, the interval bells, the
++ambient-sound choice, the post-session note, the progress view and the mental toolkit —
++now ships as an **independent practice log**. The **Practice** card sits on the Dashboard
++and on the owned day review, with two doors: *Open the practice timer* and *Progress
++(records, not results)*. It is deliberately narrow about what it can prove:
++**the only thing measured is elapsed server running time** — a paused gap does not count —
++and nothing in the app claims that a meditation happened, that anyone calmed down, or that
++any physiological, emotional or performance effect followed.
++
++**Timer.** The episode's own presets (5/10/15/30/60 minutes) or your own h/m/s length
++(1 minute – 2 hours), with start, pause, resume, complete and cancel. Interval bells are
++**elapsed-time markers** (none/1/2/5/10 minutes): they are listed as markers reached, and
++a bell is sounded with a short tone generated locally in your browser — no audio file
++ships and nothing is fetched. The **ambience** choice (none/rain/ocean/forest/fireplace/white
++noise) is recorded as *your own declaration* and every payload says so
++(`ambience_played_by_this_app:false`) — this app plays no ambient audio and streams
++nothing. A session left open for more than 24 hours cannot be completed as one session;
++cancel it instead. Every write carries the displayed revision, so a stale tab 409s with
++nothing written, and a reload button is always there.
++
++**Records, not results.** *Complete and record* writes an immutable receipt with the
++measured running time, the markers reached, the note you wrote (up to 2000 characters) and
++the optional one-line intention. The progress view counts **records**: sessions and
++measured seconds, by day or by period, plus "consecutive days with a recorded session" —
++never a streak to protect, a target, a score or a percentage
++(`counts_are_records_only:true`, `target:null`, `score:null`). An empty day is not a
++failure, stopping early is recorded exactly as it happened, and a stored receipt the app
++cannot read back is reported `unavailable` and **never counted** as a session or as a
++measured second.
++
++**No authority, and never desk-scoped.** The practice log is personal: no `/practice`
++route accepts an `account_id`, so a practice record cannot be attributed to an account or
++a desk. Nothing here admits, refuses, sizes, scores or gates a trade, and nothing changes
++risk, caps, routine, the core, grades or history — M64's mandatory 15-minute routine step,
++M106's fresh in-session four questions and M107's daily intention keep their own meaning.
++The optional intention line reuses M107's bounded classifier: free text stays stored as
++written and labelled **unverified**, and an asserted money target is refused with the same
++refusal code it gets there.
++
++**Measurement.** **M108 259/0 across 9 probes**, actual141-parent additive/restart
++migration 21/0; every prior cohort re-run unchanged (M107 231/1, M106 317/1 and M105 141/1
++with one declared milestone-only schema negative each, changes152/1, opportunities144/1,
++reviews159/1, behavior113/2, process106/2, screenshots223/3, emotions170/0,
++confluences160/0, execution260/0, routine321/0, offline178/0, market325/0, RAW596/156,
++DECLARED824/4). Ledger **132 = 102 done / 2 partial / 28 TODO**. Report
++`analysis/M108-SANCTUARY-PRACTICE.md` in the ZIP. Next M111/M112; no 70 % win-rate,
++causal/predictive edge, broker/provider/mental-state/human/meditation/pixel/production
++claim.
++
 +## M107 — one process intention for the day (2026-10-13)
 +
 +**Dashboard**, the owned **day review** and **Settings** now carry the saved rule from
@@ -766,7 +817,7 @@ index df9ae3c..7d601de 100644
  A **multi-asset trading journal, analytics engine, behavioural coach, SMC bot desk and TradingView-integrated
  pre-trade assistant**. No subscription, no broker login, no sign-in wall — a Node server, one libSQL database
  (a local file by default), and the whole thing deployable free to Vercel + Turso.
-@@ -11,6 +453,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -11,6 +504,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  
  ---
  
@@ -805,7 +856,7 @@ index df9ae3c..7d601de 100644
  ## What it does
  
  | Area | What you get |
-@@ -18,8 +492,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -18,8 +543,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  | **Journal** | 40+ fields per trade — thesis, execution notes, emotions, confidence, rule-adherence score, mistake tags, screenshots, MAE/MFE, planned R, **scale-out legs** (closes at the pct-weighted price). Works for FX, futures, stocks, ETFs, crypto, index CFDs and options. |
  | **Analytics** | Expectancy ($ and R), win rate, profit factor, payoff, SQN, Sharpe, Sortino, Calmar, recovery factor, Kelly, max drawdown, streaks, R-distribution, MAE/MFE capture efficiency, time-of-day and weekday grids, hold-time buckets, 10+ segment tables. |
  | **Coach** | 20+ deterministic behavioural tests on your own rows — losing setups, bad hours, revenge entries, post-loss trading, overtrading days, size creep, early exits, tight stops, cost of each mistake tag — each with the numbers, the dollar impact and one concrete action. |
@@ -816,7 +867,7 @@ index df9ae3c..7d601de 100644
  | **Data** | CSV import with automatic column detection, CSV export, full JSON backup & restore, multi-account (including prop-firm drawdown rules), instrument library. |
  | **Options** | Black-Scholes calculator (price, delta/gamma/theta/vega, break-even, ITM/OTM), premium-based position sizing, and a plan that warns instead of printing a fake R:R when your target premium is below the entry. 7 option presets (100× multiplier). *IV is yours to type — there is no options feed.* |
  | **Prop challenge** | Named challenge shapes (5 %/10 %, 6 %/6 %, instant…) applied to an account, then a live tracker over 4 checks — daily loss, max drawdown, profit target, consistency — with progress %. |
-@@ -263,6 +737,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
+@@ -263,6 +788,51 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
  
  Guides: [docs/BOTS.md](docs/BOTS.md) · [docs/PLAYLIST-CURRICULUM.md](docs/PLAYLIST-CURRICULUM.md)
  
@@ -855,9 +906,13 @@ index df9ae3c..7d601de 100644
 +It is descriptive only, not causal proof, per-trade overnight attribution or an
 +instruction to resize/change strategy. No older completion is fabricated.
 +
-+M108 is **partial**: this mandatory routine timer is not the full Sanctuary presets,
-+ambient audio, intention, toolkit or independent session-log/progress feature.
-+M89 app-timed self-report provenance is separate from this routine. M106 fresh in-session questions, M111 fail-closed news and
++M108 is now **applied** as an independent practice log (presets/custom length, interval
++bells, declared ambience, toolkit text, immutable receipts, records-only progress). This
++routine step is unchanged and stays its own thing: a **mandatory 15-minute workflow timer
++under the routine**, not the practice log, and neither of the two is evidence that a
++meditation happened or that any mental state was reached. M89 app-timed self-report
++provenance is separate from this routine; M107's intention and M106's fresh in-session
++questions are separate from both. M111 fail-closed news and
 +M112 allowed hours remain open. See [docs/GUARDRAILS.md](docs/GUARDRAILS.md) and
 +[docs/API.md](docs/API.md#pre-market-routine).
 +
@@ -865,7 +920,7 @@ index df9ae3c..7d601de 100644
  
  * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.
 diff --git a/docs/API.md b/docs/API.md
-index 4475db3..a62bfac 100644
+index 4475db3..c89c0ca 100644
 --- a/docs/API.md
 +++ b/docs/API.md
 @@ -1,5 +1,55 @@
@@ -924,7 +979,7 @@ index 4475db3..a62bfac 100644
  Base URL: `http://localhost:3000/api`
  Auth: session cookie (`tj_session`) **or** an `x-session: <token>` header. There is **no sign-in wall**:
  `POST /auth/local` hands the caller a workspace (reusing the database's existing one locally, minting a
-@@ -383,3 +433,790 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
+@@ -383,3 +433,848 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
  | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
  | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
  | `DELETE /api/chart/drawings?symbol=…&tf=…` | clears that market |
@@ -1663,6 +1718,64 @@ index 4475db3..a62bfac 100644
 +stays legal; a real import-store failure rolls that request back atomically; a missing
 +answer store leaves the financial backup legal with an unavailable marker. Settings
 +surfaces the warnings instead of hiding omissions.
++
++## M108 — personal practice log (timer, markers, toolkit, records-only progress)
++
++Additive owned `practice_timers` (one row per user: `idle|running|paused`,
++`accumulated_ms`, `pause_count`, `version`) and append-only `practice_sessions`
++(`human_declared` receipts + `imported_unverified` archives, immutable UPDATE facts, owner
++cascade), plus their unique `(user_id,day,version)` index, owner index and immutability
++trigger. **No `account_id` on any route**: practice is personal, never desk-scoped, never
++attributed to an account or a desk, and no write accepts a caller day, clock, elapsed time,
++source or owner.
++
++- `GET /practice?date=`: own day view — `state unrecorded|recorded`, that day's readable
++  sessions and archives, `recorded_seconds`/`sessions_count`/`imported_count` counted from
++  **readable `state:'recorded'` rows only**, presets (300/600/900/1800/3600s), custom
++  bounds 60–7200s/≤2h, six ambience options, five bell markers, the toolkit, `char_max:120`,
++  the displayed 64-hex `revision`, `authority:'none'`, `actual_meditation_verified:false`,
++  `broker_verified:false`. A malformed or not-yet day is refused through M107's `dayKey`.
++- `GET /practice/history?date=`: readonly own records; a stored row this app cannot read
++  back is reported `unavailable` verbatim and never repaired or counted.
++- `GET /practice/progress?from=&to=`: record counts over ≤366 past-or-today days —
++  `sessions_count`, `recorded_seconds`, `days_with_recorded_session`,
++  `consecutive_days_with_a_recorded_session_ending_on_to`, `counts_are_records_only:true`,
++  `target:null`, `score:null`. No goal, percentage or streak pressure; records, not results.
++- `POST /practice/timer`: `{action:start|pause|resume|complete|cancel, revision}` and, on
++  start, one saved `preset` **xor** `hours`/`minutes`/`seconds`, `bell_interval_seconds`
++  ∈ {0,60,120,300,600}, `ambience` ∈ the six options, optional one-line `intention`
++  ≤120 chars; on complete, optional `note` ≤2000. The displayed `revision` is compared and
++  set inside one transaction: a stale, unknown, malformed or wrong-state action is 409 with
++  nothing written, and a session open for more than 24 hours cannot be completed (409 —
++  cancel it instead). `start` writes the timer row only; `cancel` writes nothing but the
++  reset timer.
++
++Elapsed time is **server running time** (`elapsed_source:'server_running_time'`) with pause
++gaps excluded; bells are elapsed-time markers strictly inside the measured time and the
++tone is generated locally by the browser (no audio asset ships, nothing is fetched);
++ambience is a recorded declaration (`ambience_played_by_this_app:false`). Completing writes
++one immutable receipt (measured `elapsed_ms`/`elapsed_seconds`, `pause_count`, `bells`,
++note, intention + framing/cues) and is recorded exactly as it happened — a short or early
++completed session is not a failure. Nothing here scores, targets, tallies adherence, gates
++or permits; nothing changes admission, risk, caps, routine, the core, grades or history;
++M64's mandatory routine timer, M106's fresh four questions and M107's daily intention keep
++their own meaning, and no journal/emotion/profit/identity surface is derived from practice.
++
++The optional intention reuses M107's contract: free text is stored exactly as written as
++`unverified_free_text` (never `process_template`), an asserted amount and outcome in one
++non-negated sentence is refused `practice_outcome_target` 400 with nothing written, an
++all-blank line means "no intention" rather than an error, and no trading surface reads it.
++
++Full JSON backup carries `practice_sessions:{version,records,unavailable_records}`; restore
++labels every copy `imported_unverified`, keeps the original day/clock/elapsed time/id as
++history, never counts it as this app's measured running time, appends on repeat import (no
++upsert or dedupe) and warns on malformed optional entries while finance stays legal. A
++missing store leaves the financial backup legal with an unavailable marker. Dashboard and
++owned day-review cards plus the Settings archive warning; escaped text, readonly history,
++explicit reload with 409 handling. Not sealed against database-admin tampering.
++
++No70%/causal/predictive/mental-state/meditation/human/broker/provider/pixel/production
++proof. M111/M112 open; M30/M103 partial.
 +
 +## M107 — one process intention for the day
 +
@@ -2433,16 +2546,17 @@ index 34cc0ff..877c80b 100644
 +.routine-report{margin-top:14px}.routine-report th{white-space:normal}
 +@media(max-width:700px){.routine-banner{position:relative;top:auto;align-items:flex-start;padding:10px;flex-wrap:wrap}.routine-schedule .form-grid{grid-template-columns:1fr!important}}
 diff --git a/public/index.html b/public/index.html
-index 7ed122b..07cb606 100644
+index 7ed122b..f7709fa 100644
 --- a/public/index.html
 +++ b/public/index.html
-@@ -25,6 +25,18 @@
+@@ -25,6 +25,19 @@
  <script src="/js/api.js?v={{V}}"></script>
  <script src="/js/store.js?v={{V}}"></script>
  <script src="/js/tv.js?v={{V}}"></script>
 +<script src="/js/views/identity.js?v={{V}}"></script>
 +<script src="/js/views/state-gate.js?v={{V}}"></script>
 +<script src="/js/views/intention.js?v={{V}}"></script>
++<script src="/js/views/practice.js?v={{V}}"></script>
 +<script src="/js/views/rule-changes.js?v={{V}}"></script>
 +<script src="/js/views/period-reviews.js?v={{V}}"></script>
 +<script src="/js/views/opportunities.js?v={{V}}"></script>
@@ -2455,7 +2569,7 @@ index 7ed122b..07cb606 100644
  <script src="/js/views/dashboard.js?v={{V}}"></script>
  <script src="/js/views/bots.js?v={{V}}"></script>
  <script src="/js/views/trades.js?v={{V}}"></script>
-@@ -36,6 +48,7 @@
+@@ -36,6 +49,7 @@
  <script src="/js/views/risk.js?v={{V}}"></script>
  <script src="/js/views/market.js?v={{V}}"></script>
  <script src="/js/views/settings.js?v={{V}}"></script>
@@ -3531,10 +3645,10 @@ index 0000000..974ec82
 +  };
 +})(window);
 diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
-index d8a189b..986fcf1 100644
+index d8a189b..f7f9b4a 100644
 --- a/public/js/views/dashboard.js
 +++ b/public/js/views/dashboard.js
-@@ -1,18 +1,43 @@
+@@ -1,18 +1,44 @@
  /* views/dashboard.js — the daily cockpit */
  (function (global) {
    'use strict';
@@ -3576,17 +3690,19 @@ index d8a189b..986fcf1 100644
 +        API.get('/identity/daily/'+Store.isoToday(),{account_id:Store.accountId}).catch(()=>({state:'unavailable'})),
 +        API.get('/state-gate',{account_id:Store.accountId}).catch(()=>({state:'unavailable',account_id:null})),
 +        API.get('/intention',{account_id:Store.accountId}).catch(()=>({state:'unavailable',account_id:null})),
-+      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay,stateGateView,intentionView]=identityResult;
++        API.get('/practice').catch(()=>({state:'unavailable',sessions:[],toolkit:[]})),
++      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay,stateGateView,intentionView,practiceView]=identityResult;
 +      if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;
        const k = an.kpis;
        const acc = an.account || Store.account() || {};
        root.innerHTML = '';
-@@ -50,10 +75,19 @@
+@@ -50,10 +76,20 @@
          go('first-bots', () => global.App.go('bots'));
        }
  
 +      if(Views.stateGate)root.appendChild(Views.stateGate.card(stateGateView));
 +      if(Views.intention)root.appendChild(Views.intention.card(intentionView));
++      if(Views.practice)root.appendChild(Views.practice.card(practiceView||briefing.practice));
 +      if(Views.identity)root.appendChild(Views.identity.card(identityDay));
 +      root.appendChild(Views.sessionTimeCard(briefing?.daily?.session_time || {}));
 +      if(Views.lossWritingCard)root.appendChild(Views.lossWritingCard(briefing?.daily?.post_loss_journal || {}));
@@ -3601,7 +3717,7 @@ index d8a189b..986fcf1 100644
          const card = U.h('div', { class: 'card pad-lg', style: 'background:linear-gradient(135deg,rgba(79,140,255,.10),rgba(17,24,39,.9))' });
          card.innerHTML = `
            <div class="row-between" style="align-items:flex-start;flex-wrap:wrap">
-@@ -65,11 +99,15 @@
+@@ -65,11 +101,15 @@
                  ${(briefing.plan_of_the_day || []).map((l) => `<div class="small muted-2 bullet">${U.esc(l)}</div>`).join('')}
                </div>
                <div class="row wrap" style="gap:8px">
@@ -3619,7 +3735,7 @@ index d8a189b..986fcf1 100644
                <div class="tiny muted" style="margin-top:8px">${(rp.reasons || []).map((r) => U.esc(r)).join(' · ')}</div>
              </div>
              <div style="min-width:250px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:14px">
-@@ -140,7 +178,7 @@
+@@ -140,7 +180,7 @@
            <div><div class="l">Peak</div><div class="v">${U.money(Math.max(...an.equity.map((p) => p.equity)))}</div></div>
            <div><div class="l">Recovery factor</div><div class="v">${U.num(k.recovery_factor, 2)}</div></div>
            <div><div class="l">Streak</div><div class="v ${k.streaks.current_type === 'loss' ? 'neg' : 'pos'}">${k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + 'W' : Math.abs(k.streaks.current) + 'L')}</div></div>
@@ -3877,7 +3993,7 @@ index 0000000..5d9b9d1
 +  };
 +})(window);
 diff --git a/public/js/views/journal.js b/public/js/views/journal.js
-index 1d22619..905f5bd 100644
+index 1d22619..077510d 100644
 --- a/public/js/views/journal.js
 +++ b/public/js/views/journal.js
 @@ -6,7 +6,9 @@
@@ -3965,7 +4081,7 @@ index 1d22619..905f5bd 100644
        </div>
        <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
          <label class="field"><span>Market bias</span><select id="j-bias">${['', 'Bullish', 'Bearish', 'Neutral', 'Choppy'].map((v) => `<option ${e.market_bias === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-@@ -135,21 +172,44 @@
+@@ -135,21 +172,45 @@
        <label class="field"><span>Lessons</span><textarea id="j-lessons">${U.esc(e.lessons)}</textarea></label>
        <label class="field"><span>Tomorrow</span><textarea id="j-tomorrow">${U.esc(e.tomorrow)}</textarea></label>
        <label class="field"><span>Screen time (minutes)</span><input id="j-screen" type="number" value="${e.screen_time_minutes ?? ''}" /></label>
@@ -3979,6 +4095,7 @@ index 1d22619..905f5bd 100644
 +    if(Views.behaviorDays)body.prepend(Views.behaviorDays.card(day.behavior_days));
 +    if(Views.stateGate)body.prepend(Views.stateGate.card(day.state_gate));
 +    if(Views.intention)body.prepend(Views.intention.card(day.daily_intention));
++    if(Views.practice)body.prepend(Views.practice.card(day.practice));
 +    if(Views.identity)body.prepend(Views.identity.card(day.identity_context));
 +    if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
 +    if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
@@ -4155,6 +4272,240 @@ index 8ff1135..471c8c8 100644
    }
  
    function checklistRunner(s) {
+diff --git a/public/js/views/practice.js b/public/js/views/practice.js
+new file mode 100644
+index 0000000..8fba18c
+--- /dev/null
++++ b/public/js/views/practice.js
+@@ -0,0 +1,228 @@
++/* views/practice.js — M108 the regulation layer: a personal practice log.
++ * Server-measured RUNNING time only. The app does not verify that anyone meditated, does
++ * not play or ship ambient audio, and claims no calming, focus or performance effect. No
++ * score, streak pressure, goal or permission: a missing or short session is not a failure. */
++(function (global) {
++  'use strict';
++  const Views = global.Views = global.Views || {}, U = global.U;
++  let serial = 0, ticker = null;
++  /* Personal, not desk-scoped: the workspace user is the whole context, and no account id
++   * is ever sent — a practice record cannot be attributed to a desk. */
++  const ctx = () => ({ user: global.Store.user?.id, token: global.API.getToken() });
++  const same = (c) => c.user === global.Store.user?.id && c.token === global.API.getToken();
++  const mmss = (ms) => { const total = Math.max(0, Math.floor((ms || 0) / 1000)); return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0'); };
++  const GROUP_LABEL = { reboot: 'Reboot', rewire: 'Rewire', recovery: 'Recovery' };
++  const DEFAULT_KIT = [
++    { id: 'box_breathing', group: 'reboot', label: 'Box breathing', steps: ['Breathe in for a count of four.', 'Hold for four.', 'Breathe out for four.', 'Hold for four, then repeat at your own pace.'], note: 'The episode names box breathing as one way to reset before the session; the app times nothing here and verifies no bodily effect.' },
++    { id: 'sixty_second_reboot', group: 'reboot', label: '60-second reboot', steps: ['Stop looking at the chart for one minute.', 'Breathe out longer than you breathe in — four in, six out.', 'Then ask the four state questions before touching the mouse.'], note: 'The episode describes this as settling the parasympathetic system; this app cannot verify that and does not claim it. The four state questions live in the M106 state gate, not here.' },
++    { id: 'short_sit', group: 'reboot', label: 'Short sit (5–10 minutes)', steps: ['Start the timer at 5 or 10 minutes.', 'Sit still; the timer measures running time only.'], note: 'Recorded as a practice session like any other. Nothing about attention, calm or focus is measured.' },
++    { id: 'detach_after_loss', group: 'rewire', label: 'Detach from the last trade', steps: ['Name the fact: the last outcome does not change the odds of the next one.', 'Write nothing in the journal you do not mean.', 'Return to the process, not to the outcome.'], note: 'The episode’s randomness doctrine is his claim, quoted here as text; the app verifies nothing about odds or about how you feel.' },
++    { id: 'review_the_process', group: 'rewire', label: 'Rewire on the process', steps: ['Mark the trade against your own plan.', 'Keep the plan; change nothing mid-session.'], note: 'Curated app text. It points at surfaces the app already owns (journal, execution review) rather than judging your state.' },
++    { id: 'name_the_state', group: 'recovery', label: 'Name the state', steps: ['Answer in your own words what you are walking into the market as.', 'If you want that kept, record it in the emotion capture — not here.'], note: 'The episode says naming the state matters; the app does not read your words back to you as a diagnosis, and this text is not your emotion record.' },
++    { id: 'step_away', group: 'recovery', label: 'Step away', steps: ['Close the platform.', 'Do something that is not the market.', 'Come back only when you can answer the four state questions honestly.'], note: 'Curated app text with no timer and no measurement; the app cannot see what you do away from it.' },
++  ];
++  const PRESETS = [{ id: 'p5', seconds: 300, label: '5 minutes' }, { id: 'p10', seconds: 600, label: '10 minutes' }, { id: 'p15', seconds: 900, label: '15 minutes' }, { id: 'p30', seconds: 1800, label: '30 minutes' }, { id: 'p60', seconds: 3600, label: '60 minutes' }];
++  const AMBIENCE = ['none', 'rain', 'ocean', 'forest', 'fireplace', 'white_noise'];
++  const BELLS = [0, 60, 120, 300, 600];
++  const stateLabel = (t) => t?.state === 'running' ? 'running' : t?.state === 'paused' ? 'paused' : t?.state === 'idle' ? 'no session open' : 'unavailable';
++
++  /** A locally generated marker tone for the elapsed-time bells. No asset, no network. */
++  function chime() {
++    try {
++      const C = global.AudioContext || global.webkitAudioContext;
++      if (!C) return false;
++      const audio = new C(), osc = audio.createOscillator(), gain = audio.createGain();
++      osc.type = 'sine'; osc.frequency.value = 528; gain.gain.value = 0.05;
++      osc.connect(gain); gain.connect(audio.destination); osc.start();
++      osc.stop(audio.currentTime + 0.4);
++      setTimeout(() => { try { audio.close(); } catch { /* ignore */ } }, 700);
++      return true;
++    } catch { return false; }
++  }
++
++  const P = Views.practice = {
++    ctx, same, chime, mmss,
++    toolkit() { return P._toolkit || DEFAULT_KIT; },
++    presets() { return P._presets || PRESETS; },
++    /** Import feedback for Settings: restored practice archives are counted separately. */
++    feedback(out) { if (!out?.practice_warnings?.length) return null; return U.h('section', { class: 'sticky-note warn' }, U.h('strong', { text: 'Optional practice history' }), ...out.practice_warnings.map((text) => U.h('p', { class: 'tiny', text }))); },
++    kit() {
++      const node = U.h('div', { dataset: { practiceToolkit: 'true' } });
++      node.appendChild(U.h('h3', { text: 'Mental toolkit — curated practice text' }));
++      node.appendChild(U.h('p', { class: 'field-note', text: 'Grouped as the episode groups them. Every item is either a saved example or plain app text: no item measures you, and no physiological, emotional or performance effect is claimed. It is not your emotion record and not the M106 state gate.' }));
++      for (const group of ['reboot', 'rewire', 'recovery']) {
++        node.appendChild(U.h('h4', { text: GROUP_LABEL[group] }));
++        for (const item of P.toolkit().filter((i) => i.group === group)) {
++          const box = U.h('div', { class: 'card', dataset: { practiceItem: item.id } });
++          box.appendChild(U.h('strong', { text: item.label }));
++          for (const step of item.steps || []) box.appendChild(U.h('p', { class: 'small', text: '· ' + step }));
++          if (item.note) box.appendChild(U.h('p', { class: 'tiny muted', text: item.note }));
++          box.appendChild(U.h('p', { class: 'tiny muted', text: 'Source: ' + (item.source === 'episode_example' ? 'saved example from the episode' : 'curated app text') }));
++          node.appendChild(box);
++        }
++      }
++      return node;
++    },
++    /** The day card: what was recorded today, the open timer, and the two doors. */
++    card(v) {
++      const node = U.h('section', { class: 'card', style: 'margin-top:14px', dataset: { practiceCard: 'true' } }), context = ctx();
++      node.appendChild(U.h('h3', { text: 'Practice — reset between trades, not a gate' }));
++      node.appendChild(U.h('p', { class: 'field-note', text: 'Saved rule: the guardrails stop you mechanically, and the regulation layer is meant to deal with the state behind the override. This log records only server-measured running time. It does not verify a meditation, does not play or ship any ambient audio, and claims no calming, focus or performance effect.' }));
++      if (!v) { node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'Practice log unavailable — nothing read, nothing inferred, and nothing blocked.' })); return node; }
++      const t = v.timer || {};
++      node.appendChild(U.h('p', { class: 'small', dataset: { practiceToday: 'true' }, text: `Today (${v.day} UTC): ${v.sessions_count} recorded session(s) · ${v.recorded_seconds}s of measured running time · timer ${stateLabel(t)}${t.state === 'running' || t.state === 'paused' ? ' · ' + mmss(t.elapsed_ms) + ' elapsed' : ''}` }));
++      if (v.imported_count) node.appendChild(U.h('p', { class: 'tiny muted', text: `${v.imported_count} imported practice record(s) for this day: archives kept separate, never this account’s recorded session.` }));
++      node.appendChild(U.h('p', { class: 'tiny muted', text: 'Authority: none. No score, streak to protect, goal, target, readiness or permission. A day with no practice recorded is not a failure, and nothing here gates entries, signals, risk, caps, routine, grades or the core.' }));
++      node.appendChild(U.h('button', { class: 'btn sm primary', type: 'button', dataset: { practiceOpen: 'true' }, text: t.state === 'running' || t.state === 'paused' ? 'Return to the open session' : 'Open the practice timer', onclick: () => { if (!same(context)) return global.App.toast('Workspace/session changed; reopen your own practice log.', 'err'); return P.timer(); } }));
++      node.appendChild(U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { practiceProgress: 'true' }, text: 'Progress (records, not results)', onclick: () => { if (!same(context)) return; return P.progress(); } }));
++      const details = U.h('details'); details.appendChild(U.h('summary', { text: 'Mental toolkit — reboot / rewire / recovery' })); details.appendChild(P.kit());
++      node.appendChild(details);
++      if (v.state === 'recorded') {
++        const hist = U.h('details'); hist.appendChild(U.h('summary', { text: `Retained records for ${v.day}` }));
++        for (const s of v.sessions) hist.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(s, null, 2) }));
++        node.appendChild(hist);
++      }
++      return node;
++    },
++    async history(date) {
++      const context = ctx(), number = ++serial;
++      try {
++        const out = await global.API.get('/practice/history', { date: date || undefined });
++        if (!same(context) || number !== serial) return;
++        const body = U.h('div');
++        body.appendChild(U.h('h3', { text: 'Readonly practice history' }));
++        body.appendChild(U.h('p', { class: 'field-note', text: 'Original sessions, days and measured running times retained as recorded. Imported copies stay unverified archives and are never this account’s recorded session; nothing here is a score, a streak or a judgement.' }));
++        for (const record of out.records || []) body.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(record, null, 2) }));
++        return global.App.modal({ title: 'Readonly practice history', body, wide: true, actions: [{ label: 'Close readonly history', ghost: true }] });
++      } catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); }
++    },
++    async progress() {
++      const context = ctx(), number = ++serial;
++      const today = new Date().toISOString().slice(0, 10), from = new Date(Date.now() - 27 * 86400000).toISOString().slice(0, 10);
++      try {
++        const out = await global.API.get('/practice/progress', { from, to: today });
++        if (!same(context) || number !== serial) return;
++        const body = U.h('div', { dataset: { practiceProgressBody: 'true' } });
++        body.appendChild(U.h('p', { class: 'field-note', text: `Period ${out.from} → ${out.to} (UTC). These are counts of RECORDS, not results: recorded sessions and their server-measured running time. Not a streak to protect, not a goal, not adherence, and not evidence of calm, focus, discipline or any effect.` }));
++        body.appendChild(U.h('p', { class: 'small', dataset: { practiceProgressLine: 'true' }, text: `${out.sessions_count} recorded session(s) · ${out.recorded_seconds}s measured running time · ${out.days_with_recorded_session} day(s) with a recorded session · ${out.consecutive_days_with_a_recorded_session_ending_on_to} consecutive day(s) ending ${out.to}` }));
++        if (out.imported_count) body.appendChild(U.h('p', { class: 'tiny muted', text: `${out.imported_count} imported record(s) in this period: counted separately, never merged into your own practice.` }));
++        for (const w of out.warnings || []) body.appendChild(U.h('p', { class: 'tiny muted', text: '· ' + w }));
++        body.appendChild(U.h('p', { class: 'tiny muted', text: 'Target: none. Score: none. Authority: none.' }));
++        return global.App.modal({ title: 'Practice progress — records, not results', body, wide: true, actions: [{ label: 'Close — no target, no score', ghost: true }] });
++      } catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); }
++    },
++    /** The timer: start / pause / resume / complete / cancel, all server-measured. */
++    async timer() {
++      const context = ctx(), number = ++serial; let view;
++      try { view = await global.API.get('/practice'); }
++      catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); return; }
++      if (!same(context) || number !== serial) return;
++      P._toolkit = view.toolkit || P._toolkit; P._presets = view.presets || P._presets;
++      /* Nothing is preselected: every open starts with no length chosen. */
++      P._chosen = null; P._custom = null;
++      const body = U.h('div', { dataset: { practiceTimerBody: 'true' } });
++      let alive = true, busy = false, stale = false, chimed = 0, shown = view.timer?.elapsed_ms || 0;
++      let bell = view.timer?.bell_interval_seconds || 0;
++      const initialState = view.timer?.state || 'unavailable';
++      const valid = () => alive && same(context) && number === serial && body.isConnected;
++      const clearTick = () => { if (ticker) { clearInterval(ticker); ticker = null; } };
++      const presetOf = (id) => P.presets().find((p) => p.id === id) || null;
++      function draw() {
++        body.replaceChildren();
++        body.appendChild(U.h('p', { class: 'field-note', text: 'Server-measured RUNNING time only: a paused gap does not count, and nothing here verifies that a meditation happened or that anything changed. Bells are elapsed-time markers; ambience is your own declaration and is never played by this app.' }));
++        const t = view.timer || {};
++        body.appendChild(U.h('p', { class: 'small', dataset: { practiceState: 'true' }, text: `Timer: ${stateLabel(t)} · ${mmss(shown)} elapsed${t.state === 'running' || t.state === 'paused' ? ' (server-' + t.elapsed_source + ')' : ''}${t.target_seconds ? ' · chosen length ' + t.target_seconds + 's' : ''}${t.bell_interval_seconds ? ' · marker every ' + t.bell_interval_seconds + 's' : ''}` }));
++        const draft = P._draft = P._draft || { intention: '', bell: null, ambience: 'none' };
++        if (t.state === 'idle') {
++          const picks = U.h('div', { class: 'row gap-8', dataset: { practicePicks: 'true' } });
++          picks.appendChild(U.h('span', { class: 'tiny', text: 'Length:' }));
++          for (const p of P.presets()) picks.appendChild(U.h('button', { class: 'btn sm', type: 'button', dataset: { practicePreset: p.id }, text: p.label, onclick: () => { P._chosen = p.id; P._custom = null; draw(); } }));
++          body.appendChild(picks);
++          const custom = U.h('details', { open: !!P._custom, dataset: { practiceCustomPanel: 'true' } });
++          custom.appendChild(U.h('summary', { text: 'Custom length (h / m / s)' }));
++          const hours = U.h('input', { type: 'number', min: '0', max: '2', value: P._custom ? String(P._custom.hours) : '', dataset: { practiceHours: 'true' }, placeholder: 'h' });
++          const minutes = U.h('input', { type: 'number', min: '0', max: '120', value: P._custom ? String(P._custom.minutes) : '', dataset: { practiceMinutes: 'true' }, placeholder: 'm' });
++          const seconds = U.h('input', { type: 'number', min: '0', max: '59', value: P._custom ? String(P._custom.seconds) : '', dataset: { practiceSeconds: 'true' }, placeholder: 's' });
++          const read = () => { const h = parseInt(hours.value || '0', 10), m = parseInt(minutes.value || '0', 10), s = parseInt(seconds.value || '0', 10); if (![h, m, s].every((v) => Number.isSafeInteger(v) && v >= 0)) return null; P._chosen = null; P._custom = { hours: h, minutes: m, seconds: s }; label.textContent = `Chosen: ${h}h ${m}m ${s}s (your own length)`; };
++          for (const el of [hours, minutes, seconds]) el.addEventListener('input', read);
++          custom.appendChild(U.h('div', { class: 'row gap-8' }, hours, minutes, seconds, U.h('span', { class: 'tiny', text: '1 minute to 2 hours' })));
++          body.appendChild(custom);
++          const chosen = P._custom ? `${P._custom.hours}h ${P._custom.minutes}m ${P._custom.seconds}s (your own length)` : (presetOf(P._chosen) ? presetOf(P._chosen).label + ' (saved preset)' : null);
++          const label = body.appendChild(U.h('p', { class: 'tiny muted', dataset: { practicePick: 'true' }, text: chosen ? 'Chosen: ' + chosen : 'Chosen: none yet — pick a saved preset or your own h/m/s. Nothing is preselected.' }));
++          const bellSel = U.h('select', { dataset: { practiceBell: 'true' } }, ...BELLS.map((b) => U.h('option', { value: String(b), text: b ? 'marker every ' + b + 's' : 'no bell marker', ...(b === (draft.bell ?? bell) ? { selected: 'selected' } : {}) })));
++          bellSel.addEventListener('change', () => { bell = Number(bellSel.value); draft.bell = bell; });
++          const ambSel = U.h('select', { dataset: { practiceAmbience: 'true' } }, ...AMBIENCE.map((a) => U.h('option', { value: a, text: a.replace('_', ' '), ...(a === draft.ambience ? { selected: 'selected' } : {}) })));
++          ambSel.addEventListener('change', () => { draft.ambience = ambSel.value; });
++          body.appendChild(U.h('label', { class: 'field' }, U.h('span', { text: 'Bell markers (elapsed time only)' }), bellSel));
++          body.appendChild(U.h('label', { class: 'field' }, U.h('span', { text: 'Ambience (recorded as your declaration; not played here)' }), ambSel));
++          body.appendChild(U.h('p', { class: 'tiny muted', text: 'Only the saved presets and your own h/m/s are offered; nothing is preselected and no length is carried over from an earlier session.' }));
++          const intent = U.h('input', { type: 'text', maxlength: view.char_max || 120, dataset: { practiceIntention: 'true' }, value: draft.intention, placeholder: 'Optional: one behaviour for this session (not your trading-day intention)' });
++          intent.addEventListener('input', () => { draft.intention = intent.value; });
++          body.appendChild(U.h('label', { class: 'field' }, U.h('span', { text: 'Practice intention (optional, unverified, never your M107 day intention)' }), intent));
++          body.appendChild(U.h('p', { class: 'tiny muted', text: 'Free text is kept exactly as written and labelled unverified. An amount and an outcome in the same sentence is refused here for the same reason M107 refuses it as a daily rule.' }));
++          const start = U.h('button', { class: 'btn sm primary', type: 'button', dataset: { practiceStart: 'true' }, text: 'Start', onclick: () => {
++            const chosenNow = P._custom || (P._chosen ? { preset: P._chosen } : null);
++            if (!chosenNow) return global.App.toast('Pick a saved preset or your own h/m/s first — nothing is preselected.', 'err');
++            return act('start', { ...chosenNow, bell_interval_seconds: bell, ambience: ambSel.value, intention: intent.value });
++          } });
++          body.appendChild(U.h('div', { class: 'row gap-8' }, start, U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { practiceReload: 'true' }, text: 'Reload the server state', onclick: reload })));
++        } else {
++          if (t.intention) body.appendChild(U.h('p', { class: 'tiny', dataset: { practiceIntentionShown: 'true' }, text: 'Intention: “' + t.intention + '” (' + (t.framing || '') + ', unverified)' }));
++          const note = U.h('textarea', { dataset: { practiceNote: 'true' }, rows: '2', placeholder: 'Optional post-session note (kept as yours; not an emotion record)' });
++          body.appendChild(U.h('label', { class: 'field' }, U.h('span', { text: 'Post-session note (optional, saved when you complete)' }), note));
++          const actions = U.h('div', { class: 'row gap-8' });
++          if (t.state === 'running') actions.appendChild(U.h('button', { class: 'btn sm primary', type: 'button', dataset: { practicePause: 'true' }, text: 'Pause', onclick: () => act('pause') }));
++          if (t.state === 'paused') actions.appendChild(U.h('button', { class: 'btn sm primary', type: 'button', dataset: { practiceResume: 'true' }, text: 'Resume', onclick: () => act('resume') }));
++          actions.appendChild(U.h('button', { class: 'btn sm', type: 'button', dataset: { practiceComplete: 'true' }, text: 'Complete and record', onclick: () => act('complete', { note: note.value }) }));
++          actions.appendChild(U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { practiceCancel: 'true' }, text: 'Cancel (writes nothing)', onclick: () => act('cancel') }));
++          actions.appendChild(U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { practiceReload: 'true' }, text: 'Reload the server state', onclick: reload }));
++          body.appendChild(actions);
++          if (!t.reached_target) body.appendChild(U.h('p', { class: 'tiny muted', text: 'Shorter than the chosen length. Completing early is recorded as it happened — not a failure, and no judgement about it is stored.' }));
++        }
++        const nextMark = t.state !== 'idle' && bell > 0 ? Math.floor((shown / 1000) / bell) : null;
++        if (nextMark !== null && (chimed || 0) < nextMark) body.appendChild(U.h('p', { class: 'tiny muted', dataset: { practiceBellDue: 'true' }, text: `Bell marker ${nextMark} due at ${mmss(nextMark * bell * 1000)}. The tone is generated in this browser (no asset, no network) and the app does not verify that you heard it.` }));
++        body.appendChild(U.h('p', { class: 'tiny muted', text: 'Client display only: the recorded number is the server’s measured running time, never this ticker.' }));
++        const kit = U.h('details'); kit.appendChild(U.h('summary', { text: 'Mental toolkit — reboot / rewire / recovery' })); kit.appendChild(P.kit());
++        body.appendChild(kit);
++        const hist = U.h('details'); hist.appendChild(U.h('summary', { text: `Retained records for ${view.day}` }));
++        for (const s of view.sessions || []) hist.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(s, null, 2) }));
++        body.appendChild(hist);
++      }
++      async function act(action, extra = {}) {
++        if (!valid() || busy) return global.App.toast('Workspace/session/editor changed; reopen.', 'err');
++        busy = true; disable();
++        try {
++          const out = await global.API.post('/practice/timer', { action, revision: view.revision, ...extra });
++          if (!valid()) return;
++          view = out; stale = false; shown = out.timer?.elapsed_ms || 0; chimed = 0; bell = out.timer?.bell_interval_seconds || bell;
++          if (action === 'complete') global.App.toast('Session recorded with the server-measured running time. No score, no target, no permission changed.', 'ok');
++          if (action === 'cancel') global.App.toast('Timer cancelled. Nothing was written and no elapsed time is claimed.', 'ok');
++          P._chosen = null; P._custom = null; P._draft = { intention: '', bell: null, ambience: 'none' };
++          global.Store.invalidate(); draw();
++        } catch (e) { if (valid()) { stale = e.status === 409; global.App.toast(e.message, 'err'); } }
++        finally { busy = false; if (valid()) disable(); }
++      }
++      async function reload() {
++        if (!valid() || busy) return; busy = true; disable();
++        try { const out = await global.API.get('/practice'); if (!valid()) return; view = out; shown = out.timer?.elapsed_ms || 0; chimed = 0; bell = out.timer?.bell_interval_seconds || 0; stale = false; P._chosen = null; P._custom = null; draw(); }
++        catch (e) { if (valid()) global.App.toast(e.message, 'err'); }
++        finally { busy = false; if (valid()) disable(); }
++      }
++      function disable() { for (const b of body.querySelectorAll('button')) b.disabled = busy || stale; }
++      draw();
++      clearTick();
++      if (initialState === 'running') {
++        ticker = setInterval(() => {
++          if (!valid()) return clearTick();
++          if (view.timer?.state !== 'running') return;
++          shown += 1000;
++          const due = bell > 0 ? Math.floor((shown / 1000) / bell) : 0;
++          if (due > chimed) { chimed += 1; P.chime(); }
++        }, 1000);
++      }
++      const modal = global.App.modal({ title: 'Practice timer — running time only', body, wide: true, onClose: () => { alive = false; clearTick(); }, actions: [{ label: 'Close — no permission inferred', ghost: true }] });
++      disable();
++      return modal;
++    },
++  };
++})(window);
 diff --git a/public/js/views/process-outcomes.js b/public/js/views/process-outcomes.js
 new file mode 100644
 index 0000000..426719f
@@ -4416,7 +4767,7 @@ index 0000000..061ffe4
 +  };
 +})(window);
 diff --git a/public/js/views/settings.js b/public/js/views/settings.js
-index b72afdb..b0ea72a 100644
+index b72afdb..0835e30 100644
 --- a/public/js/views/settings.js
 +++ b/public/js/views/settings.js
 @@ -31,6 +31,8 @@
@@ -4455,7 +4806,7 @@ index b72afdb..b0ea72a 100644
 -              Store.invalidate(); global.App.toast('Import complete', 'ok');
 +              if(!currentMediaPane())return;
 +              out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
-+              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)out.appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)out.appendChild(gateHistory);const intentionHistory=Views.intention?.feedback(d);if(intentionHistory)out.appendChild(intentionHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)out.appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)out.appendChild(gateHistory);const intentionHistory=Views.intention?.feedback(d);if(intentionHistory)out.appendChild(intentionHistory);const practiceArchive=Views.practice?.feedback(d);if(practiceArchive)out.appendChild(practiceArchive);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
 +              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length||d.state_gate_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
              } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
            });
@@ -4486,7 +4837,7 @@ index b72afdb..b0ea72a 100644
 -              } catch (e) { U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
 +                if(!currentMediaPane()||attempt!==jsonRead)return;
 +                U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
-+                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)U.$('#ex-out',w).appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)U.$('#ex-out',w).appendChild(gateHistory);const intentionHistory=Views.intention?.feedback(d);if(intentionHistory)U.$('#ex-out',w).appendChild(intentionHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
++                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)U.$('#ex-out',w).appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)U.$('#ex-out',w).appendChild(gateHistory);const intentionHistory=Views.intention?.feedback(d);if(intentionHistory)U.$('#ex-out',w).appendChild(intentionHistory);const practiceArchive=Views.practice?.feedback(d);if(practiceArchive)U.$('#ex-out',w).appendChild(practiceArchive);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
 +                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length||d.state_gate_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length&&!d.review_warnings?.length&&!d.opportunity_warnings?.length&&!d.rule_change_warnings?.length&&!d.identity_warnings?.length&&!d.state_gate_warnings?.length)global.App.refresh();
 +              } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
              };
@@ -12164,7 +12515,7 @@ index 0000000..5d2e9d9
 +}
 +module.exports={key,labels,invalid,info,optional,owned,recordOn,attachOn,read,change,vocabulary,portableVocabulary,vocabularyOn,aggregate};
 diff --git a/src/db.js b/src/db.js
-index 7e2fd68..4d4448c 100644
+index 7e2fd68..f011903 100644
 --- a/src/db.js
 +++ b/src/db.js
 @@ -97,12 +97,26 @@ async function tx(fn) {
@@ -12296,7 +12647,7 @@ index 7e2fd68..4d4448c 100644
      entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf  (how this plan was anchored)
      mtf_tf TEXT,              -- the lower timeframe that confirmed an mtf plan
      risk_atr REAL,            -- stop distance in ATR at plan time
-@@ -148,6 +240,194 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+@@ -148,6 +240,238 @@ CREATE TABLE IF NOT EXISTS bot_signals (
      created_at TEXT NOT NULL DEFAULT (datetime('now')),
      resolved_at TEXT
    );
@@ -12488,10 +12839,54 @@ index 7e2fd68..4d4448c 100644
 + UNIQUE(user_id,account_key,day,version)
 +);
 +CREATE INDEX IF NOT EXISTS idx_daily_intentions_owner ON daily_intentions(user_id,account_key,day,id);
++-- M108 personal practice log (the regulation layer). Server-measured RUNNING time only:
++-- nothing here records or verifies a mental state, and no audio is shipped or played.
++CREATE TABLE IF NOT EXISTS practice_sessions (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ day TEXT NOT NULL DEFAULT '',
++ version INTEGER NOT NULL,
++ preset TEXT NOT NULL CHECK(preset IN ('p5','p10','p15','p30','p60','custom')),
++ target_seconds INTEGER NOT NULL CHECK(target_seconds BETWEEN 60 AND 7200),
++ elapsed_ms INTEGER NOT NULL CHECK(elapsed_ms>=0),
++ pause_count INTEGER NOT NULL DEFAULT 0 CHECK(pause_count>=0),
++ bell_interval_seconds INTEGER NOT NULL DEFAULT 0 CHECK(bell_interval_seconds IN (0,60,120,300,600)),
++ bell_marks_json TEXT,
++ ambience TEXT NOT NULL DEFAULT 'none' CHECK(ambience IN ('none','rain','ocean','forest','fireplace','white_noise')),
++ intention TEXT,
++ intention_framing TEXT CHECK(intention_framing IS NULL OR intention_framing IN ('unverified_free_text','outcome_language')),
++ intention_cues_json TEXT,
++ note TEXT,
++ source TEXT NOT NULL,
++ recorded_at TEXT NOT NULL,
++ historical_json TEXT,
++ schema_version TEXT NOT NULL,
++ UNIQUE(user_id,day,version)
++);
++CREATE INDEX IF NOT EXISTS idx_practice_sessions_owner ON practice_sessions(user_id,day,id);
++-- M108 the one mutable row per trader: the open timer. Completing it writes the immutable
++-- receipt above and resets this row to idle, and settings and text are never carried over.
++CREATE TABLE IF NOT EXISTS practice_timers (
++ user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
++ state TEXT NOT NULL CHECK(state IN ('idle','running','paused')),
++ preset TEXT CHECK(preset IS NULL OR preset IN ('p5','p10','p15','p30','p60','custom')),
++ target_seconds INTEGER CHECK(target_seconds IS NULL OR target_seconds BETWEEN 60 AND 7200),
++ bell_interval_seconds INTEGER CHECK(bell_interval_seconds IS NULL OR bell_interval_seconds IN (0,60,120,300,600)),
++ ambience TEXT CHECK(ambience IS NULL OR ambience IN ('none','rain','ocean','forest','fireplace','white_noise')),
++ intention TEXT,
++ intention_framing TEXT,
++ intention_cues_json TEXT,
++ accumulated_ms INTEGER NOT NULL DEFAULT 0 CHECK(accumulated_ms>=0),
++ pause_count INTEGER NOT NULL DEFAULT 0 CHECK(pause_count>=0),
++ started_at TEXT,
++ updated_at TEXT NOT NULL,
++ version INTEGER NOT NULL DEFAULT 0,
++ schema_version TEXT NOT NULL
++);
  CREATE TABLE IF NOT EXISTS goals (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -173,6 +453,102 @@ CREATE TABLE IF NOT EXISTS instruments (
+@@ -173,6 +497,102 @@ CREATE TABLE IF NOT EXISTS instruments (
    unit TEXT DEFAULT 'units',
    UNIQUE(user_id, symbol)
  );
@@ -12594,7 +12989,7 @@ index 7e2fd68..4d4448c 100644
  CREATE TABLE IF NOT EXISTS journal_entries (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -186,7 +562,17 @@ CREATE TABLE IF NOT EXISTS journal_entries (
+@@ -186,7 +606,17 @@ CREATE TABLE IF NOT EXISTS journal_entries (
    review TEXT DEFAULT '',
    lessons TEXT DEFAULT '',
    tomorrow TEXT DEFAULT '',
@@ -12612,7 +13007,7 @@ index 7e2fd68..4d4448c 100644
    created_at TEXT NOT NULL DEFAULT (datetime('now')),
    UNIQUE(user_id, entry_date)
  );
-@@ -232,6 +618,33 @@ CREATE TABLE IF NOT EXISTS strategies (
+@@ -232,6 +662,33 @@ CREATE TABLE IF NOT EXISTS strategies (
    active INTEGER DEFAULT 1,
    created_at TEXT NOT NULL DEFAULT (datetime('now'))
  );
@@ -12646,7 +13041,7 @@ index 7e2fd68..4d4448c 100644
  CREATE TABLE IF NOT EXISTS trades (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -256,18 +669,28 @@ CREATE TABLE IF NOT EXISTS trades (
+@@ -256,18 +713,28 @@ CREATE TABLE IF NOT EXISTS trades (
    mae_r REAL,                                 -- worst excursion in R (negative number)
    mfe_r REAL,                                 -- best excursion in R (positive number)
    stop_moved INTEGER DEFAULT 0,
@@ -12676,7 +13071,7 @@ index 7e2fd68..4d4448c 100644
    tags TEXT DEFAULT '',                       -- comma separated
    thesis TEXT DEFAULT '',
    lesson TEXT DEFAULT '',
-@@ -369,11 +792,215 @@ async function migrate() {
+@@ -369,11 +836,219 @@ async function migrate() {
      if (!(cols || []).some((c) => c.name === col)) await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
    };
    await add('trades', 'legs', 'TEXT');
@@ -12745,6 +13140,10 @@ index 7e2fd68..4d4448c 100644
 +  await db.prepare(`CREATE TRIGGER IF NOT EXISTS state_gate_answers_immutable BEFORE UPDATE ON state_gate_answers WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.version IS OLD.version AND NEW.answers_json IS OLD.answers_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded state-gate answers are immutable'); END`).run();
 +
 +  await db.prepare(`CREATE TRIGGER IF NOT EXISTS daily_intentions_immutable BEFORE UPDATE ON daily_intentions WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.day IS OLD.day AND NEW.version IS OLD.version AND NEW.template_id IS OLD.template_id AND NEW.text IS OLD.text AND NEW.framing IS OLD.framing AND NEW.cues_json IS OLD.cues_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded daily intentions are immutable'); END`).run();
++
++  // M108 a completed practice session is a receipt: it is never edited, reinterpreted or
++  // re-dated. The open timer row is the only mutable row in this layer.
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS practice_sessions_immutable BEFORE UPDATE ON practice_sessions BEGIN SELECT RAISE(ABORT,'Recorded practice sessions are immutable'); END`).run();
 +
 +  /* M102 backfill. Every strategy that has no version history gets an immutable v1
 +   * snapshot of the rule set it currently holds, and every trade already linked to it is
@@ -12892,7 +13291,7 @@ index 7e2fd68..4d4448c 100644
  /* ------------------------------------------------------------------- meta */
  
  async function getMeta(k) {
-@@ -553,10 +1180,25 @@ async function userFromWebhookToken(token) {
+@@ -553,10 +1228,25 @@ async function userFromWebhookToken(token) {
  
  /** Wipe every table for a workspace (used by the "fresh workspace" flow). */
  async function clearWorkspace(userId) {
@@ -12922,7 +13321,7 @@ index 7e2fd68..4d4448c 100644
  }
  
  module.exports = {
-@@ -564,7 +1206,9 @@ module.exports = {
+@@ -564,7 +1254,9 @@ module.exports = {
    client, db, prepare, exec, batch, tx, ready,
    DB_URL, DB_PATH, REMOTE, DATA_DIR, SCHEMA_VERSION,
    getMeta, setMeta, seedGlobalInstruments, createUser, hashPassword, verifyPassword,
@@ -13916,6 +14315,353 @@ index 0000000..e577e96
 +async function exportOwned(userId){try{const {db}=require('./db'),rows=await db.prepare('SELECT * FROM period_reviews WHERE user_id=? ORDER BY id').all(userId),records=rows.map(publicRow).filter(r=>r.status!=='unavailable');return {version:1,records,unavailable_records:rows.length-records.length};}catch{return {version:1,records:[],unavailable:true};}}
 +async function importOn(store,userId,parsed,map={},fallback=null){for(const r of parsed.records){const accountId=map[r.account_id]||fallback;if(accountId===null)throw invalid('No owned destination for periodic history.');await owned(store,userId,accountId);const version=(await store.prepare('SELECT MAX(version) v FROM period_reviews WHERE user_id=? AND account_key=? AND period_kind=? AND period_start=?').get(userId,accountId,r.kind,r.start)).v||0;await store.prepare('INSERT INTO period_reviews(user_id,account_id,account_key,period_kind,period_start,period_end,version,template_version,status,answers_json,focus,followup_json,metrics_json,context_hash,source,recorded_at,historical_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(userId,accountId,accountId,r.kind,r.start,r.end,version+1,VERSION,'imported',JSON.stringify(r.answers),r.focus,null,JSON.stringify(r.metrics),hash(['imported_unverified',r.metrics]),'imported_unverified',new Date().toISOString(),JSON.stringify(r.historical));}}
 +module.exports={VERSION,PERIOD_BASIS,templates,invalid,dateKey,period,canonical,input,hash,financial,owned,publicRow,snapshotOn,read,save,list,byId,portable,exportOwned,importOn};
+diff --git a/src/practice.js b/src/practice.js
+new file mode 100644
+index 0000000..18aed16
+--- /dev/null
++++ b/src/practice.js
+@@ -0,0 +1,341 @@
++'use strict';
++/**
++ * M108 — the regulation layer (the "Sanctuary" half), built as a personal practice log.
++ *
++ * Saved Ep28: the guardrails stop you mechanically, and "sanctuary fixes the emotional
++ * cause" — a meditation timer with 5/10/15/30/60-minute presets and a custom length,
++ * interval bells, ambient sound, a post-session note, a progress view and a mental toolkit
++ * grouped reboot / rewire / recovery. The daily intention half of that list is already
++ * owned by M107 and is deliberately NOT duplicated here.
++ *
++ * What this module is allowed to claim is deliberately narrow, because a meditation timer
++ * is the easiest place in this codebase to write a lie:
++ *   - The only thing proven is ELAPSED SERVER RUNNING TIME. A paused gap does not count.
++ *     Nothing here verifies that a person meditated, that a session calmed anyone, or that
++ *     any physiological, emotional or performance effect occurred. No such effect is
++ *     claimed anywhere in the payload.
++ *   - The four saved presets are the episode's own list; "custom" is the trader's own
++ *     h/m/s choice. Ambient sound is recorded as the trader's own DECLARATION and is never
++ *     played by this app (no audio assets, no streaming provider) — `played_by_this_app`
++ *     stays false in every response. Bells are elapsed-time MARKERS, not proof of sound.
++ *   - An optional one-line practice intention reuses M107's bounded classifier and the same
++ *     money/outcome-target refusal; it is free text kept as written and labelled
++ *     unverified. It is never the day's trading intention and no trading surface reads it.
++ *   - There is NO authority: no score, percentage, streak pressure, goal, target,
++ *     readiness, gate or permission over entries/signals/risk/cap/routine/core/grades/
++ *     history. A missing or short session is not a failure, and a recorded one is never
++ *     evidence that anything was achieved.
++ */
++const crypto = require('crypto');
++const Intention = require('./intention');
++const VERSION = 'practice-v1';
++const CHAR_MAX = Intention.CHAR_MAX;
++/** The episode's own preset list, kept in seconds so nothing is inferred at read time. */
++const PRESETS = [
++  { id: 'p5', seconds: 300, label: '5 minutes' },
++  { id: 'p10', seconds: 600, label: '10 minutes' },
++  { id: 'p15', seconds: 900, label: '15 minutes' },
++  { id: 'p30', seconds: 1800, label: '30 minutes' },
++  { id: 'p60', seconds: 3600, label: '60 minutes' },
++];
++const CUSTOM_MIN_SECONDS = 60, CUSTOM_MAX_SECONDS = 7200;
++/** Recorded as the trader's own declaration; this app ships and plays no ambient audio. */
++const AMBIENCE = ['none', 'rain', 'ocean', 'forest', 'fireplace', 'white_noise'];
++/** Elapsed-time markers only. 0 means no marker. */
++const BELL_INTERVALS = [0, 60, 120, 300, 600];
++const MAX_SESSION_MS = 86400000;
++/** Curated practice text, grouped as the episode groups it. Attribution is explicit and
++ * every item that the episode describes with an effect the app cannot verify says so. */
++const TOOLKIT = [
++  { id: 'box_breathing', group: 'reboot', label: 'Box breathing', source: 'episode_example', steps: ['Breathe in for a count of four.', 'Hold for four.', 'Breathe out for four.', 'Hold for four, then repeat at your own pace.'], note: 'The episode names box breathing as one way to reset before the session; the app times nothing here and verifies no bodily effect.' },
++  { id: 'sixty_second_reboot', group: 'reboot', label: '60-second reboot', source: 'episode_example', steps: ['Stop looking at the chart for one minute.', 'Breathe out longer than you breathe in — four in, six out.', 'Then ask the four state questions before touching the mouse.'], note: 'The episode describes this as settling the parasympathetic system; this app cannot verify that and does not claim it. The four state questions live in the M106 state gate, not here.' },
++  { id: 'short_sit', group: 'reboot', label: 'Short sit (5–10 minutes)', source: 'episode_example', steps: ['Start the timer at 5 or 10 minutes.', 'Sit still; the timer measures running time only.'], note: 'Recorded as a practice session like any other. Nothing about attention, calm or focus is measured.' },
++  { id: 'detach_after_loss', group: 'rewire', label: 'Detach from the last trade', source: 'episode_example', steps: ['Name the fact: the last outcome does not change the odds of the next one.', 'Write nothing in the journal you do not mean.', 'Return to the process, not to the outcome.'], note: 'The episode\'s randomness doctrine is his claim, quoted here as text; the app verifies nothing about odds or about how you feel.' },
++  { id: 'review_the_process', group: 'rewire', label: 'Rewire on the process', source: 'curated_app_text', steps: ['Mark the trade against your own plan.', 'Keep the plan; change nothing mid-session.'], note: 'Curated app text. It points at surfaces the app already owns (journal, execution review) rather than judging your state.' },
++  { id: 'name_the_state', group: 'recovery', label: 'Name the state', source: 'episode_example', steps: ['Answer in your own words what you are walking into the market as.', 'If you want that kept, record it in the emotion capture — not here.'], note: 'The episode says naming the state matters; the app does not read your words back to you as a diagnosis, and this text is not your emotion record.' },
++  { id: 'step_away', group: 'recovery', label: 'Step away', source: 'curated_app_text', steps: ['Close the platform.', 'Do something that is not the market.', 'Come back only when you can answer the four state questions honestly.'], note: 'Curated app text with no timer and no measurement; the app cannot see what you do away from it.' },
++];
++const BASIS = 'A personal practice log: server-measured RUNNING time only. Nothing here verifies that a meditation happened, that anyone calmed down, or that any physiological, emotional or performance effect occurred — and no such effect is claimed. Bells are elapsed-time markers, ambience is your own declaration (this app plays and ships no ambient audio), and the optional one-line intention is unverified free text that no trading surface reads. No score, percentage, streak pressure, goal, target, readiness, gate or permission over entries/signals/risk/cap/routine/core/grades/history.';
++
++function invalid(message, status = 400) { return Object.assign(new Error(message), { code: 'practice_invalid', status }); }
++const id = (n) => Number.isSafeInteger(n) && n > 0;
++const hash = (v) => crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
++const Clock = (s, o) => require('./process-outcomes').clock(s, o);
++const iso = (ms) => new Date(ms).toISOString();
++const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
++/** The one day policy the app already owns (M107): a malformed or not-yet UTC day is
++ * refused rather than rendered as a day with nothing recorded. */
++function day(date, { nowMs = Date.now() } = {}) {
++  try { return Intention.dayKey(date, { nowMs }); }
++  catch (e) { throw invalid(e.message || 'Use a valid past-or-today UTC calendar date (YYYY-MM-DD).'); }
++}
++const presetById = (v) => PRESETS.find((p) => p.id === v) || null;
++const whole = (v) => Number.isSafeInteger(v) && v >= 0;
++
++/** A chosen length is either one saved preset or the trader's own h/m/s. */
++function length(body) {
++  const hasPreset = Object.hasOwn(body, 'preset') && body.preset !== null;
++  const customKeys = ['hours', 'minutes', 'seconds'].filter((k) => Object.hasOwn(body, k) && body[k] !== null);
++  if (hasPreset && customKeys.length) throw invalid('Choose ONE saved preset or your own h/m/s length — not both.');
++  if (hasPreset) {
++    const p = presetById(body.preset);
++    if (!p) throw invalid('Unknown practice preset.');
++    return { preset: p.id, target_seconds: p.seconds };
++  }
++  if (customKeys.length !== 3) throw invalid('Choose a saved preset or give hours, minutes and seconds for a custom length.');
++  const h = body.hours, m = body.minutes, s = body.seconds;
++  if (!whole(h) || !whole(m) || !whole(s) || m > 59 || s > 59 || h > 2) throw invalid('A custom length is whole hours (0–2), minutes and seconds (0–59).');
++  const seconds = h * 3600 + m * 60 + s;
++  if (seconds < CUSTOM_MIN_SECONDS || seconds > CUSTOM_MAX_SECONDS) throw invalid(`A custom length is between ${CUSTOM_MIN_SECONDS} and ${CUSTOM_MAX_SECONDS} seconds (1 minute to 2 hours).`);
++  return { preset: 'custom', target_seconds: seconds };
++}
++const bellInterval = (v) => { if (!BELL_INTERVALS.includes(v)) throw invalid('Choose a bell interval from the listed elapsed-time markers (0 means none).'); return v; };
++const ambienceValue = (v) => { if (typeof v !== 'string' || !AMBIENCE.includes(v)) throw invalid('Choose an ambience from the listed options, or none.'); return v; };
++/** Optional one-line practice intention: M107's contract and classifier, practice labels.
++ * The episode's own anti-example (an asserted amount plus outcome in one sentence) is
++ * refused here for the same reason it is refused there. */
++function intention(value) {
++  if (value === null || value === undefined) return { intention: null, framing: null, cues: null };
++  /* Leaving the field empty is the normal case for an optional line, not an error. */
++  if (typeof value === 'string' && !value.trim()) return { intention: null, framing: null, cues: null };
++  try {
++    const text = Intention.text(value);
++    const c = Intention.classify(text);
++    const framing = c.framing === 'process_template' ? 'unverified_free_text' : c.framing;
++    return { intention: text, framing, cues: c.cues };
++  } catch (e) {
++    if (e.code === 'intention_outcome_target') throw Object.assign(invalid('That is an outcome goal: it names an amount and an outcome in the same sentence, and a practice intention is not a money target either. Keep it to one behaviour within your control, or leave it empty.', 400), { code: 'practice_outcome_target' });
++    throw invalid(e.message || `Write one single-line practice intention up to ${CHAR_MAX} characters.`);
++  }
++}
++function note(value) {
++  if (value === null || value === undefined) return null;
++  if (typeof value !== 'string' || value.length > 2000 || /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(value)) throw invalid('A post-session note is free text up to 2000 characters.');
++  return value.normalize('NFC');
++}
++/** Elapsed-time markers strictly inside the measured running time. */
++const bellMarks = (elapsedMs, intervalSeconds) => { const out = []; if (!intervalSeconds || !Number.isSafeInteger(elapsedMs) || elapsedMs <= 0) return out; for (let t = intervalSeconds; t * 1000 <= elapsedMs; t += intervalSeconds) out.push(t); return out; };
++const runningElapsed = (row, nowMs) => {
++  if (!row || typeof row !== 'object') throw invalid('Stored practice timer is unavailable.', 503);
++  if (!['idle', 'running', 'paused'].includes(row.state) || !Number.isSafeInteger(row.accumulated_ms) || row.accumulated_ms < 0 || row.schema_version !== VERSION) throw invalid('Stored practice timer is unavailable.', 503);
++  if (row.state === 'running') {
++    const started = Clock(row.started_at, { canonical: true });
++    if (started === null || started > nowMs || started < Clock(row.updated_at, { canonical: true })) throw invalid('Stored practice timer clock is unavailable.', 503);
++    return row.accumulated_ms + (nowMs - started);
++  }
++  if (row.started_at !== null) throw invalid('Stored practice timer clock is unavailable.', 503);
++  return row.accumulated_ms;
++};
++
++/** The timer row is the only mutable row in this layer; the receipt it produces is not. */
++async function timerRow(store, userId) {
++  const row = await store.prepare('SELECT * FROM practice_timers WHERE user_id=?').get(userId);
++  if (row) return row;
++  await store.prepare("INSERT INTO practice_timers(user_id,state,preset,target_seconds,bell_interval_seconds,ambience,intention,intention_framing,intention_cues_json,accumulated_ms,pause_count,started_at,updated_at,version,schema_version) VALUES(?,'idle',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,NULL,?,0,?)").run(userId, iso(Date.now()), VERSION);
++  return await store.prepare('SELECT * FROM practice_timers WHERE user_id=?').get(userId);
++}
++function publicTimer(row, nowMs) {
++  if (!row) return { state: 'unavailable', elapsed_ms: null, elapsed_source: null, preset: null, target_seconds: null, bell_interval_seconds: null, ambience: null, intention: null, framing: null, warnings: ['unavailable: no practice timer could be read, so nothing is inferred.'], bells: [], actual_meditation_verified: false, authority: 'none' };
++  let elapsed = null;
++  try { elapsed = runningElapsed(row, nowMs); }
++  catch { return { state: 'unavailable', elapsed_ms: null, elapsed_source: null, preset: null, target_seconds: null, bell_interval_seconds: null, ambience: null, intention: null, framing: null, warnings: ['unavailable: the stored timer cannot be read back, so nothing is inferred.'], bells: [], actual_meditation_verified: false, authority: 'none' }; }
++  let cues = null; try { cues = row.intention_cues_json ? JSON.parse(row.intention_cues_json) : null; } catch { cues = null; }
++  return {
++    state: row.state, elapsed_ms: elapsed, elapsed_source: elapsed === null ? null : 'server_running_time', preset: row.preset, target_seconds: row.target_seconds,
++    reached_target: row.state === 'idle' ? null : elapsed >= row.target_seconds * 1000, bell_interval_seconds: row.bell_interval_seconds,
++    ambience: row.ambience, ambience_played_by_this_app: false, ambience_note: 'Recorded as your own declaration; this app plays and ships no ambient audio.',
++    intention: row.intention, framing: row.intention_framing, cues, warnings: row.intention ? Intention.warningsFor(row.intention_framing, cues) : [],
++    pause_count: row.pause_count, bells: bellMarks(elapsed, row.bell_interval_seconds), actual_meditation_verified: false, authority: 'none', authority_note: 'No gate, score, target or permission; a missing or short session is not a failure.',
++  };
++}
++function publicRow(row) {
++  if (!row) return null;
++  try {
++    if (!['human_declared', 'imported_unverified'].includes(row.source) || row.schema_version !== VERSION || typeof row.day !== 'string' || !id(row.version) ||
++        (row.preset !== 'custom' && !presetById(row.preset)) || !Number.isSafeInteger(row.target_seconds) || row.target_seconds < CUSTOM_MIN_SECONDS || row.target_seconds > CUSTOM_MAX_SECONDS ||
++        !Number.isSafeInteger(row.elapsed_ms) || row.elapsed_ms < 0 || !Number.isSafeInteger(row.pause_count) || row.pause_count < 0 ||
++        !BELL_INTERVALS.includes(row.bell_interval_seconds) || !AMBIENCE.includes(row.ambience) || Clock(row.recorded_at, { canonical: true }) === null) throw invalid('Unavailable practice session record.');
++    let cues = null; try { cues = row.intention_cues_json ? JSON.parse(row.intention_cues_json) : null; } catch { cues = null; }
++    let bells = []; try { bells = row.bell_marks_json ? JSON.parse(row.bell_marks_json) : []; } catch { bells = []; }
++    const framed = row.intention ? ['outcome_language', 'unverified_free_text'].includes(row.intention_framing) : null;
++    if (row.intention && !framed) throw invalid('Unavailable practice intention framing.');
++    return {
++      id: row.id, day: row.day || null, version: Number(row.version), preset: row.preset, target_seconds: row.target_seconds,
++      elapsed_ms: row.elapsed_ms, elapsed_source: 'server_running_time', elapsed_seconds: Math.floor(row.elapsed_ms / 1000), reached_target: row.elapsed_ms >= row.target_seconds * 1000,
++      pause_count: Number(row.pause_count), bell_interval_seconds: row.bell_interval_seconds, bells, ambience: row.ambience, ambience_played_by_this_app: false,
++      intention: row.intention || null, framing: framed, cues, warnings: row.intention ? Intention.warningsFor(row.intention_framing, cues) : [],
++      note: row.note || null, source: row.source, state: row.source === 'imported_unverified' ? 'imported_unverified' : 'recorded',
++      recorded_at: row.recorded_at, historical: row.historical_json ? JSON.parse(row.historical_json) : null,
++      actual_meditation_verified: false, authority: 'none',
++    };
++  } catch {
++    return { id: row.id, day: row.day || null, version: null, state: 'unavailable', preset: null, target_seconds: null, elapsed_ms: null, pause_count: null, bells: [], ambience: null, intention: null, framing: null, cues: null, warnings: ['unavailable: the stored session cannot be read back, so nothing is inferred.'], note: null, source: 'unavailable', recorded_at: null, authority: 'none', actual_meditation_verified: false };
++  }
++}
++const rowsOf = (store, userId) => store.prepare('SELECT * FROM practice_sessions WHERE user_id=? ORDER BY day,id').all(userId);
++const ownedDay = (store, userId, date, nowMs) => store.prepare('SELECT * FROM practice_sessions WHERE user_id=? AND day=? ORDER BY id').all(userId, day(date, { nowMs }));
++
++/** Day view: exactly what was recorded that day, or that nothing was. Never a judgement. */
++async function viewOn(store, userId, { nowMs = Date.now(), date = null } = {}) {
++  const row = await timerRow(store, userId);
++  const target = date === null ? utcDay(nowMs) : day(date, { nowMs });
++  const rows = await ownedDay(store, userId, target, nowMs);
++  const readable = rows.map(publicRow);
++  /* A row this app cannot read back is never counted as a recorded session or a measured
++   * second: the totals are the readable receipts only. */
++  const recorded = readable.filter((s) => s.state === 'recorded');
++  const archives = readable.filter((s) => s.state === 'imported_unverified');
++  const seconds = recorded.reduce((n, s) => n + (Number.isSafeInteger(s.elapsed_seconds) ? s.elapsed_seconds : 0), 0);
++  return {
++    schema: VERSION, day: target, today: utcDay(nowMs), same_day: target === utcDay(nowMs),
++    state: rows.length ? 'recorded' : 'unrecorded',
++    message: rows.length ? 'Practice sessions recorded for this day: server-measured running time only.' : 'No practice session recorded for this day. Nothing is carried over, and an empty day is not a failure.',
++    sessions: readable, archives, recorded_seconds: seconds, sessions_count: recorded.length, imported_count: archives.length,
++    timer: publicTimer(row, nowMs), presets: PRESETS, custom: { min_seconds: CUSTOM_MIN_SECONDS, max_seconds: CUSTOM_MAX_SECONDS, max_hours: 2 },
++    ambience_options: AMBIENCE, bell_intervals: BELL_INTERVALS, toolkit: TOOLKIT, char_max: CHAR_MAX,
++    revision: hash([userId, row.state, row.preset, row.target_seconds, row.bell_interval_seconds, row.ambience, row.intention, row.accumulated_ms, row.pause_count, row.started_at, row.version, rows.length]),
++    authority: 'none', actual_meditation_verified: false, broker_verified: false, service: VERSION, basis: BASIS,
++  };
++}
++async function read(userId, options = {}) { const { db } = require('./db'); return db.tx(async (tx) => viewOn(db.transactionStore(tx), userId, options)); }
++
++/** Progress is a count of records, never a target, a score or a streak to protect. */
++async function progress(userId, { from, to, nowMs = Date.now() } = {}) {
++  const start = day(from, { nowMs }), end = day(to, { nowMs });
++  if (start > end) throw invalid('The progress period starts after it ends.');
++  if ((Clock(end + 'T00:00:00.000Z', { canonical: true }) - Clock(start + 'T00:00:00.000Z', { canonical: true })) / 86400000 > 366) throw invalid('A progress period is at most 366 days.');
++  const { db } = require('./db');
++  const rows = await db.prepare('SELECT * FROM practice_sessions WHERE user_id=? ORDER BY day,id').all(userId);
++  const inRange = rows.filter((r) => typeof r.day === 'string' && r.day >= start && r.day <= end).map(publicRow);
++  const recorded = inRange.filter((r) => r.state === 'recorded');
++  const days = [...new Set(recorded.map((r) => r.day))].sort();
++  let run = 0;
++  for (let d = new Date(end + 'T00:00:00.000Z'); days.includes(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() - 1)) run++;
++  return {
++    schema: VERSION, from: start, to: end, period_days: (Clock(end + 'T00:00:00.000Z', { canonical: true }) - Clock(start + 'T00:00:00.000Z', { canonical: true })) / 86400000 + 1,
++    sessions_count: recorded.length, recorded_seconds: recorded.reduce((n, r) => n + (Number.isSafeInteger(r.elapsed_seconds) ? r.elapsed_seconds : 0), 0),
++    days_with_recorded_session: days.length, consecutive_days_with_a_recorded_session_ending_on_to: run,
++    imported_count: inRange.filter((r) => r.state === 'imported_unverified').length,
++    counts_are_records_only: true, authority: 'none', target: null, score: null,
++    warnings: ['progress_are_records_not_results: these numbers count recorded sessions and their measured running time. They are not a streak to protect, not a goal, not adherence, and not evidence of calm, focus, discipline or any effect.'],
++    basis: BASIS, actual_meditation_verified: false,
++  };
++}
++async function history(userId, { date = null, nowMs = Date.now() } = {}) {
++  const { db } = require('./db');
++  const rows = date === null
++    ? await db.prepare('SELECT * FROM practice_sessions WHERE user_id=? ORDER BY day,id').all(userId)
++    : await db.prepare('SELECT * FROM practice_sessions WHERE user_id=? AND day=? ORDER BY id').all(userId, day(date, { nowMs }));
++  return { records: rows.map(publicRow), readonly: true, authority: 'none', actual_meditation_verified: false, basis: BASIS };
++}
++
++/** Timer actions. Every write path validates the previous state inside one transaction. */
++function input(body) {
++  const allowed = ['action', 'preset', 'hours', 'minutes', 'seconds', 'bell_interval_seconds', 'ambience', 'intention', 'note', 'revision'];
++  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some((k) => !allowed.includes(k))) throw invalid('Send a practice action with its settings; no caller clock, day, source, owner, account or elapsed time is accepted.');
++  if (!['start', 'pause', 'resume', 'complete', 'cancel'].includes(body.action)) throw invalid('Choose start, pause, resume, complete or cancel.');
++  if (typeof body.revision !== 'string' || !/^[a-f0-9]{64}$/.test(body.revision)) throw invalid('Send the displayed revision; another write may have changed the timer.');
++  return body;
++}
++async function save(userId, body, { nowMs = Date.now() } = {}) {
++  const fields = input(body);
++  const { db } = require('./db');
++  return db.tx(async (tx) => {
++    const store = db.transactionStore(tx);
++    const before = await timerRow(store, userId);
++    const view = await viewOn(store, userId, { nowMs });
++    if (fields.revision !== view.revision) throw invalid('The practice timer or this day\u2019s records changed. Explicitly reload before acting.', 409);
++    const elapsed = runningElapsed(before, nowMs);
++    const at = iso(nowMs);
++    if (fields.action === 'start') {
++      if (before.state !== 'idle') throw invalid('A practice session is already open. Pause, resume, complete or cancel it first.', 409);
++      const len = length(fields), bell = bellInterval(fields.bell_interval_seconds), amb = ambienceValue(fields.ambience), intent = intention(fields.intention);
++      await store.prepare("UPDATE practice_timers SET state='running',preset=?,target_seconds=?,bell_interval_seconds=?,ambience=?,intention=?,intention_framing=?,intention_cues_json=?,accumulated_ms=0,pause_count=0,started_at=?,updated_at=?,version=version+1 WHERE user_id=?")
++        .run(len.preset, len.target_seconds, bell, amb, intent.intention, intent.framing, intent.cues ? JSON.stringify(intent.cues) : null, at, at, userId);
++    } else if (fields.action === 'pause') {
++      if (before.state !== 'running') throw invalid('Only a running practice timer can be paused.', 409);
++      await store.prepare("UPDATE practice_timers SET state='paused',accumulated_ms=?,pause_count=pause_count+1,started_at=NULL,updated_at=?,version=version+1 WHERE user_id=?").run(elapsed, at, userId);
++    } else if (fields.action === 'resume') {
++      if (before.state !== 'paused') throw invalid('Only a paused practice timer can be resumed.', 409);
++      await store.prepare("UPDATE practice_timers SET state='running',started_at=?,updated_at=?,version=version+1 WHERE user_id=?").run(at, at, userId);
++    } else if (fields.action === 'cancel') {
++      if (before.state === 'idle') throw invalid('There is no open practice session to cancel.', 409);
++      await store.prepare("UPDATE practice_timers SET state='idle',preset=NULL,target_seconds=NULL,bell_interval_seconds=NULL,ambience=NULL,intention=NULL,intention_framing=NULL,intention_cues_json=NULL,accumulated_ms=0,pause_count=0,started_at=NULL,updated_at=?,version=version+1 WHERE user_id=?").run(at, userId);
++    } else {
++      if (before.state === 'idle') throw invalid('There is no open practice session to complete.', 409);
++      if (elapsed > MAX_SESSION_MS) throw invalid('A timer open for more than 24 hours cannot be completed as one session. Cancel it instead: nothing is written and no elapsed time is claimed.', 409);
++      const paused = before.state === 'paused';
++      const value = paused ? before.accumulated_ms : elapsed;
++      const next = (await store.prepare('SELECT MAX(version) v FROM practice_sessions WHERE user_id=? AND day=?').get(userId, utcDay(nowMs))).v || 0;
++      await store.prepare('INSERT INTO practice_sessions(user_id,day,version,preset,target_seconds,elapsed_ms,pause_count,bell_interval_seconds,bell_marks_json,ambience,intention,intention_framing,intention_cues_json,note,source,recorded_at,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
++        .run(userId, utcDay(nowMs), Number(next) + 1, before.preset, before.target_seconds, value, before.pause_count || 0, before.bell_interval_seconds, JSON.stringify(bellMarks(value, before.bell_interval_seconds)), before.ambience,
++          before.intention, before.intention_framing, before.intention_cues_json, note(fields.note), 'human_declared', at, VERSION);
++      await store.prepare("UPDATE practice_timers SET state='idle',preset=NULL,target_seconds=NULL,bell_interval_seconds=NULL,ambience=NULL,intention=NULL,intention_framing=NULL,intention_cues_json=NULL,accumulated_ms=0,pause_count=0,started_at=NULL,updated_at=?,version=version+1 WHERE user_id=?").run(at, userId);
++    }
++    return viewOn(store, userId, { nowMs });
++  });
++}
++/** Read-only day view for the Journal/day surfaces: that day's sessions, nothing inferred. */
++async function dayView(userId, date) { return read(userId, { date }); }
++function unavailable(reason = 'Practice log unavailable — nothing was read, nothing is inferred, and nothing is blocked.') {
++  return { schema: VERSION, day: null, today: utcDay(Date.now()), same_day: false, state: 'unavailable', message: reason, sessions: [], archives: [], recorded_seconds: 0, sessions_count: 0, imported_count: 0, timer: publicTimer(null), presets: PRESETS, custom: { min_seconds: CUSTOM_MIN_SECONDS, max_seconds: CUSTOM_MAX_SECONDS, max_hours: 2 }, ambience_options: AMBIENCE, bell_intervals: BELL_INTERVALS, toolkit: TOOLKIT, char_max: CHAR_MAX, revision: null, authority: 'none', actual_meditation_verified: false, broker_verified: false, service: VERSION, basis: BASIS };
++}
++async function optional(userId, { nowMs = Date.now(), store = null, date = null } = {}) {
++  try { return store ? await viewOn(store, userId, { nowMs, date }) : await read(userId, { nowMs, date }); }
++  catch { return unavailable(date === null ? undefined : `No practice log can be read for the requested day (${date}): it is not a past-or-today UTC calendar day, so nothing is inferred for it.`); }
++}
++
++/* Backup/restore. A restored session is an archive of someone's record: it keeps its own
++ * original day and clock as history, never becomes the receiver's recorded session, and is
++ * counted separately from the receiver's own practice everywhere. */
++function portable(raw) {
++  const out = { records: [], warnings: [] };
++  if (raw == null) return out;
++  try {
++    if (!raw || raw.version !== 1 || !Array.isArray(raw.records) || raw.records.length > 500) throw invalid('Optional practice history requires version 1 and at most 500 records.');
++    if (raw.unavailable || raw.unavailable_records > 0) out.warnings.push('Original practice history unavailable/omitted; nothing is inferred about those sessions.');
++    for (const r of raw.records) {
++      try {
++        const original = r.historical || {}, oldClock = original.recorded_at ?? r.recorded_at, oldDay = original.day ?? r.day ?? null;
++        let declared = oldClock;
++        if (oldClock != null && Clock(oldClock, { canonical: true }) === null) { out.warnings.push('Invalid/future original practice receipt omitted, not receiving-clock proof.'); declared = null; }
++        let dayValue = null;
++        if (typeof oldDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(oldDay) && Clock(oldDay + 'T00:00:00.000Z', { canonical: true }) !== null) dayValue = oldDay;
++        else out.warnings.push('Original practice day unknown; the archive is kept without claiming a day.');
++        const seconds = Number.isSafeInteger(r.elapsed_ms) && r.elapsed_ms >= 0 ? r.elapsed_ms : (Number.isSafeInteger(r.elapsed_seconds) && r.elapsed_seconds >= 0 ? r.elapsed_seconds * 1000 : null);
++        if (seconds === null) throw invalid('Practice record without a readable measured duration omitted.');
++        const preset = r.preset === 'custom' || presetById(r.preset) ? r.preset : null;
++        if (preset === null) throw invalid('Practice record with an unknown preset omitted.');
++        const target = Number.isSafeInteger(r.target_seconds) && r.target_seconds >= CUSTOM_MIN_SECONDS && r.target_seconds <= CUSTOM_MAX_SECONDS ? r.target_seconds : null;
++        if (target === null) throw invalid('Practice record without a readable chosen length omitted.');
++        const bell = BELL_INTERVALS.includes(r.bell_interval_seconds) ? r.bell_interval_seconds : 0;
++        const amb = AMBIENCE.includes(r.ambience) ? r.ambience : 'none';
++        const value = r.intention == null ? null : Intention.text(r.intention);
++        out.records.push({
++          day: dayValue, preset, target_seconds: target, elapsed_ms: seconds, pause_count: Number.isSafeInteger(r.pause_count) && r.pause_count >= 0 ? r.pause_count : 0,
++          bell_interval_seconds: bell, ambience: amb, intention: value, framing: value ? (r.framing === 'outcome_language' ? 'outcome_language' : 'unverified_free_text') : null,
++          note: typeof r.note === 'string' ? r.note.slice(0, 2000) : null,
++          historical: { source: original.source || r.source || null, recorded_at: declared, day: dayValue, original_version: original.original_version ?? r.version ?? null, original_id: original.original_id ?? r.id ?? null },
++        });
++      } catch (e) { out.warnings.push(e.message || 'Invalid optional practice record omitted.'); }
++    }
++  } catch (e) { out.warnings.push(e.message || 'Optional practice history omitted.'); }
++  out.warnings = out.warnings.slice(0, 20);
++  return out;
++}
++async function exportOwned(userId) {
++  try {
++    const { db } = require('./db'), rows = await db.prepare('SELECT * FROM practice_sessions WHERE user_id=? ORDER BY day,id').all(userId), records = rows.map(publicRow).filter((p) => p.state !== 'unavailable');
++    return { version: 1, records, unavailable_records: rows.length - records.length };
++  } catch { return { version: 1, records: [], unavailable: true }; }
++}
++async function importOn(store, userId, parsed) {
++  for (const p of parsed.records) {
++    const next = (await store.prepare('SELECT MAX(version) v FROM practice_sessions WHERE user_id=? AND day=?').get(userId, p.day || '')).v || 0;
++    const cues = (() => { try { return p.intention ? Intention.classify(p.intention).cues : null; } catch { return null; } })();
++    await store.prepare('INSERT INTO practice_sessions(user_id,day,version,preset,target_seconds,elapsed_ms,pause_count,bell_interval_seconds,bell_marks_json,ambience,intention,intention_framing,intention_cues_json,note,source,recorded_at,historical_json,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
++      .run(userId, p.day || '', Number(next) + 1, p.preset, p.target_seconds, p.elapsed_ms, p.pause_count, p.bell_interval_seconds, JSON.stringify(bellMarks(p.elapsed_ms, p.bell_interval_seconds)), p.ambience,
++        p.intention, p.framing, cues ? JSON.stringify(cues) : null, p.note, 'imported_unverified', iso(Date.now()), JSON.stringify(p.historical), VERSION);
++  }
++}
++module.exports = { VERSION, CHAR_MAX, PRESETS, CUSTOM_MIN_SECONDS, CUSTOM_MAX_SECONDS, AMBIENCE, BELL_INTERVALS, MAX_SESSION_MS, TOOLKIT, BASIS, invalid, day, presetById, length, intention, note, bellMarks, runningElapsed, publicTimer, publicRow, viewOn, read, progress, history, input, save, dayView, optional, unavailable, portable, exportOwned, importOn, utcDay, hash };
 diff --git a/src/process-outcomes.js b/src/process-outcomes.js
 new file mode 100644
 index 0000000..bf173ca
@@ -13985,10 +14731,10 @@ index 0000000..bf173ca
 +function withCoach(data,review){const warning=insight(review);return {...data,process_review:review,insights:warning?[...(data.insights||[]),warning]:data.insights};}
 +module.exports={BASIS,invalid,dateKey,clock,evaluate,insight,inspect,optional,unavailable,withCoach};
 diff --git a/src/routes/api.js b/src/routes/api.js
-index 0bb768c..defa9dc 100644
+index 0bb768c..be86a1a 100644
 --- a/src/routes/api.js
 +++ b/src/routes/api.js
-@@ -1,12 +1,31 @@
+@@ -1,12 +1,32 @@
  'use strict';
  const { asyncRouter } = require('./async-router');
 -const { db, createUser, verifyPassword, createSession, userFromToken, destroySession, getMeta, DEFAULT_CHECKLIST } = require('../db');
@@ -14014,6 +14760,7 @@ index 0bb768c..defa9dc 100644
 +const Identity = require('../identity');
 +const StateGate = require('../state-gate');
 +const Intention = require('../intention');
++const Practice = require('../practice');
 +const Opportunities = require('../opportunities');
 +const ProcessOutcomes = require('../process-outcomes');
 +const BehaviorDays = require('../behavior-days');
@@ -14021,7 +14768,7 @@ index 0bb768c..defa9dc 100644
  const O = require('../options');
  const Exp = require('../exposure');
  const Prop = require('../prop');
-@@ -14,6 +33,13 @@ const N = require('../notify');
+@@ -14,6 +34,13 @@ const N = require('../notify');
  const createBotsRouter = require('./bots');
  
  const router = asyncRouter();
@@ -14035,7 +14782,7 @@ index 0bb768c..defa9dc 100644
  const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  
-@@ -40,7 +66,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
+@@ -40,7 +67,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
  async function requireAuth(req, res, next) {
    try {
      const user = await userFromToken(readToken(req));
@@ -14063,7 +14810,7 @@ index 0bb768c..defa9dc 100644
      req.user = user;
      next();
    } catch (e) { next(e); }
-@@ -237,6 +282,7 @@ function tradeFilters(req) {
+@@ -237,6 +283,7 @@ function tradeFilters(req) {
      status: req.query.status && req.query.status !== 'all' ? req.query.status : null,
      symbol: req.query.symbol || null,
      strategy_id: req.query.strategy_id || null,
@@ -14071,7 +14818,7 @@ index 0bb768c..defa9dc 100644
      from: req.query.from || null, to: req.query.to || null,
      asset_class: req.query.asset_class || null,
      tag: req.query.tag || null,
-@@ -278,32 +324,81 @@ router.get('/trades', requireAuth, async (req, res) => {
+@@ -278,32 +325,81 @@ router.get('/trades', requireAuth, async (req, res) => {
        .some((v) => String(v || '').toLowerCase().includes(q)));
    }
    const total = (await db.prepare(`SELECT COUNT(*) n FROM trades WHERE ${where}`).get({ ...params, user_id: req.user.id })).n;
@@ -14159,7 +14906,7 @@ index 0bb768c..defa9dc 100644
  router.put('/trades/:id', requireAuth, async (req, res) => {
    const id = Number(req.params.id);
    const existing = await db.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id, req.user.id);
-@@ -311,14 +406,64 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+@@ -311,14 +407,64 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
    const instruments = await instrumentMap(req.user.id);
    const merged = { ...existing, ...req.body };
    const spec = instruments[String(merged.symbol || '').toUpperCase()] || null;
@@ -14227,7 +14974,7 @@ index 0bb768c..defa9dc 100644
  });
  
  router.post('/trades/:id/close', requireAuth, async (req, res) => {
-@@ -341,29 +486,92 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+@@ -341,29 +487,92 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
    };
    const instruments = await instrumentMap(req.user.id);
    const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
@@ -14325,7 +15072,7 @@ index 0bb768c..defa9dc 100644
  router.get('/analytics', requireAuth, async (req, res) => {
    const tz = (await settingsOf(req)).timezone;
    const f = tradeFilters(req);
-@@ -374,14 +582,20 @@ router.get('/analytics', requireAuth, async (req, res) => {
+@@ -374,14 +583,20 @@ router.get('/analytics', requireAuth, async (req, res) => {
      const want = String(f.tag).toLowerCase();
      rows = rows.filter((t) => String(t.tags || '').toLowerCase().split(',').map((x) => x.trim()).includes(want));
    }
@@ -14347,7 +15094,7 @@ index 0bb768c..defa9dc 100644
    res.json(analytics);
  });
  
-@@ -393,9 +607,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+@@ -393,9 +608,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const rs = rows.map((t) => num(t.r_multiple));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
@@ -14366,7 +15113,7 @@ index 0bb768c..defa9dc 100644
    res.json({
      monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
      optimal_risk: P.optimalRisk(rs),
-@@ -411,7 +632,9 @@ router.get('/coach', requireAuth, async (req, res) => {
+@@ -411,7 +633,9 @@ router.get('/coach', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
      || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
@@ -14377,7 +15124,7 @@ index 0bb768c..defa9dc 100644
  });
  
  router.get('/briefing', requireAuth, wrap(async (req, res) => {
-@@ -419,45 +642,146 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+@@ -419,45 +643,155 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
    const tz = settings.timezone;
    const acc = await accountOr404(req, res);
    if (!acc) return;
@@ -14396,6 +15143,7 @@ index 0bb768c..defa9dc 100644
 +  briefing.identity_context=await Identity.optional(req.user.id,acc.id,Guards.dayKey(Date.now()));
 +  briefing.state_gate=await StateGate.optional(req.user.id,acc.id);
 +  briefing.intention=await Intention.optional(req.user.id,acc.id);
++  briefing.practice=await Practice.optional(req.user.id);
 +  briefing.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
 +  briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
 +  // Briefing amounts are advice, NOT permission. Use the same close-day UTC
@@ -14457,6 +15205,14 @@ index 0bb768c..defa9dc 100644
 +router.get('/intention/history',requireAuth,intentionRoute(req=>Intention.history(req.user.id,req.query.account_id??null,{date:req.query.date??null})));
 +router.put('/intention',requireAuth,intentionRoute(req=>Intention.save(req.user.id,req.query.account_id,req.body)));
 +
++const practiceRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='practice_invalid'||e.code==='practice_outcome_target'||e.code==='intention_outcome_target')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'Practice log unavailable; no finance/permission state changed.'});}};
++/* Personal, never desk-scoped: an account_id is not an input here, so no caller can
++ * attribute a practice record to an account or bind one to a desk. */
++router.get('/practice',requireAuth,practiceRoute(req=>Practice.read(req.user.id,{date:req.query.date??null})));
++router.get('/practice/history',requireAuth,practiceRoute(req=>Practice.history(req.user.id,{date:req.query.date??null})));
++router.get('/practice/progress',requireAuth,practiceRoute(req=>Practice.progress(req.user.id,{from:req.query.from??'',to:req.query.to??''})));
++router.post('/practice/timer',requireAuth,practiceRoute(req=>Practice.save(req.user.id,req.body)));
++
  router.get('/journal', requireAuth, async (req, res) => {
    const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
 -  res.json({ entries: rows });
@@ -14498,7 +15254,7 @@ index 0bb768c..defa9dc 100644
 +  const accountId=account.id;
 +  const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
 +  const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
-+  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),state_gate:await StateGate.optional(req.user.id,accountId),daily_intention:await Intention.optional(req.user.id,accountId,{date:req.params.date}),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),state_gate:await StateGate.optional(req.user.id,accountId),daily_intention:await Intention.optional(req.user.id,accountId,{date:req.params.date}),practice:await Practice.optional(req.user.id,{date:req.params.date}),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
  });
  router.post('/journal', requireAuth, async (req, res) => {
    const b = req.body || {};
@@ -14536,7 +15292,7 @@ index 0bb768c..defa9dc 100644
  });
  router.delete('/journal/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM journal_entries WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -470,46 +794,56 @@ router.get('/strategies', requireAuth, async (req, res) => {
+@@ -470,46 +804,56 @@ router.get('/strategies', requireAuth, async (req, res) => {
    const stats = {};
    const tz = (await settingsOf(req)).timezone;
    const rows = (await db.prepare("SELECT * FROM trades WHERE user_id=? AND status='closed'").all(req.user.id)).map((t) => P.decorate(t, tz));
@@ -14624,7 +15380,7 @@ index 0bb768c..defa9dc 100644
  });
  router.delete('/strategies/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM strategies WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -541,21 +875,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
+@@ -541,21 +885,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
  router.post('/accounts', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.name) return res.status(400).json({ error: 'Account name is required' });
@@ -14693,7 +15449,7 @@ index 0bb768c..defa9dc 100644
      prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
      id, user_id: req.user.id,
      name: b.name !== undefined ? b.name : cur.name,
-@@ -563,7 +937,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -563,7 +947,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
      currency: b.currency !== undefined ? b.currency : cur.currency,
      starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
@@ -14707,7 +15463,7 @@ index 0bb768c..defa9dc 100644
      daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
      max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
      prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
-@@ -571,7 +950,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -571,7 +960,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
      archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
    });
@@ -14720,7 +15476,7 @@ index 0bb768c..defa9dc 100644
  });
  router.delete('/accounts/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -708,7 +1091,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -708,7 +1101,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
    const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
    const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
    const balance = num(b.balance, acc ? acc.current_balance : 10000);
@@ -14741,7 +15497,7 @@ index 0bb768c..defa9dc 100644
    const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
    const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
    const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
-@@ -722,6 +1117,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -722,6 +1127,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
      pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
      pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
      percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,
@@ -14752,7 +15508,7 @@ index 0bb768c..defa9dc 100644
    });
  });
  
-@@ -775,15 +1174,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
+@@ -775,15 +1184,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
  }));
  
  /* ------------------------------------------------------- import / export */
@@ -14773,7 +15529,7 @@ index 0bb768c..defa9dc 100644
    const esc = (v) => {
      const s = v === null || v === undefined ? '' : String(v);
      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-@@ -792,17 +1192,24 @@ router.get('/export/csv', requireAuth, async (req, res) => {
+@@ -792,17 +1202,25 @@ router.get('/export/csv', requireAuth, async (req, res) => {
    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
    res.setHeader('Content-Disposition', `attachment; filename="trades-${new Date().toISOString().slice(0, 10)}.csv"`);
    res.send(csv);
@@ -14791,6 +15547,7 @@ index 0bb768c..defa9dc 100644
 +    identity_declarations:await Identity.exportOwned(userId),
 +    state_gate_answers:await StateGate.exportOwned(userId),
 +    daily_intentions:await Intention.exportOwned(userId),
++    practice_sessions:await Practice.exportOwned(userId),
 +    opportunity_history:await Opportunities.exportOwned(userId),
      user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
      accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
@@ -14801,7 +15558,7 @@ index 0bb768c..defa9dc 100644
      journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
      goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
      watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
-@@ -810,7 +1217,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
+@@ -810,7 +1228,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
    res.setHeader('Content-Type', 'application/json');
    res.setHeader('Content-Disposition', `attachment; filename="tradejournal-backup-${new Date().toISOString().slice(0, 10)}.json"`);
    res.send(JSON.stringify(data, null, 2));
@@ -14810,7 +15567,7 @@ index 0bb768c..defa9dc 100644
  
  /** Import from CSV — auto-detects the usual broker column names. */
  router.post('/import/csv', requireAuth, async (req, res) => {
-@@ -831,13 +1238,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -831,13 +1249,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
      opened: findCol(['opened_at', 'open_time', 'entry_time', 'date', 'datetime', 'open_date', 'time_open', 'opened']),
      closed: findCol(['closed_at', 'close_time', 'exit_time', 'close_date', 'time_close', 'closed']),
      fees: findCol(['fees', 'commission', 'fee', 'cost', 'swap']),
@@ -14828,7 +15585,7 @@ index 0bb768c..defa9dc 100644
    const instruments = await instrumentMap(req.user.id);
    const tz = (await settingsOf(req)).timezone;
    let inserted = 0, skipped = 0;
-@@ -864,11 +1274,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -864,11 +1285,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
            closed_at: map.closed > -1 ? r[map.closed] : null,
            fees: map.fees > -1 ? r[map.fees] : 0,
            strategy_name: map.strategy > -1 ? r[map.strategy] : '',
@@ -14845,7 +15602,7 @@ index 0bb768c..defa9dc 100644
          if (map.net > -1 && String(r[map.net] || '').trim() && !isNaN(Number(String(r[map.net]).replace(/[^0-9.\-]/g, '')))) {
            const net = Number(String(r[map.net]).replace(/[^0-9.\-]/g, ''));
            if (net !== 0) {
-@@ -877,18 +1292,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -877,18 +1303,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
              if (trade.risk_amount > 0) trade.r_multiple = Math.round((net / trade.risk_amount) * 10000) / 10000;
            }
          }
@@ -14869,21 +15626,22 @@ index 0bb768c..defa9dc 100644
 +// Actual transaction insert IDs (never raw backup IDs), with optional media
 +// warnings separate from financial parsing. Storage failure rolls back together.
 +function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
-+async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null,stateGate=null,intentions=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null,stateGate=null,intentions=null,practice=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
 +  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
-+  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);if(stateGate)await StateGate.importOn(store,userId,stateGate,reviewAccounts,reviewFallback);if(intentions)await Intention.importOn(store,userId,intentions,reviewAccounts,reviewFallback);return n;
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);if(stateGate)await StateGate.importOn(store,userId,stateGate,reviewAccounts,reviewFallback);if(intentions)await Intention.importOn(store,userId,intentions,reviewAccounts,reviewFallback);if(practice)await Practice.importOn(store,userId,practice);return n;
 +});}
 +
  function parseCsv(text) {
    const rows = [];
    let row = [], field = '', inQuotes = false;
-@@ -912,10 +1337,14 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -912,10 +1348,15 @@ router.post('/import/json', requireAuth, async (req, res) => {
    const data = req.body && req.body.data ? req.body.data : req.body;
    if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
    const userId = req.user.id;
 -  const accountMap = {};
 +  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations),stateGate=StateGate.portable(data.state_gate_answers);
 +  const intentions=Intention.portable(data.daily_intentions);
++  const practice=Practice.portable(data.practice_sessions);
 +  const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
 +  const accountMap = Object.create(null);
    const instruments = await instrumentMap(userId);
@@ -14894,7 +15652,7 @@ index 0bb768c..defa9dc 100644
    try {
      // reads happen before the write batch (libSQL never interleaves them)
      const myAccounts = await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId);
-@@ -925,14 +1354,17 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -925,14 +1366,17 @@ router.post('/import/json', requireAuth, async (req, res) => {
        accountMap[a.id] = match ? match.id : (def ? def.id : null);
      }
      const existingStrategies = new Set((await db.prepare('SELECT name FROM strategies WHERE user_id=?').all(userId)).map((r) => r.name));
@@ -14914,19 +15672,19 @@ index 0bb768c..defa9dc 100644
        inserted++;
      }
      for (const s of (data.strategies || [])) {
-@@ -953,9 +1385,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -953,9 +1397,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
            j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
        });
      }
 -    await db.batch([...T.batchStatements(userId, collected), ...stmts]);
-+    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities,stateGate,intentions);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities,stateGate,intentions,practice);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
    } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
 -  res.json({ ok: true, inserted });
-+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,state_gate_warnings:stateGate.warnings,intention_warnings:intentions.warnings,opportunity_warnings:opportunities.warnings });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,state_gate_warnings:stateGate.warnings,intention_warnings:intentions.warnings,practice_warnings:practice.warnings,opportunity_warnings:opportunities.warnings });
  });
  
  /* ---------------------------------------------------------------- settings */
-@@ -971,6 +1403,16 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -971,6 +1415,16 @@ router.put('/settings', requireAuth, async (req, res) => {
      risk_defaults: b.risk_defaults || cur.risk_defaults || { risk_pct: 1, daily_limit_pct: 3, max_trades: 5 },
      // the floor every plan is judged against: below it a plan may still be shown,
      // but it is labelled and never reads as a plain order
@@ -14943,7 +15701,7 @@ index 0bb768c..defa9dc 100644
      min_rr: Number.isFinite(Number(b.min_rr)) && Number(b.min_rr) > 0
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
-@@ -982,7 +1424,7 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -982,7 +1436,7 @@ router.put('/settings', requireAuth, async (req, res) => {
  router.post('/demo/seed', requireAuth, async (req, res) => {
    const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
    const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });

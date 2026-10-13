@@ -1,0 +1,5 @@
+ ok   Chart global exposes render + mini
+CHART TEST CRASH: Error: No candles for XAUUSD 1h (Yahoo: Yahoo GC=F [1h/6mo]: query2: fetch failed (ECONNRESET) | query1: fetch failed (ECONNRESET)) [network: every provider failed at the transport layer, so the data hosts were unreachable from this machine. That is a connectivity problem, not a bad symbol, an unsupported interval, or an empty dataset — no data source replied at all.]
+    at Object.getCandles (/home/user/Trader/extracted/tradejournal/src/candles.js:607:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async /home/user/Trader/extracted/tradejournal/scripts/chart-test.js:98:31

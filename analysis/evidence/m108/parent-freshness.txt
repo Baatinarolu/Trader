@@ -1,0 +1,14 @@
+FAIL today and yesterday are readable days undefined
+FAIL a day that has not happened is refused, not read as nothing recorded "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/practice</pre>\n</body>\n</html>\n"
+FAIL the same refusal covers the history surface undefined
+FAIL a malformed day is refused at both surfaces undefined
+FAIL a non-string day is refused undefined
+FAIL the progress period refuses a future day undefined
+FAIL the progress period refuses a reversed or over-long span undefined
+FAIL a single-day period is allowed undefined
+FAIL the write path pins the session to the server’s own day and takes no day input undefined
+TypeError: Cannot read properties of undefined (reading 'state')
+    at /home/user/Trader/analysis/probe-m108-freshness.js:32:92
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async finish (/home/user/Trader/analysis/m108-test-support.js:11:50)
+M108 practice day policy and UTC boundaries: 0 passed, 10 failed

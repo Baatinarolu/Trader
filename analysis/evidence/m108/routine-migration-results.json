@@ -1,0 +1,105 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "parent": "/tmp/m64-parent/app",
+  "passed": 24,
+  "failed": 0,
+  "checks": [
+    {
+      "label": "negative migration control is actual751 parent with no routine fields",
+      "passed": true
+    },
+    {
+      "label": "additive upgrade preserves every original accounts field",
+      "passed": true
+    },
+    {
+      "label": "additive upgrade preserves every original trades field",
+      "passed": true
+    },
+    {
+      "label": "additive upgrade preserves every original journal_entries field",
+      "passed": true
+    },
+    {
+      "label": "legacy routine hour/timezone nullable, default60/Ep17 not inferred hour",
+      "passed": true
+    },
+    {
+      "label": "legacy daily note remains unknown/no fabricated self-report timestamp",
+      "passed": true
+    },
+    {
+      "label": "original guardrail_day_caps unchanged byte-for-byte during upgrade",
+      "passed": true
+    },
+    {
+      "label": "original guardrail_day_state unchanged byte-for-byte during upgrade",
+      "passed": true
+    },
+    {
+      "label": "original guardrail_entry_admissions unchanged byte-for-byte during upgrade",
+      "passed": true
+    },
+    {
+      "label": "original guardrail_events unchanged byte-for-byte during upgrade",
+      "passed": true
+    },
+    {
+      "label": "original session_time_markers unchanged byte-for-byte during upgrade",
+      "passed": true
+    },
+    {
+      "label": "original guardrail_reflections unchanged byte-for-byte during upgrade",
+      "passed": true
+    },
+    {
+      "label": "migration alone creates zero historical workflow/step/check-in/daily/admission facts",
+      "passed": true
+    },
+    {
+      "label": "repeated fresh-process migration byte-idempotent across all14 tables",
+      "passed": true
+    },
+    {
+      "label": "first new check requires own schedule plus independently retained old cap",
+      "passed": true
+    },
+    {
+      "label": "separate running restart retains original cycle/start and10min active",
+      "passed": true
+    },
+    {
+      "label": "paused2-hour restart does not add gap minutes",
+      "passed": true
+    },
+    {
+      "label": "restart and config edits cannot reset active schedule/order/check snapshots",
+      "passed": true
+    },
+    {
+      "label": "actual resumed process completes15m active/four human checks",
+      "passed": true
+    },
+    {
+      "label": "late restarted completion explicitly not on-time preparation",
+      "passed": true
+    },
+    {
+      "label": "separate completed restart retains all routine/capture bytes",
+      "passed": true
+    },
+    {
+      "label": "routine timer/steps do not create or rewrite old admission snapshots/manual marker/reflection completion",
+      "passed": true
+    },
+    {
+      "label": "truthful deletion+completed routine never refunds old observed entry/cap",
+      "passed": true
+    },
+    {
+      "label": "saved old expiry then adopts future selected timezone/order with fresh0steps/timer",
+      "passed": true
+    }
+  ],
+  "scope": "Actual751 parent additive localSQL upgrade and separate-process restarts; no production distributed/remote/Broker or inferred historical workflow proof."
+}

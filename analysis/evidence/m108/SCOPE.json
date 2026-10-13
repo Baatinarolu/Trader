@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-13",
+  "parent": "8a2cfd5edd8330056eb1ebcee8687f96dd8628eb",
+  "finding": "M108 only",
+  "ledger_before": [
+    132,
+    101,
+    3,
+    28,
+    0,
+    8
+  ],
+  "ledger_after": [
+    132,
+    102,
+    2,
+    28,
+    0,
+    8
+  ],
+  "course": "Saved Ep28, the sanctuary half of the guardrails/sanctuary pair: \"The guardrails in Edge Flow stop you mechanically. It's the hard wall… But sanctuary fixes the emotional cause… if you're tilted, if you're anxious, if you're greedy, if you're angry, if you are fearful, you are always going to find a way to break your trading rules.\" Sanctuary itself is an Edge Flow product feature (meditation timer with ambient sound and a video library by a named performance coach); a self-hosted trade journal is not obliged to ship one, so this delivery is scoped to what the codebase can honestly own and prove: a personal practice log with the episode's own preset list, elapsed-time bells, a recorded ambience declaration, the toolkit text and a records-only progress view. `grep -rniE 'sanctuary|meditat|breathing|mindfulness' src/` returned 0 hits before this milestone, and every `meditat` hit after it is M64 routine machinery or this module.",
+  "design": [
+    "Additive owned `practice_timers` (one row per user: idle/running/paused, accumulated_ms, pause_count, version) and append-only `practice_sessions` (human_declared receipts + imported_unverified archives, immutable UPDATE facts, owner cascade, UNIQUE(user_id,day,version)) + owner index + immutability trigger. No backfill, no default, no carry-over between days",
+    "Practice is personal and NEVER desk-scoped: no /practice route accepts an account_id, so a practice record cannot be attributed to an account or a desk and cannot bind M64's routine or M107's intention",
+    "The only measurable claim is ELAPSED SERVER RUNNING TIME (pause gaps excluded, elapsed_source server_running_time). Presets 5/10/15/30/60 minutes or the trader's own h/m/s (60-7200s, at most 2 hours). Nothing verifies that a meditation happened, that anyone calmed down, or that any physiological, emotional or performance effect followed — and no payload claims one",
+    "Bells are elapsed-time MARKERS (0/60/120/300/600) drawn strictly inside the measured running time; the tone is generated locally in the browser, no audio asset ships and nothing is fetched. Ambience (none/rain/ocean/forest/fireplace/white_noise) is recorded as the trader's own DECLARATION and every payload carries ambience_played_by_this_app:false — this app plays and streams no ambient audio",
+    "Completing writes ONE immutable receipt with the measured time, markers reached, the trader's own note (<=2000) and the optional one-line intention; it is recorded exactly as it happened. A short or early-completed session is not a failure; a session open for more than 24 hours cannot be completed as one session (409, cancel instead, nothing written)",
+    "Every write compare-and-sets the displayed 64-hex revision inside one transaction; a stale, unknown, malformed or wrong-state action is 409 with nothing written, and there is an explicit reload. No caller day, clock, elapsed time, source, owner or account is accepted in any body",
+    "Day/history/progress count READABLE recorded rows only: a stored receipt the app cannot read back is reported `unavailable`, is never counted as a session or as a measured second, and is never repaired or invented. Progress counts records, not results (target:null, score:null, counts_are_records_only:true, no streak language, only \"consecutive days with a recorded session\")",
+    "No authority: no score, percentage, streak pressure, goal, target, readiness, gate or permission over entries/signals/risk/cap/routine/core/grades/history, and no change to any of them. The optional intention reuses M107's bounded classifier (free text stored as written and labelled unverified_free_text, never process_template; an asserted money/outcome target refused practice_outcome_target 400 with nothing written; an all-blank line means no intention rather than an error), and no trading surface reads it",
+    "Dashboard + owned Journal day + Settings surfaces share one day card, timer modal, toolkit and progress view; escaped text, readonly history, explicit reload with 409 handling; M64's mandatory routine timer, M106's four fresh questions and M107's daily intention stay separate features and the toolkit only points at them",
+    "Full JSON backup transports practice_sessions as imported_unverified archives keeping the original day/clock/elapsed time/id as history; they are never this app's measured running time, repeat import appends, malformed optional entries warn while finance stays legal, and a missing store leaves the financial backup legal with an unavailable marker",
+    "M30/M103 remain partial; M111/M112 are open. No 70% win-rate, causal, predictive, broker, provider, human, mental-state, actual-meditation, pixel or production claim"
+  ]
+}

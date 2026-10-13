@@ -1,0 +1,176 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 42,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the four saved questions are exactly calm/clear/plan/would-take-if-up-big",
+      "passed": true
+    },
+    {
+      "label": "basis refuses mental-state/score/edge claims",
+      "passed": true
+    },
+    {
+      "label": "single answer true is not accepted as a whole answer set",
+      "passed": true
+    },
+    {
+      "label": "single answer false is not accepted as a whole answer set",
+      "passed": true
+    },
+    {
+      "label": "null is the explicit \"not answered now\"",
+      "passed": true
+    },
+    {
+      "label": "a complete yes/no set is accepted verbatim",
+      "passed": true
+    },
+    {
+      "label": "answer contract rejects missing one question with no default/maybe",
+      "passed": true
+    },
+    {
+      "label": "answer contract rejects extra key with no default/maybe",
+      "passed": true
+    },
+    {
+      "label": "answer contract rejects non-boolean with no default/maybe",
+      "passed": true
+    },
+    {
+      "label": "answer contract rejects null inside with no default/maybe",
+      "passed": true
+    },
+    {
+      "label": "answer contract rejects array with no default/maybe",
+      "passed": true
+    },
+    {
+      "label": "answer contract rejects string with no default/maybe",
+      "passed": true
+    },
+    {
+      "label": "write contract rejects missing revision",
+      "passed": true
+    },
+    {
+      "label": "write contract rejects short revision",
+      "passed": true
+    },
+    {
+      "label": "write contract rejects caller clock",
+      "passed": true
+    },
+    {
+      "label": "write contract rejects caller source",
+      "passed": true
+    },
+    {
+      "label": "write contract rejects caller owner",
+      "passed": true
+    },
+    {
+      "label": "write contract rejects missing answers key",
+      "passed": true
+    },
+    {
+      "label": "write contract accepts displayed revision + explicit null",
+      "passed": true
+    },
+    {
+      "label": "no answers at all is not_adopted, never passed",
+      "passed": true
+    },
+    {
+      "label": "imported-only answers stay archives and never grant a pass",
+      "passed": true
+    },
+    {
+      "label": "fresh all-yes answers are the only pass",
+      "passed": true
+    },
+    {
+      "label": "pass carries receipt/window/expiry and no money or score field",
+      "passed": true
+    },
+    {
+      "label": "a recorded no fails the gate and names the questions",
+      "passed": true
+    },
+    {
+      "label": "explicit unknown is unanswered, not a pass and not a failure",
+      "passed": true
+    },
+    {
+      "label": "answers older than the APP window are stale, not permission",
+      "passed": true
+    },
+    {
+      "label": "the window edge is inclusive in the trader’s favour",
+      "passed": true
+    },
+    {
+      "label": "an answer set never survives the UTC day boundary",
+      "passed": true
+    },
+    {
+      "label": "a future/corrupt receipt cannot grant a pass",
+      "passed": true
+    },
+    {
+      "label": "unreadable stored answers are unavailable, not a pass",
+      "passed": true
+    },
+    {
+      "label": "a foreign schema version is refused as unavailable",
+      "passed": true
+    },
+    {
+      "label": "the last recorded answer set is the effective one",
+      "passed": true
+    },
+    {
+      "label": "a newer no is not overwritten by the older yes",
+      "passed": true
+    },
+    {
+      "label": "not_adopted is reported, never silently upgraded into a block",
+      "passed": true
+    },
+    {
+      "label": "a failed gate becomes the same kind of stop the personal guardrails produce",
+      "passed": true
+    },
+    {
+      "label": "the refusal message is the gate’s own and cannot reach a broker",
+      "passed": true
+    },
+    {
+      "label": "an adopted account with no fresh check is refused with its own rule",
+      "passed": true
+    },
+    {
+      "label": "stale answers refuse with the stale rule rather than pretending to pass",
+      "passed": true
+    },
+    {
+      "label": "the market daily object is not mutated in place",
+      "passed": true
+    },
+    {
+      "label": "equal answers yield identical evaluations",
+      "passed": true
+    },
+    {
+      "label": "unavailable() claims neither a pass nor a block",
+      "passed": true
+    },
+    {
+      "label": "publicRow refuses a wrong-kind or wrong-owner row without inventing answers",
+      "passed": true
+    }
+  ],
+  "scope": "M106 four-question state-gate policy and answer contract: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

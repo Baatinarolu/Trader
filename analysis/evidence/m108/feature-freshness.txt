@@ -1,0 +1,16 @@
+ok today and yesterday are readable days
+ok a day that has not happened is refused, not read as nothing recorded
+ok the same refusal covers the history surface
+ok a malformed day is refused at both surfaces
+ok a non-string day is refused
+ok the progress period refuses a future day
+ok the progress period refuses a reversed or over-long span
+ok a single-day period is allowed
+ok the write path pins the session to the server’s own day and takes no day input
+ok a session running past UTC midnight keeps measuring its running time
+ok the running session is visible on the new day and not on the old one
+ok the receipt lands on the day the session was completed and says which day that is
+ok the previous day shows nothing recorded, never the later session
+ok the progress period counts the session on its completion day only
+ok the completion-day period counts it once
+M108 practice day policy and UTC boundaries: 15 passed, 0 failed

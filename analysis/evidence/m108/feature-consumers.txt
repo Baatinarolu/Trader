@@ -1,0 +1,16 @@
+ok a session can be opened with a saved preset
+ok the completed session carries the measured running time
+ok the briefing carries the practice day block
+ok the practice block carries no permission, gate or score field
+ok the practice block claims no effect and no verification
+ok the practice block never claims the app played the declared ambience
+ok the journal day carries that day’s practice block
+ok the practice block is not the day’s trading intention and does not carry it
+ok the state gate block is unchanged by practice writes
+ok another day shows nothing recorded rather than today’s session
+ok a foreign trader sees no practice records
+ok practice state never appears in a trade payload or a trade refusal
+ok the M105 identity surface is untouched and carries no practice key
+ok the practice module is required by the API alone: no bot, signal, risk or grading path reads it
+ok no practice text promises permission, a score or a streak
+M108 practice consumers: day surfaces, separation and no authority: 15 passed, 0 failed

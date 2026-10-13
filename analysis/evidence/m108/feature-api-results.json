@@ -1,0 +1,204 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 49,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the practice surface answers with the saved options and an idle timer",
+      "passed": true
+    },
+    {
+      "label": "an empty day is unrecorded and is not a failure",
+      "passed": true
+    },
+    {
+      "label": "no length, ambience or intention is preselected on an idle timer",
+      "passed": true
+    },
+    {
+      "label": "the payload claims no state, no effect and no authority",
+      "passed": true
+    },
+    {
+      "label": "starting without a saved preset or h/m/s is refused",
+      "passed": true
+    },
+    {
+      "label": "a money target is refused as a practice intention too, and nothing is written",
+      "passed": true
+    },
+    {
+      "label": "no caller clock, owner, account or elapsed time is accepted",
+      "passed": true
+    },
+    {
+      "label": "a stale revision is a conflict, not a write",
+      "passed": true
+    },
+    {
+      "label": "a saved preset starts a running timer at zero on the server’s clock",
+      "passed": true
+    },
+    {
+      "label": "the chosen ambience is recorded as the trader’s declaration and never as playback",
+      "passed": true
+    },
+    {
+      "label": "the optional intention is kept unverified, not labelled process-oriented",
+      "passed": true
+    },
+    {
+      "label": "a second start is refused while a session is open",
+      "passed": true
+    },
+    {
+      "label": "the running time is measured by the server, not reported by the caller",
+      "passed": true
+    },
+    {
+      "label": "bell markers are elapsed-time marks inside the measured time",
+      "passed": true
+    },
+    {
+      "label": "pause keeps the measured running time and counts one pause",
+      "passed": true
+    },
+    {
+      "label": "a paused gap is not counted as practice",
+      "passed": true
+    },
+    {
+      "label": "resume restarts the running clock without losing the earlier running time",
+      "passed": true
+    },
+    {
+      "label": "completing writes one receipt with the server-measured running time",
+      "passed": true
+    },
+    {
+      "label": "the receipt carries the chosen length, the declaration and the note",
+      "passed": true
+    },
+    {
+      "label": "reaching the chosen length is a fact, and no effect is claimed about it",
+      "passed": true
+    },
+    {
+      "label": "the day totals are the recorded sessions and their measured seconds",
+      "passed": true
+    },
+    {
+      "label": "nothing is carried over once the session is complete",
+      "passed": true
+    },
+    {
+      "label": "history is readonly and keeps the recorded receipt",
+      "passed": true
+    },
+    {
+      "label": "progress counts records, never results",
+      "passed": true
+    },
+    {
+      "label": "progress has no target, no score and says so",
+      "passed": true
+    },
+    {
+      "label": "progress is bounded and ordered",
+      "passed": true
+    },
+    {
+      "label": "a custom h/m/s length is accepted and labelled custom",
+      "passed": true
+    },
+    {
+      "label": "completing early is recorded as it happened, with no failure label",
+      "passed": true
+    },
+    {
+      "label": "the second record of the day is a second version, both retained",
+      "passed": true
+    },
+    {
+      "label": "cancel writes no session at all",
+      "passed": true
+    },
+    {
+      "label": "completing or cancelling with nothing open is refused",
+      "passed": true
+    },
+    {
+      "label": "a timer open for more than 24 hours cannot be completed as one session",
+      "passed": true
+    },
+    {
+      "label": "cancelling that abandoned timer writes nothing and claims nothing",
+      "passed": true
+    },
+    {
+      "label": "a day that has not happened is refused at the day surface",
+      "passed": true
+    },
+    {
+      "label": "a malformed day is refused at the day surface",
+      "passed": true
+    },
+    {
+      "label": "another trader sees an unrecorded day, never these records",
+      "passed": true
+    },
+    {
+      "label": "another trader starting a session does not touch this trader’s records",
+      "passed": true
+    },
+    {
+      "label": "the briefing carries the practice day view with no authority",
+      "passed": true
+    },
+    {
+      "label": "the journal day carries that day’s practice records only",
+      "passed": true
+    },
+    {
+      "label": "another day shows nothing recorded, never today’s sessions",
+      "passed": true
+    },
+    {
+      "label": "practice state never appears in a trade refusal: it is not a gate",
+      "passed": true
+    },
+    {
+      "label": "the backup carries the practice records",
+      "passed": true
+    },
+    {
+      "label": "a restored archive is accepted as an archive",
+      "passed": true
+    },
+    {
+      "label": "a restored archive never becomes this trader’s recorded session",
+      "passed": true
+    },
+    {
+      "label": "progress counts the archive separately and never merges it in",
+      "passed": true
+    },
+    {
+      "label": "two receipts and one archive are stored under this trader",
+      "passed": true
+    },
+    {
+      "label": "a recorded session cannot be edited in place",
+      "passed": true
+    },
+    {
+      "label": "a recorded session cannot be re-dated",
+      "passed": true
+    },
+    {
+      "label": "deleting the trader removes their practice records with them",
+      "passed": true
+    }
+  ],
+  "scope": "M108 practice API and server-measured timer: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

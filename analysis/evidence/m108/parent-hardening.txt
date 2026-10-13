@@ -1,0 +1,17 @@
+FAIL every action refuses an unknown or missing revision before any write undefined
+FAIL the pause action on an idle timer is a conflict and writes nothing "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/practice/timer</pre>\n</body>\n</html>\n"
+FAIL the resume action on an idle timer is a conflict and writes nothing "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/practice/timer</pre>\n</body>\n</html>\n"
+FAIL the complete action on an idle timer is a conflict and writes nothing "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/practice/timer</pre>\n</body>\n</html>\n"
+FAIL the cancel action on an idle timer is a conflict and writes nothing "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/practice/timer</pre>\n</body>\n</html>\n"
+FAIL start refuses an unlisted bell interval, an unlisted ambience and a mixed length undefined
+FAIL start refuses an intention over the character cap or with control characters undefined
+FAIL a valid start is accepted once undefined
+FAIL a write replayed with a consumed revision is a conflict, never a second write undefined
+FAIL a paused timer refuses a second pause and a resume starts from paused undefined
+FAIL a running timer refuses a second resume undefined
+LibsqlError: SQLITE_ERROR: no such table: practice_timers
+    at mapSqliteError (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:678:16)
+    at executeStmt (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:581:15)
+    at Sqlite3Client.execute (/home/user/Trader/extracted/tradejournal/node_modules/@libsql/client/lib-cjs/sqlite3.js:268:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+M108 practice hardening, rollback and no-authority proof: 0 passed, 12 failed

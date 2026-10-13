@@ -1,0 +1,39 @@
+diff --git a/src/practice.js b/src/practice.js
+index 7776dbd..18aed16 100644
+--- a/src/practice.js
++++ b/src/practice.js
+@@ -96,6 +96,8 @@ const ambienceValue = (v) => { if (typeof v !== 'string' || !AMBIENCE.includes(v
+  * refused here for the same reason it is refused there. */
+ function intention(value) {
+   if (value === null || value === undefined) return { intention: null, framing: null, cues: null };
++  /* Leaving the field empty is the normal case for an optional line, not an error. */
++  if (typeof value === 'string' && !value.trim()) return { intention: null, framing: null, cues: null };
+   try {
+     const text = Intention.text(value);
+     const c = Intention.classify(text);
+@@ -181,13 +183,13 @@ async function viewOn(store, userId, { nowMs = Date.now(), date = null } = {}) {
+   const readable = rows.map(publicRow);
+   /* A row this app cannot read back is never counted as a recorded session or a measured
+    * second: the totals are the readable receipts only. */
+-  const recorded = readable;
++  const recorded = readable.filter((s) => s.state === 'recorded');
+   const archives = readable.filter((s) => s.state === 'imported_unverified');
+   const seconds = recorded.reduce((n, s) => n + (Number.isSafeInteger(s.elapsed_seconds) ? s.elapsed_seconds : 0), 0);
+   return {
+     schema: VERSION, day: target, today: utcDay(nowMs), same_day: target === utcDay(nowMs),
+-    state: readable.length ? 'recorded' : 'unrecorded',
+-    message: readable.length ? 'Practice sessions recorded for this day: server-measured running time only.' : 'No practice session recorded for this day. Nothing is carried over, and an empty day is not a failure.',
++    state: rows.length ? 'recorded' : 'unrecorded',
++    message: rows.length ? 'Practice sessions recorded for this day: server-measured running time only.' : 'No practice session recorded for this day. Nothing is carried over, and an empty day is not a failure.',
+     sessions: readable, archives, recorded_seconds: seconds, sessions_count: recorded.length, imported_count: archives.length,
+     timer: publicTimer(row, nowMs), presets: PRESETS, custom: { min_seconds: CUSTOM_MIN_SECONDS, max_seconds: CUSTOM_MAX_SECONDS, max_hours: 2 },
+     ambience_options: AMBIENCE, bell_intervals: BELL_INTERVALS, toolkit: TOOLKIT, char_max: CHAR_MAX,
+@@ -205,7 +207,7 @@ async function progress(userId, { from, to, nowMs = Date.now() } = {}) {
+   const { db } = require('./db');
+   const rows = await db.prepare('SELECT * FROM practice_sessions WHERE user_id=? ORDER BY day,id').all(userId);
+   const inRange = rows.filter((r) => typeof r.day === 'string' && r.day >= start && r.day <= end).map(publicRow);
+-  const recorded = inRange;
++  const recorded = inRange.filter((r) => r.state === 'recorded');
+   const days = [...new Set(recorded.map((r) => r.day))].sort();
+   let run = 0;
+   for (let d = new Date(end + 'T00:00:00.000Z'); days.includes(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() - 1)) run++;

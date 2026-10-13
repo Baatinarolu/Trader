@@ -1,0 +1,72 @@
+ok the schema name is versioned
+ok the basis refuses effect/gate/score claims
+ok the five saved presets are the episode’s own minutes
+ok a custom length is bounded 1 minute to 2 hours
+ok a saved preset resolves to its own seconds
+ok a custom h/m/s length resolves to seconds and is labelled custom
+ok length contract rejects a preset and h/m/s together
+ok length contract rejects an unknown preset
+ok length contract rejects only some custom fields
+ok length contract rejects a custom length below one minute
+ok length contract rejects a custom length above two hours
+ok length contract rejects non-integer minutes
+ok length contract rejects negative seconds
+ok length contract rejects sixty minutes instead of an hour
+ok length contract rejects more than two hours in hours
+ok the bell intervals are elapsed-time markers, none first
+ok markers fall on the interval inside the measured running time
+ok a marker that has not been reached is not listed
+ok no interval means no marker
+ok a bad interval is refused
+ok the six saved ambience options are recorded choices, none first
+ok the toolkit has three groups and every group is populated
+ok every toolkit item carries steps, a note and an honest source label
+ok no toolkit item claims an effect on the trader
+ok a physiological word in the toolkit is attributed and disclaimed, never asserted
+ok an optional practice intention is kept as free text and labelled unverified
+ok the episode’s own anti-example is refused here too, with its own code
+ok an outcome without an amount is flagged, not refused
+ok a negated money sentence is not a target
+ok no practice intention can ever be labelled a saved process template
+ok no intention at all is allowed and stays null
+ok intention contract rejects a non-string
+ok intention contract rejects over the character cap
+ok intention contract rejects a control character
+FAIL an empty or whitespace-only intention line is "no intention", never an error and never a zero-length intention undefined
+ok a post-session note is optional free text
+ok a note over 2000 characters is refused
+ok a note with control characters is refused
+ok the day policy is the app’s one policy: today is readable
+ok a day that has not happened is refused, not read as nothing recorded
+ok a malformed day is refused
+ok a non-string day is refused
+ok an idle timer measures zero and claims nothing
+ok a running timer is measured from the server’s own clock
+ok a paused gap is not counted
+ok a running timer with a future start is unavailable, not guessed
+ok an unknown timer state is unavailable with a warning
+ok runningElapsed refuses to invent an elapsed time for a corrupt row
+ok a recorded session reads back as measured running time and claims nothing more
+ok a record shorter than its chosen length says so as a fact, not a failure
+ok an imported archive is labelled imported and never recorded
+ok a record carrying an unknown preset is unavailable, not repaired
+ok a record carrying an unknown ambience is unavailable
+ok a record with a non-listed bell interval is unavailable
+ok a record with negative measured time is unavailable
+ok a record with a bad receipt is unavailable
+ok a record with an unknown schema version is unavailable
+ok the write contract accepts only the named actions and the named fields
+ok an unknown action is refused
+ok a missing or malformed revision is refused
+ok no caller clock, account, owner or elapsed time is accepted
+ok portable history requires version 1
+ok portable history is bounded
+ok an archived session keeps its own words rather than being refused
+ok an archived duration given in seconds is converted, not dropped
+ok an archived session with no readable duration is omitted with a warning
+ok an archived session with an unknown preset is omitted with a warning
+ok an archived future receipt is not accepted as receiving-clock proof
+ok an archived session with no readable day keeps its record without claiming a day
+ok the unavailable payload claims nothing and blocks nothing
+ok the day policy runs through the same module the M107 intention uses
+M108 practice policy, presets, bells and honest reads: 70 passed, 1 failed

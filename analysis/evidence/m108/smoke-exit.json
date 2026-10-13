@@ -1,0 +1,14 @@
+{
+  "exit_code": 0,
+  "status": "completed",
+  "duration_seconds": 99.4,
+  "views_passed": 22,
+  "conditional_views_offered": 22,
+  "canvas_environment_limitations": 8,
+  "parent_control": {
+    "file": "smoke-parent-control.txt",
+    "views_passed": 22,
+    "exit_code": 0,
+    "why": "The unchanged M107 parent app, served and measured with the same harness and the same synthetic fixtures, also offered 22 conditional view/deep-dive entries (21 in the M107 record): the harness clicks the measured \"full\" filter only when that chip exists as a #content .chip, so the offered count follows the sample rather than the code. Identical 22/22 with 0 UI-style failures and 0 console errors on both trees, 8 canvas environment limitations each — a data condition, not an M108 view failure. The practice surface is measured separately by probe-m108-ui.js (29/0) and probe-m108-archive-ui.js (15/0) against a real server."
+  }
+}

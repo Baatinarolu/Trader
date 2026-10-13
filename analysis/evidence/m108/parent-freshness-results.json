@@ -1,0 +1,50 @@
+{
+  "app": "/tmp/m108-parent/app",
+  "pass": 0,
+  "fail": 10,
+  "results": [
+    {
+      "label": "today and yesterday are readable days",
+      "passed": false
+    },
+    {
+      "label": "a day that has not happened is refused, not read as nothing recorded",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/practice</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "the same refusal covers the history surface",
+      "passed": false
+    },
+    {
+      "label": "a malformed day is refused at both surfaces",
+      "passed": false
+    },
+    {
+      "label": "a non-string day is refused",
+      "passed": false
+    },
+    {
+      "label": "the progress period refuses a future day",
+      "passed": false
+    },
+    {
+      "label": "the progress period refuses a reversed or over-long span",
+      "passed": false
+    },
+    {
+      "label": "a single-day period is allowed",
+      "passed": false
+    },
+    {
+      "label": "the write path pins the session to the server’s own day and takes no day input",
+      "passed": false
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "Cannot read properties of undefined (reading 'state')"
+    }
+  ],
+  "scope": "M108 practice day policy and UTC boundaries: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

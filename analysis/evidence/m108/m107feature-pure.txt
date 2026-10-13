@@ -1,0 +1,47 @@
+ok the four saved examples are verbatim and each is one sentence
+ok the examples are behavioural and within control (no money, no prediction)
+ok basis refuses gate/score/verification claims
+ok the worked counter-example “make $5,000 today” is refused with its own code
+ok an outcome percentage target is refused
+ok a negated money sentence is process language, not a target
+ok an outcome without an amount is flagged, not refused
+ok a market prediction is flagged as unverified, never as a plan
+ok free process text is stored unverified rather than labelled process-oriented
+ok two sentences warn but are kept
+ok the cues are the app’s own measurements, not a verdict
+ok one single-line sentence up to the character cap is accepted
+ok text contract rejects empty
+ok text contract rejects whitespace
+ok text contract rejects too long
+ok text contract rejects multi-line
+ok text contract rejects non-string
+ok a template id is stored as the saved example, framed as such
+ok free text is framed unverified, never process_template
+ok choosing a template and writing text at once is refused
+ok neither a template nor text is refused
+ok an unknown template id is refused
+ok write contract rejects missing revision
+ok write contract rejects short revision
+ok write contract rejects caller day
+ok write contract rejects caller clock
+ok write contract rejects caller source
+ok write contract rejects caller owner
+ok no record for the day is unrecorded, not a failure and never carried over
+ok an earlier day’s intention is reported as history only, never as today’s
+ok a recorded template is the day’s intention with its receipt
+ok the record carries no score, percentage, net or permission field
+ok free text keeps its unverified warning in the day view
+ok outcome-framed words are recorded as unverified rather than rewritten
+ok a historical day shows exactly that day’s record, read-only
+ok an invalid requested date claims nothing
+ok a day that has not happened cannot be read as one that did
+ok a future/corrupt receipt cannot claim that day was recorded
+ok a foreign schema version is unavailable, not silently re-read
+ok imported words never become the account’s recorded intention
+ok the newest record for the day wins
+ok a template row whose stored text was tampered with is unavailable
+ok an imported archive never claims a pass, a day or a score
+ok equal records yield identical evaluations
+ok unavailable() claims neither a record nor a failure
+ok publicRow refuses a wrong-owner row without inventing words
+M107 daily process intention policy and classifier: 46 passed, 0 failed

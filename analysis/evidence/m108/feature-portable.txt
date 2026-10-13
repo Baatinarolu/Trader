@@ -1,0 +1,17 @@
+ok the backup carries a versioned practice bundle and nothing more
+ok the exported records carry no score, streak or summary field
+ok the export keeps the measured running time and the trader’s own words
+ok a well-formed archive is accepted
+ok the restored session is labelled imported, never recorded
+ok the restored session keeps its original clock and version as history
+ok restoring never touches the trader’s own recorded day
+ok progress counts the archive separately and never merges it
+ok importing the same archive twice adds a second archive rather than editing the first
+ok malformed archives warn instead of pretending to restore
+ok a record with no readable day is kept without claiming a day
+ok a record with an unusable duration or preset is omitted, not repaired
+ok a record with an unlisted ambience falls back to none rather than inventing a sound
+ok a foreign trader importing the same bundle keeps their own archive counts
+ok the export of the receiver still carries their own records only
+ok deleting the trader removes their archives with them
+M108 practice backup and restore: 16 passed, 0 failed

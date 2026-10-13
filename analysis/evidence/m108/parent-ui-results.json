@@ -1,0 +1,17 @@
+{
+  "app": "/tmp/m108-api-stage/app",
+  "pass": 0,
+  "fail": 2,
+  "results": [
+    {
+      "label": "actual HTML loads the practice view before the dashboard and journal that render it",
+      "passed": false
+    },
+    {
+      "label": "probe crashed: ENOENT: no such file or directory, open '/tmp/m108-api-stage/app/public/js/views/practice.js'",
+      "passed": false,
+      "detail": "Error: ENOENT: no such file or directory, open '/tmp/m108-api-stage/app/public/js/views/practice.js'\n    at Object.readFileSync (node:fs:440:20)\n    at /home/user/Trader/analysis/probe-m108-ui.js:38:23\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async finish (/home/user/Trader/analysis/m108-test-support.js:11:50)"
+    }
+  ],
+  "scope": "M108 real DOM: the practice card, the server-measured timer and the honest labels: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

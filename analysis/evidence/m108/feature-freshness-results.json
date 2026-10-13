@@ -1,0 +1,68 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 15,
+  "fail": 0,
+  "results": [
+    {
+      "label": "today and yesterday are readable days",
+      "passed": true
+    },
+    {
+      "label": "a day that has not happened is refused, not read as nothing recorded",
+      "passed": true
+    },
+    {
+      "label": "the same refusal covers the history surface",
+      "passed": true
+    },
+    {
+      "label": "a malformed day is refused at both surfaces",
+      "passed": true
+    },
+    {
+      "label": "a non-string day is refused",
+      "passed": true
+    },
+    {
+      "label": "the progress period refuses a future day",
+      "passed": true
+    },
+    {
+      "label": "the progress period refuses a reversed or over-long span",
+      "passed": true
+    },
+    {
+      "label": "a single-day period is allowed",
+      "passed": true
+    },
+    {
+      "label": "the write path pins the session to the server’s own day and takes no day input",
+      "passed": true
+    },
+    {
+      "label": "a session running past UTC midnight keeps measuring its running time",
+      "passed": true
+    },
+    {
+      "label": "the running session is visible on the new day and not on the old one",
+      "passed": true
+    },
+    {
+      "label": "the receipt lands on the day the session was completed and says which day that is",
+      "passed": true
+    },
+    {
+      "label": "the previous day shows nothing recorded, never the later session",
+      "passed": true
+    },
+    {
+      "label": "the progress period counts the session on its completion day only",
+      "passed": true
+    },
+    {
+      "label": "the completion-day period counts it once",
+      "passed": true
+    }
+  ],
+  "scope": "M108 practice day policy and UTC boundaries: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

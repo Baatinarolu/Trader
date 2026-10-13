@@ -1,0 +1,68 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 15,
+  "fail": 0,
+  "results": [
+    {
+      "label": "a session can be opened with a saved preset",
+      "passed": true
+    },
+    {
+      "label": "the completed session carries the measured running time",
+      "passed": true
+    },
+    {
+      "label": "the briefing carries the practice day block",
+      "passed": true
+    },
+    {
+      "label": "the practice block carries no permission, gate or score field",
+      "passed": true
+    },
+    {
+      "label": "the practice block claims no effect and no verification",
+      "passed": true
+    },
+    {
+      "label": "the practice block never claims the app played the declared ambience",
+      "passed": true
+    },
+    {
+      "label": "the journal day carries that day’s practice block",
+      "passed": true
+    },
+    {
+      "label": "the practice block is not the day’s trading intention and does not carry it",
+      "passed": true
+    },
+    {
+      "label": "the state gate block is unchanged by practice writes",
+      "passed": true
+    },
+    {
+      "label": "another day shows nothing recorded rather than today’s session",
+      "passed": true
+    },
+    {
+      "label": "a foreign trader sees no practice records",
+      "passed": true
+    },
+    {
+      "label": "practice state never appears in a trade payload or a trade refusal",
+      "passed": true
+    },
+    {
+      "label": "the M105 identity surface is untouched and carries no practice key",
+      "passed": true
+    },
+    {
+      "label": "the practice module is required by the API alone: no bot, signal, risk or grading path reads it",
+      "passed": true
+    },
+    {
+      "label": "no practice text promises permission, a score or a streak",
+      "passed": true
+    }
+  ],
+  "scope": "M108 practice consumers: day surfaces, separation and no authority: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

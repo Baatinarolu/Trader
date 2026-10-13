@@ -1,0 +1,20 @@
+ok actual HTML loads the shared gate view before the dashboard that renders it
+ok the card states the saved rule and refuses to read the trader’s mind
+ok an account that never answered is shown as not adopted, never as clear/pass
+ok the card offers the four questions and a readonly history, and no score
+ok the editor asks exactly four questions with a yes and a no each
+ok no answer is preselected — there is no default yes
+ok the editor stores no free text: there is no text input to judge or misread
+ok an unchecked save is refused with an explicit message rather than a silent pass
+ok saving four answered questions is recorded and says what did NOT change
+ok the recorded no comes back as a failed gate with the question named
+ok the failed card names the trader’s own no and the consequence
+ok the failed card still refuses any readiness/score reading
+ok readonly history shows the retained answers and receipts, not a verdict
+ok an adopted account with no current check is shown as unanswered and refusing
+ok a fresh pass is labelled as the trader’s own answers with an expiry
+ok the pass names all four questions with their recorded answers
+ok an unavailable read is refused as context, not shown as a pass or a block
+ok the card converts nothing into confidence: no percentage, dial or grade is rendered
+ok the whole run produced no uncaught DOM error
+M106 real DOM: four-question card, strict editor and readonly history: 19 passed, 0 failed

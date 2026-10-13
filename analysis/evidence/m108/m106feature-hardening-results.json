@@ -1,0 +1,112 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 26,
+  "fail": 0,
+  "results": [
+    {
+      "label": "two writers holding the same displayed revision produce exactly one record and one 409",
+      "passed": true
+    },
+    {
+      "label": "the 409 tells the trader to reload rather than silently overwriting the other answer",
+      "passed": true
+    },
+    {
+      "label": "only one version exists after the race",
+      "passed": true
+    },
+    {
+      "label": "the immutability guard is declared BEFORE UPDATE only, so declared account deletion still detaches rows",
+      "passed": true
+    },
+    {
+      "label": "a trader (or a bug) cannot rewrite a recorded answer set or its receipt in place",
+      "passed": true
+    },
+    {
+      "label": "deleting an account detaches its answers (account_id null) and never deletes the record",
+      "passed": true
+    },
+    {
+      "label": "a detached account id is a 404 with no invented answers",
+      "passed": true
+    },
+    {
+      "label": "the retained orphan row is still visible readonly in the owner’s own history",
+      "passed": true
+    },
+    {
+      "label": "an orphaned row never leaks into another owner’s history or gate",
+      "passed": true
+    },
+    {
+      "label": "a stored row from an unknown schema version is unavailable, not a pass",
+      "passed": true
+    },
+    {
+      "label": "the unavailable gate refuses a live entry and claims no pass",
+      "passed": true
+    },
+    {
+      "label": "removing the foreign row restores the honest reading, which was never rewritten",
+      "passed": true
+    },
+    {
+      "label": "a store failure during a write is a 503 that claims no receipt and no changed state",
+      "passed": true
+    },
+    {
+      "label": "the failed write stored nothing and left the previous answers intact",
+      "passed": true
+    },
+    {
+      "label": "an unreadable store is 503 rather than a fabricated not_adopted/pass",
+      "passed": true
+    },
+    {
+      "label": "while the store is unreadable the app refuses the live entry instead of claiming a clear state",
+      "passed": true
+    },
+    {
+      "label": "when the store comes back the honest stored answers are the state again",
+      "passed": true
+    },
+    {
+      "label": "export publishes owned answers with receipts, keeps detached history and claims no verification",
+      "passed": true
+    },
+    {
+      "label": "re-importing an owned backup appends copies instead of rewriting the originals",
+      "passed": true
+    },
+    {
+      "label": "every imported copy is labelled imported_unverified and keeps the original clock as history",
+      "passed": true
+    },
+    {
+      "label": "imported copies never grant a pass: the state still comes from the trader’s own rows",
+      "passed": true
+    },
+    {
+      "label": "the trader can record an explicit \"not answered now\" as the newest row",
+      "passed": true
+    },
+    {
+      "label": "with archives and an explicit null the account stays adopted and unanswered — never a pass",
+      "passed": true
+    },
+    {
+      "label": "that adopted-but-unanswered account cannot open a live entry",
+      "passed": true
+    },
+    {
+      "label": "the journal-only path is still legal for the same account, so history is never held hostage",
+      "passed": true
+    },
+    {
+      "label": "the whole run left every recorded row intact and append-only",
+      "passed": true
+    }
+  ],
+  "scope": "M106 concurrency/immutability/orphan/store-failure hardening: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

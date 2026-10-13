@@ -1,0 +1,15 @@
+ok actual full JSON backup carries standalone period record/answers/focus/snapshot
+ok destination IDs/user/account/source/newreceipt forced, original completed proof NOT replayed
+ok original declared completion clock remains unverified historic, not fresh review
+ok snapshot/answers/chosen focus retained, not recalc against destination finance
+ok source owner cannot read destination-owned restored artifact404
+ok re-restore appends history without clobber priorfocus, original historicclock retained
+ok malformed optional artifact warns, finance remains legal false
+ok malformed optional artifact warns, finance remains legal {"version":1,"records":"bad"}
+ok malformed optional artifact warns, finance remains legal {"version":1,"records":[{"kind":"month","period_st
+ok malformed optional artifact warns, finance remains legal {"version":1,"records":[{},{},{},{},{},{},{},{},{}
+ok future original declared clock omittedwithwarning, not receivingtime/broker proof
+ok real artifact-store503 atomically rolls back finance/artifact import mapping
+ok optional missing review store cannot prevent financial backup; explicitunavailable marker
+ok unavailable priorbackup marker restoreswarning, never inventedknownemptyreviews
+M99/M101 full JSON artifact backup and forced historical restore: 14 passed, 0 failed

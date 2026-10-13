@@ -1,0 +1,29 @@
+ok every action refuses an unknown or missing revision before any write
+ok the pause action on an idle timer is a conflict and writes nothing
+ok the resume action on an idle timer is a conflict and writes nothing
+ok the complete action on an idle timer is a conflict and writes nothing
+ok the cancel action on an idle timer is a conflict and writes nothing
+ok start refuses an unlisted bell interval, an unlisted ambience and a mixed length
+ok start refuses an intention over the character cap or with control characters
+ok a valid start is accepted once
+ok a write replayed with a consumed revision is a conflict, never a second write
+ok a paused timer refuses a second pause and a resume starts from paused
+ok a running timer refuses a second resume
+ok a stored timer with an unknown version reads as unavailable, not as a running clock
+ok a write on a corrupt timer fails closed with 503 and no partial row
+ok the timer row is exactly where it was before the corrupt attempts
+ok the note is stored exactly as written, including markup, and escaped only at render
+ok the receipt keeps the measured running time and the pause count
+ok no HTTP route can edit, re-date or delete a receipt
+ok the receipt is unchanged after those attempts
+ok a row this app cannot read is unavailable in the day array while the readable one is not
+ok the corrupted row is not counted as a recorded session
+ok history reports the unreadable row as unavailable rather than repairing it
+ok another trader’s timer is a separate row and is untouched by these writes
+ok this trader’s revision and records are unaffected by the other trader’s write
+ok an unowned or numeric account id is never an input to a practice surface
+ok a completed practice session changes no trade, risk or finance row
+ok the practice payload exposes no permission, gate, score, percentage or streak field
+ok the progress payload states that its numbers are records, not results
+ok a refused practice write never reports a finance change
+M108 practice hardening, rollback and no-authority proof: 28 passed, 0 failed

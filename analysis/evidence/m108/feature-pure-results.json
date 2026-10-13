@@ -1,0 +1,292 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 71,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the schema name is versioned",
+      "passed": true
+    },
+    {
+      "label": "the basis refuses effect/gate/score claims",
+      "passed": true
+    },
+    {
+      "label": "the five saved presets are the episode’s own minutes",
+      "passed": true
+    },
+    {
+      "label": "a custom length is bounded 1 minute to 2 hours",
+      "passed": true
+    },
+    {
+      "label": "a saved preset resolves to its own seconds",
+      "passed": true
+    },
+    {
+      "label": "a custom h/m/s length resolves to seconds and is labelled custom",
+      "passed": true
+    },
+    {
+      "label": "length contract rejects a preset and h/m/s together",
+      "passed": true
+    },
+    {
+      "label": "length contract rejects an unknown preset",
+      "passed": true
+    },
+    {
+      "label": "length contract rejects only some custom fields",
+      "passed": true
+    },
+    {
+      "label": "length contract rejects a custom length below one minute",
+      "passed": true
+    },
+    {
+      "label": "length contract rejects a custom length above two hours",
+      "passed": true
+    },
+    {
+      "label": "length contract rejects non-integer minutes",
+      "passed": true
+    },
+    {
+      "label": "length contract rejects negative seconds",
+      "passed": true
+    },
+    {
+      "label": "length contract rejects sixty minutes instead of an hour",
+      "passed": true
+    },
+    {
+      "label": "length contract rejects more than two hours in hours",
+      "passed": true
+    },
+    {
+      "label": "the bell intervals are elapsed-time markers, none first",
+      "passed": true
+    },
+    {
+      "label": "markers fall on the interval inside the measured running time",
+      "passed": true
+    },
+    {
+      "label": "a marker that has not been reached is not listed",
+      "passed": true
+    },
+    {
+      "label": "no interval means no marker",
+      "passed": true
+    },
+    {
+      "label": "a bad interval is refused",
+      "passed": true
+    },
+    {
+      "label": "the six saved ambience options are recorded choices, none first",
+      "passed": true
+    },
+    {
+      "label": "the toolkit has three groups and every group is populated",
+      "passed": true
+    },
+    {
+      "label": "every toolkit item carries steps, a note and an honest source label",
+      "passed": true
+    },
+    {
+      "label": "no toolkit item claims an effect on the trader",
+      "passed": true
+    },
+    {
+      "label": "a physiological word in the toolkit is attributed and disclaimed, never asserted",
+      "passed": true
+    },
+    {
+      "label": "an optional practice intention is kept as free text and labelled unverified",
+      "passed": true
+    },
+    {
+      "label": "the episode’s own anti-example is refused here too, with its own code",
+      "passed": true
+    },
+    {
+      "label": "an outcome without an amount is flagged, not refused",
+      "passed": true
+    },
+    {
+      "label": "a negated money sentence is not a target",
+      "passed": true
+    },
+    {
+      "label": "no practice intention can ever be labelled a saved process template",
+      "passed": true
+    },
+    {
+      "label": "no intention at all is allowed and stays null",
+      "passed": true
+    },
+    {
+      "label": "intention contract rejects a non-string",
+      "passed": true
+    },
+    {
+      "label": "intention contract rejects over the character cap",
+      "passed": true
+    },
+    {
+      "label": "intention contract rejects a control character",
+      "passed": true
+    },
+    {
+      "label": "an empty or whitespace-only intention line is \"no intention\", never an error and never a zero-length intention",
+      "passed": true
+    },
+    {
+      "label": "a post-session note is optional free text",
+      "passed": true
+    },
+    {
+      "label": "a note over 2000 characters is refused",
+      "passed": true
+    },
+    {
+      "label": "a note with control characters is refused",
+      "passed": true
+    },
+    {
+      "label": "the day policy is the app’s one policy: today is readable",
+      "passed": true
+    },
+    {
+      "label": "a day that has not happened is refused, not read as nothing recorded",
+      "passed": true
+    },
+    {
+      "label": "a malformed day is refused",
+      "passed": true
+    },
+    {
+      "label": "a non-string day is refused",
+      "passed": true
+    },
+    {
+      "label": "an idle timer measures zero and claims nothing",
+      "passed": true
+    },
+    {
+      "label": "a running timer is measured from the server’s own clock",
+      "passed": true
+    },
+    {
+      "label": "a paused gap is not counted",
+      "passed": true
+    },
+    {
+      "label": "a running timer with a future start is unavailable, not guessed",
+      "passed": true
+    },
+    {
+      "label": "an unknown timer state is unavailable with a warning",
+      "passed": true
+    },
+    {
+      "label": "runningElapsed refuses to invent an elapsed time for a corrupt row",
+      "passed": true
+    },
+    {
+      "label": "a recorded session reads back as measured running time and claims nothing more",
+      "passed": true
+    },
+    {
+      "label": "a record shorter than its chosen length says so as a fact, not a failure",
+      "passed": true
+    },
+    {
+      "label": "an imported archive is labelled imported and never recorded",
+      "passed": true
+    },
+    {
+      "label": "a record carrying an unknown preset is unavailable, not repaired",
+      "passed": true
+    },
+    {
+      "label": "a record carrying an unknown ambience is unavailable",
+      "passed": true
+    },
+    {
+      "label": "a record with a non-listed bell interval is unavailable",
+      "passed": true
+    },
+    {
+      "label": "a record with negative measured time is unavailable",
+      "passed": true
+    },
+    {
+      "label": "a record with a bad receipt is unavailable",
+      "passed": true
+    },
+    {
+      "label": "a record with an unknown schema version is unavailable",
+      "passed": true
+    },
+    {
+      "label": "the write contract accepts only the named actions and the named fields",
+      "passed": true
+    },
+    {
+      "label": "an unknown action is refused",
+      "passed": true
+    },
+    {
+      "label": "a missing or malformed revision is refused",
+      "passed": true
+    },
+    {
+      "label": "no caller clock, account, owner or elapsed time is accepted",
+      "passed": true
+    },
+    {
+      "label": "portable history requires version 1",
+      "passed": true
+    },
+    {
+      "label": "portable history is bounded",
+      "passed": true
+    },
+    {
+      "label": "an archived session keeps its own words rather than being refused",
+      "passed": true
+    },
+    {
+      "label": "an archived duration given in seconds is converted, not dropped",
+      "passed": true
+    },
+    {
+      "label": "an archived session with no readable duration is omitted with a warning",
+      "passed": true
+    },
+    {
+      "label": "an archived session with an unknown preset is omitted with a warning",
+      "passed": true
+    },
+    {
+      "label": "an archived future receipt is not accepted as receiving-clock proof",
+      "passed": true
+    },
+    {
+      "label": "an archived session with no readable day keeps its record without claiming a day",
+      "passed": true
+    },
+    {
+      "label": "the unavailable payload claims nothing and blocks nothing",
+      "passed": true
+    },
+    {
+      "label": "the day policy runs through the same module the M107 intention uses",
+      "passed": true
+    }
+  ],
+  "scope": "M108 practice policy, presets, bells and honest reads: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

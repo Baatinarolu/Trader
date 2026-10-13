@@ -1,0 +1,17 @@
+{
+  "app": "/tmp/m108-api-stage/app",
+  "pass": 1,
+  "fail": 1,
+  "results": [
+    {
+      "label": "the restore is accepted with warnings for the record that cannot be trusted",
+      "passed": true
+    },
+    {
+      "label": "probe crashed: Cannot read properties of undefined (reading 'card')",
+      "passed": false,
+      "detail": "TypeError: Cannot read properties of undefined (reading 'card')\n    at /home/user/Trader/analysis/probe-m108-archive-ui.js:41:20\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async finish (/home/user/Trader/analysis/m108-test-support.js:11:50)"
+    }
+  ],
+  "scope": "M108 real DOM: restored archives and unreadable rows stay readonly and separate: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

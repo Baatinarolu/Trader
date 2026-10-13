@@ -1,0 +1,25 @@
+ok a fresh account is not_adopted with a revision to write against
+ok recording four honest yes answers is a fresh pass
+ok the pass carries the APP window and an expiry, not an unbounded permission
+ok the recorded answers come back as given, with no sentiment or score added
+ok the revision returned by a write is the one the next write may use
+ok a write from a superseded displayed revision is refused 409 and stores nothing
+ok both versions are retained with server receipts, none deleted or rewritten
+ok a stored answer set cannot be rewritten in place
+ok explicit unknown is recorded as version 3 and is not a pass
+ok an explicit unknown keeps the account adopted, so the gate cannot be un-adopted by erasing an answer
+ok history is readonly own-account, newest last, with receipts
+ok history without an account still returns only the owner’s own rows
+ok another owner’s account id is a 404, not a cross-account read
+ok the other session cannot read this account’s gate
+ok a non-numeric account id is refused
+ok unauthenticated reads are 401
+ok a write carrying caller authority fields is refused 400 with nothing stored
+ok a partial answer set is refused rather than defaulted
+ok the refused writes stored nothing
+ok a second owned account reaches its own pass independently
+ok the first account’s state is untouched by the second account
+ok the briefing carries the gate for the desk, not a claim of readiness
+ok the owned day view carries the same gate object
+ok the full backup carries the answer history for portability
+M106 owned four-question answers over real HTTP/auth/SQL: 24 passed, 0 failed

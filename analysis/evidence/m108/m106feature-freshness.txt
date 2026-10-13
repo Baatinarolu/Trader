@@ -1,0 +1,23 @@
+ok a brand-new account is not_adopted with no receipt at all, so nothing is implied about the trader
+ok the published shape names the questions, window and basis even before any answer
+ok an answer recorded now is a pass at age 0 with an expiry one window ahead
+ok a fresh pass admits a live entry
+ok inside the window the same answers still stand
+ok inside the window the live entry is admitted
+ok one minute past the window the answers are stale, not permission
+ok past the window a live entry is refused as unanswered with nothing written
+ok the stale refusal states the age instead of pretending the trader failed a question
+ok no trade row was created by the refused entry
+ok answering fresh after a stale window is allowed and supersedes nothing already recorded
+ok the refreshed in-session answer re-admits the live entry
+ok a late-evening answer is a pass while it is still inside the window
+ok crossing UTC midnight expires it 50 minutes later even though the window has not closed
+ok a live entry on the next UTC day is refused until the trader answers again
+ok a future/corrupt receipt is unavailable and cannot be a pass
+ok a future receipt refuses the live entry instead of granting it
+ok after the corrupt row is removed the honest history is the state again, unchanged
+ok history is a readonly record of what was written, retained across every transition
+ok the fresh window never touches finance: equity is unchanged by every refusal above
+ok reading the gate never writes a row
+ok the revision changes with the stored rows, so a stale display cannot write
+M106 four-question freshness window and receipt canonicality: 22 passed, 0 failed

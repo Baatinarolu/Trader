@@ -1,0 +1,50 @@
+ok the practice surface answers with the saved options and an idle timer
+ok an empty day is unrecorded and is not a failure
+ok no length, ambience or intention is preselected on an idle timer
+ok the payload claims no state, no effect and no authority
+ok starting without a saved preset or h/m/s is refused
+ok a money target is refused as a practice intention too, and nothing is written
+ok no caller clock, owner, account or elapsed time is accepted
+ok a stale revision is a conflict, not a write
+ok a saved preset starts a running timer at zero on the server’s clock
+ok the chosen ambience is recorded as the trader’s declaration and never as playback
+ok the optional intention is kept unverified, not labelled process-oriented
+ok a second start is refused while a session is open
+ok the running time is measured by the server, not reported by the caller
+ok bell markers are elapsed-time marks inside the measured time
+ok pause keeps the measured running time and counts one pause
+ok a paused gap is not counted as practice
+ok resume restarts the running clock without losing the earlier running time
+ok completing writes one receipt with the server-measured running time
+ok the receipt carries the chosen length, the declaration and the note
+ok reaching the chosen length is a fact, and no effect is claimed about it
+ok the day totals are the recorded sessions and their measured seconds
+ok nothing is carried over once the session is complete
+ok history is readonly and keeps the recorded receipt
+ok progress counts records, never results
+ok progress has no target, no score and says so
+ok progress is bounded and ordered
+ok a custom h/m/s length is accepted and labelled custom
+ok completing early is recorded as it happened, with no failure label
+ok the second record of the day is a second version, both retained
+ok cancel writes no session at all
+ok completing or cancelling with nothing open is refused
+ok a timer open for more than 24 hours cannot be completed as one session
+ok cancelling that abandoned timer writes nothing and claims nothing
+ok a day that has not happened is refused at the day surface
+ok a malformed day is refused at the day surface
+ok another trader sees an unrecorded day, never these records
+ok another trader starting a session does not touch this trader’s records
+ok the briefing carries the practice day view with no authority
+ok the journal day carries that day’s practice records only
+ok another day shows nothing recorded, never today’s sessions
+ok practice state never appears in a trade refusal: it is not a gate
+ok the backup carries the practice records
+ok a restored archive is accepted as an archive
+ok a restored archive never becomes this trader’s recorded session
+ok progress counts the archive separately and never merges it in
+ok two receipts and one archive are stored under this trader
+ok a recorded session cannot be edited in place
+ok a recorded session cannot be re-dated
+ok deleting the trader removes their practice records with them
+M108 practice API and server-measured timer: 49 passed, 0 failed

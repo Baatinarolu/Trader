@@ -1,0 +1,120 @@
+{
+  "app": "/tmp/m108-pre-hardening/app",
+  "pass": 27,
+  "fail": 1,
+  "results": [
+    {
+      "label": "every action refuses an unknown or missing revision before any write",
+      "passed": true
+    },
+    {
+      "label": "the pause action on an idle timer is a conflict and writes nothing",
+      "passed": true
+    },
+    {
+      "label": "the resume action on an idle timer is a conflict and writes nothing",
+      "passed": true
+    },
+    {
+      "label": "the complete action on an idle timer is a conflict and writes nothing",
+      "passed": true
+    },
+    {
+      "label": "the cancel action on an idle timer is a conflict and writes nothing",
+      "passed": true
+    },
+    {
+      "label": "start refuses an unlisted bell interval, an unlisted ambience and a mixed length",
+      "passed": true
+    },
+    {
+      "label": "start refuses an intention over the character cap or with control characters",
+      "passed": true
+    },
+    {
+      "label": "a valid start is accepted once",
+      "passed": true
+    },
+    {
+      "label": "a write replayed with a consumed revision is a conflict, never a second write",
+      "passed": true
+    },
+    {
+      "label": "a paused timer refuses a second pause and a resume starts from paused",
+      "passed": true
+    },
+    {
+      "label": "a running timer refuses a second resume",
+      "passed": true
+    },
+    {
+      "label": "a stored timer with an unknown version reads as unavailable, not as a running clock",
+      "passed": true
+    },
+    {
+      "label": "a write on a corrupt timer fails closed with 503 and no partial row",
+      "passed": true
+    },
+    {
+      "label": "the timer row is exactly where it was before the corrupt attempts",
+      "passed": true
+    },
+    {
+      "label": "the note is stored exactly as written, including markup, and escaped only at render",
+      "passed": true
+    },
+    {
+      "label": "the receipt keeps the measured running time and the pause count",
+      "passed": true
+    },
+    {
+      "label": "no HTTP route can edit, re-date or delete a receipt",
+      "passed": true
+    },
+    {
+      "label": "the receipt is unchanged after those attempts",
+      "passed": true
+    },
+    {
+      "label": "a row this app cannot read is unavailable in the day array while the readable one is not",
+      "passed": true
+    },
+    {
+      "label": "the corrupted row is not counted as a recorded session",
+      "passed": false
+    },
+    {
+      "label": "history reports the unreadable row as unavailable rather than repairing it",
+      "passed": true
+    },
+    {
+      "label": "another trader’s timer is a separate row and is untouched by these writes",
+      "passed": true
+    },
+    {
+      "label": "this trader’s revision and records are unaffected by the other trader’s write",
+      "passed": true
+    },
+    {
+      "label": "an unowned or numeric account id is never an input to a practice surface",
+      "passed": true
+    },
+    {
+      "label": "a completed practice session changes no trade, risk or finance row",
+      "passed": true
+    },
+    {
+      "label": "the practice payload exposes no permission, gate, score, percentage or streak field",
+      "passed": true
+    },
+    {
+      "label": "the progress payload states that its numbers are records, not results",
+      "passed": true
+    },
+    {
+      "label": "a refused practice write never reports a finance change",
+      "passed": true
+    }
+  ],
+  "scope": "M108 practice hardening, rollback and no-authority proof: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or mental-state proof"
+}

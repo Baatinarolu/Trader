@@ -1,5 +1,56 @@
 # TradeJournal Pro
 
+## M108 — the regulation layer: a personal practice log (2026-10-13)
+
+The other half of Ep 28's *sanctuary* — the meditation timer, the interval bells, the
+ambient-sound choice, the post-session note, the progress view and the mental toolkit —
+now ships as an **independent practice log**. The **Practice** card sits on the Dashboard
+and on the owned day review, with two doors: *Open the practice timer* and *Progress
+(records, not results)*. It is deliberately narrow about what it can prove:
+**the only thing measured is elapsed server running time** — a paused gap does not count —
+and nothing in the app claims that a meditation happened, that anyone calmed down, or that
+any physiological, emotional or performance effect followed.
+
+**Timer.** The episode's own presets (5/10/15/30/60 minutes) or your own h/m/s length
+(1 minute – 2 hours), with start, pause, resume, complete and cancel. Interval bells are
+**elapsed-time markers** (none/1/2/5/10 minutes): they are listed as markers reached, and
+a bell is sounded with a short tone generated locally in your browser — no audio file
+ships and nothing is fetched. The **ambience** choice (none/rain/ocean/forest/fireplace/white
+noise) is recorded as *your own declaration* and every payload says so
+(`ambience_played_by_this_app:false`) — this app plays no ambient audio and streams
+nothing. A session left open for more than 24 hours cannot be completed as one session;
+cancel it instead. Every write carries the displayed revision, so a stale tab 409s with
+nothing written, and a reload button is always there.
+
+**Records, not results.** *Complete and record* writes an immutable receipt with the
+measured running time, the markers reached, the note you wrote (up to 2000 characters) and
+the optional one-line intention. The progress view counts **records**: sessions and
+measured seconds, by day or by period, plus "consecutive days with a recorded session" —
+never a streak to protect, a target, a score or a percentage
+(`counts_are_records_only:true`, `target:null`, `score:null`). An empty day is not a
+failure, stopping early is recorded exactly as it happened, and a stored receipt the app
+cannot read back is reported `unavailable` and **never counted** as a session or as a
+measured second.
+
+**No authority, and never desk-scoped.** The practice log is personal: no `/practice`
+route accepts an `account_id`, so a practice record cannot be attributed to an account or
+a desk. Nothing here admits, refuses, sizes, scores or gates a trade, and nothing changes
+risk, caps, routine, the core, grades or history — M64's mandatory 15-minute routine step,
+M106's fresh in-session four questions and M107's daily intention keep their own meaning.
+The optional intention line reuses M107's bounded classifier: free text stays stored as
+written and labelled **unverified**, and an asserted money target is refused with the same
+refusal code it gets there.
+
+**Measurement.** **M108 259/0 across 9 probes**, actual141-parent additive/restart
+migration 21/0; every prior cohort re-run unchanged (M107 231/1, M106 317/1 and M105 141/1
+with one declared milestone-only schema negative each, changes152/1, opportunities144/1,
+reviews159/1, behavior113/2, process106/2, screenshots223/3, emotions170/0,
+confluences160/0, execution260/0, routine321/0, offline178/0, market325/0, RAW596/156,
+DECLARED824/4). Ledger **132 = 102 done / 2 partial / 28 TODO**. Report
+`analysis/M108-SANCTUARY-PRACTICE.md` in the ZIP. Next M111/M112; no 70 % win-rate,
+causal/predictive edge, broker/provider/mental-state/human/meditation/pixel/production
+claim.
+
 ## M107 — one process intention for the day (2026-10-13)
 
 **Dashboard**, the owned **day review** and **Settings** now carry the saved rule from
@@ -772,9 +823,13 @@ completed/not-completed/unknown groups and evidence basis; unknown P&L is not ze
 It is descriptive only, not causal proof, per-trade overnight attribution or an
 instruction to resize/change strategy. No older completion is fabricated.
 
-M108 is **partial**: this mandatory routine timer is not the full Sanctuary presets,
-ambient audio, intention, toolkit or independent session-log/progress feature.
-M89 app-timed self-report provenance is separate from this routine. M106 fresh in-session questions, M111 fail-closed news and
+M108 is now **applied** as an independent practice log (presets/custom length, interval
+bells, declared ambience, toolkit text, immutable receipts, records-only progress). This
+routine step is unchanged and stays its own thing: a **mandatory 15-minute workflow timer
+under the routine**, not the practice log, and neither of the two is evidence that a
+meditation happened or that any mental state was reached. M89 app-timed self-report
+provenance is separate from this routine; M107's intention and M106's fresh in-session
+questions are separate from both. M111 fail-closed news and
 M112 allowed hours remain open. See [docs/GUARDRAILS.md](docs/GUARDRAILS.md) and
 [docs/API.md](docs/API.md#pre-market-routine).
 

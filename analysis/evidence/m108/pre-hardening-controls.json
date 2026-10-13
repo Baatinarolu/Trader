@@ -1,0 +1,20 @@
+{
+  "hardening": {
+    "tree": "the delivered runtime with the pre-hardening day view and empty-intention line (the api stage itself)",
+    "script": "analysis/probe-m108-hardening.js",
+    "pass": 27,
+    "fail": 1,
+    "exit_code": 1,
+    "output": "pre-hardening-hardening.txt",
+    "scope": "The unchanged M108 probes on the pre-hardening runtime (the exact policy stage pool/timer plus its routes): the hardening probe measures the day view counting a stored receipt it cannot read back as a recorded session, and the pure probe measures the empty optional intention line being refused as an error. The hardening stage made both honest and both probes are green on the delivered tree."
+  },
+  "pure": {
+    "tree": "the delivered runtime with the pre-hardening day view and empty-intention line (the api stage itself)",
+    "script": "analysis/probe-m108-pure.js",
+    "pass": 70,
+    "fail": 1,
+    "exit_code": 1,
+    "output": "pre-hardening-pure.txt",
+    "scope": "The unchanged M108 probes on the pre-hardening runtime (the exact policy stage pool/timer plus its routes): the hardening probe measures the day view counting a stored receipt it cannot read back as a recorded session, and the pure probe measures the empty optional intention line being refused as an error. The hardening stage made both honest and both probes are green on the delivered tree."
+  }
+}

@@ -1169,6 +1169,64 @@ stays legal; a real import-store failure rolls that request back atomically; a m
 answer store leaves the financial backup legal with an unavailable marker. Settings
 surfaces the warnings instead of hiding omissions.
 
+## M108 — personal practice log (timer, markers, toolkit, records-only progress)
+
+Additive owned `practice_timers` (one row per user: `idle|running|paused`,
+`accumulated_ms`, `pause_count`, `version`) and append-only `practice_sessions`
+(`human_declared` receipts + `imported_unverified` archives, immutable UPDATE facts, owner
+cascade), plus their unique `(user_id,day,version)` index, owner index and immutability
+trigger. **No `account_id` on any route**: practice is personal, never desk-scoped, never
+attributed to an account or a desk, and no write accepts a caller day, clock, elapsed time,
+source or owner.
+
+- `GET /practice?date=`: own day view — `state unrecorded|recorded`, that day's readable
+  sessions and archives, `recorded_seconds`/`sessions_count`/`imported_count` counted from
+  **readable `state:'recorded'` rows only**, presets (300/600/900/1800/3600s), custom
+  bounds 60–7200s/≤2h, six ambience options, five bell markers, the toolkit, `char_max:120`,
+  the displayed 64-hex `revision`, `authority:'none'`, `actual_meditation_verified:false`,
+  `broker_verified:false`. A malformed or not-yet day is refused through M107's `dayKey`.
+- `GET /practice/history?date=`: readonly own records; a stored row this app cannot read
+  back is reported `unavailable` verbatim and never repaired or counted.
+- `GET /practice/progress?from=&to=`: record counts over ≤366 past-or-today days —
+  `sessions_count`, `recorded_seconds`, `days_with_recorded_session`,
+  `consecutive_days_with_a_recorded_session_ending_on_to`, `counts_are_records_only:true`,
+  `target:null`, `score:null`. No goal, percentage or streak pressure; records, not results.
+- `POST /practice/timer`: `{action:start|pause|resume|complete|cancel, revision}` and, on
+  start, one saved `preset` **xor** `hours`/`minutes`/`seconds`, `bell_interval_seconds`
+  ∈ {0,60,120,300,600}, `ambience` ∈ the six options, optional one-line `intention`
+  ≤120 chars; on complete, optional `note` ≤2000. The displayed `revision` is compared and
+  set inside one transaction: a stale, unknown, malformed or wrong-state action is 409 with
+  nothing written, and a session open for more than 24 hours cannot be completed (409 —
+  cancel it instead). `start` writes the timer row only; `cancel` writes nothing but the
+  reset timer.
+
+Elapsed time is **server running time** (`elapsed_source:'server_running_time'`) with pause
+gaps excluded; bells are elapsed-time markers strictly inside the measured time and the
+tone is generated locally by the browser (no audio asset ships, nothing is fetched);
+ambience is a recorded declaration (`ambience_played_by_this_app:false`). Completing writes
+one immutable receipt (measured `elapsed_ms`/`elapsed_seconds`, `pause_count`, `bells`,
+note, intention + framing/cues) and is recorded exactly as it happened — a short or early
+completed session is not a failure. Nothing here scores, targets, tallies adherence, gates
+or permits; nothing changes admission, risk, caps, routine, the core, grades or history;
+M64's mandatory routine timer, M106's fresh four questions and M107's daily intention keep
+their own meaning, and no journal/emotion/profit/identity surface is derived from practice.
+
+The optional intention reuses M107's contract: free text is stored exactly as written as
+`unverified_free_text` (never `process_template`), an asserted amount and outcome in one
+non-negated sentence is refused `practice_outcome_target` 400 with nothing written, an
+all-blank line means "no intention" rather than an error, and no trading surface reads it.
+
+Full JSON backup carries `practice_sessions:{version,records,unavailable_records}`; restore
+labels every copy `imported_unverified`, keeps the original day/clock/elapsed time/id as
+history, never counts it as this app's measured running time, appends on repeat import (no
+upsert or dedupe) and warns on malformed optional entries while finance stays legal. A
+missing store leaves the financial backup legal with an unavailable marker. Dashboard and
+owned day-review cards plus the Settings archive warning; escaped text, readonly history,
+explicit reload with 409 handling. Not sealed against database-admin tampering.
+
+No70%/causal/predictive/mental-state/meditation/human/broker/provider/pixel/production
+proof. M111/M112 open; M30/M103 partial.
+
 ## M107 — one process intention for the day
 
 Additive `daily_intentions` append-only revision series: `human_declared` first-party
