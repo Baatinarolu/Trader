@@ -1,0 +1,76 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 17,
+  "fail": 0,
+  "results": [
+    {
+      "label": "an unauthenticated caller cannot read the surface list or ask anything",
+      "passed": true
+    },
+    {
+      "label": "the surface list is served with its refusals, its limits and its meta flags",
+      "passed": true
+    },
+    {
+      "label": "the route surface is explicit: the channel answers POST /ask, and a GET to it is not a second read path",
+      "passed": true
+    },
+    {
+      "label": "all seven surfaces answer over HTTP, each line carrying its provenance",
+      "passed": true
+    },
+    {
+      "label": "the answer vocabulary stays the stated four kinds and nothing else",
+      "passed": true
+    },
+    {
+      "label": "all six refusals are reachable, arrive as 200 successes, and carry their reason and citation",
+      "passed": true
+    },
+    {
+      "label": "a refusal carries its reason and never the content it refused: no topic, no facts, no surface lines beyond the one note",
+      "passed": true
+    },
+    {
+      "label": "every malformed question is a bounded 400 ask_invalid",
+      "passed": true
+    },
+    {
+      "label": "a refused input never leaks a stack, a SQL fragment or an internal table name",
+      "passed": true
+    },
+    {
+      "label": "a question that lands on no owned surface is an honest 200 non-answer that lists the surfaces it does own",
+      "passed": true
+    },
+    {
+      "label": "the channel takes no account/date input: extras in the body cannot scope or move the answer",
+      "passed": true
+    },
+    {
+      "label": "another owner’s workspace is never read: the second trader’s answers contain none of the first trader’s records or identifiers",
+      "passed": true
+    },
+    {
+      "label": "two identical questions over HTTP answer the same bytes (deterministic, no clock-derived drift)",
+      "passed": true
+    },
+    {
+      "label": "every HTTP answer ships the meta flags that refuse the AI perks",
+      "passed": true
+    },
+    {
+      "label": "a full HTTP battery of asks leaves every table byte-identical, including the lazy practice timer row M108 creates on its own read",
+      "passed": true
+    },
+    {
+      "label": "asking cannot move admission: the entry surface answers exactly the same before and after the whole battery",
+      "passed": true
+    },
+    {
+      "label": "no ask ever stores the question, the answer or a consultation count: the request leaves no row of its own",
+      "passed": true
+    }
+  ],
+  "scope": "M109 ask channel API: actual runtime/auth/SQL/DOM on literal journals, fixedUTC; deterministic read-only advisory channel, no model/network/provider/broker/mental-state/pixel/production proof"
+}

@@ -1,0 +1,11 @@
+ok the backup is served and carries the practice bundle with its three keys, exactly as M108 left it
+ok the export gains no ask/channel/answer key of any kind: the channel stores nothing to back up
+ok the export carries no model, key, transcript or session id from the channel either
+ok a well-formed practice archive still imports through the unchanged path
+ok an archive dated today can be restored too, and is still labelled an archive
+TypeError: Cannot read properties of undefined (reading 'find')
+    at /home/user/Trader/analysis/probe-m109-portable.js:30:40
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async finish (/home/user/Trader/analysis/m109-test-support.js:11:50)
+    at async /home/user/Trader/analysis/probe-m109-portable.js:8:12
+M109 backup, restore and the advisory channel: 5 passed, 1 failed

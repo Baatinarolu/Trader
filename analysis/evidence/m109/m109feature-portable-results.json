@@ -1,0 +1,72 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 16,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the backup is served and carries the practice bundle with its three keys, exactly as M108 left it",
+      "passed": true
+    },
+    {
+      "label": "the export gains no ask/channel/answer key of any kind: the channel stores nothing to back up",
+      "passed": true
+    },
+    {
+      "label": "the export carries no model, key, transcript or session id from the channel either",
+      "passed": true
+    },
+    {
+      "label": "a well-formed practice archive still imports through the unchanged path",
+      "passed": true
+    },
+    {
+      "label": "an archive dated today can be restored too, and is still labelled an archive",
+      "passed": true
+    },
+    {
+      "label": "an imported archive for today is counted separately and never as the trader’s own recorded session",
+      "passed": true
+    },
+    {
+      "label": "the channel’s line for the archive says it is never this account’s recorded session rather than leaving it to inference",
+      "passed": true
+    },
+    {
+      "label": "the practice surface itself still counts the archive separately, so the channel and the surface agree on the same numbers",
+      "passed": true
+    },
+    {
+      "label": "the channel never reports an imported archive as having verified anything",
+      "passed": true
+    },
+    {
+      "label": "an unknown bundle key is not imported at all: a crafted ask/answers payload cannot be restored into authority",
+      "passed": true
+    },
+    {
+      "label": "a crafted bundle changes nothing about a live refusal: the same question still refuses for the same reason",
+      "passed": true
+    },
+    {
+      "label": "a crafted bundle cannot make the channel report a permission, a pass or a limit change: no grant-shaped field exists in the payload at all",
+      "passed": true
+    },
+    {
+      "label": "a restored gate record arrives as an imported archive and cannot become this desk’s own answered gate",
+      "passed": true
+    },
+    {
+      "label": "a second trader importing the same bundle is reported with their own empty day, not the first trader’s records",
+      "passed": true
+    },
+    {
+      "label": "and their export still carries only their own records",
+      "passed": true
+    },
+    {
+      "label": "deleting a trader still removes their archives with them, and the channel then reports that workspace as gone rather than answering for it",
+      "passed": true
+    }
+  ],
+  "scope": "M109 backup, restore and the advisory channel: actual runtime/auth/SQL/DOM on literal journals, fixedUTC; deterministic read-only advisory channel, no model/network/provider/broker/mental-state/pixel/production proof"
+}

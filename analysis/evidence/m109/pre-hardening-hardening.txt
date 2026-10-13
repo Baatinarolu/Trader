@@ -1,0 +1,18 @@
+FAIL a retained-stop payload the app cannot parse is reported unavailable with its reason, not as "no stops" {}
+ok the rest of that surface still answers: one unreadable field does not blank the channel
+ok the unreadable row is left byte-for-byte as it was: not repaired, not reset, not deleted
+ok settings the app cannot parse are reported unavailable, and the channel does not invent an empty checklist
+ok the malformed settings row is untouched by the question
+FAIL a practice row with an unreadable measured time is reported and excluded from both the count and the seconds {"count":"Practice recorded today (UTC 2026-10-13): 1 session(s) and 0s of server-measured running time."}
+ok that unreadable row is left exactly as stored — the channel does not round it, repair it or drop it
+ok markup is refused at the bound and everything else is treated as one plain question
+ok an injection-shaped question neither executes nor corrupts: the schema is intact and the channel answered with data it owns
+ok every hostile question is echoed back exactly as typed (no evaluation, no interpolation, no rewriting)
+ok 280 characters is accepted and 281 is refused as ask_invalid/400
+ok a question made only of whitespace is refused rather than answered as the empty string
+ok no statement in the module is built by concatenating anything, let alone the question
+ok no answer leaks a filesystem path, a SQLite message or a stack frame
+ok a battery over corrupted rows and hostile questions leaves every table byte-identical
+ok after the whole battery the corrupted rows are still exactly as corrupt: the channel repaired nothing anywhere
+FAIL the channel still answers normally after all of that, with the same honest unavailable line undefined
+M109 hardening and no-repair proof: 14 passed, 3 failed

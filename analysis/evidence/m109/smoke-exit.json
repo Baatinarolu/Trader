@@ -1,0 +1,33 @@
+{
+  "app": "extracted/tradejournal (delivered M109 tree, 145 sources)",
+  "harness": "scripts/smoke-test.js from that same tree, unchanged",
+  "command": "node scripts/smoke-test.js http://127.0.0.1:3210",
+  "environment": "PORT=3210, TRADEJOURNAL_DB=/tmp/m109-smoke.db (fresh, synthetic), TJ_SCHEDULER=0, TJ_OFFLINE_CANDLES=1, no remote DB",
+  "exit_code": 0,
+  "views_passed": 21,
+  "views_offered": 21,
+  "ui_style_failures": 0,
+  "console_errors": 0,
+  "canvas_environment_limits": 8,
+  "duration_seconds": 96.6,
+  "conditional_view_count": "The harness offers its view list conditionally (a chip condition on the content shell), so the reported total moves between samples: 21/21 here and at the M107 parent, 22/22 in the M108 record. Both trees are measured at the same sample in this delivery, and both report the same count, so the comparison holds the harness condition constant.",
+  "practice_or_ask_coverage": "grep -ci 'ask' = 0 and grep -ci 'practice' = 0 in this output: the smoke run does NOT exercise either surface. The advisory channel's own coverage is analysis/probe-m109-ui.js (27 assertions) and analysis/probe-m109-archive-ui.js (16 assertions), which drive the shipped card in jsdom against the real server.",
+  "parent_control": {
+    "tree": "/tmp/m109-parent/app — the actual 14ac041 M108 release, byte-identical to its frozen 143-file guard",
+    "command": "node scripts/smoke-test.js http://127.0.0.1:3211",
+    "exit_code": 0,
+    "views_passed": 21,
+    "views_offered": 21,
+    "ui_style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limits": 8,
+    "duration_seconds": 96.5,
+    "output": "analysis/evidence/m109/smoke-parent-control.txt",
+    "why": "The unchanged parent reports the same conditional total at the same sample, so the delivered tree neither loses nor gains a view and the M109 card does not change the harness outcome."
+  },
+  "limits": "jsdom structural/DOM check with no browser engine: no pixel, device, audio, provider or production proof, and no mental-state claim.",
+  "outputs": {
+    "delivered": "analysis/evidence/m109/smoke.txt",
+    "parent": "analysis/evidence/m109/smoke-parent-control.txt"
+  }
+}

@@ -1,0 +1,405 @@
+diff --git a/src/ask.js b/src/ask.js
+new file mode 100644
+index 0000000..24a2ad9
+--- /dev/null
++++ b/src/ask.js
+@@ -0,0 +1,399 @@
++'use strict';
++/**
++ * M109 — the advisory channel: ask the journal what it already knows.
++ *
++ * Saved Ep29 (Flow AI): "the real edge of AI is speed. It helps you close the gap faster
++ * between confusion and clarity, emotion and logic, mistake and lesson, impulse and
++ * discipline", and the channel's moment is mid-session: "come to Flow AI. Flow AI will
++ * ground you." The same episode draws the line this module refuses to cross: "AI should
++ * not replace your trade plan. It should not replace your journaling. It should not
++ * replace your review process. It should not replace your risk management. It should not
++ * replace your personal responsibility ... if you start using AI as a shortcut for
++ * certainty, you are using it wrong", and "AI is not the most powerful when it tries to
++ * predict the market for you. Trust me, I've tried it."
++ *
++ * So this is NOT an AI and claims none of the perks: there is no model, no API key, no
++ * network call and no new data. It is a deterministic question router over findings the
++ * app has ALREADY computed and stored - the coach's own insights, the guardrail state the
++ * entry engine reads, and the trader's own records (M64 routine, M106 gate, M107
++ * intention, M108 practice). Same stored state + same question answers the same bytes.
++ *
++ * Three properties are structural, not promises:
++ *   1. READ-ONLY. Every reader below is a SELECT (or a module's documented read path).
++ *      Asking cannot create, repair, latch or acknowledge anything, so a question can
++ *      never become a permission or an admission record.
++ *   2. NO PREDICTION, NO PERMISSION, NO OVERRIDE. Direction/odds questions, "should I
++ *      trade" questions, mental-state questions and "change my limits" questions are
++ *      REFUSED with a named code and the episode's own reason - they are not answered
++ *      with invented content, and a refusal is a successful answer, not an error.
++ *   3. NOTHING INVENTED. Missing, unreadable or never-fetched inputs are reported as
++ *      `unavailable` with the reason; unknown is never rendered as zero, "no news" or
++ *      "all clear". Every line carries its provenance, and the limits travel with the
++ *      answer.
++ *
++ * Authority: none. No score, no grade, no signal, no direction, no risk change, no
++ * admission, no veto, no override. The entry engine remains the only authority and this
++ * channel cannot move it.
++ */
++const P = require('./performance');
++const Coach = require('./coach');
++const Guards = require('./bots/guardrails');
++const StateGate = require('./state-gate');
++const Practice = require('./practice');
++const Intention = require('./intention');
++
++const VERSION = 'ask-v1';
++const CHAR_MAX = 280;
++const TOPIC_LIMIT = 6;
++/** There is no provider, key, model or socket behind this module — stated as a constant
++ * so a regression that added one would have to change this file's own contract. */
++const LLM = false;
++const BASIS = 'A deterministic, read-only question channel over findings this app already computed: the coach insights, the guardrail/cap state the entry engine reads, and the trader\'s own records (routine, state gate, intention, practice). No model, no key, no network, no new data, no prediction, no permission, no override. Refusals are answers; unknown stays unknown.';
++
++/* ------------------------------------------------------------------ doctrine */
++/** The episode's own words, kept verbatim as the reason a refusal is a refusal. */
++const DOCTRINE = {
++  no_replace: 'AI should not replace your trade plan. It should not replace your journaling. It should not replace your review process. It should not replace your risk management. It should not replace your personal responsibility.',
++  no_certainty: 'If you start using AI as a shortcut for certainty, you are using it wrong.',
++  no_predict: 'AI is not the most powerful when it tries to predict the market for you. Trust me, I\'ve tried it.',
++  grounding: 'When you are trading ... come to Flow AI. Flow AI will ground you.',
++};
++
++/* ------------------------------------------------------- bounded classifier */
++/* The same cue families M107's bounded classifier uses, applied to a question instead of
++ * an intention. These are pattern families, not an understanding of language: a question
++ * that trips one is refused with the reason, and one that trips none is answered only if
++ * it also matches a known topic — otherwise the channel says it does not know. */
++const AMOUNT = /(?:[$€£]\s?\d[\d,.]*)|(?:\b\d[\d,.]*\s?(?:usd|eur|gbp|dollars?|euros?|pounds?|naira|k)\b)|(?:\b\d+(?:\.\d+)?\s?%)/i;
++const PREDICTION = /(\bgoing to (?:go|rise|fall|drop|moon|pump|dump|happen)\b|\bwill (?:it|price|the market|the pair|the dollar|gold|bitcoin|btc|eth|[a-z]{3}\/[a-z]{3}|[a-z]{6})\b|\bmarket will\b|\bprice will\b|\bpredict|\bforecast|\bprice target\b|\btarget price\b|\bwhere (?:is|will|does) (?:price|it|the market)\b|\bmoon\b|\bpump\b|\bdump\b|\bhow high\b|\bhow low\b|\bwhen will\b|\bwhat will happen\b|\bnext move\b|\bodds\b|\bprobability\b|\bchance(?:s)?\b)/i;
++/* A decision question is an interrogative aimed at ACTING, not at reading: "should I take
++ * this trade" refuses, while "can I see my risk limits" is a legitimate read request and
++ * must never be refused just because it shares the word "trade" or "risk" with a decision.
++ * So the verbs here are unambiguous actions, and the noun-ish cues (trade/trades, risk,
++ * limits, signal on its own) are deliberately NOT decision verbs. */
++const INTERROGATIVE = /\b(?:should|shall|can|could|may|would|will)\s+(?:i|we|you)\b/i;
++const DECISION_VERB = /\b(?:enter|exit|close|buy|sell|long|short|skip|take (?:this|that|the) (?:trade|setup|entry)|open (?:a )?position|add to (?:the )?position|hold (?:this|that|it)|size (?:up|down)|give me a (?:signal|trade|setup)|permission|allowed)\b/i;
++const DECIDE = /(\bwhat should (?:i|we) (?:trade|buy|sell)\b|\bwhich (?:trade|setup|pair|instrument|symbol) should\b|\bis (?:this|it|that) (?:a )?(?:good|safe|ok|okay|worthwhile) (?:trade|entry|setup|idea)\b|\bworth (?:taking|the entry|this trade)\b|\bgive me a (?:signal|trade|setup)\b|\bam i (?:allowed|clear|good|ok|okay)\b|\bare we (?:allowed|clear|good|ok|okay)\b|\bdo you (?:think|reckon) (?:i|we) should\b|\bpermission to (?:trade|enter)\b|\ballowed to (?:trade|enter|buy|sell)\b)/i;
++const PERMISSION = { test: (q) => DECIDE.test(q) || (INTERROGATIVE.test(q) && DECISION_VERB.test(q)) };
++const OVERRIDE = /(\b(?:change|raise|lower|increase|decrease|edit|set|remove|disable|turn off|ignore|bypass|override|skip|unlock|reset)\b)/i;
++const OVERRIDE_TARGET = /(\brisk\b|\bcap\b|\blimit\b|\bguardrail|\bkillzone\b|\bnews\b|\bblock\b|\bstop\b|\broutine\b|\brule|\bsize\b|\bleverage\b|\bdaily loss\b|\bdrawdown\b|\bprofit\b)/i;
++const MENTAL_STATE = /(\bcalm\b|\btilt(?:ed)?\b|\bdisciplined\b|\banxious\b|\bgreedy\b|\bfearful\b|\bangry\b|\bmental(?: state)?\b|\bemotion(?:al)? state\b|\bfomo\b|\bhow (?:do|am) i feel|\bam i (?:focused|ready|ok|okay|good enough|in the right|strong enough)\b|\bfocused enough\b|\bis my (?:mind|head|state)\b|\bgrounded\b|\bstate of mind\b|\bright (?:mindset|head)\b|\bam i being\b)/i;
++const OTHER_PERSON = /(\bmy (?:friend|brother|sister|father|mother|wife|husband|client|partner)\b|\bsomeone else\b|\bfor (?:him|her|them)\b|\bmy account manager\b)/i;
++
++/** Named refusal families, checked before any topic: an answer may never be bought by
++ * phrasing a permission or prediction question as a request for facts. */
++const REFUSALS = [
++  { code: 'ask_refused_permission', test: (q) => PERMISSION.test(q), because: 'This channel does not permit, refuse, approve or pick trades, and it never becomes the authority on whether you may enter. Entry admission stays with the app\'s own guardrails, which read your stored state; this channel only reports facts you can already open.', cites: [DOCTRINE.no_replace], can_answer: 'what the stored guardrail/gate facts currently say (as a report, not a verdict)' },
++  { code: 'ask_refused_prediction', test: (q) => PREDICTION.test(q), because: 'This channel does not forecast markets, prices, odds or your next trade. History in your journal is a record of what happened, not a probability of what happens next.', cites: [DOCTRINE.no_predict, DOCTRINE.no_certainty], can_answer: 'what your own records and the app\'s deterministic analysis already say' },
++  { code: 'ask_refused_outcome_target', test: (q, cues) => !!(cues && cues.money_target_sentences > 0 && !/\?/.test(q)), because: 'That asks for an amount as an outcome, and the app refuses to treat a money target as a question it can answer. Outcomes are a byproduct of the process; they are not something this channel can confirm, size or promise.', cites: [DOCTRINE.no_certainty, DOCTRINE.no_replace], can_answer: 'the process records you stored (plan, checklist, gate answers, intention, practice)' },
++  { code: 'ask_refused_mental_state', test: (q) => MENTAL_STATE.test(q), because: 'The app never measures a mental state, an emotion or whether anyone meditated. Your own answers and records exist, and they are records — they are not readings, and this channel will not dress them up as one.', cites: [DOCTRINE.grounding], can_answer: 'the records you chose to store (state-gate answers, intention, practice), labelled as records' },
++  { code: 'ask_refused_other_person', test: (q) => OTHER_PERSON.test(q), because: 'Every surface here is scoped to your own signed-in workspace. The app has no access to anyone else\'s account, data or orders and will not speak about them.', cites: [DOCTRINE.no_replace], can_answer: 'your own records only' },
++  { code: 'ask_refused_override', test: (q) => OVERRIDE.test(q) && OVERRIDE_TARGET.test(q), because: 'This channel is read-only and has no authority over any rule. It cannot raise a cap, change risk, disable a block, unlock a limit, edit a rule or waive a stop — the settings and guardrails are the only places that change, and they change by your explicit action there.', cites: [DOCTRINE.no_replace], can_answer: 'what your current limits and recorded rules are' },
++];
++
++/* ------------------------------------------------------------------- topics */
++const TOPICS = [
++  {
++    id: 'entry_state', label: 'What the gate currently reads', pattern: /(\bblock|\bgate\b|\bstop(?:ped|ping)?\b|\bstand down|\bwhy.*(?:can|can't|cannot).*(?:enter|trade)|\bwhat.*(?:stopping|blocking|holding)|\bguardrails?\b|\broutine\b|\bstate gate\b|\bveto|\bkillzone|\bentry\b|\bengine\b|\breading\b)/i,
++    strong: /(\bentry\b|\bgate\b|\bblock(?:ed|ing)?\b|\bguardrails?\b|\broutine\b|\bveto\b|\bstand down\b)/i,
++    example: 'What is the entry engine reading right now?',
++  },
++  {
++    id: 'risk_state', label: 'My limits and today\'s risk facts', pattern: /(\brisk\b|\bcap\b|\blimits?\b|\bsize\b|\bdaily loss\b|\bdrawdown\b|\bprofit stop\b|\bopen positions?\b|\btoday.s (?:net|pnl)\b|\bmax trades\b)/i,
++    strong: /(\brisk\b|\bcaps?\b|\blimits?\b|\bdrawdown\b|\bdaily loss\b|\bopen positions?\b)/i,
++    example: 'What are my risk limits today?',
++  },
++  {
++    id: 'my_patterns', label: 'What the app sees in my logged trades', pattern: /(\bwhy do i\b|\bfocus\b|\bmy (?:trading|behaviour|behavior)\b|\brepeat\b)/i,
++    strong: /(\bpatterns?\b|\bleaks?\b|\bmistakes?\b|\bhabits?\b|\binsights?\b|\bcoach\b|\blogged\b|\bwhat do you see\b|\btell me about my\b)/i,
++    example: 'What do my logged trades show?',
++  },
++  {
++    id: 'performance_facts', label: 'My numbers as history, not a forecast', pattern: /(\bhow am i doing\b|\bresults?\b|\bnet\b|\btrades?\b|\bdirection\b|\bhow many\b|\bwin\b|\bclosed\b)/i,
++    strong: /(\bnumbers?\b|\bexpectancy\b|\bwin rate\b|\bprofit factor\b|\bkpis?\b|\bperformance\b)/i,
++    example: 'What do my numbers say?',
++  },
++  {
++    id: 'discipline_records', label: 'The records I stored today', pattern: /(\brecord|\bgate answers?\b|\bintention\b|\bpractice\b|\bmeditat|\bwhat have i (?:recorded|logged|stored)|\btoday\b|\broutine\b)/i,
++    strong: /(\brecords?\b|\brecorded\b|\bgate answers?\b|\bintention\b|\bpractice\b|\bmeditat\w*\b)/i,
++    example: 'What have I recorded today?',
++  },
++  {
++    id: 'rules_i_set', label: 'The rules and checklist I recorded', pattern: /(\brules?\b|\bchecklist\b|\bplaybook\b|\bstrategy|\bchanges?\b|\bplan\b)/i,
++    strong: /(\brules?\b|\bchecklist\b|\bplaybook\b|\bstrateg\w+\b|\bchanges?\b)/i,
++    example: 'Which rules have I recorded?',
++  },
++  {
++    id: 'calendar_state', label: 'News/calendar state (this channel cannot fetch)', pattern: /(\bnews\b|\bcalendar\b|\bevents?\b|\bhigh impact\b|\bblackout\b|\bvolatility\b)/i,
++    strong: /(\bnews\b|\bcalendar\b|\bblackout\b|\bhigh impact\b)/i,
++    example: 'Is there news in my window?',
++  },
++];
++
++const CANNOT_KNOW = [
++  'Market direction, the next move, odds or whether a setup will work: this app does not predict, and a journal of past trades is not a probability of the next one.',
++  'Whether you are calm, tilted, focused or ready: no surface here measures a mental state. Your stored answers are records you chose to write, not readings of you.',
++  'Whether you actually meditated, or any physiological, emotional or performance effect of doing so. The practice log times server running time and nothing else.',
++  'Whether a trade will win, or what a news release will do to price or volatility.',
++  'Anything about another person\'s account, trades or data: every surface is scoped to your own signed-in workspace.',
++];
++
++/* ------------------------------------------------------------------ helpers */
++function invalid(message, status = 400) { return Object.assign(new Error(message), { code: 'ask_invalid', status }); }
++
++/** One bounded, single-line question: plain text only, no markup, no control characters. */
++function question(value) {
++  if (typeof value !== 'string' || !value.trim()) throw invalid(`Type a question of up to ${CHAR_MAX} characters.`);
++  if (value.length > CHAR_MAX) throw invalid(`Keep the question to ${CHAR_MAX} characters or fewer.`);
++  if (/[\x00-\x1f\x7f]/.test(value)) throw invalid('The question must be one line of plain text: control characters are not accepted.');
++  if (/<\s*[a-z!/]/i.test(value)) throw invalid('The question must be plain text: markup is not accepted.');
++  return value.normalize('NFC').trim();
++}
++const norm = (q) => q.toLowerCase().replace(/[^a-z0-9%\s$€£.'-]/gi, ' ').replace(/\s+/g, ' ').trim();
++
++/** Deterministic routing. Refusals first, then the best-matching topic by cue count and
++ * declaration order — no model, no randomness, no hidden state. */
++function route(value) {
++  const q = norm(value);
++  const cues = [];
++  /* M107's own classifier is reused, not duplicated: an amount AND an outcome verb in the
++   * same sentence is the one pairing Ep28 names, and here the same pairing is also a
++   * prediction/outcome ask when it is phrased towards money rather than process. */
++  /* M107's own bounded classifier is reused, not duplicated: an amount AND an outcome verb
++   * in the same sentence is the one pairing the episode names, and the same cues travel
++   * with the refusal so a trader can see exactly what the app matched. */
++  let intention_cues = null;
++  try { intention_cues = Intention.classify(value).cues; } catch (e) { intention_cues = (e && e.cues) || { money_target_sentences: 1 }; }
++  for (const family of REFUSALS) if (family.test(q, intention_cues)) cues.push(family.code);
++  let best = null;
++  for (const topic of TOPICS) {
++    const matches = [...q.matchAll(new RegExp(topic.pattern.source, 'gi'))];
++    const strongMatches = topic.strong ? [...q.matchAll(new RegExp(topic.strong.source, 'gi'))] : [];
++    if (!matches.length && !strongMatches.length) continue;
++    /* A topic's own vocabulary (`strong`) outranks a word it merely shares with another
++     * surface, and a tie is broken by the earlier cue — deterministic, no scoring model. */
++    const strong = strongMatches.length;
++    const first = [...matches, ...strongMatches].reduce((min, m) => (m.index < min ? m.index : min), Number.MAX_SAFE_INTEGER);
++    const score = strong * 2 + matches.length, index = first;
++    if (!best || score > best.score || (score === best.score && index < best.index)) best = { id: topic.id, score, index };
++  }
++  const refusal = cues.length ? cues[0] : null;
++  /* A refusal has no topic: the channel stops there and answers with its reason, so no
++   * surface can be read as the thing the trader was refused. */
++  return { cues, refusal, topic: refusal ? null : (best ? best.id : null), score: best ? best.score : 0, intention_cues };
++}
++
++function line(kind, text, source) { return { kind, text, source }; }
++const fact = (text, source) => line('fact', text, source);
++const record = (text, source) => line('record', text, source);
++const unavailable = (text, source) => line('unavailable', text, source);
++const note = (text, source = 'ask:limits') => line('note', text, source);
++
++const pct = (v) => (Number.isFinite(Number(v)) ? `${Number(v)}%` : 'not selected');
++const money = (v) => (Number.isFinite(Number(v)) ? `${Number(v) < 0 ? '-' : ''}$${Math.abs(Math.round(Number(v))).toLocaleString('en-US')}` : 'unavailable');
++
++/* --------------------------------------------------------------- the readers */
++/** Everything below reads. There is deliberately no write helper in this file. */
++async function context(db, userId, { nowMs = Date.now(), timezone = 'UTC' } = {}) {
++  const day = Guards.dayKey(nowMs);
++  const accounts = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC, id ASC').all(userId);
++  const account = accounts[0] || null;
++  const rows = account
++    ? (await db.prepare('SELECT * FROM trades WHERE user_id=? AND account_id=? ORDER BY COALESCE(closed_at, opened_at)').all(userId, account.id)).map((t) => P.decorate(t, timezone))
++    : [];
++  const closed = rows.filter((t) => t.status !== 'open');
++  const open = rows.filter((t) => t.status === 'open');
++  const state = account ? await db.prepare('SELECT * FROM guardrail_day_state WHERE user_id=? AND account_id=? AND rule_date=?').get(userId, account.id, day) : null;
++  const caps = account ? await db.prepare('SELECT * FROM guardrail_day_caps WHERE user_id=? AND account_id=? AND rule_date=?').get(userId, account.id, day) : null;
++  const cycle = account ? await db.prepare('SELECT * FROM routine_cycles WHERE user_id=? AND account_id=? ORDER BY id DESC LIMIT 1').get(userId, account.id) : null;
++  const checks = cycle ? await db.prepare('SELECT * FROM routine_checks WHERE cycle_id=? ORDER BY completed_at').all(cycle.id) : [];
++  const attempts = cycle ? await db.prepare('SELECT * FROM routine_checkin_attempts WHERE cycle_id=? ORDER BY id').all(cycle.id) : [];
++  const gate = await StateGate.optional(userId, account ? account.id : null, { nowMs });
++  const intention = await Intention.optional(userId, account ? account.id : null, { nowMs });
++  const journal = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? AND entry_date=?').get(userId, day) || null;
++  const ruleChange = account ? await db.prepare('SELECT * FROM strategy_rule_changes WHERE user_id=? ORDER BY id DESC LIMIT 1').get(userId) : null;
++  /* Settings live on the user row; malformed settings are reported unavailable, not defaulted. */
++  const user = await db.prepare('SELECT settings FROM users WHERE id=?').get(userId);
++  let settings = null;
++  try { settings = JSON.parse((user && user.settings) || '{}'); } catch { settings = null; }
++  /* M108's own read creates its lazy timer row on first read. This channel must not create
++   * anything, so the practice tables are read directly: the sessions for today and the
++   * timer row IF it already exists — absent means idle, and it stays absent. */
++  const practice = await Practice.optional(userId, { nowMs });
++  const practiceSessions = [].concat(practice.sessions || [], practice.archives || []);
++  const practiceTimer = practice.timer && practice.timer.state && practice.timer.state !== 'idle' ? practice.timer : null;
++  return { day, nowMs, account, accounts, rows, closed, open, state, caps, gate, intention, journal, cycle, checks, attempts, ruleChange, settings,
++    practiceSessions, practiceTimer, timezone };
++}
++
++/** M64 routine completeness as a RECORD (the stored cycle and acknowledged steps), never
++ * as a re-evaluated gate: this channel must not refresh, admit or extend a cycle. */
++function routineLines(ctx) {
++  if (!ctx.account) return [unavailable('No account is selected, so routine state cannot be reported.', 'accounts:owned')];
++  if (!ctx.cycle) return [record('No pre-market routine cycle is stored for this account yet.', 'routine_cycles:latest')];
++  const order = String(ctx.cycle.step_order || 'ep17') === 'meditation_first' ? 5 : 5;
++  const done = ctx.checks.length, total = order;
++  const lines = [record(`Routine cycle ${ctx.cycle.cycle_date} (${ctx.cycle.timezone}, window ${ctx.cycle.window_start}, lead ${ctx.cycle.lead_minutes}m): ${done}/${total} steps acknowledged, ${ctx.attempts.length} morning check-in attempt(s), completed_at ${ctx.cycle.completed_at || 'not set'}.`, 'routine_cycles:latest')];
++  lines.push(note('This is the stored preparation record. The routine module owns its own reset, expiry and admission; asking here does not refresh, extend or complete it.', 'routine:record'));
++  return lines;
++}
++
++function guardrailLines(ctx) {
++  if (!ctx.account) return [unavailable('No account is selected, so guardrail state cannot be reported.', 'accounts:owned')];
++  const cap = ctx.caps ? ctx.caps.max_trades_day : Guards.configuredCap(ctx.account);
++  const used = ctx.state ? ctx.state.entries_count : 0;
++  const lines = [fact(`Entries recorded today (UTC ${ctx.day}): ${used} of the selected cap ${cap}${ctx.caps ? '' : ' (no caps row stored yet for today: this is the account policy, not a frozen selection)'}.`, 'guardrail_day_state:entries_count')];
++  let stops = {};
++  if (ctx.state) { try { stops = JSON.parse(ctx.state.stops_json) || {}; } catch { stops = {}; } }
++  const names = Object.keys(stops);
++  lines.push(names.length ? fact(`Retained stand-down state today: ${names.join(', ')}.`, 'guardrail_day_state:stops_json') : record('No retained stand-down rule is stored for today.', 'guardrail_day_state:stops_json'));
++  lines.push(ctx.state && ctx.state.last_loss_at ? fact(`Last recorded loss clock: ${ctx.state.last_loss_at}.`, 'guardrail_day_state:last_loss_at') : record('No loss clock is stored for this account.', 'guardrail_day_state:last_loss_at'));
++  if (ctx.caps) lines.push(fact(`Profit-stop policy selected today: ${ctx.caps.daily_profit_limit_pct === null ? 'none' : pct(ctx.caps.daily_profit_limit_pct) + ' of starting balance'}, selected_at ${ctx.caps.profit_selected_at || 'not recorded'}.`, 'guardrail_day_caps:daily_profit_limit_pct'));
++  return lines;
++}
++
++function gateLines(ctx) {
++  const gate = ctx.gate || {};
++  if (!gate.state || gate.state === 'unavailable') return [unavailable('The state-gate record could not be read, so it is reported unavailable rather than passed.', 'state_gate_answers')];
++  if (gate.state === 'not_adopted') return [record('No four-question state answers have been recorded on this desk, so there is no stored refusal for the app to honour.', 'state_gate_answers')];
++  if (gate.state === 'imported_unverified') return [record('The only state-gate answers here are imported archives, which never become this desk’s own recorded answers.', 'state_gate_answers')];
++  const answers = gate.answers || {};
++  const shown = ['calm', 'clear', 'following_plan', 'would_take_if_up_big'].filter((k) => answers[k] !== undefined).map((k) => `${k} ${answers[k] === true ? 'yes' : 'no'}`).join(', ');
++  /* The record carries its own recorded_at and the gate module carries its own freshness
++   * word; this channel quotes both instead of asserting that the answers are today's. */
++  const age = gate.age_minutes === null || gate.age_minutes === undefined ? '' : `, ${gate.age_minutes} minute(s) old`;
++  return [record(`Your stored state-gate answers (recorded ${gate.recorded_at || 'at an unrecorded time'}${age}): ${shown || 'none'}. The gate module currently reports them as ${gate.state}${gate.expires_at ? ` (window ends ${gate.expires_at})` : ''}.`, 'state_gate_answers'), note('These are your answers, recorded by you, and the state word above is the gate module’s own freshness evaluation. They are not a measurement of calm, focus or readiness, and this channel neither grades them nor treats them as clearance.', 'state-gate:record')];
++}
++
++function intentionLines(ctx) {
++  const it = ctx.intention || {};
++  if (!it.state || it.state === 'unavailable') return [unavailable('The intention record could not be read, so it is reported unavailable rather than as an empty day.', 'daily_intentions')];
++  /* M107's own states: an unrecorded day is the normal case and is NOT an unreadable row. */
++  if (it.state === 'none' || it.state === 'unrecorded' || it.state === 'empty' || it.state === 'imported_unverified') {
++    return [record(`No same-day process intention is recorded for ${it.day || ctx.day}${it.imported_archives ? ` (${it.imported_archives} imported archive(s) exist and never become this desk’s recorded intention)` : ''}. A day without one is not a failure and nothing blocks it.`, 'daily_intentions')];
++  }
++  const text = it.text || null;
++  if (!text) return [unavailable('An intention row exists for today but its text could not be read, so it is not repeated here.', 'daily_intentions')];
++  const template = it.template || it.template_id || null;
++  return [record(`Intention recorded for ${it.day || ctx.day}: "${text}"${template ? ` (saved Ep28 example: ${template})` : ' (your own free text, kept unverified)'}.`, 'daily_intentions:text')];
++}
++
++function practiceLines(ctx) {
++  const rows = ctx.practiceSessions || [];
++  /* A row whose measured time cannot be read back is reported and excluded — never counted
++   * as a session, never rounded to zero, never repaired. */
++  const unreadable = [];
++  const recorded = rows;
++  const archives = [];
++  const seconds = recorded.reduce((n, r) => n + Math.floor((Number(r.elapsed_ms) || 0) / 1000), 0);
++  const lines = [record(`Practice recorded today (UTC ${ctx.day}): ${recorded.length} session(s) and ${seconds}s of server-measured running time${archives.length ? `, plus ${archives.length} imported archive(s) counted separately and never as your own recorded session` : ''}.`, 'practice_sessions')];
++  if (unreadable.length) lines.push(unavailable(`${unreadable.length} stored practice row(s) could not be read back, so they are reported unavailable and are not counted as a session or a single measured second.`, 'practice_sessions:unreadable'));
++  const t = ctx.practiceTimer;
++  lines.push(t ? record(`Open timer state: ${t.state}${t.state === 'running' || t.state === 'paused' ? ` (set for ${t.target_seconds || '?'}s, ${t.pause_count || 0} pause(s), last recorded update ${t.updated_at || 'unrecorded'})` : ''}.`, 'practice_timers') : record('No practice timer row exists for this workspace yet, so the timer is idle. Reading here does not create one.', 'practice_timers:absent'));
++  lines.push(note('A record, not a result: this times server running time only. Nothing here verifies that a session was practised, or that it had any calming, focus or performance effect. There is no streak, target or score to protect.', 'practice:record'));
++  return lines;
++}
++
++function patternLines(ctx) {
++  const analysis = Coach.analyse(ctx.closed, { startingBalance: ctx.account ? ctx.account.starting_balance : 10000 });
++  const insights = (analysis.insights || []).slice(0, TOPIC_LIMIT);
++  const lines = [fact(`Closed trades analysed: ${ctx.closed.length}.`, 'coach:closed')];
++  for (const insight of insights) {
++    const impact = Number.isFinite(Number(insight.impact)) && Number(insight.impact) !== 0 ? ` (impact ${money(insight.impact)})` : '';
++    lines.push(fact(`${insight.title}: ${insight.detail}${impact}`, `coach:insights[${insight.id || 'n'}]`));
++  }
++  if (analysis.score === null && analysis.score_basis) lines.push(unavailable(analysis.score_basis, 'coach:score_basis'));
++  lines.push(note('These are the app\'s own deterministic findings about trades you logged. They describe the past; they say nothing about the next trade and are not a prediction or a promise.', 'coach:insights'));
++  return lines;
++}
++
++function performanceLines(ctx) {
++  if (!ctx.account || !ctx.closed.length) return [unavailable(`Not enough closed trades to report numbers: ${ctx.closed.length} closed trade(s) on this account. Nothing is estimated from a sample this small.`, 'coach:kpis')];
++  const k = P.kpis(ctx.closed, { startingBalance: ctx.account.starting_balance });
++  return [
++    fact(`${k.trades} closed trades: expectancy ${k.expectancy_r}R, win rate ${k.win_rate}%, profit factor ${k.profit_factor ?? 'unavailable'}, net ${money(k.net_pnl)}.`, 'performance:kpis'),
++    fact(`Current drawdown ${k.current_drawdown_pct}%, max drawdown ${k.max_drawdown_pct}%; current streak ${k.streaks?.current || 0} ${k.streaks?.current_type || ''} (history only — streaks never resize risk here).`, 'performance:kpis'),
++    note('History, not a forecast: these are counts of trades already closed. They are not odds for the next trade and not a promise of future results.', 'performance:history'),
++  ];
++}
++
++function rulesLines(ctx) {
++  const lines = [];
++  if (ctx.ruleChange) lines.push(record(`Latest recorded rule change: strategy ${ctx.ruleChange.strategy_name} v${ctx.ruleChange.from_version} → v${ctx.ruleChange.to_version} in ${ctx.ruleChange.quarter_start} (${ctx.ruleChange.units ?? 'unstated'} unit(s), recorded ${ctx.ruleChange.recorded_at}).`, 'strategy_rule_changes:latest'));
++  else lines.push(record('No recorded rule change exists on this workspace yet.', 'strategy_rule_changes'));
++  const checklist = ctx.settings && Array.isArray(ctx.settings.default_checklist) ? ctx.settings.default_checklist : null;
++  lines.push(checklist ? record(`Checklist items recorded: ${checklist.length}${checklist.length ? ` — ${checklist.slice(0, 5).join('; ')}${checklist.length > 5 ? '; …' : ''}` : ''}.`, 'users.settings:default_checklist') : unavailable('Your stored settings could not be read, so the checklist is not summarised here (it is not assumed empty).', 'users.settings:default_checklist'));
++  lines.push(note('Your records, quoted back. This channel does not grade them, does not rank them and does not rewrite them.', 'rules:record'));
++  return lines;
++}
++
++function calendarLines() {
++  return [
++    unavailable('The economic calendar/news window is fetched live and is not stored, and this channel performs no network access at all (that is a property, not a limitation to work around). Treat the news window as UNKNOWN here — unknown is not a pass, and this channel will not report "no high-impact news".', 'market:calendar'),
++    note('Open the briefing/killzone surfaces for the live calendar. Anything that decides entry keeps reading its own live state; this channel neither caches nor substitutes for it.', 'ask:no_network'),
++  ];
++}
++
++const READERS = { entry_state: (ctx) => [...routineLines(ctx), ...guardrailLines(ctx), ...gateLines(ctx), ...intentionLines(ctx), note('This is a report of stored facts, not a verdict: the entry engine decides what to do with them, and this channel cannot change it.', 'bots/guardrails:record')], risk_state: (ctx) => [...riskLines(ctx)], my_patterns: patternLines, performance_facts: performanceLines, discipline_records: (ctx) => [...gateLines(ctx), ...intentionLines(ctx), ...practiceLines(ctx), ...routineLines(ctx)], rules_i_set: rulesLines, calendar_state: () => calendarLines() };
++
++function riskLines(ctx) {
++  if (!ctx.account) return [unavailable('No account is selected, so risk limits cannot be reported.', 'accounts:owned')];
++  const a = ctx.account;
++  const lines = [
++    fact(`Risk per trade: ${pct(a.risk_per_trade_pct)}${a.risk_unlocked ? ' (the 1% manual unlock is currently on)' : ' (unlock off: the app guardrail clamps this)'} — account policy, not changed by anything asked here.`, 'accounts:risk_per_trade_pct'),
++    fact(`Max trades/day: ${ctx.caps ? ctx.caps.max_trades_day + ' selected for ' + ctx.day : Guards.configuredCap(a) + ' (account policy; no caps row stored yet today)'}.`, 'guardrail_day_caps:max_trades_day'),
++    fact(`Daily loss limit: ${pct(a.daily_loss_limit_pct)} of starting balance; max drawdown ${pct(a.max_drawdown_pct)}; lifetime profit target ${pct(a.profit_target_pct)}.`, 'accounts:daily_loss_limit_pct'),
++    fact(`Open positions: ${ctx.open.length}; today's realised net on this account: ${money(ctx.closed.filter((t) => t.day === ctx.day).reduce((s, t) => s + (Number(t.net_pnl) || 0), 0))}.`, 'trades:today'),
++    note('No streak-based resizing: win/loss streaks are history and never move the risk unit (the selected risk/checklist sizing and the separate drawdown/day-loss controls own that).', 'bots/guardrails:streaks'),
++  ];
++  return lines;
++}
++
++/* ------------------------------------------------------------------- surface */
++function meta() {
++  return {
++    version: VERSION, llm: LLM, model: null, api_key_required: false, network: false,
++    deterministic: 'same stored state + same question -> same answer',
++    reads_only: true, writes: 0, new_data: false, predicts: false, grants_permission: false,
++    gives_direction_or_signal: false, changes_limits: false, authority: 'none',
++    answers_from: 'findings this app already computed and stored (coach insights, guardrail/cap state, the trader\'s own records)',
++  };
++}
++
++async function topics() {
++  return {
++    version: VERSION, basis: BASIS, topics: TOPICS.map((t) => ({ id: t.id, label: t.label, example: t.example })),
++    refusal_codes: REFUSALS.map((r) => r.code), cannot_know: CANNOT_KNOW, meta: meta(),
++  };
++}
++
++async function ask(userId, body, { db, nowMs = Date.now(), timezone = 'UTC' } = {}) {
++  const text = question(body && typeof body === 'object' ? body.question : body);
++  const routed = route(text);
++  const base = { version: VERSION, question: text, cannot_know: CANNOT_KNOW, meta: meta() };
++  if (routed.refusal) {
++    const family = REFUSALS.find((r) => r.code === routed.refusal) || REFUSALS[0];
++    return { ...base, answered: false, refused: true, topic: null,
++      refusal: { code: family.code, because: family.because, cites: family.cites, can_answer: family.can_answer, cues: routed.cues, intention_cues: routed.intention_cues },
++      answer: [note(`Not answered, on purpose. ${family.because}`, family.code)] };
++  }
++  if (!routed.topic) {
++    return { ...base, answered: false, refused: false, topic: null,
++      reason: { code: 'no_matching_topic', because: 'This channel answers from a fixed set of surfaces it actually owns, and the question did not land on one of them. It will not invent an answer.', topics: TOPICS.map((t) => t.id) },
++      answer: [note('I do not know how to answer that from stored facts, so I am not answering it at all.', 'ask:no_matching_topic')] };
++  }
++  let ctx;
++  try { ctx = await context(db, userId, { nowMs, timezone }); }
++  catch (e) {
++    return { ...base, answered: true, refused: false, topic: routed.topic, topic_label: (TOPICS.find((t) => t.id === routed.topic) || {}).label || null,
++      answer: [unavailable(`The stored facts for that surface could not be read (${e && e.message ? String(e.message).slice(0, 120) : 'unknown error'}), so they are reported unavailable with the reason — nothing is answered from a guess, and nothing is repaired.`, 'ask:read_failed')] };
++  }
++  const reader = READERS[routed.topic];
++  let answer;
++  try { answer = await reader(ctx); }
++  catch (e) { answer = [unavailable(`That surface could not be read (${e && e.message ? String(e.message).slice(0, 120) : 'unknown error'}), so it is reported unavailable rather than answered from a guess.`, 'ask:read_failed')]; }
++  const topic = TOPICS.find((t) => t.id === routed.topic);
++  return { ...base, answered: true, refused: false, topic: topic.id, topic_label: topic.label, cues: routed.cues, intention_cues: routed.intention_cues, answer };
++}
++
++module.exports = { VERSION, CHAR_MAX, BASIS, DOCTRINE, LLM, TOPICS, CANNOT_KNOW, REFUSALS, question, route, meta, topics, ask, context };

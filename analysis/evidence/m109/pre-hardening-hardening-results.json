@@ -1,0 +1,80 @@
+{
+  "app": "/tmp/m109-pre-hardening/app",
+  "pass": 14,
+  "fail": 3,
+  "results": [
+    {
+      "label": "a retained-stop payload the app cannot parse is reported unavailable with its reason, not as \"no stops\"",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "the rest of that surface still answers: one unreadable field does not blank the channel",
+      "passed": true
+    },
+    {
+      "label": "the unreadable row is left byte-for-byte as it was: not repaired, not reset, not deleted",
+      "passed": true
+    },
+    {
+      "label": "settings the app cannot parse are reported unavailable, and the channel does not invent an empty checklist",
+      "passed": true
+    },
+    {
+      "label": "the malformed settings row is untouched by the question",
+      "passed": true
+    },
+    {
+      "label": "a practice row with an unreadable measured time is reported and excluded from both the count and the seconds",
+      "passed": false,
+      "detail": {
+        "count": "Practice recorded today (UTC 2026-10-13): 1 session(s) and 0s of server-measured running time."
+      }
+    },
+    {
+      "label": "that unreadable row is left exactly as stored — the channel does not round it, repair it or drop it",
+      "passed": true
+    },
+    {
+      "label": "markup is refused at the bound and everything else is treated as one plain question",
+      "passed": true
+    },
+    {
+      "label": "an injection-shaped question neither executes nor corrupts: the schema is intact and the channel answered with data it owns",
+      "passed": true
+    },
+    {
+      "label": "every hostile question is echoed back exactly as typed (no evaluation, no interpolation, no rewriting)",
+      "passed": true
+    },
+    {
+      "label": "280 characters is accepted and 281 is refused as ask_invalid/400",
+      "passed": true
+    },
+    {
+      "label": "a question made only of whitespace is refused rather than answered as the empty string",
+      "passed": true
+    },
+    {
+      "label": "no statement in the module is built by concatenating anything, let alone the question",
+      "passed": true
+    },
+    {
+      "label": "no answer leaks a filesystem path, a SQLite message or a stack frame",
+      "passed": true
+    },
+    {
+      "label": "a battery over corrupted rows and hostile questions leaves every table byte-identical",
+      "passed": true
+    },
+    {
+      "label": "after the whole battery the corrupted rows are still exactly as corrupt: the channel repaired nothing anywhere",
+      "passed": true
+    },
+    {
+      "label": "the channel still answers normally after all of that, with the same honest unavailable line",
+      "passed": false
+    }
+  ],
+  "scope": "M109 hardening and no-repair proof: actual runtime/auth/SQL/DOM on literal journals, fixedUTC; deterministic read-only advisory channel, no model/network/provider/broker/mental-state/pixel/production proof"
+}

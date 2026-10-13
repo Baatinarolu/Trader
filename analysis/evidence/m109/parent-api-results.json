@@ -1,0 +1,25 @@
+{
+  "app": "/tmp/m109-parent/app",
+  "pass": 1,
+  "fail": 3,
+  "results": [
+    {
+      "label": "an unauthenticated caller cannot read the surface list or ask anything",
+      "passed": false
+    },
+    {
+      "label": "the surface list is served with its refusals, its limits and its meta flags",
+      "passed": false
+    },
+    {
+      "label": "the route surface is explicit: the channel answers POST /ask, and a GET to it is not a second read path",
+      "passed": true
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "topics.data.topics is not iterable"
+    }
+  ],
+  "scope": "M109 ask channel API: actual runtime/auth/SQL/DOM on literal journals, fixedUTC; deterministic read-only advisory channel, no model/network/provider/broker/mental-state/pixel/production proof"
+}

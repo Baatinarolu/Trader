@@ -1,0 +1,116 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 27,
+  "fail": 0,
+  "results": [
+    {
+      "label": "actual HTML loads the advisory view before the dashboard that renders it",
+      "passed": true
+    },
+    {
+      "label": "the shipped view makes no network call of its own and loads no third-party script: every ask goes through the app’s own API helper",
+      "passed": true
+    },
+    {
+      "label": "the view renders answer text as text nodes and never as markup",
+      "passed": true
+    },
+    {
+      "label": "the card names the channel honestly: deterministic, read-only, no AI",
+      "passed": true
+    },
+    {
+      "label": "the card states where answers come from and that it never writes",
+      "passed": true
+    },
+    {
+      "label": "the card states what the channel refuses, in the trader’s words, before they ask",
+      "passed": true
+    },
+    {
+      "label": "the card offers the server’s own example questions as chips, one per surface",
+      "passed": true
+    },
+    {
+      "label": "the input is bounded to the module’s own limit and the send action is labelled read-only",
+      "passed": true
+    },
+    {
+      "label": "the card carries the cannot-know list and the refusal codes it will actually receive",
+      "passed": true
+    },
+    {
+      "label": "the card states no authority and that limits change only where the trader changes them",
+      "passed": true
+    },
+    {
+      "label": "clicking a chip asks the server and renders one line per answer fact, each with its source",
+      "passed": true
+    },
+    {
+      "label": "every rendered line carries its stated kind as a data attribute, so provenance is structural rather than implied",
+      "passed": true
+    },
+    {
+      "label": "no rendered line claims an effect, a prediction or a calming result",
+      "passed": true
+    },
+    {
+      "label": "the chip asks through POST /api/ask with the surface’s own example as the question",
+      "passed": true
+    },
+    {
+      "label": "a typed question is sent as typed (the server trims and bounds it, the view does not rewrite it)",
+      "passed": true
+    },
+    {
+      "label": "the answer box is replaced rather than appended: one answer container is shown at a time, holding the newest answer",
+      "passed": true
+    },
+    {
+      "label": "a refusal renders as a refusal with its code, its reason, its citation and what it can answer instead",
+      "passed": true
+    },
+    {
+      "label": "a refusal shows no facts at all: one note line, no surface reading and no pick",
+      "passed": true
+    },
+    {
+      "label": "nothing in the rendered refusal offers a button that could act on the trading surfaces",
+      "passed": true
+    },
+    {
+      "label": "an unmatched question renders the honest non-answer with the list of surfaces the channel owns",
+      "passed": true
+    },
+    {
+      "label": "a blank question is refused by the server and the view shows the reason instead of a silent no-op",
+      "passed": true
+    },
+    {
+      "label": "markup typed into the box is refused at the bound and never injected into the answer surface",
+      "passed": true
+    },
+    {
+      "label": "without the surface list the card says the channel is unavailable and changes nothing about entries",
+      "passed": true
+    },
+    {
+      "label": "an unreadable surface renders as unavailable with its source, not as a zero or an all-clear",
+      "passed": true
+    },
+    {
+      "label": "the view is bound to the trader’s own session token, so a different workspace cannot be asked through a stale card",
+      "passed": true
+    },
+    {
+      "label": "no uncaught error was raised by any interaction",
+      "passed": true
+    },
+    {
+      "label": "the view keeps the trader’s typed text when a preset answer arrives elsewhere on the page",
+      "passed": true
+    }
+  ],
+  "scope": "M109 real DOM: the advisory card, its refusals and its provenance: actual runtime/auth/SQL/DOM on literal journals, fixedUTC; deterministic read-only advisory channel, no model/network/provider/broker/mental-state/pixel/production proof"
+}

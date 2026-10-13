@@ -1,0 +1,52 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 11,
+  "fail": 0,
+  "results": [
+    {
+      "label": "a session recorded yesterday is not counted, quoted or carried into today",
+      "passed": true
+    },
+    {
+      "label": "the payload names the server’s own UTC day and never the caller’s",
+      "passed": true
+    },
+    {
+      "label": "a caller cannot scope, re-date or re-timezone the answer: extras in the body change nothing",
+      "passed": true
+    },
+    {
+      "label": "the record itself is untouched: the practice surface still counts it on the day it was made",
+      "passed": true
+    },
+    {
+      "label": "the gate answers, the intention and the routine cycle are all reported as records, each with its own recorded timestamp",
+      "passed": true
+    },
+    {
+      "label": "two days later the same question reports no session and no same-day intention, and quotes the gate record with its own age instead of claiming it is today’s",
+      "passed": true
+    },
+    {
+      "label": "the routine cycle is still reported as the stored cycle it is, carrying its own date, instead of being refreshed into today",
+      "passed": true
+    },
+    {
+      "label": "asking across a day boundary creates no cycle, no reset and no new row of any kind",
+      "passed": true
+    },
+    {
+      "label": "the calendar surface refuses to translate unknown into a pass on every day",
+      "passed": true
+    },
+    {
+      "label": "the records surface never turns counts into a streak, a target or a score",
+      "passed": true
+    },
+    {
+      "label": "reading the same surfaces on two different days still writes nothing at all",
+      "passed": true
+    }
+  ],
+  "scope": "M109 day policy and UTC boundaries: actual runtime/auth/SQL/DOM on literal journals, fixedUTC; deterministic read-only advisory channel, no model/network/provider/broker/mental-state/pixel/production proof"
+}

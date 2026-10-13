@@ -1,5 +1,60 @@
 # TradeJournal Pro
 
+## M109 — the advisory channel: ask the journal, deterministically (2026-10-13)
+
+Saved Ep 29 argues for AI by **speed of feedback** — closing the gap between *confusion and
+clarity, emotion and logic, mistake and lesson, impulse and discipline* mid-session. This
+delivers the part of that which a self-hosted journal can own honestly: an **Ask the journal**
+card on the Dashboard that answers questions from findings the app has **already computed and
+stored**. It is emphatically **not an AI**: there is **no model, no API key and no network
+call** — every payload says so (`llm:false`, `model:null`, `api_key_required:false`,
+`network:false`) — and the same stored state with the same question returns the same bytes.
+
+**Seven surfaces, read-only.** *What the gate currently reads*, *my limits and today's risk
+facts*, *what the app sees in my logged trades* (the coach's own insights, narrated not
+recomputed), *my numbers as history not a forecast*, *the records I stored today* (M106 gate
+answers, M107 intention, M108 practice, the routine cycle), *the rules and checklist I
+recorded*, and *news/calendar state* — which answers **unknown**, because the channel performs
+no fetch and will not translate "I could not look" into "no high-impact news". Every answer
+line carries its **kind** (`fact`/`record`/`unavailable`/`note`) and the **surface it came
+from**; a missing, malformed or unreadable input is reported `unavailable` with the reason and
+is never rounded to zero, repaired or invented.
+
+**Six refusals, as answers.** Market direction, odds and predictions
+(`ask_refused_prediction`); "should I buy/sell/enter", signals and picks
+(`ask_refused_permission`); "am I calm/tilted/ready" readings (`ask_refused_mental_state`) —
+the app stores *your* answers, and quoting them back is not a measurement of you; questions
+about another person's account (`ask_refused_other_person`); "raise my cap / disable the news
+block" (`ask_refused_override`); and an amount asked for as an outcome
+(`ask_refused_outcome_target`, the same amount-plus-outcome pairing M107's classifier refuses).
+A refusal is a **200 success** carrying its reason, the episode's own words and what the
+channel *can* answer instead. A question that lands on no owned surface is an honest
+non-answer listing the surfaces it does own — never an invented reply.
+
+**No authority, and nothing written.** The module exports no write path, builds no SQL by
+concatenation, and is required in exactly one place — the route that exposes it. A full
+battery of asks leaves **every table byte-identical**, including *not* creating the lazy
+practice-timer row M108's own read creates. Asking cannot permit, block, size, grade or change
+anything; the entry engine remains the only authority, and **no engine, bot, guardrail,
+routine, gate, intention or practice module requires this channel**. Questions are bounded to
+280 characters of plain single-line text (markup and control characters refused), and extras
+in the request body cannot scope, re-date or re-timezone an answer.
+
+**Measurement.** **M109 168/0 across 9 probes** (read-only/byte-identical proofs in `pure` and
+`api`; consumers18/0, freshness11/0, hardening17/0, portable16/0, real-DOM ui27/0, and the
+actual143-parent migration 15/0 proving **zero schema added** and every inherited fact
+byte-identical). Every prior cohort re-run unchanged — M108 259/0, M107 231/1, M106 317/1,
+M105 141/1, one declared milestone-only schema negative each; the RAW596/156, DECLARED824/4 and
+live-provider70/1 arms are inherited from the M108 record and **not** re-run.
+The pre-hardening control tree — the module reading practice through M108's own reader,
+counting a row it cannot read back, and swallowing an unparseable stop payload — was measured
+by the *unchanged* probes at 14/3 and 28/3 before the fix and is 17/0 and 31/0 after it. Smoke
+21/21 views, 0 style failures, 0 console errors on both the delivered tree and its parent.
+Ledger **132 = 103 done / 2 partial / 27 TODO**. Report
+`analysis/M109-ADVISORY-CHANNEL.md` in the ZIP. Next M110–M112; no 70 % win-rate,
+causal/predictive edge, broker/provider/mental-state/human/pixel/production claim, and no
+predictor of any kind.
+
 ## M108 — the regulation layer: a personal practice log (2026-10-13)
 
 The other half of Ep 28's *sanctuary* — the meditation timer, the interval bells, the
@@ -47,7 +102,7 @@ with one declared milestone-only schema negative each, changes152/1, opportuniti
 reviews159/1, behavior113/2, process106/2, screenshots223/3, emotions170/0,
 confluences160/0, execution260/0, routine321/0, offline178/0, market325/0, RAW596/156,
 DECLARED824/4). Ledger **132 = 102 done / 2 partial / 28 TODO**. Report
-`analysis/M108-SANCTUARY-PRACTICE.md` in the ZIP. Next M111/M112; no 70 % win-rate,
+`analysis/M108-SANCTUARY-PRACTICE.md` in the ZIP. Next M109 (now separately delivered); no 70 % win-rate,
 causal/predictive edge, broker/provider/mental-state/human/meditation/pixel/production
 claim.
 

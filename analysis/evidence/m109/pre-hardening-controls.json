@@ -1,0 +1,20 @@
+{
+  "hardening": {
+    "tree": "the delivered runtime with the pre-hardening advisory module (the api stage itself)",
+    "script": "analysis/probe-m109-hardening.js",
+    "pass": 14,
+    "fail": 3,
+    "exit_code": 1,
+    "output": "pre-hardening-hardening.txt",
+    "scope": "The unchanged M109 probes on the pre-hardening runtime: the module reads practice through M108 own reader (creating its lazy timer row), counts a row it cannot read back as a recorded session, and reports an unparseable retained-stop payload as no stops. The hardening stage made all three honest and both probes are green on the delivered tree."
+  },
+  "pure": {
+    "tree": "the delivered runtime with the pre-hardening advisory module (the api stage itself)",
+    "script": "analysis/probe-m109-pure.js",
+    "pass": 28,
+    "fail": 3,
+    "exit_code": 1,
+    "output": "pre-hardening-pure.txt",
+    "scope": "The unchanged M109 probes on the pre-hardening runtime: the module reads practice through M108 own reader (creating its lazy timer row), counts a row it cannot read back as a recorded session, and reports an unparseable retained-stop payload as no stops. The hardening stage made all three honest and both probes are green on the delivered tree."
+  }
+}

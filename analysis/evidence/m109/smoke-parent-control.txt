@@ -1,0 +1,87 @@
+
+=== BOOT ===
+ auto-connected workspace: true · sign-in UI present: false
+=== UI STYLE ===
+ ok   shell: no sign-in UI anywhere
+ ok   shell: navigation draws 11 inline SVG icons for 11 items
+ ok   shell: zero emoji/glyph characters in rendered text
+ ok   shell: zero emoji/glyph characters in tooltips and labels
+ ok   shell: the sidebar prints the build stamp (cache check)
+
+=== WORKSPACES ===
+ fresh workspace opened: true · empty (0 trades): true · previous parked: true
+ switched back: true · trades restored: true (0) · same user: true
+
+=== BOT TABS ===
+ ✓ Mechanics              chars: 15151 tables:4 canvas:4 chips:39 checks:15
+ ✓ Prediction             chars:  7744 tables:3 canvas:0 chips:12 checks:0
+ ✓ Scan                   chars:  3440 tables:1 canvas:0 chips:14 checks:0
+ ✓ Corrections            chars:  5550 tables:1 canvas:0 chips:8 checks:0
+ ✓ Signals                chars:  2705 tables:0 canvas:0 chips:6 checks:0
+ prediction default policy: full sample=16 · expected=full · payload=full
+
+=== PREDICTION PANEL ===
+ ✓ prediction: exit-frontier table with break-even column
+ ✓ prediction: measured playlist filters table
+ ✓ prediction: the win-rate dial
+ ✓ prediction: five filter views offered
+ ✓ prediction: the selected view explains itself
+ ✓ prediction: payload-backed default is selected/marked; thin full sample falls back to all
+ ✓ prediction: measured gate chips on live setups OR explicit uncalibrated withholding
+ ✓ prediction: LTF confirmation shown on live setups OR no live plans when withheld
+ ✓ prediction: refined plan is saveable when actionable
+ ✓ prediction: second-chance re-entry is reported
+
+=== ANALYTICS TABS ===
+ ✓ Core statistics      svgs:3 tables:0 kpis:0 chars:4782
+ ✓ Timing & sessions    svgs:2 tables:0 kpis:0 chars:4318
+ ✓ Execution quality    svgs:1 tables:0 kpis:0 chars:4466
+ ✓ Risk & drawdown      svgs:1 tables:0 kpis:0 chars:4297
+ ✓ Segments             svgs:1 tables:0 kpis:0 chars:5016
+
+=== SETTINGS TABS ===
+ ✓ Accounts           chars:787 inputs:0
+ ✓ Instruments        chars:834 inputs:8
+ ✓ Import / export    chars:1384 inputs:4
+ ✓ Integrations       chars:900 inputs:5
+ ✓ Preferences        chars:1445 inputs:13
+ ✓ About              chars:1438 inputs:0
+
+=== TRADINGVIEW ===
+ tv host: true · fallback painted: true · deep link: https://www.tradingview.com/chart/?symbol=FX%3AEURUSD&interval=15
+ toolbar: 1m | 5m | 15m | 1h | 4h | 1d | 1W | M | L | XL | Full | Full screen | Open on TradingView | Analyse with the bot | Copy link | Reload chart
+ fallback copy: "FX:EURUSD 15m Chart widgets are unavailable without an internet connection. TradingView's chart runs from thei…"
+ handover to bots view: true · symbol in bot toolbar: EURUSD · bot TV link: https://www.tradingview.com/chart/?symbol=FX%3AEURUSD&interval=15
+ integrations tab: true · webhook url: http://127.0.0.1:3211/api/bots/webhook/tradingview?token=…
+ panel mentions: TradingView alerts · Copy JSON template · Send a test alert · Recent alerts
+
+=== VIEW SMOKE TEST ===
+ ✓ dashboard   12577 chars  errors:0  title:"Dashboard"
+ ✓ bots          218 chars  errors:0  title:"Bots"
+ ✓ coach        4542 chars  errors:0  title:"Coach"
+ ✓ market       2026 chars  errors:0  title:"Market"
+ ✓ trades        427 chars  errors:0  title:"Trade log"
+ ✓ journal      5032 chars  errors:0  title:"Journal"
+ ✓ calendar     1439 chars  errors:0  title:"Calendar"
+ ✓ analytics    4782 chars  errors:0  title:"Analytics"
+ ✓ playbook     3207 chars  errors:0  title:"Playbook"
+ ✓ risk         4973 chars  errors:0  title:"Risk tools"
+ ✓ settings      787 chars  errors:0  title:"Settings & data"
+ ✓ prediction:prediction: exit-frontier table with break-even column    200 chars  errors:0  title:"Prediction"
+ ✓ prediction:prediction: measured playlist filters table    200 chars  errors:0  title:"Prediction"
+ ✓ prediction:prediction: the win-rate dial    200 chars  errors:0  title:"Prediction"
+ ✓ prediction:prediction: five filter views offered    200 chars  errors:0  title:"Prediction"
+ ✓ prediction:prediction: the selected view explains itself    200 chars  errors:0  title:"Prediction"
+ ✓ prediction:prediction: payload-backed default is selected/marked; thin full sample falls back to all    200 chars  errors:0  title:"Prediction"
+ ✓ prediction:prediction: measured gate chips on live setups OR explicit uncalibrated withholding    200 chars  errors:0  title:"Prediction"
+ ✓ prediction:prediction: LTF confirmation shown on live setups OR no live plans when withheld    200 chars  errors:0  title:"Prediction"
+ ✓ prediction:prediction: refined plan is saveable when actionable    200 chars  errors:0  title:"Prediction"
+ ✓ prediction:prediction: second-chance re-entry is reported    200 chars  errors:0  title:"Prediction"
+
+ trade modal opened: true | live summary: Gross +$600.00 · net +$600.00 · +1.67R · risked $360.00
+
+(jsdom canvas limitation encountered 8× — the chart degrades to a text summary, verified separately)
+
+=== CONSOLE ERRORS (0) ===
+
+RESULT: 21/21 views OK, 0 UI-style failures, 0 console errors

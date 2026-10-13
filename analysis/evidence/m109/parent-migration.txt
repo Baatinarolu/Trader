@@ -1,0 +1,17 @@
+ok ACTUAL parent restart isolates inherited lazy M102 default strategy-v1 initialization
+ok the M108 parent141 really is the previous milestone: it has gate/intention/practice modules and no ask module or route at all
+ok the parent produced owned records to inherit: 3 trades, one completed practice receipt and a recorded intention
+ok M109 adds NO schema object of any kind: every table, index and trigger on the upgraded tree is byte-identical to the parent’s
+ok every inherited fact is byte-identical after the upgrade: trades, gate answers, intention and the practice receipt
+ok the inherited practice receipt still reads as the parent recorded it, and the channel did not create the lazy timer row on upgrade
+FAIL the delivered tree serves the channel on the inherited database, and every surface answers from the records the parent wrote undefined
+TypeError: Cannot read properties of undefined (reading 'some')
+    at /home/user/Trader/analysis/probe-m109-migration.js:47:24
+    at Object.<anonymous> (/home/user/Trader/analysis/probe-m109-migration.js:63:281)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49

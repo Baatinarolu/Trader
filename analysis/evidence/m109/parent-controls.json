@@ -1,0 +1,65 @@
+{
+  "api": {
+    "tree": "the delivered parent (M108 release) with no advisory module and no /ask surface",
+    "script": "analysis/probe-m109-api.js",
+    "pass": 1,
+    "fail": 3,
+    "exit_code": 1,
+    "output": "parent-api.txt",
+    "scope": "The unchanged M109 probe on the feature-absent parent runtime: no advisory module, no /ask route and no card. Every assertion that needs the channel is a measured negative."
+  },
+  "consumers": {
+    "tree": "the delivered parent (M108 release) with no advisory module and no /ask surface",
+    "script": "analysis/probe-m109-consumers.js",
+    "pass": 1,
+    "fail": 1,
+    "exit_code": 1,
+    "output": "parent-consumers.txt",
+    "scope": "The unchanged M109 probe on the feature-absent parent runtime: no advisory module, no /ask route and no card. Every assertion that needs the channel is a measured negative."
+  },
+  "freshness": {
+    "tree": "the delivered parent (M108 release) with no advisory module and no /ask surface",
+    "script": "analysis/probe-m109-freshness.js",
+    "pass": 0,
+    "fail": 2,
+    "exit_code": 1,
+    "output": "parent-freshness.txt",
+    "scope": "The unchanged M109 probe on the feature-absent parent runtime: no advisory module, no /ask route and no card. Every assertion that needs the channel is a measured negative."
+  },
+  "portable": {
+    "tree": "the delivered parent (M108 release) with no advisory module and no /ask surface",
+    "script": "analysis/probe-m109-portable.js",
+    "pass": 5,
+    "fail": 1,
+    "exit_code": 1,
+    "output": "parent-portable.txt",
+    "scope": "The unchanged M109 probe on the feature-absent parent runtime: no advisory module, no /ask route and no card. Every assertion that needs the channel is a measured negative."
+  },
+  "migration": {
+    "tree": "the delivered parent (M108 release) with no advisory module and no /ask surface",
+    "script": "analysis/probe-m109-migration.js",
+    "pass": 6,
+    "fail": 2,
+    "exit_code": 1,
+    "output": "parent-migration.txt",
+    "scope": "The unchanged M109 probe on the feature-absent parent runtime: no advisory module, no /ask route and no card. Every assertion that needs the channel is a measured negative."
+  },
+  "ui": {
+    "tree": "the delivered parent (M108 release) with no advisory module and no /ask surface",
+    "script": "analysis/probe-m109-ui.js",
+    "pass": 0,
+    "fail": 1,
+    "exit_code": 1,
+    "output": "parent-ui.txt",
+    "scope": "The unchanged M109 probe on the feature-absent parent runtime: no advisory module, no /ask route and no card. Every assertion that needs the channel is a measured negative."
+  },
+  "archive-ui": {
+    "tree": "the delivered parent (M108 release) with no advisory module and no /ask surface",
+    "script": "analysis/probe-m109-archive-ui.js",
+    "pass": 0,
+    "fail": 1,
+    "exit_code": 1,
+    "output": "parent-archive-ui.txt",
+    "scope": "The unchanged M109 probe on the feature-absent parent runtime: no advisory module, no /ask route and no card. Every assertion that needs the channel is a measured negative."
+  }
+}

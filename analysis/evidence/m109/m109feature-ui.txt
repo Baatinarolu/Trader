@@ -1,0 +1,28 @@
+ok actual HTML loads the advisory view before the dashboard that renders it
+ok the shipped view makes no network call of its own and loads no third-party script: every ask goes through the app’s own API helper
+ok the view renders answer text as text nodes and never as markup
+ok the card names the channel honestly: deterministic, read-only, no AI
+ok the card states where answers come from and that it never writes
+ok the card states what the channel refuses, in the trader’s words, before they ask
+ok the card offers the server’s own example questions as chips, one per surface
+ok the input is bounded to the module’s own limit and the send action is labelled read-only
+ok the card carries the cannot-know list and the refusal codes it will actually receive
+ok the card states no authority and that limits change only where the trader changes them
+ok clicking a chip asks the server and renders one line per answer fact, each with its source
+ok every rendered line carries its stated kind as a data attribute, so provenance is structural rather than implied
+ok no rendered line claims an effect, a prediction or a calming result
+ok the chip asks through POST /api/ask with the surface’s own example as the question
+ok a typed question is sent as typed (the server trims and bounds it, the view does not rewrite it)
+ok the answer box is replaced rather than appended: one answer container is shown at a time, holding the newest answer
+ok a refusal renders as a refusal with its code, its reason, its citation and what it can answer instead
+ok a refusal shows no facts at all: one note line, no surface reading and no pick
+ok nothing in the rendered refusal offers a button that could act on the trading surfaces
+ok an unmatched question renders the honest non-answer with the list of surfaces the channel owns
+ok a blank question is refused by the server and the view shows the reason instead of a silent no-op
+ok markup typed into the box is refused at the bound and never injected into the answer surface
+ok without the surface list the card says the channel is unavailable and changes nothing about entries
+ok an unreadable surface renders as unavailable with its source, not as a zero or an all-clear
+ok the view is bound to the trader’s own session token, so a different workspace cannot be asked through a stale card
+ok no uncaught error was raised by any interaction
+ok the view keeps the trader’s typed text when a preset answer arrives elsewhere on the page
+M109 real DOM: the advisory card, its refusals and its provenance: 27 passed, 0 failed

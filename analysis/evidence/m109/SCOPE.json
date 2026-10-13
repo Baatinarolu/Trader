@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-13",
+  "parent": "14ac041e4149948d6526acc8794c6430283e7643",
+  "finding": "M109 only",
+  "ledger_before": [
+    132,
+    102,
+    2,
+    28,
+    0,
+    8
+  ],
+  "ledger_after": [
+    132,
+    103,
+    2,
+    27,
+    0,
+    8
+  ],
+  "course": "Saved Ep29 (S3), the Flow AI episode: the case for an assistant in the episode is speed of feedback \u2014 \"the real edge of AI is speed. It helps you close the gap faster between confusion and clarity, emotion and logic, mistake and lesson, impulse and discipline\" \u2014 and the moment it names is mid-session and tilted (\"come to Flow AI. Flow AI will ground you.\"). The audit recorded the gap precisely: the codebase already computes the substance (the coach insights, the guardrail state the entry engine reads, the trader's own records) but there is no route by which a user can ask the system anything, and no LLM integration point of any kind. The same episode draws the line this milestone refuses to cross \u2014 \"AI should not replace your trade plan\u2026 your journaling\u2026 your review process\u2026 your risk management\u2026 your personal responsibility\", \"if you start using AI as a shortcut for certainty, you are using it wrong\", \"AI is not the most powerful when it tries to predict the market for you\" \u2014 and the episode's own fairness note says Flow AI v1 \"is not some magic AI that can read your trading account\" while this app already reads the trade database directly. So nothing needed a model: what was missing was the channel, and the channel is what is delivered.",
+  "design": [
+    "`src/ask.js` (`ask-v1`, 398 lines) is a deterministic, read-only question router over the app's OWN findings: the entry-gate/routine record, today's risk facts (account policy + today's selected cap + open positions + realised net), the coach's own insights narrated not recomputed (with the M11 30-trade score floor quoted when held back), my numbers as history (P.kpis) not a forecast, the records I stored today (M106 gate + M107 intention + M108 practice + the routine cycle), the rules/checklist I recorded, and news/calendar. Routing is a bounded cue classifier plus a deterministic tie-break; there is no scoring model, no randomness and no hidden state",
+    "Six refusal families are checked before any surface and returned as successful 200 answers carrying the reason, the episode's own citation and `can_answer`: ask_refused_permission, ask_refused_prediction, ask_refused_outcome_target (an amount plus an outcome verb in the same non-negated question \u2014 M107's classifier is reused, not copied; a negated amount stays answerable), ask_refused_mental_state, ask_refused_other_person, ask_refused_override. A refusal deliberately carries NO topic and no surface facts. A question on no owned surface is an honest non-answer: `no_matching_topic` with the list of surfaces it does own",
+    "The news/calendar surface answers `unavailable` on every day: the calendar is fetched live and never stored, the channel performs no fetch and keeps no cache, and it will not translate \"I could not look\" into \"no high-impact news\". Unknown is not a pass",
+    "NO model of any kind: `LLM = false` is a constant in the module contract and every payload carries llm:false, model:null, api_key_required:false, network:false, reads_only:true, writes:0, new_data:false, predicts:false, grants_permission:false, gives_direction_or_signal:false, changes_limits:false, authority:'none'. Same stored state + same question -> same bytes; nothing is generated, sampled or cached",
+    "Nothing invented and nothing repaired: every line carries a `kind` (fact|record|unavailable|note) and the `source` surface it came from. An unparseable retained-stop payload is `unavailable` with its reason, never \"no stops\"; malformed users.settings says the checklist is not summarised here (and is not assumed empty); a practice row whose measured time cannot be read back is reported and excluded from BOTH the count and the seconds, and left exactly as stored",
+    "Read-only by construction: no write helper, no concatenated SQL, and the practice facts are read DIRECTLY rather than through M108's Practice.optional, because that read creates its lazy practice_timers row. Measured: a full battery (7 surfaces + 6 refusals + 1 non-answer) over a real journal leaves every table byte-identical \u2014 twice over on a tree with corrupted rows, including sqlite_sequence \u2014 the sqlite_master objects of an inherited database are unchanged, and the channel adds no table, no index and no trigger",
+    "No authority and no wiring: the module is required in exactly ONE file (the route that exposes it). No engine, bot, guardrail, routine, gate, intention or practice module requires it; entry admission answers exactly as before whether or not the trader asked; nothing about a permission, a cap or a guardrail reason mentions the channel. M64/M106/M107/M108 stay separate mechanisms",
+    "Two routes, one contract: `GET /api/ask/topics` serves the surfaces, refusal codes, cannot-know list and meta flags; `POST /api/ask` takes `{question}` only (<=280 chars, plain single line, no markup or control characters) and IGNORES extras such as account_id, date, from, to or timezone rather than honouring them. A malformed question is 400 ask_invalid; a storage failure inside a reader is answered honestly as `unavailable` with writes:0, or 503 ask_unavailable when the stored facts themselves cannot be read. No answer leaks a filesystem path, a SQLite message or a stack frame, and another trader's workspace is never read",
+    "The shipped Dashboard card sets the honest framing (deterministic, read-only, no AI; where answers come from; what is refused before you ask), offers seven example chips and one bounded input, renders each line as kind \u00b7 source and each refusal with code, reason, citation and can_answer, and states \"Authority: none\" with the \"what this channel will not do\" list. Every answer goes into the card's OWN box (two mounted cards never cross-fill), typed text is sent as typed, markup is refused rather than injected, and a card whose session changed refuses with a toast rather than asking as the new workspace",
+    "M109 adds no schema and no data: the actual 143-file M108 parent and the delivered tree answer identically on the same database, with zero schema objects added and every inherited fact byte-identical after the upgrade. M30/M103 remain partial; M110/M111/M112 are open. No 70% win-rate, causal, predictive, broker, provider, human, mental-state, pixel or production claim, and no predictor of any kind"
+  ]
+}

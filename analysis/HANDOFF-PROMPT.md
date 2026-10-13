@@ -1,6 +1,81 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M108 — the regulation layer: a personal practice log — 2026-10-13
+## Current M109 — the advisory channel: ask the journal, deterministically — 2026-10-13
+
+**132:103 done /2 partial /27 TODO /0 no-action**, exact eight groups. Saved Ep29 (Flow AI):
+*"the real edge of AI is speed. It helps you close the gap faster between confusion and
+clarity, emotion and logic, mistake and lesson, impulse and discipline"*, and the moment is
+mid-session tilted — *"come to Flow AI. Flow AI will ground you."* The audit recorded that the
+substance already existed (coach insights, the guardrail state, the trader's own records) with
+**no route by which a user can ask the system anything** and no LLM integration point. The
+episode's own limits are the delivery's limits: *"AI should not replace your trade plan… your
+journaling… your review process… your risk management… your personal responsibility"*, *"if
+you start using AI as a shortcut for certainty, you are using it wrong"*, *"AI is not the most
+powerful when it tries to predict the market for you"*.
+
+`src/ask.js` (`ask-v1`, deterministic, **read-only**, required in exactly one file — the route)
+routes a bounded question to seven owned surfaces: the entry-gate/routine **record**, today's
+risk facts (account policy + today's selected cap + open positions + realised net), the coach's
+**own insights narrated not recomputed** (M11 30-trade score floor quoted when withheld), my
+numbers as history not a forecast, the records I stored today (M106 gate + M107 intention +
+M108 practice + the routine cycle, each with its **own timestamp** and the owning module's
+freshness word), the rules/checklist I recorded, and news/calendar — which answers **unknown**,
+because the channel performs no fetch and will not turn "I could not look" into "no news".
+**Six refusals are successful 200 answers** carrying reason + episode citation + `can_answer`:
+`ask_refused_permission`, `ask_refused_prediction`, `ask_refused_outcome_target` (an amount plus
+an outcome verb in the same non-negated question — M107's classifier reused, its cues travel
+with the refusal; a negated amount stays answerable), `ask_refused_mental_state`,
+`ask_refused_other_person`, `ask_refused_override`; a question on no surface is an honest
+`no_matching_topic` listing what it owns. Every line carries `kind` (fact/record/unavailable/
+note) and `source`. **No model, no key, no network, no cache, no transcript, no new data**:
+`LLM=false` in the module and `llm:false, model:null, api_key_required:false, network:false,
+predicts:false, grants_permission:false, gives_direction_or_signal:false, changes_limits:false,
+reads_only:true, writes:0, authority:'none'` in every payload; same stored state + same question
+→ same bytes. **Read-only by construction**: no write helper, no concatenated SQL, **no engine/
+bot/guardrail/routine/gate/intention/practice module requires it**, a full battery leaves every
+table byte-identical (twice over on a tree with corrupted rows, including `sqlite_sequence`) and
+does **not** create M108's lazy `practice_timers` row, adds **no table/index/trigger**, and
+cannot move admission. `POST /api/ask` takes `{question}` only (≤280 chars, plain single line,
+no markup/control chars; extras such as account/date/timezone **ignored**; malformed 400
+`ask_invalid`; storage failure 503 `ask_unavailable`); `GET /api/ask/topics` serves the
+surfaces/refusal codes/limits/meta; another trader's workspace is never read. Dashboard card
+with chips, its **own** answer box (two cards never cross-fill) and a "what this channel will not
+do" list; a stale card refuses with a toast rather than asking as a new workspace.
+
+**Final168/0 across9 probes** — pure31 (router table, bounds, no-model/no-network, byte-identical
+battery), api17, consumers18 (agrees with `/briefing` and `/coach`), freshness11 (server's own
+UTC day, no caller scoping, no cycle created), hardening17 (unreadable retained-stop/settings/
+practice rows reported and left unrepaired; hostile input stays data), portable16 (no channel key
+in the backup, archives counted separately, crafted bundles inert), real-DOM ui27 + archive-ui16,
+and the actual143-parent migration **15/0 proving ZERO schema objects added** with every inherited
+fact byte-identical. Pre-hardening control tree = the api stage (asserted identical to
+`pre-hardening-source.json`): the module reading practice through M108's reader, counting a row it
+cannot read back as a recorded session and reporting an unparseable retained-stop payload as "no
+stops" was measured by the **unchanged** probes at **14/3 + 28/3** and is **17/0 + 31/0** after the
+hardening stage; parent controls 1/3, 1/1, 0/2, 5/1, 6/2, 0/1, 0/1. Previous cohorts re-run
+unchanged: M108 259/0, M107 231/1, M106 317/1, M105 141/1 (**three declared milestone-only schema
+negatives kept**; M109 adds no schema, so the M107/M106/M105 negatives are exactly the M108 ones).
+RAW/DECLARED/live-provider/native arms **inherited unchanged and not re-run** (no route or schema
+they touch changed — the M108 record stands). Smoke exit0 **21/21 conditional DOM**,0style/0console,
+8canvas limits,96.6s, with the **same-sample M108 parent control also 21/21**; `grep -ci ask` = 0 in
+both smoke outputs, so the advisory card's coverage is the two real-DOM probes, not the smoke.
+Four runtime stages+docs, actual14ac041/pristine forward/reverse byte proofs, deterministic
+**145-source** ZIP: `build-m109-ask-artifacts.py`, `patches/M109-ASK-STAGES.json`, excluded archive
+SHA companion. [Full report](M109-ADVISORY-CHANNEL.md). Arm servers stopped; `/tmp` DBs synthetic/
+offline, scheduler OFF, not preserved real data.
+
+**Next M110/M111 (the news pair), then M112.** M110/M111/M112 and the older TODO rows still open;
+M30/M103 partial. All
+132 IDs/eight groups retained; session fixed to **arena/b411452d-trader**, older
+counts/branches/next-steps below historical.
+
+### Current remaining IDs — no omissions
+
+Partials **M30,M103**. TODO27: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M62,M65,M66,M67,M72,M73,M74,M110,M111,M112,M115,M117,M125**.
+PROGRESS asserts exact132/eight-group partition. Earlier lists are historical milestones,
+not the current remaining work.
+
+## Historical M108 — the regulation layer: a personal practice log — 2026-10-13
 
 **132:102 done /2 partial /28 TODO /0 no-action**, exact eight groups. Saved Ep28 sanctuary
 half: *"The guardrails in Edge Flow stop you mechanically. It's the hard wall… But

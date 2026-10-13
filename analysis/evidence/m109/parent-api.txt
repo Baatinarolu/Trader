@@ -1,0 +1,9 @@
+FAIL an unauthenticated caller cannot read the surface list or ask anything undefined
+FAIL the surface list is served with its refusals, its limits and its meta flags undefined
+ok the route surface is explicit: the channel answers POST /ask, and a GET to it is not a second read path
+TypeError: topics.data.topics is not iterable
+    at /home/user/Trader/analysis/probe-m109-api.js:14:30
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async finish (/home/user/Trader/analysis/m109-test-support.js:11:50)
+    at async /home/user/Trader/analysis/probe-m109-api.js:6:12
+M109 ask channel API: 1 passed, 3 failed

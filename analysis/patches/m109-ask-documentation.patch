@@ -1,0 +1,120 @@
+diff --git a/README.md b/README.md
+index 6d24b0d..56c8dbb 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,60 @@
+ # TradeJournal Pro
+ 
++## M109 — the advisory channel: ask the journal, deterministically (2026-10-13)
++
++Saved Ep 29 argues for AI by **speed of feedback** — closing the gap between *confusion and
++clarity, emotion and logic, mistake and lesson, impulse and discipline* mid-session. This
++delivers the part of that which a self-hosted journal can own honestly: an **Ask the journal**
++card on the Dashboard that answers questions from findings the app has **already computed and
++stored**. It is emphatically **not an AI**: there is **no model, no API key and no network
++call** — every payload says so (`llm:false`, `model:null`, `api_key_required:false`,
++`network:false`) — and the same stored state with the same question returns the same bytes.
++
++**Seven surfaces, read-only.** *What the gate currently reads*, *my limits and today's risk
++facts*, *what the app sees in my logged trades* (the coach's own insights, narrated not
++recomputed), *my numbers as history not a forecast*, *the records I stored today* (M106 gate
++answers, M107 intention, M108 practice, the routine cycle), *the rules and checklist I
++recorded*, and *news/calendar state* — which answers **unknown**, because the channel performs
++no fetch and will not translate "I could not look" into "no high-impact news". Every answer
++line carries its **kind** (`fact`/`record`/`unavailable`/`note`) and the **surface it came
++from**; a missing, malformed or unreadable input is reported `unavailable` with the reason and
++is never rounded to zero, repaired or invented.
++
++**Six refusals, as answers.** Market direction, odds and predictions
++(`ask_refused_prediction`); "should I buy/sell/enter", signals and picks
++(`ask_refused_permission`); "am I calm/tilted/ready" readings (`ask_refused_mental_state`) —
++the app stores *your* answers, and quoting them back is not a measurement of you; questions
++about another person's account (`ask_refused_other_person`); "raise my cap / disable the news
++block" (`ask_refused_override`); and an amount asked for as an outcome
++(`ask_refused_outcome_target`, the same amount-plus-outcome pairing M107's classifier refuses).
++A refusal is a **200 success** carrying its reason, the episode's own words and what the
++channel *can* answer instead. A question that lands on no owned surface is an honest
++non-answer listing the surfaces it does own — never an invented reply.
++
++**No authority, and nothing written.** The module exports no write path, builds no SQL by
++concatenation, and is required in exactly one place — the route that exposes it. A full
++battery of asks leaves **every table byte-identical**, including *not* creating the lazy
++practice-timer row M108's own read creates. Asking cannot permit, block, size, grade or change
++anything; the entry engine remains the only authority, and **no engine, bot, guardrail,
++routine, gate, intention or practice module requires this channel**. Questions are bounded to
++280 characters of plain single-line text (markup and control characters refused), and extras
++in the request body cannot scope, re-date or re-timezone an answer.
++
++**Measurement.** **M109 168/0 across 9 probes** (read-only/byte-identical proofs in `pure` and
++`api`; consumers18/0, freshness11/0, hardening17/0, portable16/0, real-DOM ui27/0, and the
++actual143-parent migration 15/0 proving **zero schema added** and every inherited fact
++byte-identical). Every prior cohort re-run unchanged — M108 259/0, M107 231/1, M106 317/1,
++M105 141/1, one declared milestone-only schema negative each; the RAW596/156, DECLARED824/4 and
++live-provider70/1 arms are inherited from the M108 record and **not** re-run.
++The pre-hardening control tree — the module reading practice through M108's own reader,
++counting a row it cannot read back, and swallowing an unparseable stop payload — was measured
++by the *unchanged* probes at 14/3 and 28/3 before the fix and is 17/0 and 31/0 after it. Smoke
++21/21 views, 0 style failures, 0 console errors on both the delivered tree and its parent.
++Ledger **132 = 103 done / 2 partial / 27 TODO**. Report
++`analysis/M109-ADVISORY-CHANNEL.md` in the ZIP. Next M110–M112; no 70 % win-rate,
++causal/predictive edge, broker/provider/mental-state/human/pixel/production claim, and no
++predictor of any kind.
++
+ ## M108 — the regulation layer: a personal practice log (2026-10-13)
+ 
+ The other half of Ep 28's *sanctuary* — the meditation timer, the interval bells, the
+@@ -47,7 +102,7 @@ with one declared milestone-only schema negative each, changes152/1, opportuniti
+ reviews159/1, behavior113/2, process106/2, screenshots223/3, emotions170/0,
+ confluences160/0, execution260/0, routine321/0, offline178/0, market325/0, RAW596/156,
+ DECLARED824/4). Ledger **132 = 102 done / 2 partial / 28 TODO**. Report
+-`analysis/M108-SANCTUARY-PRACTICE.md` in the ZIP. Next M111/M112; no 70 % win-rate,
++`analysis/M108-SANCTUARY-PRACTICE.md` in the ZIP. Next M109 (now separately delivered); no 70 % win-rate,
+ causal/predictive edge, broker/provider/mental-state/human/meditation/pixel/production
+ claim.
+ 
+diff --git a/docs/API.md b/docs/API.md
+index c89c0ca..8d2185a 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -1,5 +1,41 @@
+ # REST API reference
+ 
++## M109 the advisory channel (deterministic, read-only)
++
++- `GET /api/ask/topics`: the seven owned surfaces with label + example question, the six
++  refusal codes, the cannot-know limits and the meta contract (`llm:false`, `model:null`,
++  `api_key_required:false`, `network:false`, `predicts:false`, `grants_permission:false`,
++  `gives_direction_or_signal:false`, `changes_limits:false`, `reads_only:true`, `writes:0`,
++  `new_data:false`, `authority:'none'`, `answers_from:` the surfaces it narrates).
++- `POST /api/ask`: body `{question}` **only** — one line of plain text, ≤280 characters, no
++  markup and no control characters; there is no account, date, filter, model, temperature or
++  system-prompt field, and extras in the body are ignored rather than honoured. Answers are
++  `200` with `{version,question,answered,refused,topic?,topic_label?,cues,intention_cues,
++  cannot_know,meta,answer:[{kind,text,source}]}`.
++  - `kind` is exactly `fact|record|unavailable|note`; `source` names the surface each line
++    came from (`guardrail_day_state`, `state_gate_answers`, `daily_intentions`,
++    `practice_sessions`, `trades`, `coach:insights[…`, `performance:kpis`, …) so provenance
++    is structural rather than implied.
++  - **A refusal is a success**: `answered:false, refused:true` with
++    `refusal:{code,because,cites,can_answer,cues,intention_cues}` — `ask_refused_permission`,
++    `ask_refused_prediction`, `ask_refused_outcome_target`, `ask_refused_mental_state`,
++    `ask_refused_other_person`, `ask_refused_override`. A refusal never carries surface facts.
++  - **An honest non-answer is also a success**: `reason:{code:'no_matching_topic',because,
++    topics}` when the question lands on no owned surface.
++  - `unavailable` lines carry the reason a stored input could not be read; `unknown` is never
++    rendered as zero, as "no news" or as a pass, and nothing is repaired.
++  - `400 ask_invalid` for an empty, over-long, multi-line, control-character or markup
++    question; `401` unauthenticated; `503 ask_unavailable` when the stored facts themselves
++    cannot be read (nothing changed, nothing inferred).
++- Read-only by construction: every reader is a SELECT (or a module's documented read path),
++  the module exports no write helper, and a battery of asks leaves every table byte-identical
++  — including not creating the lazy `practice_timers` row M108's own read creates. No engine,
++  bot, guardrail, routine, gate, intention or practice module requires the channel, and asking
++  cannot move admission.
++- No model, key, network call, cache or transcript: the channel stores nothing, so it adds no
++  table, no index, no trigger and no backup key, and a restored/imported archive is reported
++  as an archive rather than as the trader's own record.
++
+ ## M87 optional owned visual evidence
+ 
+ - `GET /api/trades/:id/screenshots`: canonical positive integer owned ID; three

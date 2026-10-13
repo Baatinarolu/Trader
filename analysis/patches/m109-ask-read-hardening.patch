@@ -1,0 +1,49 @@
+diff --git a/src/ask.js b/src/ask.js
+index 24a2ad9..326a53d 100644
+--- a/src/ask.js
++++ b/src/ask.js
+@@ -39,7 +39,6 @@ const P = require('./performance');
+ const Coach = require('./coach');
+ const Guards = require('./bots/guardrails');
+ const StateGate = require('./state-gate');
+-const Practice = require('./practice');
+ const Intention = require('./intention');
+ 
+ const VERSION = 'ask-v1';
+@@ -219,9 +218,8 @@ async function context(db, userId, { nowMs = Date.now(), timezone = 'UTC' } = {}
+   /* M108's own read creates its lazy timer row on first read. This channel must not create
+    * anything, so the practice tables are read directly: the sessions for today and the
+    * timer row IF it already exists — absent means idle, and it stays absent. */
+-  const practice = await Practice.optional(userId, { nowMs });
+-  const practiceSessions = [].concat(practice.sessions || [], practice.archives || []);
+-  const practiceTimer = practice.timer && practice.timer.state && practice.timer.state !== 'idle' ? practice.timer : null;
++  const practiceSessions = await db.prepare('SELECT * FROM practice_sessions WHERE user_id=? AND day=? ORDER BY id').all(userId, day);
++  const practiceTimer = await db.prepare('SELECT * FROM practice_timers WHERE user_id=?').get(userId) || null;
+   return { day, nowMs, account, accounts, rows, closed, open, state, caps, gate, intention, journal, cycle, checks, attempts, ruleChange, settings,
+     practiceSessions, practiceTimer, timezone };
+ }
+@@ -244,7 +242,7 @@ function guardrailLines(ctx) {
+   const used = ctx.state ? ctx.state.entries_count : 0;
+   const lines = [fact(`Entries recorded today (UTC ${ctx.day}): ${used} of the selected cap ${cap}${ctx.caps ? '' : ' (no caps row stored yet for today: this is the account policy, not a frozen selection)'}.`, 'guardrail_day_state:entries_count')];
+   let stops = {};
+-  if (ctx.state) { try { stops = JSON.parse(ctx.state.stops_json) || {}; } catch { stops = {}; } }
++  if (ctx.state) { try { stops = JSON.parse(ctx.state.stops_json) || {}; } catch { return lines.concat([unavailable('The stored retained-stop state could not be read, so today\'s stops are unknown here — not "none".', 'guardrail_day_state:stops_json')]); } }
+   const names = Object.keys(stops);
+   lines.push(names.length ? fact(`Retained stand-down state today: ${names.join(', ')}.`, 'guardrail_day_state:stops_json') : record('No retained stand-down rule is stored for today.', 'guardrail_day_state:stops_json'));
+   lines.push(ctx.state && ctx.state.last_loss_at ? fact(`Last recorded loss clock: ${ctx.state.last_loss_at}.`, 'guardrail_day_state:last_loss_at') : record('No loss clock is stored for this account.', 'guardrail_day_state:last_loss_at'));
+@@ -282,10 +280,11 @@ function practiceLines(ctx) {
+   const rows = ctx.practiceSessions || [];
+   /* A row whose measured time cannot be read back is reported and excluded — never counted
+    * as a session, never rounded to zero, never repaired. */
+-  const unreadable = [];
+-  const recorded = rows;
+-  const archives = [];
+-  const seconds = recorded.reduce((n, r) => n + Math.floor((Number(r.elapsed_ms) || 0) / 1000), 0);
++  const unreadable = rows.filter((r) => !Number.isSafeInteger(r.elapsed_ms) || r.elapsed_ms < 0);
++  const readable = rows.filter((r) => Number.isSafeInteger(r.elapsed_ms) && r.elapsed_ms >= 0);
++  const recorded = readable.filter((r) => r.source !== 'imported_unverified');
++  const archives = readable.filter((r) => r.source === 'imported_unverified');
++  const seconds = recorded.reduce((n, r) => n + Math.floor(r.elapsed_ms / 1000), 0);
+   const lines = [record(`Practice recorded today (UTC ${ctx.day}): ${recorded.length} session(s) and ${seconds}s of server-measured running time${archives.length ? `, plus ${archives.length} imported archive(s) counted separately and never as your own recorded session` : ''}.`, 'practice_sessions')];
+   if (unreadable.length) lines.push(unavailable(`${unreadable.length} stored practice row(s) could not be read back, so they are reported unavailable and are not counted as a session or a single measured second.`, 'practice_sessions:unreadable'));
+   const t = ctx.practiceTimer;

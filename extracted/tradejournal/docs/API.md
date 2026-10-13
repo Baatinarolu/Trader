@@ -1,5 +1,41 @@
 # REST API reference
 
+## M109 the advisory channel (deterministic, read-only)
+
+- `GET /api/ask/topics`: the seven owned surfaces with label + example question, the six
+  refusal codes, the cannot-know limits and the meta contract (`llm:false`, `model:null`,
+  `api_key_required:false`, `network:false`, `predicts:false`, `grants_permission:false`,
+  `gives_direction_or_signal:false`, `changes_limits:false`, `reads_only:true`, `writes:0`,
+  `new_data:false`, `authority:'none'`, `answers_from:` the surfaces it narrates).
+- `POST /api/ask`: body `{question}` **only** — one line of plain text, ≤280 characters, no
+  markup and no control characters; there is no account, date, filter, model, temperature or
+  system-prompt field, and extras in the body are ignored rather than honoured. Answers are
+  `200` with `{version,question,answered,refused,topic?,topic_label?,cues,intention_cues,
+  cannot_know,meta,answer:[{kind,text,source}]}`.
+  - `kind` is exactly `fact|record|unavailable|note`; `source` names the surface each line
+    came from (`guardrail_day_state`, `state_gate_answers`, `daily_intentions`,
+    `practice_sessions`, `trades`, `coach:insights[…`, `performance:kpis`, …) so provenance
+    is structural rather than implied.
+  - **A refusal is a success**: `answered:false, refused:true` with
+    `refusal:{code,because,cites,can_answer,cues,intention_cues}` — `ask_refused_permission`,
+    `ask_refused_prediction`, `ask_refused_outcome_target`, `ask_refused_mental_state`,
+    `ask_refused_other_person`, `ask_refused_override`. A refusal never carries surface facts.
+  - **An honest non-answer is also a success**: `reason:{code:'no_matching_topic',because,
+    topics}` when the question lands on no owned surface.
+  - `unavailable` lines carry the reason a stored input could not be read; `unknown` is never
+    rendered as zero, as "no news" or as a pass, and nothing is repaired.
+  - `400 ask_invalid` for an empty, over-long, multi-line, control-character or markup
+    question; `401` unauthenticated; `503 ask_unavailable` when the stored facts themselves
+    cannot be read (nothing changed, nothing inferred).
+- Read-only by construction: every reader is a SELECT (or a module's documented read path),
+  the module exports no write helper, and a battery of asks leaves every table byte-identical
+  — including not creating the lazy `practice_timers` row M108's own read creates. No engine,
+  bot, guardrail, routine, gate, intention or practice module requires the channel, and asking
+  cannot move admission.
+- No model, key, network call, cache or transcript: the channel stores nothing, so it adds no
+  table, no index, no trigger and no backup key, and a restored/imported archive is reported
+  as an archive rather than as the trader's own record.
+
 ## M87 optional owned visual evidence
 
 - `GET /api/trades/:id/screenshots`: canonical positive integer owned ID; three

@@ -1,0 +1,546 @@
+{
+  "base_commit": "14ac041e4149948d6526acc8794c6430283e7643",
+  "parent": "Actual M108 Git release tree (143 files) as the M109 parent; the inherited M108 parent (the 8a2cfd5 M107 release tree), the M107 parent, the M106 parent and every older parent rebuilt by saved reverse patches and asserted against the frozen proofs. M109 adds no schema object of any kind, so the parent and the delivered tree answer identically on the same database.",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 103,
+    "partial": 2,
+    "todo": 27,
+    "no_action": 0,
+    "partition_groups": 8,
+    "partial_ids": [
+      "M30",
+      "M103"
+    ],
+    "todo_ids": [
+      "M12",
+      "M13",
+      "M15",
+      "M17",
+      "M18",
+      "M19",
+      "M45",
+      "M46",
+      "M49",
+      "M53",
+      "M55",
+      "M56",
+      "M59",
+      "M60",
+      "M62",
+      "M65",
+      "M66",
+      "M67",
+      "M72",
+      "M73",
+      "M74",
+      "M110",
+      "M111",
+      "M112",
+      "M115",
+      "M117",
+      "M125"
+    ]
+  },
+  "feature": {
+    "pass": 168,
+    "fail": 0,
+    "probes": 9,
+    "scope": "REPORTED completed assertions; literal clocks/journals/DOM only. The advisory channel is deterministic and read-only (no model, key or network); RAW failures/early aborts, DECLARED assumptions and the frozen milestone-only schema negatives remain SEPARATE. No chart/broker/provider/pixel/mental-state/prediction/edge/production proof."
+  },
+  "prior_cohorts_rerun": {
+    "feature": {
+      "pass": 259,
+      "fail": 0,
+      "probes": 9,
+      "completed_nonzero": 0
+    },
+    "m107feature": {
+      "pass": 231,
+      "fail": 1,
+      "probes": 9,
+      "completed_nonzero": 1
+    },
+    "m106feature": {
+      "pass": 317,
+      "fail": 1,
+      "probes": 10,
+      "completed_nonzero": 1
+    },
+    "m105feature": {
+      "pass": 141,
+      "fail": 1,
+      "probes": 10,
+      "completed_nonzero": 1
+    }
+  },
+  "inherited_arms_not_rerun": {
+    "note": "RAW, DECLARED, the live-provider arm and the native API/bots arms are inherited from the committed M108 record and were NOT re-run for M109: M109 adds no route they touch and no schema object, and the record stands as committed.",
+    "raw": {
+      "pass": 596,
+      "fail": 156,
+      "probes": 31,
+      "completed_nonzero": 21,
+      "timeout_no_exit": 1,
+      "summaryless": 1
+    },
+    "declared": {
+      "pass": 824,
+      "fail": 4,
+      "probes": 31,
+      "completed_nonzero": 2
+    },
+    "live_provider_attempts": {
+      "pass": 70,
+      "fail": 1,
+      "completed_nonzero": 6,
+      "summaryless": 5
+    },
+    "native": [
+      {
+        "arm": "parent",
+        "suite": "api",
+        "server_app": "/tmp/m108-parent/app",
+        "scripts_unchanged": true,
+        "pass": null,
+        "fail": null,
+        "exit_code": 2,
+        "status": "completed",
+        "output": "native-parent-api.txt",
+        "parity_fills": null,
+        "parity_mismatches": null,
+        "scope": "Unchanged api-test on a FRESH database: a live entry is refused by the mandatory pre-market routine (no selected window on a new account), so the run aborts with exit 2 and no summary \u2014 identically on the M107 parent tree and on the delivered tree. The inherited M107 record 121/0 came from that session\u2019s declared prepared workspace and is not reproducible from a fresh database on either tree; it is left as committed, never rewritten. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+      },
+      {
+        "arm": "parent",
+        "suite": "bots",
+        "server_app": "/tmp/m108-parent/app",
+        "scripts_unchanged": true,
+        "pass": 198,
+        "fail": 8,
+        "exit_code": 1,
+        "status": "completed",
+        "output": "native-parent-bots.txt",
+        "parity_fills": 15,
+        "parity_mismatches": 0,
+        "scope": "Unchanged bots-test on a FRESH database: the mandatory-routine negatives are retained and the synthetic random-walk fill parity count moves with the wall clock (15 here, 19 in the M107 record, 15 at the M106 delivery) with 0 mismatches \u2014 identical numbers on the M107 parent tree and on the delivered tree. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+      },
+      {
+        "arm": "raw",
+        "suite": "api",
+        "server_app": "/home/user/Trader/extracted/tradejournal",
+        "scripts_unchanged": true,
+        "pass": null,
+        "fail": null,
+        "exit_code": 2,
+        "status": "completed",
+        "output": "native-raw-api.txt",
+        "parity_fills": null,
+        "parity_mismatches": null,
+        "scope": "Unchanged api-test on a FRESH database: a live entry is refused by the mandatory pre-market routine (no selected window on a new account), so the run aborts with exit 2 and no summary \u2014 identically on the M107 parent tree and on the delivered tree. The inherited M107 record 121/0 came from that session\u2019s declared prepared workspace and is not reproducible from a fresh database on either tree; it is left as committed, never rewritten. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+      },
+      {
+        "arm": "raw",
+        "suite": "bots",
+        "server_app": "/home/user/Trader/extracted/tradejournal",
+        "scripts_unchanged": true,
+        "pass": 198,
+        "fail": 8,
+        "exit_code": 1,
+        "status": "completed",
+        "output": "native-raw-bots.txt",
+        "parity_fills": 15,
+        "parity_mismatches": 0,
+        "scope": "Unchanged bots-test on a FRESH database: the mandatory-routine negatives are retained and the synthetic random-walk fill parity count moves with the wall clock (15 here, 19 in the M107 record, 15 at the M106 delivery) with 0 mismatches \u2014 identical numbers on the M107 parent tree and on the delivered tree. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+      }
+    ]
+  },
+  "declared_negatives": [
+    {
+      "suite": "m107feature/migration",
+      "pass": 17,
+      "fail": 1,
+      "why": "The frozen M107 migration probe asserts the M107-only schema delta (four daily_intentions objects); the later milestones add their own objects, so that single whole-schema assertion is a declared, milestone-scoped negative. M109 adds nothing, so it is exactly the M108-recorded one, retained unchanged."
+    },
+    {
+      "suite": "m106feature/migration",
+      "pass": 17,
+      "fail": 1,
+      "why": "The frozen M106 migration probe asserts the M106-only schema delta and sees the additive M107/M108 objects; retained at exactly one failing assertion, exactly as the M108 record left it."
+    },
+    {
+      "suite": "m105feature/migration",
+      "pass": 12,
+      "fail": 1,
+      "why": "The frozen M105 migration probe asserts the M105-only schema delta and also fails on the additive M106/M107/M108 objects; retained at exactly one failing assertion, exactly as the M108 record left it."
+    }
+  ],
+  "regression_parents": {
+    "method": "Actual 14ac041 M108 Git release as the M109 parent, the inherited M108 parent (the 8a2cfd5 M107 release), the M107 parent (the 4d13078 M106 release) and every older source by saved reverse patches asserted against the frozen parent-source.json proofs; no guessed schema/current module in any parent.",
+    "parents": {
+      "/tmp/m109-parent/app": {
+        "files": 143,
+        "byte_differences": 0
+      },
+      "/tmp/m108-parent/app": {
+        "files": 141,
+        "byte_differences": 0
+      },
+      "/tmp/m107-parent/app": {
+        "files": 139,
+        "byte_differences": 0
+      },
+      "/tmp/m106-parent/app": {
+        "files": 137,
+        "byte_differences": 0
+      },
+      "/tmp/m105-parent/app": {
+        "files": 135,
+        "byte_differences": 0
+      },
+      "/tmp/m104-parent/app": {
+        "files": 133,
+        "byte_differences": 0
+      },
+      "/tmp/m100-parent/app": {
+        "files": 131,
+        "byte_differences": 0
+      },
+      "/tmp/m99-parent/app": {
+        "files": 129,
+        "byte_differences": 0
+      },
+      "/tmp/m93-parent/app": {
+        "files": 127,
+        "byte_differences": 0
+      },
+      "/tmp/m91-parent/app": {
+        "files": 125,
+        "byte_differences": 0
+      },
+      "/tmp/m89-parent/app": {
+        "files": 123,
+        "byte_differences": 0
+      },
+      "/tmp/m88-parent/app": {
+        "files": 121,
+        "byte_differences": 0
+      },
+      "/tmp/m87-parent/app": {
+        "files": 119,
+        "byte_differences": 0
+      },
+      "/tmp/m86-parent/app": {
+        "files": 117,
+        "byte_differences": 0
+      },
+      "/tmp/m64-parent/app": {
+        "files": 114,
+        "byte_differences": 0
+      },
+      "/tmp/m79-parent/extracted/tradejournal": {
+        "files": 110,
+        "byte_differences": 0
+      },
+      "/tmp/m84-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      },
+      "/tmp/m81-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      }
+    }
+  },
+  "controls": {
+    "parent": {
+      "api": [
+        1,
+        3
+      ],
+      "consumers": [
+        1,
+        1
+      ],
+      "freshness": [
+        0,
+        2
+      ],
+      "portable": [
+        5,
+        1
+      ],
+      "migration": [
+        6,
+        2
+      ],
+      "ui": [
+        0,
+        1
+      ],
+      "archive-ui": [
+        0,
+        1
+      ]
+    },
+    "pre_hardening": {
+      "compare": "the api stage IS the pre-hardening runtime (loose policy + schema + routes, no view), asserted identical to pre-hardening-source.json",
+      "probes": {
+        "hardening": {
+          "pass": 14,
+          "fail": 3
+        },
+        "pure": {
+          "pass": 28,
+          "fail": 3
+        }
+      },
+      "faults": [
+        "the module read the practice facts through M108's own reader, which creates its lazy practice_timers row",
+        "a stored practice row whose measured time could not be read back was counted as a recorded session",
+        "an unparseable retained-stop payload was reported as \"no stops\""
+      ],
+      "why": "On the pre-hardening runtime the unchanged probes measured 14/3 (hardening) and 28/3 (pure); the hardening stage made all three honest and the same probes are 17/0 and 31/0 on the delivered tree."
+    }
+  },
+  "smoke": {
+    "app": "extracted/tradejournal (delivered M109 tree, 145 sources)",
+    "harness": "scripts/smoke-test.js from that same tree, unchanged",
+    "command": "node scripts/smoke-test.js http://127.0.0.1:3210",
+    "environment": "PORT=3210, TRADEJOURNAL_DB=/tmp/m109-smoke.db (fresh, synthetic), TJ_SCHEDULER=0, TJ_OFFLINE_CANDLES=1, no remote DB",
+    "exit_code": 0,
+    "views_passed": 21,
+    "views_offered": 21,
+    "ui_style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limits": 8,
+    "duration_seconds": 96.6,
+    "conditional_view_count": "The harness offers its view list conditionally (a chip condition on the content shell), so the reported total moves between samples: 21/21 here and at the M107 parent, 22/22 in the M108 record. Both trees are measured at the same sample in this delivery, and both report the same count, so the comparison holds the harness condition constant.",
+    "practice_or_ask_coverage": "grep -ci 'ask' = 0 and grep -ci 'practice' = 0 in this output: the smoke run does NOT exercise either surface. The advisory channel's own coverage is analysis/probe-m109-ui.js (27 assertions) and analysis/probe-m109-archive-ui.js (16 assertions), which drive the shipped card in jsdom against the real server.",
+    "limits": "jsdom structural/DOM check with no browser engine: no pixel, device, audio, provider or production proof, and no mental-state claim.",
+    "outputs": {
+      "delivered": "analysis/evidence/m109/smoke.txt",
+      "parent": "analysis/evidence/m109/smoke-parent-control.txt"
+    },
+    "parent_control_views": 21,
+    "covers_the_advisory_card": false,
+    "card_coverage": [
+      "analysis/probe-m109-ui.js 27/0",
+      "analysis/probe-m109-archive-ui.js 16/0"
+    ]
+  },
+  "actual_parent_no_schema_delta": {
+    "pass": 15,
+    "fail": 0,
+    "parent_control": [
+      6,
+      2
+    ],
+    "new_schema_objects": 0,
+    "inherited_facts_byte_differences": 0,
+    "why": "The migration probe compares the parent's own sqlite_master objects with the upgraded tree's, table by table and index/trigger by index/trigger, on the same database the parent wrote; every inherited fact is compared byte-for-byte and any ask is checked not to add the lazy practice_timers row."
+  },
+  "advisory_channel": {
+    "version": "ask-v1",
+    "llm": false,
+    "model": null,
+    "network": false,
+    "api_key_required": false,
+    "deterministic": "same stored state + same question -> same answer",
+    "reads_only": true,
+    "writes": 0,
+    "new_data": false,
+    "authority": "none",
+    "topics": [
+      "entry_state",
+      "risk_state",
+      "my_patterns",
+      "performance_facts",
+      "discipline_records",
+      "rules_i_set",
+      "calendar_state"
+    ],
+    "refusal_codes": [
+      "ask_refused_permission",
+      "ask_refused_prediction",
+      "ask_refused_outcome_target",
+      "ask_refused_mental_state",
+      "ask_refused_other_person",
+      "ask_refused_override"
+    ],
+    "non_answer_code": "no_matching_topic",
+    "max_question_chars": 280,
+    "calendar_surface": "answers unavailable on every day: no fetch, no cache, and \"I could not look\" is never turned into \"no high-impact news\"",
+    "required_in_files": 1,
+    "answer_fields": [
+      "kind",
+      "source"
+    ],
+    "kinds": [
+      "fact",
+      "record",
+      "unavailable",
+      "note"
+    ]
+  },
+  "stages": [
+    {
+      "stage": "policy",
+      "source_manifest": "policy-source.json",
+      "source_files": 144,
+      "patch": "m109-ask-policy-and-owned-module.patch",
+      "files": 1,
+      "bytes": 36686,
+      "sha256": "50b5b86093a851c6f7c1eb0365e08ce52adb99f2a16c97e5063239b36f5d5ed1",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "api",
+      "source_manifest": "api-source.json",
+      "source_files": 144,
+      "patch": "m109-ask-api-routes.patch",
+      "files": 1,
+      "bytes": 2156,
+      "sha256": "dd27de20509fe5c778c52ac4305cb6f07cadd8332620e3ee500d587df3e27dd2",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "hardening",
+      "source_manifest": "hardening-source.json",
+      "source_files": 144,
+      "patch": "m109-ask-read-hardening.patch",
+      "files": 1,
+      "bytes": 4182,
+      "sha256": "f794eb2838cb526f1b26ea0b9afc817a25e74592f0846624da600876fc2f69f6",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "ui",
+      "source_manifest": "ui-source.json",
+      "source_files": 145,
+      "patch": "m109-ask-card-and-wiring.patch",
+      "files": 3,
+      "bytes": 9847,
+      "sha256": "8de7e8d365e892dcc879fd20f81700b30d0034f9fe65ae7e2af36c79527f2691",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "documentation",
+      "source_manifest": "documentation-source.json",
+      "source_files": 145,
+      "patch": "m109-ask-documentation.patch",
+      "files": 2,
+      "bytes": 8284,
+      "sha256": "7ede55c8a78e1ead946fd57853a89659f06ea83d7ea2a513b9316460f7c6331a",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 7,
+    "bytes": 57330,
+    "sha256": "eb23b08b81f6b5e2a7cacffbab63557007399ebe86f0df30704a4fe3a85a1f38",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 84,
+    "bytes": 1478193,
+    "sha256": "76cc9b78591cd7720ddcdfc2650a61686a39b04f2495e9fd984f54bc81e198b4",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 145,
+    "application_byte_differences": 0,
+    "private_env_db_dependency_files": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/setup.js",
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "other_protected_files": [
+    "src/instruments.js",
+    "src/trades.js",
+    "src/journaling.js",
+    "src/execution-review.js",
+    "src/routine.js",
+    "src/routine-records.js",
+    "src/confluences.js",
+    "src/screenshots.js",
+    "src/emotions.js",
+    "src/performance.js",
+    "src/coach.js",
+    "src/process-outcomes.js",
+    "src/behavior-days.js",
+    "src/opportunities.js",
+    "src/rule-changes.js",
+    "src/identity.js",
+    "src/period-reviews.js",
+    "src/candles.js",
+    "src/market.js",
+    "src/session-time.js",
+    "src/demo-data.js",
+    "src/bots/guardrails.js",
+    "src/bots/correction.js",
+    "src/bots/now.js",
+    "src/state-gate.js",
+    "src/intention.js",
+    "src/practice.js",
+    "src/db.js",
+    "server.js",
+    "public/js/app.js",
+    "public/js/util.js",
+    "public/js/store.js",
+    "public/js/api.js",
+    "public/js/chart.js",
+    "public/js/views/emotions.js",
+    "public/js/views/process-outcomes.js",
+    "public/js/views/behavior-days.js",
+    "public/js/views/opportunities.js",
+    "public/js/views/rule-changes.js",
+    "public/js/views/bots.js",
+    "public/js/views/coach.js",
+    "public/js/views/analytics.js",
+    "public/js/views/identity.js",
+    "public/js/views/state-gate.js",
+    "public/js/views/intention.js",
+    "public/js/views/practice.js",
+    "public/js/views/journal.js",
+    "public/js/views/settings.js",
+    "public/js/views/trades.js",
+    "public/js/views/playbook.js",
+    "public/js/views/routine.js",
+    "public/js/views/calendar.js",
+    "public/js/views/confluences.js",
+    "public/js/views/execution.js",
+    "public/js/views/market.js",
+    "public/js/views/period-reviews.js",
+    "public/js/views/risk.js",
+    "public/js/views/screenshots.js",
+    "package-lock.json",
+    "scripts/api-test.js",
+    "scripts/bots-test.js",
+    "scripts/smoke-test.js",
+    "scripts/test-cleanup.js"
+  ],
+  "harness_source_files": 22,
+  "package_lock_sha256": "33e859914328605792ab71c75957b752716748828b0b2bef164956525cffb74c",
+  "scope": "M109 the advisory channel: a deterministic, read-only question channel over findings the app already computed (coach insights, the guardrail/cap state, the trader own records). No model, no key, no network call, no new data, no prediction, no permission, no override, no transcript; refusals are successful answers and unknown stays unknown. It is required in exactly one file (its route), it writes nothing at all (a full battery leaves every table byte-identical and does not create M108 lazy practice_timers row), it adds no schema object and no backup key, and it cannot permit, block, size, grade or change anything. M64/M106/M107/M108 stay separate mechanisms. M30/M103 partial; M110/M111/M112 TODO. No70%/causal/predictive/profiler/broker/provider/human/mental-state/pixel/production proof, and no predictor of any kind."
+}

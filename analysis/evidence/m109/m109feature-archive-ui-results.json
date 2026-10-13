@@ -1,0 +1,72 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 16,
+  "fail": 0,
+  "results": [
+    {
+      "label": "an imported archive is reported by the channel as counted separately, and the view passes that wording through unchanged",
+      "passed": true
+    },
+    {
+      "label": "the imported archive is not dressed as the trader’s own practice anywhere in the rendered answer",
+      "passed": true
+    },
+    {
+      "label": "the rendered answer still states the record-not-result limits below the numbers",
+      "passed": true
+    },
+    {
+      "label": "a row the app cannot read back renders as a stated unavailable line beside the readable records",
+      "passed": true
+    },
+    {
+      "label": "the readable part of the same answer still renders, so one unreadable row does not blank the surface",
+      "passed": true
+    },
+    {
+      "label": "nothing in the rendered answer offers to repair, delete or edit the unreadable row",
+      "passed": true
+    },
+    {
+      "label": "the card offers exactly one input and two kinds of readonly action (chips and send): no account/date/risk field exists to submit",
+      "passed": true
+    },
+    {
+      "label": "every ask the view makes is a POST body with the question only — no account, date, filter or model field exists to send",
+      "passed": true
+    },
+    {
+      "label": "two cards on one page fill their own answer boxes: a card never writes into another card’s surface",
+      "passed": true
+    },
+    {
+      "label": "after the session changes, a chip on the already-mounted card refuses with a toast instead of asking as the new workspace",
+      "passed": true
+    },
+    {
+      "label": "a stale card still renders the limits it already received rather than blanking the trader’s screen",
+      "passed": true
+    },
+    {
+      "label": "the refusal path works again once the card is the trader’s own, and the refusal is not cached from the earlier card",
+      "passed": true
+    },
+    {
+      "label": "the refusal renders its citation from the episode, so the trader can read why it will not answer",
+      "passed": true
+    },
+    {
+      "label": "no uncaught error was raised across every archived/unreadable/stale interaction",
+      "passed": true
+    },
+    {
+      "label": "outside its own denials, the page never makes an affirmative score, adherence, permission or admission claim",
+      "passed": true
+    },
+    {
+      "label": "the page states the denial explicitly instead of leaving the boundary to inference",
+      "passed": true
+    }
+  ],
+  "scope": "M109 real DOM: archived facts, unreadable rows and workspace changes stay readonly: actual runtime/auth/SQL/DOM on literal journals, fixedUTC; deterministic read-only advisory channel, no model/network/provider/broker/mental-state/pixel/production proof"
+}

@@ -1,0 +1,18 @@
+ok an unauthenticated caller cannot read the surface list or ask anything
+ok the surface list is served with its refusals, its limits and its meta flags
+ok the route surface is explicit: the channel answers POST /ask, and a GET to it is not a second read path
+ok all seven surfaces answer over HTTP, each line carrying its provenance
+ok the answer vocabulary stays the stated four kinds and nothing else
+ok all six refusals are reachable, arrive as 200 successes, and carry their reason and citation
+ok a refusal carries its reason and never the content it refused: no topic, no facts, no surface lines beyond the one note
+ok every malformed question is a bounded 400 ask_invalid
+ok a refused input never leaks a stack, a SQL fragment or an internal table name
+ok a question that lands on no owned surface is an honest 200 non-answer that lists the surfaces it does own
+ok the channel takes no account/date input: extras in the body cannot scope or move the answer
+ok another owner’s workspace is never read: the second trader’s answers contain none of the first trader’s records or identifiers
+ok two identical questions over HTTP answer the same bytes (deterministic, no clock-derived drift)
+ok every HTTP answer ships the meta flags that refuse the AI perks
+ok a full HTTP battery of asks leaves every table byte-identical, including the lazy practice timer row M108 creates on its own read
+ok asking cannot move admission: the entry surface answers exactly the same before and after the whole battery
+ok no ask ever stores the question, the answer or a consultation count: the request leaves no row of its own
+M109 ask channel API: 17 passed, 0 failed

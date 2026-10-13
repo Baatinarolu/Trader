@@ -23,6 +23,7 @@ const Identity = require('../identity');
 const StateGate = require('../state-gate');
 const Intention = require('../intention');
 const Practice = require('../practice');
+const Ask = require('../ask');
 const Opportunities = require('../opportunities');
 const ProcessOutcomes = require('../process-outcomes');
 const BehaviorDays = require('../behavior-days');
@@ -725,6 +726,14 @@ router.get('/practice',requireAuth,practiceRoute(req=>Practice.read(req.user.id,
 router.get('/practice/history',requireAuth,practiceRoute(req=>Practice.history(req.user.id,{date:req.query.date??null})));
 router.get('/practice/progress',requireAuth,practiceRoute(req=>Practice.progress(req.user.id,{from:req.query.from??'',to:req.query.to??''})));
 router.post('/practice/timer',requireAuth,practiceRoute(req=>Practice.save(req.user.id,req.body)));
+
+/* M109 the advisory channel. Every reader in src/ask.js is a SELECT (or a module's
+ * documented read path), so asking cannot latch, repair or acknowledge anything; a
+ * refusal and an honest non-answer are successful 200s carrying their reason, and only
+ * a malformed question is a 400. No model, no key, no network, no authority. */
+const askRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='ask_invalid')return res.status(e.status||400).json({error:e.message,code:e.code});res.status(503).json({error:'The advisory channel could not read its stored facts; nothing was changed and nothing was inferred.',code:'ask_unavailable'});}};
+router.get('/ask/topics',requireAuth,askRoute(()=>Ask.topics()));
+router.post('/ask',requireAuth,askRoute(async req=>Ask.ask(req.user.id,req.body,{db,timezone:(await settingsOf(req)).timezone||'UTC'})));
 
 router.get('/journal', requireAuth, async (req, res) => {
   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
