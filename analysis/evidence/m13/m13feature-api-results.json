@@ -1,0 +1,100 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 23,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the payload the review already reads carries the weekly and quarterly series beside daily and monthly",
+      "passed": true
+    },
+    {
+      "label": "the buckets are the REVIEW calendar: the Sunday 23:30Z close is in the week that opened on Monday 2026-09-28, and the Friday close is in the next week",
+      "passed": true
+    },
+    {
+      "label": "and the OTHER ruler is still the journal clock, measured on the same close: the Sunday close is a Lagos MONDAY (daily 2026-10-05, +160) while its review week is 2026-09-28 (+70)",
+      "passed": true
+    },
+    {
+      "label": "a bucket is that period’s own arithmetic: two closes, one win, one loss, net and R summed, the days counted",
+      "passed": true
+    },
+    {
+      "label": "the quarterly bucket is the calendar quarter the closes fall in, with the same fields",
+      "passed": true
+    },
+    {
+      "label": "a close with NO clock is counted by name instead of being silently dropped or guessed into a week",
+      "passed": true
+    },
+    {
+      "label": "the artifact record rides the same payload, scoped to the analysed account, and is available",
+      "passed": true
+    },
+    {
+      "label": "a saved week is joined to its own period as `completed`, with its receipt and the trader’s own focus",
+      "passed": true
+    },
+    {
+      "label": "a draft is a draft and an imported copy is labelled unverified — neither is counted as a completed review",
+      "passed": true
+    },
+    {
+      "label": "a finished week with no artifact is `not_recorded`, and the record says what that does and does not mean",
+      "passed": true
+    },
+    {
+      "label": "the OTHER desk’s artifact for the same week is not joined into this account’s record",
+      "passed": true
+    },
+    {
+      "label": "the quarterly record is the same arithmetic on the quarterly ruler, with the quarter artifact joined",
+      "passed": true
+    },
+    {
+      "label": "a period with no closed trade reports NO amount rather than a flat zero, and its artifact state is still read",
+      "passed": true
+    },
+    {
+      "label": "the bucket and the review module’s own financial block agree about the same week — one number, one meaning",
+      "passed": true
+    },
+    {
+      "label": "reading the review changes NOTHING: every table is byte-identical before and after the two reads",
+      "passed": true
+    },
+    {
+      "label": "two reads of the same scope are byte-identical, and the series and the artifact record are both in them",
+      "passed": true
+    },
+    {
+      "label": "the record states what it does NOT do, and never compares reviewed periods against unreviewed ones",
+      "passed": true
+    },
+    {
+      "label": "the review list the app already served still answers with the same artifacts — this milestone added a reader, not a replacement",
+      "passed": true
+    },
+    {
+      "label": "the record is scoped to the RESOLVED analysed account, the same account the payload analyses",
+      "passed": true
+    },
+    {
+      "label": "and a desk that is not the trader’s is refused rather than described: the record answers unknown, never an invented period list",
+      "passed": true
+    },
+    {
+      "label": "an unreadable artifact table is UNKNOWN on the payload path too, never a period list of \"not reviewed\"",
+      "passed": true
+    },
+    {
+      "label": "an empty but readable record is a real record: every period `not_recorded`, no amount invented, and the scope still named",
+      "passed": true
+    },
+    {
+      "label": "the period the trader asked about is the period reported: the record’s own day is the app’s UTC day, so a period cannot be reported for a clock the caller invented",
+      "passed": true
+    }
+  ],
+  "scope": "M13/M65 api: recorded periods and the record of which were reviewed: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

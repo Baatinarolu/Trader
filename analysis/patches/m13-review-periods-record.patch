@@ -1,0 +1,130 @@
+diff --git a/src/period-reviews.js b/src/period-reviews.js
+index e577e96..5c21f56 100644
+--- a/src/period-reviews.js
++++ b/src/period-reviews.js
+@@ -1,13 +1,16 @@
+ 'use strict';
+ /** M99/M101 owned periodic artifacts, not trading/strategy/score authority. */
+ const crypto=require('crypto');
+-const PERIOD_BASIS='APP calendar policy: UTC; Monday-start weeks, calendar months/quarters/years. Not trader/broker hours or a course-mandated timezone.';
++const Periods=require('./periods');                    // M13/M65 — the ONE calendar-period ruler
++const PERIOD_BASIS=Periods.PERIOD_BASIS;               // re-exported unchanged: every caller keeps reading it here
+ const VERSION=1;
+ function invalid(message,status=400){return Object.assign(new Error(message),{code:'period_review_invalid',status});}
+ function dateKey(s){if(typeof s!=='string'||!/^\d{4}-\d\d-\d\d$/.test(s)||Number(s.slice(0,4))<100||Number(s.slice(0,4))>9998||!Number.isFinite(Date.parse(s))||new Date(s).toISOString().slice(0,10)!==s)throw invalid('Select a valid UTC calendar date.');return s;}
+ const iso=d=>d.toISOString().slice(0,10);
+-function period(kind,date){dateKey(date);if(!Object.hasOwn(templates,kind))throw invalid('Choose week, month, quarter or year.');const d=new Date(date+'T00:00:00.000Z');if(kind==='week')d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);else if(kind==='month')d.setUTCDate(1);else if(kind==='quarter'){d.setUTCDate(1);d.setUTCMonth(Math.floor(d.getUTCMonth()/3)*3);}else{d.setUTCMonth(0,1);}const start=iso(d),end=new Date(d),previous=new Date(d);if(kind==='week'){end.setUTCDate(end.getUTCDate()+7);previous.setUTCDate(previous.getUTCDate()-7);}else if(kind==='year'){end.setUTCFullYear(end.getUTCFullYear()+1);previous.setUTCFullYear(previous.getUTCFullYear()-1);}else{const months=kind==='quarter'?3:1;end.setUTCMonth(end.getUTCMonth()+months);previous.setUTCMonth(previous.getUTCMonth()-months);}return {kind,start,end:iso(end),last_day:iso(new Date(end.getTime()-86400000)),previous_start:iso(previous),basis:PERIOD_BASIS};}
+-function canonical(kind,start){const p=period(kind,start);if(p.start!==start)throw invalid('Use the displayed canonical period start.');return p;}
++/* M13/M65: the arithmetic moved to src/periods.js, and these two exports keep this module's own
++ * error code and wording so every existing caller and probe sees exactly the same contract. */
++function period(kind,date){try{return Periods.period(kind,date);}catch(e){throw invalid(e.message);}}
++function canonical(kind,start){try{return Periods.canonical(kind,start);}catch(e){throw invalid(e.message);}}
+ const question=(id,label)=>({id,label});
+ const templates={
+  week:{title:'Weekly review',question_basis:'saved_ep26_weekly_scope',policy:'No plan changes from a weekly review. Record process feedback and one next-week focus; metrics do not prove an edge.',questions:[question('worked_and_why','What went well, and specifically why?'),question('prevention_plan','What mistakes/weak points appeared, and what is the prevention plan?'),question('best_worst_pattern','What process pattern appears in the best and worst trades?')]},
+@@ -68,6 +71,81 @@ async function save(userId,accountId,kind,start,body,mode='draft'){
+   return cleanView(await viewOn(store,userId,accountId,kind,start));
+  });
+ }
++const COVERAGE_VERSION='review-coverage-v1';
++const COVERAGE_BASIS='Recorded review artifacts read from the saved rows for the trader\u2019s own account, per calendar period: `completed`, `draft`, `imported_unverified`, `unavailable` or `not_recorded`. A period with NO artifact is `not_recorded` \u2014 that is not evidence that no review happened, because a review done on paper, elsewhere or in another app leaves nothing here. A `completed` artifact is an acknowledgement that the review was written and saved; it is not proof that the period was reviewed well, that its numbers are complete, or that any rule changed. The recorded amounts beside each period are that period\u2019s own recorded closes on the APP UTC close-day calendar; the app does NOT compare reviewed periods against unreviewed ones, which would be a causal claim it has not measured.';
++const REVIEW_STATES=Object.freeze(['completed','draft','imported_unverified','unavailable','not_recorded']);
++
++/** One period\u2019s review state, derived from the LATEST saved version of that period\u2019s artifact. */
++function reviewStateOf(row){
++ if(!row)return {state:'not_recorded',public:null};
++ const pub=publicRow(row);
++ if(!pub||pub.status==='unavailable')return {state:'unavailable',public:null};
++ if(pub.source==='imported_unverified'||pub.status==='imported')return {state:'imported_unverified',public:pub};
++ if(pub.status==='completed')return {state:'completed',public:pub};
++ return {state:'draft',public:pub};
++}
++
++/**
++ * The record of which periods have an artifact, joined to that period\u2019s recorded closes.
++ * Pure: it is handed the rows and the series (`performance.weeklySeries`/`quarterlySeries`, which
++ * use the SAME calendar) and never reads a database or a clock of its own.
++ */
++function coverageOf({userId, accountId=null, rows=[], series={}, kinds=[['week',12],['quarter',8]], today=null, nowMs=Date.now()}={}){
++ if(!id(userId))throw invalid('Owned review required.');
++ const day=today===null?Periods.dayOf(Number.isFinite(nowMs)?nowMs:Date.now()):Periods.dayKey(today);
++ const out={};
++ for(const [kind,count] of kinds){
++  const canonical=Periods.sequence(kind,Periods.startOf(kind,day),count),starts=new Set(canonical.map(p=>p.start)),latest=new Map();
++  /* Buckets are looked up by their own `start`, not by their key: a week's key is its Monday but a
++   * quarter's key is `YYYY-Qn`, and joining on the key would silently drop every quarter. */
++  const buckets={};for(const b of Object.values(series[kind]||{}))if(b&&b.start)buckets[b.start]=b;
++  let scanned=0;
++  for(const row of rows){
++   if(!row||row.period_kind!==kind||row.user_id!==userId)continue;
++   if(accountId!==null&&Number(row.account_key)!==Number(accountId))continue;
++   scanned++;
++   const key=String(row.period_start),prev=latest.get(key);
++   if(!prev||(Number(row.version)||0)>(Number(prev.version)||0)||(Number(row.version)||0)===(Number(prev.version)||0)&&Number(row.id)>Number(prev.id))latest.set(key,row);
++  }
++  const periods=[];let completed=0,draft=0,imported=0,unavailableRows=0,notRecorded=0,openPeriods=0,outsideScope=0;
++  for(const p of canonical){
++   const raw=latest.get(p.start)||null,st=reviewStateOf(raw),finished=p.end<=day,b=buckets[p.start]||null;
++   if(st.state==='completed')completed++;else if(st.state==='draft')draft++;else if(st.state==='imported_unverified')imported++;else if(st.state==='unavailable')unavailableRows++;else if(finished)notRecorded++;else openPeriods++;
++   periods.push({start:p.start,end:p.end,last_day:p.last_day,label:Periods.label(kind,p.start),finished,review_state:st.state,
++    review_id:st.public?st.public.id:null,review_version:st.public?st.public.version:null,review_status:st.public?st.public.status:null,review_source:st.public?st.public.source:null,
++    review_recorded_at:st.public?st.public.recorded_at:null,review_focus:st.public&&typeof st.public.focus==='string'&&st.public.focus.trim()?st.public.focus:null,review_amendment:st.public?st.public.amendment:null,
++    trades:b?b.trades:0,pnl:b?b.pnl:null,r:b?b.r:null,win_rate:b?b.win_rate:null,unknown_net:b?b.unknown_net:0,unknown_r:b?b.unknown_r:0,days:b?b.days:0});
++  }
++  for(const key of latest.keys())if(!starts.has(key))outsideScope++;
++  out[kind]={kind,label:kind==='week'?'Weekly':'Quarterly',periods_scanned:count,rows_scanned:scanned,artifacts_outside_scope:outsideScope,periods,
++   completed,draft,imported_unverified:imported,unavailable_rows:unavailableRows,not_recorded:notRecorded,open_periods:openPeriods,
++   date_basis:'utc_close_day',calendar:Periods.PERIOD_BASIS,not_recorded_meaning:'No artifact was saved for this finished period. That is not evidence that no review happened.'};
++ }
++ return {state:'available',version:COVERAGE_VERSION,user_id:userId,account_id:accountId,today:day,kinds:out,basis:COVERAGE_BASIS,
++  outcome_compared:false,outcome_note:'The recorded amounts are listed beside the artifact state because both are facts about the same period; the app does not compare reviewed periods against unreviewed ones, which would be a causal claim it has not measured.',
++  limits:{read_only:true,writes:0,grades_influence:false,permission_influence:false,caps_influence:false,guardrail_decisions_influence:false,plan_change_permission:false,causal:false,broker_verified:false}};
++}
++
++function coverageUnavailable(reason='The saved review artifacts could not be read, so the record of which periods were reviewed is reported as unknown. This is not a period with no review, and not a clean record.'){
++ return {state:'unavailable',version:COVERAGE_VERSION,reason,kinds:{},completed:null,draft:null,imported_unverified:null,not_recorded:null,basis:COVERAGE_BASIS,
++  outcome_compared:false,limits:{read_only:true,writes:0,grades_influence:false,permission_influence:false,causal:false,broker_verified:false}};
++}
++
++/** Read the trader\u2019s own saved artifacts for this account, bounded, and join them to the series. */
++async function coverage(userId,{accountId=null,week={},quarter={},weeks=12,quarters=8,today=null,store=null}={}){
++ if(!id(userId))throw invalid('Owned review required.');
++ const {db}=require('./db');
++ const read=async st=>{
++  if(accountId!=null)await owned(st,userId,accountId);
++  const rows=accountId==null?await st.prepare('SELECT * FROM period_reviews WHERE user_id=? ORDER BY id').all(userId):await st.prepare('SELECT * FROM period_reviews WHERE user_id=? AND account_key=? ORDER BY id').all(userId,Number(accountId));
++  if(rows.length>5000)throw invalid('Review coverage APP budget5000 saved artifacts exceeded; no silently clipped period record.',503);
++  return coverageOf({userId,accountId:accountId==null?null:Number(accountId),rows,series:{week:week||{},quarter:quarter||{}},kinds:[['week',weeks],['quarter',quarters]],today});
++ };
++ return store?read(store):db.tx(async tx=>read(db.transactionStore(tx)));
++}
++
++const coverageOptional=async(userId,options)=>{try{return await coverage(userId,options);}catch{return coverageUnavailable();}};
++
+ async function list(userId,accountId=null){const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx);if(accountId!=null)await owned(store,userId,accountId);const rows=await store.prepare('SELECT * FROM period_reviews WHERE user_id=?'+(accountId==null?'':' AND account_key=?')+' ORDER BY id').all(...(accountId==null?[userId]:[userId,Number(accountId)])),map=new Map();for(const r of rows){const key=r.account_key+':'+r.period_kind+':'+r.period_start;if(!map.has(key))map.set(key,[]);map.get(key).push(r);}return {reviews:[...map.values()].map(rows=>({account_key:rows[0].account_key,kind:rows[0].period_kind,period_start:rows[0].period_start,latest:publicRow(rows.at(-1)),history_count:rows.length})),basis:PERIOD_BASIS};});}
+ async function byId(userId,reviewId){if(!id(reviewId))throw invalid('Review not found.',404);const {db}=require('./db'),row=await db.prepare('SELECT * FROM period_reviews WHERE user_id=? AND id=?').get(userId,reviewId);if(!row)throw invalid('Review not found.',404);return {review:publicRow(row),readonly:true};}
+ 
+@@ -75,4 +153,4 @@ async function byId(userId,reviewId){if(!id(reviewId))throw invalid('Review not
+ function portable(raw){const out={records:[],warnings:[]};if(raw==null)return out;try{if(!raw||typeof raw!=='object'||raw.version!==1||!Array.isArray(raw.records)||raw.records.length>500)throw invalid('Optional periodic history requires version1 and at most500 records.');if(raw.unavailable)out.warnings.push('Original backup had unavailable periodic history; no lost completion/focus inferred.');for(const r of raw.records){try{const range=canonical(r.kind,r.period_start),original=r.historical||{},status=original.status||r.status;if(!['draft','completed','imported'].includes(status))throw invalid('Invalid optional periodic status.');const fields=input(r.kind,{revision:'a'.repeat(64),answers:r.answers,focus:r.focus},{complete:status==='completed'});if(!r.metrics||r.metrics.version!==VERSION||typeof r.metrics.financial!=='object'||Array.isArray(r.metrics.financial)||JSON.stringify(r.metrics).length>1000000)throw invalid('Unverified periodic snapshot omitted: invalid shape or APP1MB budget.');let oldClock=original.recorded_at??r.recorded_at;if(oldClock!=null&&require('./process-outcomes').clock(oldClock,{canonical:true})===null){out.warnings.push('Invalid/future original periodic clock omitted, not receiving/capture proof.');oldClock=null;}const follow=original.follow_up??r.follow_up??null;if(follow!==null&&(typeof follow!=='object'||Array.isArray(follow)||follow.acted_on_focus!==null&&typeof follow.acted_on_focus!=='boolean'))throw invalid('Invalid unverified historical focus response.');out.records.push({kind:r.kind,start:range.start,end:range.end,account_id:r.account_id??r.account_key,answers:fields.answers,focus:fields.focus,metrics:r.metrics,historical:{source:original.source||r.source||null,status:status==='imported'?'completed':status,recorded_at:oldClock,original_version:original.original_version??r.version??null,original_review_id:original.original_review_id??r.id??null,follow_up:follow}});}catch(e){out.warnings.push(e.message||'Invalid optional review omitted.');}}}catch(e){out.warnings.push(e.message||'Invalid optional periodic history omitted.');}out.warnings=out.warnings.slice(0,20);return out;}
+ async function exportOwned(userId){try{const {db}=require('./db'),rows=await db.prepare('SELECT * FROM period_reviews WHERE user_id=? ORDER BY id').all(userId),records=rows.map(publicRow).filter(r=>r.status!=='unavailable');return {version:1,records,unavailable_records:rows.length-records.length};}catch{return {version:1,records:[],unavailable:true};}}
+ async function importOn(store,userId,parsed,map={},fallback=null){for(const r of parsed.records){const accountId=map[r.account_id]||fallback;if(accountId===null)throw invalid('No owned destination for periodic history.');await owned(store,userId,accountId);const version=(await store.prepare('SELECT MAX(version) v FROM period_reviews WHERE user_id=? AND account_key=? AND period_kind=? AND period_start=?').get(userId,accountId,r.kind,r.start)).v||0;await store.prepare('INSERT INTO period_reviews(user_id,account_id,account_key,period_kind,period_start,period_end,version,template_version,status,answers_json,focus,followup_json,metrics_json,context_hash,source,recorded_at,historical_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(userId,accountId,accountId,r.kind,r.start,r.end,version+1,VERSION,'imported',JSON.stringify(r.answers),r.focus,null,JSON.stringify(r.metrics),hash(['imported_unverified',r.metrics]),'imported_unverified',new Date().toISOString(),JSON.stringify(r.historical));}}
+-module.exports={VERSION,PERIOD_BASIS,templates,invalid,dateKey,period,canonical,input,hash,financial,owned,publicRow,snapshotOn,read,save,list,byId,portable,exportOwned,importOn};
++module.exports={VERSION,PERIOD_BASIS,COVERAGE_VERSION,COVERAGE_BASIS,REVIEW_STATES,templates,invalid,dateKey,period,canonical,input,hash,financial,owned,publicRow,reviewStateOf,coverageOf,coverage,coverageOptional,coverageUnavailable,snapshotOn,read,save,list,byId,portable,exportOwned,importOn};
+diff --git a/src/routes/api.js b/src/routes/api.js
+index f4f3166..3de929c 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -604,6 +604,13 @@ router.get('/analytics', requireAuth, async (req, res) => {
+    * account, not every account the trader owns), so the review cannot read one desk's performance
+    * beside another desk's rule breaks. `from`/`to` are the payload's own window when given. */
+   analytics.rule_breaks=await RuleBreaks.optional(req.user.id,{accountId:acc.id??null,from:req.query.from??null,to:req.query.to??null});
++  /* M13/M65 — the review periods. The weekly/quarterly buckets are already on this payload (the
++   * performance summary, bucketed on the REVIEW calendar: UTC, Monday-start weeks, calendar
++   * quarters) and the artifact record is joined to them for the SAME resolved account, so the
++   * review the trader reads can say which of those periods has a saved artifact — and, when one is
++   * absent, that it is `not_recorded` rather than reviewed-and-forgotten. Read-only: it reads the
++   * saved rows, writes nothing, and changes no grade, cap, permission or plan-change decision. */
++  analytics.review_periods=await PeriodReviews.coverageOptional(req.user.id,{accountId:acc.id??null,week:analytics.weekly??null,quarter:analytics.quarterly??null,weeks:12,quarters:8});
+   res.json(analytics);
+ });
+ 

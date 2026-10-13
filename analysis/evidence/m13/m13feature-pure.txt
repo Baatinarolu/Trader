@@ -1,0 +1,40 @@
+ok this tree ships the M13/M65 calendar ruler (src/periods.js) (the committed parent does not, and that absence is this probe's control)
+ok the ruler is a leaf: it requires nothing, so it cannot inherit a schema or a clock from anywhere
+ok Monday-start weeks: every day of one week resolves to the same Monday, and the next Monday opens the next week
+ok the week is half-open and whole: [Monday, next Monday) with last_day the Sunday before it
+ok a week that crosses a year boundary is still one week and still Monday-start, and its prior week is adjacent
+ok quarters are calendar quarters: the start is the first of Jan/Apr/Jul/Oct and the prior quarter is adjacent
+ok months and years are whole calendars too, February 29 included
+ok every period states its own calendar basis, so a bucket cannot be read on an unstated clock
+ok a period is addressed by its canonical start only: a mid-week or mid-quarter address is refused, never rounded
+ok a day that is not a real calendar day is refused rather than parsed into a nearby one
+ok the bucket key is the period symbol, and a quarter key is the shape a reader can address back
+ok a sequence is the canonical periods ending at the asked-for period, newest first, each one whole
+ok a sequence is bounded rather than unbounded, so a caller cannot ask for a window it cannot read
+ok the review module re-exports the SAME ruler, so a review period and a bucket cannot be computed twice
+ok the review module keeps its OWN error code and wording, so the contract its routes and probes use is unchanged
+ok the quarterly rule-change advisory agrees with the ruler on every day of three years — measured, not assumed
+ok the series bucket on the REVIEW calendar: a UTC close-day decides the week, not the trade order
+ok a bucket is a whole period with its own range, its own trade count, its own days and its own win rate
+ok a close with no recorded amount is NOT a zero: the bucket reports no recorded amount and counts the close
+ok a close with no clock at all is skipped by the series rather than guessed into a week
+ok quarters roll over on the calendar quarter, and a bucket never spans two of them
+ok the buckets are ordered oldest first, so a reader can read a period series without re-sorting it
+ok an empty series is an empty object, never a zero-filled calendar of periods nothing happened in
+ok two rulers, both labelled, and neither converts a trade into the other: the same instant is a different week on the journal clock
+ok a period with no saved artifact is `not_recorded`, with the meaning spelled out — not "missed", not a clean record
+ok the period still running is counted as open rather than as a period that was not reviewed
+ok a saved artifact is joined by its canonical period start and reported as `completed` with its own receipt
+ok a draft is a draft: it is never counted as a completed review
+ok an imported copy is labelled unverified and is never counted as the trader’s own completed review
+ok an unreadable artifact row is reported as unavailable rather than as a period with no review
+ok the LATEST saved version of a period is the one reported, the way the review module reads its own history
+ok another account’s artifact and another owner’s row are not joined into this record
+ok an artifact whose stored start is not a canonical period start is COUNTED as outside the window rather than silently invisible
+ok the recorded amounts are the period’s own: a week with two closes reports them, a week with none reports no amount
+ok a bucket is joined by its own `start`, so a QUARTER bucket — whose key is `2026-Q4`, not a date — still reaches its period
+ok quarterly coverage is the same arithmetic on the quarterly ruler, over its own window
+ok the record is read-only and states what it does not do: no write, no grade/cap/permission influence, no reviewed-vs-unreviewed comparison
+ok an unreadable record is UNKNOWN, never a period list full of "not reviewed"
+ok sampling the pure record against the shipped routes’ error contract: a bad owner or account is refused, not defaulted
+M13/M65 pure: the review calendar, its series and the artifact record: 39 passed, 0 failed

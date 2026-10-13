@@ -1,0 +1,20 @@
+ok the card is its own section with a title that names both cadences
+ok the card renders both cadences as their own blocks, addressed by kind rather than by position
+ok the totals separate a completed review from a draft, an imported copy, an unreadable row and a period with NO artifact
+ok a saved period is marked as saved and carries the trader’s own focus, not a summary the app invented
+ok a draft says draft and an imported copy says unverified, in the same line as the period it belongs to
+ok a period with no artifact says exactly that, and the card says what it does NOT mean
+ok a period with no closed trade reports NO amount rather than a flat zero, and a close with no recorded amount is counted instead of zeroed
+ok the period still running is labelled as still open rather than counted as a period that was not reviewed
+ok an artifact outside the scanned window is counted on screen instead of disappearing
+ok the card states the two rulers rather than presenting one number as both, and never compares reviewed with unreviewed periods
+ok the card makes no percentage, causal or profit claim the payload did not make
+ok the read-only basis reaches the screen, so a reader is told this is an acknowledgement and not a permission
+ok an unknown record is shown as UNKNOWN, never as a period list of "no artifact recorded"
+ok a payload that never arrived takes the same path: unknown, not a clean record
+ok a reload is offered and it re-reads the same view rather than silently reloading a page whose workspace moved
+ok the reload keeps the workspace/account/session it was rendered under: unchanged, it navigates to the same view and sends no toast
+ok and when the account changed under it, the reload REFUSES with one error toast instead of rendering another desk’s record
+ok the analytics view mounts the card and the page loads it, and the mount sits above the view’s own tabs
+ok and it is mounted after the rule-break card, so the review reads numbers, breaks, then the period record
+M13/M65 real DOM: the review-period card the review reads: 19 passed, 0 failed

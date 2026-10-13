@@ -1,0 +1,109 @@
+{
+  "app": "/tmp/m13-pre-hardening/app",
+  "pass": 24,
+  "fail": 1,
+  "results": [
+    {
+      "label": "this tree ships the M13/M65 calendar ruler (src/periods.js) (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the ruler is a leaf: it requires nothing, so it cannot inherit a schema or a clock from anywhere",
+      "passed": true
+    },
+    {
+      "label": "Monday-start weeks: every day of one week resolves to the same Monday, and the next Monday opens the next week",
+      "passed": true
+    },
+    {
+      "label": "the week is half-open and whole: [Monday, next Monday) with last_day the Sunday before it",
+      "passed": true
+    },
+    {
+      "label": "a week that crosses a year boundary is still one week and still Monday-start, and its prior week is adjacent",
+      "passed": true
+    },
+    {
+      "label": "quarters are calendar quarters: the start is the first of Jan/Apr/Jul/Oct and the prior quarter is adjacent",
+      "passed": true
+    },
+    {
+      "label": "months and years are whole calendars too, February 29 included",
+      "passed": true
+    },
+    {
+      "label": "every period states its own calendar basis, so a bucket cannot be read on an unstated clock",
+      "passed": true
+    },
+    {
+      "label": "a period is addressed by its canonical start only: a mid-week or mid-quarter address is refused, never rounded",
+      "passed": true
+    },
+    {
+      "label": "a day that is not a real calendar day is refused rather than parsed into a nearby one",
+      "passed": true
+    },
+    {
+      "label": "the bucket key is the period symbol, and a quarter key is the shape a reader can address back",
+      "passed": true
+    },
+    {
+      "label": "a sequence is the canonical periods ending at the asked-for period, newest first, each one whole",
+      "passed": true
+    },
+    {
+      "label": "a sequence is bounded rather than unbounded, so a caller cannot ask for a window it cannot read",
+      "passed": true
+    },
+    {
+      "label": "the review module re-exports the SAME ruler, so a review period and a bucket cannot be computed twice",
+      "passed": true
+    },
+    {
+      "label": "the review module keeps its OWN error code and wording, so the contract its routes and probes use is unchanged",
+      "passed": true
+    },
+    {
+      "label": "the quarterly rule-change advisory agrees with the ruler on every day of three years — measured, not assumed",
+      "passed": true
+    },
+    {
+      "label": "the series bucket on the REVIEW calendar: a UTC close-day decides the week, not the trade order",
+      "passed": true
+    },
+    {
+      "label": "a bucket is a whole period with its own range, its own trade count, its own days and its own win rate",
+      "passed": true
+    },
+    {
+      "label": "a close with no recorded amount is NOT a zero: the bucket reports no recorded amount and counts the close",
+      "passed": true
+    },
+    {
+      "label": "a close with no clock at all is skipped by the series rather than guessed into a week",
+      "passed": true
+    },
+    {
+      "label": "quarters roll over on the calendar quarter, and a bucket never spans two of them",
+      "passed": true
+    },
+    {
+      "label": "the buckets are ordered oldest first, so a reader can read a period series without re-sorting it",
+      "passed": true
+    },
+    {
+      "label": "an empty series is an empty object, never a zero-filled calendar of periods nothing happened in",
+      "passed": true
+    },
+    {
+      "label": "two rulers, both labelled, and neither converts a trade into the other: the same instant is a different week on the journal clock",
+      "passed": true
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "R.coverageOf is not a function"
+    }
+  ],
+  "scope": "M13/M65 pure: the review calendar, its series and the artifact record: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

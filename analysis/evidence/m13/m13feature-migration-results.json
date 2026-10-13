@@ -1,0 +1,60 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 13,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the parent tree IS the committed 67f2ed2 M112 release: it HAS the review artifacts of M99/M101 and no period ruler of its own",
+      "passed": true
+    },
+    {
+      "label": "the delivered tree creates exactly the parent’s schema: every table, index and trigger is byte-identical DDL, so this milestone adds no schema object of any kind",
+      "passed": true
+    },
+    {
+      "label": "and on the same fixture every table is byte-identical, the review table included — the periods and the coverage store nothing new",
+      "passed": true
+    },
+    {
+      "label": "the review table the coverage reads has exactly the columns the parent declared, so a period cannot be addressed by a column this milestone invented",
+      "passed": true
+    },
+    {
+      "label": "the PARENT’s own code reads the seeded artifact as a completed review, so the delivered tree is interpreting a legal row rather than a fixture shape",
+      "passed": true
+    },
+    {
+      "label": "and the parent’s own payload has NO period series and no period record — the absence this milestone closes, measured in the parent’s code rather than asserted about it",
+      "passed": true
+    },
+    {
+      "label": "the delivered tree reads the parent’s OWN file and reports the same period on the review calendar: the week of 2026-10-05",
+      "passed": true
+    },
+    {
+      "label": "the weekly and quarterly buckets are derived from the closes the parent wrote, and the quarter the closes fall in is named",
+      "passed": true
+    },
+    {
+      "label": "the artifact the parent’s own module wrote is joined to that period as `completed`, with its id and focus intact",
+      "passed": true
+    },
+    {
+      "label": "the periods the parent never reviewed are `not_recorded`, and the period still running is counted as open rather than skipped",
+      "passed": true
+    },
+    {
+      "label": "reading the periods on the parent’s file changes NOTHING: every table’s digest is identical before and after the read",
+      "passed": true
+    },
+    {
+      "label": "the record’s limits are the ones a review needs: read-only, zero writes, no grade/cap/permission/plan-change influence, nothing causal",
+      "passed": true
+    },
+    {
+      "label": "the parent’s own code still opens the file afterwards and sees exactly the artifact it left: one review, completed, with no row this milestone added",
+      "passed": true
+    }
+  ],
+  "scope": "M13/M65 migration: no schema object added, and the parent’s own file is read untouched: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

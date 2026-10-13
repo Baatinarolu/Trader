@@ -1,0 +1,122 @@
+diff --git a/src/periods.js b/src/periods.js
+new file mode 100644
+index 0000000..a797bfb
+--- /dev/null
++++ b/src/periods.js
+@@ -0,0 +1,116 @@
++'use strict';
++/**
++ * periods.js — M13/M65. The app's ONE calendar-period ruler.
++ *
++ * WHY THIS FILE EXISTS: the review system has spoken in weeks, months, quarters and years since
++ * M99/M101 (`period-reviews.js`), and the quarterly rule-change advisory has spoken in quarters
++ * since M104 (`rule-changes.js`) — with the quarter arithmetic written out a second time there.
++ * Two copies of a boundary rule is exactly the shape of the M59 defect (two grade ladders, one
++ * score graded differently by each), so the boundary arithmetic now lives here once and every
++ * caller reads it from here: the review artifacts, the rule-change advisory and the new weekly /
++ * quarterly series in `performance.js`.
++ *
++ * THE POLICY IS THE REVIEWS' OWN, UNCHANGED: UTC days, **Monday-start weeks**, calendar months,
++ * calendar quarters, calendar years. It is an APP calendar, not the trader's broker clock and not
++ * the journal timezone used by the daily/monthly series: the two are DIFFERENT RULERS on purpose
++ * and both are labelled where they are shown, so a close near midnight can sit in a different
++ * period in each. Nothing here ever moves a trade between rulers to make two numbers agree.
++ *
++ * Pure: no database, no environment, no filesystem, and no clock of its own — every function is
++ * given the day it must answer about.
++ */
++const VERSION = 'periods-v1';
++const PERIOD_BASIS = 'APP calendar policy: UTC; Monday-start weeks, calendar months/quarters/years. Not trader/broker hours or a course-mandated timezone.';
++const KINDS = Object.freeze(['week', 'month', 'quarter', 'year']);
++const TZ_BASIS = 'APP UTC calendar (the review ruler). The analytics daily/monthly series use the journal timezone instead; the two rulers can disagree near midnight and neither is silently converted into the other.';
++
++function invalid(message, status = 400) { return Object.assign(new Error(message), { code: 'periods_invalid', status }); }
++const pad = (n, w = 2) => String(n).padStart(w, '0');
++const iso = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
++
++/** A UTC calendar day, `YYYY-MM-DD`, as a real day rather than a plausible-looking one. */
++function dayKey(value) {
++  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number(value.slice(0, 4)) < 100 || Number(value.slice(0, 4)) > 9998
++    || !Number.isFinite(Date.parse(value + 'T00:00:00.000Z')) || new Date(value + 'T00:00:00.000Z').toISOString().slice(0, 10) !== value) {
++    throw invalid('Select a valid UTC calendar date.');
++  }
++  return value;
++}
++
++/** The UTC calendar day an instant falls on — the same "close-day" rule the review artifacts use. */
++function dayOf(ms) {
++  if (!Number.isFinite(ms)) throw invalid('A known instant is required for a calendar day.');
++  return new Date(ms).toISOString().slice(0, 10);
++}
++
++function kindOf(kind) {
++  if (!KINDS.includes(kind)) throw invalid('Choose week, month, quarter or year.');
++  return kind;
++}
++
++/** The canonical start of the period containing `day`. Monday-start weeks, UTC. */
++function startOf(kind, day) {
++  kindOf(kind); const d = new Date(dayKey(day) + 'T00:00:00.000Z');
++  if (kind === 'week') { d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return iso(d); }
++  if (kind === 'month') { d.setUTCDate(1); return iso(d); }
++  if (kind === 'quarter') { d.setUTCDate(1); d.setUTCMonth(Math.floor(d.getUTCMonth() / 3) * 3); return iso(d); }
++  d.setUTCMonth(0, 1); return iso(d);
++}
++
++/** The whole-calendar period `[start, end)` that contains `day`, with its adjacent prior start. */
++function period(kind, day) {
++  const start = startOf(kind, day);
++  const d = new Date(start + 'T00:00:00.000Z'), end = new Date(d), previous = new Date(d);
++  if (kind === 'week') { end.setUTCDate(end.getUTCDate() + 7); previous.setUTCDate(previous.getUTCDate() - 7); }
++  else if (kind === 'year') { end.setUTCFullYear(end.getUTCFullYear() + 1); previous.setUTCFullYear(previous.getUTCFullYear() - 1); }
++  else { const months = kind === 'quarter' ? 3 : 1; end.setUTCMonth(end.getUTCMonth() + months); previous.setUTCMonth(previous.getUTCMonth() - months); }
++  return { kind, start, end: iso(end), last_day: iso(new Date(end.getTime() - 86400000)), previous_start: iso(previous), basis: PERIOD_BASIS };
++}
++
++/** A period may only be addressed by the start it actually has: no mid-period address, no typo. */
++function canonical(kind, start) {
++  const p = period(kind, start);
++  if (p.start !== start) throw invalid('Use the displayed canonical period start.');
++  return p;
++}
++
++/**
++ * The BUCKET key a day belongs to. Weeks and quarters use their own symbols because a bucket has to
++ * be read back without re-deriving it: `week` is the canonical Monday, `month` is `YYYY-MM` (the
++ * shape the existing monthly series already uses), `quarter` is `YYYY-Qn`, `year` is `YYYY`.
++ */
++function bucketOf(kind, day) {
++  const start = startOf(kind, day);
++  if (kind === 'month') return start.slice(0, 7);
++  if (kind === 'quarter') return `${start.slice(0, 4)}-Q${Math.floor(Number(start.slice(5, 7)) / 3) + 1}`;
++  if (kind === 'year') return start.slice(0, 4);
++  return start;
++}
++
++/** The canonical periods ending at `endStart`, newest first. `count` is bounded by the caller's budget. */
++function sequence(kind, endStart, count) {
++  const p = canonical(kind, endStart);
++  if (!Number.isSafeInteger(count) || count < 1 || count > 520) throw invalid('Choose between 1 and 520 periods.');
++  const out = [p];
++  let cursor = p.start;
++  while (out.length < count) {
++    const d = new Date(cursor + 'T00:00:00.000Z');
++    if (kind === 'week') d.setUTCDate(d.getUTCDate() - 7);
++    else if (kind === 'year') d.setUTCFullYear(d.getUTCFullYear() - 1);
++    else d.setUTCMonth(d.getUTCMonth() - (kind === 'quarter' ? 3 : 1));
++    cursor = iso(d);
++    out.push(period(kind, cursor));
++  }
++  return out;
++}
++
++/** A human label for a canonical start. Never a claim about the period's contents. */
++function label(kind, start) {
++  const p = canonical(kind, start), y = start.slice(0, 4), m = Number(start.slice(5, 7));
++  if (kind === 'week') return `Week of ${start}`;
++  if (kind === 'month') return `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m - 1]} ${y}`;
++  if (kind === 'quarter') return `Q${Math.floor((m - 1) / 3) + 1} ${y}`;
++  return y;
++}
++
++module.exports = { VERSION, PERIOD_BASIS, TZ_BASIS, KINDS, invalid, dayKey, dayOf, kindOf, startOf, period, canonical, bucketOf, sequence, label };

@@ -1,0 +1,50 @@
+payload keys: weekly,quarterly,undated_closes,review_periods
+{
+ "state": "available",
+ "weekly": [
+  [
+   "2026-09-28",
+   [
+    1,
+    1,
+    1
+   ]
+  ],
+  [
+   "2026-10-05",
+   [
+    2,
+    2,
+    2
+   ]
+  ]
+ ],
+ "quarterly": {
+  "2026-Q4": [
+   3,
+   3,
+   true
+  ]
+ },
+ "undated": 0,
+ "card_shows": [
+  true,
+  true
+ ],
+ "weekly_totals": [
+  0,
+  11,
+  1
+ ],
+ "card_two_rulers": true,
+ "card_readonly": false,
+ "card_len": 5203
+}
+---
+Measured through the REAL server (PORT=3251, fresh TRADEJOURNAL_DB, TJ_SCHEDULER=0, TJ_OFFLINE_CANDLES=1,
+no remote DB) with the REAL card in jsdom: register -> /api/accounts -> three closed trades posted
+through POST /api/trades (the app computes its OWN net_pnl from the fills, so the amounts below are the
+app's arithmetic, not the script's) -> GET /api/analytics -> Views.reviewPeriods.card(payload).
+Not part of the frozen cohort: this is a sanity check that the real payload and the real card agree, and
+it is NOT claimed as card-state coverage — that is analysis/probe-m13-ui.js (19/0) against the payload
+shape the API probe measures over HTTP (analysis/probe-m13-api.js, 23/0).

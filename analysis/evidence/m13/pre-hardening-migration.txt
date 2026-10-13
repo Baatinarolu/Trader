@@ -1,0 +1,14 @@
+ok the parent tree IS the committed 67f2ed2 M112 release: it HAS the review artifacts of M99/M101 and no period ruler of its own
+ok the delivered tree creates exactly the parent’s schema: every table, index and trigger is byte-identical DDL, so this milestone adds no schema object of any kind
+ok and on the same fixture every table is byte-identical, the review table included — the periods and the coverage store nothing new
+ok the review table the coverage reads has exactly the columns the parent declared, so a period cannot be addressed by a column this milestone invented
+ok the PARENT’s own code reads the seeded artifact as a completed review, so the delivered tree is interpreting a legal row rather than a fixture shape
+ok and the parent’s own payload has NO period series and no period record — the absence this milestone closes, measured in the parent’s code rather than asserted about it
+Error: child 1: TypeError: Q.coverage is not a function
+    at [eval]:11:19
+
+
+    at run (/home/user/Trader/analysis/probe-m13-migration.js:60:31)
+    at /home/user/Trader/analysis/probe-m13-migration.js:90:25
+    at Object.finish (/home/user/Trader/analysis/m111-test-support.js:44:35)
+M13/M65 migration: no schema object added, and the parent’s own file is read untouched: 6 passed, 1 failed

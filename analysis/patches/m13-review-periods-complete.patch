@@ -1,0 +1,592 @@
+diff --git a/README.md b/README.md
+index 4aa28bb..3f04f90 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,82 @@
+ # TradeJournal Pro
+ 
++## M13/M65 — the review periods: one ruler, the weekly and quarterly buckets, and the record of which periods were saved (2026-10-13)
++
++Ep 26 asks for **weekly** and **quarterly** reviews, and Ep 17's "quarterly" cadence is where plan
++changes become legitimate. Two defects sat here at once, so they are one delivery:
++
++* **M13** — the performance payload bucketed closes **only** by day and month
++  (`dailySeries`/`monthlySeries`). A monthly bucket moving its own window because the journal timezone
++  says so is not a week, and it is not a quarter.
++* **M65** — the quarter already existed as a *goal* cadence (`period=month|quarter|year`) and as a
++  saved review template since M99/M101; what was missing was the **quarterly series** beside the new
++  weekly one, and the record of which periods were actually reviewed.
++
++**One ruler, not three.** The review system has spoken in weeks/months/quarters/years since M99/M101,
++and the M104 rule-change advisory wrote the quarter arithmetic out for itself — two copies of a
++boundary rule is the shape of the M59 defect. `src/periods.js` (`periods-v1`) is now the only
++implementation: **UTC days, Monday-start weeks, calendar months, calendar quarters, calendar years**.
++The review artifacts, the rule-change advisory and the new series all read it, and the agreement
++between the advisory and the ruler is asserted **day by day across 2025–2027** in the pure probe —
++not spot-checked at a boundary or two.
++
++**Two rulers, both labelled.** `daily` and `monthly` keep the **journal timezone**; the new
++`weekly` and `quarterly` bucket on the **review calendar** (UTC close-day, Monday-start week,
++calendar quarter) and every bucket carries a `basis` sentence that names both rulers. Measured in
++both probes: a close at `2026-10-04T23:30:00Z` is **week `2026-09-28`** on the review calendar and
++**Lagos day `2026-10-05`** on the journal clock. Nothing moves a trade from one ruler into the other
++to make two numbers agree.
++
++**The record of which periods were reviewed.** `period-reviews.js` gained
++`review-coverage-v1` — a read-only record joining each canonical period to the artifact the trader
++saved **for that exact period** on their **own** account:
++
++| state | meaning |
++| --- | --- |
++| `completed` | a saved artifact the trader wrote, `status: completed` |
++| `draft` | saved but not completed — **never** counted as a review |
++| `imported_unverified` | an imported copy — evidence that a row exists, not that the trader reviewed it |
++| `unavailable` | a saved row that cannot be read back — counted, never silently dropped |
++| `not_recorded` | **no artifact for that period** |
++
++`not_recorded` is spelled out in the payload and on screen: *"that is not evidence that you did not
++review it somewhere else"*. It is **not** "missed", and it is **not** a clean record. A period still
++running is counted as **open** instead of being called unreviewed, a saved artifact whose stored
++period start is not a canonical period start is counted as **outside the window** rather than
++disappearing, and a period with **no closed trade** reports **no amount** (`null`) rather than a flat
++zero — a close with no recorded amount is counted as `unknown_net`/`unknown_r`, not read as a loss.
++`outcome_compared:false` rides the payload with the sentence saying why: the recorded amounts sit
++beside the state because both are facts about the same period, and the app does **not** compare
++reviewed against unreviewed periods, which would be a causal claim it has not measured.
++
++**Delivery shape:** `GET /api/analytics` carries `analytics.weekly`, `analytics.quarterly`,
++`analytics.undated_closes` (a closed trade with no clock at all, counted by name instead of guessed
++into a week) and `analytics.review_periods`; the UI is one read-only card,
++`Views.reviewPeriods.card`, on the analytics view above its existing tabs. **No new endpoint, no
++writes, no grade/cap/permission/guardrail or plan-change influence** — writing a review is still the
++trader's act, and this record only says whether one was saved.
++
++**Measured:** **94/0 across 4 probes** (ruler+series+record 39, API 23, migration 13, UI 19) — the
++ruler boundary-by-boundary, the buckets against closes with exact clocks, the record over real HTTP
++with a draft, an imported copy and a foreign desk's artifact present, and the database the committed
++M12 release created and wrote with its own code (byte-identical tables before and after, every
++clock-defaulted column pinned so "byte-identical" is a measurement and not a race). The
++**pre-hardening control** is the delivered ruler and buckets with the committed M12 record, endpoint,
++page and view: on that tree the ruler is measured working (24 pure assertions pass) and there is
++nothing to join a period to (`R.coverageOf is not a function`, no `review_periods` key, no card file),
++while the mode-aware control probe measures **11/0 in every mode** — on the parent, on the
++pre-hardening tree and on the delivered one — because it counts the fault rather than crashing on it.
++
++**Declared negative, carried by name:** the inherited M99/M101 **reviews cohort is stale at this
++HEAD — 157/3 against its committed 159/1** (migration 12/3). The three gaps all trace to schema growth
++*after* M101 that the M108-era evidence predates — `accounts` DDL grew 26→36 columns and ten
++tables were delivered since (`daily_intentions`, `identity_declarations`, `opportunity_decisions`,
++`opportunity_trade_links`, `period_reviews`, `practice_sessions`, `practice_timers`,
++`signal_opportunities`, `state_gate_answers`, `strategy_rule_changes`). It is declared here and in
++`analysis/evidence/m13/`, and **not** repaired by editing a frozen probe.
++
++---
++
+ ## M12 — the rule breaks the app already recorded, tallied for the review that reads them (2026-10-13)
+ 
+ Ep 26 lists **rule breaks** among the metrics a weekly review tracks. They were produced and never
+diff --git a/docs/API.md b/docs/API.md
+index e2f3958..4af3b0e 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -157,7 +157,7 @@ they are converted using the stop distance.
+ 
+ | Method | Path | Notes |
+ |---|---|---|
+-| GET | `/analytics` | Full payload: `kpis`, `equity[]`, `daily{}`, `monthly{}`, `distribution[]`, `points[]` (per-trade R/MAE/MFE/risk), segment tables (`by_strategy`, `by_symbol`, `by_session`, `by_timing`, `by_emotion`, `by_mistake`, `by_tag`, `by_hold`, `by_adherence`, …), `time{}` grids, and `rule_breaks` (M12) — the **read-only tally of the guardrail audit** for the **same resolved account** this payload analyses, with `from`/`to` taken from the payload’s own window (see [the rule-break tally](#the-rule-break-tally--recorded-never-joined-to-a-result-m12)). Accepts all trade filters. |
++| GET | `/analytics` | Full payload: `kpis`, `equity[]`, `daily{}`, `monthly{}`, `distribution[]`, `points[]` (per-trade R/MAE/MFE/risk), segment tables (`by_strategy`, `by_symbol`, `by_session`, `by_timing`, `by_emotion`, `by_mistake`, `by_tag`, `by_hold`, `by_adherence`, …), `time{}` grids, `weekly{}` and `quarterly{}` (M13/M65) — closes bucketed on the **review calendar** (UTC close-day, Monday-start weeks, calendar quarters) beside the journal-timezone `daily{}`/`monthly{}`, each bucket carrying a `basis` sentence that names both rulers — plus `undated_closes` (a closed trade with no clock at all, counted rather than guessed into a week), `review_periods` (M13/M65) — the **read-only record of which periods were reviewed**, joined to the artifact the trader saved for that exact period (see [the review periods](#the-review-periods--one-ruler-two-calendars-and-the-record-of-which-periods-were-saved-m13m65)), and `rule_breaks` (M12) — the **read-only tally of the guardrail audit** for the **same resolved account** this payload analyses, with `from`/`to` taken from the payload’s own window (see [the rule-break tally](#the-rule-break-tally--recorded-never-joined-to-a-result-m12)). Accepts all trade filters. |
+ | GET | `/analytics/monte-carlo` | `?risk_pct=1&horizon=100&sims=2000&start_equity=10000&ruin=50` → `monte_carlo` percentiles + `optimal_risk` (Kelly / half / quarter) |
+ | GET | `/coach` | `{ insights:[{ id, severity, title, detail, impact, evidence[], action }], score:{score,grade}, summary }` |
+ | GET | `/briefing` | pre-session plan: market context, risk multiplier and reasoning, performance snapshot, open positions, focus items, checklist |
+@@ -269,6 +269,72 @@ the methodology, the weights and the honest limitations.
+ | PUT | `/bots/window` | `{ account_id?, window_start, window_end, accept_suggestion? }` | set, accept or clear the window. Both sides of an `HH:MM` pair in the account's owned IANA zone, or both blank/null to clear. `accept_suggestion: true` applies the current derived candidate (409 `trading_window_suggestion_unavailable` when it is refused). `source` is recorded as `from_session_history` only when the submitted pair is exactly the current candidate, otherwise `manual`. |
+ | GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ state, blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, unavailable?, unavailable_note?, error? }`. `state` is `blocked` \| `clear` \| `unknown` (M111): `clear` means the calendar **was read** and nothing is inside its clock; a read that failed is `unknown`, which carries `unavailable` (the reason), `unavailable_note` (the sentence to display) and `windows.unavailable: true`. An `unknown` read still echoes the pair, so a client can name the windows that were **not** checked — it is never an all-clear. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
+ 
++### The review periods — one ruler, two calendars, and the record of which periods were saved (M13/M65)
++
++Ep 26 asks for a **weekly** and a **quarterly** review, and Ep 17's plan changes are legitimate at the
++**quarterly** cadence. The payload had only `daily`/`monthly`, and nothing joined a period to the
++artifact the trader saved for it — so a review could read a month of P&L and still not answer *"what
++did the weeks and quarters look like, and which of them did I actually review?"*.
++
++`src/periods.js` (`periods-v1`) is the app's **one** calendar ruler: UTC days, **Monday-start weeks**,
++calendar months, calendar quarters, calendar years. The review artifacts (`period-reviews.js`), the
++M104 rule-change advisory (`rule-changes.js`) and the new series all read it, and the advisory/ruler
++agreement is asserted **day by day across 2025–2027**. The ruler is pure: no database, no filesystem
++and no clock of its own — every function is handed the day it must answer about.
++
++`GET /api/analytics` now carries four new keys, all **read-only**, on the **same resolved account** the
++payload analyses:
++
++| key | meaning |
++| --- | --- |
++| `weekly{}` | closes bucketed by **review week** (Monday start, UTC close-day), keyed `YYYY-MM-DD` = the week's Monday, each bucket `{week, start, end, last_day, trades, wins, losses, breakeven, pnl, r, win_rate, unknown_net, unknown_r, days, basis}` |
++| `quarterly{}` | the same arithmetic on calendar quarters, keyed `YYYY-Qn`, each bucket carrying its own `start`/`end`/`last_day` |
++| `undated_closes` | a closed trade whose `closed_at` is not a usable clock: counted **by name**, never guessed into a week and never silently dropped |
++| `review_periods` | the record below: each canonical period joined to the artifact saved for it |
++
++**Two rulers, both labelled, never converted into one another.** `daily`/`monthly` keep the **journal
++timezone**; `weekly`/`quarterly` bucket on the **review calendar** and carry a per-bucket `basis`
++sentence naming both. A close at `2026-10-04T23:30:00Z` is week `2026-09-28` on the review calendar and
++day `2026-10-05` in Lagos: the same instant, two rulers, and `daily`/`monthly` are unchanged. **A
++missing amount is not a zero:** a bucket with no recorded `net_pnl` reports `pnl: null` and counts the
++close in `unknown_net` (likewise `unknown_r`); a bucket with no closed trade reports `pnl: null`, not
++`0`.
++
++`review_periods` (`review-coverage-v1`) is either `{state: "unavailable", reason, not_recorded: null, …}`
++or `{state: "available", kinds: {week, quarter}, …}`. Each kind reports
++`periods_scanned`, `rows_scanned`, `artifacts_outside_scope`, `completed`, `draft`,
++`imported_unverified`, `unavailable_rows`, `not_recorded`, `open_periods`, and a `periods[]` list,
++newest first (12 weeks, 8 quarters), each entry:
++
++| field | meaning |
++| --- | --- |
++| `start` / `end` / `last_day` / `label` | the canonical period and how it is addressed — `Week of 2026-10-05`, `Q4 2026` |
++| `finished` | whether the period has ended; a period still running is `open_periods`, **not** an unreviewed one |
++| `review_state` | `completed`, `draft`, `imported_unverified`, `unavailable` or `not_recorded` — from the **latest saved version** of that period's artifact |
++| `review_id`, `review_version`, `review_status`, `review_source`, `review_recorded_at`, `review_focus`, `review_amendment` | the artifact's own receipt: what was saved, when, and the trader's committed focus (never the app's summary) |
++| `trades`, `pnl`, `r`, `win_rate`, `unknown_net`, `unknown_r`, `days` | that period's **own** recorded closes on the review calendar; `pnl`/`r`/`win_rate` are `null` when nothing was recorded, never `0` |
++| `not_recorded_meaning` | the sentence that travels with every kind: *"No artifact was saved for this finished period. That is not evidence that no review happened."* |
++| `outcome_compared` | always `false`, with `outcome_note` saying why: the amounts sit beside the state because both are facts about the same period, and comparing reviewed against unreviewed periods would be a causal claim this journal has not measured |
++| `limits` | `read_only: true`, `writes: 0`, and `grades_influence`, `permission_influence`, `caps_influence`, `guardrail_decisions_influence`, `plan_change_permission`, `causal`, `broker_verified` all `false` |
++
++**Unknown is not clean, and `not_recorded` is not "missed".** An unreadable record is
++`state: "unavailable"` with `not_recorded: null` — never a period list full of "no review" and never a
++clean record (a foreign or unowned account resolves to the same shape, from the route's own scope).
++An imported artifact is `imported_unverified`: evidence that a row exists, **not** that the trader
++reviewed it. A draft is a draft and is never counted as a completed review. `not_recorded` means only
++that no artifact was saved — a review done on paper or elsewhere leaves nothing here, and the payload
++says so rather than grading it. A completed artifact is an acknowledgement that the review was
++**written and saved**; it is not proof that the period was **reviewed well**, that its numbers are
++complete, or that any rule changed. Writing a review is still the trader's act: `review_periods` adds
++no endpoint, writes nothing, and changes no grade, cap, permission, guardrail decision or plan-change
++permission.
++
++The card is `Views.reviewPeriods.card` on the analytics view above its existing tabs: the totals per
++kind (completed / draft only / imported copy (unverified) / unreadable / no artifact recorded, of N
++periods scanned, M still open), each period's own line with its saved focus, the two-ruler sentence,
++the `not_recorded` meaning and the read-only basis. It reloads itself through the analytics view and
++**refuses** if the workspace/account changed under it, rather than rendering another desk's record.
++
+ ### The rule-break tally — recorded, never joined to a result (M12)
+ 
+ Ep 26 lists **rule breaks** among the metrics a weekly review tracks. The app already produced them
+@@ -1040,6 +1106,14 @@ snapshot.20MBselected-file/25MBbody limits unchanged, no silent clipping. Review
+ artifacts never complete required trade/loss writing, grade/resize risk or prove
+ human/mental/meditation/broker/provider/pixels/production/causal edge/70% wins.
+ 
++**M13/M65 read this same series back, read-only.** `src/periods.js` is one shared ruler for the
++week/month/quarter/year boundaries these artifacts are addressed by (the M104 rule-change advisory
++reads it too), `GET /api/analytics` carries `weekly{}`/`quarterly{}` bucketed on that calendar beside
++the journal-timezone `daily{}`/`monthly{}`, and `review_periods` joins each period to the artifact
++saved for it — `completed`/`draft`/`imported_unverified`/`unavailable`/`not_recorded`, where
++`not_recorded` is **not** "missed" and **not** a clean record. Nothing above changes: this is the same
++stored series, read.
++
+ 
+ ## M100 — owned recorded opportunities, explicit decisions and journal association
+ 
+diff --git a/public/index.html b/public/index.html
+index 69f7ff0..ce6c162 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -36,6 +36,7 @@
+ <script src="/js/views/execution.js?v={{V}}"></script>
+ <script src="/js/views/behavior-days.js?v={{V}}"></script>
+ <script src="/js/views/rule-breaks.js?v={{V}}"></script>
++<script src="/js/views/review-periods.js?v={{V}}"></script>
+ <script src="/js/views/process-outcomes.js?v={{V}}"></script>
+ <script src="/js/views/emotions.js?v={{V}}"></script>
+ <script src="/js/views/confluences.js?v={{V}}"></script>
+diff --git a/public/js/views/analytics.js b/public/js/views/analytics.js
+index 23eb0cb..a3d3e91 100644
+--- a/public/js/views/analytics.js
++++ b/public/js/views/analytics.js
+@@ -20,6 +20,7 @@
+       TABS.forEach(([id, label]) => tabs.appendChild(U.h('button', { class: active === id ? 'active' : '', text: label, onclick: () => { active = id; U.$$('button', tabs).forEach((b, i) => b.classList.toggle('active', TABS[i][0] === id)); U.clear(panes); panes.appendChild(PANES[id]()); } })));
+       if(Views.behaviorDays)root.appendChild(Views.behaviorDays.card(an.behavior_days));
+       if(Views.ruleBreaks)root.appendChild(Views.ruleBreaks.card(an.rule_breaks));
++      if(Views.reviewPeriods)root.appendChild(Views.reviewPeriods.card(an.review_periods));
+       if(Views.opportunities)root.appendChild(Views.opportunities.summary(an.opportunity_review));
+       if(Views.processOutcomes)root.appendChild(Views.processOutcomes.card(an.process_review));
+       root.appendChild(tabs); root.appendChild(panes);
+diff --git a/public/js/views/review-periods.js b/public/js/views/review-periods.js
+new file mode 100644
+index 0000000..1ac64e5
+--- /dev/null
++++ b/public/js/views/review-periods.js
+@@ -0,0 +1,29 @@
++/* M13/M65 review periods: the weekly/quarterly buckets and which periods have a saved review artifact.
++   Read-only. A period with no artifact is `not_recorded`, never "missed" and never a clean record. */
++(function(global){
++ 'use strict';const Views=global.Views=global.Views||{},U=global.U,context=()=>({user:global.Store.user?.id,account:global.Store.accountId,token:global.API.getToken()}),same=c=>!!c&&c.user===global.Store.user?.id&&c.account===global.Store.accountId&&c.token===global.API.getToken();
++ const money=v=>v===null||v===undefined?'no recorded amount':(v>=0?'+':'')+U.money?U.money(v):String(v);
++ const STATE_TEXT={completed:'review saved',draft:'draft only, not completed',imported_unverified:'imported copy, unverified',unavailable:'saved artifact could not be read',not_recorded:'no artifact recorded'};
++ const num=(v,d=2)=>v===null||v===undefined?'—':U.num?U.num(v,d):String(v);
++ const pct=v=>v===null||v===undefined?'—':U.pct?U.pct(v,1):String(v)+'%';
++ Views.reviewPeriods={context,same,
++  card(report){const node=U.h('section',{class:'card',style:'margin-top:14px',dataset:{reviewPeriods:'true'}}),expected=context();node.appendChild(U.h('h3',{text:'Review periods · weekly and quarterly'}));
++   node.appendChild(U.h('p',{class:'field-note',text:'The weekly and quarterly buckets below are bucketed on the REVIEW calendar (UTC close-day, Monday-start weeks, calendar quarters), which is the calendar a period review is addressed by. The Analytics Daily and Monthly series use your journal timezone instead: two different rulers, both labelled, and nothing here moves a trade from one into the other. Each period is listed with its own recorded closes and with the artifact the app has saved for that exact period. A period with no artifact is "no artifact recorded" \u2014 that is not evidence that you did not review it somewhere else. A saved artifact is an acknowledgement that a review was written and stored, not proof that the period was reviewed well, that its numbers are complete, or that any rule changed. The app does not compare reviewed periods against unreviewed ones.'}));
++   if(!report||report.state!=='available'){node.appendChild(U.h('p',{class:'sticky-note warn',text:'Saved review artifacts unavailable. Which periods were reviewed is UNKNOWN here \u2014 this is not a period with no review and not a clean record.'}));return node;}
++   for(const kind of ['week','quarter']){const k=(report.kinds||{})[kind];if(!k)continue;
++    const block=U.h('div',{dataset:{reviewPeriodsKind:kind}});
++    block.appendChild(U.h('h4',{text:(kind==='week'?'Weekly':'Quarterly')+' review record'}));
++    block.appendChild(U.h('p',{class:'small',dataset:{reviewPeriodsTotals:kind},text:`${k.completed} completed \u00b7 ${k.draft} draft only \u00b7 ${k.imported_unverified} imported copy (unverified) \u00b7 ${k.unavailable_rows} unreadable \u00b7 ${k.not_recorded} no artifact recorded (of ${k.periods_scanned} periods scanned${k.open_periods?`, ${k.open_periods} still open`:''}).`}));
++    if(k.artifacts_outside_scope)block.appendChild(U.h('p',{class:'small warn',text:`${k.artifacts_outside_scope} saved ${kind==='week'?'weekly':'quarterly'} artifact${k.artifacts_outside_scope===1?' carries':'s carry'} a period start this window does not scan; counted here rather than dropped, and not included in the figures above.`}));
++    for(const p of k.periods){const bits=[p.trades?`${p.trades} close${p.trades===1?'':'s'} over ${p.days} day${p.days===1?'':'s'}`:'no closed trade recorded',p.pnl===null?'no recorded amount':(p.pnl>=0?'+':'')+(U.money?U.money(p.pnl):String(p.pnl)),p.r===null?'no recorded R':`${num(p.r,2)}R`,p.win_rate===null?'win rate unavailable':pct(p.win_rate)+' win',p.unknown_net?`${p.unknown_net} close${p.unknown_net===1?'':'s'} with no recorded amount`:null,p.unknown_r?`${p.unknown_r} with no recorded R`:null].filter(Boolean);
++     const line=U.h('p',{class:'tiny '+(p.review_state==='completed'?'':'muted'),dataset:{reviewPeriodsPeriod:p.start,reviewPeriodsState:p.review_state}});
++     line.textContent=`${p.label} \u00b7 ${bits.join(' \u00b7 ')} \u00b7 review: ${STATE_TEXT[p.review_state]||p.review_state}${p.review_recorded_at?' ('+p.review_recorded_at+')':''}${p.review_focus?' \u00b7 focus: '+p.review_focus:''}${p.finished?'':' \u00b7 still open'}`;
++     block.appendChild(line);}
++    block.appendChild(U.h('p',{class:'tiny muted',text:k.calendar+' '+k.not_recorded_meaning}));
++    node.appendChild(block);}
++   node.appendChild(U.h('p',{class:'tiny muted',text:(report.basis||'')+' '+(report.outcome_note||'')}));
++   node.appendChild(U.h('button',{class:'btn sm ghost',type:'button',dataset:{reviewPeriodsRefresh:true},text:'Reload this record',onclick:()=>{if(!same(expected))return global.App.toast('Workspace/account/session changed; reopen the review.','err');return global.App.go?global.App.go('analytics'):location.reload();}}));
++   return node;
++  }
++ };
++})(window);
+diff --git a/src/performance.js b/src/performance.js
+index da05a25..b558195 100644
+--- a/src/performance.js
++++ b/src/performance.js
+@@ -12,6 +12,7 @@ const Execution = require('./execution-review');
+ const Confluences = require('./confluences');
+ const Emotions = require('./emotions');
+ const TradingWindow = require('./trading-window');   // M112
++const Periods = require('./periods');                // M13/M65 — the review calendar (UTC, Monday weeks)
+ 
+ const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
+ const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+@@ -326,6 +327,59 @@ function monthlySeries(closed) {
+   return out;
+ }
+ 
++/**
++ * M13/M65 — the WEEKLY and QUARTERLY series, beside daily/monthly.
++ *
++ * The review system has spoken in weeks and quarters since M99/M101 while the numbers below it could
++ * only be bucketed by day and by month, so the review cadence had no series of its own. These two use
++ * the REVIEW's calendar (`src/periods.js`: UTC close-day, Monday-start weeks, calendar quarters) — the
++ * same ruler `period-reviews.js` filters a period by — which is NOT the ruler `dailySeries` and
++ * `monthlySeries` use above (they bucket by the journal timezone's close-day). Two rulers, both
++ * labelled, and nothing here converts a trade from one into the other.
++ *
++ * Three honesty rules, because a bucket is presented as a fact about a period:
++ *   - a close with no recorded clock is NOT guessed into a week: it is skipped here and counted in
++ *     `undated_closes` on the payload, which is the only place it can be seen at all;
++ *   - a bucket whose closes carry no recorded net (or no recorded R) reports `null`, not `0` — a
++ *     missing number is not a flat week;
++ *   - `unknown_net`/`unknown_r` count those closes per bucket, and the win rate divides by the closes
++ *     that HAVE a known net, so one unreported close cannot be read as a loss.
++ */
++function periodSeries(closed, kind) {
++  const out = {};
++  for (const t of closed) {
++    const ms = Date.parse(t.closed_at);
++    if (!Number.isFinite(ms)) continue;
++    const day = Periods.dayOf(ms), key = Periods.bucketOf(kind, day);
++    if (!out[key]) {
++      const p = Periods.period(kind, day);
++      out[key] = { [kind]: key, start: p.start, end: p.end, last_day: p.last_day, pnl: 0, r: 0, trades: 0, wins: 0, losses: 0, breakeven: 0, unknown_net: 0, unknown_r: 0, days: 0, _days: new Set() };
++    }
++    const o = out[key];
++    o.trades += 1;
++    o._days.add(day);
++    const net = t.net_pnl;
++    if (net === null || net === undefined || net === '' || isNaN(Number(net))) o.unknown_net += 1;
++    else { const v = Number(net); o.pnl += v; if (v > 0) o.wins += 1; else if (v < 0) o.losses += 1; else o.breakeven += 1; }
++    const r = t.r_multiple;
++    if (r === null || r === undefined || r === '' || isNaN(Number(r))) o.unknown_r += 1; else o.r += Number(r);
++  }
++  for (const k of Object.keys(out)) {
++    const o = out[k];
++    o.days = o._days.size; delete o._days;
++    o.pnl = o.unknown_net === o.trades ? null : r2(o.pnl);
++    o.r = o.unknown_r === o.trades ? null : r4(o.r);
++    const known = o.trades - o.unknown_net;
++    o.win_rate = known ? r2((o.wins / known) * 100) : null;
++    o.basis = 'UTC close-day, ' + (kind === 'week' ? 'Monday-start week' : 'calendar quarter') + ' (the review calendar; the daily/monthly series above use the journal timezone).';
++  }
++  return Object.fromEntries(Object.entries(out).sort(([a], [b]) => a.localeCompare(b)));
++}
++
++function weeklySeries(closed) { return periodSeries(closed, 'week'); }
++
++function quarterlySeries(closed) { return periodSeries(closed, 'quarter'); }
++
+ function streaks(closed) {
+   const sorted = [...closed].sort((a, b) => new Date(a.closed_at || a.opened_at) - new Date(b.closed_at || b.opened_at));
+   let best = 0, worst = 0, curW = 0, curL = 0;
+@@ -549,6 +603,11 @@ function fullAnalytics(trades, opts = {}) {
+     equity: equityCurve(trades.filter((t) => t.status !== 'open'), num(opts.startingBalance, 10000)),
+     daily: dailySeries(trades.filter((t) => t.status !== 'open')),
+     monthly: monthlySeries(trades.filter((t) => t.status !== 'open')),
++    weekly: weeklySeries(trades.filter((t) => t.status !== 'open')),
++    quarterly: quarterlySeries(trades.filter((t) => t.status !== 'open')),
++    /* M13/M65: a closed trade with no recorded clock cannot be placed on ANY calendar, so it is
++     * counted here by name instead of being silently dropped or guessed into a week. */
++    undated_closes: trades.filter((t) => t.status !== 'open' && !Number.isFinite(Date.parse(t.closed_at))).length,
+     distribution: rDistribution(trades.filter((t) => t.status !== 'open')),
+     /* M102 — segment on (strategy, VERSION), not on the name alone. Two defects were live
+      * here: renaming a strategy silently merged or split its whole performance history, and
+@@ -605,7 +664,7 @@ function windowSuggestion(trades, { zone = null, floor = TradingWindow.FLOOR } =
+ }
+ 
+ module.exports = {
+-  decorate, kpis, equityCurve, drawdownStats, dailySeries, monthlySeries, segment, rDistribution,
++  decorate, kpis, equityCurve, drawdownStats, dailySeries, monthlySeries, periodSeries, weeklySeries, quarterlySeries, segment, rDistribution,
+   timeGrids, monteCarlo, optimalRisk, fullAnalytics, sessionOf, SESSION_LABEL, SESSIONS,
+   localParts, localDateStr, holdBucket, mean, stdev, median, percentile, splitTags, deriveExitReason, r2, r4, windowSuggestion,
+ };
+diff --git a/src/period-reviews.js b/src/period-reviews.js
+index e577e96..5c21f56 100644
+--- a/src/period-reviews.js
++++ b/src/period-reviews.js
+@@ -1,13 +1,16 @@
+ 'use strict';
+ /** M99/M101 owned periodic artifacts, not trading/strategy/score authority. */
+ const crypto=require('crypto');
+-const PERIOD_BASIS='APP calendar policy: UTC; Monday-start weeks, calendar months/quarters/years. Not trader/broker hours or a course-mandated timezone.';
++const Periods=require('./periods');                    // M13/M65 — the ONE calendar-period ruler
++const PERIOD_BASIS=Periods.PERIOD_BASIS;               // re-exported unchanged: every caller keeps reading it here
+ const VERSION=1;
+ function invalid(message,status=400){return Object.assign(new Error(message),{code:'period_review_invalid',status});}
+ function dateKey(s){if(typeof s!=='string'||!/^\d{4}-\d\d-\d\d$/.test(s)||Number(s.slice(0,4))<100||Number(s.slice(0,4))>9998||!Number.isFinite(Date.parse(s))||new Date(s).toISOString().slice(0,10)!==s)throw invalid('Select a valid UTC calendar date.');return s;}
+ const iso=d=>d.toISOString().slice(0,10);
+-function period(kind,date){dateKey(date);if(!Object.hasOwn(templates,kind))throw invalid('Choose week, month, quarter or year.');const d=new Date(date+'T00:00:00.000Z');if(kind==='week')d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);else if(kind==='month')d.setUTCDate(1);else if(kind==='quarter'){d.setUTCDate(1);d.setUTCMonth(Math.floor(d.getUTCMonth()/3)*3);}else{d.setUTCMonth(0,1);}const start=iso(d),end=new Date(d),previous=new Date(d);if(kind==='week'){end.setUTCDate(end.getUTCDate()+7);previous.setUTCDate(previous.getUTCDate()-7);}else if(kind==='year'){end.setUTCFullYear(end.getUTCFullYear()+1);previous.setUTCFullYear(previous.getUTCFullYear()-1);}else{const months=kind==='quarter'?3:1;end.setUTCMonth(end.getUTCMonth()+months);previous.setUTCMonth(previous.getUTCMonth()-months);}return {kind,start,end:iso(end),last_day:iso(new Date(end.getTime()-86400000)),previous_start:iso(previous),basis:PERIOD_BASIS};}
+-function canonical(kind,start){const p=period(kind,start);if(p.start!==start)throw invalid('Use the displayed canonical period start.');return p;}
++/* M13/M65: the arithmetic moved to src/periods.js, and these two exports keep this module's own
++ * error code and wording so every existing caller and probe sees exactly the same contract. */
++function period(kind,date){try{return Periods.period(kind,date);}catch(e){throw invalid(e.message);}}
++function canonical(kind,start){try{return Periods.canonical(kind,start);}catch(e){throw invalid(e.message);}}
+ const question=(id,label)=>({id,label});
+ const templates={
+  week:{title:'Weekly review',question_basis:'saved_ep26_weekly_scope',policy:'No plan changes from a weekly review. Record process feedback and one next-week focus; metrics do not prove an edge.',questions:[question('worked_and_why','What went well, and specifically why?'),question('prevention_plan','What mistakes/weak points appeared, and what is the prevention plan?'),question('best_worst_pattern','What process pattern appears in the best and worst trades?')]},
+@@ -68,6 +71,81 @@ async function save(userId,accountId,kind,start,body,mode='draft'){
+   return cleanView(await viewOn(store,userId,accountId,kind,start));
+  });
+ }
++const COVERAGE_VERSION='review-coverage-v1';
++const COVERAGE_BASIS='Recorded review artifacts read from the saved rows for the trader\u2019s own account, per calendar period: `completed`, `draft`, `imported_unverified`, `unavailable` or `not_recorded`. A period with NO artifact is `not_recorded` \u2014 that is not evidence that no review happened, because a review done on paper, elsewhere or in another app leaves nothing here. A `completed` artifact is an acknowledgement that the review was written and saved; it is not proof that the period was reviewed well, that its numbers are complete, or that any rule changed. The recorded amounts beside each period are that period\u2019s own recorded closes on the APP UTC close-day calendar; the app does NOT compare reviewed periods against unreviewed ones, which would be a causal claim it has not measured.';
++const REVIEW_STATES=Object.freeze(['completed','draft','imported_unverified','unavailable','not_recorded']);
++
++/** One period\u2019s review state, derived from the LATEST saved version of that period\u2019s artifact. */
++function reviewStateOf(row){
++ if(!row)return {state:'not_recorded',public:null};
++ const pub=publicRow(row);
++ if(!pub||pub.status==='unavailable')return {state:'unavailable',public:null};
++ if(pub.source==='imported_unverified'||pub.status==='imported')return {state:'imported_unverified',public:pub};
++ if(pub.status==='completed')return {state:'completed',public:pub};
++ return {state:'draft',public:pub};
++}
++
++/**
++ * The record of which periods have an artifact, joined to that period\u2019s recorded closes.
++ * Pure: it is handed the rows and the series (`performance.weeklySeries`/`quarterlySeries`, which
++ * use the SAME calendar) and never reads a database or a clock of its own.
++ */
++function coverageOf({userId, accountId=null, rows=[], series={}, kinds=[['week',12],['quarter',8]], today=null, nowMs=Date.now()}={}){
++ if(!id(userId))throw invalid('Owned review required.');
++ const day=today===null?Periods.dayOf(Number.isFinite(nowMs)?nowMs:Date.now()):Periods.dayKey(today);
++ const out={};
++ for(const [kind,count] of kinds){
++  const canonical=Periods.sequence(kind,Periods.startOf(kind,day),count),starts=new Set(canonical.map(p=>p.start)),latest=new Map();
++  /* Buckets are looked up by their own `start`, not by their key: a week's key is its Monday but a
++   * quarter's key is `YYYY-Qn`, and joining on the key would silently drop every quarter. */
++  const buckets={};for(const b of Object.values(series[kind]||{}))if(b&&b.start)buckets[b.start]=b;
++  let scanned=0;
++  for(const row of rows){
++   if(!row||row.period_kind!==kind||row.user_id!==userId)continue;
++   if(accountId!==null&&Number(row.account_key)!==Number(accountId))continue;
++   scanned++;
++   const key=String(row.period_start),prev=latest.get(key);
++   if(!prev||(Number(row.version)||0)>(Number(prev.version)||0)||(Number(row.version)||0)===(Number(prev.version)||0)&&Number(row.id)>Number(prev.id))latest.set(key,row);
++  }
++  const periods=[];let completed=0,draft=0,imported=0,unavailableRows=0,notRecorded=0,openPeriods=0,outsideScope=0;
++  for(const p of canonical){
++   const raw=latest.get(p.start)||null,st=reviewStateOf(raw),finished=p.end<=day,b=buckets[p.start]||null;
++   if(st.state==='completed')completed++;else if(st.state==='draft')draft++;else if(st.state==='imported_unverified')imported++;else if(st.state==='unavailable')unavailableRows++;else if(finished)notRecorded++;else openPeriods++;
++   periods.push({start:p.start,end:p.end,last_day:p.last_day,label:Periods.label(kind,p.start),finished,review_state:st.state,
++    review_id:st.public?st.public.id:null,review_version:st.public?st.public.version:null,review_status:st.public?st.public.status:null,review_source:st.public?st.public.source:null,
++    review_recorded_at:st.public?st.public.recorded_at:null,review_focus:st.public&&typeof st.public.focus==='string'&&st.public.focus.trim()?st.public.focus:null,review_amendment:st.public?st.public.amendment:null,
++    trades:b?b.trades:0,pnl:b?b.pnl:null,r:b?b.r:null,win_rate:b?b.win_rate:null,unknown_net:b?b.unknown_net:0,unknown_r:b?b.unknown_r:0,days:b?b.days:0});
++  }
++  for(const key of latest.keys())if(!starts.has(key))outsideScope++;
++  out[kind]={kind,label:kind==='week'?'Weekly':'Quarterly',periods_scanned:count,rows_scanned:scanned,artifacts_outside_scope:outsideScope,periods,
++   completed,draft,imported_unverified:imported,unavailable_rows:unavailableRows,not_recorded:notRecorded,open_periods:openPeriods,
++   date_basis:'utc_close_day',calendar:Periods.PERIOD_BASIS,not_recorded_meaning:'No artifact was saved for this finished period. That is not evidence that no review happened.'};
++ }
++ return {state:'available',version:COVERAGE_VERSION,user_id:userId,account_id:accountId,today:day,kinds:out,basis:COVERAGE_BASIS,
++  outcome_compared:false,outcome_note:'The recorded amounts are listed beside the artifact state because both are facts about the same period; the app does not compare reviewed periods against unreviewed ones, which would be a causal claim it has not measured.',
++  limits:{read_only:true,writes:0,grades_influence:false,permission_influence:false,caps_influence:false,guardrail_decisions_influence:false,plan_change_permission:false,causal:false,broker_verified:false}};
++}
++
++function coverageUnavailable(reason='The saved review artifacts could not be read, so the record of which periods were reviewed is reported as unknown. This is not a period with no review, and not a clean record.'){
++ return {state:'unavailable',version:COVERAGE_VERSION,reason,kinds:{},completed:null,draft:null,imported_unverified:null,not_recorded:null,basis:COVERAGE_BASIS,
++  outcome_compared:false,limits:{read_only:true,writes:0,grades_influence:false,permission_influence:false,causal:false,broker_verified:false}};
++}
++
++/** Read the trader\u2019s own saved artifacts for this account, bounded, and join them to the series. */
++async function coverage(userId,{accountId=null,week={},quarter={},weeks=12,quarters=8,today=null,store=null}={}){
++ if(!id(userId))throw invalid('Owned review required.');
++ const {db}=require('./db');
++ const read=async st=>{
++  if(accountId!=null)await owned(st,userId,accountId);
++  const rows=accountId==null?await st.prepare('SELECT * FROM period_reviews WHERE user_id=? ORDER BY id').all(userId):await st.prepare('SELECT * FROM period_reviews WHERE user_id=? AND account_key=? ORDER BY id').all(userId,Number(accountId));
++  if(rows.length>5000)throw invalid('Review coverage APP budget5000 saved artifacts exceeded; no silently clipped period record.',503);
++  return coverageOf({userId,accountId:accountId==null?null:Number(accountId),rows,series:{week:week||{},quarter:quarter||{}},kinds:[['week',weeks],['quarter',quarters]],today});
++ };
++ return store?read(store):db.tx(async tx=>read(db.transactionStore(tx)));
++}
++
++const coverageOptional=async(userId,options)=>{try{return await coverage(userId,options);}catch{return coverageUnavailable();}};
++
+ async function list(userId,accountId=null){const {db}=require('./db');return db.tx(async tx=>{const store=db.transactionStore(tx);if(accountId!=null)await owned(store,userId,accountId);const rows=await store.prepare('SELECT * FROM period_reviews WHERE user_id=?'+(accountId==null?'':' AND account_key=?')+' ORDER BY id').all(...(accountId==null?[userId]:[userId,Number(accountId)])),map=new Map();for(const r of rows){const key=r.account_key+':'+r.period_kind+':'+r.period_start;if(!map.has(key))map.set(key,[]);map.get(key).push(r);}return {reviews:[...map.values()].map(rows=>({account_key:rows[0].account_key,kind:rows[0].period_kind,period_start:rows[0].period_start,latest:publicRow(rows.at(-1)),history_count:rows.length})),basis:PERIOD_BASIS};});}
+ async function byId(userId,reviewId){if(!id(reviewId))throw invalid('Review not found.',404);const {db}=require('./db'),row=await db.prepare('SELECT * FROM period_reviews WHERE user_id=? AND id=?').get(userId,reviewId);if(!row)throw invalid('Review not found.',404);return {review:publicRow(row),readonly:true};}
+ 
+@@ -75,4 +153,4 @@ async function byId(userId,reviewId){if(!id(reviewId))throw invalid('Review not
+ function portable(raw){const out={records:[],warnings:[]};if(raw==null)return out;try{if(!raw||typeof raw!=='object'||raw.version!==1||!Array.isArray(raw.records)||raw.records.length>500)throw invalid('Optional periodic history requires version1 and at most500 records.');if(raw.unavailable)out.warnings.push('Original backup had unavailable periodic history; no lost completion/focus inferred.');for(const r of raw.records){try{const range=canonical(r.kind,r.period_start),original=r.historical||{},status=original.status||r.status;if(!['draft','completed','imported'].includes(status))throw invalid('Invalid optional periodic status.');const fields=input(r.kind,{revision:'a'.repeat(64),answers:r.answers,focus:r.focus},{complete:status==='completed'});if(!r.metrics||r.metrics.version!==VERSION||typeof r.metrics.financial!=='object'||Array.isArray(r.metrics.financial)||JSON.stringify(r.metrics).length>1000000)throw invalid('Unverified periodic snapshot omitted: invalid shape or APP1MB budget.');let oldClock=original.recorded_at??r.recorded_at;if(oldClock!=null&&require('./process-outcomes').clock(oldClock,{canonical:true})===null){out.warnings.push('Invalid/future original periodic clock omitted, not receiving/capture proof.');oldClock=null;}const follow=original.follow_up??r.follow_up??null;if(follow!==null&&(typeof follow!=='object'||Array.isArray(follow)||follow.acted_on_focus!==null&&typeof follow.acted_on_focus!=='boolean'))throw invalid('Invalid unverified historical focus response.');out.records.push({kind:r.kind,start:range.start,end:range.end,account_id:r.account_id??r.account_key,answers:fields.answers,focus:fields.focus,metrics:r.metrics,historical:{source:original.source||r.source||null,status:status==='imported'?'completed':status,recorded_at:oldClock,original_version:original.original_version??r.version??null,original_review_id:original.original_review_id??r.id??null,follow_up:follow}});}catch(e){out.warnings.push(e.message||'Invalid optional review omitted.');}}}catch(e){out.warnings.push(e.message||'Invalid optional periodic history omitted.');}out.warnings=out.warnings.slice(0,20);return out;}
+ async function exportOwned(userId){try{const {db}=require('./db'),rows=await db.prepare('SELECT * FROM period_reviews WHERE user_id=? ORDER BY id').all(userId),records=rows.map(publicRow).filter(r=>r.status!=='unavailable');return {version:1,records,unavailable_records:rows.length-records.length};}catch{return {version:1,records:[],unavailable:true};}}
+ async function importOn(store,userId,parsed,map={},fallback=null){for(const r of parsed.records){const accountId=map[r.account_id]||fallback;if(accountId===null)throw invalid('No owned destination for periodic history.');await owned(store,userId,accountId);const version=(await store.prepare('SELECT MAX(version) v FROM period_reviews WHERE user_id=? AND account_key=? AND period_kind=? AND period_start=?').get(userId,accountId,r.kind,r.start)).v||0;await store.prepare('INSERT INTO period_reviews(user_id,account_id,account_key,period_kind,period_start,period_end,version,template_version,status,answers_json,focus,followup_json,metrics_json,context_hash,source,recorded_at,historical_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(userId,accountId,accountId,r.kind,r.start,r.end,version+1,VERSION,'imported',JSON.stringify(r.answers),r.focus,null,JSON.stringify(r.metrics),hash(['imported_unverified',r.metrics]),'imported_unverified',new Date().toISOString(),JSON.stringify(r.historical));}}
+-module.exports={VERSION,PERIOD_BASIS,templates,invalid,dateKey,period,canonical,input,hash,financial,owned,publicRow,snapshotOn,read,save,list,byId,portable,exportOwned,importOn};
++module.exports={VERSION,PERIOD_BASIS,COVERAGE_VERSION,COVERAGE_BASIS,REVIEW_STATES,templates,invalid,dateKey,period,canonical,input,hash,financial,owned,publicRow,reviewStateOf,coverageOf,coverage,coverageOptional,coverageUnavailable,snapshotOn,read,save,list,byId,portable,exportOwned,importOn};
+diff --git a/src/periods.js b/src/periods.js
+new file mode 100644
+index 0000000..a797bfb
+--- /dev/null
++++ b/src/periods.js
+@@ -0,0 +1,116 @@
++'use strict';
++/**
++ * periods.js — M13/M65. The app's ONE calendar-period ruler.
++ *
++ * WHY THIS FILE EXISTS: the review system has spoken in weeks, months, quarters and years since
++ * M99/M101 (`period-reviews.js`), and the quarterly rule-change advisory has spoken in quarters
++ * since M104 (`rule-changes.js`) — with the quarter arithmetic written out a second time there.
++ * Two copies of a boundary rule is exactly the shape of the M59 defect (two grade ladders, one
++ * score graded differently by each), so the boundary arithmetic now lives here once and every
++ * caller reads it from here: the review artifacts, the rule-change advisory and the new weekly /
++ * quarterly series in `performance.js`.
++ *
++ * THE POLICY IS THE REVIEWS' OWN, UNCHANGED: UTC days, **Monday-start weeks**, calendar months,
++ * calendar quarters, calendar years. It is an APP calendar, not the trader's broker clock and not
++ * the journal timezone used by the daily/monthly series: the two are DIFFERENT RULERS on purpose
++ * and both are labelled where they are shown, so a close near midnight can sit in a different
++ * period in each. Nothing here ever moves a trade between rulers to make two numbers agree.
++ *
++ * Pure: no database, no environment, no filesystem, and no clock of its own — every function is
++ * given the day it must answer about.
++ */
++const VERSION = 'periods-v1';
++const PERIOD_BASIS = 'APP calendar policy: UTC; Monday-start weeks, calendar months/quarters/years. Not trader/broker hours or a course-mandated timezone.';
++const KINDS = Object.freeze(['week', 'month', 'quarter', 'year']);
++const TZ_BASIS = 'APP UTC calendar (the review ruler). The analytics daily/monthly series use the journal timezone instead; the two rulers can disagree near midnight and neither is silently converted into the other.';
++
++function invalid(message, status = 400) { return Object.assign(new Error(message), { code: 'periods_invalid', status }); }
++const pad = (n, w = 2) => String(n).padStart(w, '0');
++const iso = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
++
++/** A UTC calendar day, `YYYY-MM-DD`, as a real day rather than a plausible-looking one. */
++function dayKey(value) {
++  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number(value.slice(0, 4)) < 100 || Number(value.slice(0, 4)) > 9998
++    || !Number.isFinite(Date.parse(value + 'T00:00:00.000Z')) || new Date(value + 'T00:00:00.000Z').toISOString().slice(0, 10) !== value) {
++    throw invalid('Select a valid UTC calendar date.');
++  }
++  return value;
++}
++
++/** The UTC calendar day an instant falls on — the same "close-day" rule the review artifacts use. */
++function dayOf(ms) {
++  if (!Number.isFinite(ms)) throw invalid('A known instant is required for a calendar day.');
++  return new Date(ms).toISOString().slice(0, 10);
++}
++
++function kindOf(kind) {
++  if (!KINDS.includes(kind)) throw invalid('Choose week, month, quarter or year.');
++  return kind;
++}
++
++/** The canonical start of the period containing `day`. Monday-start weeks, UTC. */
++function startOf(kind, day) {
++  kindOf(kind); const d = new Date(dayKey(day) + 'T00:00:00.000Z');
++  if (kind === 'week') { d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return iso(d); }
++  if (kind === 'month') { d.setUTCDate(1); return iso(d); }
++  if (kind === 'quarter') { d.setUTCDate(1); d.setUTCMonth(Math.floor(d.getUTCMonth() / 3) * 3); return iso(d); }
++  d.setUTCMonth(0, 1); return iso(d);
++}
++
++/** The whole-calendar period `[start, end)` that contains `day`, with its adjacent prior start. */
++function period(kind, day) {
++  const start = startOf(kind, day);
++  const d = new Date(start + 'T00:00:00.000Z'), end = new Date(d), previous = new Date(d);
++  if (kind === 'week') { end.setUTCDate(end.getUTCDate() + 7); previous.setUTCDate(previous.getUTCDate() - 7); }
++  else if (kind === 'year') { end.setUTCFullYear(end.getUTCFullYear() + 1); previous.setUTCFullYear(previous.getUTCFullYear() - 1); }
++  else { const months = kind === 'quarter' ? 3 : 1; end.setUTCMonth(end.getUTCMonth() + months); previous.setUTCMonth(previous.getUTCMonth() - months); }
++  return { kind, start, end: iso(end), last_day: iso(new Date(end.getTime() - 86400000)), previous_start: iso(previous), basis: PERIOD_BASIS };
++}
++
++/** A period may only be addressed by the start it actually has: no mid-period address, no typo. */
++function canonical(kind, start) {
++  const p = period(kind, start);
++  if (p.start !== start) throw invalid('Use the displayed canonical period start.');
++  return p;
++}
++
++/**
++ * The BUCKET key a day belongs to. Weeks and quarters use their own symbols because a bucket has to
++ * be read back without re-deriving it: `week` is the canonical Monday, `month` is `YYYY-MM` (the
++ * shape the existing monthly series already uses), `quarter` is `YYYY-Qn`, `year` is `YYYY`.
++ */
++function bucketOf(kind, day) {
++  const start = startOf(kind, day);
++  if (kind === 'month') return start.slice(0, 7);
++  if (kind === 'quarter') return `${start.slice(0, 4)}-Q${Math.floor(Number(start.slice(5, 7)) / 3) + 1}`;
++  if (kind === 'year') return start.slice(0, 4);
++  return start;
++}
++
++/** The canonical periods ending at `endStart`, newest first. `count` is bounded by the caller's budget. */
++function sequence(kind, endStart, count) {
++  const p = canonical(kind, endStart);
++  if (!Number.isSafeInteger(count) || count < 1 || count > 520) throw invalid('Choose between 1 and 520 periods.');
++  const out = [p];
++  let cursor = p.start;
++  while (out.length < count) {
++    const d = new Date(cursor + 'T00:00:00.000Z');
++    if (kind === 'week') d.setUTCDate(d.getUTCDate() - 7);
++    else if (kind === 'year') d.setUTCFullYear(d.getUTCFullYear() - 1);
++    else d.setUTCMonth(d.getUTCMonth() - (kind === 'quarter' ? 3 : 1));
++    cursor = iso(d);
++    out.push(period(kind, cursor));
++  }
++  return out;
++}
++
++/** A human label for a canonical start. Never a claim about the period's contents. */
++function label(kind, start) {
++  const p = canonical(kind, start), y = start.slice(0, 4), m = Number(start.slice(5, 7));
++  if (kind === 'week') return `Week of ${start}`;
++  if (kind === 'month') return `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m - 1]} ${y}`;
++  if (kind === 'quarter') return `Q${Math.floor((m - 1) / 3) + 1} ${y}`;
++  return y;
++}
++
++module.exports = { VERSION, PERIOD_BASIS, TZ_BASIS, KINDS, invalid, dayKey, dayOf, kindOf, startOf, period, canonical, bucketOf, sequence, label };
+diff --git a/src/routes/api.js b/src/routes/api.js
+index f4f3166..3de929c 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -604,6 +604,13 @@ router.get('/analytics', requireAuth, async (req, res) => {
+    * account, not every account the trader owns), so the review cannot read one desk's performance
+    * beside another desk's rule breaks. `from`/`to` are the payload's own window when given. */
+   analytics.rule_breaks=await RuleBreaks.optional(req.user.id,{accountId:acc.id??null,from:req.query.from??null,to:req.query.to??null});
++  /* M13/M65 — the review periods. The weekly/quarterly buckets are already on this payload (the
++   * performance summary, bucketed on the REVIEW calendar: UTC, Monday-start weeks, calendar
++   * quarters) and the artifact record is joined to them for the SAME resolved account, so the
++   * review the trader reads can say which of those periods has a saved artifact — and, when one is
++   * absent, that it is `not_recorded` rather than reviewed-and-forgotten. Read-only: it reads the
++   * saved rows, writes nothing, and changes no grade, cap, permission or plan-change decision. */
++  analytics.review_periods=await PeriodReviews.coverageOptional(req.user.id,{accountId:acc.id??null,week:analytics.weekly??null,quarter:analytics.quarterly??null,weeks:12,quarters:8});
+   res.json(analytics);
+ });
+ 

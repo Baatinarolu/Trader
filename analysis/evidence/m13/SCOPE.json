@@ -1,0 +1,63 @@
+{
+  "item": "M13 + M65 \u2014 the review periods: one shared calendar ruler, the weekly and quarterly buckets, and the record of which periods were saved",
+  "parent": "9c88e0acfee00462e6c6ba5e3cb0d3ae06444b2c",
+  "parent_short": "9c88e0a",
+  "ledger_before": [
+    132,
+    108,
+    2,
+    22,
+    0,
+    8
+  ],
+  "ledger_after": [
+    132,
+    110,
+    2,
+    20,
+    0,
+    8
+  ],
+  "issue": "M13: Ep 26 asks for a weekly and a quarterly review and the payload had only daily/monthly buckets (`performance.js` carried no weekly or quarterly series at all), so the review could never say what the weeks and quarters looked like. M65: the quarter already existed as a goal cadence (`period=month|quarter|year`), as a quarter-start computation in `routes/api.js` and as a saved review template since M99/M101 \u2014 what was missing was the quarterly SERIES beside the new weekly one and any record of which periods were actually reviewed. The two findings are therefore built as ONE delivery: one calendar ruler, two series, and the per-period record. The ledger reads M13 and M65 as two items; both flip on this commit.",
+  "owned_surfaces": {
+    "ruler": "extracted/tradejournal/src/periods.js (periods-v1): the app's ONE calendar-period ruler \u2014 UTC days, Monday-start weeks, calendar months/quarters/years, half-open [start,end) with last_day. Pure: no database, no environment, no filesystem and no clock of its own. The review artifacts (period-reviews.js), the M104 rule-change advisory (rule-changes.js) and the new series all read it, and the advisory/ruler agreement is asserted day by day across 2025-2027",
+    "series": "src/performance.js: periodSeries(closed,kind) plus weeklySeries/quarterlySeries bucketed on the REVIEW calendar (UTC close-day, Monday-start week, calendar quarter), riding the existing payload beside the journal-timezone daily/monthly. Each bucket carries {kind, start, end, last_day, trades, wins, losses, breakeven, pnl, r, win_rate, unknown_net, unknown_r, days, basis}; a close with no clock at all is counted on `undated_closes` rather than guessed into a week",
+    "record": "src/period-reviews.js (review-coverage-v1): coverageOf()/coverage()/coverageOptional() \u2014 a read-only record joining each canonical period to the artifact saved for that exact period on the trader's own account, states completed/draft/imported_unverified/unavailable/not_recorded, joined to that period's own recorded closes by bucket START (a quarter's key is `YYYY-Qn`, not a date)",
+    "endpoint": "analytics.weekly, analytics.quarterly, analytics.undated_closes and analytics.review_periods on the EXISTING GET /api/analytics \u2014 no new route, scoped to the resolved analysed account with the payload's own window",
+    "card": "public/js/views/review-periods.js (Views.reviewPeriods.card) mounted in public/js/views/analytics.js above its existing tabs and loaded by public/index.html",
+    "docs": "extracted/tradejournal/README.md, docs/API.md"
+  },
+  "framing_rules": [
+    "ONE ruler, not three: the review boundaries live in src/periods.js once, and the rule-change advisory reads the same ruler instead of its own second copy \u2014 the shape of the M59 defect (two grade ladders, one score graded differently by each)",
+    "two rulers, both labelled: daily/monthly keep the journal timezone and weekly/quarterly bucket on the review calendar; a close at 2026-10-04T23:30:00Z is week 2026-09-28 on the review calendar and Lagos day 2026-10-05 on the journal clock, and nothing moves a trade between them to make two numbers agree",
+    "a missing amount is not a zero: a bucket or period with no recorded net report `pnl: null` and count the close in `unknown_net`/`unknown_r`; a period with no closed trade reports `null`, never 0",
+    "a period that was not reviewed is not `missed`: `not_recorded` means only that no artifact was saved for that period, and the meaning sentence travels with the payload and is rendered on screen \u2014 a review done on paper or elsewhere leaves nothing here",
+    "an unknown record is not a clean record: an unreadable record is `state:'unavailable'` with `not_recorded:null`, never a period list full of 'no review', and a foreign or unowned account resolves to the same shape from the route's own scope",
+    "a draft is a draft and an imported copy is unverified: `draft`/`imported_unverified` are never counted as the trader's own completed review, and legacy/imported artifacts stay separate from own human reviews",
+    "a period still running is `open`, not unreviewed; an artifact whose stored period start is not a canonical period start is counted as outside the window rather than disappearing",
+    "the artifact is read, never written: `review_periods` adds no endpoint, writes nothing, and changes no grade, cap, permission, guardrail decision or plan-change permission \u2014 writing a review is still the trader's act",
+    "no reviewed-vs-unreviewed comparison: `outcome_compared:false` carries the sentence saying why \u2014 the amounts sit beside the state because both are facts about the same period, and comparing them would be a causal claim this journal has not measured",
+    "no 70 %/causal/predictive/broker/human/mental-state/provider/production claim; nothing retuned; no existing guard weakened; missing amount \u2260 zero and unknown \u2260 clean throughout"
+  ],
+  "deliverables": {
+    "ruler": "extracted/tradejournal/src/periods.js",
+    "series": "extracted/tradejournal/src/performance.js",
+    "record": "extracted/tradejournal/src/period-reviews.js",
+    "route": "extracted/tradejournal/src/routes/api.js (weekly/quarterly/undated_closes/review_periods)",
+    "views": "extracted/tradejournal/public/js/views/review-periods.js, public/js/views/analytics.js, public/index.html",
+    "docs": "extracted/tradejournal/README.md, docs/API.md",
+    "probes": "analysis/probe-m13-{pure,api,migration,ui,control}.js",
+    "runner": "analysis/run-m13-verification.py",
+    "smoke": "analysis/run-m13-smoke.py",
+    "capture": "analysis/capture-m13-stages.py",
+    "builder": "analysis/build-m13-review-periods-artifacts.py",
+    "report": "analysis/M13-REVIEW-PERIODS.md"
+  },
+  "carried_not_owned": {
+    "files": [],
+    "why": "This milestone adds nothing carried: the parent (the actual 9c88e0a M12 release) already ships `tools/jsmin/**` and `src/rule-breaks.js`, so the delivered files the parent does not have are exactly this milestone's own two new files (`src/periods.js`, `public/js/views/review-periods.js`) \u2014 asserted in analysis/capture-m13-stages.py rather than assumed."
+  },
+  "cohort_before_control_arms": {
+    "note": "Written before the delivered tree's final cohort runs; the builder asserts the measured numbers from analysis/evidence/m13/feature-summary.json, each probe's own results file and the delegated cohorts' own evidence, so this file is the scope statement, not the evidence."
+  }
+}

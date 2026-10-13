@@ -1,0 +1,706 @@
+{
+  "base_commit": "9c88e0acfee00462e6c6ba5e3cb0d3ae06444b2c",
+  "parent": "Actual 9c88e0a M12 Git release tree (159 files) as the M13/M65 parent: the milestone that added the rule-break tally and the release these probes measure against. The ruler, the weekly/quarterly buckets and the record are what this milestone adds; nothing at all is added to the schema.",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 110,
+    "partial": 2,
+    "todo": 20,
+    "no_action": 0,
+    "partition_groups": 8,
+    "partial_ids": [
+      "M30",
+      "M103"
+    ]
+  },
+  "feature": {
+    "pass": 94,
+    "fail": 0,
+    "probes": 4,
+    "scope": "REPORTED completed assertions; literal clocks, saved rows and DOM only. The review artifacts the app already saves, joined to the periods they belong to on ONE calendar ruler, plus the weekly and quarterly buckets that ruler defines: the ruler is measured day by day across 2025-2027, the buckets against the closes the committed 9c88e0a M12 release wrote on its own file, the record over HTTP on the endpoint the review reads, and the shipped card in a real DOM. No broker, provider, mental-state, pixel or production proof, and no causal claim joining a review to a result. RAW failures/early aborts, DECLARED assumptions and every frozen milestone-only schema negative remain SEPARATE. DECLARED NEGATIVE carried here by name: the inherited M99/M101 reviews cohort is STALE at this HEAD \u2014 157/3 against its committed 159/1 (migration 12/3), because the schema grew after M101 (accounts 26->36 columns and 10 delivered-only tables), which the M108-era evidence did not contain. The three gaps are declared here, not repaired in the probe."
+  },
+  "prior_cohorts_rerun": {
+    "M112": {
+      "pass": 181,
+      "fail": 0,
+      "probes": 6,
+      "completed_nonzero": 0,
+      "evidence": "analysis/evidence/m112/feature-summary.json"
+    },
+    "M111": {
+      "pass": 152,
+      "fail": 2,
+      "probes": 8,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m111/feature-summary.json"
+    },
+    "M110": {
+      "pass": 248,
+      "fail": 10,
+      "probes": 9,
+      "completed_nonzero": 4,
+      "evidence": "analysis/evidence/m110/feature-summary.json"
+    },
+    "M109": {
+      "pass": 166,
+      "fail": 2,
+      "probes": 9,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m109/feature-summary.json"
+    },
+    "M108": {
+      "pass": 257,
+      "fail": 2,
+      "probes": 9,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m108/feature-summary.json"
+    },
+    "M107": {
+      "pass": 232,
+      "fail": 0,
+      "probes": 9,
+      "completed_nonzero": 0,
+      "evidence": "analysis/evidence/m107/feature-summary.json"
+    },
+    "M106": {
+      "pass": 318,
+      "fail": 0,
+      "probes": 10,
+      "completed_nonzero": 0,
+      "evidence": "analysis/evidence/m106/feature-summary.json"
+    },
+    "M105": {
+      "pass": 142,
+      "fail": 0,
+      "probes": 10,
+      "completed_nonzero": 0,
+      "evidence": "analysis/evidence/m105/feature-summary.json"
+    }
+  },
+  "inherited_arms_rerun_this_session": {
+    "note": "RAW, DECLARED, the live-provider arm and the inherited M99/M101 reviews cohort were re-run on this tree in this session through analysis/run-m13-verification.py and reproduce their own records; the reviews cohort reproduces 157/3 where its committed record says 159/1, and that delta is declared by name below rather than repaired.",
+    "raw": {
+      "pass": 596,
+      "fail": 156,
+      "probes": 31,
+      "completed_nonzero": 21,
+      "timeout_no_exit": 1,
+      "summaryless": 1
+    },
+    "declared": {
+      "pass": 824,
+      "fail": 4,
+      "probes": 31,
+      "completed_nonzero": 2
+    },
+    "live_provider": {
+      "pass": 70,
+      "fail": 1,
+      "probes": 8,
+      "completed_nonzero": 6,
+      "summaryless": 5
+    },
+    "reviews_M99_M101": {
+      "pass": 157,
+      "fail": 3,
+      "probes": 9,
+      "completed_nonzero": 1
+    },
+    "reviews_committed_record": {
+      "pass": 159,
+      "fail": 1
+    }
+  },
+  "stale_nested_cohort_copies_declared_not_reread": {
+    "note": "These three files were written by the M110-era delegation chain and are NOT this tree\u2019s result: they measure the same cohorts against a smaller schema. They are named here so a later reader cannot mistake a committed older copy for a re-run.",
+    "copies": {
+      "m105feature": {
+        "pass": 140,
+        "fail": 2,
+        "probes": 10,
+        "completed_nonzero": 1,
+        "path": "analysis/evidence/m108/m105feature-summary.json"
+      },
+      "m106feature": {
+        "pass": 316,
+        "fail": 2,
+        "probes": 10,
+        "completed_nonzero": 1,
+        "path": "analysis/evidence/m108/m106feature-summary.json"
+      },
+      "m107feature": {
+        "pass": 230,
+        "fail": 2,
+        "probes": 9,
+        "completed_nonzero": 1,
+        "path": "analysis/evidence/m108/m107feature-summary.json"
+      }
+    }
+  },
+  "native_arms_inherited_not_rerun": {
+    "note": "The native API/bots provider arms need a market provider this sandbox cannot reach; the committed M108 record stands and is asserted as an inherited fact. M13/M65 adds no provider, broker or network path of any kind."
+  },
+  "declared_negatives": [
+    {
+      "cohort": "M110",
+      "suite": "m110feature/engine",
+      "frozen_assertion": "M110 does not claim to fix M111: a failed calendar still reaches this rule as a QUIET one",
+      "evidence": "analysis/evidence/m110/m110feature-engine.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 world it shipped beside; it is frozen where it was measured and retained by name rather than edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/engine",
+      "frozen_assertion": "the engine source keeps the M111 marker at that exact branch, so closing M111 later cannot be mistaken for a regression",
+      "evidence": "analysis/evidence/m110/m110feature-engine.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 world it shipped beside; it is frozen where it was measured and retained by name rather than edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "the served payload has no top-level `window_min` any more",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 world it shipped beside; it is frozen where it was measured and retained by name rather than edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "a genuinely empty week yields a clear payload that is distinguishable from a blocked one but not from an outage",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 world it shipped beside; it is frozen where it was measured and retained by name rather than edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "an M111 outage reaches this consumer as silence",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 world it shipped beside; it is frozen where it was measured and retained by name rather than edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/portable",
+      "frozen_assertion": "a backup carries the pair out, so a trader can see which window their own archive was taken under \u2014 as two columns, with no single knob beside them",
+      "evidence": "analysis/evidence/m110/m110feature-portable.txt",
+      "why": "This assertion freezes the M110-era shape of the inherited `accounts` row; M112 appended the two news columns so the legacy column order no longer matches the fresh DDL, which is a recorded position difference and not a data change."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "every pre-existing account column keeps its name, declared type, nullability and default, and the two new columns are appended LAST",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "This assertion freezes the M110-era shape of the inherited `accounts` row; M112 appended the two news columns so the legacy column order no longer matches the fresh DDL, which is a recorded position difference and not a data change."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "the ONLY difference in the inherited `accounts` rows is the two new columns \u2014 id, name, balance and policy fields are untouched",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "This assertion freezes the M110-era shape of the inherited `accounts` row; M112 appended the two news columns so the legacy column order no longer matches the fresh DDL, which is a recorded position difference and not a data change."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "and the position difference is recorded instead of hidden: the inherited columns are appended LAST, the fresh DDL places them before the drawdown fields",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "This assertion freezes the M110-era shape of the inherited `accounts` row; M112 appended the two news columns so the legacy column order no longer matches the fresh DDL, which is a recorded position difference and not a data change."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "pass": 18,
+      "fail": 4,
+      "frozen_assertion": "no shipped client reads the new `windows` echo either, so the API\u2019s provenance block cannot be mistaken for a control by an old page",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "The M12 rule-break card renders the payload\u2019s `windows` echo, which M110\u2019s lexical guard reads as a client \"using\" it; the guard is retained by name rather than edited."
+    },
+    {
+      "cohort": "M109",
+      "suite": "m109/feature-migration",
+      "pass": 13,
+      "fail": 2,
+      "exit_code": 1,
+      "evidence": "analysis/evidence/m109/feature-summary.json",
+      "why": "Re-measured on this tree in this session: this cohort measured exactly what its committed record says, so its migration result is its own frozen record and not a delta of this milestone."
+    },
+    {
+      "cohort": "M108",
+      "suite": "m108/feature-migration",
+      "pass": 19,
+      "fail": 2,
+      "exit_code": 1,
+      "evidence": "analysis/evidence/m108/feature-summary.json",
+      "why": "Re-measured on this tree in this session: this cohort measured exactly what its committed record says, so its migration result is its own frozen record and not a delta of this milestone."
+    },
+    {
+      "cohort": "M107",
+      "suite": "m107/feature-migration",
+      "pass": 18,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "analysis/evidence/m107/feature-summary.json",
+      "why": "Re-measured on this tree in this session: this cohort measured exactly what its committed record says, so its migration result is its own frozen record and not a delta of this milestone."
+    },
+    {
+      "cohort": "M106",
+      "suite": "m106/feature-migration",
+      "pass": 18,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "analysis/evidence/m106/feature-summary.json",
+      "why": "Re-measured on this tree in this session: this cohort measured exactly what its committed record says, so its migration result is its own frozen record and not a delta of this milestone."
+    },
+    {
+      "cohort": "M105",
+      "suite": "m105/feature-migration",
+      "pass": 13,
+      "fail": 0,
+      "exit_code": 0,
+      "evidence": "analysis/evidence/m105/feature-summary.json",
+      "why": "Re-measured on this tree in this session: this cohort measured exactly what its committed record says, so its migration result is its own frozen record and not a delta of this milestone."
+    },
+    {
+      "cohort": "M99/M101 (reviews)",
+      "suite": "reviews/migration",
+      "pass": 12,
+      "fail": 3,
+      "committed_record": {
+        "pass": 14,
+        "fail": 1
+      },
+      "evidence": "analysis/evidence/m108/reviews-summary.json",
+      "why": "STALE NEGATIVE, DECLARED BY NAME: the cohort was measured at M108 and the schema has grown since (accounts 26->36 columns; ten delivered-only tables: daily_intentions, identity_declarations, opportunity_decisions, opportunity_trade_links, period_reviews, practice_sessions, practice_timers, signal_opportunities, state_gate_answers, strategy_rule_changes). One of the three already failed at the M108 baseline; two flipped relative to it. Not repaired by editing the frozen probe; the isolation path is to stash the period-reviews.js delegation and re-run analysis/probe-m99-migration.js."
+    }
+  ],
+  "regression_parents": {
+    "trees": 21,
+    "method": "Actual 9c88e0a M12 Git release as the M13/M65 parent (the milestone these periods sit on), plus the M112 cohort\u2019s and the inherited reviews cohort\u2019s own measured parent maps, inherited unchanged \u2014 no parent is re-derived here and no schema or module is read out of an older runner.",
+    "parents": {
+      "/tmp/m13-parent/app": {
+        "files": 159,
+        "byte_differences": 0
+      },
+      "/tmp/m112-parent/app": {
+        "files": 146,
+        "byte_differences": 0
+      },
+      "/tmp/m110-parent/app": {
+        "files": 145,
+        "byte_differences": 0
+      },
+      "/tmp/m109-parent/app": {
+        "files": 143,
+        "byte_differences": 0
+      },
+      "/tmp/m108-parent/app": {
+        "files": 141,
+        "byte_differences": 0
+      },
+      "/tmp/m107-parent/app": {
+        "files": 139,
+        "byte_differences": 0
+      },
+      "/tmp/m106-parent/app": {
+        "files": 137,
+        "byte_differences": 0
+      },
+      "/tmp/m105-parent/app": {
+        "files": 135,
+        "byte_differences": 0
+      },
+      "/tmp/m104-parent/app": {
+        "files": 133,
+        "byte_differences": 0
+      },
+      "/tmp/m100-parent/app": {
+        "files": 131,
+        "byte_differences": 0
+      },
+      "/tmp/m99-parent/app": {
+        "files": 129,
+        "byte_differences": 0
+      },
+      "/tmp/m93-parent/app": {
+        "files": 127,
+        "byte_differences": 0
+      },
+      "/tmp/m91-parent/app": {
+        "files": 125,
+        "byte_differences": 0
+      },
+      "/tmp/m89-parent/app": {
+        "files": 123,
+        "byte_differences": 0
+      },
+      "/tmp/m88-parent/app": {
+        "files": 121,
+        "byte_differences": 0
+      },
+      "/tmp/m87-parent/app": {
+        "files": 119,
+        "byte_differences": 0
+      },
+      "/tmp/m86-parent/app": {
+        "files": 117,
+        "byte_differences": 0
+      },
+      "/tmp/m64-parent/app": {
+        "files": 114,
+        "byte_differences": 0
+      },
+      "/tmp/m79-parent/extracted/tradejournal": {
+        "files": 110,
+        "byte_differences": 0
+      },
+      "/tmp/m84-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      },
+      "/tmp/m81-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      }
+    }
+  },
+  "controls": {
+    "delivered_control_probe": {
+      "pass": 11,
+      "fail": 0
+    },
+    "parent": {
+      "pure": [
+        0,
+        1
+      ],
+      "api": [
+        0,
+        1
+      ],
+      "migration": [
+        0,
+        1
+      ],
+      "ui": [
+        0,
+        1
+      ],
+      "control": [
+        11,
+        0
+      ]
+    },
+    "pre_hardening": {
+      "pure": [
+        24,
+        1
+      ],
+      "api": [
+        0,
+        1
+      ],
+      "migration": [
+        6,
+        1
+      ],
+      "ui": [
+        0,
+        1
+      ],
+      "control": [
+        11,
+        0
+      ]
+    },
+    "pre_hardening_tree": "the series stage: the ruler and the weekly/quarterly buckets are measured working (24 pure assertions pass) and nothing records or shows which periods were reviewed",
+    "why": "On the pre-hardening runtime the unchanged probes measured pure 24/1 (the probe stops at `R.coverageOf is not a function` AFTER the ruler and series assertions all pass), api 0/1 (no `review_periods` key), migration 6/1 (`Q.coverage is not a function`) and ui 0/1 (ENOENT on the card), while the mode-aware control probe measures 11/0 in every mode. The same facts answer `ok` on the delivered tree (94/0), and each fault line is asserted from both texts above. The staged fault IS the parent\u2019s own committed files."
+  },
+  "smoke": {
+    "app": "extracted/tradejournal (delivered M13/M65 tree, 161 sources)",
+    "harness": "scripts/smoke-test.js from that same tree, unchanged",
+    "command": "PORT=3232 node server.js + node scripts/smoke-test.js http://127.0.0.1:3232",
+    "environment": "PORT=3232, TRADEJOURNAL_DB=/tmp/m13-smoke.db (fresh, synthetic), TJ_SCHEDULER=0, TJ_OFFLINE_CANDLES=1, no remote DB",
+    "exit_code": 0,
+    "views_passed": 22,
+    "views_offered": 22,
+    "ui_style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limits": 0,
+    "duration_seconds": 97.5,
+    "conditional_view_count": "The harness offers its view list conditionally (a chip condition on the content shell), so the reported total moves between samples: it is measured here at the same sample on both trees and the two counts are compared, not asserted absolutely.",
+    "card_state_coverage": "grep -ci 'review period' = 0 and grep -ci 'no artifact recorded' = 0 and grep -ci 'not recorded' = 0: the smoke OUTPUT never names the card, so this run is NOT claimed as card coverage at all. The card's ordinary state and its unavailable, no-artifact, draft, imported-copy, still-open and refresh-guard states are covered by analysis/probe-m13-ui.js (19 assertions), which mounts the shipped view in jsdom against the real analytics payload.",
+    "limits": "jsdom structural/DOM check with no browser engine: no pixel, device, audio, provider, broker, human or production proof, and no mental-state claim.",
+    "outputs": {
+      "delivered": "analysis/evidence/m13/smoke.txt",
+      "parent": "analysis/evidence/m13/smoke-parent-control.txt"
+    },
+    "parent_control_views": 22,
+    "covers_the_review_period_card": false,
+    "field_coverage": [
+      "analysis/probe-m13-ui.js 19/0 \u2014 the card, both cadences, the five artifact states, the open period, the no-amount rule, the outside-window count, the two rulers, the read-only basis and the refresh guard"
+    ]
+  },
+  "periods": {
+    "version": "periods-v1",
+    "kinds": [
+      "week",
+      "month",
+      "quarter",
+      "year"
+    ],
+    "calendar": "UTC days, Monday-start weeks, calendar months/quarters/years, half-open [start,end) with last_day",
+    "bucket_keys": {
+      "week": "the Monday",
+      "month": "YYYY-MM",
+      "quarter": "YYYY-Qn",
+      "year": "YYYY"
+    },
+    "sequence_max": 520,
+    "readers": [
+      "src/period-reviews.js (the review artifacts)",
+      "src/rule-changes.js (the M104 quarterly advisory)",
+      "src/performance.js (the new series)"
+    ],
+    "asserted": "the advisory/ruler agreement is asserted day by day across 2025-2027 in analysis/probe-m13-pure.js",
+    "leaf": "no requires, no database, no environment, no filesystem and no clock of its own"
+  },
+  "series": {
+    "basis": "the review calendar (UTC close-day, Monday-start week, calendar quarter) \u2014 distinct from the journal timezone the daily/monthly buckets keep",
+    "keys": [
+      "weekly",
+      "quarterly",
+      "undated_closes"
+    ],
+    "bucket_fields": [
+      "week|quarter",
+      "start",
+      "end",
+      "last_day",
+      "trades",
+      "wins",
+      "losses",
+      "breakeven",
+      "pnl",
+      "r",
+      "win_rate",
+      "unknown_net",
+      "unknown_r",
+      "days",
+      "basis"
+    ],
+    "missing_amount_is_not_zero": true,
+    "undated_close_is_counted_not_guessed": true,
+    "two_rulers_measured": "a close at 2026-10-04T23:30:00.000Z is week 2026-09-28 on the review calendar and Lagos day 2026-10-05 on the journal clock"
+  },
+  "review_coverage": {
+    "version": "review-coverage-v1",
+    "states": [
+      "completed",
+      "draft",
+      "imported_unverified",
+      "unavailable",
+      "not_recorded"
+    ],
+    "surfaces": [
+      "analytics.review_periods on the existing GET /api/analytics",
+      "Views.reviewPeriods.card on the analytics view above its existing tabs"
+    ],
+    "scope": "the resolved analysed account, the trader\u2019s own artifacts only, latest saved version per canonical period start",
+    "window": {
+      "weeks": 12,
+      "quarters": 8
+    },
+    "not_recorded_is_not_missed": true,
+    "unknown_is_not_clean": true,
+    "outcome_compared": false,
+    "writes": 0,
+    "never": [
+      "a new endpoint",
+      "a write",
+      "a grade, cap, permission, guardrail-decision or plan-change influence",
+      "a causal or predictive claim",
+      "a reviewed-vs-unreviewed comparison"
+    ]
+  },
+  "stages": [
+    {
+      "stage": "ruler",
+      "source_manifest": "ruler-source.json",
+      "source_files": 160,
+      "patch": "m13-review-periods-ruler.patch",
+      "files": 1,
+      "bytes": 6755,
+      "sha256": "ce2e8898de8902e643831c14a4284685e00cb03f811c0f7b7719b66059ebb8c7",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "series",
+      "source_manifest": "series-source.json",
+      "source_files": 160,
+      "patch": "m13-review-periods-series.patch",
+      "files": 1,
+      "bytes": 5537,
+      "sha256": "4b8d98cc29588db5927330468cebce008da932b06904731465daff4675f4ea9c",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "record",
+      "source_manifest": "record-source.json",
+      "source_files": 160,
+      "patch": "m13-review-periods-record.patch",
+      "files": 2,
+      "bytes": 16828,
+      "sha256": "33b80deaf1d97789c91ce152898314ebe144fe4d5664c9479f1ad8bb26cfe94f",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "card",
+      "source_manifest": "card-source.json",
+      "source_files": 161,
+      "patch": "m13-review-periods-card.patch",
+      "files": 3,
+      "bytes": 6725,
+      "sha256": "b5f4a2471867fd6ab0b2f1d13f022646680552323d66b7ac8205a208878625fb",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "documentation",
+      "source_manifest": "documentation-source.json",
+      "source_files": 161,
+      "patch": "m13-review-periods-documentation.patch",
+      "files": 2,
+      "bytes": 17331,
+      "sha256": "11f30258a705213f4315362f0f0738519a4a8335ec0548fd088a2f7cdbba8ca5",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 9,
+    "bytes": 53176,
+    "sha256": "0f087ff770fc917c0c9bc93a91d40a371bc3d2239a1fcc404260a4bf81ab608a",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 100,
+    "bytes": 1827467,
+    "sha256": "24629bf4f5675088dc3283fc55fa3532498aa2af2539ccd930ed48c9110044e8",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 161,
+    "application_byte_differences": 0,
+    "private_env_db_dependency_files": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "newly_protected_from_m112": [
+    "src/trading-window.js",
+    "src/db.js",
+    "src/performance.js",
+    "src/bots/correction.js",
+    "src/bots/index.js",
+    "src/bots/setup.js",
+    "src/routes/bots.js",
+    "public/js/views/settings.js",
+    "public/js/views/bots.js"
+  ],
+  "m13_touches_inside_the_protected_set": [
+    "src/periods.js",
+    "src/performance.js",
+    "src/period-reviews.js",
+    "src/routes/api.js",
+    "public/js/views/review-periods.js",
+    "public/index.html",
+    "public/js/views/analytics.js"
+  ],
+  "other_protected_files": [
+    "package-lock.json",
+    "public/js/api.js",
+    "public/js/app.js",
+    "public/js/chart.js",
+    "public/js/store.js",
+    "public/js/util.js",
+    "public/js/views/ask.js",
+    "public/js/views/behavior-days.js",
+    "public/js/views/bots.js",
+    "public/js/views/calendar.js",
+    "public/js/views/coach.js",
+    "public/js/views/confluences.js",
+    "public/js/views/emotions.js",
+    "public/js/views/execution.js",
+    "public/js/views/identity.js",
+    "public/js/views/intention.js",
+    "public/js/views/journal.js",
+    "public/js/views/market.js",
+    "public/js/views/opportunities.js",
+    "public/js/views/period-reviews.js",
+    "public/js/views/playbook.js",
+    "public/js/views/practice.js",
+    "public/js/views/process-outcomes.js",
+    "public/js/views/risk.js",
+    "public/js/views/routine.js",
+    "public/js/views/rule-changes.js",
+    "public/js/views/screenshots.js",
+    "public/js/views/settings.js",
+    "public/js/views/state-gate.js",
+    "public/js/views/trades.js",
+    "scripts/api-test.js",
+    "scripts/bots-test.js",
+    "scripts/smoke-test.js",
+    "scripts/test-cleanup.js",
+    "server.js",
+    "src/ask.js",
+    "src/behavior-days.js",
+    "src/bots/correction.js",
+    "src/bots/guardrails.js",
+    "src/bots/index.js",
+    "src/bots/now.js",
+    "src/bots/setup.js",
+    "src/candles.js",
+    "src/coach.js",
+    "src/confluences.js",
+    "src/db.js",
+    "src/demo-data.js",
+    "src/emotions.js",
+    "src/execution-review.js",
+    "src/identity.js",
+    "src/instruments.js",
+    "src/intention.js",
+    "src/journaling.js",
+    "src/market.js",
+    "src/news-window.js",
+    "src/opportunities.js",
+    "src/practice.js",
+    "src/process-outcomes.js",
+    "src/routes/bots.js",
+    "src/routine-records.js",
+    "src/routine.js",
+    "src/rule-changes.js",
+    "src/screenshots.js",
+    "src/session-time.js",
+    "src/state-gate.js",
+    "src/trades.js",
+    "src/trading-window.js"
+  ],
+  "harness_source_files": 21,
+  "package_lock_sha256": "33e859914328605792ab71c75957b752716748828b0b2bef164956525cffb74c",
+  "scope": "M13/M65 the review periods: ONE shared calendar ruler (`src/periods.js`, periods-v1), the weekly and quarterly buckets it defines on the existing analytics payload, and the read-only record joining each canonical period to the artifact the trader saved for it (`review-coverage-v1`). No schema object of any kind, no new endpoint, NOTHING written, and no grade, cap, permission, guardrail decision or plan-change permission influenced. The two rulers are labelled and never converted: `daily`/`monthly` keep the journal timezone while `weekly`/`quarterly` bucket on the review calendar, and a close near midnight sits in a different period in each. Unknown stays unknown (an unreadable record is `state:'unavailable'` with `not_recorded:null`, never a period list of \"no review\") and a missing amount is not a zero (`pnl:null` with the close counted in `unknown_net`). A period with no artifact is `not_recorded` \u2014 explicitly not \"missed\" and not a clean record \u2014 a draft is a draft, an imported copy is unverified, and a period still running is `open` rather than unreviewed. No reviewed-vs-unreviewed comparison (`outcome_compared:false`): no 70 %/causal/predictive/broker/provider/human/mental-state/pixel/production proof, no fill padding, no sample-floor, clock, target, risk or grade retuning, and no existing guard weakened. DECLARED NEGATIVE carried by name: the inherited M99/M101 reviews cohort is stale at this HEAD \u2014 157/3 against its committed 159/1 \u2014 because the schema grew after M101 (accounts 26->36 columns; ten delivered-only tables); declared, never repaired by editing the frozen probe."
+}

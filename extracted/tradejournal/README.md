@@ -1,5 +1,82 @@
 # TradeJournal Pro
 
+## M13/M65 — the review periods: one ruler, the weekly and quarterly buckets, and the record of which periods were saved (2026-10-13)
+
+Ep 26 asks for **weekly** and **quarterly** reviews, and Ep 17's "quarterly" cadence is where plan
+changes become legitimate. Two defects sat here at once, so they are one delivery:
+
+* **M13** — the performance payload bucketed closes **only** by day and month
+  (`dailySeries`/`monthlySeries`). A monthly bucket moving its own window because the journal timezone
+  says so is not a week, and it is not a quarter.
+* **M65** — the quarter already existed as a *goal* cadence (`period=month|quarter|year`) and as a
+  saved review template since M99/M101; what was missing was the **quarterly series** beside the new
+  weekly one, and the record of which periods were actually reviewed.
+
+**One ruler, not three.** The review system has spoken in weeks/months/quarters/years since M99/M101,
+and the M104 rule-change advisory wrote the quarter arithmetic out for itself — two copies of a
+boundary rule is the shape of the M59 defect. `src/periods.js` (`periods-v1`) is now the only
+implementation: **UTC days, Monday-start weeks, calendar months, calendar quarters, calendar years**.
+The review artifacts, the rule-change advisory and the new series all read it, and the agreement
+between the advisory and the ruler is asserted **day by day across 2025–2027** in the pure probe —
+not spot-checked at a boundary or two.
+
+**Two rulers, both labelled.** `daily` and `monthly` keep the **journal timezone**; the new
+`weekly` and `quarterly` bucket on the **review calendar** (UTC close-day, Monday-start week,
+calendar quarter) and every bucket carries a `basis` sentence that names both rulers. Measured in
+both probes: a close at `2026-10-04T23:30:00Z` is **week `2026-09-28`** on the review calendar and
+**Lagos day `2026-10-05`** on the journal clock. Nothing moves a trade from one ruler into the other
+to make two numbers agree.
+
+**The record of which periods were reviewed.** `period-reviews.js` gained
+`review-coverage-v1` — a read-only record joining each canonical period to the artifact the trader
+saved **for that exact period** on their **own** account:
+
+| state | meaning |
+| --- | --- |
+| `completed` | a saved artifact the trader wrote, `status: completed` |
+| `draft` | saved but not completed — **never** counted as a review |
+| `imported_unverified` | an imported copy — evidence that a row exists, not that the trader reviewed it |
+| `unavailable` | a saved row that cannot be read back — counted, never silently dropped |
+| `not_recorded` | **no artifact for that period** |
+
+`not_recorded` is spelled out in the payload and on screen: *"that is not evidence that you did not
+review it somewhere else"*. It is **not** "missed", and it is **not** a clean record. A period still
+running is counted as **open** instead of being called unreviewed, a saved artifact whose stored
+period start is not a canonical period start is counted as **outside the window** rather than
+disappearing, and a period with **no closed trade** reports **no amount** (`null`) rather than a flat
+zero — a close with no recorded amount is counted as `unknown_net`/`unknown_r`, not read as a loss.
+`outcome_compared:false` rides the payload with the sentence saying why: the recorded amounts sit
+beside the state because both are facts about the same period, and the app does **not** compare
+reviewed against unreviewed periods, which would be a causal claim it has not measured.
+
+**Delivery shape:** `GET /api/analytics` carries `analytics.weekly`, `analytics.quarterly`,
+`analytics.undated_closes` (a closed trade with no clock at all, counted by name instead of guessed
+into a week) and `analytics.review_periods`; the UI is one read-only card,
+`Views.reviewPeriods.card`, on the analytics view above its existing tabs. **No new endpoint, no
+writes, no grade/cap/permission/guardrail or plan-change influence** — writing a review is still the
+trader's act, and this record only says whether one was saved.
+
+**Measured:** **94/0 across 4 probes** (ruler+series+record 39, API 23, migration 13, UI 19) — the
+ruler boundary-by-boundary, the buckets against closes with exact clocks, the record over real HTTP
+with a draft, an imported copy and a foreign desk's artifact present, and the database the committed
+M12 release created and wrote with its own code (byte-identical tables before and after, every
+clock-defaulted column pinned so "byte-identical" is a measurement and not a race). The
+**pre-hardening control** is the delivered ruler and buckets with the committed M12 record, endpoint,
+page and view: on that tree the ruler is measured working (24 pure assertions pass) and there is
+nothing to join a period to (`R.coverageOf is not a function`, no `review_periods` key, no card file),
+while the mode-aware control probe measures **11/0 in every mode** — on the parent, on the
+pre-hardening tree and on the delivered one — because it counts the fault rather than crashing on it.
+
+**Declared negative, carried by name:** the inherited M99/M101 **reviews cohort is stale at this
+HEAD — 157/3 against its committed 159/1** (migration 12/3). The three gaps all trace to schema growth
+*after* M101 that the M108-era evidence predates — `accounts` DDL grew 26→36 columns and ten
+tables were delivered since (`daily_intentions`, `identity_declarations`, `opportunity_decisions`,
+`opportunity_trade_links`, `period_reviews`, `practice_sessions`, `practice_timers`,
+`signal_opportunities`, `state_gate_answers`, `strategy_rule_changes`). It is declared here and in
+`analysis/evidence/m13/`, and **not** repaired by editing a frozen probe.
+
+---
+
 ## M12 — the rule breaks the app already recorded, tallied for the review that reads them (2026-10-13)
 
 Ep 26 lists **rule breaks** among the metrics a weekly review tracks. They were produced and never

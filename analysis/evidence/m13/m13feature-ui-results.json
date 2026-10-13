@@ -1,0 +1,84 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 19,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the card is its own section with a title that names both cadences",
+      "passed": true
+    },
+    {
+      "label": "the card renders both cadences as their own blocks, addressed by kind rather than by position",
+      "passed": true
+    },
+    {
+      "label": "the totals separate a completed review from a draft, an imported copy, an unreadable row and a period with NO artifact",
+      "passed": true
+    },
+    {
+      "label": "a saved period is marked as saved and carries the trader’s own focus, not a summary the app invented",
+      "passed": true
+    },
+    {
+      "label": "a draft says draft and an imported copy says unverified, in the same line as the period it belongs to",
+      "passed": true
+    },
+    {
+      "label": "a period with no artifact says exactly that, and the card says what it does NOT mean",
+      "passed": true
+    },
+    {
+      "label": "a period with no closed trade reports NO amount rather than a flat zero, and a close with no recorded amount is counted instead of zeroed",
+      "passed": true
+    },
+    {
+      "label": "the period still running is labelled as still open rather than counted as a period that was not reviewed",
+      "passed": true
+    },
+    {
+      "label": "an artifact outside the scanned window is counted on screen instead of disappearing",
+      "passed": true
+    },
+    {
+      "label": "the card states the two rulers rather than presenting one number as both, and never compares reviewed with unreviewed periods",
+      "passed": true
+    },
+    {
+      "label": "the card makes no percentage, causal or profit claim the payload did not make",
+      "passed": true
+    },
+    {
+      "label": "the read-only basis reaches the screen, so a reader is told this is an acknowledgement and not a permission",
+      "passed": true
+    },
+    {
+      "label": "an unknown record is shown as UNKNOWN, never as a period list of \"no artifact recorded\"",
+      "passed": true
+    },
+    {
+      "label": "a payload that never arrived takes the same path: unknown, not a clean record",
+      "passed": true
+    },
+    {
+      "label": "a reload is offered and it re-reads the same view rather than silently reloading a page whose workspace moved",
+      "passed": true
+    },
+    {
+      "label": "the reload keeps the workspace/account/session it was rendered under: unchanged, it navigates to the same view and sends no toast",
+      "passed": true
+    },
+    {
+      "label": "and when the account changed under it, the reload REFUSES with one error toast instead of rendering another desk’s record",
+      "passed": true
+    },
+    {
+      "label": "the analytics view mounts the card and the page loads it, and the mount sits above the view’s own tabs",
+      "passed": true
+    },
+    {
+      "label": "and it is mounted after the rule-break card, so the review reads numbers, breaks, then the period record",
+      "passed": true
+    }
+  ],
+  "scope": "M13/M65 real DOM: the review-period card the review reads: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

@@ -604,6 +604,13 @@ router.get('/analytics', requireAuth, async (req, res) => {
    * account, not every account the trader owns), so the review cannot read one desk's performance
    * beside another desk's rule breaks. `from`/`to` are the payload's own window when given. */
   analytics.rule_breaks=await RuleBreaks.optional(req.user.id,{accountId:acc.id??null,from:req.query.from??null,to:req.query.to??null});
+  /* M13/M65 — the review periods. The weekly/quarterly buckets are already on this payload (the
+   * performance summary, bucketed on the REVIEW calendar: UTC, Monday-start weeks, calendar
+   * quarters) and the artifact record is joined to them for the SAME resolved account, so the
+   * review the trader reads can say which of those periods has a saved artifact — and, when one is
+   * absent, that it is `not_recorded` rather than reviewed-and-forgotten. Read-only: it reads the
+   * saved rows, writes nothing, and changes no grade, cap, permission or plan-change decision. */
+  analytics.review_periods=await PeriodReviews.coverageOptional(req.user.id,{accountId:acc.id??null,week:analytics.weekly??null,quarter:analytics.quarterly??null,weeks:12,quarters:8});
   res.json(analytics);
 });
 

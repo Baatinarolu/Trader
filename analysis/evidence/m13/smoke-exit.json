@@ -1,0 +1,33 @@
+{
+  "app": "extracted/tradejournal (delivered M13/M65 tree, 161 sources)",
+  "harness": "scripts/smoke-test.js from that same tree, unchanged",
+  "command": "PORT=3232 node server.js + node scripts/smoke-test.js http://127.0.0.1:3232",
+  "environment": "PORT=3232, TRADEJOURNAL_DB=/tmp/m13-smoke.db (fresh, synthetic), TJ_SCHEDULER=0, TJ_OFFLINE_CANDLES=1, no remote DB",
+  "exit_code": 0,
+  "views_passed": 22,
+  "views_offered": 22,
+  "ui_style_failures": 0,
+  "console_errors": 0,
+  "canvas_environment_limits": 0,
+  "duration_seconds": 97.5,
+  "conditional_view_count": "The harness offers its view list conditionally (a chip condition on the content shell), so the reported total moves between samples: it is measured here at the same sample on both trees and the two counts are compared, not asserted absolutely.",
+  "card_state_coverage": "grep -ci 'review period' = 0 and grep -ci 'no artifact recorded' = 0 and grep -ci 'not recorded' = 0: the smoke OUTPUT never names the card, so this run is NOT claimed as card coverage at all. The card's ordinary state and its unavailable, no-artifact, draft, imported-copy, still-open and refresh-guard states are covered by analysis/probe-m13-ui.js (19 assertions), which mounts the shipped view in jsdom against the real analytics payload.",
+  "parent_control": {
+    "tree": "/tmp/m13-parent/app \u2014 the actual 9c88e0a M12 release, byte-identical to its frozen 160-file guard",
+    "command": "PORT=3233 node server.js + node scripts/smoke-test.js http://127.0.0.1:3233",
+    "exit_code": 0,
+    "views_passed": 22,
+    "views_offered": 22,
+    "ui_style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limits": 0,
+    "duration_seconds": 97.4,
+    "output": "analysis/evidence/m13/smoke-parent-control.txt",
+    "why": "The unchanged parent reports the same view count at the same sample, so M13/M65 neither loses nor gains a view in the harness \u2014 the card adds lines to a view that already existed."
+  },
+  "limits": "jsdom structural/DOM check with no browser engine: no pixel, device, audio, provider, broker, human or production proof, and no mental-state claim.",
+  "outputs": {
+    "delivered": "analysis/evidence/m13/smoke.txt",
+    "parent": "analysis/evidence/m13/smoke-parent-control.txt"
+  }
+}

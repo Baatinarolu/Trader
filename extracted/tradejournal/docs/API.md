@@ -157,7 +157,7 @@ they are converted using the stop distance.
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/analytics` | Full payload: `kpis`, `equity[]`, `daily{}`, `monthly{}`, `distribution[]`, `points[]` (per-trade R/MAE/MFE/risk), segment tables (`by_strategy`, `by_symbol`, `by_session`, `by_timing`, `by_emotion`, `by_mistake`, `by_tag`, `by_hold`, `by_adherence`, …), `time{}` grids, and `rule_breaks` (M12) — the **read-only tally of the guardrail audit** for the **same resolved account** this payload analyses, with `from`/`to` taken from the payload’s own window (see [the rule-break tally](#the-rule-break-tally--recorded-never-joined-to-a-result-m12)). Accepts all trade filters. |
+| GET | `/analytics` | Full payload: `kpis`, `equity[]`, `daily{}`, `monthly{}`, `distribution[]`, `points[]` (per-trade R/MAE/MFE/risk), segment tables (`by_strategy`, `by_symbol`, `by_session`, `by_timing`, `by_emotion`, `by_mistake`, `by_tag`, `by_hold`, `by_adherence`, …), `time{}` grids, `weekly{}` and `quarterly{}` (M13/M65) — closes bucketed on the **review calendar** (UTC close-day, Monday-start weeks, calendar quarters) beside the journal-timezone `daily{}`/`monthly{}`, each bucket carrying a `basis` sentence that names both rulers — plus `undated_closes` (a closed trade with no clock at all, counted rather than guessed into a week), `review_periods` (M13/M65) — the **read-only record of which periods were reviewed**, joined to the artifact the trader saved for that exact period (see [the review periods](#the-review-periods--one-ruler-two-calendars-and-the-record-of-which-periods-were-saved-m13m65)), and `rule_breaks` (M12) — the **read-only tally of the guardrail audit** for the **same resolved account** this payload analyses, with `from`/`to` taken from the payload’s own window (see [the rule-break tally](#the-rule-break-tally--recorded-never-joined-to-a-result-m12)). Accepts all trade filters. |
 | GET | `/analytics/monte-carlo` | `?risk_pct=1&horizon=100&sims=2000&start_equity=10000&ruin=50` → `monte_carlo` percentiles + `optimal_risk` (Kelly / half / quarter) |
 | GET | `/coach` | `{ insights:[{ id, severity, title, detail, impact, evidence[], action }], score:{score,grade}, summary }` |
 | GET | `/briefing` | pre-session plan: market context, risk multiplier and reasoning, performance snapshot, open positions, focus items, checklist |
@@ -268,6 +268,72 @@ the methodology, the weights and the honest limitations.
 | GET | `/bots/window` | `account_id` (optional) | the trader's own trading window: `{ state, block, reason, window{ start, end, timezone, source, span_minutes, local_time }, in_window, until_minutes, owned_timezone, suggestion, settings, basis, limits }`. `state` is `unset` \| `inside` \| `outside` \| `unavailable` (M112); **`unset` blocks nothing** and **`unavailable` refuses** with its repair action. The suggestion is derived from the trader's own recorded `by_session` history, labelled `from_session_history`, refused below the 30-trade review floor, and never applied by the server. |
 | PUT | `/bots/window` | `{ account_id?, window_start, window_end, accept_suggestion? }` | set, accept or clear the window. Both sides of an `HH:MM` pair in the account's owned IANA zone, or both blank/null to clear. `accept_suggestion: true` applies the current derived candidate (409 `trading_window_suggestion_unavailable` when it is refused). `source` is recorded as `from_session_history` only when the submitted pair is exactly the current candidate, otherwise `manual`. |
 | GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ state, blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, unavailable?, unavailable_note?, error? }`. `state` is `blocked` \| `clear` \| `unknown` (M111): `clear` means the calendar **was read** and nothing is inside its clock; a read that failed is `unknown`, which carries `unavailable` (the reason), `unavailable_note` (the sentence to display) and `windows.unavailable: true`. An `unknown` read still echoes the pair, so a client can name the windows that were **not** checked — it is never an all-clear. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
+
+### The review periods — one ruler, two calendars, and the record of which periods were saved (M13/M65)
+
+Ep 26 asks for a **weekly** and a **quarterly** review, and Ep 17's plan changes are legitimate at the
+**quarterly** cadence. The payload had only `daily`/`monthly`, and nothing joined a period to the
+artifact the trader saved for it — so a review could read a month of P&L and still not answer *"what
+did the weeks and quarters look like, and which of them did I actually review?"*.
+
+`src/periods.js` (`periods-v1`) is the app's **one** calendar ruler: UTC days, **Monday-start weeks**,
+calendar months, calendar quarters, calendar years. The review artifacts (`period-reviews.js`), the
+M104 rule-change advisory (`rule-changes.js`) and the new series all read it, and the advisory/ruler
+agreement is asserted **day by day across 2025–2027**. The ruler is pure: no database, no filesystem
+and no clock of its own — every function is handed the day it must answer about.
+
+`GET /api/analytics` now carries four new keys, all **read-only**, on the **same resolved account** the
+payload analyses:
+
+| key | meaning |
+| --- | --- |
+| `weekly{}` | closes bucketed by **review week** (Monday start, UTC close-day), keyed `YYYY-MM-DD` = the week's Monday, each bucket `{week, start, end, last_day, trades, wins, losses, breakeven, pnl, r, win_rate, unknown_net, unknown_r, days, basis}` |
+| `quarterly{}` | the same arithmetic on calendar quarters, keyed `YYYY-Qn`, each bucket carrying its own `start`/`end`/`last_day` |
+| `undated_closes` | a closed trade whose `closed_at` is not a usable clock: counted **by name**, never guessed into a week and never silently dropped |
+| `review_periods` | the record below: each canonical period joined to the artifact saved for it |
+
+**Two rulers, both labelled, never converted into one another.** `daily`/`monthly` keep the **journal
+timezone**; `weekly`/`quarterly` bucket on the **review calendar** and carry a per-bucket `basis`
+sentence naming both. A close at `2026-10-04T23:30:00Z` is week `2026-09-28` on the review calendar and
+day `2026-10-05` in Lagos: the same instant, two rulers, and `daily`/`monthly` are unchanged. **A
+missing amount is not a zero:** a bucket with no recorded `net_pnl` reports `pnl: null` and counts the
+close in `unknown_net` (likewise `unknown_r`); a bucket with no closed trade reports `pnl: null`, not
+`0`.
+
+`review_periods` (`review-coverage-v1`) is either `{state: "unavailable", reason, not_recorded: null, …}`
+or `{state: "available", kinds: {week, quarter}, …}`. Each kind reports
+`periods_scanned`, `rows_scanned`, `artifacts_outside_scope`, `completed`, `draft`,
+`imported_unverified`, `unavailable_rows`, `not_recorded`, `open_periods`, and a `periods[]` list,
+newest first (12 weeks, 8 quarters), each entry:
+
+| field | meaning |
+| --- | --- |
+| `start` / `end` / `last_day` / `label` | the canonical period and how it is addressed — `Week of 2026-10-05`, `Q4 2026` |
+| `finished` | whether the period has ended; a period still running is `open_periods`, **not** an unreviewed one |
+| `review_state` | `completed`, `draft`, `imported_unverified`, `unavailable` or `not_recorded` — from the **latest saved version** of that period's artifact |
+| `review_id`, `review_version`, `review_status`, `review_source`, `review_recorded_at`, `review_focus`, `review_amendment` | the artifact's own receipt: what was saved, when, and the trader's committed focus (never the app's summary) |
+| `trades`, `pnl`, `r`, `win_rate`, `unknown_net`, `unknown_r`, `days` | that period's **own** recorded closes on the review calendar; `pnl`/`r`/`win_rate` are `null` when nothing was recorded, never `0` |
+| `not_recorded_meaning` | the sentence that travels with every kind: *"No artifact was saved for this finished period. That is not evidence that no review happened."* |
+| `outcome_compared` | always `false`, with `outcome_note` saying why: the amounts sit beside the state because both are facts about the same period, and comparing reviewed against unreviewed periods would be a causal claim this journal has not measured |
+| `limits` | `read_only: true`, `writes: 0`, and `grades_influence`, `permission_influence`, `caps_influence`, `guardrail_decisions_influence`, `plan_change_permission`, `causal`, `broker_verified` all `false` |
+
+**Unknown is not clean, and `not_recorded` is not "missed".** An unreadable record is
+`state: "unavailable"` with `not_recorded: null` — never a period list full of "no review" and never a
+clean record (a foreign or unowned account resolves to the same shape, from the route's own scope).
+An imported artifact is `imported_unverified`: evidence that a row exists, **not** that the trader
+reviewed it. A draft is a draft and is never counted as a completed review. `not_recorded` means only
+that no artifact was saved — a review done on paper or elsewhere leaves nothing here, and the payload
+says so rather than grading it. A completed artifact is an acknowledgement that the review was
+**written and saved**; it is not proof that the period was **reviewed well**, that its numbers are
+complete, or that any rule changed. Writing a review is still the trader's act: `review_periods` adds
+no endpoint, writes nothing, and changes no grade, cap, permission, guardrail decision or plan-change
+permission.
+
+The card is `Views.reviewPeriods.card` on the analytics view above its existing tabs: the totals per
+kind (completed / draft only / imported copy (unverified) / unreadable / no artifact recorded, of N
+periods scanned, M still open), each period's own line with its saved focus, the two-ruler sentence,
+the `not_recorded` meaning and the read-only basis. It reloads itself through the analytics view and
+**refuses** if the workspace/account changed under it, rather than rendering another desk's record.
 
 ### The rule-break tally — recorded, never joined to a result (M12)
 
@@ -1039,6 +1105,14 @@ APP budgets (not course rules):4000chars/question,300single-line focus,1000amend
 snapshot.20MBselected-file/25MBbody limits unchanged, no silent clipping. Review
 artifacts never complete required trade/loss writing, grade/resize risk or prove
 human/mental/meditation/broker/provider/pixels/production/causal edge/70% wins.
+
+**M13/M65 read this same series back, read-only.** `src/periods.js` is one shared ruler for the
+week/month/quarter/year boundaries these artifacts are addressed by (the M104 rule-change advisory
+reads it too), `GET /api/analytics` carries `weekly{}`/`quarterly{}` bucketed on that calendar beside
+the journal-timezone `daily{}`/`monthly{}`, and `review_periods` joins each period to the artifact
+saved for it — `completed`/`draft`/`imported_unverified`/`unavailable`/`not_recorded`, where
+`not_recorded` is **not** "missed" and **not** a clean record. Nothing above changes: this is the same
+stored series, read.
 
 
 ## M100 — owned recorded opportunities, explicit decisions and journal association
