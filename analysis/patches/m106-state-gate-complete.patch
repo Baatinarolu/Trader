@@ -1,0 +1,782 @@
+diff --git a/README.md b/README.md
+index a5d9bcd..eb31ace 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,45 @@
+ # TradeJournal Pro
+ 
++## M106 — fresh in-session four-question state gate (2026-10-13)
++
++**Dashboard** and the owned **day review** now carry the saved pre-entry check: *Am I
++calm? Am I clear? Am I following the trade plan? Would I take this trade if I was
++already up big today?* — and the saved rule that follows it, *“if the answer to any of
++these questions is no, then you don’t trade yet.”* Answers are your own yes/no words
++with a **server receipt**; the card, the editor and the readonly history never
++preselect an answer, never accept free text, and never infer a state from your notes,
++profit or adherence.
++
++A recorded **no** refuses the app's own actionable surface the way the killzone veto
++does: live entries and reopen on `POST/PUT /trades` answer 409 `state_gate_failed`,
++saved signals/plans refuse with the same code, and `analyse`/`chart`/`scan`/Now refuse
++with `NO TRADE` and a blocking guard. Freshness is the APP's own policy — same UTC day
++and within the 60-minute window since the receipt — so yesterday's check is never
++today's permission; an *adopted* account with no current check is equally refused. An
++account that **never** answered is reported as `not_adopted` and is **not** blocked:
++the desk does not invent a rule the trader never adopted. Imported copies are
++`imported_unverified` archives with the original clock retained; they can never pass,
++fail or block anyone. `record_only` history, closes, edits and imports stay legal, so
++the check can never hold your journal hostage.
++
++Answers are stored append-only and immutable; a stale displayed revision 409s with
++nothing written, and a store outage 503s without claiming a receipt. `not_adopted`,
++`passed`, `failed`, `unanswered`, `stale` and `unavailable` are distinct and visible —
++including in the export/restore path and in Settings. This is a record of what you
++said, not verified calmness, clarity, plan adherence, broker state, an edge, a
++readiness/mental-state score or any authority over risk, admission, cap, routine, core
++or grades. M89 emotion capture, M64's morning check-in and M107's daily intention stay
++separate features; the gate is only the in-session check before a prospective entry.
++
++**M106 318/0 across 10 probes**, actual137-parent additive/restart migration 18/0;
++every prior M105 cohort re-run unchanged (142/0 with one declared M105-only schema
++negative, changes152/1, opportunities144/1, reviews159/1, behavior113/2, process106/2,
++screenshots223/3, emotions170/0, confluences160/0, execution260/0, routine321/0,
++offline178/0, market325/0, RAW596/156, DECLARED824/4, pure70/1). Ledger
++**132=100 done/3 partial/29 TODO**. Report `analysis/M106-STATE-GATE.md` in the ZIP.
++Next M107. No 70%, causal/predictive edge, broker/provider/mental/human/meditation/
++pixel/production claim.
++
+ ## M105 — chosen self-description / separate quarterly theme (2026-10-13)
+ 
+ **Dashboard** and owned **day review** now show optional declared words: a persistent
+diff --git a/docs/API.md b/docs/API.md
+index 911a052..2f0917f 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -1118,3 +1118,53 @@ M106 freshstate gate or M107 daily intention. No grade/risk/cap/routine/loss/cor
+ admission/model/weights/factors/geometry/stops/targets/RR change. Course30/M103n>=5/
+ B-C unchanged. No70%/causal/predictive/mental/broker/provider/human/meditation/pixel/
+ production proof. M106 next; M111/M112 open, M30/M103/M108 partial.
++
++## M106 — fresh in-session four-question state gate
++
++Additive `state_gate_answers` append-only answer history: `human_declared` first-party
++rows and `imported_unverified` archives. UPDATE facts immutable (FK nullification only
++exception); owner deletion cascades, account deletion SET NULL retains the row for the
++owner's own readonly history and never re-attaches it to a foreign account. Not sealed
++against database-admin tampering. Nothing is backfilled from notes, profit, adherence
++or legacy journal text, and no answer is ever defaulted.
++
++- `GET /state-gate?account_id=` live view: account, current state
++  (`not_adopted`|`passed`|`failed`|`unanswered`|`stale`|`unavailable`), the four saved
++  questions, recorded answers, server receipt, `age_minutes`, `expires_at`, APP
++  `window_minutes`, `failed_questions`, `imported_archives`, history, displayed
++  `revision`, `basis`, `broker_verified:false`. `allowed` is true only for a fresh
++  all-yes pass; `not_adopted` is reported as adoption, never as a pass.
++- `GET /state-gate/history?account_id=` readonly own rows including detached orphans
++  and imported archives. Omitted account means all own accounts, never another user's.
++- `PUT /state-gate?account_id=` only `{answers, revision}` where `answers` is exactly
++  `{calm,clear,following_plan,would_take_if_up_big}` booleans or explicit `null`
++  ("not answered now"). No caller clock, source, owner, score or text is accepted.
++  Stale displayed revision409 with nothing written; a store failure503 claims no
++  receipt and rolls the new row back only.
++
++The four questions are the saved rule (“if the answer to any of these questions is no,
++then you don't trade yet”): am I calm, am I clear, am I following the trade plan, would
++I take this trade if I was already up big today. A recorded no publishes
++`state_gate_failed`; an adopted account whose check is missing/stale/unreadable
++publishes `state_gate_unanswered|stale|unavailable`. Both refuse `POST /trades` live
++entries and `PUT /trades/:id` reopen with 409 + `state_gate` payload, fold into the
++guardrail snapshot, and become the same kind of personal stop the killzone/personal
++guardrails use — `Guards.applyToSetups` / Now refuse the signal, `saveSignals` and
++`savePlan` throw the gate's own 409 code. `record_only` journal history, closing,
++editing and importing are never gated: an in-session check cannot hold a trader's
++history hostage.
++
++Freshness is the APP's own policy: same UTC day and `<=window_minutes` since the
++server receipt (default 60). The window edge is inclusive; a corrupt/future receipt is
++`unavailable` and cannot pass. `not_adopted` accounts are not blocked — the app does
++not invent a check the trader never gave — and imported copies never grant permission
++on the receiving account. Answers are the trader's own words: this is not verified
++calmness, clarity, plan adherence, broker state, an edge, a readiness/mental-state
++score or any authority over risk, admission, cap, routine, core or grades.
++
++Full JSON backup carries `state_gate_answers`; restore labels every copy
++`imported_unverified` with the original clock as history and can never pass, fail or
++block the receiving trader. Invalid optional history warns while the financial import
++stays legal; a real import-store failure rolls that request back atomically; a missing
++answer store leaves the financial backup legal with an unavailable marker. Settings
++surfaces the warnings instead of hiding omissions.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index f200197..6c01654 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -632,3 +632,41 @@ Current132=99done/3partial/30TODO. NextM106, M107/M111/M112 open, M30/M103/M108
+ partial. Existing execution/daily/window scores/grades/weights/default risk/factors/
+ entrymodels/checklists/stops/targets/RR/floor30/M103n>=5/B-C unchanged. No70%/causal/
+ predictive edge/broker/provider/actual mental/human/meditation/pixels/production proof.
++
++
++## M106 — the fresh four-question check refuses, it never grades
++
++Owned append-only `human_declared` answers to the four saved questions (calm, clear,
++following the plan, would take it if already up big) with a server receipt; imported
++copies are `imported_unverified` archives. No default, no preselected answer, no free
++text, no inference from notes/profit/emotion/adherence/legacy rows, no backfill.
++
++A recorded no is `state_gate_failed`. An adopted account whose check is missing, stale,
++unparseable or from an unknown schema version is `state_gate_unanswered|stale|
++unavailable`. Both become the same kind of personal stop the personal guardrails and
++the killzone veto already produce: `POST /trades` live entry and reopen answer 409,
++`saveSignals`/`savePlan` throw the same code, and analyse/chart/scan/Now refuse with
++`NO TRADE`, `personal_blocked:true`, `execution_permission.allowed:false` and a blocking
++`state_gate_*` breach. The gate takes the trader's own desk: an omitted `account_id`
++resolves the default account, so skipping the field is not a bypass, while an explicit
++research-only save stays a labelled research artifact.
++
++`not_adopted` is deliberately NOT a block: an account that never answered has no
++recorded refusal to honour, and inventing one would be a fabricated rule. Freshness is
++APP policy only — same UTC day and within the 60-minute window, edge inclusive; a
++future/corrupt receipt is `unavailable`, never a pass. Admission, caps, cooldown,
++routine, risk, grades, geometry, targets/RR and the core journal are untouched:
++refusals change the app's own permission, never a number.
++
++Immutable rows (UPDATE guarded, FK-nullification exception), revision CAS with 409 +
++retained draft, store failure 503 with no receipt and no partial write, orphaned rows
++retained readonly for their owner only. Backup/restore labels copies as archives that
++can never pass, fail or block the receiving trader; malformed optional history warns
++while the financial import stays legal; a real import-store failure rolls back that
++request atomically. Settings shows the warnings; nothing auto-refreshes them away.
++
++Current132=100done/3partial/29TODO. NextM107, M111/M112 open, M30/M103/M108 partial.
++This is recorded self-report, not verified calmness, clarity, plan adherence, broker
++state, an edge, a readiness/mental-state score or a discipline rating; no 70%/causal/
++predictive/broker/provider/human/meditation/pixel/production proof. M89 capture, M64
++morning check-in and M107 intention remain separate features.
+diff --git a/public/index.html b/public/index.html
+index afae9c2..e402254 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -26,6 +26,7 @@
+ <script src="/js/store.js?v={{V}}"></script>
+ <script src="/js/tv.js?v={{V}}"></script>
+ <script src="/js/views/identity.js?v={{V}}"></script>
++<script src="/js/views/state-gate.js?v={{V}}"></script>
+ <script src="/js/views/rule-changes.js?v={{V}}"></script>
+ <script src="/js/views/period-reviews.js?v={{V}}"></script>
+ <script src="/js/views/opportunities.js?v={{V}}"></script>
+diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
+index 2352d8e..d5e1743 100644
+--- a/public/js/views/dashboard.js
++++ b/public/js/views/dashboard.js
+@@ -34,7 +34,8 @@
+         API.get('/briefing', params).catch(() => null),
+         API.get('/trades', { ...params, limit: 12 }),
+         API.get('/identity/daily/'+Store.isoToday(),{account_id:Store.accountId}).catch(()=>({state:'unavailable'})),
+-      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay]=identityResult;
++        API.get('/state-gate',{account_id:Store.accountId}).catch(()=>({state:'unavailable',account_id:null})),
++      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay,stateGateView]=identityResult;
+       if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;
+       const k = an.kpis;
+       const acc = an.account || Store.account() || {};
+@@ -73,6 +74,7 @@
+         go('first-bots', () => global.App.go('bots'));
+       }
+ 
++      if(Views.stateGate)root.appendChild(Views.stateGate.card(stateGateView));
+       if(Views.identity)root.appendChild(Views.identity.card(identityDay));
+       root.appendChild(Views.sessionTimeCard(briefing?.daily?.session_time || {}));
+       if(Views.lossWritingCard)root.appendChild(Views.lossWritingCard(briefing?.daily?.post_loss_journal || {}));
+diff --git a/public/js/views/journal.js b/public/js/views/journal.js
+index 8ac5d15..1135f22 100644
+--- a/public/js/views/journal.js
++++ b/public/js/views/journal.js
+@@ -179,6 +179,7 @@
+         <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
+         <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
+     if(Views.behaviorDays)body.prepend(Views.behaviorDays.card(day.behavior_days));
++    if(Views.stateGate)body.prepend(Views.stateGate.card(day.state_gate));
+     if(Views.identity)body.prepend(Views.identity.card(day.identity_context));
+     if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
+     if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index 3d8e250..f6cc7ee 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -151,8 +151,8 @@
+               const d = await API.post('/import/csv', { csv, account_id: U.$('#im-account', w).value });
+               if(!currentMediaPane())return;
+               out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)out.appendChild(identityHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
+-              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)out.appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)out.appendChild(gateHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
++              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length||d.state_gate_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
+             } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+           });
+           const file = U.$('#im-file', w);
+@@ -176,8 +176,8 @@
+                 const d = await API.post('/import/json', { data });
+                 if(!currentMediaPane()||attempt!==jsonRead)return;
+                 U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
+-                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)U.$('#ex-out',w).appendChild(identityHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
+-                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length&&!d.review_warnings?.length&&!d.opportunity_warnings?.length&&!d.rule_change_warnings?.length&&!d.identity_warnings?.length)global.App.refresh();
++                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)U.$('#ex-out',w).appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)U.$('#ex-out',w).appendChild(gateHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
++                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length||d.state_gate_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length&&!d.review_warnings?.length&&!d.opportunity_warnings?.length&&!d.rule_change_warnings?.length&&!d.identity_warnings?.length&&!d.state_gate_warnings?.length)global.App.refresh();
+               } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
+             };
+             r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
+diff --git a/public/js/views/state-gate.js b/public/js/views/state-gate.js
+new file mode 100644
+index 0000000..0d8c1be
+--- /dev/null
++++ b/public/js/views/state-gate.js
+@@ -0,0 +1,107 @@
++/* views/state-gate.js — M106 fresh in-session four-question check.
++ * Records the trader's own yes/no answers; never a readiness score, a mental-state
++ * measurement or permission for anything outside the app's own surfaces. */
++(function (global) {
++  'use strict';
++  const Views = global.Views = global.Views || {}, U = global.U;
++  let serial = 0;
++  const ctx = () => ({ user: global.Store.user?.id, account: global.Store.accountId, token: global.API.getToken() });
++  const same = (c) => c.user === global.Store.user?.id && c.account === global.Store.accountId && c.token === global.API.getToken();
++  const LABEL = { not_adopted: 'Not adopted on this account', passed: 'Fresh answers: all yes', failed: 'Fresh answers: a no — no trade yet', unanswered: 'Not answered for this session', stale: 'Answers older than the APP window', unavailable: 'Answers unreadable — no pass claimed' };
++  const QUESTION_TEXT = (id) => ({ calm: 'Am I calm?', clear: 'Am I clear?', following_plan: 'Am I following the trade plan?', would_take_if_up_big: 'Would I take this trade if I was already up big today?' }[id] || id);
++
++  const P = Views.stateGate = {
++    ctx, same,
++    feedback(out) { if (!out?.state_gate_warnings?.length) return null; return U.h('section', { class: 'sticky-note warn' }, U.h('strong', { text: 'Optional state-gate answer history' }), ...out.state_gate_warnings.map((text) => U.h('p', { class: 'tiny', text }))); },
++    async history(accountId) {
++      const context = ctx(), number = ++serial;
++      try {
++        const out = await global.API.get('/state-gate/history', { account_id: accountId });
++        if (!same(context) || number !== serial) return;
++        const body = U.h('div');
++        body.appendChild(U.h('h3', { text: 'Readonly state-gate answer history' }));
++        body.appendChild(U.h('p', { class: 'field-note', text: 'Original keys, receipts and answers retained. Imported copies stay unverified and can never grant a pass; orphaned originals are never re-attached to another account.' }));
++        for (const record of out.records || []) body.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(record, null, 2) }));
++        return global.App.modal({ title: 'Readonly state-gate history', body, wide: true, actions: [{ label: 'Close readonly history', ghost: true }] });
++      } catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); }
++    },
++    card(v) {
++      const node = U.h('section', { class: 'card', style: 'margin-top:14px', dataset: { stateGateCard: 'true' } }), context = ctx();
++      node.appendChild(U.h('h3', { text: 'Pre-entry state check — four questions' }));
++      node.appendChild(U.h('p', { class: 'field-note', text: 'Saved rule: “If the answer to any of these questions is no, then you don’t trade yet.” The app records your own answers with a server receipt. It cannot read your mind, verify calmness or plan adherence, or stop a broker — and a missing or stale answer is never treated as a pass.' }));
++      if (!v || v.state === 'unavailable' && v.account_id === null) { node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'State-check context unavailable — not treated as answered, passed or blocked. Nothing is inferred from old notes, profit or adherence.' })); return node; }
++      node.appendChild(U.h('p', { class: 'small', text: 'Current: ' + (LABEL[v.state] || v.state) + (v.receipt ? ' · server receipt ' + v.receipt + ' · expires ' + v.expires_at + ' (APP window ' + v.window_minutes + ' min)' : '') }));
++      if (v.answers) {
++        for (const q of v.questions || []) node.appendChild(U.h('p', { class: 'tiny', text: `· ${q.text} — ${v.answers[q.id] === true ? 'yes' : v.answers[q.id] === false ? 'no' : 'not answered'}` }));
++      }
++      if (v.state === 'failed') node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'You answered no to: ' + (v.failed_questions || []).map(QUESTION_TEXT).join('; ') + '. Actionable signals and new live entries are refused in the app until you answer fresh — this refusal cannot reach a broker and does not change history.' }));
++      else if (v.state === 'stale') node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'Your last answers are outside the APP window, so they are not a pass for a new in-session entry. Answer again to act.' }));
++      else if (v.state === 'unanswered') node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'You have used this gate before but not for this session. New live entries and saved signals are refused until you answer.' }));
++      else if (v.state === 'not_adopted') node.appendChild(U.h('p', { class: 'tiny muted', text: 'This account has never answered the four questions, so the app has no recorded refusal to honour and does not invent one. It also cannot claim a state check it never received — answered or not, this is not permission.' }));
++      if (v.imported_archives) node.appendChild(U.h('p', { class: 'tiny muted', text: `${v.imported_archives} imported answer record(s) restored as unverified archives; they never count as a pass.` }));
++      if (v.adopted && v.state !== 'passed') node.appendChild(U.h('p', { class: 'tiny muted', text: 'Adopted gate: while it is not fresh and all-yes, the app’s own entry/signal surfaces refuse, exactly as the killzone veto refuses a setup.' }));
++      node.appendChild(U.h('p', { class: 'tiny muted', text: v.basis }));
++      node.appendChild(U.h('button', { class: 'btn sm primary', type: 'button', dataset: { stateGateEdit: 'true' }, text: v.adopted ? 'Answer the four questions again' : 'Answer the four questions', onclick: () => { if (!same(context)) return global.App.toast('Workspace/account/session changed; reopen this account’s own check.', 'err'); return P.edit(); } }));
++      node.appendChild(U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { stateGateHistory: 'true' }, text: 'Review readonly answer history', onclick: () => { if (!same(context)) return; return P.history(); } }));
++      return node;
++    },
++    async edit() {
++      const context = ctx(), number = ++serial; let view;
++      try { view = await global.API.get('/state-gate', { account_id: context.account }); }
++      catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); return; }
++      if (!same(context) || number !== serial || view.account_id !== Number(context.account)) return;
++      const body = U.h('div'); let alive = true, busy = false, stale = false;
++      const valid = () => alive && same(context) && number === serial && body.isConnected;
++      const picks = {};
++      function draw() {
++        body.replaceChildren();
++        body.appendChild(U.h('p', { class: 'field-note', text: `Account #${view.account_id} · ${LABEL[view.state] || view.state}${view.receipt ? ' · receipt ' + view.receipt + ' (APP window ' + view.window_minutes + ' min)' : ''}. Answer honestly for right now; the app stores your words and clock, nothing else, and no answer here changes finance, grades, risk, the routine or the core.` }));
++        for (const q of view.questions || []) {
++          const row = U.h('label', { class: 'row gap-8' });
++          row.appendChild(U.h('span', { text: q.text }));
++          const group = U.h('span', { class: 'row gap-8' });
++          for (const value of [true, false]) {
++            const radio = U.h('input', { type: 'radio', name: 'sg-' + q.id, dataset: { stateGateAnswer: q.id }, value: value ? 'yes' : 'no' });
++            if (view.answers && view.answers[q.id] === value) radio.checked = true;
++            radio.addEventListener('change', () => { picks[q.id] = value; refresh(); });
++            group.appendChild(U.h('span', { class: 'row gap-8' }, radio, U.h('span', { class: 'tiny', text: value ? 'yes' : 'no' })));
++          }
++          if (view.answers) picks[q.id] = view.answers[q.id];
++          row.appendChild(group); body.appendChild(row);
++        }
++        const unknown = U.h('input', { type: 'checkbox', dataset: { stateGateUnknown: 'true' } });
++        body.appendChild(U.h('label', { class: 'row gap-8' }, unknown, U.h('span', { text: 'Record that I have not answered the four questions now (explicit unknown — retains history, grants nothing)' })));
++        body.appendChild(U.h('p', { class: 'tiny muted', text: 'There is no default, no “maybe”, and no preselected yes. A yes/no pair answered here is the app’s only source for this gate; the app does not infer your state from journal text or P&L.' }));
++        const save = U.h('button', { class: 'btn sm primary', type: 'button', dataset: { stateGateSave: 'true' }, text: 'Record this check', onclick: async () => {
++          if (!valid() || busy) return global.App.toast('Workspace/account/session/editor changed; reopen.', 'err');
++          const answers = unknown.checked ? null : ((view.questions || []).every((q) => typeof picks[q.id] === 'boolean') ? Object.fromEntries((view.questions || []).map((q) => [q.id, picks[q.id]])) : null);
++          if (!unknown.checked && answers === null) return global.App.toast('Answer all four questions yes/no, or tick explicit unknown.', 'err');
++          busy = true; disable();
++          try { const out = await global.API.put('/state-gate?account_id=' + context.account, { answers, revision: view.revision }); if (!valid()) return; view = out; stale = false; picks_clear(); draw(); global.Store.invalidate(); global.App.toast('Answers recorded; finance, grades, routine, core and permission outside this gate are unchanged.', 'ok'); }
++          catch (e) { if (valid()) { stale = e.status === 409; global.App.toast(e.message, 'err'); } }
++          finally { busy = false; if (valid()) disable(); }
++        } });
++        const reload = U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { stateGateReload: 'true' }, text: 'Reload current answers (discard unsaved picks)', onclick: async () => {
++          if (!valid() || busy) return; busy = true; disable();
++          try { const out = await global.API.get('/state-gate', { account_id: context.account }); if (!valid()) return; view = out; stale = false; picks_clear(); draw(); }
++          catch (e) { if (valid()) global.App.toast(e.message, 'err'); }
++          finally { busy = false; if (valid()) disable(); }
++        } });
++        body.appendChild(save); body.appendChild(reload);
++        const details = U.h('details'); details.appendChild(U.h('summary', { text: 'Retained answer history' }));
++        for (const d of view.history || []) details.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(d, null, 2) }));
++        body.appendChild(details);
++      }
++      function picks_clear() { for (const k of Object.keys(picks)) delete picks[k]; }
++      function disable() {
++        body.querySelector('[data-state-gate-save]').disabled = busy || stale;
++        body.querySelector('[data-state-gate-reload]').disabled = busy;
++      }
++      function refresh() { if (valid()) disable(); }
++      draw();
++      const modal = global.App.modal({ title: 'Pre-entry state check', body, wide: true, onClose: () => { alive = false; }, actions: [{ label: 'Close — no permission inferred', ghost: true }] });
++      disable();
++      return modal;
++    },
++  };
++})(window);
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 9f80aae..489a513 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -30,6 +30,7 @@ const Now = require('./now');
+ const Predict = require('./predict');
+ const Cor = require('./correction');
+ const Guards = require('./guardrails');
++const StateGate = require('../state-gate');
+ 
+ /* -------------------------------------------------------------------------
+  * M124 — THE ENTRY-SERIES DEPTH THE METHOD READS.
+@@ -249,9 +250,44 @@ function hysteresisView(h) {
+ 
+ async function personalState(userId, accountId, entryTf) {
+   if (!userId) return null; // unsized research has no claimed personal permission
+-  try { return await Cor.dailyState(userId,{accountId,entryTf,forEntry:true}); }
++  try {
++    const daily = await Cor.dailyState(userId,{accountId,entryTf,forEntry:true});
++    /* M106 — the fresh four-question check rides the same personal-state object the
++     * killzone/personal-stop refusals already use, so setup vetoes, `armed`, the Now
++     * guards and the scan rows all refuse it through code that was already measured.
++     * An account that never answered is reported as `not_adopted`, never as a pass. */
++    return StateGate.apply(daily, await StateGate.optional(userId, daily.account_id || accountId));
++  }
+   catch { return Guards.unavailable({accountId}); }
+ }
++/** A refusal is a 409 carrying the gate's own state so the caller can explain it; an
++ * adopted-but-not-fresh check refuses exactly like a recorded no.
++ *
++ * Resolution rule: an explicit account is used as given, otherwise the trader's own
++ * desk is resolved the same way POST /trades resolves it, so omitting account_id is
++ * not a way to skip an adopted check. Only when the user genuinely owns no desk (or an
++ * id that is not theirs) is the gate left unconsulted — research calls must keep
++ * working, and the pre-existing guardrail paths stay the authority there. */
++async function stateGateRefusal(userId, accountId) {
++  if (!userId) return { allowed: true, state: 'not_consulted', adopted: false, message: 'Unsized research carries no personal four-question claim.' };
++  let resolved = accountId === undefined ? null : accountId;
++  if (resolved === null) {
++    const desk = await db.prepare('SELECT id FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
++    resolved = desk ? desk.id : null;
++  }
++  if (resolved === null) return { allowed: true, state: 'not_consulted', adopted: false, message: 'No owned account in this action — the four-question gate is not consulted.' };
++  let gate;
++  try { gate = await StateGate.permission(userId, resolved); }
++  catch (e) {
++    if (e.code === 'state_gate_invalid' && e.status === 404) return { allowed: true, state: 'not_consulted', adopted: false, message: 'No owned account in this action — the four-question gate is not consulted.' };
++    throw e;
++  }
++  if (gate.allowed) return gate;
++  const e = StateGate.invalid(gate.message, 409);
++  e.code = gate.state === 'failed' ? 'state_gate_failed' : 'state_gate_unanswered';
++  e.state_gate = { state: gate.state, adopted: gate.adopted, failed_questions: gate.failed_questions || [], window_minutes: gate.window_minutes, expires_at: gate.expires_at || null };
++  return { ...gate, refusal: e };
++}
+ function candidateTf(setups, td, fallback) {
+   const c = (setups.candidates || []).find(c=>c.dir===td.direction) || (setups.candidates || [])[0];
+   return c && (c.entry_tf || c.levels && c.levels.entry_tf) || td.entry_setup?.entry_tf || fallback;
+@@ -822,6 +858,9 @@ async function insertSignals(userId, payload, store = db, stamp = {}) {
+ async function savePlan(userId,p = {}) {
+   await ensureSignalsTable();
+   if (p.research_only === true) return {...await insertPlan(userId,p,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
++  /* M106 — saving a plan is an actionable surface for THIS trader, so an adopted
++   * four-question check must be fresh and non-failing first. */
++  const planGate=await stateGateRefusal(userId,p.account_id || null);if(planGate.refusal)throw planGate.refusal;
+   return Guards.admit(userId,{accountId:p.account_id || null,entryTf:p.entry_tf || p.timeframe,action:'save_plan',entityType:'signal',overrideReason:p.override_reason},
+     async (store,daily) => {
+       const result = await insertPlan(userId,p,store,Guards.snapshotFields(daily));
+@@ -834,6 +873,8 @@ async function saveSignals(userId,payload,options = {}) {
+   const market = {...payload,setups:{...payload.setups,candidates:marketCandidates}};
+   if (!marketCandidates.some(c=>c.ok && c.levels && c.levels.entry_status!=='invalid')) return {saved:0,reason:'no actionable setup in this analysis'};
+   if (options.research_only === true) return {...await insertSignals(userId,market,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
++  /* M106 — saving an actionable signal for THIS trader obeys the same fresh check. */
++  const signalGate=await stateGateRefusal(userId,options.accountId || payload.daily?.account_id || null);if(signalGate.refusal)throw signalGate.refusal;
+   return Guards.admit(userId,{accountId:options.accountId || payload.daily?.account_id || null,entryTf:candidateTf(market.setups,payload.topdown || {},payload.timeframe),action:'save_signal',entityType:'signal',overrideReason:options.override_reason},
+     async (store,daily) => {
+       const result = await insertSignals(userId,market,store,Guards.snapshotFields(daily));
+diff --git a/src/db.js b/src/db.js
+index 0006ddc..bef10ce 100644
+--- a/src/db.js
++++ b/src/db.js
+@@ -394,6 +394,21 @@ CREATE TABLE IF NOT EXISTS identity_declarations (
+  UNIQUE(user_id,account_key,kind,period_start,version)
+ );
+ CREATE INDEX IF NOT EXISTS idx_identity_declarations_owner ON identity_declarations(user_id,account_key,kind,period_start,id);
++-- M106 fresh in-session four-question state answers. Owned self-reports, not a pass by default.
++CREATE TABLE IF NOT EXISTS state_gate_answers (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
++ account_key INTEGER NOT NULL,
++ version INTEGER NOT NULL,
++ answers_json TEXT,
++ source TEXT NOT NULL,
++ recorded_at TEXT NOT NULL,
++ historical_json TEXT,
++ schema_version TEXT NOT NULL,
++ UNIQUE(user_id,account_key,version)
++);
++CREATE INDEX IF NOT EXISTS idx_state_gate_answers_owner ON state_gate_answers(user_id,account_key,id);
+ CREATE TABLE IF NOT EXISTS goals (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+@@ -820,6 +835,8 @@ async function migrate() {
+ 
+   await db.prepare(`CREATE TRIGGER IF NOT EXISTS identity_declarations_immutable BEFORE UPDATE ON identity_declarations WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.kind IS OLD.kind AND NEW.period_start IS OLD.period_start AND NEW.period_end IS OLD.period_end AND NEW.version IS OLD.version AND NEW.statement IS OLD.statement AND NEW.identity_snapshot_json IS OLD.identity_snapshot_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Original identity/theme declaration facts immutable'); END`).run();
+ 
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS state_gate_answers_immutable BEFORE UPDATE ON state_gate_answers WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.version IS OLD.version AND NEW.answers_json IS OLD.answers_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded state-gate answers are immutable'); END`).run();
++
+   /* M102 backfill. Every strategy that has no version history gets an immutable v1
+    * snapshot of the rule set it currently holds, and every trade already linked to it is
+    * attributed to that v1. That attribution is an ASSUMPTION and is labelled as one in
+diff --git a/src/routes/api.js b/src/routes/api.js
+index 35c65e4..229f685 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -20,6 +20,7 @@ const Emotions = require('../emotions');
+ const PeriodReviews = require('../period-reviews');
+ const RuleChanges = require('../rule-changes');
+ const Identity = require('../identity');
++const StateGate = require('../state-gate');
+ const Opportunities = require('../opportunities');
+ const ProcessOutcomes = require('../process-outcomes');
+ const BehaviorDays = require('../behavior-days');
+@@ -359,10 +360,15 @@ router.post('/trades', requireAuth, async (req, res) => {
+     if (trade.status === 'open' && body.record_only !== true) {
+       try { trade.emotion_before=J.text(body.emotion_before,'Name your emotional state before prospective entry',100); }
+       catch(e){throw Guards.inputError(e.message);}
++      /* M106 — a live prospective entry is the app's own actionable surface, so an
++       * ADOPTED four-question check must be fresh and non-failing before the entry is
++       * admitted. An account that never answered the gate has no recorded refusal to
++       * honour and is told so instead of being blocked by an invented rule. */
++      const gate = await StateGate.permission(req.user.id, accountId);
++      if (!gate.allowed) return res.status(409).json({ error: gate.message, code: gate.state === 'failed' ? 'state_gate_failed' : 'state_gate_unanswered', state_gate: { state: gate.state, adopted: gate.adopted, failed_questions: gate.failed_questions || [], window_minutes: gate.window_minutes, expires_at: gate.expires_at || null }, hint: 'Answer the four questions fresh (or record this as already-executed history with record_only) — nothing financial was written.' });
+       const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade',overrideReason:body.override_reason},async (store,daily) => {
+-        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
+-        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,record:await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id),permission:Guards.actionPermission(daily)};
+-      });
++        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(StateGate.apply(daily, gate))};
++        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,record:await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id),permission:Guards.actionPermission(daily)}; });
+       id = out.id; permission = out.permission; written=out.record;
+     } else {
+       const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>{const id=await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')});await Confluences.attachOn(store,req.user.id,id,confluences);return {id};});
+@@ -409,7 +415,10 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+     if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
+       try { trade.emotion_before=J.text(req.body.emotion_before,'Name your current emotional state before reopening',100); }
+       catch(e){throw Guards.inputError(e.message);}
+-      written=await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>write(store,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
++      /* M106 — reopening a closed trade into a live position is the same prospective act as a new entry. */
++      const reopenGate=await StateGate.permission(req.user.id,accountId);
++      if(!reopenGate.allowed)return res.status(409).json({error:reopenGate.message,code:reopenGate.state==='failed'?'state_gate_failed':'state_gate_unanswered',state_gate:{state:reopenGate.state,adopted:reopenGate.adopted,failed_questions:reopenGate.failed_questions||[],window_minutes:reopenGate.window_minutes,expires_at:reopenGate.expires_at||null},hint:'Answer the four questions fresh, or record this as journal history with record_only — nothing financial was written.'});
++      written=await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>write(store,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(StateGate.apply(daily,reopenGate))}));
+     } else written=await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>write(store,{...trade,account_id:accountId}));
+   } catch(e) {
+     if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
+@@ -643,6 +652,7 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+   const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
+   briefing.risk_plan.trade_cap_policy = capPolicy;
+   briefing.identity_context=await Identity.optional(req.user.id,acc.id,Guards.dayKey(Date.now()));
++  briefing.state_gate=await StateGate.optional(req.user.id,acc.id);
+   briefing.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
+   briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
+   // Briefing amounts are advice, NOT permission. Use the same close-day UTC
+@@ -694,6 +704,11 @@ router.get('/identity/daily/:date',requireAuth,identityRoute(req=>Identity.daily
+ router.put('/identity/statement',requireAuth,identityRoute(req=>Identity.save(req.user.id,req.query.account_id,'identity','',req.body)));
+ router.put('/identity/theme/:start',requireAuth,identityRoute(req=>Identity.save(req.user.id,req.query.account_id,'theme',req.params.start,req.body)));
+ 
++const stateGateRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='state_gate_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'State-gate answers unavailable; no finance/core/permission state changed.'});}};
++router.get('/state-gate',requireAuth,stateGateRoute(req=>StateGate.read(req.user.id,req.query.account_id)));
++router.get('/state-gate/history',requireAuth,stateGateRoute(req=>StateGate.history(req.user.id,req.query.account_id??null)));
++router.put('/state-gate',requireAuth,stateGateRoute(req=>StateGate.save(req.user.id,req.query.account_id,req.body)));
++
+ router.get('/journal', requireAuth, async (req, res) => {
+   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
+   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
+@@ -732,7 +747,7 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
+   const accountId=account.id;
+   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
+   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
+-  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),state_gate:await StateGate.optional(req.user.id,accountId),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
+ });
+ router.post('/journal', requireAuth, async (req, res) => {
+   const b = req.body || {};
+@@ -1180,6 +1195,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
+     period_reviews:await PeriodReviews.exportOwned(userId),
+     strategy_rule_changes:await RuleChanges.exportOwned(userId),
+     identity_declarations:await Identity.exportOwned(userId),
++    state_gate_answers:await StateGate.exportOwned(userId),
+     opportunity_history:await Opportunities.exportOwned(userId),
+     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
+     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
+@@ -1285,9 +1301,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+ // Actual transaction insert IDs (never raw backup IDs), with optional media
+ // warnings separate from financial parsing. Storage failure rolls back together.
+ function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
+-async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null,stateGate=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+   for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
+-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);return n;
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);if(stateGate)await StateGate.importOn(store,userId,stateGate,reviewAccounts,reviewFallback);return n;
+ });}
+ 
+ function parseCsv(text) {
+@@ -1313,7 +1329,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
+   const data = req.body && req.body.data ? req.body.data : req.body;
+   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
+   const userId = req.user.id;
+-  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations);
++  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations),stateGate=StateGate.portable(data.state_gate_answers);
+   const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
+   const accountMap = Object.create(null);
+   const instruments = await instrumentMap(userId);
+@@ -1360,9 +1376,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
+       });
+     }
+-    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities,stateGate);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
+-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,opportunity_warnings:opportunities.warnings });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,state_gate_warnings:stateGate.warnings,opportunity_warnings:opportunities.warnings });
+ });
+ 
+ /* ---------------------------------------------------------------- settings */
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index df5ff18..446474a 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -19,6 +19,7 @@ function createBotsRouter({ requireAuth }) {
+     if (res.headersSent) return;
+     if(err.code==='execution_review_invalid')return res.status(err.status).json({error:err.message,code:err.code});
+     if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
++    if (err.code?.startsWith('state_gate_')) return res.status(err.status).json({error:err.message,code:err.code,state_gate:err.state_gate});
+     res.status(500).json({ error: err.message || 'Bot error' });
+   });
+   const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));
+diff --git a/src/state-gate.js b/src/state-gate.js
+new file mode 100644
+index 0000000..b63745c
+--- /dev/null
++++ b/src/state-gate.js
+@@ -0,0 +1,200 @@
++'use strict';
++/**
++ * M106 — the fresh in-session four-question state gate.
++ *
++ * Saved Ep28 states the rule verbatim: "Am I calm? Am I clear? Am I following the
++ * trade plan? Would I take this trade if I was already up big today? If the answer to
++ * any of these questions is no, then you don't trade yet."
++ *
++ * The app cannot read a mind. What this module does is record THE TRADER'S OWN
++ * answers with a server receipt, refuse to call a missing, stale or unavailable answer
++ * set a pass, and refuse the app's own actionable surface when an answer set that was
++ * actually given says no. It is deterministic and auditable; it is not a mental-state
++ * measurement, a score, a grade, or a broker/execution block.
++ */
++const crypto = require('crypto');
++const VERSION = 'state-gate-v1';
++/** APP freshness policy for an in-session check — not a course, broker or clock rule. */
++const WINDOW_MIN = 60;
++const QUESTIONS = [
++  { id: 'calm', text: 'Am I calm?' },
++  { id: 'clear', text: 'Am I clear?' },
++  { id: 'following_plan', text: 'Am I following the trade plan?' },
++  { id: 'would_take_if_up_big', text: 'Would I take this trade if I was already up big today?' },
++];
++const ANSWER_IDS = QUESTIONS.map((q) => q.id);
++const BASIS = 'Recorded self-declared answers to the four saved questions with a server receipt; a fresh pass is the trader\'s own statement, not verified calmness, clear thinking, plan adherence, broker state or an edge. A no blocks the app\'s own actionable surface the way the killzone veto does and cannot reach a broker. Absence of answers is never a pass, and imported copies never grant permission.';
++
++const id = (n) => Number.isSafeInteger(n) && n > 0;
++const hash = (v) => crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
++function invalid(message, status = 400) { return Object.assign(new Error(message), { code: 'state_gate_invalid', status }); }
++const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
++const Clock = (s, o) => require('./process-outcomes').clock(s, o);
++
++/** null = "not answered now". Any other value must be exactly the four booleans. */
++function answers(value) {
++  if (value === null) return null;
++  if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalid('Answer all four questions yes/no, or explicitly record that you have not answered.');
++  const keys = Object.keys(value);
++  if (keys.length !== ANSWER_IDS.length || ANSWER_IDS.some((k) => !Object.hasOwn(value, k)) || keys.some((k) => !ANSWER_IDS.includes(k))) throw invalid('Answer exactly the four saved questions: calm, clear, following the plan, would take it if already up big.');
++  const out = {};
++  for (const k of ANSWER_IDS) { if (typeof value[k] !== 'boolean') throw invalid('Each answer is a truthful yes or no; there is no "maybe" and no default.'); out[k] = value[k]; }
++  return out;
++}
++function input(body) {
++  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some((k) => !['answers', 'revision'].includes(k)) || !Object.hasOwn(body, 'answers') || typeof body.revision !== 'string' || !/^[a-f0-9]{64}$/.test(body.revision)) throw invalid('Send the displayed revision and explicit answers/null only; the app records your answers, so no caller clock, source or owner authority is accepted.');
++  return { answers: answers(body.answers), revision: body.revision };
++}
++
++function evaluate(rows, accountId, { nowMs = Date.now() } = {}) {
++  const human = (rows || []).filter((r) => r && r.source === 'human_declared');
++  const archives = (rows || []).filter((r) => r && r.source === 'imported_unverified');
++  /** Using the gate at all — including an explicit "not answered now" — is adoption;
++   * recording a null can therefore never be a way to un-adopt the check and act. */
++  const adopted = human.length > 0;
++  const base = {
++    schema: VERSION, version: null, account_id: accountId, state: 'not_adopted', allowed: false, adopted,
++    answers: null, receipt: null, recorded_at: null, age_minutes: null, expires_at: null,
++    questions: QUESTIONS, window_minutes: WINDOW_MIN, imported_archives: archives.length,
++    failed_questions: [], broker_verified: false, service: VERSION, basis: BASIS,
++  };
++  const last = human.length ? human[human.length - 1] : null;
++  if (!last) return base;
++  const receipt = Clock(last.recorded_at, { canonical: true, now: nowMs });
++  if (receipt === null) return { ...base, state: 'unavailable' };
++  if (last.schema_version !== VERSION) return { ...base, state: 'unavailable', recorded_at: last.recorded_at };
++  let given; try { given = last.answers_json === null || last.answers_json === undefined ? null : JSON.parse(last.answers_json); } catch { return { ...base, state: 'unavailable', recorded_at: last.recorded_at }; }
++  try { given = answers(given); } catch { return { ...base, state: 'unavailable', recorded_at: last.recorded_at }; }
++  const age = nowMs - receipt, fresh = age >= 0 && age <= WINDOW_MIN * 60000 && utcDay(receipt) === utcDay(nowMs);
++  const failed = given ? ANSWER_IDS.filter((k) => given[k] === false) : [];
++  const state = given === null ? 'unanswered' : !fresh ? 'stale' : failed.length ? 'failed' : 'passed';
++  return {
++    ...base, state, allowed: state === 'passed', answers: given, failed_questions: failed,
++    recorded_at: last.recorded_at, receipt: receipt === null ? null : new Date(receipt).toISOString(),
++    version: id(Number(last.version)) ? Number(last.version) : null,
++    age_minutes: Math.max(0, Math.round(age / 60000)),
++    expires_at: new Date(receipt + WINDOW_MIN * 60000).toISOString(),
++  };
++}
++
++function publicRow(row) {
++  if (!row) return null;
++  try {
++    if (!['human_declared', 'imported_unverified'].includes(row.source) || row.schema_version !== VERSION || !id(row.account_key) || (row.account_id !== null && row.account_id !== row.account_key) || !id(row.version) || Clock(row.recorded_at, { canonical: true }) === null) throw invalid('Unavailable state-gate answer record.');
++    const given = row.answers_json === null || row.answers_json === undefined ? null : answers(JSON.parse(row.answers_json));
++    return { id: row.id, account_id: row.account_id, account_key: row.account_key, version: Number(row.version), answers: given, state: row.source === 'imported_unverified' ? 'imported_unverified' : given === null ? 'unanswered' : 'answered', source: row.source, recorded_at: row.recorded_at, historical: row.historical_json ? JSON.parse(row.historical_json) : null, broker_verified: false };
++  } catch { return { id: row.id, account_key: row.account_key, version: null, answers: null, state: 'unavailable', source: 'unavailable', recorded_at: null, broker_verified: false }; }
++}
++
++async function owned(store, userId, accountId) {
++  if (!['string', 'number'].includes(typeof accountId) || (typeof accountId === 'string' && !/^[1-9]\d*$/.test(accountId)) || !id(Number(accountId))) throw invalid('Account not found.', 404);
++  const a = await store.prepare('SELECT * FROM accounts WHERE user_id=? AND id=?').get(userId, Number(accountId));
++  if (!a) throw invalid('Account not found.', 404);
++  return a;
++}
++const rowsOn = (store, userId, accountId) => store.prepare('SELECT * FROM state_gate_answers WHERE user_id=? AND account_key=? ORDER BY id').all(userId, accountId);
++
++async function viewOn(store, userId, accountId, { nowMs = Date.now() } = {}) {
++  const a = await owned(store, userId, accountId);
++  const rows = await rowsOn(store, userId, a.id);
++  return { account_id: a.id, ...evaluate(rows, a.id, { nowMs }), history: rows.map(publicRow), revision: hash([userId, a.id, rows]) };
++}
++async function read(userId, accountId, options) { const { db } = require('./db'); return db.tx(async (tx) => viewOn(db.transactionStore(tx), userId, accountId, options)); }
++async function save(userId, accountId, body, { nowMs = Date.now() } = {}) {
++  const fields = input(body); const { db } = require('./db');
++  return db.tx(async (tx) => {
++    const store = db.transactionStore(tx), v = await viewOn(store, userId, accountId, { nowMs });
++    if (fields.revision !== v.revision) throw invalid('State-gate answers or account changed. Explicitly reload before answering.', 409);
++    const next = (await store.prepare('SELECT MAX(version) v FROM state_gate_answers WHERE user_id=? AND account_key=?').get(userId, v.account_id)).v || 0;
++    await store.prepare('INSERT INTO state_gate_answers(user_id,account_id,account_key,version,answers_json,source,recorded_at,schema_version) VALUES(?,?,?,?,?,?,?,?)')
++      .run(userId, v.account_id, v.account_id, Number(next) + 1, fields.answers === null ? null : JSON.stringify(fields.answers), 'human_declared', new Date(nowMs).toISOString(), VERSION);
++    return viewOn(store, userId, accountId, { nowMs });
++  });
++}
++function unavailable(reason = 'State-gate answers unavailable — not answered, not a pass, and not a block.') { return { schema: VERSION, version: null, account_id: null, state: 'unavailable', allowed: false, adopted: false, answers: null, receipt: null, recorded_at: null, age_minutes: null, expires_at: null, questions: QUESTIONS, window_minutes: WINDOW_MIN, imported_archives: 0, failed_questions: [], broker_verified: false, service: VERSION, message: reason, basis: BASIS }; }
++async function optional(userId, accountId, { nowMs = Date.now(), store = null } = {}) {
++  try {
++    if (store) return await viewOn(store, userId, accountId, { nowMs });
++    return await read(userId, accountId, { nowMs });
++  } catch { return unavailable(); }
++}
++/** The write paths' own permission question. `not_adopted` is the ONE state that is
++ * not an enforcement: an account that has never answered the four questions has no
++ * recorded refusal for the app to honour, so the desk stays legible and says so
++ * rather than inventing a check the trader never gave. Everything else refuses. */
++async function permission(userId, accountId, { nowMs = Date.now() } = {}) {
++  let view; try { view = await read(userId, accountId, { nowMs }); } catch (e) { if (e.code === 'state_gate_invalid' && e.status === 404) throw e; return { ...unavailable(), adopted: true, message: 'State gate unavailable; the app cannot claim a fresh pass.' }; }
++  const allowed = view.state === 'passed' || view.state === 'not_adopted';
++  const message = view.state === 'failed' ? `State gate: you answered no to ${view.failed_questions.map((k) => `"${QUESTIONS.find((q) => q.id === k).text}"`).join(', ')}. You do not trade yet.`
++    : view.state === 'stale' ? `State gate: your last answers are ${view.age_minutes} minutes old (APP window ${WINDOW_MIN} min) and cannot stand in for a fresh in-session check.`
++      : view.state === 'unanswered' ? 'State gate: you have not answered the four questions for this session.'
++        : view.state === 'unavailable' ? 'State gate: the stored answers cannot be read back, so no pass is claimed.'
++          : view.state === 'not_adopted' ? 'The four-question state gate is not adopted on this account: the desk cannot claim a state check it never received, and this is not a pass.' : `State gate passed at ${view.receipt} (trader's own answers, expired ${view.expires_at}).`;
++  return { ...view, allowed, message };
++}
++async function history(userId, accountId = null) {
++  const { db } = require('./db');
++  if (accountId !== null) await owned(db, userId, accountId);
++  const rows = await db.prepare('SELECT * FROM state_gate_answers WHERE user_id=?' + (accountId === null ? '' : ' AND account_key=?') + ' ORDER BY id').all(...(accountId === null ? [userId] : [userId, Number(accountId)]));
++  return { records: rows.map(publicRow), readonly: true, broker_verified: false, basis: BASIS };
++}
++function portable(raw) {
++  const out = { records: [], warnings: [] };
++  if (raw == null) return out;
++  try {
++    if (!raw || raw.version !== 1 || !Array.isArray(raw.records) || raw.records.length > 500) throw invalid('Optional state-gate history requires version 1 and at most 500 records.');
++    if (raw.unavailable || raw.unavailable_records > 0) out.warnings.push('Original state-gate history unavailable/omitted; no pass and no refusal is inferred.');
++    for (const r of raw.records) {
++      try {
++        const given = answers(r.answers === undefined ? null : r.answers);
++        const original = r.historical || {}, oldClock = original.recorded_at ?? r.recorded_at;
++        let declared = oldClock;
++        if (oldClock != null && Clock(oldClock, { canonical: true }) === null) { out.warnings.push('Invalid/future original state-gate receipt omitted, not receiving-clock proof.'); declared = null; }
++        out.records.push({ account_id: r.account_id ?? r.account_key, answers: given, historical: { source: original.source || r.source || null, recorded_at: declared, original_version: original.original_version ?? r.version ?? null, original_id: original.original_id ?? r.id ?? null } });
++      } catch (e) { out.warnings.push(e.message || 'Invalid optional state-gate answer set omitted.'); }
++    }
++  } catch (e) { out.warnings.push(e.message || 'Optional state-gate history omitted.'); }
++  out.warnings = out.warnings.slice(0, 20);
++  return out;
++}
++async function exportOwned(userId) {
++  try { const { db } = require('./db'), rows = await db.prepare('SELECT * FROM state_gate_answers WHERE user_id=? ORDER BY id').all(userId), records = rows.map(publicRow).filter((p) => p.state !== 'unavailable'); return { version: 1, records, unavailable_records: rows.length - records.length }; }
++  catch { return { version: 1, records: [], unavailable: true }; }
++}
++async function importOn(store, userId, parsed, map = {}, fallback = null) {
++  for (const p of parsed.records) {
++    const accountId = map[p.account_id] || fallback;
++    await owned(store, userId, accountId);
++    const next = (await store.prepare('SELECT MAX(version) v FROM state_gate_answers WHERE user_id=? AND account_key=?').get(userId, accountId)).v || 0;
++    await store.prepare('INSERT INTO state_gate_answers(user_id,account_id,account_key,version,answers_json,source,recorded_at,historical_json,schema_version) VALUES(?,?,?,?,?,?,?,?,?)')
++      .run(userId, accountId, accountId, Number(next) + 1, p.answers === null ? null : JSON.stringify(p.answers), 'imported_unverified', new Date().toISOString(), JSON.stringify(p.historical), VERSION);
++  }
++}
++/** Merge into the desk's personal state. A recorded no — or an adopted account whose
++ * check is missing/stale/unreadable — becomes the same kind of stop the personal
++ * guardrails already produce, so `Guards.applyToSetups` and the Now surface refuse the
++ * signal. `not_adopted` is reported, never silently upgraded into a block. */
++function apply(daily, gate) {
++  if (!daily || !gate) return daily;
++  /* `allowed` in the published object always means "a fresh all-yes pass exists".
++   * `permission` is the app's own write decision, where an account that never adopted
++   * the gate is deliberately not refused. Keeping the two distinct is what stops a
++   * snapshot of an unadopted account from reading like a state check that passed. */
++  const published = { ...gate, permission: gate.state === 'passed' || gate.state === 'not_adopted', allowed: gate.state === 'passed' };
++  const out = { ...daily, state_gate: published };
++  const refusing = gate.state === 'failed' || (gate.adopted && gate.state !== 'passed');
++  if (!refusing) return out;
++  const rule = gate.state === 'failed' ? 'state_gate_failed' : `state_gate_${gate.state}`;
++  const detail = gate.state === 'failed'
++    ? `State gate: your own recorded answer was no to ${gate.failed_questions.map((k) => `"${QUESTIONS.find((q) => q.id === k).text}"`).join(', ')} — you do not trade yet, and a fresh honest answer is the only way to change that.`
++    : `State gate: an adopted in-session check is not currently passed (${gate.state}). Answer the four questions; this refusal is the app's own and cannot reach a broker.`;
++  return {
++    ...out,
++    state_gate: { ...published, rule, detail },
++    breaches: [...(daily.breaches || []), { rule, detail, state_gate: true }],
++    status: 'stop',
++    message: 'Stand down: ' + detail,
++    permission: { ...(daily.permission || {}), allowed: false, can_override: false, state: 'state_gate', message: 'Stand down: ' + detail },
++  };
++}
++module.exports = { VERSION, WINDOW_MIN, QUESTIONS, ANSWER_IDS, BASIS, id, hash, invalid, answers, input, evaluate, publicRow, owned, viewOn, read, save, permission, optional, unavailable, history, portable, exportOwned, importOn, apply };

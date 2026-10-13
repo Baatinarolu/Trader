@@ -1,0 +1,46 @@
+{
+  "app": "/tmp/m106-policy-stage/app",
+  "pass": 0,
+  "fail": 8,
+  "results": [
+    {
+      "label": "a fresh account is not_adopted with a revision to write against",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/state-gate</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "recording four honest yes answers is a fresh pass",
+      "passed": false,
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/state-gate</pre>\n</body>\n</html>\n"
+    },
+    {
+      "label": "the pass carries the APP window and an expiry, not an unbounded permission",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "the recorded answers come back as given, with no sentiment or score added",
+      "passed": false
+    },
+    {
+      "label": "the revision returned by a write is the one the next write may use",
+      "passed": false
+    },
+    {
+      "label": "a write from a superseded displayed revision is refused 409 and stores nothing",
+      "passed": false,
+      "detail": 404
+    },
+    {
+      "label": "both versions are retained with server receipts, none deleted or rewritten",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "Cannot read properties of undefined (reading 'id')"
+    }
+  ],
+  "scope": "M106 owned four-question answers over real HTTP/auth/SQL: actual runtime/auth/SQL/DOM, fixedUTC and tiny raster/literal journals; not real chart/provider/broker/pixel/production or complete course journal proof"
+}

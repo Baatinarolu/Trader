@@ -315,12 +315,52 @@ index 0000000..bd0e991
 +no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
 +Those four are what distinguish a working deploy from one that merely builds.
 diff --git a/README.md b/README.md
-index df9ae3c..a5d9bcd 100644
+index df9ae3c..eb31ace 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,5 +1,368 @@
+@@ -1,5 +1,408 @@
  # TradeJournal Pro
  
++## M106 — fresh in-session four-question state gate (2026-10-13)
++
++**Dashboard** and the owned **day review** now carry the saved pre-entry check: *Am I
++calm? Am I clear? Am I following the trade plan? Would I take this trade if I was
++already up big today?* — and the saved rule that follows it, *“if the answer to any of
++these questions is no, then you don’t trade yet.”* Answers are your own yes/no words
++with a **server receipt**; the card, the editor and the readonly history never
++preselect an answer, never accept free text, and never infer a state from your notes,
++profit or adherence.
++
++A recorded **no** refuses the app's own actionable surface the way the killzone veto
++does: live entries and reopen on `POST/PUT /trades` answer 409 `state_gate_failed`,
++saved signals/plans refuse with the same code, and `analyse`/`chart`/`scan`/Now refuse
++with `NO TRADE` and a blocking guard. Freshness is the APP's own policy — same UTC day
++and within the 60-minute window since the receipt — so yesterday's check is never
++today's permission; an *adopted* account with no current check is equally refused. An
++account that **never** answered is reported as `not_adopted` and is **not** blocked:
++the desk does not invent a rule the trader never adopted. Imported copies are
++`imported_unverified` archives with the original clock retained; they can never pass,
++fail or block anyone. `record_only` history, closes, edits and imports stay legal, so
++the check can never hold your journal hostage.
++
++Answers are stored append-only and immutable; a stale displayed revision 409s with
++nothing written, and a store outage 503s without claiming a receipt. `not_adopted`,
++`passed`, `failed`, `unanswered`, `stale` and `unavailable` are distinct and visible —
++including in the export/restore path and in Settings. This is a record of what you
++said, not verified calmness, clarity, plan adherence, broker state, an edge, a
++readiness/mental-state score or any authority over risk, admission, cap, routine, core
++or grades. M89 emotion capture, M64's morning check-in and M107's daily intention stay
++separate features; the gate is only the in-session check before a prospective entry.
++
++**M106 318/0 across 10 probes**, actual137-parent additive/restart migration 18/0;
++every prior M105 cohort re-run unchanged (142/0 with one declared M105-only schema
++negative, changes152/1, opportunities144/1, reviews159/1, behavior113/2, process106/2,
++screenshots223/3, emotions170/0, confluences160/0, execution260/0, routine321/0,
++offline178/0, market325/0, RAW596/156, DECLARED824/4, pure70/1). Ledger
++**132=100 done/3 partial/29 TODO**. Report `analysis/M106-STATE-GATE.md` in the ZIP.
++Next M107. No 70%, causal/predictive edge, broker/provider/mental/human/meditation/
++pixel/production claim.
++
 +## M105 — chosen self-description / separate quarterly theme (2026-10-13)
 +
 +**Dashboard** and owned **day review** now show optional declared words: a persistent
@@ -687,7 +727,7 @@ index df9ae3c..a5d9bcd 100644
  A **multi-asset trading journal, analytics engine, behavioural coach, SMC bot desk and TradingView-integrated
  pre-trade assistant**. No subscription, no broker login, no sign-in wall — a Node server, one libSQL database
  (a local file by default), and the whole thing deployable free to Vercel + Turso.
-@@ -11,6 +374,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -11,6 +414,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  
  ---
  
@@ -726,7 +766,7 @@ index df9ae3c..a5d9bcd 100644
  ## What it does
  
  | Area | What you get |
-@@ -18,8 +413,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -18,8 +453,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  | **Journal** | 40+ fields per trade — thesis, execution notes, emotions, confidence, rule-adherence score, mistake tags, screenshots, MAE/MFE, planned R, **scale-out legs** (closes at the pct-weighted price). Works for FX, futures, stocks, ETFs, crypto, index CFDs and options. |
  | **Analytics** | Expectancy ($ and R), win rate, profit factor, payoff, SQN, Sharpe, Sortino, Calmar, recovery factor, Kelly, max drawdown, streaks, R-distribution, MAE/MFE capture efficiency, time-of-day and weekday grids, hold-time buckets, 10+ segment tables. |
  | **Coach** | 20+ deterministic behavioural tests on your own rows — losing setups, bad hours, revenge entries, post-loss trading, overtrading days, size creep, early exits, tight stops, cost of each mistake tag — each with the numbers, the dollar impact and one concrete action. |
@@ -737,7 +777,7 @@ index df9ae3c..a5d9bcd 100644
  | **Data** | CSV import with automatic column detection, CSV export, full JSON backup & restore, multi-account (including prop-firm drawdown rules), instrument library. |
  | **Options** | Black-Scholes calculator (price, delta/gamma/theta/vega, break-even, ITM/OTM), premium-based position sizing, and a plan that warns instead of printing a fake R:R when your target premium is below the entry. 7 option presets (100× multiplier). *IV is yours to type — there is no options feed.* |
  | **Prop challenge** | Named challenge shapes (5 %/10 %, 6 %/6 %, instant…) applied to an account, then a live tracker over 4 checks — daily loss, max drawdown, profit target, consistency — with progress %. |
-@@ -263,6 +658,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
+@@ -263,6 +698,47 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
  
  Guides: [docs/BOTS.md](docs/BOTS.md) · [docs/PLAYLIST-CURRICULUM.md](docs/PLAYLIST-CURRICULUM.md)
  
@@ -786,7 +826,7 @@ index df9ae3c..a5d9bcd 100644
  
  * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.
 diff --git a/docs/API.md b/docs/API.md
-index 4475db3..911a052 100644
+index 4475db3..2f0917f 100644
 --- a/docs/API.md
 +++ b/docs/API.md
 @@ -1,5 +1,55 @@
@@ -845,7 +885,7 @@ index 4475db3..911a052 100644
  Base URL: `http://localhost:3000/api`
  Auth: session cookie (`tj_session`) **or** an `x-session: <token>` header. There is **no sign-in wall**:
  `POST /auth/local` hands the caller a workspace (reusing the database's existing one locally, minting a
-@@ -383,3 +433,688 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
+@@ -383,3 +433,738 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
  | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
  | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
  | `DELETE /api/chart/drawings?symbol=…&tf=…` | clears that market |
@@ -1534,12 +1574,62 @@ index 4475db3..911a052 100644
 +admission/model/weights/factors/geometry/stops/targets/RR change. Course30/M103n>=5/
 +B-C unchanged. No70%/causal/predictive/mental/broker/provider/human/meditation/pixel/
 +production proof. M106 next; M111/M112 open, M30/M103/M108 partial.
++
++## M106 — fresh in-session four-question state gate
++
++Additive `state_gate_answers` append-only answer history: `human_declared` first-party
++rows and `imported_unverified` archives. UPDATE facts immutable (FK nullification only
++exception); owner deletion cascades, account deletion SET NULL retains the row for the
++owner's own readonly history and never re-attaches it to a foreign account. Not sealed
++against database-admin tampering. Nothing is backfilled from notes, profit, adherence
++or legacy journal text, and no answer is ever defaulted.
++
++- `GET /state-gate?account_id=` live view: account, current state
++  (`not_adopted`|`passed`|`failed`|`unanswered`|`stale`|`unavailable`), the four saved
++  questions, recorded answers, server receipt, `age_minutes`, `expires_at`, APP
++  `window_minutes`, `failed_questions`, `imported_archives`, history, displayed
++  `revision`, `basis`, `broker_verified:false`. `allowed` is true only for a fresh
++  all-yes pass; `not_adopted` is reported as adoption, never as a pass.
++- `GET /state-gate/history?account_id=` readonly own rows including detached orphans
++  and imported archives. Omitted account means all own accounts, never another user's.
++- `PUT /state-gate?account_id=` only `{answers, revision}` where `answers` is exactly
++  `{calm,clear,following_plan,would_take_if_up_big}` booleans or explicit `null`
++  ("not answered now"). No caller clock, source, owner, score or text is accepted.
++  Stale displayed revision409 with nothing written; a store failure503 claims no
++  receipt and rolls the new row back only.
++
++The four questions are the saved rule (“if the answer to any of these questions is no,
++then you don't trade yet”): am I calm, am I clear, am I following the trade plan, would
++I take this trade if I was already up big today. A recorded no publishes
++`state_gate_failed`; an adopted account whose check is missing/stale/unreadable
++publishes `state_gate_unanswered|stale|unavailable`. Both refuse `POST /trades` live
++entries and `PUT /trades/:id` reopen with 409 + `state_gate` payload, fold into the
++guardrail snapshot, and become the same kind of personal stop the killzone/personal
++guardrails use — `Guards.applyToSetups` / Now refuse the signal, `saveSignals` and
++`savePlan` throw the gate's own 409 code. `record_only` journal history, closing,
++editing and importing are never gated: an in-session check cannot hold a trader's
++history hostage.
++
++Freshness is the APP's own policy: same UTC day and `<=window_minutes` since the
++server receipt (default 60). The window edge is inclusive; a corrupt/future receipt is
++`unavailable` and cannot pass. `not_adopted` accounts are not blocked — the app does
++not invent a check the trader never gave — and imported copies never grant permission
++on the receiving account. Answers are the trader's own words: this is not verified
++calmness, clarity, plan adherence, broker state, an edge, a readiness/mental-state
++score or any authority over risk, admission, cap, routine, core or grades.
++
++Full JSON backup carries `state_gate_answers`; restore labels every copy
++`imported_unverified` with the original clock as history and can never pass, fail or
++block the receiving trader. Invalid optional history warns while the financial import
++stays legal; a real import-store failure rolls that request back atomically; a missing
++answer store leaves the financial backup legal with an unavailable marker. Settings
++surfaces the warnings instead of hiding omissions.
 diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
 new file mode 100644
-index 0000000..f200197
+index 0000000..6c01654
 --- /dev/null
 +++ b/docs/GUARDRAILS.md
-@@ -0,0 +1,634 @@
+@@ -0,0 +1,672 @@
 +# Personal guardrails, recording and reasoned exceptions
 +
 +## M87 visual journal scope (2026-10-11)
@@ -2174,6 +2264,44 @@ index 0000000..f200197
 +partial. Existing execution/daily/window scores/grades/weights/default risk/factors/
 +entrymodels/checklists/stops/targets/RR/floor30/M103n>=5/B-C unchanged. No70%/causal/
 +predictive edge/broker/provider/actual mental/human/meditation/pixels/production proof.
++
++
++## M106 — the fresh four-question check refuses, it never grades
++
++Owned append-only `human_declared` answers to the four saved questions (calm, clear,
++following the plan, would take it if already up big) with a server receipt; imported
++copies are `imported_unverified` archives. No default, no preselected answer, no free
++text, no inference from notes/profit/emotion/adherence/legacy rows, no backfill.
++
++A recorded no is `state_gate_failed`. An adopted account whose check is missing, stale,
++unparseable or from an unknown schema version is `state_gate_unanswered|stale|
++unavailable`. Both become the same kind of personal stop the personal guardrails and
++the killzone veto already produce: `POST /trades` live entry and reopen answer 409,
++`saveSignals`/`savePlan` throw the same code, and analyse/chart/scan/Now refuse with
++`NO TRADE`, `personal_blocked:true`, `execution_permission.allowed:false` and a blocking
++`state_gate_*` breach. The gate takes the trader's own desk: an omitted `account_id`
++resolves the default account, so skipping the field is not a bypass, while an explicit
++research-only save stays a labelled research artifact.
++
++`not_adopted` is deliberately NOT a block: an account that never answered has no
++recorded refusal to honour, and inventing one would be a fabricated rule. Freshness is
++APP policy only — same UTC day and within the 60-minute window, edge inclusive; a
++future/corrupt receipt is `unavailable`, never a pass. Admission, caps, cooldown,
++routine, risk, grades, geometry, targets/RR and the core journal are untouched:
++refusals change the app's own permission, never a number.
++
++Immutable rows (UPDATE guarded, FK-nullification exception), revision CAS with 409 +
++retained draft, store failure 503 with no receipt and no partial write, orphaned rows
++retained readonly for their owner only. Backup/restore labels copies as archives that
++can never pass, fail or block the receiving trader; malformed optional history warns
++while the financial import stays legal; a real import-store failure rolls back that
++request atomically. Settings shows the warnings; nothing auto-refreshes them away.
++
++Current132=100done/3partial/29TODO. NextM107, M111/M112 open, M30/M103/M108 partial.
++This is recorded self-report, not verified calmness, clarity, plan adherence, broker
++state, an edge, a readiness/mental-state score or a discipline rating; no 70%/causal/
++predictive/broker/provider/human/meditation/pixel/production proof. M89 capture, M64
++morning check-in and M107 intention remain separate features.
 diff --git a/public/css/app.css b/public/css/app.css
 index 34cc0ff..877c80b 100644
 --- a/public/css/app.css
@@ -2214,14 +2342,15 @@ index 34cc0ff..877c80b 100644
 +.routine-report{margin-top:14px}.routine-report th{white-space:normal}
 +@media(max-width:700px){.routine-banner{position:relative;top:auto;align-items:flex-start;padding:10px;flex-wrap:wrap}.routine-schedule .form-grid{grid-template-columns:1fr!important}}
 diff --git a/public/index.html b/public/index.html
-index 7ed122b..afae9c2 100644
+index 7ed122b..e402254 100644
 --- a/public/index.html
 +++ b/public/index.html
-@@ -25,6 +25,16 @@
+@@ -25,6 +25,17 @@
  <script src="/js/api.js?v={{V}}"></script>
  <script src="/js/store.js?v={{V}}"></script>
  <script src="/js/tv.js?v={{V}}"></script>
 +<script src="/js/views/identity.js?v={{V}}"></script>
++<script src="/js/views/state-gate.js?v={{V}}"></script>
 +<script src="/js/views/rule-changes.js?v={{V}}"></script>
 +<script src="/js/views/period-reviews.js?v={{V}}"></script>
 +<script src="/js/views/opportunities.js?v={{V}}"></script>
@@ -2234,7 +2363,7 @@ index 7ed122b..afae9c2 100644
  <script src="/js/views/dashboard.js?v={{V}}"></script>
  <script src="/js/views/bots.js?v={{V}}"></script>
  <script src="/js/views/trades.js?v={{V}}"></script>
-@@ -36,6 +46,7 @@
+@@ -36,6 +47,7 @@
  <script src="/js/views/risk.js?v={{V}}"></script>
  <script src="/js/views/market.js?v={{V}}"></script>
  <script src="/js/views/settings.js?v={{V}}"></script>
@@ -3310,10 +3439,10 @@ index 0000000..974ec82
 +  };
 +})(window);
 diff --git a/public/js/views/dashboard.js b/public/js/views/dashboard.js
-index d8a189b..2352d8e 100644
+index d8a189b..d5e1743 100644
 --- a/public/js/views/dashboard.js
 +++ b/public/js/views/dashboard.js
-@@ -1,18 +1,41 @@
+@@ -1,18 +1,42 @@
  /* views/dashboard.js — the daily cockpit */
  (function (global) {
    'use strict';
@@ -3353,15 +3482,17 @@ index d8a189b..2352d8e 100644
          API.get('/trades', { ...params, limit: 12 }),
 -      ]);
 +        API.get('/identity/daily/'+Store.isoToday(),{account_id:Store.accountId}).catch(()=>({state:'unavailable'})),
-+      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay]=identityResult;
++        API.get('/state-gate',{account_id:Store.accountId}).catch(()=>({state:'unavailable',account_id:null})),
++      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay,stateGateView]=identityResult;
 +      if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;
        const k = an.kpis;
        const acc = an.account || Store.account() || {};
        root.innerHTML = '';
-@@ -50,10 +73,17 @@
+@@ -50,10 +74,18 @@
          go('first-bots', () => global.App.go('bots'));
        }
  
++      if(Views.stateGate)root.appendChild(Views.stateGate.card(stateGateView));
 +      if(Views.identity)root.appendChild(Views.identity.card(identityDay));
 +      root.appendChild(Views.sessionTimeCard(briefing?.daily?.session_time || {}));
 +      if(Views.lossWritingCard)root.appendChild(Views.lossWritingCard(briefing?.daily?.post_loss_journal || {}));
@@ -3376,7 +3507,7 @@ index d8a189b..2352d8e 100644
          const card = U.h('div', { class: 'card pad-lg', style: 'background:linear-gradient(135deg,rgba(79,140,255,.10),rgba(17,24,39,.9))' });
          card.innerHTML = `
            <div class="row-between" style="align-items:flex-start;flex-wrap:wrap">
-@@ -65,11 +95,15 @@
+@@ -65,11 +97,15 @@
                  ${(briefing.plan_of_the_day || []).map((l) => `<div class="small muted-2 bullet">${U.esc(l)}</div>`).join('')}
                </div>
                <div class="row wrap" style="gap:8px">
@@ -3394,7 +3525,7 @@ index d8a189b..2352d8e 100644
                <div class="tiny muted" style="margin-top:8px">${(rp.reasons || []).map((r) => U.esc(r)).join(' · ')}</div>
              </div>
              <div style="min-width:250px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:14px">
-@@ -140,7 +174,7 @@
+@@ -140,7 +176,7 @@
            <div><div class="l">Peak</div><div class="v">${U.money(Math.max(...an.equity.map((p) => p.equity)))}</div></div>
            <div><div class="l">Recovery factor</div><div class="v">${U.num(k.recovery_factor, 2)}</div></div>
            <div><div class="l">Streak</div><div class="v ${k.streaks.current_type === 'loss' ? 'neg' : 'pos'}">${k.streaks.current === 0 ? '—' : (k.streaks.current_type === 'win' ? k.streaks.current + 'W' : Math.abs(k.streaks.current) + 'L')}</div></div>
@@ -3541,7 +3672,7 @@ index 0000000..ef12ef0
 + };
 +})(window);
 diff --git a/public/js/views/journal.js b/public/js/views/journal.js
-index 1d22619..8ac5d15 100644
+index 1d22619..1135f22 100644
 --- a/public/js/views/journal.js
 +++ b/public/js/views/journal.js
 @@ -6,7 +6,9 @@
@@ -3629,7 +3760,7 @@ index 1d22619..8ac5d15 100644
        </div>
        <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
          <label class="field"><span>Market bias</span><select id="j-bias">${['', 'Bullish', 'Bearish', 'Neutral', 'Choppy'].map((v) => `<option ${e.market_bias === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-@@ -135,21 +172,42 @@
+@@ -135,21 +172,43 @@
        <label class="field"><span>Lessons</span><textarea id="j-lessons">${U.esc(e.lessons)}</textarea></label>
        <label class="field"><span>Tomorrow</span><textarea id="j-tomorrow">${U.esc(e.tomorrow)}</textarea></label>
        <label class="field"><span>Screen time (minutes)</span><input id="j-screen" type="number" value="${e.screen_time_minutes ?? ''}" /></label>
@@ -3641,6 +3772,7 @@ index 1d22619..8ac5d15 100644
 +        <td class="tiny"><button class="btn xs ghost" type="button" data-day-emotions="${t.id}">Emotion timing</button> <button class="btn xs ghost" type="button" data-day-confluences="${t.id}">Entry reasons</button> <button class="btn xs ghost" data-day-screenshots="${t.id}">HTF / MTF / LTF</button></td>
          <td class="tiny muted">${U.esc((t.lesson || t.notes || '').slice(0, 80))}</td></tr>`).join('')}</tbody></table>` : ''}`;
 +    if(Views.behaviorDays)body.prepend(Views.behaviorDays.card(day.behavior_days));
++    if(Views.stateGate)body.prepend(Views.stateGate.card(day.state_gate));
 +    if(Views.identity)body.prepend(Views.identity.card(day.identity_context));
 +    if(Views.processOutcomes)body.prepend(Views.processOutcomes.card(day.process_review));
 +    if(Views.execution)body.appendChild(Views.execution.summaryCard(day.execution_summary||{}));
@@ -4078,7 +4210,7 @@ index 0000000..061ffe4
 +  };
 +})(window);
 diff --git a/public/js/views/settings.js b/public/js/views/settings.js
-index b72afdb..3d8e250 100644
+index b72afdb..f6cc7ee 100644
 --- a/public/js/views/settings.js
 +++ b/public/js/views/settings.js
 @@ -31,6 +31,8 @@
@@ -4117,8 +4249,8 @@ index b72afdb..3d8e250 100644
 -              Store.invalidate(); global.App.toast('Import complete', 'ok');
 +              if(!currentMediaPane())return;
 +              out.innerHTML = `Imported <b>${d.inserted}</b> trades${d.skipped ? `, skipped ${d.skipped}` : ''}. Detected columns: ${Object.entries(d.detected).filter(([, v]) => v).map(([k, v]) => `${k}→${v}`).join(', ') || 'none'}`+(Views.screenshots?Views.screenshots.importResult(d):'');
-+              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)out.appendChild(identityHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
-+              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
++              const reasons=Views.confluences?.feedback(d);if(reasons)out.appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)out.appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)out.appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)out.appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)out.appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)out.appendChild(gateHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)out.appendChild(opportunities);
++              Store.invalidate(); global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length||d.state_gate_warnings?.length?'Financial import recorded; review optional journal evidence omissions below.':'Import complete', 'ok');
              } catch (e) { out.innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
            });
            const file = U.$('#im-file', w);
@@ -4148,8 +4280,8 @@ index b72afdb..3d8e250 100644
 -              } catch (e) { U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
 +                if(!currentMediaPane()||attempt!==jsonRead)return;
 +                U.$('#ex-out', w).innerHTML = `Restored <b>${d.inserted}</b> trades.`+(Views.screenshots?Views.screenshots.importResult(d):'');
-+                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)U.$('#ex-out',w).appendChild(identityHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
-+                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length&&!d.review_warnings?.length&&!d.opportunity_warnings?.length&&!d.rule_change_warnings?.length&&!d.identity_warnings?.length)global.App.refresh();
++                const reasons=Views.confluences?.feedback(d);if(reasons)U.$('#ex-out',w).appendChild(reasons);const states=Views.emotions?.feedback(d);if(states)U.$('#ex-out',w).appendChild(states);const reviews=Views.periodReviews?.feedback(d);if(reviews)U.$('#ex-out',w).appendChild(reviews);const ruleHistory=Views.ruleChanges?.feedback(d);if(ruleHistory)U.$('#ex-out',w).appendChild(ruleHistory);const identityHistory=Views.identity?.feedback(d);if(identityHistory)U.$('#ex-out',w).appendChild(identityHistory);const gateHistory=Views.stateGate?.feedback(d);if(gateHistory)U.$('#ex-out',w).appendChild(gateHistory);const opportunities=Views.opportunities?.feedback(d);if(opportunities)U.$('#ex-out',w).appendChild(opportunities);
++                await Store.reloadAll();if(!currentMediaPane())return;global.App.toast(d.media_warnings?.length||d.confluence_warnings?.length||d.emotion_warnings?.length||d.review_warnings?.length||d.opportunity_warnings?.length||d.rule_change_warnings?.length||d.identity_warnings?.length||d.state_gate_warnings?.length?'Financial restore recorded; review optional journal evidence omissions below.':'Backup restored (media historical/unverified)', 'ok');if(!d.media_warnings?.length&&!d.confluence_warnings?.length&&!d.emotion_warnings?.length&&!d.review_warnings?.length&&!d.opportunity_warnings?.length&&!d.rule_change_warnings?.length&&!d.identity_warnings?.length&&!d.state_gate_warnings?.length)global.App.refresh();
 +              } catch (e) { if(currentMediaPane()&&attempt===jsonRead)U.$('#ex-out', w).innerHTML = `<span class="neg">${U.esc(e.message)}</span>`; }
              };
 +            r.onerror=()=>{if(currentMediaPane()&&attempt===jsonRead)global.App.toast('File could not be read; no import performed.','err');};
@@ -4244,6 +4376,119 @@ index b72afdb..3d8e250 100644
                if (isNew) await API.post('/accounts', payload); else await API.put('/accounts/' + a.id, payload);
                await Store.reloadAll(); close(); global.App.toast('Account saved', 'ok'); global.App.refresh();
              },
+diff --git a/public/js/views/state-gate.js b/public/js/views/state-gate.js
+new file mode 100644
+index 0000000..0d8c1be
+--- /dev/null
++++ b/public/js/views/state-gate.js
+@@ -0,0 +1,107 @@
++/* views/state-gate.js — M106 fresh in-session four-question check.
++ * Records the trader's own yes/no answers; never a readiness score, a mental-state
++ * measurement or permission for anything outside the app's own surfaces. */
++(function (global) {
++  'use strict';
++  const Views = global.Views = global.Views || {}, U = global.U;
++  let serial = 0;
++  const ctx = () => ({ user: global.Store.user?.id, account: global.Store.accountId, token: global.API.getToken() });
++  const same = (c) => c.user === global.Store.user?.id && c.account === global.Store.accountId && c.token === global.API.getToken();
++  const LABEL = { not_adopted: 'Not adopted on this account', passed: 'Fresh answers: all yes', failed: 'Fresh answers: a no — no trade yet', unanswered: 'Not answered for this session', stale: 'Answers older than the APP window', unavailable: 'Answers unreadable — no pass claimed' };
++  const QUESTION_TEXT = (id) => ({ calm: 'Am I calm?', clear: 'Am I clear?', following_plan: 'Am I following the trade plan?', would_take_if_up_big: 'Would I take this trade if I was already up big today?' }[id] || id);
++
++  const P = Views.stateGate = {
++    ctx, same,
++    feedback(out) { if (!out?.state_gate_warnings?.length) return null; return U.h('section', { class: 'sticky-note warn' }, U.h('strong', { text: 'Optional state-gate answer history' }), ...out.state_gate_warnings.map((text) => U.h('p', { class: 'tiny', text }))); },
++    async history(accountId) {
++      const context = ctx(), number = ++serial;
++      try {
++        const out = await global.API.get('/state-gate/history', { account_id: accountId });
++        if (!same(context) || number !== serial) return;
++        const body = U.h('div');
++        body.appendChild(U.h('h3', { text: 'Readonly state-gate answer history' }));
++        body.appendChild(U.h('p', { class: 'field-note', text: 'Original keys, receipts and answers retained. Imported copies stay unverified and can never grant a pass; orphaned originals are never re-attached to another account.' }));
++        for (const record of out.records || []) body.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(record, null, 2) }));
++        return global.App.modal({ title: 'Readonly state-gate history', body, wide: true, actions: [{ label: 'Close readonly history', ghost: true }] });
++      } catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); }
++    },
++    card(v) {
++      const node = U.h('section', { class: 'card', style: 'margin-top:14px', dataset: { stateGateCard: 'true' } }), context = ctx();
++      node.appendChild(U.h('h3', { text: 'Pre-entry state check — four questions' }));
++      node.appendChild(U.h('p', { class: 'field-note', text: 'Saved rule: “If the answer to any of these questions is no, then you don’t trade yet.” The app records your own answers with a server receipt. It cannot read your mind, verify calmness or plan adherence, or stop a broker — and a missing or stale answer is never treated as a pass.' }));
++      if (!v || v.state === 'unavailable' && v.account_id === null) { node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'State-check context unavailable — not treated as answered, passed or blocked. Nothing is inferred from old notes, profit or adherence.' })); return node; }
++      node.appendChild(U.h('p', { class: 'small', text: 'Current: ' + (LABEL[v.state] || v.state) + (v.receipt ? ' · server receipt ' + v.receipt + ' · expires ' + v.expires_at + ' (APP window ' + v.window_minutes + ' min)' : '') }));
++      if (v.answers) {
++        for (const q of v.questions || []) node.appendChild(U.h('p', { class: 'tiny', text: `· ${q.text} — ${v.answers[q.id] === true ? 'yes' : v.answers[q.id] === false ? 'no' : 'not answered'}` }));
++      }
++      if (v.state === 'failed') node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'You answered no to: ' + (v.failed_questions || []).map(QUESTION_TEXT).join('; ') + '. Actionable signals and new live entries are refused in the app until you answer fresh — this refusal cannot reach a broker and does not change history.' }));
++      else if (v.state === 'stale') node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'Your last answers are outside the APP window, so they are not a pass for a new in-session entry. Answer again to act.' }));
++      else if (v.state === 'unanswered') node.appendChild(U.h('p', { class: 'sticky-note warn', text: 'You have used this gate before but not for this session. New live entries and saved signals are refused until you answer.' }));
++      else if (v.state === 'not_adopted') node.appendChild(U.h('p', { class: 'tiny muted', text: 'This account has never answered the four questions, so the app has no recorded refusal to honour and does not invent one. It also cannot claim a state check it never received — answered or not, this is not permission.' }));
++      if (v.imported_archives) node.appendChild(U.h('p', { class: 'tiny muted', text: `${v.imported_archives} imported answer record(s) restored as unverified archives; they never count as a pass.` }));
++      if (v.adopted && v.state !== 'passed') node.appendChild(U.h('p', { class: 'tiny muted', text: 'Adopted gate: while it is not fresh and all-yes, the app’s own entry/signal surfaces refuse, exactly as the killzone veto refuses a setup.' }));
++      node.appendChild(U.h('p', { class: 'tiny muted', text: v.basis }));
++      node.appendChild(U.h('button', { class: 'btn sm primary', type: 'button', dataset: { stateGateEdit: 'true' }, text: v.adopted ? 'Answer the four questions again' : 'Answer the four questions', onclick: () => { if (!same(context)) return global.App.toast('Workspace/account/session changed; reopen this account’s own check.', 'err'); return P.edit(); } }));
++      node.appendChild(U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { stateGateHistory: 'true' }, text: 'Review readonly answer history', onclick: () => { if (!same(context)) return; return P.history(); } }));
++      return node;
++    },
++    async edit() {
++      const context = ctx(), number = ++serial; let view;
++      try { view = await global.API.get('/state-gate', { account_id: context.account }); }
++      catch (e) { if (same(context) && number === serial) global.App.toast(e.message, 'err'); return; }
++      if (!same(context) || number !== serial || view.account_id !== Number(context.account)) return;
++      const body = U.h('div'); let alive = true, busy = false, stale = false;
++      const valid = () => alive && same(context) && number === serial && body.isConnected;
++      const picks = {};
++      function draw() {
++        body.replaceChildren();
++        body.appendChild(U.h('p', { class: 'field-note', text: `Account #${view.account_id} · ${LABEL[view.state] || view.state}${view.receipt ? ' · receipt ' + view.receipt + ' (APP window ' + view.window_minutes + ' min)' : ''}. Answer honestly for right now; the app stores your words and clock, nothing else, and no answer here changes finance, grades, risk, the routine or the core.` }));
++        for (const q of view.questions || []) {
++          const row = U.h('label', { class: 'row gap-8' });
++          row.appendChild(U.h('span', { text: q.text }));
++          const group = U.h('span', { class: 'row gap-8' });
++          for (const value of [true, false]) {
++            const radio = U.h('input', { type: 'radio', name: 'sg-' + q.id, dataset: { stateGateAnswer: q.id }, value: value ? 'yes' : 'no' });
++            if (view.answers && view.answers[q.id] === value) radio.checked = true;
++            radio.addEventListener('change', () => { picks[q.id] = value; refresh(); });
++            group.appendChild(U.h('span', { class: 'row gap-8' }, radio, U.h('span', { class: 'tiny', text: value ? 'yes' : 'no' })));
++          }
++          if (view.answers) picks[q.id] = view.answers[q.id];
++          row.appendChild(group); body.appendChild(row);
++        }
++        const unknown = U.h('input', { type: 'checkbox', dataset: { stateGateUnknown: 'true' } });
++        body.appendChild(U.h('label', { class: 'row gap-8' }, unknown, U.h('span', { text: 'Record that I have not answered the four questions now (explicit unknown — retains history, grants nothing)' })));
++        body.appendChild(U.h('p', { class: 'tiny muted', text: 'There is no default, no “maybe”, and no preselected yes. A yes/no pair answered here is the app’s only source for this gate; the app does not infer your state from journal text or P&L.' }));
++        const save = U.h('button', { class: 'btn sm primary', type: 'button', dataset: { stateGateSave: 'true' }, text: 'Record this check', onclick: async () => {
++          if (!valid() || busy) return global.App.toast('Workspace/account/session/editor changed; reopen.', 'err');
++          const answers = unknown.checked ? null : ((view.questions || []).every((q) => typeof picks[q.id] === 'boolean') ? Object.fromEntries((view.questions || []).map((q) => [q.id, picks[q.id]])) : null);
++          if (!unknown.checked && answers === null) return global.App.toast('Answer all four questions yes/no, or tick explicit unknown.', 'err');
++          busy = true; disable();
++          try { const out = await global.API.put('/state-gate?account_id=' + context.account, { answers, revision: view.revision }); if (!valid()) return; view = out; stale = false; picks_clear(); draw(); global.Store.invalidate(); global.App.toast('Answers recorded; finance, grades, routine, core and permission outside this gate are unchanged.', 'ok'); }
++          catch (e) { if (valid()) { stale = e.status === 409; global.App.toast(e.message, 'err'); } }
++          finally { busy = false; if (valid()) disable(); }
++        } });
++        const reload = U.h('button', { class: 'btn sm ghost', type: 'button', dataset: { stateGateReload: 'true' }, text: 'Reload current answers (discard unsaved picks)', onclick: async () => {
++          if (!valid() || busy) return; busy = true; disable();
++          try { const out = await global.API.get('/state-gate', { account_id: context.account }); if (!valid()) return; view = out; stale = false; picks_clear(); draw(); }
++          catch (e) { if (valid()) global.App.toast(e.message, 'err'); }
++          finally { busy = false; if (valid()) disable(); }
++        } });
++        body.appendChild(save); body.appendChild(reload);
++        const details = U.h('details'); details.appendChild(U.h('summary', { text: 'Retained answer history' }));
++        for (const d of view.history || []) details.appendChild(U.h('pre', { class: 'tiny', text: JSON.stringify(d, null, 2) }));
++        body.appendChild(details);
++      }
++      function picks_clear() { for (const k of Object.keys(picks)) delete picks[k]; }
++      function disable() {
++        body.querySelector('[data-state-gate-save]').disabled = busy || stale;
++        body.querySelector('[data-state-gate-reload]').disabled = busy;
++      }
++      function refresh() { if (valid()) disable(); }
++      draw();
++      const modal = global.App.modal({ title: 'Pre-entry state check', body, wide: true, onClose: () => { alive = false; }, actions: [{ label: 'Close — no permission inferred', ghost: true }] });
++      disable();
++      return modal;
++    },
++  };
++})(window);
 diff --git a/public/js/views/trades.js b/public/js/views/trades.js
 index ffdec3d..b816f56 100644
 --- a/public/js/views/trades.js
@@ -6551,10 +6796,10 @@ index 0000000..dd6a036
 +module.exports = { parseProfitLimit, inputError, retainedState, retainState, DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
 +  evaluate, unavailable, isBlocked, applyToSetups, admissionError, admit, observe, snapshotFields, logEvent, eventsForDay, record, overrideReason, actionPermission };
 diff --git a/src/bots/index.js b/src/bots/index.js
-index 0007b01..9f80aae 100644
+index 0007b01..489a513 100644
 --- a/src/bots/index.js
 +++ b/src/bots/index.js
-@@ -16,16 +16,42 @@
+@@ -16,16 +16,43 @@
   *      so the bot's own hit rate is on the record (no vibes, no cherry-picking).
   */
  
@@ -6573,6 +6818,7 @@ index 0007b01..9f80aae 100644
  const Predict = require('./predict');
  const Cor = require('./correction');
 +const Guards = require('./guardrails');
++const StateGate = require('../state-gate');
 +
 +/* -------------------------------------------------------------------------
 + * M124 — THE ENTRY-SERIES DEPTH THE METHOD READS.
@@ -6598,7 +6844,7 @@ index 0007b01..9f80aae 100644
  
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-@@ -97,6 +123,140 @@ function specOf(symbol) {
+@@ -97,6 +124,175 @@ function specOf(symbol) {
  const floorRR = (v) => (Number(v) > 0 ? Number(v) : 1);   // the trader's minimum R:R
  const runRR = (v) => Math.max(2, floorRR(v));              // the setup model's 1:2 runway
  
@@ -6728,8 +6974,43 @@ index 0007b01..9f80aae 100644
 +
 +async function personalState(userId, accountId, entryTf) {
 +  if (!userId) return null; // unsized research has no claimed personal permission
-+  try { return await Cor.dailyState(userId,{accountId,entryTf,forEntry:true}); }
++  try {
++    const daily = await Cor.dailyState(userId,{accountId,entryTf,forEntry:true});
++    /* M106 — the fresh four-question check rides the same personal-state object the
++     * killzone/personal-stop refusals already use, so setup vetoes, `armed`, the Now
++     * guards and the scan rows all refuse it through code that was already measured.
++     * An account that never answered is reported as `not_adopted`, never as a pass. */
++    return StateGate.apply(daily, await StateGate.optional(userId, daily.account_id || accountId));
++  }
 +  catch { return Guards.unavailable({accountId}); }
++}
++/** A refusal is a 409 carrying the gate's own state so the caller can explain it; an
++ * adopted-but-not-fresh check refuses exactly like a recorded no.
++ *
++ * Resolution rule: an explicit account is used as given, otherwise the trader's own
++ * desk is resolved the same way POST /trades resolves it, so omitting account_id is
++ * not a way to skip an adopted check. Only when the user genuinely owns no desk (or an
++ * id that is not theirs) is the gate left unconsulted — research calls must keep
++ * working, and the pre-existing guardrail paths stay the authority there. */
++async function stateGateRefusal(userId, accountId) {
++  if (!userId) return { allowed: true, state: 'not_consulted', adopted: false, message: 'Unsized research carries no personal four-question claim.' };
++  let resolved = accountId === undefined ? null : accountId;
++  if (resolved === null) {
++    const desk = await db.prepare('SELECT id FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
++    resolved = desk ? desk.id : null;
++  }
++  if (resolved === null) return { allowed: true, state: 'not_consulted', adopted: false, message: 'No owned account in this action — the four-question gate is not consulted.' };
++  let gate;
++  try { gate = await StateGate.permission(userId, resolved); }
++  catch (e) {
++    if (e.code === 'state_gate_invalid' && e.status === 404) return { allowed: true, state: 'not_consulted', adopted: false, message: 'No owned account in this action — the four-question gate is not consulted.' };
++    throw e;
++  }
++  if (gate.allowed) return gate;
++  const e = StateGate.invalid(gate.message, 409);
++  e.code = gate.state === 'failed' ? 'state_gate_failed' : 'state_gate_unanswered';
++  e.state_gate = { state: gate.state, adopted: gate.adopted, failed_questions: gate.failed_questions || [], window_minutes: gate.window_minutes, expires_at: gate.expires_at || null };
++  return { ...gate, refusal: e };
 +}
 +function candidateTf(setups, td, fallback) {
 +  const c = (setups.candidates || []).find(c=>c.dir===td.direction) || (setups.candidates || [])[0];
@@ -6739,7 +7020,7 @@ index 0007b01..9f80aae 100644
  async function analyse(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const spec = specOf(sym);
-@@ -109,23 +269,32 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -109,23 +305,32 @@ async function analyse(symbol, tf = '15m', opts = {}) {
    const replay = trim > 0 || cut.asOf ? cut : null;
  
    const [momentum, news] = await Promise.all([
@@ -6780,7 +7061,7 @@ index 0007b01..9f80aae 100644
    });
  
    let prediction = null;
-@@ -137,23 +306,39 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -137,23 +342,39 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      }
    }
  
@@ -6826,7 +7107,7 @@ index 0007b01..9f80aae 100644
      headline: td.headline || null,
      conviction: td.conviction || null,
      pending_step: (td.steps || []).find((s) => !s.done) || null,
-@@ -168,8 +353,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -168,8 +389,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      // build the *untrimmed* read as well, so a replay can say what happened after
      const L2 = Momentum.topdown.layersFor(tf);
      const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
@@ -6837,7 +7118,7 @@ index 0007b01..9f80aae 100644
      replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
    }
    const now = Now.build({
-@@ -189,7 +374,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -189,7 +410,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      method_verdict: methodVerdict,
      topdown: td,
      momentum: {
@@ -6853,7 +7134,7 @@ index 0007b01..9f80aae 100644
        alignment: momentum.alignment, mechanics: momentum.mechanics,
        narrative: momentum.narrative, conflicts: momentum.conflicts,
        htf: momentum.htf, quote: momentum.quote, series: momentum.series,
-@@ -213,6 +405,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -213,6 +441,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
        direction: prediction.direction, setups: prediction.setups, buy: prediction.buy, sell: prediction.sell,
        model: prediction.model, backtest: prediction.backtest, summary: prediction.summary,
        current: predRow || null, error: prediction.error || null,
@@ -6861,7 +7142,7 @@ index 0007b01..9f80aae 100644
      } : null,
      news,
      daily,
-@@ -227,8 +420,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -227,8 +456,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
    parts.push(`${sym} ${tf}: ${v.action}${v.grade && v.grade !== 'no-trade' ? ` (${v.grade}, ${v.score}/100)` : ''} — ${v.headline}`);
    if (td.headline) parts.push(`${td.status === 'confirmed' ? 'Method: confirmed' : 'Method: waiting'} — ${td.headline}`);
    if (td.playbook && td.playbook.length) parts.push(`Next: ${td.playbook[0]}`);
@@ -6872,7 +7153,7 @@ index 0007b01..9f80aae 100644
    if (news.blackout) parts.push(`NEWS BLACKOUT: ${news.blackout}`);
    if (daily && daily.status !== 'clear') parts.push(`Personal guardrail: ${daily.message}`);
    if (momentum.conflicts.length) parts.push(`Caution: ${momentum.conflicts.join(' ')}`);
-@@ -266,6 +459,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -266,6 +495,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
   * @param {string} tf
   * @param {{bars?:number, userId?:number, accountId?:number, minRR?:number, balance?:number, riskPct?:number}} opts
   */
@@ -6880,7 +7161,7 @@ index 0007b01..9f80aae 100644
  async function chart(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const bars = Math.min(Math.max(Number(opts.bars) || 400, 80), 1200);
-@@ -279,44 +473,56 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -279,44 +509,56 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // never disagree about the same market (they did once: the chart asked for 200
    // higher-timeframe candles and the method read a different range from them).
    const [entry, bias, triggerRaw] = await Promise.all([
@@ -6954,7 +7235,7 @@ index 0007b01..9f80aae 100644
        entry_status: td.status === 'confirmed' ? 'confirmed' : td.status,
        alternatives: { aggressive: crt.aggressive, safer: crt.safer },
        management: {
-@@ -325,9 +531,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -325,9 +567,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
        },
        note: `${crt.side} after the ${crt.sweep.level} sweep failed to hold · ${crt.target_note}`,
      };
@@ -6966,7 +7247,7 @@ index 0007b01..9f80aae 100644
        ...best.levels,
        entry_status: best.levels.entry_status,
      };
-@@ -335,7 +541,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -335,7 +577,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const smc = {
      price: entry.smc.price, atr: entry.smc.atr, counts: entry.smc.counts,
@@ -6975,7 +7256,7 @@ index 0007b01..9f80aae 100644
      premium_discount: entry.smc.premium_discount, sessions: entry.smc.sessions,
      order_blocks: entry.smc.order_blocks.slice(0, 8), fvgs: entry.smc.fvgs.slice(0, 8),
      sweeps: entry.smc.sweeps.slice(0, 6), displacement: entry.smc.displacement.slice(0, 4),
-@@ -349,7 +555,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -349,7 +591,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const stack = {
      bias: {
@@ -6984,7 +7265,7 @@ index 0007b01..9f80aae 100644
        structure: bias.smc.structure ? bias.smc.structure.trend : null,
        state: td.layers.bias.state,
        level: td.layers.bias.range ? { low: td.layers.bias.range.low, high: td.layers.bias.range.high, label: 'CRT range' } : null,
-@@ -370,7 +576,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -370,7 +612,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // the same single answer the analysis strip shows, so the chart and the words
    // on screen can never disagree about what to do
    const now = Now.build({
@@ -6993,7 +7274,7 @@ index 0007b01..9f80aae 100644
      replay: cut.trim || cut.asOf ? { trim: cut.trim || null, since: null } : null,
      nowMs: opts.nowMs,
      minRR: opts.minRR,
-@@ -380,24 +586,36 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -380,24 +622,36 @@ async function chart(symbol, tf = '15m', opts = {}) {
      ok: true, symbol: sym, timeframe: tf, instrument: spec,
      generated_at: new Date().toISOString(),
      replay: cut.trim || cut.asOf ? { trim: cut.trim || null, as_of: cut.asOf ? new Date(cut.asOf).toISOString() : null } : null,
@@ -7035,7 +7316,7 @@ index 0007b01..9f80aae 100644
    const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
    const rows = [];
    let cursor = 0;
-@@ -406,13 +624,22 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -406,13 +660,22 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
        const sym = list[cursor++];
        try {
          const [momentum, series] = await Promise.all([
@@ -7062,7 +7343,7 @@ index 0007b01..9f80aae 100644
          // one row per market: the side the method permits (a scan that lists both
          // a buy and a sell for the same symbol is not a scan, it is a coin toss)
          const best = (momentum.topdown && momentum.topdown.direction
-@@ -421,10 +648,21 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -421,10 +684,21 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
          rows.push({
            symbol: sym, timeframe: tf, ok: true,
            price: series.price, atr: series.atr,
@@ -7087,7 +7368,7 @@ index 0007b01..9f80aae 100644
            entry_status: best && best.levels ? best.levels.entry_status : null,
            entry: best && best.levels ? best.levels.entry : null,
            stop: best && best.levels ? best.levels.stop : null,
-@@ -469,6 +707,7 @@ async function ensureSignalsTable() {
+@@ -469,6 +743,7 @@ async function ensureSignalsTable() {
      rr_primary REAL, rr_final REAL,
      mechanics REAL,
      sentiment TEXT,           -- the read-aloud headline at the time
@@ -7095,7 +7376,7 @@ index 0007b01..9f80aae 100644
      entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf
      mtf_tf TEXT,
      risk_atr REAL,
-@@ -486,7 +725,8 @@ async function ensureSignalsTable() {
+@@ -486,7 +761,8 @@ async function ensureSignalsTable() {
    const cols = await db.prepare('PRAGMA table_info(bot_signals)').all();
    const have = new Set((cols || []).map((c) => c.name));
    for (const [name, type] of [['entry_mode', 'TEXT'], ['mtf_tf', 'TEXT'], ['risk_atr', 'REAL'],
@@ -7105,7 +7386,7 @@ index 0007b01..9f80aae 100644
      if (!have.has(name)) await db.exec(`ALTER TABLE bot_signals ADD COLUMN ${name} ${type}`);
    }
  }
-@@ -497,55 +737,70 @@ async function ensureSignalsTable() {
+@@ -497,55 +773,70 @@ async function ensureSignalsTable() {
   * re-derive anything from a fresh analysis — it stores exactly what the
   * trader was shown, so the bot can be graded on it later.
   */
@@ -7191,7 +7472,7 @@ index 0007b01..9f80aae 100644
      const info = await ins.run(
        userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
        predRow ? predRow.p_win : null,
-@@ -553,8 +808,10 @@ async function saveSignals(userId, payload) {
+@@ -553,8 +844,10 @@ async function saveSignals(userId, payload) {
        L.targets.length > 1 ? L.targets[L.targets.length - 1].price : null,
        L.rr_primary, L.rr_final,
        payload.momentum ? payload.momentum.mechanics.score : null,
@@ -7203,13 +7484,16 @@ index 0007b01..9f80aae 100644
      );
      out.push(info.lastInsertRowid);
      saved++;
-@@ -562,6 +819,28 @@ async function saveSignals(userId, payload) {
+@@ -562,6 +855,33 @@ async function saveSignals(userId, payload) {
    return { saved, ids: out };
  }
  
 +async function savePlan(userId,p = {}) {
 +  await ensureSignalsTable();
 +  if (p.research_only === true) return {...await insertPlan(userId,p,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
++  /* M106 — saving a plan is an actionable surface for THIS trader, so an adopted
++   * four-question check must be fresh and non-failing first. */
++  const planGate=await stateGateRefusal(userId,p.account_id || null);if(planGate.refusal)throw planGate.refusal;
 +  return Guards.admit(userId,{accountId:p.account_id || null,entryTf:p.entry_tf || p.timeframe,action:'save_plan',entityType:'signal',overrideReason:p.override_reason},
 +    async (store,daily) => {
 +      const result = await insertPlan(userId,p,store,Guards.snapshotFields(daily));
@@ -7222,6 +7506,8 @@ index 0007b01..9f80aae 100644
 +  const market = {...payload,setups:{...payload.setups,candidates:marketCandidates}};
 +  if (!marketCandidates.some(c=>c.ok && c.levels && c.levels.entry_status!=='invalid')) return {saved:0,reason:'no actionable setup in this analysis'};
 +  if (options.research_only === true) return {...await insertSignals(userId,market,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
++  /* M106 — saving an actionable signal for THIS trader obeys the same fresh check. */
++  const signalGate=await stateGateRefusal(userId,options.accountId || payload.daily?.account_id || null);if(signalGate.refusal)throw signalGate.refusal;
 +  return Guards.admit(userId,{accountId:options.accountId || payload.daily?.account_id || null,entryTf:candidateTf(market.setups,payload.topdown || {},payload.timeframe),action:'save_signal',entityType:'signal',overrideReason:options.override_reason},
 +    async (store,daily) => {
 +      const result = await insertSignals(userId,market,store,Guards.snapshotFields(daily));
@@ -7232,7 +7518,7 @@ index 0007b01..9f80aae 100644
  async function listSignals(userId, { status = null, limit = 50 } = {}) {
    await ensureSignalsTable();
    const rows = status
-@@ -633,9 +912,13 @@ async function signalStats(userId) {
+@@ -633,9 +953,13 @@ async function signalStats(userId) {
    const resolved = all.filter((s) => ['win', 'loss', 'expired'].includes(s.status));
    const wins = resolved.filter((s) => s.status === 'win');
    const byGrade = {};
@@ -7246,7 +7532,7 @@ index 0007b01..9f80aae 100644
    }
    return {
      total: all.length,
-@@ -646,6 +929,8 @@ async function signalStats(userId) {
+@@ -646,6 +970,8 @@ async function signalStats(userId) {
      win_rate: resolved.length ? r2((wins.length / resolved.length) * 100) : null,
      total_r: r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0)),
      expectancy_r: resolved.length ? r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0) / resolved.length) : null,
@@ -11672,7 +11958,7 @@ index 0000000..5d2e9d9
 +}
 +module.exports={key,labels,invalid,info,optional,owned,recordOn,attachOn,read,change,vocabulary,portableVocabulary,vocabularyOn,aggregate};
 diff --git a/src/db.js b/src/db.js
-index 7e2fd68..0006ddc 100644
+index 7e2fd68..bef10ce 100644
 --- a/src/db.js
 +++ b/src/db.js
 @@ -97,12 +97,26 @@ async function tx(fn) {
@@ -11804,7 +12090,7 @@ index 7e2fd68..0006ddc 100644
      entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf  (how this plan was anchored)
      mtf_tf TEXT,              -- the lower timeframe that confirmed an mtf plan
      risk_atr REAL,            -- stop distance in ATR at plan time
-@@ -148,6 +240,160 @@ CREATE TABLE IF NOT EXISTS bot_signals (
+@@ -148,6 +240,175 @@ CREATE TABLE IF NOT EXISTS bot_signals (
      created_at TEXT NOT NULL DEFAULT (datetime('now')),
      resolved_at TEXT
    );
@@ -11962,10 +12248,25 @@ index 7e2fd68..0006ddc 100644
 + UNIQUE(user_id,account_key,kind,period_start,version)
 +);
 +CREATE INDEX IF NOT EXISTS idx_identity_declarations_owner ON identity_declarations(user_id,account_key,kind,period_start,id);
++-- M106 fresh in-session four-question state answers. Owned self-reports, not a pass by default.
++CREATE TABLE IF NOT EXISTS state_gate_answers (
++ id INTEGER PRIMARY KEY AUTOINCREMENT,
++ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++ account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
++ account_key INTEGER NOT NULL,
++ version INTEGER NOT NULL,
++ answers_json TEXT,
++ source TEXT NOT NULL,
++ recorded_at TEXT NOT NULL,
++ historical_json TEXT,
++ schema_version TEXT NOT NULL,
++ UNIQUE(user_id,account_key,version)
++);
++CREATE INDEX IF NOT EXISTS idx_state_gate_answers_owner ON state_gate_answers(user_id,account_key,id);
  CREATE TABLE IF NOT EXISTS goals (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -173,6 +419,102 @@ CREATE TABLE IF NOT EXISTS instruments (
+@@ -173,6 +434,102 @@ CREATE TABLE IF NOT EXISTS instruments (
    unit TEXT DEFAULT 'units',
    UNIQUE(user_id, symbol)
  );
@@ -12068,7 +12369,7 @@ index 7e2fd68..0006ddc 100644
  CREATE TABLE IF NOT EXISTS journal_entries (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -186,7 +528,17 @@ CREATE TABLE IF NOT EXISTS journal_entries (
+@@ -186,7 +543,17 @@ CREATE TABLE IF NOT EXISTS journal_entries (
    review TEXT DEFAULT '',
    lessons TEXT DEFAULT '',
    tomorrow TEXT DEFAULT '',
@@ -12086,7 +12387,7 @@ index 7e2fd68..0006ddc 100644
    created_at TEXT NOT NULL DEFAULT (datetime('now')),
    UNIQUE(user_id, entry_date)
  );
-@@ -232,6 +584,33 @@ CREATE TABLE IF NOT EXISTS strategies (
+@@ -232,6 +599,33 @@ CREATE TABLE IF NOT EXISTS strategies (
    active INTEGER DEFAULT 1,
    created_at TEXT NOT NULL DEFAULT (datetime('now'))
  );
@@ -12120,7 +12421,7 @@ index 7e2fd68..0006ddc 100644
  CREATE TABLE IF NOT EXISTS trades (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-@@ -256,18 +635,28 @@ CREATE TABLE IF NOT EXISTS trades (
+@@ -256,18 +650,28 @@ CREATE TABLE IF NOT EXISTS trades (
    mae_r REAL,                                 -- worst excursion in R (negative number)
    mfe_r REAL,                                 -- best excursion in R (positive number)
    stop_moved INTEGER DEFAULT 0,
@@ -12150,7 +12451,7 @@ index 7e2fd68..0006ddc 100644
    tags TEXT DEFAULT '',                       -- comma separated
    thesis TEXT DEFAULT '',
    lesson TEXT DEFAULT '',
-@@ -369,11 +758,211 @@ async function migrate() {
+@@ -369,11 +773,213 @@ async function migrate() {
      if (!(cols || []).some((c) => c.name === col)) await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
    };
    await add('trades', 'legs', 'TEXT');
@@ -12215,6 +12516,8 @@ index 7e2fd68..0006ddc 100644
 +  await db.prepare(`CREATE TRIGGER IF NOT EXISTS strategy_rule_changes_immutable BEFORE UPDATE ON strategy_rule_changes WHEN NOT (NEW.strategy_id IS NULL AND OLD.strategy_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM strategies WHERE id=OLD.strategy_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.strategy_key IS OLD.strategy_key AND NEW.strategy_name IS OLD.strategy_name AND NEW.from_version IS OLD.from_version AND NEW.to_version IS OLD.to_version AND NEW.before_json IS OLD.before_json AND NEW.after_json IS OLD.after_json AND NEW.delta_json IS OLD.delta_json AND NEW.units IS OLD.units AND NEW.quarter_start IS OLD.quarter_start AND NEW.recorded_at IS OLD.recorded_at AND NEW.rubric_version IS OLD.rubric_version AND NEW.source IS OLD.source AND NEW.context_hash IS OLD.context_hash AND NEW.historical_json IS OLD.historical_json) BEGIN SELECT RAISE(ABORT,'Recorded strategy rule change facts immutable'); END`).run();
 +
 +  await db.prepare(`CREATE TRIGGER IF NOT EXISTS identity_declarations_immutable BEFORE UPDATE ON identity_declarations WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.kind IS OLD.kind AND NEW.period_start IS OLD.period_start AND NEW.period_end IS OLD.period_end AND NEW.version IS OLD.version AND NEW.statement IS OLD.statement AND NEW.identity_snapshot_json IS OLD.identity_snapshot_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Original identity/theme declaration facts immutable'); END`).run();
++
++  await db.prepare(`CREATE TRIGGER IF NOT EXISTS state_gate_answers_immutable BEFORE UPDATE ON state_gate_answers WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.version IS OLD.version AND NEW.answers_json IS OLD.answers_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded state-gate answers are immutable'); END`).run();
 +
 +  /* M102 backfill. Every strategy that has no version history gets an immutable v1
 +   * snapshot of the rule set it currently holds, and every trade already linked to it is
@@ -12362,7 +12665,7 @@ index 7e2fd68..0006ddc 100644
  /* ------------------------------------------------------------------- meta */
  
  async function getMeta(k) {
-@@ -553,10 +1142,25 @@ async function userFromWebhookToken(token) {
+@@ -553,10 +1159,25 @@ async function userFromWebhookToken(token) {
  
  /** Wipe every table for a workspace (used by the "fresh workspace" flow). */
  async function clearWorkspace(userId) {
@@ -12392,7 +12695,7 @@ index 7e2fd68..0006ddc 100644
  }
  
  module.exports = {
-@@ -564,7 +1168,9 @@ module.exports = {
+@@ -564,7 +1185,9 @@ module.exports = {
    client, db, prepare, exec, batch, tx, ready,
    DB_URL, DB_PATH, REMOTE, DATA_DIR, SCHEMA_VERSION,
    getMeta, setMeta, seedGlobalInstruments, createUser, hashPassword, verifyPassword,
@@ -13193,10 +13496,10 @@ index 0000000..bf173ca
 +function withCoach(data,review){const warning=insight(review);return {...data,process_review:review,insights:warning?[...(data.insights||[]),warning]:data.insights};}
 +module.exports={BASIS,invalid,dateKey,clock,evaluate,insight,inspect,optional,unavailable,withCoach};
 diff --git a/src/routes/api.js b/src/routes/api.js
-index 0bb768c..35c65e4 100644
+index 0bb768c..229f685 100644
 --- a/src/routes/api.js
 +++ b/src/routes/api.js
-@@ -1,12 +1,29 @@
+@@ -1,12 +1,30 @@
  'use strict';
  const { asyncRouter } = require('./async-router');
 -const { db, createUser, verifyPassword, createSession, userFromToken, destroySession, getMeta, DEFAULT_CHECKLIST } = require('../db');
@@ -13220,6 +13523,7 @@ index 0bb768c..35c65e4 100644
 +const PeriodReviews = require('../period-reviews');
 +const RuleChanges = require('../rule-changes');
 +const Identity = require('../identity');
++const StateGate = require('../state-gate');
 +const Opportunities = require('../opportunities');
 +const ProcessOutcomes = require('../process-outcomes');
 +const BehaviorDays = require('../behavior-days');
@@ -13227,7 +13531,7 @@ index 0bb768c..35c65e4 100644
  const O = require('../options');
  const Exp = require('../exposure');
  const Prop = require('../prop');
-@@ -14,6 +31,13 @@ const N = require('../notify');
+@@ -14,6 +32,13 @@ const N = require('../notify');
  const createBotsRouter = require('./bots');
  
  const router = asyncRouter();
@@ -13241,7 +13545,7 @@ index 0bb768c..35c65e4 100644
  const num = (v, d = 0) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? d : Number(v));
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  
-@@ -40,7 +64,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
+@@ -40,7 +65,26 @@ function readToken(req) { return parseCookies(req)[COOKIE] || req.headers['x-ses
  async function requireAuth(req, res, next) {
    try {
      const user = await userFromToken(readToken(req));
@@ -13269,7 +13573,7 @@ index 0bb768c..35c65e4 100644
      req.user = user;
      next();
    } catch (e) { next(e); }
-@@ -237,6 +280,7 @@ function tradeFilters(req) {
+@@ -237,6 +281,7 @@ function tradeFilters(req) {
      status: req.query.status && req.query.status !== 'all' ? req.query.status : null,
      symbol: req.query.symbol || null,
      strategy_id: req.query.strategy_id || null,
@@ -13277,7 +13581,7 @@ index 0bb768c..35c65e4 100644
      from: req.query.from || null, to: req.query.to || null,
      asset_class: req.query.asset_class || null,
      tag: req.query.tag || null,
-@@ -278,32 +322,76 @@ router.get('/trades', requireAuth, async (req, res) => {
+@@ -278,32 +323,81 @@ router.get('/trades', requireAuth, async (req, res) => {
        .some((v) => String(v || '').toLowerCase().includes(q)));
    }
    const total = (await db.prepare(`SELECT COUNT(*) n FROM trades WHERE ${where}`).get({ ...params, user_id: req.user.id })).n;
@@ -13322,10 +13626,15 @@ index 0bb768c..35c65e4 100644
 +    if (trade.status === 'open' && body.record_only !== true) {
 +      try { trade.emotion_before=J.text(body.emotion_before,'Name your emotional state before prospective entry',100); }
 +      catch(e){throw Guards.inputError(e.message);}
++      /* M106 — a live prospective entry is the app's own actionable surface, so an
++       * ADOPTED four-question check must be fresh and non-failing before the entry is
++       * admitted. An account that never answered the gate has no recorded refusal to
++       * honour and is told so instead of being blocked by an invented rule. */
++      const gate = await StateGate.permission(req.user.id, accountId);
++      if (!gate.allowed) return res.status(409).json({ error: gate.message, code: gate.state === 'failed' ? 'state_gate_failed' : 'state_gate_unanswered', state_gate: { state: gate.state, adopted: gate.adopted, failed_questions: gate.failed_questions || [], window_minutes: gate.window_minutes, expires_at: gate.expires_at || null }, hint: 'Answer the four questions fresh (or record this as already-executed history with record_only) — nothing financial was written.' });
 +      const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade',overrideReason:body.override_reason},async (store,daily) => {
-+        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
-+        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,record:await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id),permission:Guards.actionPermission(daily)};
-+      });
++        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(StateGate.apply(daily, gate))};
++        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,record:await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id),permission:Guards.actionPermission(daily)}; });
 +      id = out.id; permission = out.permission; written=out.record;
 +    } else {
 +      const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>{const id=await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')});await Confluences.attachOn(store,req.user.id,id,confluences);return {id};});
@@ -13360,7 +13669,7 @@ index 0bb768c..35c65e4 100644
  router.put('/trades/:id', requireAuth, async (req, res) => {
    const id = Number(req.params.id);
    const existing = await db.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id, req.user.id);
-@@ -311,14 +399,61 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
+@@ -311,14 +405,64 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
    const instruments = await instrumentMap(req.user.id);
    const merged = { ...existing, ...req.body };
    const spec = instruments[String(merged.symbol || '').toUpperCase()] || null;
@@ -13376,7 +13685,10 @@ index 0bb768c..35c65e4 100644
 +    if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
 +      try { trade.emotion_before=J.text(req.body.emotion_before,'Name your current emotional state before reopening',100); }
 +      catch(e){throw Guards.inputError(e.message);}
-+      written=await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>write(store,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
++      /* M106 — reopening a closed trade into a live position is the same prospective act as a new entry. */
++      const reopenGate=await StateGate.permission(req.user.id,accountId);
++      if(!reopenGate.allowed)return res.status(409).json({error:reopenGate.message,code:reopenGate.state==='failed'?'state_gate_failed':'state_gate_unanswered',state_gate:{state:reopenGate.state,adopted:reopenGate.adopted,failed_questions:reopenGate.failed_questions||[],window_minutes:reopenGate.window_minutes,expires_at:reopenGate.expires_at||null},hint:'Answer the four questions fresh, or record this as journal history with record_only — nothing financial was written.'});
++      written=await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>write(store,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(StateGate.apply(daily,reopenGate))}));
 +    } else written=await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>write(store,{...trade,account_id:accountId}));
 +  } catch(e) {
 +    if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
@@ -13425,7 +13737,7 @@ index 0bb768c..35c65e4 100644
  });
  
  router.post('/trades/:id/close', requireAuth, async (req, res) => {
-@@ -341,29 +476,92 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
+@@ -341,29 +485,92 @@ router.post('/trades/:id/close', requireAuth, async (req, res) => {
    };
    const instruments = await instrumentMap(req.user.id);
    const trade = T.normalise(merged, { instrument: instruments[existing.symbol] || null, tz: (await settingsOf(req)).timezone });
@@ -13523,7 +13835,7 @@ index 0bb768c..35c65e4 100644
  router.get('/analytics', requireAuth, async (req, res) => {
    const tz = (await settingsOf(req)).timezone;
    const f = tradeFilters(req);
-@@ -374,14 +572,20 @@ router.get('/analytics', requireAuth, async (req, res) => {
+@@ -374,14 +581,20 @@ router.get('/analytics', requireAuth, async (req, res) => {
      const want = String(f.tag).toLowerCase();
      rows = rows.filter((t) => String(t.tags || '').toLowerCase().split(',').map((x) => x.trim()).includes(want));
    }
@@ -13545,7 +13857,7 @@ index 0bb768c..35c65e4 100644
    res.json(analytics);
  });
  
-@@ -393,9 +597,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
+@@ -393,9 +606,16 @@ router.get('/analytics/monte-carlo', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const rs = rows.map((t) => num(t.r_multiple));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
@@ -13564,7 +13876,7 @@ index 0bb768c..35c65e4 100644
    res.json({
      monte_carlo: P.monteCarlo(rs, { startEquity: start, riskPct, horizon: num(req.query.horizon, 100), sims: num(req.query.sims, 2000), ruinPct: num(req.query.ruin, 50) }),
      optimal_risk: P.optimalRisk(rs),
-@@ -411,7 +622,9 @@ router.get('/coach', requireAuth, async (req, res) => {
+@@ -411,7 +631,9 @@ router.get('/coach', requireAuth, async (req, res) => {
      .map((t) => P.decorate(t, tz));
    const acc = await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(num(req.query.account_id, 0), req.user.id)
      || await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
@@ -13575,7 +13887,7 @@ index 0bb768c..35c65e4 100644
  });
  
  router.get('/briefing', requireAuth, wrap(async (req, res) => {
-@@ -419,45 +632,134 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
+@@ -419,45 +641,140 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
    const tz = settings.timezone;
    const acc = await accountOr404(req, res);
    if (!acc) return;
@@ -13592,6 +13904,7 @@ index 0bb768c..35c65e4 100644
 +  const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
 +  briefing.risk_plan.trade_cap_policy = capPolicy;
 +  briefing.identity_context=await Identity.optional(req.user.id,acc.id,Guards.dayKey(Date.now()));
++  briefing.state_gate=await StateGate.optional(req.user.id,acc.id);
 +  briefing.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
 +  briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
 +  // Briefing amounts are advice, NOT permission. Use the same close-day UTC
@@ -13643,6 +13956,11 @@ index 0bb768c..35c65e4 100644
 +router.put('/identity/statement',requireAuth,identityRoute(req=>Identity.save(req.user.id,req.query.account_id,'identity','',req.body)));
 +router.put('/identity/theme/:start',requireAuth,identityRoute(req=>Identity.save(req.user.id,req.query.account_id,'theme',req.params.start,req.body)));
 +
++const stateGateRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='state_gate_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'State-gate answers unavailable; no finance/core/permission state changed.'});}};
++router.get('/state-gate',requireAuth,stateGateRoute(req=>StateGate.read(req.user.id,req.query.account_id)));
++router.get('/state-gate/history',requireAuth,stateGateRoute(req=>StateGate.history(req.user.id,req.query.account_id??null)));
++router.put('/state-gate',requireAuth,stateGateRoute(req=>StateGate.save(req.user.id,req.query.account_id,req.body)));
++
  router.get('/journal', requireAuth, async (req, res) => {
    const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
 -  res.json({ entries: rows });
@@ -13684,7 +14002,7 @@ index 0bb768c..35c65e4 100644
 +  const accountId=account.id;
 +  const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
 +  const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
-+  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
++  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),state_gate:await StateGate.optional(req.user.id,accountId),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
  });
  router.post('/journal', requireAuth, async (req, res) => {
    const b = req.body || {};
@@ -13722,7 +14040,7 @@ index 0bb768c..35c65e4 100644
  });
  router.delete('/journal/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM journal_entries WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -470,46 +772,56 @@ router.get('/strategies', requireAuth, async (req, res) => {
+@@ -470,46 +787,56 @@ router.get('/strategies', requireAuth, async (req, res) => {
    const stats = {};
    const tz = (await settingsOf(req)).timezone;
    const rows = (await db.prepare("SELECT * FROM trades WHERE user_id=? AND status='closed'").all(req.user.id)).map((t) => P.decorate(t, tz));
@@ -13810,7 +14128,7 @@ index 0bb768c..35c65e4 100644
  });
  router.delete('/strategies/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM strategies WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -541,21 +853,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
+@@ -541,21 +868,61 @@ router.get('/accounts', requireAuth, async (req, res) => {
  router.post('/accounts', requireAuth, async (req, res) => {
    const b = req.body || {};
    if (!b.name) return res.status(400).json({ error: 'Account name is required' });
@@ -13879,7 +14197,7 @@ index 0bb768c..35c65e4 100644
      prop_rules=@prop_rules, archived=@archived WHERE id=@id AND user_id=@user_id`).run({
      id, user_id: req.user.id,
      name: b.name !== undefined ? b.name : cur.name,
-@@ -563,7 +915,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -563,7 +930,12 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      account_type: b.account_type !== undefined ? b.account_type : cur.account_type,
      currency: b.currency !== undefined ? b.currency : cur.currency,
      starting_balance: b.starting_balance !== undefined ? num(b.starting_balance, cur.starting_balance) : cur.starting_balance,
@@ -13893,7 +14211,7 @@ index 0bb768c..35c65e4 100644
      daily_loss_limit_pct: b.daily_loss_limit_pct !== undefined ? num(b.daily_loss_limit_pct, cur.daily_loss_limit_pct) : cur.daily_loss_limit_pct,
      max_drawdown_pct: b.max_drawdown_pct !== undefined ? num(b.max_drawdown_pct, cur.max_drawdown_pct) : cur.max_drawdown_pct,
      prop_preset: b.prop_preset !== undefined ? (b.prop_preset ? String(b.prop_preset) : null) : cur.prop_preset,
-@@ -571,7 +928,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
+@@ -571,7 +943,11 @@ router.put('/accounts/:id', requireAuth, async (req, res) => {
      profit_target_pct: b.profit_target_pct !== undefined ? num(b.profit_target_pct, cur.profit_target_pct) : cur.profit_target_pct,
      archived: b.archived === undefined ? cur.archived : (b.archived ? 1 : 0),
    });
@@ -13906,7 +14224,7 @@ index 0bb768c..35c65e4 100644
  });
  router.delete('/accounts/:id', requireAuth, async (req, res) => {
    await db.prepare('DELETE FROM accounts WHERE id=? AND user_id=?').run(Number(req.params.id), req.user.id);
-@@ -708,7 +1069,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -708,7 +1084,19 @@ router.post('/tools/size', requireAuth, async (req, res) => {
    const spec = instruments[String(b.symbol || '').toUpperCase()] || I.genericSpec(b.symbol, b.asset_class);
    const acc = b.account_id ? await db.prepare('SELECT * FROM accounts WHERE id=? AND user_id=?').get(Number(b.account_id), req.user.id) : null;
    const balance = num(b.balance, acc ? acc.current_balance : 10000);
@@ -13927,7 +14245,7 @@ index 0bb768c..35c65e4 100644
    const entry = num(b.entry), stop = num(b.stop), target = num(b.target);
    const out = I.positionSize({ balance, riskPct, entry, stop, asset_class: spec.asset_class, value_per_point: spec.value_per_point, maxSize: b.max_size });
    const risk = I.riskAmount({ entry, stop, size: out.size, value_per_point: spec.value_per_point });
-@@ -722,6 +1095,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
+@@ -722,6 +1110,10 @@ router.post('/tools/size', requireAuth, async (req, res) => {
      pips_to_stop: spec.pip_size ? I.pipsMoved({ entry, exit: stop, pip_size: spec.pip_size, direction: 'long' }) : null,
      pips_to_target: target && spec.pip_size ? Math.abs(r2((target - entry) / spec.pip_size)) : null,
      percent_move_stop: entry && stop ? r2((Math.abs(entry - stop) / entry) * 100) : null,
@@ -13938,7 +14256,7 @@ index 0bb768c..35c65e4 100644
    });
  });
  
-@@ -775,15 +1152,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
+@@ -775,15 +1167,16 @@ router.get('/market/overview', requireAuth, wrap(async (req, res) => {
  }));
  
  /* ------------------------------------------------------- import / export */
@@ -13959,7 +14277,7 @@ index 0bb768c..35c65e4 100644
    const esc = (v) => {
      const s = v === null || v === undefined ? '' : String(v);
      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-@@ -792,17 +1170,22 @@ router.get('/export/csv', requireAuth, async (req, res) => {
+@@ -792,17 +1185,23 @@ router.get('/export/csv', requireAuth, async (req, res) => {
    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
    res.setHeader('Content-Disposition', `attachment; filename="trades-${new Date().toISOString().slice(0, 10)}.csv"`);
    res.send(csv);
@@ -13975,6 +14293,7 @@ index 0bb768c..35c65e4 100644
 +    period_reviews:await PeriodReviews.exportOwned(userId),
 +    strategy_rule_changes:await RuleChanges.exportOwned(userId),
 +    identity_declarations:await Identity.exportOwned(userId),
++    state_gate_answers:await StateGate.exportOwned(userId),
 +    opportunity_history:await Opportunities.exportOwned(userId),
      user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
      accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
@@ -13985,7 +14304,7 @@ index 0bb768c..35c65e4 100644
      journal: await db.prepare('SELECT * FROM journal_entries WHERE user_id=?').all(userId),
      goals: await db.prepare('SELECT * FROM goals WHERE user_id=?').all(userId),
      watchlist: await db.prepare('SELECT * FROM watchlist WHERE user_id=?').all(userId),
-@@ -810,7 +1193,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
+@@ -810,7 +1209,7 @@ router.get('/export/json', requireAuth, async (req, res) => {
    res.setHeader('Content-Type', 'application/json');
    res.setHeader('Content-Disposition', `attachment; filename="tradejournal-backup-${new Date().toISOString().slice(0, 10)}.json"`);
    res.send(JSON.stringify(data, null, 2));
@@ -13994,7 +14313,7 @@ index 0bb768c..35c65e4 100644
  
  /** Import from CSV — auto-detects the usual broker column names. */
  router.post('/import/csv', requireAuth, async (req, res) => {
-@@ -831,13 +1214,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -831,13 +1230,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
      opened: findCol(['opened_at', 'open_time', 'entry_time', 'date', 'datetime', 'open_date', 'time_open', 'opened']),
      closed: findCol(['closed_at', 'close_time', 'exit_time', 'close_date', 'time_close', 'closed']),
      fees: findCol(['fees', 'commission', 'fee', 'cost', 'swap']),
@@ -14012,7 +14331,7 @@ index 0bb768c..35c65e4 100644
    const instruments = await instrumentMap(req.user.id);
    const tz = (await settingsOf(req)).timezone;
    let inserted = 0, skipped = 0;
-@@ -864,11 +1250,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -864,11 +1266,16 @@ router.post('/import/csv', requireAuth, async (req, res) => {
            closed_at: map.closed > -1 ? r[map.closed] : null,
            fees: map.fees > -1 ? r[map.fees] : 0,
            strategy_name: map.strategy > -1 ? r[map.strategy] : '',
@@ -14029,7 +14348,7 @@ index 0bb768c..35c65e4 100644
          if (map.net > -1 && String(r[map.net] || '').trim() && !isNaN(Number(String(r[map.net]).replace(/[^0-9.\-]/g, '')))) {
            const net = Number(String(r[map.net]).replace(/[^0-9.\-]/g, ''));
            if (net !== 0) {
-@@ -877,18 +1268,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
+@@ -877,18 +1284,28 @@ router.post('/import/csv', requireAuth, async (req, res) => {
              if (trade.risk_amount > 0) trade.r_multiple = Math.round((net / trade.risk_amount) * 10000) / 10000;
            }
          }
@@ -14053,20 +14372,20 @@ index 0bb768c..35c65e4 100644
 +// Actual transaction insert IDs (never raw backup IDs), with optional media
 +// warnings separate from financial parsing. Storage failure rolls back together.
 +function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
-+async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
++async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null,stateGate=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
 +  for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
-+  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);return n;
++  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);if(stateGate)await StateGate.importOn(store,userId,stateGate,reviewAccounts,reviewFallback);return n;
 +});}
 +
  function parseCsv(text) {
    const rows = [];
    let row = [], field = '', inQuotes = false;
-@@ -912,10 +1313,13 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -912,10 +1329,13 @@ router.post('/import/json', requireAuth, async (req, res) => {
    const data = req.body && req.body.data ? req.body.data : req.body;
    if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
    const userId = req.user.id;
 -  const accountMap = {};
-+  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations);
++  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations),stateGate=StateGate.portable(data.state_gate_answers);
 +  const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
 +  const accountMap = Object.create(null);
    const instruments = await instrumentMap(userId);
@@ -14077,7 +14396,7 @@ index 0bb768c..35c65e4 100644
    try {
      // reads happen before the write batch (libSQL never interleaves them)
      const myAccounts = await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId);
-@@ -925,14 +1329,17 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -925,14 +1345,17 @@ router.post('/import/json', requireAuth, async (req, res) => {
        accountMap[a.id] = match ? match.id : (def ? def.id : null);
      }
      const existingStrategies = new Set((await db.prepare('SELECT name FROM strategies WHERE user_id=?').all(userId)).map((r) => r.name));
@@ -14097,19 +14416,19 @@ index 0bb768c..35c65e4 100644
        inserted++;
      }
      for (const s of (data.strategies || [])) {
-@@ -953,9 +1360,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
+@@ -953,9 +1376,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
            j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
        });
      }
 -    await db.batch([...T.batchStatements(userId, collected), ...stmts]);
-+    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
++    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities,stateGate);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
    } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
 -  res.json({ ok: true, inserted });
-+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,opportunity_warnings:opportunities.warnings });
++  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,state_gate_warnings:stateGate.warnings,opportunity_warnings:opportunities.warnings });
  });
  
  /* ---------------------------------------------------------------- settings */
-@@ -971,6 +1378,16 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -971,6 +1394,16 @@ router.put('/settings', requireAuth, async (req, res) => {
      risk_defaults: b.risk_defaults || cur.risk_defaults || { risk_pct: 1, daily_limit_pct: 3, max_trades: 5 },
      // the floor every plan is judged against: below it a plan may still be shown,
      // but it is labelled and never reads as a plain order
@@ -14126,7 +14445,7 @@ index 0bb768c..35c65e4 100644
      min_rr: Number.isFinite(Number(b.min_rr)) && Number(b.min_rr) > 0
        ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
        : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
-@@ -982,7 +1399,7 @@ router.put('/settings', requireAuth, async (req, res) => {
+@@ -982,7 +1415,7 @@ router.put('/settings', requireAuth, async (req, res) => {
  router.post('/demo/seed', requireAuth, async (req, res) => {
    const acc = await db.prepare('SELECT * FROM accounts WHERE user_id=? ORDER BY is_default DESC LIMIT 1').get(req.user.id);
    const inserted = await require('../demo-data').seedUser(req.user.id, acc ? acc.id : null, { force: true });
@@ -14136,10 +14455,10 @@ index 0bb768c..35c65e4 100644
  
  /**
 diff --git a/src/routes/bots.js b/src/routes/bots.js
-index 2c6ff6c..df5ff18 100644
+index 2c6ff6c..446474a 100644
 --- a/src/routes/bots.js
 +++ b/src/routes/bots.js
-@@ -10,12 +10,15 @@ const C = require('../candles');
+@@ -10,12 +10,16 @@ const C = require('../candles');
  const I = require('../instruments');
  const TV = require('../tradingview');
  const D = require('../db');
@@ -14152,10 +14471,11 @@ index 2c6ff6c..df5ff18 100644
      if (res.headersSent) return;
 +    if(err.code==='execution_review_invalid')return res.status(err.status).json({error:err.message,code:err.code});
 +    if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
++    if (err.code?.startsWith('state_gate_')) return res.status(err.status).json({error:err.message,code:err.code,state_gate:err.state_gate});
      res.status(500).json({ error: err.message || 'Bot error' });
    });
    const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));
-@@ -28,11 +31,26 @@ function createBotsRouter({ requireAuth }) {
+@@ -28,11 +32,26 @@ function createBotsRouter({ requireAuth }) {
   * scenario". `?min_rr=` overrides it for a single request so a probe or a test
   * can measure the same plan against a different floor.
   */
@@ -14183,7 +14503,7 @@ index 2c6ff6c..df5ff18 100644
      const set = row && row.settings ? JSON.parse(row.settings) : {};
      const v = Number(set.min_rr);
      if (Number.isFinite(v) && v > 0) return Math.min(Math.max(v, 0.1), 10);
-@@ -88,12 +106,13 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -88,12 +107,13 @@ router.get('/markets', requireAuth, (req, res) => {
        predictionBars: Math.min(Math.max(num(req.query.bars, 1200), 300), 3000),
        step: Math.min(Math.max(num(req.query.step, 2), 1), 6),
        minRR: await floorOf(req),
@@ -14198,7 +14518,7 @@ index 2c6ff6c..df5ff18 100644
      res.json({ ...payload, saved });
    }));
  
-@@ -113,6 +132,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -113,6 +133,7 @@ router.get('/markets', requireAuth, (req, res) => {
        userId: req.user.id,
        accountId: req.query.account_id ? Number(req.query.account_id) : null,
        minRR: await floorOf(req),
@@ -14206,7 +14526,7 @@ index 2c6ff6c..df5ff18 100644
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),
        as_of: req.query.as_of || null,
      });
-@@ -128,6 +148,8 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -128,6 +149,8 @@ router.get('/markets', requireAuth, (req, res) => {
      const tf = String(req.query.tf || '15m');
      const out = await Bots.chart(symbol, tf, {
        bars: Math.min(Math.max(num(req.query.bars, 300), 80), 900), userId: req.user.id,
@@ -14215,7 +14535,7 @@ index 2c6ff6c..df5ff18 100644
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
      });
      res.json({
-@@ -137,8 +159,8 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -137,8 +160,8 @@ router.get('/markets', requireAuth, (req, res) => {
        checks: out.topdown.checks, score: out.topdown.score, grade: out.topdown.grade,
        status: out.topdown.status, direction: out.topdown.direction,
        headline: out.topdown.headline, playbook: out.topdown.playbook,
@@ -14226,7 +14546,7 @@ index 2c6ff6c..df5ff18 100644
        verdict: out.setups.verdict, meta: out.meta,
      });
    }));
-@@ -150,7 +172,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -150,7 +173,7 @@ router.get('/markets', requireAuth, (req, res) => {
        .split(',').map((s) => s.trim()).filter(Boolean);
      if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
      const tf = String(req.query.tf || '15m');
@@ -14235,7 +14555,7 @@ index 2c6ff6c..df5ff18 100644
      res.json(out);
    }));
  
-@@ -211,18 +233,22 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -211,18 +234,22 @@ router.get('/markets', requireAuth, (req, res) => {
        days: Math.min(Math.max(num(req.query.days, 365), 7), 2000),
        backfill: req.query.backfill === '1',
      });
@@ -14261,7 +14581,7 @@ index 2c6ff6c..df5ff18 100644
      res.json({ ok: true, guardrails: g.guardrails, stats: g.stats, evidence: g.evidence, daily });
    }));
  
-@@ -240,7 +266,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -240,7 +267,7 @@ router.get('/markets', requireAuth, (req, res) => {
  
    router.get('/signals', requireAuth, wrap(async (req, res) => {
      const status = req.query.status ? String(req.query.status) : null;
@@ -14270,7 +14590,7 @@ index 2c6ff6c..df5ff18 100644
    }));
  
    router.post('/signals/save', requireAuth, wrap(async (req, res) => {
-@@ -252,8 +278,9 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -252,8 +279,9 @@ router.get('/markets', requireAuth, (req, res) => {
        accountId: (req.body && req.body.account_id) || null,
        includePrediction: req.body && req.body.prediction !== false,
      });
@@ -14282,7 +14602,7 @@ index 2c6ff6c..df5ff18 100644
    }));
  
    /**
-@@ -262,12 +289,30 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -262,12 +290,30 @@ router.get('/markets', requireAuth, (req, res) => {
     */
    router.post('/signals/save-plan', requireAuth, wrap(async (req, res) => {
      const b = req.body || {};
@@ -14315,7 +14635,7 @@ index 2c6ff6c..df5ff18 100644
    }));
  
    router.post('/signals/resolve', requireAuth, wrap(async (req, res) => {
-@@ -393,6 +438,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -393,6 +439,7 @@ router.get('/markets', requireAuth, (req, res) => {
          plan = summarise(payload, parsed);
          if (user.autocreate && payload.setups && payload.setups.verdict && payload.setups.verdict.action !== 'NO TRADE') {
            const saved = await Bots.saveSignals(user.id, payload);
@@ -14838,6 +15158,212 @@ index 0000000..9f97515
 +  });
 +}
 +module.exports={parseLimit,owned,describe,inspect,start,end,unavailable};
+diff --git a/src/state-gate.js b/src/state-gate.js
+new file mode 100644
+index 0000000..b63745c
+--- /dev/null
++++ b/src/state-gate.js
+@@ -0,0 +1,200 @@
++'use strict';
++/**
++ * M106 — the fresh in-session four-question state gate.
++ *
++ * Saved Ep28 states the rule verbatim: "Am I calm? Am I clear? Am I following the
++ * trade plan? Would I take this trade if I was already up big today? If the answer to
++ * any of these questions is no, then you don't trade yet."
++ *
++ * The app cannot read a mind. What this module does is record THE TRADER'S OWN
++ * answers with a server receipt, refuse to call a missing, stale or unavailable answer
++ * set a pass, and refuse the app's own actionable surface when an answer set that was
++ * actually given says no. It is deterministic and auditable; it is not a mental-state
++ * measurement, a score, a grade, or a broker/execution block.
++ */
++const crypto = require('crypto');
++const VERSION = 'state-gate-v1';
++/** APP freshness policy for an in-session check — not a course, broker or clock rule. */
++const WINDOW_MIN = 60;
++const QUESTIONS = [
++  { id: 'calm', text: 'Am I calm?' },
++  { id: 'clear', text: 'Am I clear?' },
++  { id: 'following_plan', text: 'Am I following the trade plan?' },
++  { id: 'would_take_if_up_big', text: 'Would I take this trade if I was already up big today?' },
++];
++const ANSWER_IDS = QUESTIONS.map((q) => q.id);
++const BASIS = 'Recorded self-declared answers to the four saved questions with a server receipt; a fresh pass is the trader\'s own statement, not verified calmness, clear thinking, plan adherence, broker state or an edge. A no blocks the app\'s own actionable surface the way the killzone veto does and cannot reach a broker. Absence of answers is never a pass, and imported copies never grant permission.';
++
++const id = (n) => Number.isSafeInteger(n) && n > 0;
++const hash = (v) => crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
++function invalid(message, status = 400) { return Object.assign(new Error(message), { code: 'state_gate_invalid', status }); }
++const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
++const Clock = (s, o) => require('./process-outcomes').clock(s, o);
++
++/** null = "not answered now". Any other value must be exactly the four booleans. */
++function answers(value) {
++  if (value === null) return null;
++  if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalid('Answer all four questions yes/no, or explicitly record that you have not answered.');
++  const keys = Object.keys(value);
++  if (keys.length !== ANSWER_IDS.length || ANSWER_IDS.some((k) => !Object.hasOwn(value, k)) || keys.some((k) => !ANSWER_IDS.includes(k))) throw invalid('Answer exactly the four saved questions: calm, clear, following the plan, would take it if already up big.');
++  const out = {};
++  for (const k of ANSWER_IDS) { if (typeof value[k] !== 'boolean') throw invalid('Each answer is a truthful yes or no; there is no "maybe" and no default.'); out[k] = value[k]; }
++  return out;
++}
++function input(body) {
++  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some((k) => !['answers', 'revision'].includes(k)) || !Object.hasOwn(body, 'answers') || typeof body.revision !== 'string' || !/^[a-f0-9]{64}$/.test(body.revision)) throw invalid('Send the displayed revision and explicit answers/null only; the app records your answers, so no caller clock, source or owner authority is accepted.');
++  return { answers: answers(body.answers), revision: body.revision };
++}
++
++function evaluate(rows, accountId, { nowMs = Date.now() } = {}) {
++  const human = (rows || []).filter((r) => r && r.source === 'human_declared');
++  const archives = (rows || []).filter((r) => r && r.source === 'imported_unverified');
++  /** Using the gate at all — including an explicit "not answered now" — is adoption;
++   * recording a null can therefore never be a way to un-adopt the check and act. */
++  const adopted = human.length > 0;
++  const base = {
++    schema: VERSION, version: null, account_id: accountId, state: 'not_adopted', allowed: false, adopted,
++    answers: null, receipt: null, recorded_at: null, age_minutes: null, expires_at: null,
++    questions: QUESTIONS, window_minutes: WINDOW_MIN, imported_archives: archives.length,
++    failed_questions: [], broker_verified: false, service: VERSION, basis: BASIS,
++  };
++  const last = human.length ? human[human.length - 1] : null;
++  if (!last) return base;
++  const receipt = Clock(last.recorded_at, { canonical: true, now: nowMs });
++  if (receipt === null) return { ...base, state: 'unavailable' };
++  if (last.schema_version !== VERSION) return { ...base, state: 'unavailable', recorded_at: last.recorded_at };
++  let given; try { given = last.answers_json === null || last.answers_json === undefined ? null : JSON.parse(last.answers_json); } catch { return { ...base, state: 'unavailable', recorded_at: last.recorded_at }; }
++  try { given = answers(given); } catch { return { ...base, state: 'unavailable', recorded_at: last.recorded_at }; }
++  const age = nowMs - receipt, fresh = age >= 0 && age <= WINDOW_MIN * 60000 && utcDay(receipt) === utcDay(nowMs);
++  const failed = given ? ANSWER_IDS.filter((k) => given[k] === false) : [];
++  const state = given === null ? 'unanswered' : !fresh ? 'stale' : failed.length ? 'failed' : 'passed';
++  return {
++    ...base, state, allowed: state === 'passed', answers: given, failed_questions: failed,
++    recorded_at: last.recorded_at, receipt: receipt === null ? null : new Date(receipt).toISOString(),
++    version: id(Number(last.version)) ? Number(last.version) : null,
++    age_minutes: Math.max(0, Math.round(age / 60000)),
++    expires_at: new Date(receipt + WINDOW_MIN * 60000).toISOString(),
++  };
++}
++
++function publicRow(row) {
++  if (!row) return null;
++  try {
++    if (!['human_declared', 'imported_unverified'].includes(row.source) || row.schema_version !== VERSION || !id(row.account_key) || (row.account_id !== null && row.account_id !== row.account_key) || !id(row.version) || Clock(row.recorded_at, { canonical: true }) === null) throw invalid('Unavailable state-gate answer record.');
++    const given = row.answers_json === null || row.answers_json === undefined ? null : answers(JSON.parse(row.answers_json));
++    return { id: row.id, account_id: row.account_id, account_key: row.account_key, version: Number(row.version), answers: given, state: row.source === 'imported_unverified' ? 'imported_unverified' : given === null ? 'unanswered' : 'answered', source: row.source, recorded_at: row.recorded_at, historical: row.historical_json ? JSON.parse(row.historical_json) : null, broker_verified: false };
++  } catch { return { id: row.id, account_key: row.account_key, version: null, answers: null, state: 'unavailable', source: 'unavailable', recorded_at: null, broker_verified: false }; }
++}
++
++async function owned(store, userId, accountId) {
++  if (!['string', 'number'].includes(typeof accountId) || (typeof accountId === 'string' && !/^[1-9]\d*$/.test(accountId)) || !id(Number(accountId))) throw invalid('Account not found.', 404);
++  const a = await store.prepare('SELECT * FROM accounts WHERE user_id=? AND id=?').get(userId, Number(accountId));
++  if (!a) throw invalid('Account not found.', 404);
++  return a;
++}
++const rowsOn = (store, userId, accountId) => store.prepare('SELECT * FROM state_gate_answers WHERE user_id=? AND account_key=? ORDER BY id').all(userId, accountId);
++
++async function viewOn(store, userId, accountId, { nowMs = Date.now() } = {}) {
++  const a = await owned(store, userId, accountId);
++  const rows = await rowsOn(store, userId, a.id);
++  return { account_id: a.id, ...evaluate(rows, a.id, { nowMs }), history: rows.map(publicRow), revision: hash([userId, a.id, rows]) };
++}
++async function read(userId, accountId, options) { const { db } = require('./db'); return db.tx(async (tx) => viewOn(db.transactionStore(tx), userId, accountId, options)); }
++async function save(userId, accountId, body, { nowMs = Date.now() } = {}) {
++  const fields = input(body); const { db } = require('./db');
++  return db.tx(async (tx) => {
++    const store = db.transactionStore(tx), v = await viewOn(store, userId, accountId, { nowMs });
++    if (fields.revision !== v.revision) throw invalid('State-gate answers or account changed. Explicitly reload before answering.', 409);
++    const next = (await store.prepare('SELECT MAX(version) v FROM state_gate_answers WHERE user_id=? AND account_key=?').get(userId, v.account_id)).v || 0;
++    await store.prepare('INSERT INTO state_gate_answers(user_id,account_id,account_key,version,answers_json,source,recorded_at,schema_version) VALUES(?,?,?,?,?,?,?,?)')
++      .run(userId, v.account_id, v.account_id, Number(next) + 1, fields.answers === null ? null : JSON.stringify(fields.answers), 'human_declared', new Date(nowMs).toISOString(), VERSION);
++    return viewOn(store, userId, accountId, { nowMs });
++  });
++}
++function unavailable(reason = 'State-gate answers unavailable — not answered, not a pass, and not a block.') { return { schema: VERSION, version: null, account_id: null, state: 'unavailable', allowed: false, adopted: false, answers: null, receipt: null, recorded_at: null, age_minutes: null, expires_at: null, questions: QUESTIONS, window_minutes: WINDOW_MIN, imported_archives: 0, failed_questions: [], broker_verified: false, service: VERSION, message: reason, basis: BASIS }; }
++async function optional(userId, accountId, { nowMs = Date.now(), store = null } = {}) {
++  try {
++    if (store) return await viewOn(store, userId, accountId, { nowMs });
++    return await read(userId, accountId, { nowMs });
++  } catch { return unavailable(); }
++}
++/** The write paths' own permission question. `not_adopted` is the ONE state that is
++ * not an enforcement: an account that has never answered the four questions has no
++ * recorded refusal for the app to honour, so the desk stays legible and says so
++ * rather than inventing a check the trader never gave. Everything else refuses. */
++async function permission(userId, accountId, { nowMs = Date.now() } = {}) {
++  let view; try { view = await read(userId, accountId, { nowMs }); } catch (e) { if (e.code === 'state_gate_invalid' && e.status === 404) throw e; return { ...unavailable(), adopted: true, message: 'State gate unavailable; the app cannot claim a fresh pass.' }; }
++  const allowed = view.state === 'passed' || view.state === 'not_adopted';
++  const message = view.state === 'failed' ? `State gate: you answered no to ${view.failed_questions.map((k) => `"${QUESTIONS.find((q) => q.id === k).text}"`).join(', ')}. You do not trade yet.`
++    : view.state === 'stale' ? `State gate: your last answers are ${view.age_minutes} minutes old (APP window ${WINDOW_MIN} min) and cannot stand in for a fresh in-session check.`
++      : view.state === 'unanswered' ? 'State gate: you have not answered the four questions for this session.'
++        : view.state === 'unavailable' ? 'State gate: the stored answers cannot be read back, so no pass is claimed.'
++          : view.state === 'not_adopted' ? 'The four-question state gate is not adopted on this account: the desk cannot claim a state check it never received, and this is not a pass.' : `State gate passed at ${view.receipt} (trader's own answers, expired ${view.expires_at}).`;
++  return { ...view, allowed, message };
++}
++async function history(userId, accountId = null) {
++  const { db } = require('./db');
++  if (accountId !== null) await owned(db, userId, accountId);
++  const rows = await db.prepare('SELECT * FROM state_gate_answers WHERE user_id=?' + (accountId === null ? '' : ' AND account_key=?') + ' ORDER BY id').all(...(accountId === null ? [userId] : [userId, Number(accountId)]));
++  return { records: rows.map(publicRow), readonly: true, broker_verified: false, basis: BASIS };
++}
++function portable(raw) {
++  const out = { records: [], warnings: [] };
++  if (raw == null) return out;
++  try {
++    if (!raw || raw.version !== 1 || !Array.isArray(raw.records) || raw.records.length > 500) throw invalid('Optional state-gate history requires version 1 and at most 500 records.');
++    if (raw.unavailable || raw.unavailable_records > 0) out.warnings.push('Original state-gate history unavailable/omitted; no pass and no refusal is inferred.');
++    for (const r of raw.records) {
++      try {
++        const given = answers(r.answers === undefined ? null : r.answers);
++        const original = r.historical || {}, oldClock = original.recorded_at ?? r.recorded_at;
++        let declared = oldClock;
++        if (oldClock != null && Clock(oldClock, { canonical: true }) === null) { out.warnings.push('Invalid/future original state-gate receipt omitted, not receiving-clock proof.'); declared = null; }
++        out.records.push({ account_id: r.account_id ?? r.account_key, answers: given, historical: { source: original.source || r.source || null, recorded_at: declared, original_version: original.original_version ?? r.version ?? null, original_id: original.original_id ?? r.id ?? null } });
++      } catch (e) { out.warnings.push(e.message || 'Invalid optional state-gate answer set omitted.'); }
++    }
++  } catch (e) { out.warnings.push(e.message || 'Optional state-gate history omitted.'); }
++  out.warnings = out.warnings.slice(0, 20);
++  return out;
++}
++async function exportOwned(userId) {
++  try { const { db } = require('./db'), rows = await db.prepare('SELECT * FROM state_gate_answers WHERE user_id=? ORDER BY id').all(userId), records = rows.map(publicRow).filter((p) => p.state !== 'unavailable'); return { version: 1, records, unavailable_records: rows.length - records.length }; }
++  catch { return { version: 1, records: [], unavailable: true }; }
++}
++async function importOn(store, userId, parsed, map = {}, fallback = null) {
++  for (const p of parsed.records) {
++    const accountId = map[p.account_id] || fallback;
++    await owned(store, userId, accountId);
++    const next = (await store.prepare('SELECT MAX(version) v FROM state_gate_answers WHERE user_id=? AND account_key=?').get(userId, accountId)).v || 0;
++    await store.prepare('INSERT INTO state_gate_answers(user_id,account_id,account_key,version,answers_json,source,recorded_at,historical_json,schema_version) VALUES(?,?,?,?,?,?,?,?,?)')
++      .run(userId, accountId, accountId, Number(next) + 1, p.answers === null ? null : JSON.stringify(p.answers), 'imported_unverified', new Date().toISOString(), JSON.stringify(p.historical), VERSION);
++  }
++}
++/** Merge into the desk's personal state. A recorded no — or an adopted account whose
++ * check is missing/stale/unreadable — becomes the same kind of stop the personal
++ * guardrails already produce, so `Guards.applyToSetups` and the Now surface refuse the
++ * signal. `not_adopted` is reported, never silently upgraded into a block. */
++function apply(daily, gate) {
++  if (!daily || !gate) return daily;
++  /* `allowed` in the published object always means "a fresh all-yes pass exists".
++   * `permission` is the app's own write decision, where an account that never adopted
++   * the gate is deliberately not refused. Keeping the two distinct is what stops a
++   * snapshot of an unadopted account from reading like a state check that passed. */
++  const published = { ...gate, permission: gate.state === 'passed' || gate.state === 'not_adopted', allowed: gate.state === 'passed' };
++  const out = { ...daily, state_gate: published };
++  const refusing = gate.state === 'failed' || (gate.adopted && gate.state !== 'passed');
++  if (!refusing) return out;
++  const rule = gate.state === 'failed' ? 'state_gate_failed' : `state_gate_${gate.state}`;
++  const detail = gate.state === 'failed'
++    ? `State gate: your own recorded answer was no to ${gate.failed_questions.map((k) => `"${QUESTIONS.find((q) => q.id === k).text}"`).join(', ')} — you do not trade yet, and a fresh honest answer is the only way to change that.`
++    : `State gate: an adopted in-session check is not currently passed (${gate.state}). Answer the four questions; this refusal is the app's own and cannot reach a broker.`;
++  return {
++    ...out,
++    state_gate: { ...published, rule, detail },
++    breaches: [...(daily.breaches || []), { rule, detail, state_gate: true }],
++    status: 'stop',
++    message: 'Stand down: ' + detail,
++    permission: { ...(daily.permission || {}), allowed: false, can_override: false, state: 'state_gate', message: 'Stand down: ' + detail },
++  };
++}
++module.exports = { VERSION, WINDOW_MIN, QUESTIONS, ANSWER_IDS, BASIS, id, hash, invalid, answers, input, evaluate, publicRow, owned, viewOn, read, save, permission, optional, unavailable, history, portable, exportOwned, importOn, apply };
 diff --git a/src/trades.js b/src/trades.js
 index 171df43..ded2586 100644
 --- a/src/trades.js

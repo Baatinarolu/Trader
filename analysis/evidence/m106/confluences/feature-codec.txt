@@ -1,0 +1,27 @@
+ok literal nullable/none/partial/selected text normalisation null
+ok literal nullable/none/partial/selected text normalisation []
+ok literal nullable/none/partial/selected text normalisation ["Sweep"]
+ok literal nullable/none/partial/selected text normalisation ["Sweep","Order block"]
+ok literal nullable/none/partial/selected text normalisation ["A","B","C","D","E"]
+ok literal nullable/none/partial/selected text normalisation [" Sweep ","sweep","Order   block"]
+ok literal nullable/none/partial/selected text normalisation ["Café","Café"]
+ok literal nullable/none/partial/selected text normalisation ["level, reaction","\"quoted\" level"]
+ok literal nullable/none/partial/selected text normalisation ["<img src=x>","Flip"]
+ok reject malformed/ambiguous/over-budget undefined
+ok reject malformed/ambiguous/over-budget "Sweep,Order block"
+ok reject malformed/ambiguous/over-budget "[\"Sweep\"]"
+ok reject malformed/ambiguous/over-budget 1
+ok reject malformed/ambiguous/over-budget false
+ok reject malformed/ambiguous/over-budget {}
+ok reject malformed/ambiguous/over-budget [null]
+ok reject malformed/ambiguous/over-budget [""]
+ok reject malformed/ambiguous/over-budget ["  "]
+ok reject malformed/ambiguous/over-budget ["A",{}]
+ok reject malformed/ambiguous/over-budget ["A","B","C","D","E","F"]
+ok reject malformed/ambiguous/over-budget ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"]
+ok reject malformed/ambiguous/over-budget ["a\u0000b"]
+ok reject malformed/ambiguous/over-budget ["a\nb"]
+ok reject malformed/ambiguous/over-budget ["A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A"]
+ok pure codec no mutation, no guessed source/capture clocks/technical truth
+ok case/spacing reusable key canonical, semantic alias not invented
+M88 explicit confluence codec: 26 passed, 0 failed

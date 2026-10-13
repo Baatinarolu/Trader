@@ -34,7 +34,8 @@
         API.get('/briefing', params).catch(() => null),
         API.get('/trades', { ...params, limit: 12 }),
         API.get('/identity/daily/'+Store.isoToday(),{account_id:Store.accountId}).catch(()=>({state:'unavailable'})),
-      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay]=identityResult;
+        API.get('/state-gate',{account_id:Store.accountId}).catch(()=>({state:'unavailable',account_id:null})),
+      ]);}catch(e){if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;throw e;}const [an,coach,briefing,tradesRes,identityDay,stateGateView]=identityResult;
       if(epoch!==identityRenderEpoch||Views.identity&&!Views.identity.same(identityContext))return;
       const k = an.kpis;
       const acc = an.account || Store.account() || {};
@@ -73,6 +74,7 @@
         go('first-bots', () => global.App.go('bots'));
       }
 
+      if(Views.stateGate)root.appendChild(Views.stateGate.card(stateGateView));
       if(Views.identity)root.appendChild(Views.identity.card(identityDay));
       root.appendChild(Views.sessionTimeCard(briefing?.daily?.session_time || {}));
       if(Views.lossWritingCard)root.appendChild(Views.lossWritingCard(briefing?.daily?.post_loss_journal || {}));

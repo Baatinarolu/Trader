@@ -1,0 +1,30 @@
+FAIL missing/blank reason cannot override: undefined {"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+FAIL missing/blank reason cannot override: null {"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+FAIL missing/blank reason cannot override: "" {"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+FAIL missing/blank reason cannot override: "  \n  " {"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+ok invalid plain-text reason rejected without a write: boolean
+ok invalid plain-text reason rejected without a write: number
+ok invalid plain-text reason rejected without a write: object
+ok invalid plain-text reason rejected without a write: object
+ok invalid plain-text reason rejected without a write: string
+FAIL known stop plus nonblank reason admits exactly this action {"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+FAIL server trims and persists reason on trade undefined
+FAIL server persists stopped rule snapshot, never client-supplied clear {}
+FAIL override snapshot uses actual account/server date/time {}
+FAIL reason/rule/id committed together in durable day audit undefined
+FAIL ordinary edit cannot rewrite the captured reason/violated rule {"status":0,"data":{}}
+FAIL one override does not unlock the rest of the day {"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+ok save-plan requires and records the same reasoned server override
+ok plan override cannot move entry/stop/target to fake permission
+FAIL eligible signal storage uses fresh override, not stale read permission {"saved":1,"ids":[2],"permission":{"allowed":true,"can_override":false,"state":"overridden","override_reason":"I accept this cap violation deliberately; this is not an automatic unlock.","action":"save_signal","account_id":1,"evaluated_at":"2026-10-11T12:00:00.000Z","scope":"personal rules for this recorded action only, not broker execution or future permission"}}
+ok personal override cannot waive a TECHNICAL candidate veto
+ok public save-signal uses server analysis veto, not supplied client approval
+FAIL even a reason cannot override an unavailable guardrail check {"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+ok override is not an account-ownership bypass
+FAIL reopened prospective entry records reason and fresh stop {"status":400,"data":{"error":"Name your current emotional state before reopening requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+FAIL audit failure rolls back BOTH entry and override, never an unlogged exception {"response":{"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}},"count":4}
+ok day review actually returns override reason AND violated rule
+FAIL trade deletion cannot erase override reasons in day audit 2
+FAIL a reason submitted while CLEAR is not falsely called an override {"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+FAIL no-next-candle unknown TF cannot be waived by reason {"status":400,"data":{"error":"Name your emotional state before prospective entry requires plain nonblank text, at most 100 characters.","code":"guardrail_input_invalid"}}
+M80 overrides: 11 passed, 18 failed

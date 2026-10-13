@@ -632,3 +632,41 @@ Current132=99done/3partial/30TODO. NextM106, M107/M111/M112 open, M30/M103/M108
 partial. Existing execution/daily/window scores/grades/weights/default risk/factors/
 entrymodels/checklists/stops/targets/RR/floor30/M103n>=5/B-C unchanged. No70%/causal/
 predictive edge/broker/provider/actual mental/human/meditation/pixels/production proof.
+
+
+## M106 — the fresh four-question check refuses, it never grades
+
+Owned append-only `human_declared` answers to the four saved questions (calm, clear,
+following the plan, would take it if already up big) with a server receipt; imported
+copies are `imported_unverified` archives. No default, no preselected answer, no free
+text, no inference from notes/profit/emotion/adherence/legacy rows, no backfill.
+
+A recorded no is `state_gate_failed`. An adopted account whose check is missing, stale,
+unparseable or from an unknown schema version is `state_gate_unanswered|stale|
+unavailable`. Both become the same kind of personal stop the personal guardrails and
+the killzone veto already produce: `POST /trades` live entry and reopen answer 409,
+`saveSignals`/`savePlan` throw the same code, and analyse/chart/scan/Now refuse with
+`NO TRADE`, `personal_blocked:true`, `execution_permission.allowed:false` and a blocking
+`state_gate_*` breach. The gate takes the trader's own desk: an omitted `account_id`
+resolves the default account, so skipping the field is not a bypass, while an explicit
+research-only save stays a labelled research artifact.
+
+`not_adopted` is deliberately NOT a block: an account that never answered has no
+recorded refusal to honour, and inventing one would be a fabricated rule. Freshness is
+APP policy only — same UTC day and within the 60-minute window, edge inclusive; a
+future/corrupt receipt is `unavailable`, never a pass. Admission, caps, cooldown,
+routine, risk, grades, geometry, targets/RR and the core journal are untouched:
+refusals change the app's own permission, never a number.
+
+Immutable rows (UPDATE guarded, FK-nullification exception), revision CAS with 409 +
+retained draft, store failure 503 with no receipt and no partial write, orphaned rows
+retained readonly for their owner only. Backup/restore labels copies as archives that
+can never pass, fail or block the receiving trader; malformed optional history warns
+while the financial import stays legal; a real import-store failure rolls back that
+request atomically. Settings shows the warnings; nothing auto-refreshes them away.
+
+Current132=100done/3partial/29TODO. NextM107, M111/M112 open, M30/M103/M108 partial.
+This is recorded self-report, not verified calmness, clarity, plan adherence, broker
+state, an edge, a readiness/mental-state score or a discipline rating; no 70%/causal/
+predictive/broker/provider/human/meditation/pixel/production proof. M89 capture, M64
+morning check-in and M107 intention remain separate features.

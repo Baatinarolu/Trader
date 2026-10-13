@@ -19,6 +19,7 @@ function createBotsRouter({ requireAuth }) {
     if (res.headersSent) return;
     if(err.code==='execution_review_invalid')return res.status(err.status).json({error:err.message,code:err.code});
     if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
+    if (err.code?.startsWith('state_gate_')) return res.status(err.status).json({error:err.message,code:err.code,state_gate:err.state_gate});
     res.status(500).json({ error: err.message || 'Bot error' });
   });
   const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));

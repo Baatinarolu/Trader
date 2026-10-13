@@ -1,0 +1,12 @@
+FAIL a fresh account is not_adopted with a revision to write against "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/state-gate</pre>\n</body>\n</html>\n"
+FAIL recording four honest yes answers is a fresh pass "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot PUT /api/state-gate</pre>\n</body>\n</html>\n"
+FAIL the pass carries the APP window and an expiry, not an unbounded permission {}
+FAIL the recorded answers come back as given, with no sentiment or score added undefined
+FAIL the revision returned by a write is the one the next write may use undefined
+FAIL a write from a superseded displayed revision is refused 409 and stores nothing 404
+FAIL both versions are retained with server receipts, none deleted or rewritten []
+TypeError: Cannot read properties of undefined (reading 'id')
+    at /home/user/Trader/analysis/probe-m106-api.js:27:107
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async finish (/home/user/Trader/analysis/m106-test-support.js:9:50)
+M106 owned four-question answers over real HTTP/auth/SQL: 0 passed, 8 failed

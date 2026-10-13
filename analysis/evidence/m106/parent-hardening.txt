@@ -1,0 +1,6 @@
+FAIL two writers holding the same displayed revision produce exactly one record and one 409 [404,404]
+TypeError: Cannot read properties of undefined (reading 'data')
+    at /home/user/Trader/analysis/probe-m106-hardening.js:23:114
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async finish (/home/user/Trader/analysis/m106-test-support.js:9:50)
+M106 concurrency/immutability/orphan/store-failure hardening: 0 passed, 2 failed

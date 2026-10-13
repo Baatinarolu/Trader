@@ -20,6 +20,7 @@ const Emotions = require('../emotions');
 const PeriodReviews = require('../period-reviews');
 const RuleChanges = require('../rule-changes');
 const Identity = require('../identity');
+const StateGate = require('../state-gate');
 const Opportunities = require('../opportunities');
 const ProcessOutcomes = require('../process-outcomes');
 const BehaviorDays = require('../behavior-days');
@@ -359,10 +360,15 @@ router.post('/trades', requireAuth, async (req, res) => {
     if (trade.status === 'open' && body.record_only !== true) {
       try { trade.emotion_before=J.text(body.emotion_before,'Name your emotional state before prospective entry',100); }
       catch(e){throw Guards.inputError(e.message);}
+      /* M106 — a live prospective entry is the app's own actionable surface, so an
+       * ADOPTED four-question check must be fresh and non-failing before the entry is
+       * admitted. An account that never answered the gate has no recorded refusal to
+       * honour and is told so instead of being blocked by an invented rule. */
+      const gate = await StateGate.permission(req.user.id, accountId);
+      if (!gate.allowed) return res.status(409).json({ error: gate.message, code: gate.state === 'failed' ? 'state_gate_failed' : 'state_gate_unanswered', state_gate: { state: gate.state, adopted: gate.adopted, failed_questions: gate.failed_questions || [], window_minutes: gate.window_minutes, expires_at: gate.expires_at || null }, hint: 'Answer the four questions fresh (or record this as already-executed history with record_only) — nothing financial was written.' });
       const out = await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'trade_entry',entityType:'trade',overrideReason:body.override_reason},async (store,daily) => {
-        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)};
-        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,record:await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id),permission:Guards.actionPermission(daily)};
-      });
+        const entry = {...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(StateGate.apply(daily, gate))};
+        const id=await T.insert(store,req.user.id,entry);await Confluences.attachOn(store,req.user.id,id,confluences);return {id,record:await store.prepare('SELECT * FROM trades WHERE id=? AND user_id=?').get(id,req.user.id),permission:Guards.actionPermission(daily)}; });
       id = out.id; permission = out.permission; written=out.record;
     } else {
       const out = await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_trade',entityType:'trade'},async (store,daily)=>{const id=await T.insert(store,req.user.id,{...trade,account_id:accountId,...Guards.snapshotFields(daily,'record_only')});await Confluences.attachOn(store,req.user.id,id,confluences);return {id};});
@@ -409,7 +415,10 @@ router.put('/trades/:id', requireAuth, async (req, res) => {
     if (existing.status !== 'open' && trade.status === 'open' && req.body.record_only !== true) {
       try { trade.emotion_before=J.text(req.body.emotion_before,'Name your current emotional state before reopening',100); }
       catch(e){throw Guards.inputError(e.message);}
-      written=await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>write(store,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(daily)}));
+      /* M106 — reopening a closed trade into a live position is the same prospective act as a new entry. */
+      const reopenGate=await StateGate.permission(req.user.id,accountId);
+      if(!reopenGate.allowed)return res.status(409).json({error:reopenGate.message,code:reopenGate.state==='failed'?'state_gate_failed':'state_gate_unanswered',state_gate:{state:reopenGate.state,adopted:reopenGate.adopted,failed_questions:reopenGate.failed_questions||[],window_minutes:reopenGate.window_minutes,expires_at:reopenGate.expires_at||null},hint:'Answer the four questions fresh, or record this as journal history with record_only — nothing financial was written.'});
+      written=await Guards.admit(req.user.id,{accountId,entryTf:trade.entry_tf,action:'reopen_entry',entityType:'trade',entityId:id,overrideReason:req.body.override_reason},(store,daily)=>write(store,{...trade,account_id:accountId,opened_at:daily.evaluated_at,...Guards.snapshotFields(StateGate.apply(daily,reopenGate))}));
     } else written=await Guards.record(req.user.id,{accountId,entryTf:trade.entry_tf,action:'journal_correction',entityType:'trade',entityId:id},store=>write(store,{...trade,account_id:accountId}));
   } catch(e) {
     if (e.code?.startsWith('guardrail_')) return res.status(e.status).json({error:e.message,code:e.code,daily:e.daily});
@@ -643,6 +652,7 @@ router.get('/briefing', requireAuth, wrap(async (req, res) => {
   const briefing = Coach.briefing({ trades: rows, events, quotes: quotes.quotes || {}, account: { ...acc, max_trades_day: capPolicy.max_trades_day }, journalEntry, riskRules: settings });
   briefing.risk_plan.trade_cap_policy = capPolicy;
   briefing.identity_context=await Identity.optional(req.user.id,acc.id,Guards.dayKey(Date.now()));
+  briefing.state_gate=await StateGate.optional(req.user.id,acc.id);
   briefing.behavior_days=await BehaviorDays.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
   briefing.process_review=await ProcessOutcomes.optional(req.user.id,{accountId:acc.id,from:Guards.dayKey(Date.now()),to:Guards.dayKey(Date.now())});
   // Briefing amounts are advice, NOT permission. Use the same close-day UTC
@@ -694,6 +704,11 @@ router.get('/identity/daily/:date',requireAuth,identityRoute(req=>Identity.daily
 router.put('/identity/statement',requireAuth,identityRoute(req=>Identity.save(req.user.id,req.query.account_id,'identity','',req.body)));
 router.put('/identity/theme/:start',requireAuth,identityRoute(req=>Identity.save(req.user.id,req.query.account_id,'theme',req.params.start,req.body)));
 
+const stateGateRoute=fn=>async(req,res)=>{try{res.json(await fn(req));}catch(e){if(e.code==='state_gate_invalid')return res.status(e.status).json({error:e.message,code:e.code});res.status(503).json({error:'State-gate answers unavailable; no finance/core/permission state changed.'});}};
+router.get('/state-gate',requireAuth,stateGateRoute(req=>StateGate.read(req.user.id,req.query.account_id)));
+router.get('/state-gate/history',requireAuth,stateGateRoute(req=>StateGate.history(req.user.id,req.query.account_id??null)));
+router.put('/state-gate',requireAuth,stateGateRoute(req=>StateGate.save(req.user.id,req.query.account_id,req.body)));
+
 router.get('/journal', requireAuth, async (req, res) => {
   const rows = await db.prepare('SELECT * FROM journal_entries WHERE user_id=? ORDER BY entry_date DESC LIMIT 400').all(req.user.id);
   const guardrailDays = await db.prepare(`SELECT rule_date,COUNT(*) AS events,SUM(kind='override') AS overrides FROM guardrail_events WHERE user_id=? GROUP BY rule_date ORDER BY rule_date DESC LIMIT 400`).all(req.user.id);
@@ -732,7 +747,7 @@ router.get('/journal/:date', requireAuth, async (req, res) => {
   const accountId=account.id;
   const trades = (await db.prepare(`SELECT * FROM trades WHERE user_id=? AND date(COALESCE(closed_at,opened_at))=date(?)${accountId===null?'':' AND account_id=?'}`).all(...(accountId===null?[req.user.id,req.params.date]:[req.user.id,req.params.date,accountId]))).map((t) => journalTrade(t, tz));
   const guardrailEvents = await Guards.eventsForDay(db,req.user.id,req.params.date,accountId);
-  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
+  res.json({ entry: row || null, trades,account_id:accountId,execution_summary:Execution.summary(trades,{accountId,date:req.params.date,timezone:'UTC'}),pre_market:await RR.daily(req.user.id,{accountId,date:req.params.date}), journal_summary:J.summary(trades),loss_reflections:await J.reflectionsForDay(req.user.id,{accountId,date:req.params.date}),guardrail_events:guardrailEvents, guardrail_timezone:'UTC',identity_context:await Identity.optional(req.user.id,accountId,req.params.date),state_gate:await StateGate.optional(req.user.id,accountId),behavior_days:await BehaviorDays.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}),process_review:await ProcessOutcomes.optional(req.user.id,{accountId,from:req.params.date,to:req.params.date}) });
 });
 router.post('/journal', requireAuth, async (req, res) => {
   const b = req.body || {};
@@ -1180,6 +1195,7 @@ router.get('/export/json', requireAuth, backup(async (req, res) => {
     period_reviews:await PeriodReviews.exportOwned(userId),
     strategy_rule_changes:await RuleChanges.exportOwned(userId),
     identity_declarations:await Identity.exportOwned(userId),
+    state_gate_answers:await StateGate.exportOwned(userId),
     opportunity_history:await Opportunities.exportOwned(userId),
     user: { email: req.user.email, name: req.user.name, settings: req.user.settings },
     accounts: await db.prepare('SELECT * FROM accounts WHERE user_id=?').all(userId),
@@ -1285,9 +1301,9 @@ router.post('/import/csv', requireAuth, async (req, res) => {
 // Actual transaction insert IDs (never raw backup IDs), with optional media
 // warnings separate from financial parsing. Storage failure rolls back together.
 function mediaFeedback(collected){return {emotion_warnings:collected.flatMap((c,i)=>(c.emotions?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),confluence_warnings:collected.flatMap((c,i)=>(c.confluences?.warnings||[]).map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20),media_skipped:collected.reduce((n,c)=>n+c.media.skipped,0),media_warnings:collected.flatMap((c,i)=>c.media.warnings.map(w=>'Imported row '+(i+1)+': '+w)).slice(0,20)};}
-async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
+async function importTradesWithMedia(userId,collected,extras=[],vocabulary=[],reviews=null,reviewAccounts={},reviewFallback=null,opportunities=null,ruleHistory=null,identities=null,stateGate=null){return db.tx(async tx=>{const store=db.transactionStore(tx);let n=0;
   for(const c of collected){if(!await store.prepare('SELECT id FROM accounts WHERE id=? AND user_id=?').get(c.trade.account_id,userId))throw new Error('Owned destination account unavailable.');const id=await T.insert(store,userId,c.trade),t=await Screenshots.owned(store,userId,id);n+=await Screenshots.insertPortableOn(store,t,c.media);await Confluences.attachOn(store,userId,id,c.confluences,{source:'imported'});await Emotions.importOn(store,t,c.emotions);}
-  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);return n;
+  for(const stmt of extras)await store.prepare(stmt.sql).run(stmt.args);await Confluences.vocabularyOn(store,userId,vocabulary);if(reviews)await PeriodReviews.importOn(store,userId,reviews,reviewAccounts,reviewFallback);if(opportunities)await Opportunities.importOn(store,userId,opportunities,reviewAccounts,reviewFallback);if(ruleHistory)await RuleChanges.importOn(store,userId,ruleHistory);if(identities)await Identity.importOn(store,userId,identities,reviewAccounts,reviewFallback);if(stateGate)await StateGate.importOn(store,userId,stateGate,reviewAccounts,reviewFallback);return n;
 });}
 
 function parseCsv(text) {
@@ -1313,7 +1329,7 @@ router.post('/import/json', requireAuth, async (req, res) => {
   const data = req.body && req.body.data ? req.body.data : req.body;
   if (!data || !Array.isArray(data.trades)) return res.status(400).json({ error: 'Expected an exported backup object with a trades array.' });
   const userId = req.user.id;
-  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations);
+  const ruleHistory=RuleChanges.portable(data.strategy_rule_changes),identities=Identity.portable(data.identity_declarations),stateGate=StateGate.portable(data.state_gate_answers);
   const vocabulary=Confluences.portableVocabulary(data.confluence_labels),reviews=PeriodReviews.portable(data.period_reviews),opportunities=Opportunities.portable(data.opportunity_history);
   const accountMap = Object.create(null);
   const instruments = await instrumentMap(userId);
@@ -1360,9 +1376,9 @@ router.post('/import/json', requireAuth, async (req, res) => {
           j.market_bias || '', j.mood || null, j.energy || null, j.focus || '', j.plan || '', j.review || '', j.lessons || '', j.tomorrow || '', j.screen_time_minutes || null],
       });
     }
-    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
+    try{media_imported=await importTradesWithMedia(userId,collected,stmts,vocabulary.labels,reviews,accountMap,def?.id??null,opportunities,ruleHistory,identities,stateGate);}catch{return res.status(503).json({error:'Import could not be recorded; no trades/images from this request committed.'});}
   } catch (e) { return res.status(400).json({ error: 'Import failed: ' + e.message }); }
-  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,opportunity_warnings:opportunities.warnings });
+  res.json({ ok: true, inserted, media_imported, ...mediaFeedback(collected),confluence_warnings:[...mediaFeedback(collected).confluence_warnings,...vocabulary.warnings].slice(0,20),review_warnings:reviews.warnings,rule_change_warnings:ruleHistory.warnings,identity_warnings:identities.warnings,state_gate_warnings:stateGate.warnings,opportunity_warnings:opportunities.warnings });
 });
 
 /* ---------------------------------------------------------------- settings */

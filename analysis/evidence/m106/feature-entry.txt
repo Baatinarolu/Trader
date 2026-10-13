@@ -1,0 +1,26 @@
+ok an account that never answered the gate can still record a live entry — no invented rule
+ok the admitted entry snapshot says the gate was not adopted, never that it passed
+ok the inherited rule still requires a named entry emotion before the gate is even consulted
+ok a recorded no fails the gate for this account
+ok a new live entry is refused 409 with the gate code while the gate is failed
+ok the refusal names the trader’s own no and the way back
+ok nothing financial was written by the refused entry
+ok the account balance is untouched by the refusal
+ok the signal-save endpoint never stores a signal while the gate records a no
+ok the refusal is visible on the endpoint’s own headline/verdict, not hidden
+BOT API error on POST /api/bots/signals/save-plan: State gate: you answered no to "Am I following the trade plan?". You do not trade yet.
+ok the plan-save endpoint refuses through the same gate with its own code
+ok neither refused save wrote a signal row or a trade
+ok recording an already-executed entry as journal history stays legal at a failed gate
+ok recording a closed trade is never gated by an in-session check
+ok reopening a closed trade into a live position is refused while the gate is failed
+ok explicit unknown is recorded
+ok an adopted account with no fresh check refuses the new live entry as unanswered
+ok the unanswered refusal still wrote nothing
+ok answering all four yes is a fresh pass
+ok a fresh pass admits the live entry through the normal guardrail path
+ok the admitted snapshot records the pass as the trader’s own answers, not verified calm
+ok the pass wrote exactly one additional trade
+ok the pass does not change account equity
+ok with the same market and a passed gate the state-gate refusal is gone
+M106 prospective entry against an adopted four-question gate: 24 passed, 0 failed

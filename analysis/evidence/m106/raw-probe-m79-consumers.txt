@@ -1,0 +1,45 @@
+FAIL -1/market_shift: positive control qualifies before personal stop {"ok":false,"action":"NO TRADE","no_trade":["Personal guardrail: Stand down: Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred."]}
+ok -1/market_shift: analyser and method verdict cannot emit BUY/SELL at personal stop
+ok -1/market_shift: Now unarms the order, marks guard as blocking
+ok -1/market_shift: chart unarms and removes the actionable plan
+ok -1/market_shift: scan action refuses same cap
+ok -1/market_shift: original geometry/grade/score/risk remain byte-equal market context
+ok -1/market_shift: veto explains PERSONAL rule; market eligibility is separate
+ok -1/market_shift: fresh signal admission rejects stale clear analysis
+FAIL -1/market_shift: second user still has qualifying permission "NO TRADE"
+ok -1/market_shift: read error fails closed across analysis/chart/scan, never daily=null
+ok -1/market_shift: unsized/unauthenticated research remains market context, not personally vetoed
+FAIL 1/market_shift: positive control qualifies before personal stop {"ok":false,"action":"NO TRADE","no_trade":["Personal guardrail: Stand down: Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred."]}
+ok 1/market_shift: analyser and method verdict cannot emit BUY/SELL at personal stop
+ok 1/market_shift: Now unarms the order, marks guard as blocking
+ok 1/market_shift: chart unarms and removes the actionable plan
+ok 1/market_shift: scan action refuses same cap
+ok 1/market_shift: original geometry/grade/score/risk remain byte-equal market context
+ok 1/market_shift: veto explains PERSONAL rule; market eligibility is separate
+ok 1/market_shift: fresh signal admission rejects stale clear analysis
+FAIL 1/market_shift: second user still has qualifying permission "NO TRADE"
+ok 1/market_shift: read error fails closed across analysis/chart/scan, never daily=null
+ok 1/market_shift: unsized/unauthenticated research remains market context, not personally vetoed
+FAIL -1/flip: positive control qualifies before personal stop {"ok":false,"action":"NO TRADE","no_trade":["Personal guardrail: Stand down: Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred."]}
+ok -1/flip: analyser and method verdict cannot emit BUY/SELL at personal stop
+ok -1/flip: Now unarms the order, marks guard as blocking
+ok -1/flip: chart unarms and removes the actionable plan
+ok -1/flip: scan action refuses same cap
+ok -1/flip: original geometry/grade/score/risk remain byte-equal market context
+ok -1/flip: veto explains PERSONAL rule; market eligibility is separate
+ok -1/flip: fresh signal admission rejects stale clear analysis
+FAIL -1/flip: second user still has qualifying permission "NO TRADE"
+ok -1/flip: read error fails closed across analysis/chart/scan, never daily=null
+ok -1/flip: unsized/unauthenticated research remains market context, not personally vetoed
+FAIL 1/flip: positive control qualifies before personal stop {"ok":false,"action":"NO TRADE","no_trade":["Personal guardrail: Stand down: Select your own local window/timezone, then complete the pre-market routine. No trader/broker hours or prior preparation are inferred."]}
+ok 1/flip: analyser and method verdict cannot emit BUY/SELL at personal stop
+ok 1/flip: Now unarms the order, marks guard as blocking
+ok 1/flip: chart unarms and removes the actionable plan
+ok 1/flip: scan action refuses same cap
+ok 1/flip: original geometry/grade/score/risk remain byte-equal market context
+ok 1/flip: veto explains PERSONAL rule; market eligibility is separate
+ok 1/flip: fresh signal admission rejects stale clear analysis
+FAIL 1/flip: second user still has qualifying permission "NO TRADE"
+ok 1/flip: read error fails closed across analysis/chart/scan, never daily=null
+ok 1/flip: unsized/unauthenticated research remains market context, not personally vetoed
+M79 consumers: 36 passed, 8 failed

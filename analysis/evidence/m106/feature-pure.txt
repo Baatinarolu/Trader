@@ -1,0 +1,43 @@
+ok the four saved questions are exactly calm/clear/plan/would-take-if-up-big
+ok basis refuses mental-state/score/edge claims
+ok single answer true is not accepted as a whole answer set
+ok single answer false is not accepted as a whole answer set
+ok null is the explicit "not answered now"
+ok a complete yes/no set is accepted verbatim
+ok answer contract rejects missing one question with no default/maybe
+ok answer contract rejects extra key with no default/maybe
+ok answer contract rejects non-boolean with no default/maybe
+ok answer contract rejects null inside with no default/maybe
+ok answer contract rejects array with no default/maybe
+ok answer contract rejects string with no default/maybe
+ok write contract rejects missing revision
+ok write contract rejects short revision
+ok write contract rejects caller clock
+ok write contract rejects caller source
+ok write contract rejects caller owner
+ok write contract rejects missing answers key
+ok write contract accepts displayed revision + explicit null
+ok no answers at all is not_adopted, never passed
+ok imported-only answers stay archives and never grant a pass
+ok fresh all-yes answers are the only pass
+ok pass carries receipt/window/expiry and no money or score field
+ok a recorded no fails the gate and names the questions
+ok explicit unknown is unanswered, not a pass and not a failure
+ok answers older than the APP window are stale, not permission
+ok the window edge is inclusive in the trader’s favour
+ok an answer set never survives the UTC day boundary
+ok a future/corrupt receipt cannot grant a pass
+ok unreadable stored answers are unavailable, not a pass
+ok a foreign schema version is refused as unavailable
+ok the last recorded answer set is the effective one
+ok a newer no is not overwritten by the older yes
+ok not_adopted is reported, never silently upgraded into a block
+ok a failed gate becomes the same kind of stop the personal guardrails produce
+ok the refusal message is the gate’s own and cannot reach a broker
+ok an adopted account with no fresh check is refused with its own rule
+ok stale answers refuse with the stale rule rather than pretending to pass
+ok the market daily object is not mutated in place
+ok equal answers yield identical evaluations
+ok unavailable() claims neither a pass nor a block
+ok publicRow refuses a wrong-kind or wrong-owner row without inventing answers
+M106 four-question state-gate policy and answer contract: 42 passed, 0 failed

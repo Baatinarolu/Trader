@@ -1,0 +1,28 @@
+ok actual own canonical template/period/current preview endpoint exists
+ok blank optional draft persists as DRAFT, not completed/defaultfocus
+ok completion refuses missing template answers, draft remains intact400
+ok actual completion appends captured metrics/answers/chosen focus/serverclock
+ok snapshot known denominator1/below30 and explicitno missed setup inference
+ok old draft retained independently, not overwritten by complete
+ok reviews never mutate finance/grades/evidence/clocks/core flags
+ok review reading/writing never refunds caps/routine/admissions/loss queues
+ok frozen saved metrics retain +10 despite current correction -10, visibly priorsnapshot
+ok unseen financial/context change409, not silentnew snapshot
+ok completed review cannot be silently overwritten by draft save409
+ok explicit amendment appends new completed receipt, old answer/focus/baseline survives
+ok original completed record clock and frozen context still byteidentical
+ok strict saved review rejects caller source400
+ok strict saved review rejects caller recorded_at400
+ok strict saved review rejects caller metrics400
+ok strict saved review rejects caller user_id400
+ok strict saved review rejects caller permission400
+ok foreign account cannot read review or focus404
+ok real auth required401
+ok noncanonical weekstart rejected400, not silently createTuesdayperiod
+ok noncanonical account alias404
+ok SQL UPDATE original review facts disallowed, not only API convention
+ok stored revisioned periods discoverable list, not recomputedrecommendation
+ok quarter preview differenttemplate and ownedstrategy-version baseline preserved
+ok quarter review NEVER edits strategy rules/versions or risk settings
+ok real review-store503 rolls back artifact only, earlier truthful finance survives
+M99 owned periodic artifact API/immutable snapshots/CAS: 27 passed, 0 failed

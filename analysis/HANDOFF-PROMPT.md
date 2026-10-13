@@ -1,6 +1,55 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M105 — declared identity, separate quarter theme — 2026-10-13
+## Current M106 — fresh in-session four-question state gate — 2026-10-13
+
+**132:100 done /3 partial /29 TODO /0 no-action**, exact eight groups. Saved Ep28 rule
+after an emotional spike: calm / clear / following the trade plan / would take it if
+already up big — any no means **don't trade yet**. The code already carried it verbatim
+as coach advice and nothing enforced it. Additive append-only `state_gate_answers`
+(`human_declared` + `imported_unverified`, UPDATE facts immutable, owner cascade, account
+SET NULL retained), answers exactly the four booleans or explicit null (partial/extra/
+coerced invalid), revisioned CAS409/503rollback, no caller clock/source/owner/score/text,
+nothing backfilled or defaulted. Freshness is APP policy: same UTC day and <=60min, states
+not_adopted(allowed, no invented rule)/passed/failed/unanswered/stale/unavailable.
+A recorded no is the same kind of personal stop as the killzone veto: signals/plan/Now
+refuse, live `POST /trades` and reopen409 with no financial row, while closing/editing/
+`record_only` history are never gated. Inherited M89 emotion-required 400 kept and asserted
+before the gate is consulted; imported archives can never pass/fail/block.
+
+Actual Dashboard/day/settings four-question card/editor text-only (no score/percentage/
+readiness/dial), escaped, no provider fetch. Desk resolution `not_consulted` for no user/
+unowned desk/foreign id; research and existing guardrails stay the authority. Separate from
+M64 morning `check_in`, M89 emotion capture and M107 intention; no risk/cap/grade/routine/
+core/history authority or write.
+
+**Final318/0 across10 probes**, actual137-parent additive/restart18/0 (parent control7/2).
+Original M105 141/1 = the frozen identity-only whole-schema assertion meeting the four new
+objects: **declared milestone-scoped negative**, kept; M104152/1, M100144/1, M99/M101159/1,
+M93113/2, M91106/2, M87223/3 unchanged shape negatives kept; emotions170/0, reasons160/0,
+execution260/0, routine321/0. Raw596/156+90stimeout vsDECLARED824/4; offline178/0; declared
+market325/0; live70/1 with6nonzero/5summaryless. Pre-hardening strict stage market5/1
+(absent/foreign account escaped404) fixed by the desk stage → 325/0, both retained.
+
+Native three arms: parent(prepared fixture)**API121/0/Bots204/2**, current same, RAW
+**APIexit2/no summary/Bots200/6**, all same15syntheticfills/0mismatch; both original>20
+sample conditions still fail, no fillpadding/floor/clock/targetretune. Smoke22/22conditional
+DOM,0style/console,8canvaslimits,exit0,99.0s. Five runtime stages+docs, actual6f0783c/
+pristine forward/reverse byteproofs, deterministic **139-source** ZIP:
+`build-m106-state-gate-artifacts.py`, `patches/M106-STATE-GATE-STAGES.json`, excluded
+archive SHA companion. [Full report](M106-STATE-GATE.md). Preview/arm servers stopped;
+`/tmp` DBs synthetic/offline, schedulerOFF, blank remotes, not preserved realdata.
+
+**Next M107 — daily intention.** M111/M112 stillTODO; M30/M103/M108 partial. All132IDs/
+eightgroups retained; session fixed to **arena/b411452d-trader**, older counts/branches/
+nextsteps below historical.
+
+### Current remaining IDs — no omissions
+
+Partials **M30,M103,M108**. TODO29: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M62,M65,M66,M67,M72,M73,M74,M107,M109,M110,M111,M112,M115,M117,M125**.
+PROGRESS asserts exact132/eightgroup partition. Earlier lists are historical milestones,
+not the current remaining work.
+
+## Historical M105 — declared identity, separate quarter theme — 2026-10-13
 
 **132:99 done /3 partial /30 TODO /0 no-action**, exact eight groups. Optional
 owned persistent self-description +distinct calendar-quarter theme, append-only
@@ -37,16 +86,6 @@ byteproofs, deterministic **137-source** ZIP: `build-m105-identity-artifacts.py`
 `patches/M105-IDENTITY-STAGES.json`, excluded archive SHA companion.
 [Full report](M105-IDENTITY-QUARTER-THEME.md). Preview3000 temporary synthetic
 `/tmp/m105-preview.db`, offline/schedulerOFF/blank remotes, not preserved realdata.
-
-**Next M106 — fresh in-session four-question state gate.** M107 separateintention,
-M111/M112 stillTODO; M30/M103/M108 partial. All132IDs/eightgroups retained; session
-fixed to **arena/762c0295-trader**, older counts/branches/nextsteps below historical.
-
-### Current remaining IDs — no omissions
-
-Partials **M30,M103,M108**. TODO30: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M62,M65,M66,M67,M72,M73,M74,M106,M107,M109,M110,M111,M112,M115,M117,M125**.
-PROGRESS asserts exact132/eightgroup partition. Earlier lists are historical milestones,
-not the current remaining work.
 
 ## Historical M104 — recorded quarterly rule-change discipline — 2026-10-12
 

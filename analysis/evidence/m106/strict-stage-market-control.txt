@@ -1,0 +1,19 @@
+DECLARED M64 prerequisite isolation: routine held fulfilled, new first-entry routine capture not exercised. NOT full current policy proof. Original runs/negatives retained.
+ ok   -1/market_shift: final analyser refuses 1.5R T1 even when final runner is >2R
+ ok   -1/market_shift: Now/chart cannot arm the refused candidate or HTF projection
+ ok   -1/market_shift: scan cannot emit BUY/SELL from this runner-rescued idea
+ ok   -1/market_shift: automatic signal storage cannot persist refused first-target geometry
+ ok   -1/market_shift: primary-floor correction cannot resurrect stale 99% probabilities
+Error: Account not found.
+    at invalid (/tmp/m106-strict-stage/app/src/state-gate.js:30:64)
+    at owned (/tmp/m106-strict-stage/app/src/state-gate.js:90:157)
+    at viewOn (/tmp/m106-strict-stage/app/src/state-gate.js:98:19)
+    at /tmp/m106-strict-stage/app/src/state-gate.js:102:110
+    at Object.tx (/tmp/m106-strict-stage/app/src/db.js:91:23)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Object.permission (/tmp/m106-strict-stage/app/src/state-gate.js:126:26)
+    at async stateGateRefusal (/tmp/m106-strict-stage/app/src/bots/index.js:272:16)
+    at async Object.saveSignals (/tmp/m106-strict-stage/app/src/bots/index.js:865:20)
+    at async /home/user/Trader/analysis/probe-m71-rr-consumers.js:63:73
+
+M71 consumers: 5 passed, 1 failed

@@ -1,0 +1,154 @@
+diff --git a/README.md b/README.md
+index a5d9bcd..eb31ace 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,45 @@
+ # TradeJournal Pro
+ 
++## M106 — fresh in-session four-question state gate (2026-10-13)
++
++**Dashboard** and the owned **day review** now carry the saved pre-entry check: *Am I
++calm? Am I clear? Am I following the trade plan? Would I take this trade if I was
++already up big today?* — and the saved rule that follows it, *“if the answer to any of
++these questions is no, then you don’t trade yet.”* Answers are your own yes/no words
++with a **server receipt**; the card, the editor and the readonly history never
++preselect an answer, never accept free text, and never infer a state from your notes,
++profit or adherence.
++
++A recorded **no** refuses the app's own actionable surface the way the killzone veto
++does: live entries and reopen on `POST/PUT /trades` answer 409 `state_gate_failed`,
++saved signals/plans refuse with the same code, and `analyse`/`chart`/`scan`/Now refuse
++with `NO TRADE` and a blocking guard. Freshness is the APP's own policy — same UTC day
++and within the 60-minute window since the receipt — so yesterday's check is never
++today's permission; an *adopted* account with no current check is equally refused. An
++account that **never** answered is reported as `not_adopted` and is **not** blocked:
++the desk does not invent a rule the trader never adopted. Imported copies are
++`imported_unverified` archives with the original clock retained; they can never pass,
++fail or block anyone. `record_only` history, closes, edits and imports stay legal, so
++the check can never hold your journal hostage.
++
++Answers are stored append-only and immutable; a stale displayed revision 409s with
++nothing written, and a store outage 503s without claiming a receipt. `not_adopted`,
++`passed`, `failed`, `unanswered`, `stale` and `unavailable` are distinct and visible —
++including in the export/restore path and in Settings. This is a record of what you
++said, not verified calmness, clarity, plan adherence, broker state, an edge, a
++readiness/mental-state score or any authority over risk, admission, cap, routine, core
++or grades. M89 emotion capture, M64's morning check-in and M107's daily intention stay
++separate features; the gate is only the in-session check before a prospective entry.
++
++**M106 318/0 across 10 probes**, actual137-parent additive/restart migration 18/0;
++every prior M105 cohort re-run unchanged (142/0 with one declared M105-only schema
++negative, changes152/1, opportunities144/1, reviews159/1, behavior113/2, process106/2,
++screenshots223/3, emotions170/0, confluences160/0, execution260/0, routine321/0,
++offline178/0, market325/0, RAW596/156, DECLARED824/4, pure70/1). Ledger
++**132=100 done/3 partial/29 TODO**. Report `analysis/M106-STATE-GATE.md` in the ZIP.
++Next M107. No 70%, causal/predictive edge, broker/provider/mental/human/meditation/
++pixel/production claim.
++
+ ## M105 — chosen self-description / separate quarterly theme (2026-10-13)
+ 
+ **Dashboard** and owned **day review** now show optional declared words: a persistent
+diff --git a/docs/API.md b/docs/API.md
+index 911a052..2f0917f 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -1118,3 +1118,53 @@ M106 freshstate gate or M107 daily intention. No grade/risk/cap/routine/loss/cor
+ admission/model/weights/factors/geometry/stops/targets/RR change. Course30/M103n>=5/
+ B-C unchanged. No70%/causal/predictive/mental/broker/provider/human/meditation/pixel/
+ production proof. M106 next; M111/M112 open, M30/M103/M108 partial.
++
++## M106 — fresh in-session four-question state gate
++
++Additive `state_gate_answers` append-only answer history: `human_declared` first-party
++rows and `imported_unverified` archives. UPDATE facts immutable (FK nullification only
++exception); owner deletion cascades, account deletion SET NULL retains the row for the
++owner's own readonly history and never re-attaches it to a foreign account. Not sealed
++against database-admin tampering. Nothing is backfilled from notes, profit, adherence
++or legacy journal text, and no answer is ever defaulted.
++
++- `GET /state-gate?account_id=` live view: account, current state
++  (`not_adopted`|`passed`|`failed`|`unanswered`|`stale`|`unavailable`), the four saved
++  questions, recorded answers, server receipt, `age_minutes`, `expires_at`, APP
++  `window_minutes`, `failed_questions`, `imported_archives`, history, displayed
++  `revision`, `basis`, `broker_verified:false`. `allowed` is true only for a fresh
++  all-yes pass; `not_adopted` is reported as adoption, never as a pass.
++- `GET /state-gate/history?account_id=` readonly own rows including detached orphans
++  and imported archives. Omitted account means all own accounts, never another user's.
++- `PUT /state-gate?account_id=` only `{answers, revision}` where `answers` is exactly
++  `{calm,clear,following_plan,would_take_if_up_big}` booleans or explicit `null`
++  ("not answered now"). No caller clock, source, owner, score or text is accepted.
++  Stale displayed revision409 with nothing written; a store failure503 claims no
++  receipt and rolls the new row back only.
++
++The four questions are the saved rule (“if the answer to any of these questions is no,
++then you don't trade yet”): am I calm, am I clear, am I following the trade plan, would
++I take this trade if I was already up big today. A recorded no publishes
++`state_gate_failed`; an adopted account whose check is missing/stale/unreadable
++publishes `state_gate_unanswered|stale|unavailable`. Both refuse `POST /trades` live
++entries and `PUT /trades/:id` reopen with 409 + `state_gate` payload, fold into the
++guardrail snapshot, and become the same kind of personal stop the killzone/personal
++guardrails use — `Guards.applyToSetups` / Now refuse the signal, `saveSignals` and
++`savePlan` throw the gate's own 409 code. `record_only` journal history, closing,
++editing and importing are never gated: an in-session check cannot hold a trader's
++history hostage.
++
++Freshness is the APP's own policy: same UTC day and `<=window_minutes` since the
++server receipt (default 60). The window edge is inclusive; a corrupt/future receipt is
++`unavailable` and cannot pass. `not_adopted` accounts are not blocked — the app does
++not invent a check the trader never gave — and imported copies never grant permission
++on the receiving account. Answers are the trader's own words: this is not verified
++calmness, clarity, plan adherence, broker state, an edge, a readiness/mental-state
++score or any authority over risk, admission, cap, routine, core or grades.
++
++Full JSON backup carries `state_gate_answers`; restore labels every copy
++`imported_unverified` with the original clock as history and can never pass, fail or
++block the receiving trader. Invalid optional history warns while the financial import
++stays legal; a real import-store failure rolls that request back atomically; a missing
++answer store leaves the financial backup legal with an unavailable marker. Settings
++surfaces the warnings instead of hiding omissions.
+diff --git a/docs/GUARDRAILS.md b/docs/GUARDRAILS.md
+index f200197..6c01654 100644
+--- a/docs/GUARDRAILS.md
++++ b/docs/GUARDRAILS.md
+@@ -632,3 +632,41 @@ Current132=99done/3partial/30TODO. NextM106, M107/M111/M112 open, M30/M103/M108
+ partial. Existing execution/daily/window scores/grades/weights/default risk/factors/
+ entrymodels/checklists/stops/targets/RR/floor30/M103n>=5/B-C unchanged. No70%/causal/
+ predictive edge/broker/provider/actual mental/human/meditation/pixels/production proof.
++
++
++## M106 — the fresh four-question check refuses, it never grades
++
++Owned append-only `human_declared` answers to the four saved questions (calm, clear,
++following the plan, would take it if already up big) with a server receipt; imported
++copies are `imported_unverified` archives. No default, no preselected answer, no free
++text, no inference from notes/profit/emotion/adherence/legacy rows, no backfill.
++
++A recorded no is `state_gate_failed`. An adopted account whose check is missing, stale,
++unparseable or from an unknown schema version is `state_gate_unanswered|stale|
++unavailable`. Both become the same kind of personal stop the personal guardrails and
++the killzone veto already produce: `POST /trades` live entry and reopen answer 409,
++`saveSignals`/`savePlan` throw the same code, and analyse/chart/scan/Now refuse with
++`NO TRADE`, `personal_blocked:true`, `execution_permission.allowed:false` and a blocking
++`state_gate_*` breach. The gate takes the trader's own desk: an omitted `account_id`
++resolves the default account, so skipping the field is not a bypass, while an explicit
++research-only save stays a labelled research artifact.
++
++`not_adopted` is deliberately NOT a block: an account that never answered has no
++recorded refusal to honour, and inventing one would be a fabricated rule. Freshness is
++APP policy only — same UTC day and within the 60-minute window, edge inclusive; a
++future/corrupt receipt is `unavailable`, never a pass. Admission, caps, cooldown,
++routine, risk, grades, geometry, targets/RR and the core journal are untouched:
++refusals change the app's own permission, never a number.
++
++Immutable rows (UPDATE guarded, FK-nullification exception), revision CAS with 409 +
++retained draft, store failure 503 with no receipt and no partial write, orphaned rows
++retained readonly for their owner only. Backup/restore labels copies as archives that
++can never pass, fail or block the receiving trader; malformed optional history warns
++while the financial import stays legal; a real import-store failure rolls back that
++request atomically. Settings shows the warnings; nothing auto-refreshes them away.
++
++Current132=100done/3partial/29TODO. NextM107, M111/M112 open, M30/M103/M108 partial.
++This is recorded self-report, not verified calmness, clarity, plan adherence, broker
++state, an edge, a readiness/mental-state score or a discipline rating; no 70%/causal/
++predictive/broker/provider/human/meditation/pixel/production proof. M89 capture, M64
++morning check-in and M107 intention remain separate features.

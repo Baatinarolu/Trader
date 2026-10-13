@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-13",
+  "parent": "6f0783c34f5f3c30f02efbf1043dbf3065d91339",
+  "finding": "M106 only",
+  "ledger_before": [132, 99, 3, 30, 0, 8],
+  "ledger_after": [132, 100, 3, 29, 0, 8],
+  "course": "Saved Ep28: after an emotional spike the trader reboots, then asks four self-report questions (calm / clear / following the plan / would I take this if I was already up big) and refuses the trade while any answer is no. coach.js already carried the rule as advice; nothing enforced it. No new fetch/timestamp/full transcript.",
+  "design": [
+    "Owned per-account four recorded answers calm/clear/following_plan/would_take_if_up_big over the existing self-report columns; a complete boolean set or an explicit null, never an inferred or measured mental state",
+    "Revisioned compare-and-swap writes (64-hex revision), no caller authority fields, immutable rows; imported rows are imported_unverified archives that can never grant a pass",
+    "Freshness is 60 minutes and the same UTC day: not_adopted(allowed) / unanswered / failed / stale / unavailable; a trader who adopted nothing is never refused by an invented rule",
+    "Refusal parity with the killzone veto: signal admission and trade open/reopen answer 409 (or saved:0 with the gate text) on failed/stale/unanswered/unavailable, exactly as a recorded no does",
+    "Desk resolution: absent or foreign account id resolves to not_consulted so research and the existing guardrails stay the authority; the pre-hardening stage's 404 escape is measured and fixed",
+    "UI four-question card/editor and day surfaces report the recorded answers and the state text only; no score/percentage/readiness/dial, and record-only journal entries keep their meaning",
+    "M64 morning routine check_in, M89 entry/exit emotion capture and M107 daily intention stay separate; no risk/cap/grade/history/routine/core/session authority, no broker/meditation/pixel/70%/causal/predictive/production proof. M107 is the next milestone"
+  ]
+}

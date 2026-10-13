@@ -1,5 +1,45 @@
 # TradeJournal Pro
 
+## M106 — fresh in-session four-question state gate (2026-10-13)
+
+**Dashboard** and the owned **day review** now carry the saved pre-entry check: *Am I
+calm? Am I clear? Am I following the trade plan? Would I take this trade if I was
+already up big today?* — and the saved rule that follows it, *“if the answer to any of
+these questions is no, then you don’t trade yet.”* Answers are your own yes/no words
+with a **server receipt**; the card, the editor and the readonly history never
+preselect an answer, never accept free text, and never infer a state from your notes,
+profit or adherence.
+
+A recorded **no** refuses the app's own actionable surface the way the killzone veto
+does: live entries and reopen on `POST/PUT /trades` answer 409 `state_gate_failed`,
+saved signals/plans refuse with the same code, and `analyse`/`chart`/`scan`/Now refuse
+with `NO TRADE` and a blocking guard. Freshness is the APP's own policy — same UTC day
+and within the 60-minute window since the receipt — so yesterday's check is never
+today's permission; an *adopted* account with no current check is equally refused. An
+account that **never** answered is reported as `not_adopted` and is **not** blocked:
+the desk does not invent a rule the trader never adopted. Imported copies are
+`imported_unverified` archives with the original clock retained; they can never pass,
+fail or block anyone. `record_only` history, closes, edits and imports stay legal, so
+the check can never hold your journal hostage.
+
+Answers are stored append-only and immutable; a stale displayed revision 409s with
+nothing written, and a store outage 503s without claiming a receipt. `not_adopted`,
+`passed`, `failed`, `unanswered`, `stale` and `unavailable` are distinct and visible —
+including in the export/restore path and in Settings. This is a record of what you
+said, not verified calmness, clarity, plan adherence, broker state, an edge, a
+readiness/mental-state score or any authority over risk, admission, cap, routine, core
+or grades. M89 emotion capture, M64's morning check-in and M107's daily intention stay
+separate features; the gate is only the in-session check before a prospective entry.
+
+**M106 318/0 across 10 probes**, actual137-parent additive/restart migration 18/0;
+every prior M105 cohort re-run unchanged (142/0 with one declared M105-only schema
+negative, changes152/1, opportunities144/1, reviews159/1, behavior113/2, process106/2,
+screenshots223/3, emotions170/0, confluences160/0, execution260/0, routine321/0,
+offline178/0, market325/0, RAW596/156, DECLARED824/4, pure70/1). Ledger
+**132=100 done/3 partial/29 TODO**. Report `analysis/M106-STATE-GATE.md` in the ZIP.
+Next M107. No 70%, causal/predictive edge, broker/provider/mental/human/meditation/
+pixel/production claim.
+
 ## M105 — chosen self-description / separate quarterly theme (2026-10-13)
 
 **Dashboard** and owned **day review** now show optional declared words: a persistent

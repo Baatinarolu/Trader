@@ -1,0 +1,25 @@
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 4dc74fa..489a513 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -269,7 +269,19 @@ async function personalState(userId, accountId, entryTf) {
+  * id that is not theirs) is the gate left unconsulted — research calls must keep
+  * working, and the pre-existing guardrail paths stay the authority there. */
+ async function stateGateRefusal(userId, accountId) {
+-  const gate = await StateGate.permission(userId, accountId);
++  if (!userId) return { allowed: true, state: 'not_consulted', adopted: false, message: 'Unsized research carries no personal four-question claim.' };
++  let resolved = accountId === undefined ? null : accountId;
++  if (resolved === null) {
++    const desk = await db.prepare('SELECT id FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
++    resolved = desk ? desk.id : null;
++  }
++  if (resolved === null) return { allowed: true, state: 'not_consulted', adopted: false, message: 'No owned account in this action — the four-question gate is not consulted.' };
++  let gate;
++  try { gate = await StateGate.permission(userId, resolved); }
++  catch (e) {
++    if (e.code === 'state_gate_invalid' && e.status === 404) return { allowed: true, state: 'not_consulted', adopted: false, message: 'No owned account in this action — the four-question gate is not consulted.' };
++    throw e;
++  }
+   if (gate.allowed) return gate;
+   const e = StateGate.invalid(gate.message, 409);
+   e.code = gate.state === 'failed' ? 'state_gate_failed' : 'state_gate_unanswered';

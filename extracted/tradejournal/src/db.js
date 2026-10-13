@@ -394,6 +394,21 @@ CREATE TABLE IF NOT EXISTS identity_declarations (
  UNIQUE(user_id,account_key,kind,period_start,version)
 );
 CREATE INDEX IF NOT EXISTS idx_identity_declarations_owner ON identity_declarations(user_id,account_key,kind,period_start,id);
+-- M106 fresh in-session four-question state answers. Owned self-reports, not a pass by default.
+CREATE TABLE IF NOT EXISTS state_gate_answers (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+ account_key INTEGER NOT NULL,
+ version INTEGER NOT NULL,
+ answers_json TEXT,
+ source TEXT NOT NULL,
+ recorded_at TEXT NOT NULL,
+ historical_json TEXT,
+ schema_version TEXT NOT NULL,
+ UNIQUE(user_id,account_key,version)
+);
+CREATE INDEX IF NOT EXISTS idx_state_gate_answers_owner ON state_gate_answers(user_id,account_key,id);
 CREATE TABLE IF NOT EXISTS goals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -819,6 +834,8 @@ async function migrate() {
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS strategy_rule_changes_immutable BEFORE UPDATE ON strategy_rule_changes WHEN NOT (NEW.strategy_id IS NULL AND OLD.strategy_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM strategies WHERE id=OLD.strategy_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.strategy_key IS OLD.strategy_key AND NEW.strategy_name IS OLD.strategy_name AND NEW.from_version IS OLD.from_version AND NEW.to_version IS OLD.to_version AND NEW.before_json IS OLD.before_json AND NEW.after_json IS OLD.after_json AND NEW.delta_json IS OLD.delta_json AND NEW.units IS OLD.units AND NEW.quarter_start IS OLD.quarter_start AND NEW.recorded_at IS OLD.recorded_at AND NEW.rubric_version IS OLD.rubric_version AND NEW.source IS OLD.source AND NEW.context_hash IS OLD.context_hash AND NEW.historical_json IS OLD.historical_json) BEGIN SELECT RAISE(ABORT,'Recorded strategy rule change facts immutable'); END`).run();
 
   await db.prepare(`CREATE TRIGGER IF NOT EXISTS identity_declarations_immutable BEFORE UPDATE ON identity_declarations WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.kind IS OLD.kind AND NEW.period_start IS OLD.period_start AND NEW.period_end IS OLD.period_end AND NEW.version IS OLD.version AND NEW.statement IS OLD.statement AND NEW.identity_snapshot_json IS OLD.identity_snapshot_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Original identity/theme declaration facts immutable'); END`).run();
+
+  await db.prepare(`CREATE TRIGGER IF NOT EXISTS state_gate_answers_immutable BEFORE UPDATE ON state_gate_answers WHEN NOT (NEW.account_id IS NULL AND OLD.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts WHERE id=OLD.account_id) AND NEW.id IS OLD.id AND NEW.user_id IS OLD.user_id AND NEW.account_key IS OLD.account_key AND NEW.version IS OLD.version AND NEW.answers_json IS OLD.answers_json AND NEW.source IS OLD.source AND NEW.recorded_at IS OLD.recorded_at AND NEW.historical_json IS OLD.historical_json AND NEW.schema_version IS OLD.schema_version) BEGIN SELECT RAISE(ABORT,'Recorded state-gate answers are immutable'); END`).run();
 
   /* M102 backfill. Every strategy that has no version history gets an immutable v1
    * snapshot of the rule set it currently holds, and every trade already linked to it is

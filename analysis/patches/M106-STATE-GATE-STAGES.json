@@ -1,0 +1,554 @@
+{
+  "base_commit": "6f0783c34f5f3c30f02efbf1043dbf3065d91339",
+  "parent": "Actual M105 Git release tree (137 files), every older parent rebuilt by saved reverse patches and asserted against the frozen proofs.",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 100,
+    "partial": 3,
+    "todo": 29,
+    "no_action": 0,
+    "partition_groups": 8,
+    "partial_ids": [
+      "M30",
+      "M103",
+      "M108"
+    ],
+    "todo_ids": [
+      "M12",
+      "M13",
+      "M15",
+      "M17",
+      "M18",
+      "M19",
+      "M45",
+      "M46",
+      "M49",
+      "M53",
+      "M55",
+      "M56",
+      "M59",
+      "M60",
+      "M62",
+      "M65",
+      "M66",
+      "M67",
+      "M72",
+      "M73",
+      "M74",
+      "M107",
+      "M109",
+      "M110",
+      "M111",
+      "M112",
+      "M115",
+      "M117",
+      "M125"
+    ]
+  },
+  "feature": {
+    "pass": 318,
+    "fail": 0,
+    "probes": 10,
+    "scope": "REPORTED completed assertions; literal clocks/journals/DOM only. Feature/m105feature/execution/routine no prerequisite adapter; RAW failures/early aborts and DECLARED assumptions remain SEPARATE. No chart/broker/provider/pixel/meditation/edge/production proof."
+  },
+  "prior_cohorts": {
+    "m105feature": {
+      "pass": 141,
+      "fail": 1,
+      "probes": 10
+    },
+    "screenshots": {
+      "pass": 223,
+      "fail": 3,
+      "probes": 9
+    },
+    "confluences": {
+      "pass": 160,
+      "fail": 0,
+      "probes": 8
+    },
+    "emotions": {
+      "pass": 170,
+      "fail": 0,
+      "probes": 13
+    },
+    "process": {
+      "pass": 106,
+      "fail": 2,
+      "probes": 6
+    },
+    "behavior": {
+      "pass": 113,
+      "fail": 2,
+      "probes": 7
+    },
+    "reviews": {
+      "pass": 159,
+      "fail": 1,
+      "probes": 9
+    },
+    "opportunities": {
+      "pass": 144,
+      "fail": 1,
+      "probes": 10
+    },
+    "changes": {
+      "pass": 152,
+      "fail": 1,
+      "probes": 11
+    },
+    "execution": {
+      "pass": 260,
+      "fail": 0,
+      "probes": 9
+    },
+    "routine": {
+      "pass": 321,
+      "fail": 0,
+      "probes": 10
+    },
+    "offline": {
+      "pass": 178,
+      "fail": 0,
+      "probes": 4
+    },
+    "market": {
+      "pass": 325,
+      "fail": 0,
+      "probes": 4
+    }
+  },
+  "raw": {
+    "pass": 596,
+    "fail": 156,
+    "probes": 31,
+    "completed_nonzero": 21,
+    "timeout_no_exit": 1,
+    "summaryless": 1
+  },
+  "declared": {
+    "pass": 824,
+    "fail": 4,
+    "probes": 31,
+    "completed_nonzero": 2
+  },
+  "live_provider_attempts": {
+    "pass": 70,
+    "fail": 1,
+    "completed_nonzero": 6,
+    "summaryless": 5
+  },
+  "m105_declared_negative": {
+    "suite": "m105feature/migration",
+    "pass": 12,
+    "fail": 1,
+    "why": "The frozen M105 migration probe asserts the M105-only schema delta (four identity objects); M106 adds four state-gate objects, so that single whole-schema assertion is a declared, milestone-scoped negative. The M106 migration probe is its successor assertion.",
+    "assertion_seen_in_output": "ONLY identitytable"
+  },
+  "regression_parents": {
+    "method": "Actual 6f0783c M105 Git release as the M106 parent, every older source by saved reverse patches asserted against the frozen parent-source.json proofs (missing historic Git objects are never required); no guessed schema/current module in any parent.",
+    "parents": {
+      "/tmp/m106-parent/app": {
+        "files": 137,
+        "byte_differences": 0
+      },
+      "/tmp/m105-parent/app": {
+        "files": 135,
+        "byte_differences": 0
+      },
+      "/tmp/m104-parent/app": {
+        "files": 133,
+        "byte_differences": 0
+      },
+      "/tmp/m100-parent/app": {
+        "files": 131,
+        "byte_differences": 0
+      },
+      "/tmp/m99-parent/app": {
+        "files": 129,
+        "byte_differences": 0
+      },
+      "/tmp/m93-parent/app": {
+        "files": 127,
+        "byte_differences": 0
+      },
+      "/tmp/m91-parent/app": {
+        "files": 125,
+        "byte_differences": 0
+      },
+      "/tmp/m89-parent/app": {
+        "files": 123,
+        "byte_differences": 0
+      },
+      "/tmp/m88-parent/app": {
+        "files": 121,
+        "byte_differences": 0
+      },
+      "/tmp/m87-parent/app": {
+        "files": 119,
+        "byte_differences": 0
+      },
+      "/tmp/m86-parent/app": {
+        "files": 117,
+        "byte_differences": 0
+      },
+      "/tmp/m64-parent/app": {
+        "files": 114,
+        "byte_differences": 0
+      },
+      "/tmp/m79-parent/extracted/tradejournal": {
+        "files": 110,
+        "byte_differences": 0
+      },
+      "/tmp/m84-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      },
+      "/tmp/m81-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      }
+    }
+  },
+  "controls": {
+    "pure": [
+      0,
+      5
+    ],
+    "api": [
+      0,
+      8
+    ],
+    "entry": [
+      8,
+      16
+    ],
+    "gate": [
+      1,
+      1
+    ],
+    "ui": [
+      0,
+      2
+    ],
+    "freshness": [
+      0,
+      2
+    ],
+    "hardening": [
+      0,
+      2
+    ],
+    "portable": [
+      0,
+      2
+    ],
+    "archive-ui": [
+      0,
+      1
+    ],
+    "migration": [
+      7,
+      2
+    ]
+  },
+  "strict_stage_regression": {
+    "script": "analysis/probe-m71-rr-consumers.js",
+    "pass": 5,
+    "fail": 1,
+    "why": "The pre-hardening stage let an absent/foreign account id escape as 404 instead of consulting nothing; the unchanged market cohort measured 5/1 there and 325/0 after the desk-resolution stage."
+  },
+  "native": [
+    {
+      "arm": "parent",
+      "suite": "api",
+      "server_app": "/tmp/m106-parent/app",
+      "scripts_unchanged": true,
+      "pass": 121,
+      "fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "native-parent-api.txt",
+      "parity_fills": null,
+      "parity_mismatches": null,
+      "scope": "Original native assertions/cleanup, matching server/DB; synthetic offline candles. DECLARED actual owned preparation/15m control clock, not human or meditation proof. Not broker/live/pixels/edge/production."
+    },
+    {
+      "arm": "parent",
+      "suite": "bots",
+      "server_app": "/tmp/m106-parent/app",
+      "scripts_unchanged": true,
+      "pass": 204,
+      "fail": 2,
+      "exit_code": 1,
+      "status": "completed",
+      "output": "native-parent-bots.txt",
+      "parity_fills": 15,
+      "parity_mismatches": 0,
+      "scope": "Original native assertions/cleanup, matching server/DB; synthetic offline candles. DECLARED actual owned preparation/15m control clock, not human or meditation proof. Not broker/live/pixels/edge/production."
+    },
+    {
+      "arm": "raw",
+      "suite": "api",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": null,
+      "fail": null,
+      "exit_code": 2,
+      "status": "completed",
+      "output": "native-raw-api.txt",
+      "parity_fills": null,
+      "parity_mismatches": null,
+      "scope": "Original native assertions/cleanup, matching server/DB; synthetic offline candles. NO preparation, mandatory routine negatives retained. Not broker/live/pixels/edge/production."
+    },
+    {
+      "arm": "raw",
+      "suite": "bots",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": 200,
+      "fail": 6,
+      "exit_code": 1,
+      "status": "completed",
+      "output": "native-raw-bots.txt",
+      "parity_fills": 15,
+      "parity_mismatches": 0,
+      "scope": "Original native assertions/cleanup, matching server/DB; synthetic offline candles. NO preparation, mandatory routine negatives retained. Not broker/live/pixels/edge/production."
+    },
+    {
+      "arm": "fixture",
+      "suite": "api",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": 121,
+      "fail": 0,
+      "exit_code": 0,
+      "status": "completed",
+      "output": "native-fixture-api.txt",
+      "parity_fills": null,
+      "parity_mismatches": null,
+      "scope": "Original native assertions/cleanup, matching server/DB; synthetic offline candles. DECLARED actual owned preparation/15m control clock, not human or meditation proof. Not broker/live/pixels/edge/production."
+    },
+    {
+      "arm": "fixture",
+      "suite": "bots",
+      "server_app": "/home/user/Trader/extracted/tradejournal",
+      "scripts_unchanged": true,
+      "pass": 204,
+      "fail": 2,
+      "exit_code": 1,
+      "status": "completed",
+      "output": "native-fixture-bots.txt",
+      "parity_fills": 15,
+      "parity_mismatches": 0,
+      "scope": "Original native assertions/cleanup, matching server/DB; synthetic offline candles. DECLARED actual owned preparation/15m control clock, not human or meditation proof. Not broker/live/pixels/edge/production."
+    }
+  ],
+  "native_limits": "Parent/current same15 synthetic fill parity/0 mismatches; both original >20-sample conditions fail, no padding/clock/floor/risk/targets retune. Raw api arm exits2 with no summary; raw bots 200/6 retained.",
+  "smoke": {
+    "exit_code": 0,
+    "status": "completed",
+    "duration_seconds": 99.0,
+    "views_passed": 22,
+    "style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limits": 8,
+    "scope": "Unchanged original conditional DOM script, current restarted backend/served final source assets, native processes stopped. JSDOM/TradingView blocked/no canvas, not pixel/broker/human/production.",
+    "conditional_views_passed": 22
+  },
+  "actual_parent_additive_migration": {
+    "pass": 18,
+    "fail": 0,
+    "parent_control": [
+      7,
+      2
+    ],
+    "new_schema_objects": 4,
+    "original_trade_columns": 63,
+    "old_facts_byte_differences": 0
+  },
+  "answer_model": {
+    "states": [
+      "not_adopted",
+      "passed",
+      "failed",
+      "unanswered",
+      "stale",
+      "unavailable"
+    ],
+    "refusing_states": [
+      "failed",
+      "unanswered",
+      "stale",
+      "unavailable"
+    ],
+    "non_refusing": [
+      "not_adopted"
+    ],
+    "window_minutes": 60,
+    "same_utc_day": true,
+    "imported_state": "imported_unverified"
+  },
+  "stages": [
+    {
+      "stage": "policy",
+      "source_manifest": "policy-source.json",
+      "source_files": 138,
+      "patch": "m106-answer-policy-and-owned-schema.patch",
+      "files": 2,
+      "bytes": 19720,
+      "sha256": "1e1ef17e93616bf0195af7e840d579653ed29fbee15fd18ab6786a43f6fe23ab",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "api",
+      "source_manifest": "api-source.json",
+      "source_files": 138,
+      "patch": "m106-owned-answer-api-and-live-entry-gate.patch",
+      "files": 1,
+      "bytes": 15661,
+      "sha256": "d59364397a418436211a02a34f6b391e4772383a1cde6ad34970495493b25fd7",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "strict",
+      "source_manifest": "strict-source.json",
+      "source_files": 138,
+      "patch": "m106-refusal-codes-and-signal-admission.patch",
+      "files": 2,
+      "bytes": 5527,
+      "sha256": "3a908c2e23fb2f943b195e97451768d601f8d84c4dff8d20baf6e58d9275f9db",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "desk",
+      "source_manifest": "desk-source.json",
+      "source_files": 138,
+      "patch": "m106-desk-resolution-and-research-isolation.patch",
+      "files": 1,
+      "bytes": 1598,
+      "sha256": "6c43b117ef16015df832b96c948b9ea4c327aee3ba590e3410741b42617200a0",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "ui",
+      "source_manifest": "ui-source.json",
+      "source_files": 139,
+      "patch": "m106-four-question-card-editor-day-surfaces.patch",
+      "files": 5,
+      "bytes": 20741,
+      "sha256": "622fc3a1a126bf7550ed7f9746db32b2edac3292eccf1a17c0245de325533f07",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "documentation",
+      "source_manifest": "documentation-source.json",
+      "source_files": 139,
+      "patch": "m106-state-gate-documentation.patch",
+      "files": 3,
+      "bytes": 10154,
+      "sha256": "dd6e73034098db8462f84b9c9ef2bd8d21564f909b95aecec78355a07ef07723",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 13,
+    "bytes": 72678,
+    "sha256": "dff8c952f562c0eeca0e772b87d2122d6e11fff6fde3884549672cb5662e7eec",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 78,
+    "bytes": 1308242,
+    "sha256": "4fbae861fa7eedabd9c5c60cf98696e8f6938d54a6b7a1d2ca5d816c15fc74f6",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 139,
+    "application_byte_differences": 0,
+    "private_env_db_dependency_files": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/setup.js",
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "other_protected_files": [
+    "src/instruments.js",
+    "src/trades.js",
+    "src/journaling.js",
+    "src/execution-review.js",
+    "src/routine.js",
+    "src/routine-records.js",
+    "src/confluences.js",
+    "src/screenshots.js",
+    "src/emotions.js",
+    "src/performance.js",
+    "src/coach.js",
+    "src/process-outcomes.js",
+    "src/behavior-days.js",
+    "src/opportunities.js",
+    "src/rule-changes.js",
+    "src/identity.js",
+    "src/period-reviews.js",
+    "src/candles.js",
+    "src/market.js",
+    "src/session-time.js",
+    "src/demo-data.js",
+    "src/bots/guardrails.js",
+    "src/bots/correction.js",
+    "src/bots/now.js",
+    "server.js",
+    "public/js/app.js",
+    "public/js/util.js",
+    "public/js/store.js",
+    "public/js/api.js",
+    "public/js/chart.js",
+    "public/js/views/emotions.js",
+    "public/js/views/process-outcomes.js",
+    "public/js/views/behavior-days.js",
+    "public/js/views/opportunities.js",
+    "public/js/views/rule-changes.js",
+    "public/js/views/bots.js",
+    "public/js/views/coach.js",
+    "public/js/views/analytics.js",
+    "public/js/views/identity.js",
+    "public/js/views/trades.js",
+    "public/js/views/playbook.js",
+    "public/js/views/routine.js",
+    "public/js/views/calendar.js",
+    "public/js/views/confluences.js",
+    "public/js/views/execution.js",
+    "public/js/views/market.js",
+    "public/js/views/period-reviews.js",
+    "public/js/views/risk.js",
+    "public/js/views/screenshots.js",
+    "package-lock.json",
+    "scripts/api-test.js",
+    "scripts/bots-test.js",
+    "scripts/smoke-test.js",
+    "scripts/test-cleanup.js"
+  ],
+  "harness_source_files": 16,
+  "package_lock_sha256": "33e859914328605792ab71c75957b752716748828b0b2bef164956525cffb74c",
+  "scope": "M106 fresh in-session four-question state gate only: recorded self-report yes/no answers with a server receipt refusing the app own actionable surface exactly like the killzone/personal stop; not verified calmness/clarity/plan adherence/broker/mental state, not a readiness or discipline score, and no authority over risk/admission/cap/routine/core/grade/history. M107/M111/M112 TODO, M30/M103/M108 partial. No70%/causal/predictive/provider/human/meditation/pixel/production proof."
+}

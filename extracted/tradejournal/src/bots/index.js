@@ -30,6 +30,7 @@ const Now = require('./now');
 const Predict = require('./predict');
 const Cor = require('./correction');
 const Guards = require('./guardrails');
+const StateGate = require('../state-gate');
 
 /* -------------------------------------------------------------------------
  * M124 — THE ENTRY-SERIES DEPTH THE METHOD READS.
@@ -249,8 +250,43 @@ function hysteresisView(h) {
 
 async function personalState(userId, accountId, entryTf) {
   if (!userId) return null; // unsized research has no claimed personal permission
-  try { return await Cor.dailyState(userId,{accountId,entryTf,forEntry:true}); }
+  try {
+    const daily = await Cor.dailyState(userId,{accountId,entryTf,forEntry:true});
+    /* M106 — the fresh four-question check rides the same personal-state object the
+     * killzone/personal-stop refusals already use, so setup vetoes, `armed`, the Now
+     * guards and the scan rows all refuse it through code that was already measured.
+     * An account that never answered is reported as `not_adopted`, never as a pass. */
+    return StateGate.apply(daily, await StateGate.optional(userId, daily.account_id || accountId));
+  }
   catch { return Guards.unavailable({accountId}); }
+}
+/** A refusal is a 409 carrying the gate's own state so the caller can explain it; an
+ * adopted-but-not-fresh check refuses exactly like a recorded no.
+ *
+ * Resolution rule: an explicit account is used as given, otherwise the trader's own
+ * desk is resolved the same way POST /trades resolves it, so omitting account_id is
+ * not a way to skip an adopted check. Only when the user genuinely owns no desk (or an
+ * id that is not theirs) is the gate left unconsulted — research calls must keep
+ * working, and the pre-existing guardrail paths stay the authority there. */
+async function stateGateRefusal(userId, accountId) {
+  if (!userId) return { allowed: true, state: 'not_consulted', adopted: false, message: 'Unsized research carries no personal four-question claim.' };
+  let resolved = accountId === undefined ? null : accountId;
+  if (resolved === null) {
+    const desk = await db.prepare('SELECT id FROM accounts WHERE user_id=? AND archived=0 ORDER BY is_default DESC, id LIMIT 1').get(userId);
+    resolved = desk ? desk.id : null;
+  }
+  if (resolved === null) return { allowed: true, state: 'not_consulted', adopted: false, message: 'No owned account in this action — the four-question gate is not consulted.' };
+  let gate;
+  try { gate = await StateGate.permission(userId, resolved); }
+  catch (e) {
+    if (e.code === 'state_gate_invalid' && e.status === 404) return { allowed: true, state: 'not_consulted', adopted: false, message: 'No owned account in this action — the four-question gate is not consulted.' };
+    throw e;
+  }
+  if (gate.allowed) return gate;
+  const e = StateGate.invalid(gate.message, 409);
+  e.code = gate.state === 'failed' ? 'state_gate_failed' : 'state_gate_unanswered';
+  e.state_gate = { state: gate.state, adopted: gate.adopted, failed_questions: gate.failed_questions || [], window_minutes: gate.window_minutes, expires_at: gate.expires_at || null };
+  return { ...gate, refusal: e };
 }
 function candidateTf(setups, td, fallback) {
   const c = (setups.candidates || []).find(c=>c.dir===td.direction) || (setups.candidates || [])[0];
@@ -822,6 +858,9 @@ async function insertSignals(userId, payload, store = db, stamp = {}) {
 async function savePlan(userId,p = {}) {
   await ensureSignalsTable();
   if (p.research_only === true) return {...await insertPlan(userId,p,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
+  /* M106 — saving a plan is an actionable surface for THIS trader, so an adopted
+   * four-question check must be fresh and non-failing first. */
+  const planGate=await stateGateRefusal(userId,p.account_id || null);if(planGate.refusal)throw planGate.refusal;
   return Guards.admit(userId,{accountId:p.account_id || null,entryTf:p.entry_tf || p.timeframe,action:'save_plan',entityType:'signal',overrideReason:p.override_reason},
     async (store,daily) => {
       const result = await insertPlan(userId,p,store,Guards.snapshotFields(daily));
@@ -834,6 +873,8 @@ async function saveSignals(userId,payload,options = {}) {
   const market = {...payload,setups:{...payload.setups,candidates:marketCandidates}};
   if (!marketCandidates.some(c=>c.ok && c.levels && c.levels.entry_status!=='invalid')) return {saved:0,reason:'no actionable setup in this analysis'};
   if (options.research_only === true) return {...await insertSignals(userId,market,db,{entry_permission:'research_only'}),permission:{allowed:false,state:'research_only',can_override:false}};
+  /* M106 — saving an actionable signal for THIS trader obeys the same fresh check. */
+  const signalGate=await stateGateRefusal(userId,options.accountId || payload.daily?.account_id || null);if(signalGate.refusal)throw signalGate.refusal;
   return Guards.admit(userId,{accountId:options.accountId || payload.daily?.account_id || null,entryTf:candidateTf(market.setups,payload.topdown || {},payload.timeframe),action:'save_signal',entityType:'signal',overrideReason:options.override_reason},
     async (store,daily) => {
       const result = await insertSignals(userId,market,store,Guards.snapshotFields(daily));

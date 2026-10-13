@@ -1118,3 +1118,53 @@ M106 freshstate gate or M107 daily intention. No grade/risk/cap/routine/loss/cor
 admission/model/weights/factors/geometry/stops/targets/RR change. Course30/M103n>=5/
 B-C unchanged. No70%/causal/predictive/mental/broker/provider/human/meditation/pixel/
 production proof. M106 next; M111/M112 open, M30/M103/M108 partial.
+
+## M106 — fresh in-session four-question state gate
+
+Additive `state_gate_answers` append-only answer history: `human_declared` first-party
+rows and `imported_unverified` archives. UPDATE facts immutable (FK nullification only
+exception); owner deletion cascades, account deletion SET NULL retains the row for the
+owner's own readonly history and never re-attaches it to a foreign account. Not sealed
+against database-admin tampering. Nothing is backfilled from notes, profit, adherence
+or legacy journal text, and no answer is ever defaulted.
+
+- `GET /state-gate?account_id=` live view: account, current state
+  (`not_adopted`|`passed`|`failed`|`unanswered`|`stale`|`unavailable`), the four saved
+  questions, recorded answers, server receipt, `age_minutes`, `expires_at`, APP
+  `window_minutes`, `failed_questions`, `imported_archives`, history, displayed
+  `revision`, `basis`, `broker_verified:false`. `allowed` is true only for a fresh
+  all-yes pass; `not_adopted` is reported as adoption, never as a pass.
+- `GET /state-gate/history?account_id=` readonly own rows including detached orphans
+  and imported archives. Omitted account means all own accounts, never another user's.
+- `PUT /state-gate?account_id=` only `{answers, revision}` where `answers` is exactly
+  `{calm,clear,following_plan,would_take_if_up_big}` booleans or explicit `null`
+  ("not answered now"). No caller clock, source, owner, score or text is accepted.
+  Stale displayed revision409 with nothing written; a store failure503 claims no
+  receipt and rolls the new row back only.
+
+The four questions are the saved rule (“if the answer to any of these questions is no,
+then you don't trade yet”): am I calm, am I clear, am I following the trade plan, would
+I take this trade if I was already up big today. A recorded no publishes
+`state_gate_failed`; an adopted account whose check is missing/stale/unreadable
+publishes `state_gate_unanswered|stale|unavailable`. Both refuse `POST /trades` live
+entries and `PUT /trades/:id` reopen with 409 + `state_gate` payload, fold into the
+guardrail snapshot, and become the same kind of personal stop the killzone/personal
+guardrails use — `Guards.applyToSetups` / Now refuse the signal, `saveSignals` and
+`savePlan` throw the gate's own 409 code. `record_only` journal history, closing,
+editing and importing are never gated: an in-session check cannot hold a trader's
+history hostage.
+
+Freshness is the APP's own policy: same UTC day and `<=window_minutes` since the
+server receipt (default 60). The window edge is inclusive; a corrupt/future receipt is
+`unavailable` and cannot pass. `not_adopted` accounts are not blocked — the app does
+not invent a check the trader never gave — and imported copies never grant permission
+on the receiving account. Answers are the trader's own words: this is not verified
+calmness, clarity, plan adherence, broker state, an edge, a readiness/mental-state
+score or any authority over risk, admission, cap, routine, core or grades.
+
+Full JSON backup carries `state_gate_answers`; restore labels every copy
+`imported_unverified` with the original clock as history and can never pass, fail or
+block the receiving trader. Invalid optional history warns while the financial import
+stays legal; a real import-store failure rolls that request back atomically; a missing
+answer store leaves the financial backup legal with an unavailable marker. Settings
+surfaces the warnings instead of hiding omissions.

@@ -1,0 +1,59 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "passed": 13,
+  "failed": 0,
+  "checks": [
+    {
+      "label": "numeric UTC offset is not explicit IANA timezone400",
+      "passed": true
+    },
+    {
+      "label": "array query account id not silently coerced into owned account404",
+      "passed": true
+    },
+    {
+      "label": "strict owned account wire type array",
+      "passed": true
+    },
+    {
+      "label": "strict owned account wire type object",
+      "passed": true
+    },
+    {
+      "label": "strict owned account wire type Boolean",
+      "passed": true
+    },
+    {
+      "label": "strict current cycle wire type array",
+      "passed": true
+    },
+    {
+      "label": "strict current cycle wire type object",
+      "passed": true
+    },
+    {
+      "label": "strict current cycle wire type Boolean",
+      "passed": true
+    },
+    {
+      "label": "corrupt stored future configuration is unavailable503, not request400",
+      "passed": true
+    },
+    {
+      "label": "first read with corrupt routine genuinely returns UNKNOWN",
+      "passed": true
+    },
+    {
+      "label": "first unknown-routine read independently retains old cap/count AND observed loss clock",
+      "passed": true
+    },
+    {
+      "label": "known old cap breach captured even before unknown routine response",
+      "passed": true
+    },
+    {
+      "label": "honest delete/repair/reflection do not refund known old cap/cooldown/full-candle",
+      "passed": true
+    }
+  ]
+}
