@@ -1,0 +1,16 @@
+ok this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)
+FAIL a calendar failure shaped as its own {ok:false} with a reason is `unknown` with a usable reason and the honest sentence {}
+FAIL a calendar failure shaped as {ok:false} with NO reason at all is `unknown` with a usable reason and the honest sentence {}
+FAIL a calendar failure shaped as {ok:false} with a null reason is `unknown` with a usable reason and the honest sentence {}
+FAIL a calendar failure shaped as {ok:false} with an empty-string reason is `unknown` with a usable reason and the honest sentence {}
+FAIL a calendar failure shaped as {ok:false} with an object reason is `unknown` with a usable reason and the honest sentence {}
+FAIL a calendar failure shaped as a bare empty object is `unknown` with a usable reason and the honest sentence {}
+FAIL a calendar failure shaped as a resolved non-object (the layer returning junk) is `unknown` with a usable reason and the honest sentence {}
+FAIL a calendar failure shaped as a thrown Error is `unknown` with a usable reason and the honest sentence {}
+FAIL a calendar failure shaped as a thrown string is `unknown` with a usable reason and the honest sentence {}
+TypeError: Cannot read properties of null (reading 'message')
+    at Object.newsCheck (/tmp/m111-pre-hardening/app/src/bots/index.js:125:229)
+    at async withReader (/home/user/Trader/analysis/probe-m111-hardening.js:16:71)
+    at async /home/user/Trader/analysis/probe-m111-hardening.js:34:17
+    at async Object.finish (/home/user/Trader/analysis/m111-test-support.js:44:29)
+M111 hardening: every failing shape is unknown, and none of them lies: 1 passed, 10 failed

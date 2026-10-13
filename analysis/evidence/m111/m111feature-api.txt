@@ -1,0 +1,15 @@
+ok this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)
+ok a calendar that was read and holds nothing for this symbol answers 200 `clear` with the account's own two windows
+ok an unreadable calendar answers 200 with an `unknown` state — not a 500, not an empty 200 that reads like a quiet week
+ok the response carries the reason and the sentence, so a client can render the failure rather than inventing one
+ok the sentence never claims an all-clear, which is the whole defect being closed
+ok and the two windows are still reported, so the client can say WHICH windows were not checked
+ok a news read is a read: the account row is byte-identical across the outage
+ok a known release inside the account's own block still answers `blocked` with the M110 sentence and the per-event side
+ok the single-knob refusals still hold on the wire while a calendar is failing and while it is fine
+ok and the settle floor is still a 400 rather than a clamped answer
+ok a research pair is honoured on the outage path too, so the windows reported as unchecked are the ones the caller asked about
+ok and that research pair is not stored: an outage cannot move the trader's settings
+ok the endpoint still answers for the caller's own default desk with the same state vocabulary
+ok an account update still refuses a settle below the floor while the calendar is unreadable — the two failures are independent
+M111 API: the outage is legible over HTTP: 14 passed, 0 failed

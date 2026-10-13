@@ -387,6 +387,13 @@ function build(p = {}) {
   // the sub-floor warning is rendered as its own red block under the order — it is
   // not repeated in the guard list (measured in the browser: both printed)
   if (news && news.blackout) guards.push({ level: 'block', text: news.blackout });
+  /* M111 — an unreadable calendar is SAID, not omitted. It is a warning rather than a block: the
+   * news stand-down is a blackout on a known release, and an outage is the absence of that
+   * information, so this reports "unknown" in the engine's own sentence (the payload carries it)
+   * instead of letting the playlist read as if the calendar had been consulted and found quiet. */
+  else if (news && news.state === 'unknown') {
+    guards.push({ level: 'warn', text: news.unavailable_note || 'News risk unknown — the economic calendar could not be read, so the news windows were not checked.' });
+  }
   if (daily && daily.status && daily.status !== 'clear') guards.push({ level: personalBlocked ? 'block' : 'warn', text: daily.message || String(daily.status) });
   if (freshness.state === 'stale' || freshness.state === 'aging') guards.push({ level: 'warn', text: freshness.note });
   if (!kzNow && !blocked && direction) guards.push({ level: 'info', text: 'Outside every killzone: the playlist only trades the London and New York windows.' });

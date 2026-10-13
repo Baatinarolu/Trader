@@ -1,0 +1,33 @@
+{
+  "app": "extracted/tradejournal (delivered M111 tree, 146 sources)",
+  "harness": "scripts/smoke-test.js from that same tree, unchanged",
+  "command": "PORT=3210 node server.js + node scripts/smoke-test.js http://127.0.0.1:3210",
+  "environment": "PORT=3210, TRADEJOURNAL_DB=/tmp/m111-smoke.db (fresh, synthetic), TJ_SCHEDULER=0, TJ_OFFLINE_CANDLES=1, no remote DB",
+  "exit_code": 0,
+  "views_passed": 22,
+  "views_offered": 22,
+  "ui_style_failures": 0,
+  "console_errors": 0,
+  "canvas_environment_limits": 0,
+  "duration_seconds": 99.1,
+  "conditional_view_count": "The harness offers its view list conditionally (a chip condition on the content shell), so the reported total moves between samples: it is measured here at the same sample on both trees and the two counts are compared, not asserted absolutely.",
+  "news_dialog_coverage": "grep -ci 'news' = 0 and grep -ci 'settings' = 2: the smoke run does NOT open the account dialog. No M111 change touches a view, and M111 ships no dialog: the news settings fields remain M110's coverage (analysis/probe-m110-ui.js, 23 assertions) and are not claimed here.",
+  "parent_control": {
+    "tree": "/tmp/m111-parent/app \u2014 the actual b39d9ef M110 release, byte-identical to its frozen 146-file guard",
+    "command": "PORT=3211 node server.js + node scripts/smoke-test.js http://127.0.0.1:3211",
+    "exit_code": 0,
+    "views_passed": 22,
+    "views_offered": 22,
+    "ui_style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limits": 0,
+    "duration_seconds": 99.1,
+    "output": "analysis/evidence/m111/smoke-parent-control.txt",
+    "why": "The unchanged parent reports the same view count at the same sample, so M111 neither loses nor gains a view in the harness."
+  },
+  "limits": "jsdom structural/DOM check with no browser engine: no pixel, device, audio, provider, broker, human or production proof, and no mental-state claim.",
+  "outputs": {
+    "delivered": "analysis/evidence/m111/smoke.txt",
+    "parent": "analysis/evidence/m111/smoke-parent-control.txt"
+  }
+}

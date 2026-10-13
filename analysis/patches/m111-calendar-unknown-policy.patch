@@ -1,0 +1,80 @@
+diff --git a/src/news-window.js b/src/news-window.js
+index 318045e..7013c55 100644
+--- a/src/news-window.js
++++ b/src/news-window.js
+@@ -33,8 +33,9 @@
+  *     it does not grade, score or override anything: the blackout is still the same
+  *     veto it was, applied to the same analyse path.
+  *   - Nothing here fetches a calendar. `hit()` is pure arithmetic over whatever
+- *     `M.getCalendar()` returned; a calendar that cannot be read is a separate finding
+- *     (M111) and is NOT solved here.
++ *     `M.getCalendar()` returned, and the state vocabulary below (M111) is pure too: it
++ *     classifies the READ, it does not perform it. A calendar that cannot be read is
++ *     `unknown` — never `clear`.
+  *   - No provider/broker/pixel/human proof, and no claim about volatility, spreads or
+  *     what a release will do to price: the rule is a stand-down clock, nothing else.
+  * ────────────────────────────────────────────────────────────────────────────*/
+@@ -201,9 +202,57 @@ function noteFor(pair, warnings = []) {
+   };
+ }
+ 
++/* ─────────────────────────────────────────────── M111: UNKNOWN IS A STATE OF ITS OWN ──
++ * The stand-down above is only as true as the calendar it is measured against, and Ep 30
++ * frames the block as a SAFETY mechanism — "it prevent you from getting wiped out ... it's
++ * simply a mechanism for Edge Flow to protect you from impulse", "it's trying to keep you
++ * alive and disciplined". A safety gate that answers "clear" when it cannot SEE is the
++ * wrong default: the failure would be indistinguishable from a genuinely quiet week, and
++ * the all-clear would be manufactured rather than observed.
++ *
++ * So a calendar read has exactly three outcomes, and they are mutually exclusive:
++ *
++ *   blocked  a known high-impact release is inside its clock (the stand-down above)
++ *   clear    the calendar WAS read and nothing high-impact is inside its clock
++ *   unknown  the calendar could not be read — NOT clear, and not a pass
++ *
++ * `stateOf()` is the one place that mapping lives, ordered so a known block can never be
++ * masked by a read that failed later, and `unknownNote()` is the sentence shown in place of
++ * an all-clear. Nothing here fetches anything or claims that a release will move price: this
++ * module owns the vocabulary, `bots/index.js` owns the read.
++ */
++const STATES = { BLOCKED: 'blocked', CLEAR: 'clear', UNKNOWN: 'unknown' };
++
++function stateOf({ blackout = null, unavailable = null } = {}) {
++  if (blackout) return STATES.BLOCKED;
++  return unavailable ? STATES.UNKNOWN : STATES.CLEAR;
++}
++
++/** The reason as a readable phrase: a string is used as-is, an Error/object contributes its
++ * `message` (or a compact JSON form), and a circular or otherwise unusable value degrades to a
++ * phrase rather than printing `[object Object]` at the trader. */
++function reasonOf(unavailable) {
++  if (unavailable == null) return '';
++  if (typeof unavailable === 'string') return unavailable.trim();
++  if (typeof unavailable === 'object') {
++    if (typeof unavailable.message === 'string' && unavailable.message.trim()) return unavailable.message.trim();
++    try { const j = JSON.stringify(unavailable); if (j && j !== '{}') return j; } catch { /* circular */ }
++    return 'unreadable calendar error';
++  }
++  return String(unavailable);
++}
++
++function unknownNote(unavailable) {
++  const reason = reasonOf(unavailable);
++  const why = reason ? ` (${reason})` : '';
++  return `News risk UNKNOWN — the economic calendar could not be read${why}. Nothing was checked against your stand-down windows, so this is NOT an all-clear.`;
++}
++
+ function policy() {
+   return {
+     version: VERSION,
++    states: STATES,
++    unknown_is_not_clear: true,
+     before: { field: BEFORE.field, default: BEFORE.default, min: BEFORE.min, max: BEFORE.max, recommended_min: BEFORE.recommended_min },
+     after: { field: AFTER.field, default: AFTER.default, min: AFTER.min, max: AFTER.max, recommended_min: AFTER.recommended_min, recommended_max: AFTER.recommended_max },
+     single_knob: false,
+@@ -212,4 +261,4 @@ function policy() {
+   };
+ }
+ 
+-module.exports = { VERSION, BEFORE, AFTER, BASIS, DOCTRINE, parse, parsePair, plan, hit, detail, noteFor, policy, invalid, LEGACY_SINGLE };
++module.exports = { VERSION, STATES, BEFORE, AFTER, BASIS, DOCTRINE, parse, parsePair, plan, hit, detail, noteFor, stateOf, unknownNote, reasonOf, policy, invalid, LEGACY_SINGLE };

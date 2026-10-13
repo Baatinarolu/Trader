@@ -265,7 +265,25 @@ the methodology, the weights and the honest limitations.
 | POST | `/bots/signals/resolve` | `{ limit }` | resolves pending alerts against real candles → `{ checked, results[], stats }` |
 | GET | `/bots/signals/stats` | — | win rate / expectancy of tracked alerts, by grade |
 | GET | `/bots/sessions` | — | session + killzone windows and the active one |
-| GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, settings }`. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
+| GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ state, blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, unavailable?, unavailable_note?, error? }`. `state` is `blocked` \| `clear` \| `unknown` (M111): `clear` means the calendar **was read** and nothing is inside its clock; a read that failed is `unknown`, which carries `unavailable` (the reason), `unavailable_note` (the sentence to display) and `windows.unavailable: true`. An `unknown` read still echoes the pair, so a client can name the windows that were **not** checked — it is never an all-clear. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
+
+### An unreadable calendar is UNKNOWN, not clear (M111)
+
+`state` is a property of the **read**, not of the moment, and it is derived on every check — there
+is no column, settings key or cache for it. `blocked` means a known high-impact release is inside
+its clock (the M110 pair decides); `clear` means the calendar **was read** and nothing is inside its
+clock; `unknown` means the calendar could not be read, and `clear` has to be **earned by a positive
+signal**: the read must be a calendar with `ok:true` and an events list. A `{ok:false}` reply, a
+bare object, an array, a `null`, a thrown read or a thrown string are all `unknown`, each with a
+readable reason in `unavailable` and the display sentence in `unavailable_note`.
+
+Consumers treat `unknown` as **not passing**: `Setup.buildSetups` fails the news row (same recorded
+weight and label) and exposes `filters.news_state` beside `filters.news_blackout`; the desk
+playlist adds a `warn` guard carrying the engine's sentence, and the read-aloud headline says
+`NEWS UNKNOWN: …` with its machine-readable flag false. A caller that consulted no calendar at all
+(the chart and scan surfaces) reports `not_consulted` — never silently mapped to `clear` or
+`unknown` — and its behaviour is unchanged. An outage never writes, never moves the stored pair and
+never fabricates a release to stand down for.
 
 ### The news stand-down — two clocks, not one (M110)
 

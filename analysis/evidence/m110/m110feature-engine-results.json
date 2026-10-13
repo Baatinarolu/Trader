@@ -1,7 +1,7 @@
 {
   "app": "/home/user/Trader/extracted/tradejournal",
-  "pass": 25,
-  "fail": 0,
+  "pass": 23,
+  "fail": 2,
   "results": [
     {
       "label": "this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)",
@@ -89,7 +89,20 @@
     },
     {
       "label": "M110 does not claim to fix M111: a failed calendar still reaches this rule as a QUIET one — blackout null and no unavailable flag",
-      "passed": true
+      "passed": false,
+      "detail": {
+        "blackout": null,
+        "windows": {
+          "before_min": 15,
+          "after_min": 45,
+          "source": [
+            "news_block_before_min:stored",
+            "news_settle_after_min:stored"
+          ],
+          "clamped": [],
+          "unavailable": true
+        }
+      }
     },
     {
       "label": "a failure is not cached the way a success is, so the next check retries the feed instead of freezing the outage",
@@ -101,7 +114,8 @@
     },
     {
       "label": "the engine source keeps the M111 marker at that exact branch, so closing M111 later cannot be mistaken for a regression",
-      "passed": true
+      "passed": false,
+      "detail": "marker"
     }
   ],
   "scope": "M110 engine: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"

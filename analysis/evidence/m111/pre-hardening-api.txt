@@ -1,0 +1,9 @@
+ok this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)
+FAIL a calendar that was read and holds nothing for this symbol answers 200 `clear` with the account's own two windows {"status":200,"windows":{"before_min":20,"after_min":60,"source":["news_block_before_min:current","news_settle_after_min:current"],"clamped":[]}}
+FAIL an unreadable calendar answers 200 with an `unknown` state — not a 500, not an empty 200 that reads like a quiet week {"status":200}
+FAIL the response carries the reason and the sentence, so a client can render the failure rather than inventing one {}
+TypeError: Cannot read properties of undefined (reading 'replace')
+    at /home/user/Trader/analysis/probe-m111-api.js:26:135
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Object.finish (/home/user/Trader/analysis/m111-test-support.js:44:29)
+M111 API: the outage is legible over HTTP: 1 passed, 4 failed

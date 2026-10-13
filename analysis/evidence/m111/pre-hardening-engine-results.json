@@ -1,0 +1,126 @@
+{
+  "app": "/tmp/m111-pre-hardening/app",
+  "pass": 8,
+  "fail": 13,
+  "results": [
+    {
+      "label": "this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "a calendar that WAS read and holds nothing that touches this symbol reads as `clear`, with no unavailability anywhere",
+      "passed": false,
+      "detail": [
+        "blackout",
+        "events",
+        "upcoming",
+        "currencies",
+        "windows"
+      ]
+    },
+    {
+      "label": "an empty feed is reported by the market layer as a failure (its own \"empty calendar\" error), not as a quiet week with zero rows",
+      "passed": true
+    },
+    {
+      "label": "so it reaches the news check as `unknown` too — counting rows cannot manufacture an all-clear",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "the outage is real at the source: the market layer refuses the read rather than serving an empty week",
+      "passed": true
+    },
+    {
+      "label": "the outage reaches the news check as `unknown` — NOT as a quiet calendar",
+      "passed": false
+    },
+    {
+      "label": "and the reason travels with it, so a caller never has to say \"unknown\" without saying why",
+      "passed": false
+    },
+    {
+      "label": "the payload carries the module's own sentence rather than a second wording invented here",
+      "passed": false
+    },
+    {
+      "label": "the failure is NOT dressed as data: no events, no upcoming list, and the currencies still name the symbol's own",
+      "passed": true
+    },
+    {
+      "label": "the two windows are STILL echoed on the unknown path, so an outage can never be read as \"the window was applied and nothing was found\"",
+      "passed": true
+    },
+    {
+      "label": "the windows also say the read failed, beside the pair they belong to",
+      "passed": false,
+      "detail": {
+        "before_min": 15,
+        "after_min": 45,
+        "source": [
+          "news_block_before_min:stored",
+          "news_settle_after_min:stored"
+        ],
+        "clamped": []
+      }
+    },
+    {
+      "label": "the old `error` key is still there AND still names the read, so a consumer written against the previous shape is not silently blinded",
+      "passed": false
+    },
+    {
+      "label": "the payload still has no top-level single knob: M111 added states, it did not resurrect a number",
+      "passed": true
+    },
+    {
+      "label": "a thrown read is the SAME outcome as `{ok:false}` — one unknown state, not two behaviours",
+      "passed": false
+    },
+    {
+      "label": "the thrown message is the reason, quoted rather than replaced by a generic phrase",
+      "passed": false
+    },
+    {
+      "label": "a thrown read does not escape the engine: no exception reaches a route, and the pair is still echoed",
+      "passed": true
+    },
+    {
+      "label": "even a non-Error throw is stringified into a readable reason rather than leaking a bare value",
+      "passed": false
+    },
+    {
+      "label": "a release INSIDE the block is still `blocked` with the M110 sentence, so the new state did not replace the old rule",
+      "passed": false,
+      "detail": {
+        "blackout": "USD CPI in 10 min — inside your news window (15 min before / 45 min after a release). Stand down until it prints."
+      }
+    },
+    {
+      "label": "the asymmetric boundaries are untouched by M111: the 45-minute print is blocked on the settle side, 46 is let go",
+      "passed": false,
+      "detail": [
+        {
+          "title": "NFP",
+          "currency": "USD",
+          "time": "2026-10-13T12:35:00.000Z",
+          "impact": "high",
+          "forecast": "",
+          "previous": "",
+          "side": "after",
+          "offset_min": 45,
+          "window_min": 45
+        }
+      ]
+    },
+    {
+      "label": "an outage and a block are both READS: every table is byte-identical afterwards, and an unknown never becomes a stored fact",
+      "passed": true
+    },
+    {
+      "label": "the engine states the three outcomes at the function it happens in, so the rule is readable where it is applied",
+      "passed": false,
+      "detail": "marker"
+    }
+  ],
+  "scope": "M111 engine: a read that failed is unknown, a read that worked is clear: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

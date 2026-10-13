@@ -19,8 +19,8 @@ ok one minute outside either boundary is clear, so the window is never wider tha
 ok a news check is a read: every table is byte-identical afterwards
 ok and it does not rewrite the account it read the pair from
 ok M111’s feed really does fail here (the shim is refusing the URL, not serving an empty week)
-ok M110 does not claim to fix M111: a failed calendar still reaches this rule as a QUIET one — blackout null and no unavailable flag
+FAIL M110 does not claim to fix M111: a failed calendar still reaches this rule as a QUIET one — blackout null and no unavailable flag {"blackout":null,"windows":{"before_min":15,"after_min":45,"source":["news_block_before_min:stored","news_settle_after_min:stored"],"clamped":[],"unavailable":true}}
 ok a failure is not cached the way a success is, so the next check retries the feed instead of freezing the outage
 ok and the pair is still echoed on that path, so the outage can never be read as “45 minutes was applied and nothing was found”
-ok the engine source keeps the M111 marker at that exact branch, so closing M111 later cannot be mistaken for a regression
-M110 engine: 25 passed, 0 failed
+FAIL the engine source keeps the M111 marker at that exact branch, so closing M111 later cannot be mistaken for a regression "marker"
+M110 engine: 23 passed, 2 failed

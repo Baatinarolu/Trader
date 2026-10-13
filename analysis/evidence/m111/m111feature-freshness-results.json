@@ -1,0 +1,52 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 11,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the first read of a quiet week is `clear` and it fetched the feed",
+      "passed": true
+    },
+    {
+      "label": "a second check inside the TTL reuses the cached read instead of hitting the feed again",
+      "passed": true
+    },
+    {
+      "label": "once the feed fails, the check says `unknown` and it really did try the feed",
+      "passed": true
+    },
+    {
+      "label": "the failure is NOT cached the way a success is: the next check retries the feed instead of freezing the outage",
+      "passed": true
+    },
+    {
+      "label": "when the feed comes back the very next check reads it and returns to `clear` — no sticky unknown, and no manual reset",
+      "passed": true
+    },
+    {
+      "label": "a failure INSIDE the cached window is still reported as `unknown`: the read is what is cached, not the verdict",
+      "passed": true
+    },
+    {
+      "label": "and after the TTL expires the feed is read again rather than a stale success being replayed for ever",
+      "passed": true
+    },
+    {
+      "label": "no read — clear, unknown or blocked — writes any state anywhere: every table is byte-identical",
+      "passed": true
+    },
+    {
+      "label": "and there is no column to store it in: the news state is derived on every check, never a stored fact",
+      "passed": true
+    },
+    {
+      "label": "nor does it leak into the user settings blob, so a state cannot survive as configuration",
+      "passed": true
+    }
+  ],
+  "scope": "M111 freshness: the state follows the last read: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

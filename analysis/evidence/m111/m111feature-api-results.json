@@ -1,0 +1,64 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 14,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "a calendar that was read and holds nothing for this symbol answers 200 `clear` with the account's own two windows",
+      "passed": true
+    },
+    {
+      "label": "an unreadable calendar answers 200 with an `unknown` state — not a 500, not an empty 200 that reads like a quiet week",
+      "passed": true
+    },
+    {
+      "label": "the response carries the reason and the sentence, so a client can render the failure rather than inventing one",
+      "passed": true
+    },
+    {
+      "label": "the sentence never claims an all-clear, which is the whole defect being closed",
+      "passed": true
+    },
+    {
+      "label": "and the two windows are still reported, so the client can say WHICH windows were not checked",
+      "passed": true
+    },
+    {
+      "label": "a news read is a read: the account row is byte-identical across the outage",
+      "passed": true
+    },
+    {
+      "label": "a known release inside the account's own block still answers `blocked` with the M110 sentence and the per-event side",
+      "passed": true
+    },
+    {
+      "label": "the single-knob refusals still hold on the wire while a calendar is failing and while it is fine",
+      "passed": true
+    },
+    {
+      "label": "and the settle floor is still a 400 rather than a clamped answer",
+      "passed": true
+    },
+    {
+      "label": "a research pair is honoured on the outage path too, so the windows reported as unchecked are the ones the caller asked about",
+      "passed": true
+    },
+    {
+      "label": "and that research pair is not stored: an outage cannot move the trader's settings",
+      "passed": true
+    },
+    {
+      "label": "the endpoint still answers for the caller's own default desk with the same state vocabulary",
+      "passed": true
+    },
+    {
+      "label": "an account update still refuses a settle below the floor while the calendar is unreadable — the two failures are independent",
+      "passed": true
+    }
+  ],
+  "scope": "M111 API: the outage is legible over HTTP: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

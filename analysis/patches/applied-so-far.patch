@@ -315,12 +315,64 @@ index 0000000..bd0e991
 +no `{{V}}` in the served HTML, a rendered `?v=` id, `no-store`, deep links returning 200.
 +Those four are what distinguish a working deploy from one that merely builds.
 diff --git a/README.md b/README.md
-index df9ae3c..e0c2f3e 100644
+index df9ae3c..1c4e341 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,5 +1,606 @@
+@@ -1,5 +1,658 @@
  # TradeJournal Pro
  
++## M111 — an unreadable calendar is UNKNOWN, not clear (2026-10-13)
++
++Ep 30 frames the news block as a **safety** mechanism, not a preference — *"it prevent you from
++getting wiped out… it prevent you from getting trapped in unpredictable move… it's simply a
++mechanism for Edge Flow to protect you from impulse"*, *"it's trying to keep you alive and
++disciplined so your edge can actually play out."* The engine's news check nonetheless **failed
++open**: the market layer reports a failed calendar as `{ok:false, events:[]}` rather than throwing,
++and that reply fell through to "no events inside the window" — so `setup.js` scored
++`'No high-impact news in the window'` as **satisfied**, and an outage was indistinguishable from a
++genuinely quiet week. A safety gate that answers "clear" when it cannot see is the wrong default.
++
++**Three states, and they are mutually exclusive.** `src/news-window.js` now owns the vocabulary:
++**`blocked`** (a known release is inside its clock), **`clear`** (the calendar WAS read and nothing
++is inside its clock) and **`unknown`** (the calendar could not be read — not clear, and not a
++pass). `stateOf()` is the one mapping and `unknownNote()` the one sentence, so no surface invents
++its own wording. **`clear` has to be earned by a positive signal**: the read must be a calendar
++with `ok:true` and an events list. A `{ok:false}` reply, a bare object, an array, a null, a thrown
++read, a thrown string, a circular error object — every one of them is `unknown` with a readable
++reason, and none of them can be mistaken for a quiet week.
++
++**What the states do.** The setup model's news row **fails** on `unknown` and its detail is the
++engine's own sentence — *"News risk UNKNOWN — the economic calendar could not be read (…). Nothing
++was checked against your stand-down windows, so this is NOT an all-clear."* — while keeping its
++recorded **weight and label**, so M111 changed a verdict and not a grade scale. The payload carries
++`filters.news_state` beside `news_blackout`, so a downstream alert cannot read a null blackout as
++clearance. The desk playlist adds a **warn** guard (an outage does not fabricate a release to stand
++down for), and the read-aloud headline says `NEWS UNKNOWN: …` with its machine-readable news flag
++false. A caller that consulted no calendar at all — the chart and scan surfaces — is recorded as
++**`not_consulted`** rather than being mapped onto either `clear` or `unknown`, and its behaviour is
++unchanged: this fix is about the read that **failed**, not about every surface that does not read.
++The state is derived on every check and **never stored**: no column, no settings key, no write.
++
++**Measured.** M111 **158/0 across 8 probes** (module 26, engine 21, consumers 20, API 14, freshness
++11, hardening 36, portable 15, migration 16/0 against the actual **b39d9ef M110 release** — no
++schema object added or changed, every inherited fact byte-identical, and the *same failing read*
++answers `unknown` on the delivered tree where the parent answered with a quiet payload that had no
++state at all). M110's own cohort re-runs at **253/5**, and those five failures are this milestone's
++**declared negatives**: three assertions in the M110 engine/consumers probes that measure the
++pre-M111 silence on purpose (including its "M111 is open and NOT solved here" marker, which exists
++so closing M111 cannot be mistaken for a regression) and two that assert the blocked payload's
++exact key set, which grew by the new `state`. Every failure is named in the probe output, nothing
++was edited to make a frozen assertion pass, and the older cohorts (M109 166/2, M108 257/2, M107
++230/2, M106 316/2, M105 140/2) keep their own declared schema negatives. RAW 596/156, DECLARED
++824/4 and the live-provider arm 70/1 re-run identical; the native provider arms stay inherited.
++The calendar is fed through the app's own fetch path and parser in every probe and no market or
++calendar provider is reachable from this sandbox, so **no live-feed, provider, broker, pixel or
++human proof is claimed**, and nothing here says what a release will do to price. Ledger
++**132 = 106 done / 2 partial / 24 TODO**. Report `analysis/M111-CALENDAR-UNKNOWN.md` in the ZIP.
++Next **M112** (a trading window derived from `by_session` history — a hard block, not a scored
++penalty); no 70 % win-rate, causal/predictive edge, broker/provider/human/mental-state/pixel/
++production claim, and no predictor of any kind.
++
 +## M110 — the news stand-down is two clocks, not one (2026-10-13)
 +
 +Saved Ep 30 states **two** news stand-downs of different length: a **pre-release block** (*"you
@@ -370,7 +422,7 @@ index df9ae3c..e0c2f3e 100644
 +synthetic structure and **no live-market or provider claim is made**. **M111 is not solved here**
 +and is stated as such: a calendar that cannot be fetched still arrives as a quiet week (null
 +blackout, no `unavailable` flag). Ledger **132 = 105 done / 2 partial / 25 TODO**. Report
-+`analysis/M110-NEWS-WINDOW.md` in the ZIP. Next **M111** (the fail-open) and **M112**; no 70 %
++`analysis/M110-NEWS-WINDOW.md` in the ZIP. Next M112 (M111 was delivered separately); no 70 %
 +win-rate, causal/predictive edge, broker/provider/human/mental-state/pixel/production claim, and
 +no predictor of any kind.
 +
@@ -925,7 +977,7 @@ index df9ae3c..e0c2f3e 100644
  A **multi-asset trading journal, analytics engine, behavioural coach, SMC bot desk and TradingView-integrated
  pre-trade assistant**. No subscription, no broker login, no sign-in wall — a Node server, one libSQL database
  (a local file by default), and the whole thing deployable free to Vercel + Turso.
-@@ -11,6 +612,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -11,6 +664,38 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  
  ---
  
@@ -964,7 +1016,7 @@ index df9ae3c..e0c2f3e 100644
  ## What it does
  
  | Area | What you get |
-@@ -18,8 +651,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
+@@ -18,8 +703,8 @@ Opens straight into a workspace (no sign-in).  Fresh start: Settings → About 
  | **Journal** | 40+ fields per trade — thesis, execution notes, emotions, confidence, rule-adherence score, mistake tags, screenshots, MAE/MFE, planned R, **scale-out legs** (closes at the pct-weighted price). Works for FX, futures, stocks, ETFs, crypto, index CFDs and options. |
  | **Analytics** | Expectancy ($ and R), win rate, profit factor, payoff, SQN, Sharpe, Sortino, Calmar, recovery factor, Kelly, max drawdown, streaks, R-distribution, MAE/MFE capture efficiency, time-of-day and weekday grids, hold-time buckets, 10+ segment tables. |
  | **Coach** | 20+ deterministic behavioural tests on your own rows — losing setups, bad hours, revenge entries, post-loss trading, overtrading days, size creep, early exits, tight stops, cost of each mistake tag — each with the numbers, the dollar impact and one concrete action. |
@@ -975,7 +1027,7 @@ index df9ae3c..e0c2f3e 100644
  | **Data** | CSV import with automatic column detection, CSV export, full JSON backup & restore, multi-account (including prop-firm drawdown rules), instrument library. |
  | **Options** | Black-Scholes calculator (price, delta/gamma/theta/vega, break-even, ITM/OTM), premium-based position sizing, and a plan that warns instead of printing a fake R:R when your target premium is below the entry. 7 option presets (100× multiplier). *IV is yours to type — there is no options feed.* |
  | **Prop challenge** | Named challenge shapes (5 %/10 %, 6 %/6 %, instant…) applied to an account, then a live tracker over 4 checks — daily loss, max drawdown, profit target, consistency — with progress %. |
-@@ -263,6 +896,51 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
+@@ -263,6 +948,51 @@ webhook URL: point a TradingView alert at it and each trigger is parsed, graded
  
  Guides: [docs/BOTS.md](docs/BOTS.md) · [docs/PLAYLIST-CURRICULUM.md](docs/PLAYLIST-CURRICULUM.md)
  
@@ -1028,7 +1080,7 @@ index df9ae3c..e0c2f3e 100644
  
  * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.
 diff --git a/docs/API.md b/docs/API.md
-index 4475db3..7e85eb5 100644
+index 4475db3..9522013 100644
 --- a/docs/API.md
 +++ b/docs/API.md
 @@ -1,5 +1,91 @@
@@ -1132,12 +1184,30 @@ index 4475db3..7e85eb5 100644
  | GET | `/accounts/:id/challenge` | `{ preset, status: { ok, passed, checks[4], progress_pct, drawdown_pct } }` — daily loss, max drawdown, profit target and consistency checked against the account's own trades |
  | GET/POST/PUT/DELETE | `/strategies` · `/strategies/:id` | `{ name, description, market_conditions, timeframes, entry_rules[], exit_rules[], checklist[], risk_rules, target_r_multiple, colour, active }`; GET also returns per-strategy performance stats |
  | GET/POST/DELETE | `/instruments` · `/instruments/:id` | instrument spec: `{ symbol, name, asset_class, exchange, currency, tick_size, pip_size, value_per_point, unit }` |
-@@ -179,7 +265,23 @@ the methodology, the weights and the honest limitations.
+@@ -179,7 +265,41 @@ the methodology, the weights and the honest limitations.
  | POST | `/bots/signals/resolve` | `{ limit }` | resolves pending alerts against real candles → `{ checked, results[], stats }` |
  | GET | `/bots/signals/stats` | — | win rate / expectancy of tracked alerts, by grade |
  | GET | `/bots/sessions` | — | session + killzone windows and the active one |
 -| GET | `/bots/news/:symbol` | `window` (minutes) | high-impact releases inside the window |
-+| GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, settings }`. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
++| GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ state, blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, unavailable?, unavailable_note?, error? }`. `state` is `blocked` \| `clear` \| `unknown` (M111): `clear` means the calendar **was read** and nothing is inside its clock; a read that failed is `unknown`, which carries `unavailable` (the reason), `unavailable_note` (the sentence to display) and `windows.unavailable: true`. An `unknown` read still echoes the pair, so a client can name the windows that were **not** checked — it is never an all-clear. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
++
++### An unreadable calendar is UNKNOWN, not clear (M111)
++
++`state` is a property of the **read**, not of the moment, and it is derived on every check — there
++is no column, settings key or cache for it. `blocked` means a known high-impact release is inside
++its clock (the M110 pair decides); `clear` means the calendar **was read** and nothing is inside its
++clock; `unknown` means the calendar could not be read, and `clear` has to be **earned by a positive
++signal**: the read must be a calendar with `ok:true` and an events list. A `{ok:false}` reply, a
++bare object, an array, a `null`, a thrown read or a thrown string are all `unknown`, each with a
++readable reason in `unavailable` and the display sentence in `unavailable_note`.
++
++Consumers treat `unknown` as **not passing**: `Setup.buildSetups` fails the news row (same recorded
++weight and label) and exposes `filters.news_state` beside `filters.news_blackout`; the desk
++playlist adds a `warn` guard carrying the engine's sentence, and the read-aloud headline says
++`NEWS UNKNOWN: …` with its machine-readable flag false. A caller that consulted no calendar at all
++(the chart and scan surfaces) reports `not_consulted` — never silently mapped to `clear` or
++`unknown` — and its behaviour is unchanged. An outage never writes, never moves the stored pair and
++never fabricates a release to stand down for.
 +
 +### The news stand-down — two clocks, not one (M110)
 +
@@ -1157,7 +1227,7 @@ index 4475db3..7e85eb5 100644
  
  ### Choosing what to measure on `/bots/backtest`
  
-@@ -383,3 +485,848 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
+@@ -383,3 +503,848 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
  | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
  | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
  | `DELETE /api/chart/drawings?symbol=…&tf=…` | clears that market |
@@ -8043,7 +8113,7 @@ index 0000000..dd6a036
 +module.exports = { parseProfitLimit, inputError, retainedState, retainState, DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
 +  evaluate, unavailable, isBlocked, applyToSetups, admissionError, admit, observe, snapshotFields, logEvent, eventsForDay, record, overrideReason, actionPermission };
 diff --git a/src/bots/index.js b/src/bots/index.js
-index 0007b01..18a8fd6 100644
+index 0007b01..b718d25 100644
 --- a/src/bots/index.js
 +++ b/src/bots/index.js
 @@ -16,16 +16,44 @@
@@ -8092,7 +8162,7 @@ index 0007b01..18a8fd6 100644
  
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-@@ -48,10 +76,20 @@ function currenciesOf(symbol) {
+@@ -48,32 +76,92 @@ function currenciesOf(symbol) {
  }
  
  /**
@@ -8104,9 +8174,17 @@ index 0007b01..18a8fd6 100644
 + * `windowMin` here or anywhere else, and a bare number is refused rather than taken to mean
 + * "both sides" (that equivalence is the recorded defect).
 + *
++ * M111 — the read itself has three outcomes and they are NOT interchangeable: `blocked` (a
++ * known release is inside its clock), `clear` (the calendar WAS read and nothing is inside its
++ * clock) and `unknown` (the calendar could not be read). Both failure shapes — the market
++ * layer's `{ok:false}` and a thrown read — are `unknown`, with the reason in `unavailable` and
++ * the sentence in `unavailable_note`. `blackout: null` on an `unknown` read is still true ("no
++ * known release"), but it is no longer the whole answer, so a consumer can never read an
++ * outage as an all-clear.
++ *
 + * @param {string} symbol
 + * @param {object} pair `NewsWindow.plan()` output (or any `{before_min, after_min}` pair)
-+ * @returns {Promise<{blackout:string|null, events:Array, windows:object}>}
++ * @returns {Promise<{state:string, blackout:string|null, unavailable?:string, events:Array, windows:object}>}
   */
 -async function newsCheck(symbol, windowMin = 45) {
 +async function newsCheck(symbol, pair = NewsWindow.plan(null)) {
@@ -8115,8 +8193,31 @@ index 0007b01..18a8fd6 100644
 +  }
    try {
      const cal = await M.getCalendar();
-     const events = (cal && cal.events) || [];
-@@ -62,18 +100,29 @@ async function newsCheck(symbol, windowMin = 45) {
+-    const events = (cal && cal.events) || [];
++    /* M111 — `clear` has to be EARNED by a positive signal, not inferred from the absence of one.
++     * The market layer reports its own failure as `{ok:false}` rather than throwing, and anything
++     * that is not a calendar with an events list (a bare object, an array, a null, a shape change
++     * upstream) is not a successful read either. Before this milestone all of those fell through
++     * to `events: []` and were graded as a quiet calendar. */
++    const read = cal && typeof cal === 'object' && !Array.isArray(cal) ? cal : null;
++    const usable = !!(read && read.ok === true && Array.isArray(read.events));
++    const unavailable = usable ? null : (NewsWindow.reasonOf(read && read.error)
++      || (read ? 'the economic calendar read returned no usable events' : 'the economic calendar read returned no calendar'));
++    const events = usable ? read.events : [];
+     const now = Date.now();
+     const ccys = currenciesOf(symbol);
++    const windows = { before_min: pair.before_min, after_min: pair.after_min, source: pair.source || null, clamped: pair.clamped || [] };
++    if (unavailable) {
++      return {
++        blackout: null, events: [], upcoming: [], currencies: ccys,
++        state: NewsWindow.STATES.UNKNOWN, unavailable,
++        unavailable_note: NewsWindow.unknownNote(unavailable),
++        windows: { ...windows, unavailable: true },
++        error: unavailable,
++      };
++    }
+     const hits = events.filter((e) => {
+       if (!e.date) return false;
        if (!/high/i.test(e.impact || '')) return false;
        const ccy = String(e.currency || '').toUpperCase();
        if (!ccys.some((c) => ccy.includes(c))) return false;
@@ -8132,26 +8233,38 @@ index 0007b01..18a8fd6 100644
        .slice(0, 4)
        .map((e) => ({ title: e.title, currency: e.currency, time: e.date, in_minutes: Math.round((new Date(e.date).getTime() - now) / 60000) }));
 +    const sides = { before: pair.before_min, after: pair.after_min };
++    const blocked = hits.length > 0;
      return {
 -      blackout: hits.length ? `${hits.map((h) => `${h.currency} ${h.title}`).join('; ')} — high-impact release inside ±${windowMin} min. Stand down until it prints.` : null,
 -      events: hits, upcoming, currencies: ccys, window_min: windowMin,
 +      // The numbers in the string are the account's own settings, interpolated rather than
 +      // hardcoded, and the side each blocked release is on is named — so the note can never
 +      // describe a window the app is not applying.
-+      blackout: hits.length ? `${hits.map((h) => `${h.currency} ${h.title}${h.side === 'before' ? ` in ${h.offset_min} min` : ` printed ${h.offset_min} min ago`}`).join('; ')} — inside your news window (${sides.before} min before / ${sides.after} min after a release). ${hits.some((h) => h.side === 'before') ? 'Stand down until it prints.' : 'It has printed — stand down until the settle passes.'}` : null,
++      blackout: blocked ? `${hits.map((h) => `${h.currency} ${h.title}${h.side === 'before' ? ` in ${h.offset_min} min` : ` printed ${h.offset_min} min ago`}`).join('; ')} — inside your news window (${sides.before} min before / ${sides.after} min after a release). ${hits.some((h) => h.side === 'before') ? 'Stand down until it prints.' : 'It has printed — stand down until the settle passes.'}` : null,
 +      events: hits, upcoming, currencies: ccys,
-+      windows: { before_min: sides.before, after_min: sides.after, source: pair.source || null, clamped: pair.clamped || [] },
++      // M111 — `clear` here means the calendar WAS read and nothing was inside its clock. It is
++      // never the value of a read that failed: that is `unknown`, which those consumers treat as
++      // not-passing.
++      state: blocked ? NewsWindow.STATES.BLOCKED : NewsWindow.STATES.CLEAR,
++      windows,
      };
    } catch (e) {
 -    return { blackout: null, events: [], upcoming: [], currencies: currenciesOf(symbol), window_min: windowMin, error: e.message };
-+    // M111 is open and NOT solved here: this branch is unchanged in the one way that matters —
-+    // it reports the failure, and `blackout: null` on this path is the fail-open behaviour the
-+    // M111 row measures. The pair is echoed so the caller still knows which window was in force.
-+    return { blackout: null, events: [], upcoming: [], currencies: currenciesOf(symbol), windows: { before_min: pair.before_min, after_min: pair.after_min, source: pair.source || null, clamped: [], unavailable: true }, error: e.message };
++    // M111 — a thrown read is the SAME outcome as `{ok:false}`: unknown, not quiet. The pair is
++    // still echoed so the caller always knows which windows were in force, and the reason travels
++    // with the payload instead of being swallowed.
++    const unavailable = NewsWindow.reasonOf(e) || 'the economic calendar could not be read';
++    return {
++      blackout: null, events: [], upcoming: [], currencies: currenciesOf(symbol),
++      state: NewsWindow.STATES.UNKNOWN, unavailable,
++      unavailable_note: NewsWindow.unknownNote(unavailable),
++      windows: { before_min: pair.before_min, after_min: pair.after_min, source: pair.source || null, clamped: [], unavailable: true },
++      error: unavailable,
++    };
    }
  }
  
-@@ -97,6 +146,175 @@ function specOf(symbol) {
+@@ -97,6 +185,175 @@ function specOf(symbol) {
  const floorRR = (v) => (Number(v) > 0 ? Number(v) : 1);   // the trader's minimum R:R
  const runRR = (v) => Math.max(2, floorRR(v));              // the setup model's 1:2 runway
  
@@ -8327,7 +8440,7 @@ index 0007b01..18a8fd6 100644
  async function analyse(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const spec = specOf(sym);
-@@ -108,24 +326,41 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -108,24 +365,46 @@ async function analyse(symbol, tf = '15m', opts = {}) {
    const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null };
    const replay = trim > 0 || cut.asOf ? cut : null;
  
@@ -8371,15 +8484,20 @@ index 0007b01..18a8fd6 100644
 +    balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
      newsBlackout: news.blackout, minRR: floorRR(opts.minRR),
 -    topdown: momentum.topdown,          // the method decides whether a side may be armed
++    // M111 — the state travels with the note, so the setup model can fail its news row on an
++    // outage instead of scoring the absence of evidence as evidence of absence. The note is the
++    // sentence for the case that is NOT blocked: the account's own windows when the calendar was
++    // read, and the module's UNKNOWN sentence when it could not be.
++    newsState: news.state,
 +    // M62 (surviving half): the note states the windows this account is actually governed
 +    // by, interpolated from the settings above, instead of naming no window or a stale one.
-+    newsNote: NewsWindow.detail(newsPlan),
++    newsNote: news.state === NewsWindow.STATES.UNKNOWN ? news.unavailable_note : NewsWindow.detail(newsPlan),
 +    topdown: momentum.topdown, useBreakers: !!opts.useBreakers,          // the method decides whether a side may be armed
 +    sessionPref: opts.sessionPref || null,   // M26 — the trader's one window
    });
  
    let prediction = null;
-@@ -137,23 +372,39 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -137,23 +416,39 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      }
    }
  
@@ -8425,7 +8543,7 @@ index 0007b01..18a8fd6 100644
      headline: td.headline || null,
      conviction: td.conviction || null,
      pending_step: (td.steps || []).find((s) => !s.done) || null,
-@@ -168,8 +419,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -168,8 +463,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      // build the *untrimmed* read as well, so a replay can say what happened after
      const L2 = Momentum.topdown.layersFor(tf);
      const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
@@ -8436,7 +8554,7 @@ index 0007b01..18a8fd6 100644
      replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
    }
    const now = Now.build({
-@@ -189,7 +440,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -189,7 +484,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      method_verdict: methodVerdict,
      topdown: td,
      momentum: {
@@ -8452,7 +8570,7 @@ index 0007b01..18a8fd6 100644
        alignment: momentum.alignment, mechanics: momentum.mechanics,
        narrative: momentum.narrative, conflicts: momentum.conflicts,
        htf: momentum.htf, quote: momentum.quote, series: momentum.series,
-@@ -213,6 +471,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -213,6 +515,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
        direction: prediction.direction, setups: prediction.setups, buy: prediction.buy, sell: prediction.sell,
        model: prediction.model, backtest: prediction.backtest, summary: prediction.summary,
        current: predRow || null, error: prediction.error || null,
@@ -8460,7 +8578,7 @@ index 0007b01..18a8fd6 100644
      } : null,
      news,
      daily,
-@@ -227,8 +486,8 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -227,9 +530,12 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
    parts.push(`${sym} ${tf}: ${v.action}${v.grade && v.grade !== 'no-trade' ? ` (${v.grade}, ${v.score}/100)` : ''} — ${v.headline}`);
    if (td.headline) parts.push(`${td.status === 'confirmed' ? 'Method: confirmed' : 'Method: waiting'} — ${td.headline}`);
    if (td.playbook && td.playbook.length) parts.push(`Next: ${td.playbook[0]}`);
@@ -8469,9 +8587,24 @@ index 0007b01..18a8fd6 100644
 +  if (!(td.entry_setup && td.entry_setup.applies) && !td.countertrend && predRow && predRow.p_win != null) parts.push(`Modelled chance ${predRow.p_win}% to the first target (${predRow.similar_setups} similar setups, expected ${predRow.expected_r}R).`);
 +  if (!(td.entry_setup && td.entry_setup.applies) && !td.countertrend && prediction && prediction.backtest && prediction.backtest.expectancy_r != null) parts.push(`This market/timeframe shows ${prediction.backtest.expectancy_r > 0 ? '+' : ''}${prediction.backtest.expectancy_r}R expectancy over ${prediction.backtest.decided} resolved setups.`);
    if (news.blackout) parts.push(`NEWS BLACKOUT: ${news.blackout}`);
++  // M111 — an unreadable calendar is stated in the read-aloud line rather than omitted: a trader
++  // hearing only the graded setup would otherwise never learn that the news check could not run.
++  else if (news.state === NewsWindow.STATES.UNKNOWN) parts.push(`NEWS UNKNOWN: ${news.unavailable_note}`);
    if (daily && daily.status !== 'clear') parts.push(`Personal guardrail: ${daily.message}`);
    if (momentum.conflicts.length) parts.push(`Caution: ${momentum.conflicts.join(' ')}`);
-@@ -266,6 +525,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+   return {
+@@ -242,7 +548,9 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+     next_trigger: v.next_trigger,
+     checks: {
+       momentum: momentum.bias, sweep: !!(setups.candidates[0] && setups.candidates[0].levels),
+-      prediction: predRow ? predRow.p_win : null, news: !news.blackout,
++      // M111 — the headline's news flag is now the STATE, not the absence of a blackout string:
++      // `unknown` is not a pass, so it cannot be reported as one here either.
++      prediction: predRow ? predRow.p_win : null, news: news.state !== NewsWindow.STATES.BLOCKED && news.state !== NewsWindow.STATES.UNKNOWN,
+       guardrails: daily ? daily.status : null,
+     },
+   };
+@@ -266,6 +574,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
   * @param {string} tf
   * @param {{bars?:number, userId?:number, accountId?:number, minRR?:number, balance?:number, riskPct?:number}} opts
   */
@@ -8479,7 +8612,7 @@ index 0007b01..18a8fd6 100644
  async function chart(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const bars = Math.min(Math.max(Number(opts.bars) || 400, 80), 1200);
-@@ -279,44 +539,56 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -279,44 +588,56 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // never disagree about the same market (they did once: the chart asked for 200
    // higher-timeframe candles and the method read a different range from them).
    const [entry, bias, triggerRaw] = await Promise.all([
@@ -8553,7 +8686,7 @@ index 0007b01..18a8fd6 100644
        entry_status: td.status === 'confirmed' ? 'confirmed' : td.status,
        alternatives: { aggressive: crt.aggressive, safer: crt.safer },
        management: {
-@@ -325,9 +597,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -325,9 +646,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
        },
        note: `${crt.side} after the ${crt.sweep.level} sweep failed to hold · ${crt.target_note}`,
      };
@@ -8565,7 +8698,7 @@ index 0007b01..18a8fd6 100644
        ...best.levels,
        entry_status: best.levels.entry_status,
      };
-@@ -335,7 +607,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -335,7 +656,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const smc = {
      price: entry.smc.price, atr: entry.smc.atr, counts: entry.smc.counts,
@@ -8574,7 +8707,7 @@ index 0007b01..18a8fd6 100644
      premium_discount: entry.smc.premium_discount, sessions: entry.smc.sessions,
      order_blocks: entry.smc.order_blocks.slice(0, 8), fvgs: entry.smc.fvgs.slice(0, 8),
      sweeps: entry.smc.sweeps.slice(0, 6), displacement: entry.smc.displacement.slice(0, 4),
-@@ -349,7 +621,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -349,7 +670,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const stack = {
      bias: {
@@ -8583,7 +8716,7 @@ index 0007b01..18a8fd6 100644
        structure: bias.smc.structure ? bias.smc.structure.trend : null,
        state: td.layers.bias.state,
        level: td.layers.bias.range ? { low: td.layers.bias.range.low, high: td.layers.bias.range.high, label: 'CRT range' } : null,
-@@ -370,7 +642,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -370,7 +691,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // the same single answer the analysis strip shows, so the chart and the words
    // on screen can never disagree about what to do
    const now = Now.build({
@@ -8592,7 +8725,7 @@ index 0007b01..18a8fd6 100644
      replay: cut.trim || cut.asOf ? { trim: cut.trim || null, since: null } : null,
      nowMs: opts.nowMs,
      minRR: opts.minRR,
-@@ -380,24 +652,36 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -380,24 +701,36 @@ async function chart(symbol, tf = '15m', opts = {}) {
      ok: true, symbol: sym, timeframe: tf, instrument: spec,
      generated_at: new Date().toISOString(),
      replay: cut.trim || cut.asOf ? { trim: cut.trim || null, as_of: cut.asOf ? new Date(cut.asOf).toISOString() : null } : null,
@@ -8634,7 +8767,7 @@ index 0007b01..18a8fd6 100644
    const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
    const rows = [];
    let cursor = 0;
-@@ -406,13 +690,22 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -406,13 +739,22 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
        const sym = list[cursor++];
        try {
          const [momentum, series] = await Promise.all([
@@ -8661,7 +8794,7 @@ index 0007b01..18a8fd6 100644
          // one row per market: the side the method permits (a scan that lists both
          // a buy and a sell for the same symbol is not a scan, it is a coin toss)
          const best = (momentum.topdown && momentum.topdown.direction
-@@ -421,10 +714,21 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -421,10 +763,21 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
          rows.push({
            symbol: sym, timeframe: tf, ok: true,
            price: series.price, atr: series.atr,
@@ -8686,7 +8819,7 @@ index 0007b01..18a8fd6 100644
            entry_status: best && best.levels ? best.levels.entry_status : null,
            entry: best && best.levels ? best.levels.entry : null,
            stop: best && best.levels ? best.levels.stop : null,
-@@ -469,6 +773,7 @@ async function ensureSignalsTable() {
+@@ -469,6 +822,7 @@ async function ensureSignalsTable() {
      rr_primary REAL, rr_final REAL,
      mechanics REAL,
      sentiment TEXT,           -- the read-aloud headline at the time
@@ -8694,7 +8827,7 @@ index 0007b01..18a8fd6 100644
      entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf
      mtf_tf TEXT,
      risk_atr REAL,
-@@ -486,7 +791,8 @@ async function ensureSignalsTable() {
+@@ -486,7 +840,8 @@ async function ensureSignalsTable() {
    const cols = await db.prepare('PRAGMA table_info(bot_signals)').all();
    const have = new Set((cols || []).map((c) => c.name));
    for (const [name, type] of [['entry_mode', 'TEXT'], ['mtf_tf', 'TEXT'], ['risk_atr', 'REAL'],
@@ -8704,7 +8837,7 @@ index 0007b01..18a8fd6 100644
      if (!have.has(name)) await db.exec(`ALTER TABLE bot_signals ADD COLUMN ${name} ${type}`);
    }
  }
-@@ -497,55 +803,70 @@ async function ensureSignalsTable() {
+@@ -497,55 +852,70 @@ async function ensureSignalsTable() {
   * re-derive anything from a fresh analysis — it stores exactly what the
   * trader was shown, so the bot can be graded on it later.
   */
@@ -8790,7 +8923,7 @@ index 0007b01..18a8fd6 100644
      const info = await ins.run(
        userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
        predRow ? predRow.p_win : null,
-@@ -553,8 +874,10 @@ async function saveSignals(userId, payload) {
+@@ -553,8 +923,10 @@ async function saveSignals(userId, payload) {
        L.targets.length > 1 ? L.targets[L.targets.length - 1].price : null,
        L.rr_primary, L.rr_final,
        payload.momentum ? payload.momentum.mechanics.score : null,
@@ -8802,7 +8935,7 @@ index 0007b01..18a8fd6 100644
      );
      out.push(info.lastInsertRowid);
      saved++;
-@@ -562,6 +885,33 @@ async function saveSignals(userId, payload) {
+@@ -562,6 +934,33 @@ async function saveSignals(userId, payload) {
    return { saved, ids: out };
  }
  
@@ -8836,7 +8969,7 @@ index 0007b01..18a8fd6 100644
  async function listSignals(userId, { status = null, limit = 50 } = {}) {
    await ensureSignalsTable();
    const rows = status
-@@ -633,9 +983,13 @@ async function signalStats(userId) {
+@@ -633,9 +1032,13 @@ async function signalStats(userId) {
    const resolved = all.filter((s) => ['win', 'loss', 'expired'].includes(s.status));
    const wins = resolved.filter((s) => s.status === 'win');
    const byGrade = {};
@@ -8850,7 +8983,7 @@ index 0007b01..18a8fd6 100644
    }
    return {
      total: all.length,
-@@ -646,6 +1000,8 @@ async function signalStats(userId) {
+@@ -646,6 +1049,8 @@ async function signalStats(userId) {
      win_rate: resolved.length ? r2((wins.length / resolved.length) * 100) : null,
      total_r: r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0)),
      expectancy_r: resolved.length ? r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0) / resolved.length) : null,
@@ -9166,7 +9299,7 @@ index 2e664e5..2376466 100644
 +  biasHysteresis, nextBiasInvalidation,
  };
 diff --git a/src/bots/now.js b/src/bots/now.js
-index 66e0bbb..1b2b0e0 100644
+index 66e0bbb..16afcbd 100644
 --- a/src/bots/now.js
 +++ b/src/bots/now.js
 @@ -21,6 +21,10 @@
@@ -9417,16 +9550,23 @@ index 66e0bbb..1b2b0e0 100644
      otherSide = {
        dir: -direction,
        side: otherDir.side,
-@@ -275,7 +387,7 @@ function build(p = {}) {
+@@ -275,7 +387,14 @@ function build(p = {}) {
    // the sub-floor warning is rendered as its own red block under the order — it is
    // not repeated in the guard list (measured in the browser: both printed)
    if (news && news.blackout) guards.push({ level: 'block', text: news.blackout });
 -  if (daily && daily.status && daily.status !== 'clear') guards.push({ level: 'warn', text: daily.message || String(daily.status) });
++  /* M111 — an unreadable calendar is SAID, not omitted. It is a warning rather than a block: the
++   * news stand-down is a blackout on a known release, and an outage is the absence of that
++   * information, so this reports "unknown" in the engine's own sentence (the payload carries it)
++   * instead of letting the playlist read as if the calendar had been consulted and found quiet. */
++  else if (news && news.state === 'unknown') {
++    guards.push({ level: 'warn', text: news.unavailable_note || 'News risk unknown — the economic calendar could not be read, so the news windows were not checked.' });
++  }
 +  if (daily && daily.status && daily.status !== 'clear') guards.push({ level: personalBlocked ? 'block' : 'warn', text: daily.message || String(daily.status) });
    if (freshness.state === 'stale' || freshness.state === 'aging') guards.push({ level: 'warn', text: freshness.note });
    if (!kzNow && !blocked && direction) guards.push({ level: 'info', text: 'Outside every killzone: the playlist only trades the London and New York windows.' });
  
-@@ -305,7 +417,8 @@ function build(p = {}) {
+@@ -305,7 +424,8 @@ function build(p = {}) {
        replay: !!replay, trim: replay ? replay.trim : 0,
      },
      live: quote ? { price: num(quote.price), at: quote.at ? new Date(quote.at).toISOString() : null, provider: quote.provider || null, drift_atr: drift === null ? null : Number(drift.toFixed(2)) } : null,
@@ -9436,7 +9576,7 @@ index 66e0bbb..1b2b0e0 100644
      armed: !!order,
      order,
      watch,
-@@ -315,11 +428,12 @@ function build(p = {}) {
+@@ -315,11 +435,12 @@ function build(p = {}) {
      guards,
      other_side: otherSide,
      conviction: convictionTier,
@@ -9590,7 +9730,7 @@ index 0000000..f43d8e2
 +}
 +module.exports = { discover, scope, forSweep, annotate, unknown, TF_MS, number, samePrice };
 diff --git a/src/bots/setup.js b/src/bots/setup.js
-index 138beb4..4606b4d 100644
+index 138beb4..52f7485 100644
 --- a/src/bots/setup.js
 +++ b/src/bots/setup.js
 @@ -15,13 +15,27 @@
@@ -9897,7 +10037,7 @@ index 138beb4..4606b4d 100644
    for (const p of outward) {
      const key = p.price.toFixed(5);
      if (seen.has(key)) continue;
-@@ -70,12 +337,149 @@ function targetPools(analysis, dir, entry) {
+@@ -70,60 +337,242 @@ function targetPools(analysis, dir, entry) {
   *                                    only that side can be armed.
   * @returns {{candidates:Array, verdict:object}}
   */
@@ -10046,8 +10186,17 @@ index 138beb4..4606b4d 100644
 +  const standDown = standDownFor(sessions, ctx.standDown);
    const strike = sessions.quality != null ? sessions.quality : 0.5;
    const blackout = ctx.newsBlackout || null;
++  /* M111 — the news row is only a PASS when the calendar was actually read. `ctx.newsState`
++   * carries the engine's own three-state read (`blocked` / `clear` / `unknown`); an outage is
++   * `unknown`, and an unknown news read is NOT a pass — evidence of absence requires the absence
++   * to have been observed. A caller that consulted no calendar at all (the chart and scan
++   * surfaces) supplies no state: that is recorded as `not_consulted` in the payload below rather
++   * than being mapped onto either `clear` or `unknown`, and its behaviour is unchanged — this fix
++   * is about the read that FAILED, not about every surface that does not read. */
++  const newsState = ctx.newsState || 'not_consulted';
++  const newsUnknown = newsState === 'unknown';
    const ind = ctx.indicators || null;
-@@ -83,47 +487,83 @@ function buildSetups(analysis, ctx = {}) {
+   const momentum = ctx.momentum || null;
    const td = ctx.topdown || null;                   // the method gate
  
    const candidates = [];
@@ -10154,7 +10303,7 @@ index 138beb4..4606b4d 100644
  
      if (zone && zone.overlap) add('nested', 'Zone + imbalance overlap (confluence)', true, 8, 'The order block contains an unfilled FVG — two reasons for price to react at the same price.');
  
-@@ -135,10 +575,57 @@ function buildSetups(analysis, ctx = {}) {
+@@ -135,10 +584,57 @@ function buildSetups(analysis, ctx = {}) {
  
      /* ------------------------------------------------------------- 5. trend alignment */
      const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
@@ -10214,7 +10363,7 @@ index 138beb4..4606b4d 100644
      if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
  
      /* ------------------------------------------------------------- 6. higher-timeframe bias */
-@@ -155,12 +642,18 @@ function buildSetups(analysis, ctx = {}) {
+@@ -155,12 +651,18 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      /* ------------------------------------------------------- 8. session / killzone */
@@ -10223,8 +10372,9 @@ index 138beb4..4606b4d 100644
        sessions.note || 'Session filter unavailable.');
  
      /* ---------------------------------------------------------------- 9. news */
-     add('news', 'No high-impact news in the window', !blackout, 10,
+-    add('news', 'No high-impact news in the window', !blackout, 10,
 -      blackout ? blackout : 'No high-impact releases due in the next 60 minutes.');
++    add('news', 'No high-impact news in the window', !blackout && !newsUnknown, 10,
 +      // M4 fixed the old "the next 60 minutes" fallback, which was wrong twice (it named a
 +      // hardcoded number and described a symmetric test as forward-only). M62's surviving
 +      // half is closed by M110 here: the note does not stay silent about the window — it
@@ -10235,7 +10385,7 @@ index 138beb4..4606b4d 100644
  
      /* ------------------------------------------------------------- 10. volatility */
      const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
-@@ -169,22 +662,68 @@ function buildSetups(analysis, ctx = {}) {
+@@ -169,22 +671,68 @@ function buildSetups(analysis, ctx = {}) {
  
      /* --------------------------------------------------------- 11. liquidity runway */
      let levels = null;
@@ -10313,7 +10463,7 @@ index 138beb4..4606b4d 100644
          const extreme = long ? pd.range_high : pd.range_low;
          const reward = Math.abs(extreme - entry);
          if (reward > 0) {
-@@ -194,28 +733,63 @@ function buildSetups(analysis, ctx = {}) {
+@@ -194,28 +742,63 @@ function buildSetups(analysis, ctx = {}) {
            }
          }
        }
@@ -10394,7 +10544,7 @@ index 138beb4..4606b4d 100644
  
        // entry status: are we at the zone, or chasing?
        let entryStatus, entryNote;
-@@ -230,38 +804,88 @@ function buildSetups(analysis, ctx = {}) {
+@@ -230,38 +813,88 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
@@ -10498,7 +10648,7 @@ index 138beb4..4606b4d 100644
        };
      } else {
        add('runway', 'Open runway to opposing liquidity', false, 14, 'No zone, so no defined risk — the model needs a level to trade against.');
-@@ -271,37 +895,190 @@ function buildSetups(analysis, ctx = {}) {
+@@ -271,37 +904,190 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -10696,7 +10846,7 @@ index 138beb4..4606b4d 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +1088,60 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +1097,60 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -10763,7 +10913,7 @@ index 138beb4..4606b4d 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -331,7 +1150,11 @@ function buildSetups(analysis, ctx = {}) {
+@@ -331,7 +1159,11 @@ function buildSetups(analysis, ctx = {}) {
    candidates.sort((a, b) => b.score - a.score);
  
    /* --------------------------------------------------------------- top verdict */
@@ -10776,7 +10926,7 @@ index 138beb4..4606b4d 100644
    const buy = candidates.find((c) => c.dir === 1);
    const sell = candidates.find((c) => c.dir === -1);
  
-@@ -350,8 +1173,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -350,8 +1182,7 @@ function buildSetups(analysis, ctx = {}) {
      const aligned = candidates.find((c) => c.dir === td.direction);
      if (aligned) best = aligned;                    // the higher timeframe chooses the side
    }
@@ -10786,7 +10936,7 @@ index 138beb4..4606b4d 100644
    const methodBlocked = !!(td && (td.blocked || (td.direction !== 0 && (!best || best.dir !== td.direction))));
  
    let verdict;
-@@ -367,20 +1189,22 @@ function buildSetups(analysis, ctx = {}) {
+@@ -367,20 +1198,22 @@ function buildSetups(analysis, ctx = {}) {
        detail: `${why}${pendingStep(td)}`,
        next_trigger: [td.playbook && td.playbook.length ? td.playbook[0] : null, nextTriggerHint(analysis)].filter(Boolean),
        source: 'topdown-gate', method, setup_action: setupAction,
@@ -10814,7 +10964,7 @@ index 138beb4..4606b4d 100644
        : `${best.grade} ${best.side} setup`;
      const methodOk = !td ? null : (td.direction !== 0 && td.direction === best.dir);
      verdict = {
-@@ -399,7 +1223,52 @@ function buildSetups(analysis, ctx = {}) {
+@@ -399,8 +1232,56 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -10865,9 +11015,13 @@ index 138beb4..4606b4d 100644
 +        note: phaseInfo.note,
 +      },
        news_blackout: blackout || null,
++      // M111 — the state beside the sentence. `unknown` next to a null blackout is the honest
++      // pair: nothing is known to be inside the window, and the window was never checked.
++      news_state: newsState,
        min_rr: minRR,
      },
-@@ -430,4 +1299,8 @@ function pendingStep(td) {
+   };
+@@ -430,4 +1311,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  
@@ -14871,10 +15025,10 @@ index 0000000..36e58eb
 +module.exports={invalid,text,reviewFields,fingerprint,knownNet,info,summary,days,reviewTrade,syncLosses,reflectionsForDay,reflectLoss};
 diff --git a/src/news-window.js b/src/news-window.js
 new file mode 100644
-index 0000000..318045e
+index 0000000..7013c55
 --- /dev/null
 +++ b/src/news-window.js
-@@ -0,0 +1,215 @@
+@@ -0,0 +1,264 @@
 +'use strict';
 +/**
 + * ─────────────────────────────────────────────────────────────────────────────
@@ -14910,8 +15064,9 @@ index 0000000..318045e
 + *     it does not grade, score or override anything: the blackout is still the same
 + *     veto it was, applied to the same analyse path.
 + *   - Nothing here fetches a calendar. `hit()` is pure arithmetic over whatever
-+ *     `M.getCalendar()` returned; a calendar that cannot be read is a separate finding
-+ *     (M111) and is NOT solved here.
++ *     `M.getCalendar()` returned, and the state vocabulary below (M111) is pure too: it
++ *     classifies the READ, it does not perform it. A calendar that cannot be read is
++ *     `unknown` — never `clear`.
 + *   - No provider/broker/pixel/human proof, and no claim about volatility, spreads or
 + *     what a release will do to price: the rule is a stand-down clock, nothing else.
 + * ────────────────────────────────────────────────────────────────────────────*/
@@ -15078,9 +15233,57 @@ index 0000000..318045e
 +  };
 +}
 +
++/* ─────────────────────────────────────────────── M111: UNKNOWN IS A STATE OF ITS OWN ──
++ * The stand-down above is only as true as the calendar it is measured against, and Ep 30
++ * frames the block as a SAFETY mechanism — "it prevent you from getting wiped out ... it's
++ * simply a mechanism for Edge Flow to protect you from impulse", "it's trying to keep you
++ * alive and disciplined". A safety gate that answers "clear" when it cannot SEE is the
++ * wrong default: the failure would be indistinguishable from a genuinely quiet week, and
++ * the all-clear would be manufactured rather than observed.
++ *
++ * So a calendar read has exactly three outcomes, and they are mutually exclusive:
++ *
++ *   blocked  a known high-impact release is inside its clock (the stand-down above)
++ *   clear    the calendar WAS read and nothing high-impact is inside its clock
++ *   unknown  the calendar could not be read — NOT clear, and not a pass
++ *
++ * `stateOf()` is the one place that mapping lives, ordered so a known block can never be
++ * masked by a read that failed later, and `unknownNote()` is the sentence shown in place of
++ * an all-clear. Nothing here fetches anything or claims that a release will move price: this
++ * module owns the vocabulary, `bots/index.js` owns the read.
++ */
++const STATES = { BLOCKED: 'blocked', CLEAR: 'clear', UNKNOWN: 'unknown' };
++
++function stateOf({ blackout = null, unavailable = null } = {}) {
++  if (blackout) return STATES.BLOCKED;
++  return unavailable ? STATES.UNKNOWN : STATES.CLEAR;
++}
++
++/** The reason as a readable phrase: a string is used as-is, an Error/object contributes its
++ * `message` (or a compact JSON form), and a circular or otherwise unusable value degrades to a
++ * phrase rather than printing `[object Object]` at the trader. */
++function reasonOf(unavailable) {
++  if (unavailable == null) return '';
++  if (typeof unavailable === 'string') return unavailable.trim();
++  if (typeof unavailable === 'object') {
++    if (typeof unavailable.message === 'string' && unavailable.message.trim()) return unavailable.message.trim();
++    try { const j = JSON.stringify(unavailable); if (j && j !== '{}') return j; } catch { /* circular */ }
++    return 'unreadable calendar error';
++  }
++  return String(unavailable);
++}
++
++function unknownNote(unavailable) {
++  const reason = reasonOf(unavailable);
++  const why = reason ? ` (${reason})` : '';
++  return `News risk UNKNOWN — the economic calendar could not be read${why}. Nothing was checked against your stand-down windows, so this is NOT an all-clear.`;
++}
++
 +function policy() {
 +  return {
 +    version: VERSION,
++    states: STATES,
++    unknown_is_not_clear: true,
 +    before: { field: BEFORE.field, default: BEFORE.default, min: BEFORE.min, max: BEFORE.max, recommended_min: BEFORE.recommended_min },
 +    after: { field: AFTER.field, default: AFTER.default, min: AFTER.min, max: AFTER.max, recommended_min: AFTER.recommended_min, recommended_max: AFTER.recommended_max },
 +    single_knob: false,
@@ -15089,7 +15292,7 @@ index 0000000..318045e
 +  };
 +}
 +
-+module.exports = { VERSION, BEFORE, AFTER, BASIS, DOCTRINE, parse, parsePair, plan, hit, detail, noteFor, policy, invalid, LEGACY_SINGLE };
++module.exports = { VERSION, STATES, BEFORE, AFTER, BASIS, DOCTRINE, parse, parsePair, plan, hit, detail, noteFor, stateOf, unknownNote, reasonOf, policy, invalid, LEGACY_SINGLE };
 diff --git a/src/opportunities.js b/src/opportunities.js
 new file mode 100644
 index 0000000..3c6cd1b

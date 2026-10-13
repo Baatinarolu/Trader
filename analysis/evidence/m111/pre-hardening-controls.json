@@ -1,0 +1,38 @@
+{
+  "engine": {
+    "tree": "the delivered runtime with the M111 vocabulary present and the engine and its consumers still the committed M110 files (the policy stage itself)",
+    "script": "analysis/probe-m111-engine.js",
+    "pass": 8,
+    "fail": 13,
+    "exit_code": 1,
+    "output": "pre-hardening-engine.txt",
+    "scope": "The unchanged M111 probes on the pre-hardening runtime: the module can name the states, but the engine still answers a failed read with a quiet payload, so the unknown-specific assertions measure the fail-open rather than a crash."
+  },
+  "consumers": {
+    "tree": "the delivered runtime with the M111 vocabulary present and the engine and its consumers still the committed M110 files (the policy stage itself)",
+    "script": "analysis/probe-m111-consumers.js",
+    "pass": 5,
+    "fail": 9,
+    "exit_code": 1,
+    "output": "pre-hardening-consumers.txt",
+    "scope": "The unchanged M111 probes on the pre-hardening runtime: the module can name the states, but the engine still answers a failed read with a quiet payload, so the unknown-specific assertions measure the fail-open rather than a crash."
+  },
+  "api": {
+    "tree": "the delivered runtime with the M111 vocabulary present and the engine and its consumers still the committed M110 files (the policy stage itself)",
+    "script": "analysis/probe-m111-api.js",
+    "pass": 1,
+    "fail": 4,
+    "exit_code": 1,
+    "output": "pre-hardening-api.txt",
+    "scope": "The unchanged M111 probes on the pre-hardening runtime: the module can name the states, but the engine still answers a failed read with a quiet payload, so the unknown-specific assertions measure the fail-open rather than a crash."
+  },
+  "hardening": {
+    "tree": "the delivered runtime with the M111 vocabulary present and the engine and its consumers still the committed M110 files (the policy stage itself)",
+    "script": "analysis/probe-m111-hardening.js",
+    "pass": 1,
+    "fail": 10,
+    "exit_code": 1,
+    "output": "pre-hardening-hardening.txt",
+    "scope": "The unchanged M111 probes on the pre-hardening runtime: the module can name the states, but the engine still answers a failed read with a quiet payload, so the unknown-specific assertions measure the fail-open rather than a crash."
+  }
+}

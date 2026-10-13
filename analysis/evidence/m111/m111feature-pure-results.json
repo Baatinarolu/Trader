@@ -1,0 +1,112 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 26,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "there are exactly three states, and they are the words the fix is about",
+      "passed": true
+    },
+    {
+      "label": "the three states are distinct strings, so no consumer can compare them with `!`",
+      "passed": true
+    },
+    {
+      "label": "and the list is closed: no fourth state is implied anywhere in the module",
+      "passed": true
+    },
+    {
+      "label": "a known release maps to `blocked` even if a later read failed",
+      "passed": true
+    },
+    {
+      "label": "a failed read with no known release maps to `unknown` — the whole point of the fix",
+      "passed": true
+    },
+    {
+      "label": "a successful read with nothing inside the clock maps to `clear`",
+      "passed": true
+    },
+    {
+      "label": "an empty object is `clear` rather than a silent unknown, so the honest-empty-week case is not folded into the outage case",
+      "passed": true
+    },
+    {
+      "label": "a missing argument does not throw and is `clear`",
+      "passed": true
+    },
+    {
+      "label": "a plausibly-truthy but empty `unavailable` is not unknown: the states are decided by the VALUE, not by the caller's keys",
+      "passed": true
+    },
+    {
+      "label": "the unknown sentence says UNKNOWN in the trader's face, so it cannot be skimmed as an all-clear",
+      "passed": true
+    },
+    {
+      "label": "it names the reason it could not read, so the failure is attributable",
+      "passed": true
+    },
+    {
+      "label": "it states what was NOT done, rather than implying the windows were checked and found quiet",
+      "passed": true
+    },
+    {
+      "label": "it refuses the all-clear explicitly",
+      "passed": true
+    },
+    {
+      "label": "and it names NO window number, so it cannot be misread as \"the window was applied and nothing was found\" (that is the M110 pair's job, and the pair is echoed separately)",
+      "passed": true
+    },
+    {
+      "label": "a missing reason still yields a complete sentence with no stray brackets",
+      "passed": true
+    },
+    {
+      "label": "an object reason is stringified rather than printed as \"[object Object]\" or as an empty gap",
+      "passed": true
+    },
+    {
+      "label": "two calls with the same reason produce the same bytes — the sentence is data, not a log line",
+      "passed": true
+    },
+    {
+      "label": "the policy advertises the states and the fact that unknown is not clear, so a caller can read the rule without guessing",
+      "passed": true
+    },
+    {
+      "label": "M110's two settings are untouched by M111: same fields, same defaults, same floor, still no single knob",
+      "passed": true
+    },
+    {
+      "label": "the module is still a LEAF: it requires nothing at all, so the state vocabulary cannot pull in the app, a database or a fetcher",
+      "passed": true
+    },
+    {
+      "label": "it still calls no clock of its own — the read is classified from what it is GIVEN",
+      "passed": true
+    },
+    {
+      "label": "it still performs no I/O and holds no cache",
+      "passed": true
+    },
+    {
+      "label": "the module still exports no write path, so \"unknown\" can never be persisted as if it were a stored fact",
+      "passed": true
+    },
+    {
+      "label": "M110's one-number refusal is intact in the same file, so closing M111 did not reopen the split-knob defect",
+      "passed": true
+    },
+    {
+      "label": "the unknown path has no separate code and no new error class: it is a STATE on a successful read, not an exception to catch",
+      "passed": true
+    }
+  ],
+  "scope": "M111 module states: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

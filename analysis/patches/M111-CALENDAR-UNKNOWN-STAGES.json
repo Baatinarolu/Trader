@@ -1,0 +1,636 @@
+{
+  "base_commit": "b39d9ef5ffd526550ad58dc1b5c5385754a32aad",
+  "parent": "Actual M110 Git release tree (146 files) as the M111 parent; the inherited M110 parent (the actual c09574e M109 release), the M109 parent and every older parent rebuilt by saved reverse patches and asserted against the frozen proofs. M111 upgrades the parent database in place WITHOUT adding or changing a single schema object: the same failing read answers `unknown` on the delivered tree where the parent answered with a quiet payload that had no state at all.",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 106,
+    "partial": 2,
+    "todo": 24,
+    "no_action": 0,
+    "partition_groups": 8,
+    "partial_ids": [
+      "M30",
+      "M103"
+    ],
+    "todo_ids": [
+      "M12",
+      "M13",
+      "M15",
+      "M17",
+      "M18",
+      "M19",
+      "M45",
+      "M46",
+      "M49",
+      "M53",
+      "M55",
+      "M56",
+      "M59",
+      "M60",
+      "M65",
+      "M66",
+      "M67",
+      "M72",
+      "M73",
+      "M74",
+      "M112",
+      "M115",
+      "M117",
+      "M125"
+    ]
+  },
+  "feature": {
+    "pass": 154,
+    "fail": 0,
+    "probes": 8,
+    "scope": "REPORTED completed assertions; literal clocks/journals/DOM only. The calendar-read states (blocked/clear/unknown) measured on the module, over HTTP, through the engine and its consumers, across a feed outage, a recovery and a restart, and by upgrading the committed M110 release. The sandbox has no market or calendar network, so the calendar is fed through the app\u2019s own fetch path by a shim and the thrown-read path by a patched reader; no live-feed, provider, broker, pixel or human proof is claimed, and nothing here says what a release does to price. RAW failures/early aborts, DECLARED assumptions and every frozen milestone-only schema negative remain SEPARATE."
+  },
+  "prior_cohorts_rerun": {
+    "m110feature": {
+      "pass": 253,
+      "fail": 5,
+      "probes": 9,
+      "completed_nonzero": 2,
+      "evidence": "analysis/evidence/m110/feature-summary.json"
+    },
+    "m109feature": {
+      "pass": 166,
+      "fail": 2,
+      "probes": 9,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m109/feature-summary.json"
+    },
+    "m108feature": {
+      "pass": 257,
+      "fail": 2,
+      "probes": 9,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m108/feature-summary.json"
+    },
+    "m107feature": {
+      "pass": 230,
+      "fail": 2,
+      "probes": 9,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m108/m107feature-summary.json"
+    },
+    "m106feature": {
+      "pass": 316,
+      "fail": 2,
+      "probes": 10,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m108/m106feature-summary.json"
+    },
+    "m105feature": {
+      "pass": 140,
+      "fail": 2,
+      "probes": 10,
+      "completed_nonzero": 1,
+      "evidence": "analysis/evidence/m108/m105feature-summary.json"
+    }
+  },
+  "inherited_arms_rerun_this_session": {
+    "note": "RAW, DECLARED and the live-provider arm were re-run on this tree in this session through analysis/run-m111-verification.py and reproduce the committed records exactly, so they are this session\u2019s measurements rather than an inherited claim.",
+    "raw": {
+      "pass": 596,
+      "fail": 156,
+      "probes": 31,
+      "completed_nonzero": 21,
+      "timeout_no_exit": 1,
+      "summaryless": 1
+    },
+    "declared": {
+      "pass": 824,
+      "fail": 4,
+      "probes": 31,
+      "completed_nonzero": 2
+    },
+    "live_provider_attempts": {
+      "pass": 70,
+      "fail": 1,
+      "completed_nonzero": 6,
+      "summaryless": 5
+    }
+  },
+  "native_arms_inherited_not_rerun": {
+    "note": "The native API/bots provider arms need a market provider this sandbox cannot reach; the committed M108 record stands and is asserted as an inherited fact. M111 changes no provider call, no route shape and no schema.",
+    "native": [
+      {
+        "arm": "parent",
+        "suite": "api",
+        "server_app": "/tmp/m108-parent/app",
+        "scripts_unchanged": true,
+        "pass": null,
+        "fail": null,
+        "exit_code": 2,
+        "status": "completed",
+        "output": "native-parent-api.txt",
+        "parity_fills": null,
+        "parity_mismatches": null,
+        "scope": "Unchanged api-test on a FRESH database: a live entry is refused by the mandatory pre-market routine (no selected window on a new account), so the run aborts with exit 2 and no summary \u2014 identically on the M107 parent tree and on the delivered tree. The inherited M107 record 121/0 came from that session\u2019s declared prepared workspace and is not reproducible from a fresh database on either tree; it is left as committed, never rewritten. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+      },
+      {
+        "arm": "parent",
+        "suite": "bots",
+        "server_app": "/tmp/m108-parent/app",
+        "scripts_unchanged": true,
+        "pass": 198,
+        "fail": 8,
+        "exit_code": 1,
+        "status": "completed",
+        "output": "native-parent-bots.txt",
+        "parity_fills": 15,
+        "parity_mismatches": 0,
+        "scope": "Unchanged bots-test on a FRESH database: the mandatory-routine negatives are retained and the synthetic random-walk fill parity count moves with the wall clock (15 here, 19 in the M107 record, 15 at the M106 delivery) with 0 mismatches \u2014 identical numbers on the M107 parent tree and on the delivered tree. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+      },
+      {
+        "arm": "raw",
+        "suite": "api",
+        "server_app": "/home/user/Trader/extracted/tradejournal",
+        "scripts_unchanged": true,
+        "pass": null,
+        "fail": null,
+        "exit_code": 2,
+        "status": "completed",
+        "output": "native-raw-api.txt",
+        "parity_fills": null,
+        "parity_mismatches": null,
+        "scope": "Unchanged api-test on a FRESH database: a live entry is refused by the mandatory pre-market routine (no selected window on a new account), so the run aborts with exit 2 and no summary \u2014 identically on the M107 parent tree and on the delivered tree. The inherited M107 record 121/0 came from that session\u2019s declared prepared workspace and is not reproducible from a fresh database on either tree; it is left as committed, never rewritten. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+      },
+      {
+        "arm": "raw",
+        "suite": "bots",
+        "server_app": "/home/user/Trader/extracted/tradejournal",
+        "scripts_unchanged": true,
+        "pass": 198,
+        "fail": 8,
+        "exit_code": 1,
+        "status": "completed",
+        "output": "native-raw-bots.txt",
+        "parity_fills": 15,
+        "parity_mismatches": 0,
+        "scope": "Unchanged bots-test on a FRESH database: the mandatory-routine negatives are retained and the synthetic random-walk fill parity count moves with the wall clock (15 here, 19 in the M107 record, 15 at the M106 delivery) with 0 mismatches \u2014 identical numbers on the M107 parent tree and on the delivered tree. Original assertions/cleanup and synthetic offline candles; not broker/live/pixels/edge/production or human/meditation proof."
+      }
+    ]
+  },
+  "declared_negatives": [
+    {
+      "cohort": "M110",
+      "suite": "m110feature/engine",
+      "frozen_assertion": "M110 does not claim to fix M111: a failed calendar still reaches this rule as a QUIET one",
+      "evidence": "analysis/evidence/m110/m110feature-engine.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 state (the fail-open read, its silent all-clear on an outage and the marker that said so). M111 changes that measurement on purpose, so the assertion now fails and is retained by name rather than deleted: it is the record of the gap this milestone closed."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/engine",
+      "frozen_assertion": "the engine source keeps the M111 marker at that exact branch, so closing M111 later cannot be mistaken for a regression",
+      "evidence": "analysis/evidence/m110/m110feature-engine.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 state (the fail-open read, its silent all-clear on an outage and the marker that said so). M111 changes that measurement on purpose, so the assertion now fails and is retained by name rather than deleted: it is the record of the gap this milestone closed."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "the served payload has no top-level `window_min` any more",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 state (the fail-open read, its silent all-clear on an outage and the marker that said so). M111 changes that measurement on purpose, so the assertion now fails and is retained by name rather than deleted: it is the record of the gap this milestone closed."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "a genuinely empty week yields a clear payload that is distinguishable from a blocked one but not from an outage",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 state (the fail-open read, its silent all-clear on an outage and the marker that said so). M111 changes that measurement on purpose, so the assertion now fails and is retained by name rather than deleted: it is the record of the gap this milestone closed."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "an M111 outage reaches this consumer as silence",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "M110 wrote this assertion to measure the pre-M111 state (the fail-open read, its silent all-clear on an outage and the marker that said so). M111 changes that measurement on purpose, so the assertion now fails and is retained by name rather than deleted: it is the record of the gap this milestone closed."
+    },
+    {
+      "cohort": "m109feature",
+      "suite": "m109feature/migration",
+      "pass": 13,
+      "fail": 2,
+      "frozen_assertion": "M109 adds NO schema object of any kind",
+      "inherited_facts_detail": "accounts",
+      "why": "the whole-schema assertion of the M109 migration probe says that release added ONLY its own schema objects, and the same probe compares the inherited facts of every table including `accounts`. M110 added two columns to `accounts` (and M111 adds none), so exactly two assertions fail: the whole-schema one and the inherited-facts one, which names `accounts` as the only differing table (the M105 probe prints `undefined` there \u2014 its own committed output, unchanged). The probe text, its failing labels and its nonzero exit are preserved in analysis/evidence/m109/m109feature-migration.txt; its own runner assert trips on it, and nothing was edited to make it pass."
+    },
+    {
+      "cohort": "m108feature",
+      "suite": "feature/migration",
+      "pass": 19,
+      "fail": 2,
+      "frozen_assertion": "ONLY the practice tables",
+      "inherited_facts_detail": "accounts",
+      "why": "the M108 practice-only schema assertion says that release added ONLY its own schema objects, and the same probe compares the inherited facts of every table including `accounts`. M110 added two columns to `accounts` (and M111 adds none), so exactly two assertions fail: the whole-schema one and the inherited-facts one, which names `accounts` as the only differing table (the M105 probe prints `undefined` there \u2014 its own committed output, unchanged). The probe text, its failing labels and its nonzero exit are preserved in analysis/evidence/m108/feature-migration.txt; its own runner assert trips on it, and nothing was edited to make it pass."
+    },
+    {
+      "cohort": "m107feature",
+      "suite": "m107feature/migration",
+      "pass": 16,
+      "fail": 2,
+      "frozen_assertion": "ONLY the intention table",
+      "inherited_facts_detail": "accounts",
+      "why": "the M107 intention-only schema assertion says that release added ONLY its own schema objects, and the same probe compares the inherited facts of every table including `accounts`. M110 added two columns to `accounts` (and M111 adds none), so exactly two assertions fail: the whole-schema one and the inherited-facts one, which names `accounts` as the only differing table (the M105 probe prints `undefined` there \u2014 its own committed output, unchanged). The probe text, its failing labels and its nonzero exit are preserved in analysis/evidence/m108/m107feature-migration.txt; its own runner assert trips on it, and nothing was edited to make it pass."
+    },
+    {
+      "cohort": "m106feature",
+      "suite": "m106feature/migration",
+      "pass": 16,
+      "fail": 2,
+      "frozen_assertion": "ONLY state-gate table",
+      "inherited_facts_detail": "accounts",
+      "why": "the M106 state-gate-only schema assertion says that release added ONLY its own schema objects, and the same probe compares the inherited facts of every table including `accounts`. M110 added two columns to `accounts` (and M111 adds none), so exactly two assertions fail: the whole-schema one and the inherited-facts one, which names `accounts` as the only differing table (the M105 probe prints `undefined` there \u2014 its own committed output, unchanged). The probe text, its failing labels and its nonzero exit are preserved in analysis/evidence/m108/m106feature-migration.txt; its own runner assert trips on it, and nothing was edited to make it pass."
+    },
+    {
+      "cohort": "m105feature",
+      "suite": "m105feature/migration",
+      "pass": 11,
+      "fail": 2,
+      "frozen_assertion": "ONLY identitytable",
+      "inherited_facts_detail": "undefined",
+      "why": "the M105 identity-only schema assertion says that release added ONLY its own schema objects, and the same probe compares the inherited facts of every table including `accounts`. M110 added two columns to `accounts` (and M111 adds none), so exactly two assertions fail: the whole-schema one and the inherited-facts one, which names `accounts` as the only differing table (the M105 probe prints `undefined` there \u2014 its own committed output, unchanged). The probe text, its failing labels and its nonzero exit are preserved in analysis/evidence/m108/m105feature-migration.txt; its own runner assert trips on it, and nothing was edited to make it pass."
+    }
+  ],
+  "regression_parents": {
+    "method": "Actual b39d9ef M110 Git release as the M111 parent, the inherited M110 parent (the actual c09574e M109 release), the M109 parent and every older source by saved reverse patches asserted against the frozen parent-source.json proofs; no guessed schema/current module in any parent.",
+    "parents": {
+      "/tmp/m111-parent/app": {
+        "files": 146,
+        "byte_differences": 0
+      },
+      "/tmp/m110-parent/app": {
+        "files": 145,
+        "byte_differences": 0
+      },
+      "/tmp/m109-parent/app": {
+        "files": 143,
+        "byte_differences": 0
+      },
+      "/tmp/m108-parent/app": {
+        "files": 141,
+        "byte_differences": 0
+      },
+      "/tmp/m107-parent/app": {
+        "files": 139,
+        "byte_differences": 0
+      },
+      "/tmp/m106-parent/app": {
+        "files": 137,
+        "byte_differences": 0
+      },
+      "/tmp/m105-parent/app": {
+        "files": 135,
+        "byte_differences": 0
+      },
+      "/tmp/m104-parent/app": {
+        "files": 133,
+        "byte_differences": 0
+      },
+      "/tmp/m100-parent/app": {
+        "files": 131,
+        "byte_differences": 0
+      },
+      "/tmp/m99-parent/app": {
+        "files": 129,
+        "byte_differences": 0
+      },
+      "/tmp/m93-parent/app": {
+        "files": 127,
+        "byte_differences": 0
+      },
+      "/tmp/m91-parent/app": {
+        "files": 125,
+        "byte_differences": 0
+      },
+      "/tmp/m89-parent/app": {
+        "files": 123,
+        "byte_differences": 0
+      },
+      "/tmp/m88-parent/app": {
+        "files": 121,
+        "byte_differences": 0
+      },
+      "/tmp/m87-parent/app": {
+        "files": 119,
+        "byte_differences": 0
+      },
+      "/tmp/m86-parent/app": {
+        "files": 117,
+        "byte_differences": 0
+      },
+      "/tmp/m64-parent/app": {
+        "files": 114,
+        "byte_differences": 0
+      },
+      "/tmp/m79-parent/extracted/tradejournal": {
+        "files": 110,
+        "byte_differences": 0
+      },
+      "/tmp/m84-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      },
+      "/tmp/m81-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      }
+    }
+  },
+  "controls": {
+    "parent": {
+      "pure": [
+        0,
+        1
+      ],
+      "engine": [
+        0,
+        1
+      ],
+      "consumers": [
+        0,
+        1
+      ],
+      "api": [
+        0,
+        1
+      ],
+      "freshness": [
+        0,
+        1
+      ],
+      "hardening": [
+        0,
+        1
+      ],
+      "portable": [
+        0,
+        1
+      ],
+      "migration": [
+        0,
+        1
+      ]
+    },
+    "pre_hardening": {
+      "compare": "the policy stage IS the pre-hardening runtime (the delivered vocabulary with the committed M110 engine and its two consumers, no docs), asserted identical to pre-hardening-source.json",
+      "probes": {
+        "engine": {
+          "pass": 8,
+          "fail": 13
+        },
+        "consumers": {
+          "pass": 5,
+          "fail": 9
+        },
+        "api": {
+          "pass": 1,
+          "fail": 4
+        },
+        "hardening": {
+          "pass": 1,
+          "fail": 10
+        }
+      },
+      "faults": [
+        "the read rule is the M110 test, so a failed calendar still reaches the rule as a quiet one: null blackout, an empty event list and no `state`/`unavailable` anywhere",
+        "setup.js therefore still scores `No high-impact news in the window` as SATISFIED during an outage, and the desk playlist stays silent",
+        "the route therefore answers an unreadable calendar with the same 200 an empty week produces",
+        "the ten hostile failure shapes are not classified at all because there is nothing to classify them into"
+      ],
+      "why": "On the pre-hardening runtime the unchanged probes measured engine 8/13, consumers 5/9, api 1/4 and hardening 1/10, and every failing line names the fail-open rather than a crash; the engine stage makes them 21/0, the consumer stage 20/0 and the delivered tree 14/0 and 36/0. The staged fault IS the parent\u2019s own committed file, so the control measures the release being fixed rather than an approximation of it.",
+      "parent_migration_measured_inside_the_delivered_probe": "The migration probe spawns the parent\u2019s OWN code on the same database and the same failing read: the parent answers with a quiet payload (blackout null, empty events, no state, no unavailable, no note, no error) while the delivered tree answers `unknown` with the reason and the sentence. Nothing about the parent\u2019s behaviour is asserted from memory."
+    }
+  },
+  "smoke": {
+    "app": "extracted/tradejournal (delivered M111 tree, 146 sources)",
+    "harness": "scripts/smoke-test.js from that same tree, unchanged",
+    "command": "PORT=3210 node server.js + node scripts/smoke-test.js http://127.0.0.1:3210",
+    "environment": "PORT=3210, TRADEJOURNAL_DB=/tmp/m111-smoke.db (fresh, synthetic), TJ_SCHEDULER=0, TJ_OFFLINE_CANDLES=1, no remote DB",
+    "exit_code": 0,
+    "views_passed": 22,
+    "views_offered": 22,
+    "ui_style_failures": 0,
+    "console_errors": 0,
+    "canvas_environment_limits": 0,
+    "duration_seconds": 99.1,
+    "conditional_view_count": "The harness offers its view list conditionally (a chip condition on the content shell), so the reported total moves between samples: it is measured here at the same sample on both trees and the two counts are compared, not asserted absolutely.",
+    "news_dialog_coverage": "grep -ci 'news' = 0 and grep -ci 'settings' = 2: the smoke run does NOT open the account dialog. No M111 change touches a view, and M111 ships no dialog: the news settings fields remain M110's coverage (analysis/probe-m110-ui.js, 23 assertions) and are not claimed here.",
+    "limits": "jsdom structural/DOM check with no browser engine: no pixel, device, audio, provider, broker, human or production proof, and no mental-state claim.",
+    "outputs": {
+      "delivered": "analysis/evidence/m111/smoke.txt",
+      "parent": "analysis/evidence/m111/smoke-parent-control.txt"
+    },
+    "parent_control_views": 22,
+    "covers_a_dialog": false,
+    "field_coverage": [
+      "analysis/probe-m110-ui.js 23/0 (M111 changes no view)"
+    ]
+  },
+  "calendar_unknown": {
+    "version": "news-window-v1 (M111 adds the state vocabulary to it)",
+    "states": [
+      "blocked",
+      "clear",
+      "unknown"
+    ],
+    "unknown_is_not_clear": true,
+    "clear_requires": [
+      "read.ok === true",
+      "Array.isArray(read.events)"
+    ],
+    "precedence": "a known blackout wins even when a read also failed; otherwise a non-empty `unavailable` is `unknown`; otherwise `clear` (values, not key presence)",
+    "payload_added": [
+      "state",
+      "unavailable",
+      "unavailable_note",
+      "windows.unavailable"
+    ],
+    "payload_kept": [
+      "error (so a pre-M111 consumer is not blinded)"
+    ],
+    "note_contains_window_numbers": false,
+    "stored": false,
+    "writes": 0,
+    "new_columns": 0,
+    "new_tables": 0,
+    "caller_tokens": [
+      "blocked",
+      "clear",
+      "unknown",
+      "not_consulted"
+    ],
+    "consumers": {
+      "setup.js": "the news row fails on `unknown` (same weight and label, no veto) and exposes filters.news_state",
+      "now.js": "a warn guard carrying the module sentence",
+      "index.js": "the read rule, the headline prefix and checks.news === false"
+    },
+    "accepted_property": "getCalendar() does not cache failures, so consecutive checks during an outage re-fetch and an `unknown` verdict may flap back to `clear` when the feed returns; measured in analysis/probe-m111-freshness.js rather than hidden."
+  },
+  "stages": [
+    {
+      "stage": "policy",
+      "source_manifest": "policy-source.json",
+      "source_files": 146,
+      "patch": "m111-calendar-unknown-policy.patch",
+      "files": 1,
+      "bytes": 4694,
+      "sha256": "d02e13dc682e2fb192ba51fe6551f9f5f208d36a1c77f1adcdd77713721414c6",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "engine",
+      "source_manifest": "engine-source.json",
+      "source_files": 146,
+      "patch": "m111-calendar-unknown-engine.patch",
+      "files": 1,
+      "bytes": 9626,
+      "sha256": "3e9bda7bd71343cc5ab622e45ab1b282b52be2354510c6e7cc531ce7e0c9332c",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "consumers",
+      "source_manifest": "consumers-source.json",
+      "source_files": 146,
+      "patch": "m111-calendar-unknown-consumers.patch",
+      "files": 2,
+      "bytes": 3814,
+      "sha256": "e6236ac2e75a79fdd26fec86777291173dd010c46408a2598ce07d40e23a4134",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "documentation",
+      "source_manifest": "documentation-source.json",
+      "source_files": 146,
+      "patch": "m111-calendar-unknown-documentation.patch",
+      "files": 2,
+      "bytes": 9153,
+      "sha256": "9d9b741bf5378700f5b6d9fbe1ecbced095c58f95d7e802fe8cce9bb035c7d12",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 6,
+    "bytes": 27287,
+    "sha256": "66472ace4ab167b54b5a134f626a92dd421fc6e63300aaacd2ac52f9d8f91e8d",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 85,
+    "bytes": 1528794,
+    "sha256": "b4931e9271f3fcef765ed3d3a0596dba3f45b92bb6d1359362465cc09629b2b3",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 146,
+    "application_byte_differences": 0,
+    "private_env_db_dependency_files": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "newly_protected_from_m110": [
+    "src/db.js",
+    "src/routes/api.js",
+    "src/routes/bots.js",
+    "public/js/views/settings.js"
+  ],
+  "m111_touches_inside_the_protected_set": [
+    "src/news-window.js",
+    "src/bots/index.js",
+    "src/bots/setup.js",
+    "src/bots/now.js"
+  ],
+  "other_protected_files": [
+    "src/instruments.js",
+    "src/trades.js",
+    "src/journaling.js",
+    "src/execution-review.js",
+    "src/routine.js",
+    "src/routine-records.js",
+    "src/confluences.js",
+    "src/screenshots.js",
+    "src/emotions.js",
+    "src/performance.js",
+    "src/coach.js",
+    "src/process-outcomes.js",
+    "src/behavior-days.js",
+    "src/opportunities.js",
+    "src/rule-changes.js",
+    "src/identity.js",
+    "src/period-reviews.js",
+    "src/candles.js",
+    "src/market.js",
+    "src/session-time.js",
+    "src/demo-data.js",
+    "src/bots/guardrails.js",
+    "src/bots/correction.js",
+    "src/state-gate.js",
+    "src/intention.js",
+    "src/practice.js",
+    "server.js",
+    "public/js/app.js",
+    "public/js/util.js",
+    "public/js/store.js",
+    "public/js/api.js",
+    "public/js/chart.js",
+    "public/js/views/emotions.js",
+    "public/js/views/process-outcomes.js",
+    "public/js/views/behavior-days.js",
+    "public/js/views/opportunities.js",
+    "public/js/views/rule-changes.js",
+    "public/js/views/bots.js",
+    "public/js/views/coach.js",
+    "public/js/views/analytics.js",
+    "public/js/views/identity.js",
+    "public/js/views/state-gate.js",
+    "public/js/views/intention.js",
+    "public/js/views/practice.js",
+    "public/js/views/journal.js",
+    "public/js/views/trades.js",
+    "public/js/views/playbook.js",
+    "public/js/views/routine.js",
+    "public/js/views/calendar.js",
+    "public/js/views/confluences.js",
+    "public/js/views/execution.js",
+    "public/js/views/market.js",
+    "public/js/views/period-reviews.js",
+    "public/js/views/risk.js",
+    "public/js/views/screenshots.js",
+    "package-lock.json",
+    "scripts/api-test.js",
+    "scripts/bots-test.js",
+    "scripts/smoke-test.js",
+    "scripts/test-cleanup.js",
+    "src/ask.js",
+    "public/js/views/ask.js",
+    "src/db.js",
+    "src/routes/api.js",
+    "src/routes/bots.js",
+    "public/js/views/settings.js"
+  ],
+  "harness_source_files": 22,
+  "package_lock_sha256": "33e859914328605792ab71c75957b752716748828b0b2bef164956525cffb74c",
+  "scope": "M111 the calendar fail-open: an unreadable calendar is UNKNOWN, not clear. Three states owned by `src/news-window.js` (blocked/clear/unknown) with `clear` earned by a positive signal only, the engine\u2019s read rule requiring `ok:true` and an events list, the setup row failing on `unknown` with the module\u2019s own sentence at the SAME weight and label and with NO veto, a warn guard on the desk playlist, `NEWS UNKNOWN: \u2026` in the headline, `filters.news_state` beside `filters.news_blackout`, and `not_consulted` kept explicitly separate for callers that read no calendar. Nothing else moved: no window number, no weight, no grade, no clock, no sample floor, no fill padding, no target and no risk setting; no column, table, key or write was added and every table is byte-identical across a clear, an unknown and a blocked read. M112 (a trading window derived from by_session history) stays TODO. No 70%/causal/predictive/broker/provider/human/mental-state/pixel/production proof, and no claim about what a release does to price."
+}

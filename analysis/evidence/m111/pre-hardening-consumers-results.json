@@ -1,0 +1,107 @@
+{
+  "app": "/tmp/m111-pre-hardening/app",
+  "pass": 5,
+  "fail": 9,
+  "results": [
+    {
+      "label": "this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the news row FAILS on an unread calendar — the absence of evidence is not scored as evidence of absence",
+      "passed": false,
+      "detail": {
+        "key": "news",
+        "label": "No high-impact news in the window",
+        "pass": true,
+        "weight": 10,
+        "detail": "No high-impact releases inside the news window (checked either side of the entry)."
+      }
+    },
+    {
+      "label": "and its detail is the engine's own UNKNOWN sentence, not the old all-clear wording and not a second wording invented here",
+      "passed": false,
+      "detail": "No high-impact releases inside the news window (checked either side of the entry)."
+    },
+    {
+      "label": "the row keeps its recorded weight and label, so M111 changed a verdict and not a grade scale",
+      "passed": true
+    },
+    {
+      "label": "the payload states the news STATE beside the blackout, so a downstream alert cannot read a null blackout as clearance",
+      "passed": false,
+      "detail": [
+        "killzone",
+        "stand_down",
+        "killzone_quality",
+        "session_pref",
+        "chase_guard",
+        "news_blackout",
+        "min_rr"
+      ]
+    },
+    {
+      "label": "an unknown read does NOT become a veto: the stand-down blocks a KNOWN release, and this is the absence of that information (the veto count is unchanged)",
+      "passed": true
+    },
+    {
+      "label": "a calendar that WAS read and is quiet still PASSES the row, with the account's two windows in the detail",
+      "passed": false,
+      "detail": {
+        "row": {
+          "key": "news",
+          "label": "No high-impact news in the window",
+          "pass": true,
+          "weight": 10,
+          "detail": "No high-impact releases inside your news window: 15 min before and 45 min after a release (checked either side of the entry, from this account's settings)."
+        }
+      }
+    },
+    {
+      "label": "a blocked read FAILS the row with the M110 blackout sentence, and the payload says `blocked`",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "and it is still a real veto, so M111 did not soften the stand-down while adding a state",
+      "passed": true
+    },
+    {
+      "label": "a caller that consulted no calendar is recorded as `not_consulted` — never mapped onto `clear` and never onto `unknown`",
+      "passed": false,
+      "detail": [
+        "killzone",
+        "stand_down",
+        "killzone_quality",
+        "session_pref",
+        "chase_guard",
+        "news_blackout",
+        "min_rr"
+      ]
+    },
+    {
+      "label": "and its behaviour is unchanged from before M111: the row still passes with the M110 fallback wording (this fix is about the read that FAILED, not about every surface that does not read)",
+      "passed": true
+    },
+    {
+      "label": "the three caller kinds are mutually exclusive in the payload: `clear`, `unknown` and `not_consulted` are three different strings",
+      "passed": false,
+      "detail": [
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "label": "the desk playlist SAYS the calendar could not be read, in the engine's own sentence, instead of staying silent",
+      "passed": false,
+      "detail": []
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "Cannot read properties of undefined (reading 'level')"
+    }
+  ],
+  "scope": "M111 consumers: unknown is not a pass, and it is said out loud: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

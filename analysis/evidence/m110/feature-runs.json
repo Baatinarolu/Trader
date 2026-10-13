@@ -26,11 +26,11 @@
   {
     "name": "engine",
     "script": "analysis/probe-m110-engine.js",
-    "pass": 25,
-    "fail": 0,
+    "pass": 23,
+    "fail": 2,
     "expected_pass": 25,
     "expected_fail": 0,
-    "exit_code": 0,
+    "exit_code": 1,
     "status": "completed",
     "output": "m110feature-engine.txt",
     "scope": "M110 engine: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"
@@ -38,11 +38,11 @@
   {
     "name": "consumers",
     "script": "analysis/probe-m110-consumers.js",
-    "pass": 22,
-    "fail": 0,
+    "pass": 19,
+    "fail": 3,
     "expected_pass": 22,
     "expected_fail": 0,
-    "exit_code": 0,
+    "exit_code": 1,
     "status": "completed",
     "output": "m110feature-consumers.txt",
     "scope": "M110 consumers: actual runtime/auth/SQL/HTTP with a frozen UTC clock and a synthetic calendar fed through the app's own parser; two asymmetric news clocks, no provider/broker/pixel/human proof and no claim about what a release does to price"

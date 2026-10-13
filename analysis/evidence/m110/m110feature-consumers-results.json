@@ -1,7 +1,7 @@
 {
   "app": "/home/user/Trader/extracted/tradejournal",
-  "pass": 22,
-  "fail": 0,
+  "pass": 19,
+  "fail": 3,
   "results": [
     {
       "label": "this tree ships the M110 news-window module (the committed parent does not, and that absence is this probe's control)",
@@ -25,7 +25,15 @@
     },
     {
       "label": "the served payload has no top-level `window_min` any more — the one-number field is gone, not deprecated",
-      "passed": true
+      "passed": false,
+      "detail": [
+        "blackout",
+        "events",
+        "upcoming",
+        "currencies",
+        "state",
+        "windows"
+      ]
     },
     {
       "label": "each blocked release carries the window of ITS OWN side (the 45-minute settle, not the 5-minute block)",
@@ -37,7 +45,17 @@
     },
     {
       "label": "a genuinely empty week yields a clear payload that is distinguishable from a blocked one but not from an outage (that gap is M111, and this probe names it as such)",
-      "passed": true
+      "passed": false,
+      "detail": {
+        "before_min": 5,
+        "after_min": 45,
+        "source": [
+          "news_block_before_min:stored",
+          "news_settle_after_min:stored"
+        ],
+        "clamped": [],
+        "unavailable": true
+      }
     },
     {
       "label": "the desk playlist renders the blackout as exactly one guard, quoted verbatim from the engine",
@@ -53,7 +71,22 @@
     },
     {
       "label": "an M111 outage reaches this consumer as silence: no guard, no unavailable flag and no error on the payload — the failure is visible only at the market layer, which is exactly the gap M111 measures",
-      "passed": true
+      "passed": false,
+      "detail": {
+        "feed": false,
+        "keys": [
+          "blackout",
+          "events",
+          "upcoming",
+          "currencies",
+          "state",
+          "unavailable",
+          "unavailable_note",
+          "windows",
+          "error"
+        ],
+        "guards": 1
+      }
     },
     {
       "label": "a release whose block has not started yet (20 minutes out, 5-minute block) produces no guard, and the payload says why",

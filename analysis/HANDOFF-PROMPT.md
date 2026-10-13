@@ -1,6 +1,106 @@
 # Handoff prompt — paste this into a new Arena coding session
 
-## Current M110 — the news stand-down is two clocks, not one — 2026-10-13
+## Current M111 — an unreadable calendar is UNKNOWN, not clear — 2026-10-13
+
+**132:106 done /2 partial /24 TODO /0 no-action**, exact eight groups. `newsCheck` **failed open**:
+the market layer reports a calendar it could not read as `{ok:false, error, events:[]}` rather than
+throwing, the engine's only test was `blackout === null`, and `setup.js` therefore scored *"No
+high-impact news in the window"* as **SATISFIED** during an outage — indistinguishable from a
+genuinely quiet week. Ep30 frames this rule as protection, not preference — *"it prevent you from
+getting wiped out… It prevent you from getting trapped in unpredictable move… it's simply a
+mechanism for Edge Flow to protect you from impulse"*, *"it's trying to keep you alive and
+disciplined so your edge can actually play out."* A safety gate that answers **clear** when it
+cannot see is the wrong default.
+
+`src/news-window.js` now owns the vocabulary. **Three states, mutually exclusive**: `blocked` (a
+known release is inside its clock), `clear` (the calendar **was read** and nothing is inside its
+clock) and `unknown` (the calendar could not be read — **not clear, and not a pass**). `stateOf()`
+is the one mapping, `unknownNote()` the one sentence, `reasonOf()` the one normaliser
+(whitespace-only → null; object → `.message`, else JSON, circular-safe; null → null), and the
+precedence is safe-ordered: **a known blackout wins even when a read also failed**; otherwise a
+non-empty `unavailable` is `unknown`; otherwise `clear` — decided on **values, not key presence**.
+**`clear` has to be earned by a positive signal**: the read must be a calendar with `ok:true` and
+an events list, so a `{ok:false}` reply, a bare object, an array, a `null`, a thrown `Error`, a
+thrown **string**, a circular error object — all ten hostile shapes are measured — land on
+`unknown` with a readable reason instead of a silent all-clear. `unknownNote()` deliberately
+carries **no window numbers** (*"Nothing was checked against your stand-down windows, so this is
+NOT an all-clear."*), and the configured pair is echoed **separately** in `windows` with
+`windows.unavailable: true`, so the sentence cannot be skimmed as "checked and quiet". The old
+`error` key is **kept** beside the new `unavailable`, so a consumer written against the previous
+shape is not blinded.
+
+**Consumers treat `unknown` as not-passing, without inventing a veto.** `setup.js`'s news row
+**FAILS** on `unknown` with the engine's own sentence, at the **same recorded weight and label**
+(10 pts, *"No high-impact news in the window"*) and with **no veto** — an outage is not evidence of
+a release, so it must not stand a trader down; the row still passes on `clear` and on
+`not_consulted` (the prior fallback wording for a caller that consulted no calendar at all), and
+`filters.news_state` mirrors the caller's own token **verbatim** beside `filters.news_blackout`.
+`now.js` adds a **`warn`** guard carrying the module's sentence (visible, still not a stand-down),
+`analyse()` prefixes the headline **`NEWS UNKNOWN: …`** and reports `checks.news === false`. The
+chart and scan callers stay `not_consulted`: **"did not read" is never defaulted onto `clear` or
+`unknown`**. **Nothing is stored**: no column, no table, no settings key, no cache, no write —
+every table is byte-identical across a clear, an unknown and a blocked read — and `getCalendar()`
+does not cache failures, so an outage is retried (an `unknown` may flap back to `clear` on the next
+check: a measured, accepted property, asserted in the freshness probe rather than papered over).
+
+**Measured.** M111 **154/0 across 8 probes** (module 26, engine 21, consumers 20, API 14,
+freshness 11, hardening 36, portable 10, migration **16/0**). The migration probe spawns the
+**parent's own code** (`b39d9ef`, 146 files) on the same database with the same failing read: the
+parent answers with a **quiet payload** — `blackout:null`, `events:[]`, **no `state`, no
+`unavailable`, no note, no `error`** — while the delivered tree answers `unknown` with the reason
+and the sentence; the two payloads differ **only** by the state and the failure it names, **no
+schema object is added or changed**, every inherited fact is **byte-identical**, and the parent's
+own code still opens the file the delivered tree wrote. Four constructed runtime stages
+(**policy → engine → consumers → documentation**), each replayed forward **and** reversed with
+**0 byte differences** against its frozen guard; the pre-M111 files in the staged trees are the
+**parent's own content**, so the staged fault *is* the committed behaviour being fixed. **Parent
+control** = the committed M110 release: eight probes **0/1**, each naming the absent vocabulary.
+**Pre-hardening control** = the policy stage (vocabulary present, the M110 engine and its two
+consumers still failing open): **engine 8/13, consumers 5/9, api 1/4, hardening 1/10**, with the
+failing lines naming the fault (*"the outage reaches the news check as `unknown` — NOT as a quiet
+calendar"*, *"the news row FAILS on an unread calendar — the absence of evidence is not scored as
+evidence of absence"*) before the engine/consumer stages made them **21/0, 20/0, 14/0, 36/0**.
+
+Cohorts re-run on this tree: **M110 253/5**, **M109 166/2, M108 257/2, M107 230/2, M106 316/2,
+M105 140/2**. The M110 five are this milestone's **declared negatives** and each one measures the
+pre-M111 state on purpose: *"M110 does not claim to fix M111: a failed calendar still reaches this
+rule as a QUIET one"*, its own marker *"M111 is open and NOT solved here"*, and the two frozen
+key-set assertions whose set grew by `state` (plus the empty-week arm that names the gap). Nothing
+was edited to make a frozen assertion pass. RAW **596/156**, DECLARED **824/4** and the
+live-provider arm **70/1** were re-run this session and reproduce exactly; the native API/bots arms
+stay **inherited, asserted as inherited**. Smoke exit 0, **22/22 views on both trees**, 0 style /
+0 console — M111 changes **no view**, and `grep -ci news` = 0 in both smoke outputs, so no dialog
+coverage is claimed (the news fields remain `analysis/probe-m110-ui.js` 23/0). Ledger
+**132 = 106 done / 2 partial / 24 TODO**. Deterministic **146-source** ZIP:
+`build-m111-calendar-unknown-artifacts.py`, `patches/M111-CALENDAR-UNKNOWN-STAGES.json`, excluded
+archive SHA companion. [Full report](M111-CALENDAR-UNKNOWN.md). Arm servers stopped; `/tmp` DBs
+synthetic/offline, scheduler OFF, not preserved real data.
+
+**Workspace note for the next session (this session ran from a restored snapshot).** `/tmp` and
+`node_modules` are snapshot-excluded: the parent trees were **rebuilt from git**
+(`freeze('b39d9ef', '/tmp/m111-parent/app')`, digest re-asserted against the frozen
+`analysis/evidence/m111/parent-source.json`), `node_modules` re-symlinked/`npm ci`'d, and every
+stage tree rebuilt by `capture-m111-stages.py` (which asserts the pre-hardening tree **is** the
+policy stage). **M111 probes must be run under `timeout`**: the harness keeps its own express
+listener open and closes it in `finish()` (a run whose output looks complete would otherwise hang).
+`--capture-stages` hashes the harness files listed in `analysis/evidence/m111/harness-source.json`,
+so **re-run `capture-m111-stages.py` after editing the builder and before building**, or its own
+hash assert fires.
+
+**Next M112 — a trading window guardrail from the existing `by_session` history.** `performance.js`
+already computes `by_session`; M112 adds `window_start`/`window_end` (+ timezone) to `accounts`,
+defaulting from the top `by_session` bucket, and treats a signal outside the window as a **hard
+block** (not a scored penalty) — the `ixmTrvUB1Ks` segment settles hard-block. Then the older
+backlog (groups A/B/C/E/G). All 132 IDs / eight groups retained; session fixed to
+**arena/b411452d-trader**, older counts/branches/next-steps below are historical.
+
+### Current remaining IDs — no omissions
+
+Partials **M30,M103**. TODO24: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M65,M66,M67,M72,M73,M74,M112,M115,M117,M125**.
+PROGRESS asserts exact132/eight-group partition. Earlier lists are historical milestones,
+not the current remaining work.
+
+## Historical M110 — the news stand-down is two clocks, not one — 2026-10-13
 
 **132:105 done /2 partial /25 TODO /0 no-action**, exact eight groups. Saved Ep30 states **two**
 news stand-downs of different length, not one: a **pre-release block** — *"you don't open new
@@ -84,18 +184,16 @@ M110 work, and after the reset the diff against c09574e is exactly the 9-file ch
 asserts the pre-hardening tree **is** the engine stage). The M110 migration probe was re-derived in
 this session against that rebuilt parent and is now **33/0**.
 
-**Next M111 (the calendar fail-open), then M112.** M110 is NOT a fix for M111 and says so on every
-probe: a calendar that cannot be fetched still reaches this rule as a **quiet** one — `blackout:
+**Next at the time: M111 (the calendar fail-open), then M112 — M111 is now delivered (see the
+current section above).** M110 was NOT a fix for M111 and said so on every probe: a calendar that cannot be fetched still reaches this rule as a **quiet** one — `blackout:
 null`, no `unavailable` flag, no error on the payload — so an outage is still indistinguishable
 from a clean week at this boundary; the pair *is* echoed on that path and a failure is **not**
 cached, but the fail-open itself is M111's to fix. All 132 IDs / eight groups retained; session
 fixed to **arena/b411452d-trader**, older counts/branches/next-steps below historical.
 
-### Current remaining IDs — no omissions
+### Remaining IDs as M110 left them — historical
 
-Partials **M30,M103**. TODO25: **M12,M13,M15,M17,M18,M19,M45,M46,M49,M53,M55,M56,M59,M60,M65,M66,M67,M72,M73,M74,M111,M112,M115,M117,M125**.
-PROGRESS asserts exact132/eight-group partition. Earlier lists are historical milestones,
-not the current remaining work.
+Partials **M30,M103**. TODO25 (then): the same 24 IDs plus **M111**, which M111 has since closed.
 
 ## Historical M109 — the advisory channel: ask the journal, deterministically — 2026-10-13
 

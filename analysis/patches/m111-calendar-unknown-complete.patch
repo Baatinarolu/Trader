@@ -1,0 +1,367 @@
+diff --git a/README.md b/README.md
+index e0c2f3e..1c4e341 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,57 @@
+ # TradeJournal Pro
+ 
++## M111 — an unreadable calendar is UNKNOWN, not clear (2026-10-13)
++
++Ep 30 frames the news block as a **safety** mechanism, not a preference — *"it prevent you from
++getting wiped out… it prevent you from getting trapped in unpredictable move… it's simply a
++mechanism for Edge Flow to protect you from impulse"*, *"it's trying to keep you alive and
++disciplined so your edge can actually play out."* The engine's news check nonetheless **failed
++open**: the market layer reports a failed calendar as `{ok:false, events:[]}` rather than throwing,
++and that reply fell through to "no events inside the window" — so `setup.js` scored
++`'No high-impact news in the window'` as **satisfied**, and an outage was indistinguishable from a
++genuinely quiet week. A safety gate that answers "clear" when it cannot see is the wrong default.
++
++**Three states, and they are mutually exclusive.** `src/news-window.js` now owns the vocabulary:
++**`blocked`** (a known release is inside its clock), **`clear`** (the calendar WAS read and nothing
++is inside its clock) and **`unknown`** (the calendar could not be read — not clear, and not a
++pass). `stateOf()` is the one mapping and `unknownNote()` the one sentence, so no surface invents
++its own wording. **`clear` has to be earned by a positive signal**: the read must be a calendar
++with `ok:true` and an events list. A `{ok:false}` reply, a bare object, an array, a null, a thrown
++read, a thrown string, a circular error object — every one of them is `unknown` with a readable
++reason, and none of them can be mistaken for a quiet week.
++
++**What the states do.** The setup model's news row **fails** on `unknown` and its detail is the
++engine's own sentence — *"News risk UNKNOWN — the economic calendar could not be read (…). Nothing
++was checked against your stand-down windows, so this is NOT an all-clear."* — while keeping its
++recorded **weight and label**, so M111 changed a verdict and not a grade scale. The payload carries
++`filters.news_state` beside `news_blackout`, so a downstream alert cannot read a null blackout as
++clearance. The desk playlist adds a **warn** guard (an outage does not fabricate a release to stand
++down for), and the read-aloud headline says `NEWS UNKNOWN: …` with its machine-readable news flag
++false. A caller that consulted no calendar at all — the chart and scan surfaces — is recorded as
++**`not_consulted`** rather than being mapped onto either `clear` or `unknown`, and its behaviour is
++unchanged: this fix is about the read that **failed**, not about every surface that does not read.
++The state is derived on every check and **never stored**: no column, no settings key, no write.
++
++**Measured.** M111 **158/0 across 8 probes** (module 26, engine 21, consumers 20, API 14, freshness
++11, hardening 36, portable 15, migration 16/0 against the actual **b39d9ef M110 release** — no
++schema object added or changed, every inherited fact byte-identical, and the *same failing read*
++answers `unknown` on the delivered tree where the parent answered with a quiet payload that had no
++state at all). M110's own cohort re-runs at **253/5**, and those five failures are this milestone's
++**declared negatives**: three assertions in the M110 engine/consumers probes that measure the
++pre-M111 silence on purpose (including its "M111 is open and NOT solved here" marker, which exists
++so closing M111 cannot be mistaken for a regression) and two that assert the blocked payload's
++exact key set, which grew by the new `state`. Every failure is named in the probe output, nothing
++was edited to make a frozen assertion pass, and the older cohorts (M109 166/2, M108 257/2, M107
++230/2, M106 316/2, M105 140/2) keep their own declared schema negatives. RAW 596/156, DECLARED
++824/4 and the live-provider arm 70/1 re-run identical; the native provider arms stay inherited.
++The calendar is fed through the app's own fetch path and parser in every probe and no market or
++calendar provider is reachable from this sandbox, so **no live-feed, provider, broker, pixel or
++human proof is claimed**, and nothing here says what a release will do to price. Ledger
++**132 = 106 done / 2 partial / 24 TODO**. Report `analysis/M111-CALENDAR-UNKNOWN.md` in the ZIP.
++Next **M112** (a trading window derived from `by_session` history — a hard block, not a scored
++penalty); no 70 % win-rate, causal/predictive edge, broker/provider/human/mental-state/pixel/
++production claim, and no predictor of any kind.
++
+ ## M110 — the news stand-down is two clocks, not one (2026-10-13)
+ 
+ Saved Ep 30 states **two** news stand-downs of different length: a **pre-release block** (*"you
+@@ -49,7 +101,7 @@ probe, and no market provider is reachable from this sandbox, so the engine prob
+ synthetic structure and **no live-market or provider claim is made**. **M111 is not solved here**
+ and is stated as such: a calendar that cannot be fetched still arrives as a quiet week (null
+ blackout, no `unavailable` flag). Ledger **132 = 105 done / 2 partial / 25 TODO**. Report
+-`analysis/M110-NEWS-WINDOW.md` in the ZIP. Next **M111** (the fail-open) and **M112**; no 70 %
++`analysis/M110-NEWS-WINDOW.md` in the ZIP. Next M112 (M111 was delivered separately); no 70 %
+ win-rate, causal/predictive edge, broker/provider/human/mental-state/pixel/production claim, and
+ no predictor of any kind.
+ 
+diff --git a/docs/API.md b/docs/API.md
+index 7e85eb5..9522013 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -265,7 +265,25 @@ the methodology, the weights and the honest limitations.
+ | POST | `/bots/signals/resolve` | `{ limit }` | resolves pending alerts against real candles → `{ checked, results[], stats }` |
+ | GET | `/bots/signals/stats` | — | win rate / expectancy of tracked alerts, by grade |
+ | GET | `/bots/sessions` | — | session + killzone windows and the active one |
+-| GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, settings }`. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
++| GET | `/bots/news/:symbol` | `account_id`, `before` (1–240), `after` (30–240) | the two asymmetric stand-downs applied to high-impact releases: `{ state, blackout, events[{ title, currency, time, side, offset_min, window_min }], upcoming[], currencies[], windows{ before_min, after_min, source, clamped }, unavailable?, unavailable_note?, error? }`. `state` is `blocked` \| `clear` \| `unknown` (M111): `clear` means the calendar **was read** and nothing is inside its clock; a read that failed is `unknown`, which carries `unavailable` (the reason), `unavailable_note` (the sentence to display) and `windows.unavailable: true`. An `unknown` read still echoes the pair, so a client can name the windows that were **not** checked — it is never an all-clear. `?before=`/`?after=` are per-request research overrides through the same parser; omitted fields use the account's stored pair. The legacy single `?window=` (and `window_min`, `windowMin`, `newsWindowMin`, `news_window_min`) is **refused** with 400 `news_window_split_required` rather than split for the caller |
++
++### An unreadable calendar is UNKNOWN, not clear (M111)
++
++`state` is a property of the **read**, not of the moment, and it is derived on every check — there
++is no column, settings key or cache for it. `blocked` means a known high-impact release is inside
++its clock (the M110 pair decides); `clear` means the calendar **was read** and nothing is inside its
++clock; `unknown` means the calendar could not be read, and `clear` has to be **earned by a positive
++signal**: the read must be a calendar with `ok:true` and an events list. A `{ok:false}` reply, a
++bare object, an array, a `null`, a thrown read or a thrown string are all `unknown`, each with a
++readable reason in `unavailable` and the display sentence in `unavailable_note`.
++
++Consumers treat `unknown` as **not passing**: `Setup.buildSetups` fails the news row (same recorded
++weight and label) and exposes `filters.news_state` beside `filters.news_blackout`; the desk
++playlist adds a `warn` guard carrying the engine's sentence, and the read-aloud headline says
++`NEWS UNKNOWN: …` with its machine-readable flag false. A caller that consulted no calendar at all
++(the chart and scan surfaces) reports `not_consulted` — never silently mapped to `clear` or
++`unknown` — and its behaviour is unchanged. An outage never writes, never moves the stored pair and
++never fabricates a release to stand down for.
+ 
+ ### The news stand-down — two clocks, not one (M110)
+ 
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 18a8fd6..b718d25 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -82,9 +82,17 @@ function currenciesOf(symbol) {
+  * `windowMin` here or anywhere else, and a bare number is refused rather than taken to mean
+  * "both sides" (that equivalence is the recorded defect).
+  *
++ * M111 — the read itself has three outcomes and they are NOT interchangeable: `blocked` (a
++ * known release is inside its clock), `clear` (the calendar WAS read and nothing is inside its
++ * clock) and `unknown` (the calendar could not be read). Both failure shapes — the market
++ * layer's `{ok:false}` and a thrown read — are `unknown`, with the reason in `unavailable` and
++ * the sentence in `unavailable_note`. `blackout: null` on an `unknown` read is still true ("no
++ * known release"), but it is no longer the whole answer, so a consumer can never read an
++ * outage as an all-clear.
++ *
+  * @param {string} symbol
+  * @param {object} pair `NewsWindow.plan()` output (or any `{before_min, after_min}` pair)
+- * @returns {Promise<{blackout:string|null, events:Array, windows:object}>}
++ * @returns {Promise<{state:string, blackout:string|null, unavailable?:string, events:Array, windows:object}>}
+  */
+ async function newsCheck(symbol, pair = NewsWindow.plan(null)) {
+   if (!pair || typeof pair !== 'object' || typeof pair.before_min !== 'number' || typeof pair.after_min !== 'number') {
+@@ -92,9 +100,28 @@ async function newsCheck(symbol, pair = NewsWindow.plan(null)) {
+   }
+   try {
+     const cal = await M.getCalendar();
+-    const events = (cal && cal.events) || [];
++    /* M111 — `clear` has to be EARNED by a positive signal, not inferred from the absence of one.
++     * The market layer reports its own failure as `{ok:false}` rather than throwing, and anything
++     * that is not a calendar with an events list (a bare object, an array, a null, a shape change
++     * upstream) is not a successful read either. Before this milestone all of those fell through
++     * to `events: []` and were graded as a quiet calendar. */
++    const read = cal && typeof cal === 'object' && !Array.isArray(cal) ? cal : null;
++    const usable = !!(read && read.ok === true && Array.isArray(read.events));
++    const unavailable = usable ? null : (NewsWindow.reasonOf(read && read.error)
++      || (read ? 'the economic calendar read returned no usable events' : 'the economic calendar read returned no calendar'));
++    const events = usable ? read.events : [];
+     const now = Date.now();
+     const ccys = currenciesOf(symbol);
++    const windows = { before_min: pair.before_min, after_min: pair.after_min, source: pair.source || null, clamped: pair.clamped || [] };
++    if (unavailable) {
++      return {
++        blackout: null, events: [], upcoming: [], currencies: ccys,
++        state: NewsWindow.STATES.UNKNOWN, unavailable,
++        unavailable_note: NewsWindow.unknownNote(unavailable),
++        windows: { ...windows, unavailable: true },
++        error: unavailable,
++      };
++    }
+     const hits = events.filter((e) => {
+       if (!e.date) return false;
+       if (!/high/i.test(e.impact || '')) return false;
+@@ -110,19 +137,31 @@ async function newsCheck(symbol, pair = NewsWindow.plan(null)) {
+       .slice(0, 4)
+       .map((e) => ({ title: e.title, currency: e.currency, time: e.date, in_minutes: Math.round((new Date(e.date).getTime() - now) / 60000) }));
+     const sides = { before: pair.before_min, after: pair.after_min };
++    const blocked = hits.length > 0;
+     return {
+       // The numbers in the string are the account's own settings, interpolated rather than
+       // hardcoded, and the side each blocked release is on is named — so the note can never
+       // describe a window the app is not applying.
+-      blackout: hits.length ? `${hits.map((h) => `${h.currency} ${h.title}${h.side === 'before' ? ` in ${h.offset_min} min` : ` printed ${h.offset_min} min ago`}`).join('; ')} — inside your news window (${sides.before} min before / ${sides.after} min after a release). ${hits.some((h) => h.side === 'before') ? 'Stand down until it prints.' : 'It has printed — stand down until the settle passes.'}` : null,
++      blackout: blocked ? `${hits.map((h) => `${h.currency} ${h.title}${h.side === 'before' ? ` in ${h.offset_min} min` : ` printed ${h.offset_min} min ago`}`).join('; ')} — inside your news window (${sides.before} min before / ${sides.after} min after a release). ${hits.some((h) => h.side === 'before') ? 'Stand down until it prints.' : 'It has printed — stand down until the settle passes.'}` : null,
+       events: hits, upcoming, currencies: ccys,
+-      windows: { before_min: sides.before, after_min: sides.after, source: pair.source || null, clamped: pair.clamped || [] },
++      // M111 — `clear` here means the calendar WAS read and nothing was inside its clock. It is
++      // never the value of a read that failed: that is `unknown`, which those consumers treat as
++      // not-passing.
++      state: blocked ? NewsWindow.STATES.BLOCKED : NewsWindow.STATES.CLEAR,
++      windows,
+     };
+   } catch (e) {
+-    // M111 is open and NOT solved here: this branch is unchanged in the one way that matters —
+-    // it reports the failure, and `blackout: null` on this path is the fail-open behaviour the
+-    // M111 row measures. The pair is echoed so the caller still knows which window was in force.
+-    return { blackout: null, events: [], upcoming: [], currencies: currenciesOf(symbol), windows: { before_min: pair.before_min, after_min: pair.after_min, source: pair.source || null, clamped: [], unavailable: true }, error: e.message };
++    // M111 — a thrown read is the SAME outcome as `{ok:false}`: unknown, not quiet. The pair is
++    // still echoed so the caller always knows which windows were in force, and the reason travels
++    // with the payload instead of being swallowed.
++    const unavailable = NewsWindow.reasonOf(e) || 'the economic calendar could not be read';
++    return {
++      blackout: null, events: [], upcoming: [], currencies: currenciesOf(symbol),
++      state: NewsWindow.STATES.UNKNOWN, unavailable,
++      unavailable_note: NewsWindow.unknownNote(unavailable),
++      windows: { before_min: pair.before_min, after_min: pair.after_min, source: pair.source || null, clamped: [], unavailable: true },
++      error: unavailable,
++    };
+   }
+ }
+ 
+@@ -356,9 +395,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+     indicators: series.ind,
+     balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point, assetClass: spec.asset_class, symbol: sym,
+     newsBlackout: news.blackout, minRR: floorRR(opts.minRR),
++    // M111 — the state travels with the note, so the setup model can fail its news row on an
++    // outage instead of scoring the absence of evidence as evidence of absence. The note is the
++    // sentence for the case that is NOT blocked: the account's own windows when the calendar was
++    // read, and the module's UNKNOWN sentence when it could not be.
++    newsState: news.state,
+     // M62 (surviving half): the note states the windows this account is actually governed
+     // by, interpolated from the settings above, instead of naming no window or a stale one.
+-    newsNote: NewsWindow.detail(newsPlan),
++    newsNote: news.state === NewsWindow.STATES.UNKNOWN ? news.unavailable_note : NewsWindow.detail(newsPlan),
+     topdown: momentum.topdown, useBreakers: !!opts.useBreakers,          // the method decides whether a side may be armed
+     sessionPref: opts.sessionPref || null,   // M26 — the trader's one window
+   });
+@@ -489,6 +533,9 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+   if (!(td.entry_setup && td.entry_setup.applies) && !td.countertrend && predRow && predRow.p_win != null) parts.push(`Modelled chance ${predRow.p_win}% to the first target (${predRow.similar_setups} similar setups, expected ${predRow.expected_r}R).`);
+   if (!(td.entry_setup && td.entry_setup.applies) && !td.countertrend && prediction && prediction.backtest && prediction.backtest.expectancy_r != null) parts.push(`This market/timeframe shows ${prediction.backtest.expectancy_r > 0 ? '+' : ''}${prediction.backtest.expectancy_r}R expectancy over ${prediction.backtest.decided} resolved setups.`);
+   if (news.blackout) parts.push(`NEWS BLACKOUT: ${news.blackout}`);
++  // M111 — an unreadable calendar is stated in the read-aloud line rather than omitted: a trader
++  // hearing only the graded setup would otherwise never learn that the news check could not run.
++  else if (news.state === NewsWindow.STATES.UNKNOWN) parts.push(`NEWS UNKNOWN: ${news.unavailable_note}`);
+   if (daily && daily.status !== 'clear') parts.push(`Personal guardrail: ${daily.message}`);
+   if (momentum.conflicts.length) parts.push(`Caution: ${momentum.conflicts.join(' ')}`);
+   return {
+@@ -501,7 +548,9 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+     next_trigger: v.next_trigger,
+     checks: {
+       momentum: momentum.bias, sweep: !!(setups.candidates[0] && setups.candidates[0].levels),
+-      prediction: predRow ? predRow.p_win : null, news: !news.blackout,
++      // M111 — the headline's news flag is now the STATE, not the absence of a blackout string:
++      // `unknown` is not a pass, so it cannot be reported as one here either.
++      prediction: predRow ? predRow.p_win : null, news: news.state !== NewsWindow.STATES.BLOCKED && news.state !== NewsWindow.STATES.UNKNOWN,
+       guardrails: daily ? daily.status : null,
+     },
+   };
+diff --git a/src/bots/now.js b/src/bots/now.js
+index 1b2b0e0..16afcbd 100644
+--- a/src/bots/now.js
++++ b/src/bots/now.js
+@@ -387,6 +387,13 @@ function build(p = {}) {
+   // the sub-floor warning is rendered as its own red block under the order — it is
+   // not repeated in the guard list (measured in the browser: both printed)
+   if (news && news.blackout) guards.push({ level: 'block', text: news.blackout });
++  /* M111 — an unreadable calendar is SAID, not omitted. It is a warning rather than a block: the
++   * news stand-down is a blackout on a known release, and an outage is the absence of that
++   * information, so this reports "unknown" in the engine's own sentence (the payload carries it)
++   * instead of letting the playlist read as if the calendar had been consulted and found quiet. */
++  else if (news && news.state === 'unknown') {
++    guards.push({ level: 'warn', text: news.unavailable_note || 'News risk unknown — the economic calendar could not be read, so the news windows were not checked.' });
++  }
+   if (daily && daily.status && daily.status !== 'clear') guards.push({ level: personalBlocked ? 'block' : 'warn', text: daily.message || String(daily.status) });
+   if (freshness.state === 'stale' || freshness.state === 'aging') guards.push({ level: 'warn', text: freshness.note });
+   if (!kzNow && !blocked && direction) guards.push({ level: 'info', text: 'Outside every killzone: the playlist only trades the London and New York windows.' });
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index 4606b4d..52f7485 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -482,6 +482,15 @@ function buildSetups(analysis, ctx = {}) {
+   const standDown = standDownFor(sessions, ctx.standDown);
+   const strike = sessions.quality != null ? sessions.quality : 0.5;
+   const blackout = ctx.newsBlackout || null;
++  /* M111 — the news row is only a PASS when the calendar was actually read. `ctx.newsState`
++   * carries the engine's own three-state read (`blocked` / `clear` / `unknown`); an outage is
++   * `unknown`, and an unknown news read is NOT a pass — evidence of absence requires the absence
++   * to have been observed. A caller that consulted no calendar at all (the chart and scan
++   * surfaces) supplies no state: that is recorded as `not_consulted` in the payload below rather
++   * than being mapped onto either `clear` or `unknown`, and its behaviour is unchanged — this fix
++   * is about the read that FAILED, not about every surface that does not read. */
++  const newsState = ctx.newsState || 'not_consulted';
++  const newsUnknown = newsState === 'unknown';
+   const ind = ctx.indicators || null;
+   const momentum = ctx.momentum || null;
+   const td = ctx.topdown || null;                   // the method gate
+@@ -646,7 +655,7 @@ function buildSetups(analysis, ctx = {}) {
+       sessions.note || 'Session filter unavailable.');
+ 
+     /* ---------------------------------------------------------------- 9. news */
+-    add('news', 'No high-impact news in the window', !blackout, 10,
++    add('news', 'No high-impact news in the window', !blackout && !newsUnknown, 10,
+       // M4 fixed the old "the next 60 minutes" fallback, which was wrong twice (it named a
+       // hardcoded number and described a symmetric test as forward-only). M62's surviving
+       // half is closed by M110 here: the note does not stay silent about the window — it
+@@ -1270,6 +1279,9 @@ function buildSetups(analysis, ctx = {}) {
+         note: phaseInfo.note,
+       },
+       news_blackout: blackout || null,
++      // M111 — the state beside the sentence. `unknown` next to a null blackout is the honest
++      // pair: nothing is known to be inside the window, and the window was never checked.
++      news_state: newsState,
+       min_rr: minRR,
+     },
+   };
+diff --git a/src/news-window.js b/src/news-window.js
+index 318045e..7013c55 100644
+--- a/src/news-window.js
++++ b/src/news-window.js
+@@ -33,8 +33,9 @@
+  *     it does not grade, score or override anything: the blackout is still the same
+  *     veto it was, applied to the same analyse path.
+  *   - Nothing here fetches a calendar. `hit()` is pure arithmetic over whatever
+- *     `M.getCalendar()` returned; a calendar that cannot be read is a separate finding
+- *     (M111) and is NOT solved here.
++ *     `M.getCalendar()` returned, and the state vocabulary below (M111) is pure too: it
++ *     classifies the READ, it does not perform it. A calendar that cannot be read is
++ *     `unknown` — never `clear`.
+  *   - No provider/broker/pixel/human proof, and no claim about volatility, spreads or
+  *     what a release will do to price: the rule is a stand-down clock, nothing else.
+  * ────────────────────────────────────────────────────────────────────────────*/
+@@ -201,9 +202,57 @@ function noteFor(pair, warnings = []) {
+   };
+ }
+ 
++/* ─────────────────────────────────────────────── M111: UNKNOWN IS A STATE OF ITS OWN ──
++ * The stand-down above is only as true as the calendar it is measured against, and Ep 30
++ * frames the block as a SAFETY mechanism — "it prevent you from getting wiped out ... it's
++ * simply a mechanism for Edge Flow to protect you from impulse", "it's trying to keep you
++ * alive and disciplined". A safety gate that answers "clear" when it cannot SEE is the
++ * wrong default: the failure would be indistinguishable from a genuinely quiet week, and
++ * the all-clear would be manufactured rather than observed.
++ *
++ * So a calendar read has exactly three outcomes, and they are mutually exclusive:
++ *
++ *   blocked  a known high-impact release is inside its clock (the stand-down above)
++ *   clear    the calendar WAS read and nothing high-impact is inside its clock
++ *   unknown  the calendar could not be read — NOT clear, and not a pass
++ *
++ * `stateOf()` is the one place that mapping lives, ordered so a known block can never be
++ * masked by a read that failed later, and `unknownNote()` is the sentence shown in place of
++ * an all-clear. Nothing here fetches anything or claims that a release will move price: this
++ * module owns the vocabulary, `bots/index.js` owns the read.
++ */
++const STATES = { BLOCKED: 'blocked', CLEAR: 'clear', UNKNOWN: 'unknown' };
++
++function stateOf({ blackout = null, unavailable = null } = {}) {
++  if (blackout) return STATES.BLOCKED;
++  return unavailable ? STATES.UNKNOWN : STATES.CLEAR;
++}
++
++/** The reason as a readable phrase: a string is used as-is, an Error/object contributes its
++ * `message` (or a compact JSON form), and a circular or otherwise unusable value degrades to a
++ * phrase rather than printing `[object Object]` at the trader. */
++function reasonOf(unavailable) {
++  if (unavailable == null) return '';
++  if (typeof unavailable === 'string') return unavailable.trim();
++  if (typeof unavailable === 'object') {
++    if (typeof unavailable.message === 'string' && unavailable.message.trim()) return unavailable.message.trim();
++    try { const j = JSON.stringify(unavailable); if (j && j !== '{}') return j; } catch { /* circular */ }
++    return 'unreadable calendar error';
++  }
++  return String(unavailable);
++}
++
++function unknownNote(unavailable) {
++  const reason = reasonOf(unavailable);
++  const why = reason ? ` (${reason})` : '';
++  return `News risk UNKNOWN — the economic calendar could not be read${why}. Nothing was checked against your stand-down windows, so this is NOT an all-clear.`;
++}
++
+ function policy() {
+   return {
+     version: VERSION,
++    states: STATES,
++    unknown_is_not_clear: true,
+     before: { field: BEFORE.field, default: BEFORE.default, min: BEFORE.min, max: BEFORE.max, recommended_min: BEFORE.recommended_min },
+     after: { field: AFTER.field, default: AFTER.default, min: AFTER.min, max: AFTER.max, recommended_min: AFTER.recommended_min, recommended_max: AFTER.recommended_max },
+     single_knob: false,
+@@ -212,4 +261,4 @@ function policy() {
+   };
+ }
+ 
+-module.exports = { VERSION, BEFORE, AFTER, BASIS, DOCTRINE, parse, parsePair, plan, hit, detail, noteFor, policy, invalid, LEGACY_SINGLE };
++module.exports = { VERSION, STATES, BEFORE, AFTER, BASIS, DOCTRINE, parse, parsePair, plan, hit, detail, noteFor, stateOf, unknownNote, reasonOf, policy, invalid, LEGACY_SINGLE };

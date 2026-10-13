@@ -1,0 +1,72 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 16,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the parent tree IS the committed M110 release: it owns the two clocks and refuses the single knob, but it has no state vocabulary at all",
+      "passed": true
+    },
+    {
+      "label": "the parent's own restart isolates its lazy M102 default strategy snapshot (and the sequence it moves) rather than merging it into the delta",
+      "passed": true
+    },
+    {
+      "label": "the parent produced owned history to inherit: three closed trades and one account row at the M110 defaults",
+      "passed": true
+    },
+    {
+      "label": "the parent's account pair defaults to 15/45 and the row carries both columns",
+      "passed": true
+    },
+    {
+      "label": "ON THE PARENT the same failing read is the recorded FAIL-OPEN: a null blackout, an empty event list, no state, no reason and no note — the payload that reads exactly like a quiet week",
+      "passed": true
+    },
+    {
+      "label": "the parent still echoes its pair on that path, which is why the two payloads are comparable line for line",
+      "passed": true
+    },
+    {
+      "label": "ON THE DELIVERED TREE the identical read is `unknown`, with the reason and the sentence attached",
+      "passed": true
+    },
+    {
+      "label": "and everything else about the payload is unchanged: same pair, same currencies, same empty lists, no invented release",
+      "passed": true
+    },
+    {
+      "label": "the two payloads differ ONLY by the state and the failure it names, which is the whole change",
+      "passed": true
+    },
+    {
+      "label": "M111 adds NO schema object of any kind and changes none: every table, index and trigger is byte-identical to the parent's",
+      "passed": true
+    },
+    {
+      "label": "every inherited fact is byte-identical after the upgrade: a state that is derived on every read has nothing to store",
+      "passed": true
+    },
+    {
+      "label": "the pair the trader stored is still the pair the app applies, and the read did not move it",
+      "passed": true
+    },
+    {
+      "label": "a second open of the database is a no-op: same objects, same facts, same pair",
+      "passed": true
+    },
+    {
+      "label": "the change is additive in the strongest sense available here: the PARENT's own code still reads the file the delivered tree wrote, and still reports its own quiet shape there",
+      "passed": true
+    },
+    {
+      "label": "and there is nothing to migrate for it: no column anywhere stores a calendar state",
+      "passed": true
+    }
+  ],
+  "scope": "M111 migration: no schema change, and the same read answers differently: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

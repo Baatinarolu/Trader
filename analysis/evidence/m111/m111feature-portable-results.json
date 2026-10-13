@@ -1,0 +1,48 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 10,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the module still requires nothing at all: no app module, no database, no fetcher, no helper",
+      "passed": true
+    },
+    {
+      "label": "it still reads no environment, no filesystem and no path, so it cannot be configured from outside itself",
+      "passed": true
+    },
+    {
+      "label": "it still calls no clock of its own and takes its instants as arguments",
+      "passed": true
+    },
+    {
+      "label": "a copied module makes the same decisions as the shipped one, including the new state mapping",
+      "passed": true
+    },
+    {
+      "label": "exactly the three shipped files that already reached it still do — M111 added no importer, so the state cannot leak into a module that had no reason to know it",
+      "passed": true
+    },
+    {
+      "label": "and M111 added the vocabulary to the SAME file as the two clocks, so the module count did not grow",
+      "passed": true
+    },
+    {
+      "label": "no shipped file mentions a probe, the shim or the test support, so the fix is in the app and not in its harness",
+      "passed": true
+    },
+    {
+      "label": "the market layer is NOT rewired to the harness: it still reads the real feed URLs, and its own failure path is what M111 classifies",
+      "passed": true
+    },
+    {
+      "label": "the API documentation names the three states and the fact that unknown is not a pass, so the contract is written down where a client reads it",
+      "passed": true
+    }
+  ],
+  "scope": "M111 portability: the vocabulary is a leaf, and nothing shipped mentions the harness: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

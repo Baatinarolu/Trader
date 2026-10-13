@@ -1,0 +1,98 @@
+[
+  {
+    "name": "pure",
+    "script": "analysis/probe-m111-pure.js",
+    "pass": 26,
+    "fail": 0,
+    "expected_pass": 26,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m111feature-pure.txt",
+    "scope": "M111 module states: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "engine",
+    "script": "analysis/probe-m111-engine.js",
+    "pass": 21,
+    "fail": 0,
+    "expected_pass": 21,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m111feature-engine.txt",
+    "scope": "M111 engine: a read that failed is unknown, a read that worked is clear: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "consumers",
+    "script": "analysis/probe-m111-consumers.js",
+    "pass": 20,
+    "fail": 0,
+    "expected_pass": 20,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m111feature-consumers.txt",
+    "scope": "M111 consumers: unknown is not a pass, and it is said out loud: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "api",
+    "script": "analysis/probe-m111-api.js",
+    "pass": 14,
+    "fail": 0,
+    "expected_pass": 14,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m111feature-api.txt",
+    "scope": "M111 API: the outage is legible over HTTP: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "freshness",
+    "script": "analysis/probe-m111-freshness.js",
+    "pass": 11,
+    "fail": 0,
+    "expected_pass": 11,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m111feature-freshness.txt",
+    "scope": "M111 freshness: the state follows the last read: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "hardening",
+    "script": "analysis/probe-m111-hardening.js",
+    "pass": 36,
+    "fail": 0,
+    "expected_pass": 36,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m111feature-hardening.txt",
+    "scope": "M111 hardening: every failing shape is unknown, and none of them lies: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "portable",
+    "script": "analysis/probe-m111-portable.js",
+    "pass": 10,
+    "fail": 0,
+    "expected_pass": 10,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m111feature-portable.txt",
+    "scope": "M111 portability: the vocabulary is a leaf, and nothing shipped mentions the harness: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "migration",
+    "script": "analysis/probe-m111-migration.js",
+    "pass": 16,
+    "fail": 0,
+    "expected_pass": 16,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m111feature-migration.txt",
+    "scope": "M111 migration: no schema change, and the same read answers differently: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  }
+]

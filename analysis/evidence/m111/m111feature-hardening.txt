@@ -1,0 +1,37 @@
+ok this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)
+ok a calendar failure shaped as its own {ok:false} with a reason is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as {ok:false} with NO reason at all is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as {ok:false} with a null reason is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as {ok:false} with an empty-string reason is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as {ok:false} with an object reason is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as a bare empty object is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as a resolved non-object (the layer returning junk) is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as a thrown Error is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as a thrown string is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as a thrown null is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as a thrown object with no message is `unknown` with a usable reason and the honest sentence
+ok a calendar failure shaped as a rejected promise (async throw) is `unknown` with a usable reason and the honest sentence
+ok a successful read with rows but nothing for this symbol stays `clear`, so the fix did not turn a readable calendar into a permanent unknown
+ok a successful read whose rows are all low-impact stays `clear`, so the fix did not turn a readable calendar into a permanent unknown
+ok a successful read whose rows are all for another currency stays `clear`, so the fix did not turn a readable calendar into a permanent unknown
+ok an `{ok:true}` read with ZERO rows is `clear` at this layer — it is the market layer, not the news check, that turns a truly empty feed into a failure, and this probe records both halves rather than assuming either
+ok an outage produces no events, no upcoming list and no blackout string — the app never invents a release to stand down for
+ok and the unknown sentence names no window number, so it cannot be misread as a window that was applied
+ok only an exact `unknown` fails the row: no truthiness accident can turn a real clear into a failure, and no lookalike can turn an outage into a pass
+ok the payload mirrors the caller's own token rather than a normalised invention, so what was passed is what is reported
+ok on an unknown read the row FAILS with the sentence the engine prepared, and the row keeps its weight so no grade scale moved
+ok over HTTP, its own {ok:false} with a reason answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, {ok:false} with NO reason at all answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, {ok:false} with a null reason answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, {ok:false} with an empty-string reason answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, {ok:false} with an object reason answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, a bare empty object answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, a resolved non-object (the layer returning junk) answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, a thrown Error answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, a thrown string answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, a thrown null answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, a thrown object with no message answers 200 with a body rather than a 500 or an empty envelope
+ok over HTTP, a rejected promise (async throw) answers 200 with a body rather than a 500 or an empty envelope
+ok and after every hostile shape the account settings are exactly where they were — an outage cannot write
+ok M111 does not smuggle a news state into another mechanism: a state key in a gate answer is still refused by that surface
+M111 hardening: every failing shape is unknown, and none of them lies: 36 passed, 0 failed

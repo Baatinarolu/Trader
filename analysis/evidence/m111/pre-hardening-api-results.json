@@ -1,0 +1,45 @@
+{
+  "app": "/tmp/m111-pre-hardening/app",
+  "pass": 1,
+  "fail": 4,
+  "results": [
+    {
+      "label": "this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "a calendar that was read and holds nothing for this symbol answers 200 `clear` with the account's own two windows",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "windows": {
+          "before_min": 20,
+          "after_min": 60,
+          "source": [
+            "news_block_before_min:current",
+            "news_settle_after_min:current"
+          ],
+          "clamped": []
+        }
+      }
+    },
+    {
+      "label": "an unreadable calendar answers 200 with an `unknown` state — not a 500, not an empty 200 that reads like a quiet week",
+      "passed": false,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "label": "the response carries the reason and the sentence, so a client can render the failure rather than inventing one",
+      "passed": false,
+      "detail": {}
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "Cannot read properties of undefined (reading 'replace')"
+    }
+  ],
+  "scope": "M111 API: the outage is legible over HTTP: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

@@ -1,0 +1,27 @@
+ok this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)
+ok there are exactly three states, and they are the words the fix is about
+ok the three states are distinct strings, so no consumer can compare them with `!`
+ok and the list is closed: no fourth state is implied anywhere in the module
+ok a known release maps to `blocked` even if a later read failed
+ok a failed read with no known release maps to `unknown` — the whole point of the fix
+ok a successful read with nothing inside the clock maps to `clear`
+ok an empty object is `clear` rather than a silent unknown, so the honest-empty-week case is not folded into the outage case
+ok a missing argument does not throw and is `clear`
+ok a plausibly-truthy but empty `unavailable` is not unknown: the states are decided by the VALUE, not by the caller's keys
+ok the unknown sentence says UNKNOWN in the trader's face, so it cannot be skimmed as an all-clear
+ok it names the reason it could not read, so the failure is attributable
+ok it states what was NOT done, rather than implying the windows were checked and found quiet
+ok it refuses the all-clear explicitly
+ok and it names NO window number, so it cannot be misread as "the window was applied and nothing was found" (that is the M110 pair's job, and the pair is echoed separately)
+ok a missing reason still yields a complete sentence with no stray brackets
+ok an object reason is stringified rather than printed as "[object Object]" or as an empty gap
+ok two calls with the same reason produce the same bytes — the sentence is data, not a log line
+ok the policy advertises the states and the fact that unknown is not clear, so a caller can read the rule without guessing
+ok M110's two settings are untouched by M111: same fields, same defaults, same floor, still no single knob
+ok the module is still a LEAF: it requires nothing at all, so the state vocabulary cannot pull in the app, a database or a fetcher
+ok it still calls no clock of its own — the read is classified from what it is GIVEN
+ok it still performs no I/O and holds no cache
+ok the module still exports no write path, so "unknown" can never be persisted as if it were a stored fact
+ok M110's one-number refusal is intact in the same file, so closing M111 did not reopen the split-knob defect
+ok the unknown path has no separate code and no new error class: it is a STATE on a successful read, not an exception to catch
+M111 module states: 26 passed, 0 failed

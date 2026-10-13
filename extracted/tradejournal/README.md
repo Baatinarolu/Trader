@@ -1,5 +1,57 @@
 # TradeJournal Pro
 
+## M111 — an unreadable calendar is UNKNOWN, not clear (2026-10-13)
+
+Ep 30 frames the news block as a **safety** mechanism, not a preference — *"it prevent you from
+getting wiped out… it prevent you from getting trapped in unpredictable move… it's simply a
+mechanism for Edge Flow to protect you from impulse"*, *"it's trying to keep you alive and
+disciplined so your edge can actually play out."* The engine's news check nonetheless **failed
+open**: the market layer reports a failed calendar as `{ok:false, events:[]}` rather than throwing,
+and that reply fell through to "no events inside the window" — so `setup.js` scored
+`'No high-impact news in the window'` as **satisfied**, and an outage was indistinguishable from a
+genuinely quiet week. A safety gate that answers "clear" when it cannot see is the wrong default.
+
+**Three states, and they are mutually exclusive.** `src/news-window.js` now owns the vocabulary:
+**`blocked`** (a known release is inside its clock), **`clear`** (the calendar WAS read and nothing
+is inside its clock) and **`unknown`** (the calendar could not be read — not clear, and not a
+pass). `stateOf()` is the one mapping and `unknownNote()` the one sentence, so no surface invents
+its own wording. **`clear` has to be earned by a positive signal**: the read must be a calendar
+with `ok:true` and an events list. A `{ok:false}` reply, a bare object, an array, a null, a thrown
+read, a thrown string, a circular error object — every one of them is `unknown` with a readable
+reason, and none of them can be mistaken for a quiet week.
+
+**What the states do.** The setup model's news row **fails** on `unknown` and its detail is the
+engine's own sentence — *"News risk UNKNOWN — the economic calendar could not be read (…). Nothing
+was checked against your stand-down windows, so this is NOT an all-clear."* — while keeping its
+recorded **weight and label**, so M111 changed a verdict and not a grade scale. The payload carries
+`filters.news_state` beside `news_blackout`, so a downstream alert cannot read a null blackout as
+clearance. The desk playlist adds a **warn** guard (an outage does not fabricate a release to stand
+down for), and the read-aloud headline says `NEWS UNKNOWN: …` with its machine-readable news flag
+false. A caller that consulted no calendar at all — the chart and scan surfaces — is recorded as
+**`not_consulted`** rather than being mapped onto either `clear` or `unknown`, and its behaviour is
+unchanged: this fix is about the read that **failed**, not about every surface that does not read.
+The state is derived on every check and **never stored**: no column, no settings key, no write.
+
+**Measured.** M111 **158/0 across 8 probes** (module 26, engine 21, consumers 20, API 14, freshness
+11, hardening 36, portable 15, migration 16/0 against the actual **b39d9ef M110 release** — no
+schema object added or changed, every inherited fact byte-identical, and the *same failing read*
+answers `unknown` on the delivered tree where the parent answered with a quiet payload that had no
+state at all). M110's own cohort re-runs at **253/5**, and those five failures are this milestone's
+**declared negatives**: three assertions in the M110 engine/consumers probes that measure the
+pre-M111 silence on purpose (including its "M111 is open and NOT solved here" marker, which exists
+so closing M111 cannot be mistaken for a regression) and two that assert the blocked payload's
+exact key set, which grew by the new `state`. Every failure is named in the probe output, nothing
+was edited to make a frozen assertion pass, and the older cohorts (M109 166/2, M108 257/2, M107
+230/2, M106 316/2, M105 140/2) keep their own declared schema negatives. RAW 596/156, DECLARED
+824/4 and the live-provider arm 70/1 re-run identical; the native provider arms stay inherited.
+The calendar is fed through the app's own fetch path and parser in every probe and no market or
+calendar provider is reachable from this sandbox, so **no live-feed, provider, broker, pixel or
+human proof is claimed**, and nothing here says what a release will do to price. Ledger
+**132 = 106 done / 2 partial / 24 TODO**. Report `analysis/M111-CALENDAR-UNKNOWN.md` in the ZIP.
+Next **M112** (a trading window derived from `by_session` history — a hard block, not a scored
+penalty); no 70 % win-rate, causal/predictive edge, broker/provider/human/mental-state/pixel/
+production claim, and no predictor of any kind.
+
 ## M110 — the news stand-down is two clocks, not one (2026-10-13)
 
 Saved Ep 30 states **two** news stand-downs of different length: a **pre-release block** (*"you
@@ -49,7 +101,7 @@ probe, and no market provider is reachable from this sandbox, so the engine prob
 synthetic structure and **no live-market or provider claim is made**. **M111 is not solved here**
 and is stated as such: a calendar that cannot be fetched still arrives as a quiet week (null
 blackout, no `unavailable` flag). Ledger **132 = 105 done / 2 partial / 25 TODO**. Report
-`analysis/M110-NEWS-WINDOW.md` in the ZIP. Next **M111** (the fail-open) and **M112**; no 70 %
+`analysis/M110-NEWS-WINDOW.md` in the ZIP. Next M112 (M111 was delivered separately); no 70 %
 win-rate, causal/predictive edge, broker/provider/human/mental-state/pixel/production claim, and
 no predictor of any kind.
 

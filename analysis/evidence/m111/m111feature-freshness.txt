@@ -1,0 +1,12 @@
+ok this tree ships the M111 calendar-read state vocabulary (the committed parent does not, and that absence is this probe's control)
+ok the first read of a quiet week is `clear` and it fetched the feed
+ok a second check inside the TTL reuses the cached read instead of hitting the feed again
+ok once the feed fails, the check says `unknown` and it really did try the feed
+ok the failure is NOT cached the way a success is: the next check retries the feed instead of freezing the outage
+ok when the feed comes back the very next check reads it and returns to `clear` — no sticky unknown, and no manual reset
+ok a failure INSIDE the cached window is still reported as `unknown`: the read is what is cached, not the verdict
+ok and after the TTL expires the feed is read again rather than a stale success being replayed for ever
+ok no read — clear, unknown or blocked — writes any state anywhere: every table is byte-identical
+ok and there is no column to store it in: the news state is derived on every check, never a stored fact
+ok nor does it leak into the user settings blob, so a state cannot survive as configuration
+M111 freshness: the state follows the last read: 11 passed, 0 failed

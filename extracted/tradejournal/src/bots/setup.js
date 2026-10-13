@@ -482,6 +482,15 @@ function buildSetups(analysis, ctx = {}) {
   const standDown = standDownFor(sessions, ctx.standDown);
   const strike = sessions.quality != null ? sessions.quality : 0.5;
   const blackout = ctx.newsBlackout || null;
+  /* M111 — the news row is only a PASS when the calendar was actually read. `ctx.newsState`
+   * carries the engine's own three-state read (`blocked` / `clear` / `unknown`); an outage is
+   * `unknown`, and an unknown news read is NOT a pass — evidence of absence requires the absence
+   * to have been observed. A caller that consulted no calendar at all (the chart and scan
+   * surfaces) supplies no state: that is recorded as `not_consulted` in the payload below rather
+   * than being mapped onto either `clear` or `unknown`, and its behaviour is unchanged — this fix
+   * is about the read that FAILED, not about every surface that does not read. */
+  const newsState = ctx.newsState || 'not_consulted';
+  const newsUnknown = newsState === 'unknown';
   const ind = ctx.indicators || null;
   const momentum = ctx.momentum || null;
   const td = ctx.topdown || null;                   // the method gate
@@ -646,7 +655,7 @@ function buildSetups(analysis, ctx = {}) {
       sessions.note || 'Session filter unavailable.');
 
     /* ---------------------------------------------------------------- 9. news */
-    add('news', 'No high-impact news in the window', !blackout, 10,
+    add('news', 'No high-impact news in the window', !blackout && !newsUnknown, 10,
       // M4 fixed the old "the next 60 minutes" fallback, which was wrong twice (it named a
       // hardcoded number and described a symmetric test as forward-only). M62's surviving
       // half is closed by M110 here: the note does not stay silent about the window — it
@@ -1270,6 +1279,9 @@ function buildSetups(analysis, ctx = {}) {
         note: phaseInfo.note,
       },
       news_blackout: blackout || null,
+      // M111 — the state beside the sentence. `unknown` next to a null blackout is the honest
+      // pair: nothing is known to be inside the window, and the window was never checked.
+      news_state: newsState,
       min_rr: minRR,
     },
   };
