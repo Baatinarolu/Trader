@@ -1,0 +1,180 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 43,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the plan gate (src/bots/plan-gate.js) (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the vocabulary is a closed list of named facts, each with a documented line",
+      "passed": true
+    },
+    {
+      "label": "every documented line parses as a MACHINE rule — the documentation cannot drift from the engine",
+      "passed": true
+    },
+    {
+      "label": "and each fact appears exactly once",
+      "passed": true
+    },
+    {
+      "label": "the compare facts document their own operator, so a trader never has to guess the direction",
+      "passed": true
+    },
+    {
+      "label": "a fact with a closed value set publishes that set, so a client can render the choices",
+      "passed": true
+    },
+    {
+      "label": "a line that does not start with `require` is prose — context for the human, never a rule for the engine",
+      "passed": true
+    },
+    {
+      "label": "a `require` line naming a fact the vocabulary does not know is reported as unrecognised, NOT passed as satisfied",
+      "passed": true
+    },
+    {
+      "label": "an empty line is prose rather than an empty rule",
+      "passed": true
+    },
+    {
+      "label": "a floor cannot be written as a ceiling: `require min_rr <= 2` is unrecognised, not a rule",
+      "passed": true
+    },
+    {
+      "label": "and a ceiling cannot be written as a floor: `require risk >= 1` is unrecognised",
+      "passed": true
+    },
+    {
+      "label": "a boolean fact takes no operator or value",
+      "passed": true
+    },
+    {
+      "label": "an enum fact must be one of its own values (a misspelling is not a silent pass)",
+      "passed": true
+    },
+    {
+      "label": "a compare fact must have a positive number",
+      "passed": true
+    },
+    {
+      "label": "`min_rr >= 2` is met at the boundary (2.0R) and refused just below it",
+      "passed": true
+    },
+    {
+      "label": "`risk <= 1` is met at the boundary (1%) and refused above it",
+      "passed": true
+    },
+    {
+      "label": "the grade ladder is ordered A+ > A > B > C > D, so `>= B` is met by A+ and refused by C",
+      "passed": true
+    },
+    {
+      "label": "a stood-down setup cannot satisfy a plan that asked for a tradeable grade",
+      "passed": true
+    },
+    {
+      "label": "an enum comparison is case-insensitive on both sides",
+      "passed": true
+    },
+    {
+      "label": "a boolean fact is refused only when it is known false",
+      "passed": true
+    },
+    {
+      "label": "a fact the caller did not hand over is UNKNOWN — never `met`",
+      "passed": true
+    },
+    {
+      "label": "and every read that could not be made is unknown: undefined, null and NaN alike",
+      "passed": true
+    },
+    {
+      "label": "every documented line is a machine rule, so the sweep below covers the whole vocabulary",
+      "passed": true
+    },
+    {
+      "label": "with nothing readable, every rule is unknown and NOT ONE veto is fabricated",
+      "passed": true
+    },
+    {
+      "label": "and an unknown rule carries no sentence either (a refusal must always be a measured false)",
+      "passed": true
+    },
+    {
+      "label": "a refusal names the trader’s own plan, its version and its own rule text",
+      "passed": true
+    },
+    {
+      "label": "it states the fact that failed, and quotes the episode’s own non-negotiable",
+      "passed": true
+    },
+    {
+      "label": "and it is exactly one sentence per refused rule, in the plan’s own order",
+      "passed": true
+    },
+    {
+      "label": "a path with no trader is `not_consulted`, which is a different token from a plan that failed to read",
+      "passed": true
+    },
+    {
+      "label": "no plan is `no_plan` and blocks nothing, with the reason in the note",
+      "passed": true
+    },
+    {
+      "label": "two active plans are reported as ambiguous WITH both names, never silently intersected or picked",
+      "passed": true
+    },
+    {
+      "label": "an unreadable plan is `unavailable` and carries the reason, so a broken read can never look like compliance",
+      "passed": true
+    },
+    {
+      "label": "a ready plan reports what is enforced, what is prose and what is unrecognised — as three separate lists",
+      "passed": true
+    },
+    {
+      "label": "the per-direction results ride the view, so a client can explain which side a rule refused",
+      "passed": true
+    },
+    {
+      "label": "the limits name the vocabulary and deny every influence a gate could be mistaken for",
+      "passed": true
+    },
+    {
+      "label": "nothing in the gate is money-shaped: no amount, P&L, equity or goal key anywhere in the payload",
+      "passed": true
+    },
+    {
+      "label": "a plan whose rules were never written parses to zero rules, not to an error",
+      "passed": true
+    },
+    {
+      "label": "a stored value that is not an array (or not JSON at all) also yields zero rules — the gate can never crash a signal",
+      "passed": true
+    },
+    {
+      "label": "and it is reported as MALFORMED rather than as a plan with nothing to enforce",
+      "passed": true
+    },
+    {
+      "label": "an array of strings is parsed in order, and blank entries are dropped rather than counted",
+      "passed": true
+    },
+    {
+      "label": "and the counts a client renders are the parse’s own counts",
+      "passed": true
+    },
+    {
+      "label": "the gate exposes no way to change a grade, a score, a cap or a price: the module exports no such setter",
+      "passed": true
+    },
+    {
+      "label": "and it names that limit itself, so the refusal can never be quoted as a performance claim",
+      "passed": true
+    }
+  ],
+  "scope": "M56 pure: the plan gate’s vocabulary, parse and evaluation: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

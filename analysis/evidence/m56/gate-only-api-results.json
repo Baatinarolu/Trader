@@ -1,0 +1,26 @@
+{
+  "app": "/tmp/m56-gate-stage/app",
+  "pass": 2,
+  "fail": 2,
+  "results": [
+    {
+      "label": "this tree ships the plan gate (src/bots/plan-gate.js) (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the app’s own starter playbook is published active (the sample this section measures)",
+      "passed": true
+    },
+    {
+      "label": "with several active plans the gate reports `ambiguous` and names every candidate, and it NEVER picks one silently",
+      "passed": false,
+      "detail": "{}"
+    },
+    {
+      "label": "uncaught",
+      "passed": false,
+      "detail": "Cannot read properties of undefined (reading 'length')"
+    }
+  ],
+  "scope": "M56 api: the written plan over the real routes, its ownership and its read-only proof: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

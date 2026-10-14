@@ -1,0 +1,193 @@
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 708b6c1..532e59d 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -30,6 +30,7 @@ const Now = require('./now');
+ const Predict = require('./predict');
+ const Cor = require('./correction');
+ const Guards = require('./guardrails');
++const PlanGate = require('./plan-gate');   // M56: the trader's written plan, as a gate
+ const StateGate = require('../state-gate');
+ const NewsWindow = require('../news-window');
+ const TradingWindow = require('../trading-window');   // M112   // M110 — two clocks, not one number
+@@ -377,6 +378,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+    * is published as itself rather than being folded into either "inside" or "blocked". An explicit
+    * clock is honoured when a caller supplies one; otherwise this is the server clock, never a
+    * client's. */
++  /* M56 — the trader's OWN written plan, read once per analysis exactly like the window above, and
++   * for the same reason: the gate must be a function of the stored plan and the trader's own
++   * settings, not of which bot asked. `safe` never throws on an unreadable plan (it returns the
++   * `unavailable` state, which refuses rather than passing); an explicit strategy_id that is not
++   * theirs is the caller's error and surfaces. `opts.strategyId` is validated by the route. */
++  const writtenPlan = await PlanGate.safe(opts.userId, opts.strategyId);
+   const windowNow = Number.isFinite(Number(opts.nowMs)) ? Number(opts.nowMs) : Date.now();
+   const tradingWindow = TradingWindow.safeState({ start: account && account.window_start, end: account && account.window_end,
+     timezone: account && account.window_timezone, ownedZone: account && account.routine_timezone, source: account && account.window_source, nowMs: windowNow });
+@@ -419,6 +426,9 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+     // refusal names THEIR window (with the local time that produced it) next to the other
+     // non-negotiables, instead of arriving later as a generic personal stop.
+     tradingWindow,
++    // M56 — the plan travels into the setup model the same way, so the plan's requirements are
++    // evaluated at the point every other non-negotiable is, against the model's own facts.
++    planGate: writtenPlan,
+   });
+ 
+   let prediction = null;
+@@ -626,11 +636,16 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
+   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
+ 
++  /* M56 — the chart confirms against the SAME written plan the analysis does, read here rather than
++   * taken from the caller: M124's rule is that the chart is not a second opinion, and a gate only one
++   * of the two surfaces obeyed would be exactly that. */
++  const chartPlan = await PlanGate.safe(opts.userId, opts.strategyId);
+   let setups = Setup.buildSetups(entry.smc, {
+     price: entry.price, atr: entry.atr, entrySeries: entry, observedAt: cut.asOf || opts.nowMs, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
+     indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
+     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
+     sessionPref: opts.sessionPref || null,   // M26
++    planGate: chartPlan,                     // M56
+   });
+ 
+   const daily = await personalState(opts.userId,opts.accountId,candidateTf(setups,td,tf));
+@@ -735,17 +750,26 @@ async function chart(symbol, tf = '15m', opts = {}) {
+     setups: {
+       verdict: setups.verdict, method: setups.method, execution_permission:setups.execution_permission,
+       candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok, market_ok:c.market_ok, personal_blocked:c.personal_blocked,
++        // M56 — the written plan and its per-side rules travel with the chart too: the chart is not a
++        // second opinion (M124), so a client that renders the chart's candidates can show the same
++        // refusal the analysis shows instead of having to ask again with different inputs.
++        plan_rules: c.plan_rules,
+         // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
+         // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
+         entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence, entry_preference: c.entry_preference,
+         no_trade: c.no_trade || [], levels: c.levels, action: c.action })),
++      filters: setups.filters,
+     },
+     quote: { price: entry.price, atr: entry.atr, change_pct: entry.candles.length > 1 ? r2(((entry.price - entry.candles[0].c) / entry.candles[0].c) * 100) : null },
+   };
+ }
+ 
+-async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, sessionPref = null, useBreakers = false, entryModels } = {}) {
++async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, strategyId = null, sessionPref = null, useBreakers = false, entryModels } = {}) {
+   const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
++  /* M56 — read the written plan ONCE for the whole scan, not once per symbol: the plan is a property
++   * of the trader, and re-reading it inside the worker could only ever produce a different answer for
++   * the same plan. A scan that offered symbols the plan refuses would be the same gap in a wider lens. */
++  const scanPlan = await PlanGate.safe(userId, strategyId);
+   const rows = [];
+   let cursor = 0;
+   async function worker() {
+@@ -764,8 +788,10 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+           price: series.price, atr: series.atr, entrySeries: series, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
+           indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
+           sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
++          planGate: scanPlan,   // M56 — the same written plan for every symbol in the scan
+                          // No symbol on this path either, so the pair-conflict note stays
+-                         // null rather than false.
++                         // null rather than false. (M56's plan is read once below, beside the
++                         // other per-user reads, and rides this ctx the same way.)
+         });
+         const daily = await personalState(userId,accountId,candidateTf(specs,momentum.topdown || {},tf));
+         specs = Guards.applyToSetups(specs,daily);
+@@ -802,6 +828,11 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+           provider: series.meta.provider, ticker: series.meta.ticker,
+           headline: momentum.narrative && momentum.narrative[0] ? momentum.narrative[0].text : '',
+           conflicts: momentum.conflicts,
++          // M56 — the written plan the row was confirmed against, and whether it took this row's
++          // setup away: a scan that silently listed a symbol the trader's own plan refuses would be
++          // the original gap in a wider lens.
++          plan_gate: specs.filters.plan_gate,
++          plan_refused: !!(best && best.plan_rules && best.plan_rules.refused > 0),
+         });
+       } catch (e) {
+         rows.push({ symbol: sym, timeframe: tf, ok: false, error: e.message });
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index 4dc0651..a5dc8ed 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -338,6 +338,7 @@ function targetPools(analysis, dir, entry, { magnets = true } = {}) {
+  * @returns {{candidates:Array, verdict:object}}
+  */
+ const SMC = require('./smc');   // M38/M40: sessionAffinity
++const PlanGate = require('./plan-gate');   // M56: the written plan as a gate
+ 
+ /** M33 — counter-HTF execution is reduced even with A-grade confirmation.
+  * Reuse the existing counter-CRT policy too: it previously promised half size in
+@@ -498,6 +499,7 @@ function buildSetups(analysis, ctx = {}) {
+   const candidates = [];
+   // M61: `const vetoes = []` lived here and was never read or returned — dead code. Removed.
+ 
++  const planEvals = [];
+   for (const dir of [1, -1]) {
+     const long = dir > 0;
+     const side = long ? 'buy' : 'sell';
+@@ -1023,6 +1025,44 @@ function buildSetups(analysis, ctx = {}) {
+     if (counter && ctx.bias != null && Math.sign(Number(ctx.bias)) !== counter.htf_bias) {
+       vetoes.push('The held daily bias disagrees with this HTF narrative — wait for its defining invalidation, not an MTF override.');
+     }
++    /* M56 — the trader's OWN written plan, as a gate on this candidate. The plan's machine-checkable
++     * `require …` lines are evaluated here, against the SAME facts the vetoes above were built from,
++     * so the plan can only ever refuse something the model already knows. Facts the engine could not
++     * read are `unknown` and refuse nothing (M8/M111's rule) — while a plan line the trader wrote to
++     * gate and the vocabulary does NOT recognise is reported as unrecognised rather than passed, so a
++     * silent green is impossible. The refusal is an ordinary entry in `no_trade`, which is what makes
++     * the verdict, the Now guards, the toolbar and Copy plan obey it without any new plumbing. */
++    let planRules = null;
++    if (ctx.planGate && ctx.planGate.state === 'ready') {
++      const planFacts = PlanGate.facts({
++        sweep: PlanGate.read(hasTrigger, null),
++        market_shift: PlanGate.read(structureKnown ? !!marketShift : undefined, null),
++        zone: PlanGate.read(hasZone, null),
++        // M8 — the short-series sentinel leaves `in_killzone` undefined, and that is an UNKNOWN
++        // window, never "outside": a plan asking for a killzone must not be refused on a blind read.
++        killzone: PlanGate.read(sess.in_killzone === undefined ? undefined : !!sess.in_killzone,
++          sess.killzone ? `${sess.killzone} is open.` : null),
++        session: PlanGate.read(prefOpenBullet ? prefOpenBullet.key : (sess.in_killzone === false ? null : undefined), null),
++        timeframe: PlanGate.read(entryTf, null),
++        trend: PlanGate.read(analysis && analysis.structure ? analysis.structure.trend : undefined, null),
++        phase: PlanGate.read(phaseInfo && phaseInfo.phase !== 'unknown' ? phaseInfo.phase : undefined, null),
++        bias_aligned: PlanGate.read(bias ? (Math.sign(bias) === dir) : undefined, null),
++        no_news_blackout: PlanGate.read(newsUnknown ? undefined : !blackout, blackout ? String(blackout).slice(0, 160) : null),
++        grade: PlanGate.read(g.grade, `Setup grades ${g.grade} at ${score}/100.`),
++        // No computed levels yet is an UNKNOWN reward:risk, not a zero one.
++        min_rr: PlanGate.read(levels && Number.isFinite(Number(floorRR)) ? Number(floorRR) : undefined,
++          levels && Number.isFinite(Number(floorRR)) ? `The first target is ${r2(floorRR)}R${levels.stop ? ` against a ${levels.stop} stop` : ''}.` : null),
++        risk: PlanGate.read(Number.isFinite(Number(ctx.riskPct)) ? Number(ctx.riskPct) : undefined, null),
++      });
++      const verdict = PlanGate.evaluate(ctx.planGate, planFacts, dir);
++      /* The plan's refusal goes to the FRONT of the list, not the end: `no_trade[0]` is what the
++       * action line, the Now headline and the copy button say first, and the one refusal that is the
++       * trader's own written instruction outranks a mechanical veto about the market. (M3 sets the
++       * same precedent when it places the anti-chase line ahead of the zone veto.) */
++      vetoes.unshift(...verdict.vetoes);
++      planRules = { dir, refused: verdict.refused, unknown: verdict.unknown, rules: verdict.results };
++      planEvals.push(verdict);
++    }
+     const tradeable = vetoes.length === 0 && g.grade !== 'no-trade';
+ 
+     // M25's phaseInfo now lives above the loop (M3 gates on it before the vetoes are
+@@ -1129,6 +1169,10 @@ function buildSetups(analysis, ctx = {}) {
+       // the grade. `no_trade` says which one fired, so the refusal is explainable.
+       ok: tradeable,
+       no_trade: vetoes,
++      // M56 — which of the plan's machine-checkable requirements this candidate was measured against,
++      // and how each resolved. `null` when no plan was consulted, so the absence is visible rather
++      // than reported as an empty (and therefore perfect-looking) rule list.
++      plan_rules: planRules,
+       checks,
+       passed: checks.filter((c) => c.pass).length,
+       total_checks: checks.length,
+@@ -1243,6 +1287,12 @@ function buildSetups(analysis, ctx = {}) {
+        * than only as a refusal, so a client can render "your window is 07:00-10:00 Africa/Lagos and
+        * it is 13:41 there" without re-deriving it from the veto string. `not_selected` is its own
+        * token: this app never defaults one. */
++      /* M56 — the written plan as a gate, stated as a filter beside the killzone and the trading
++       * window so a client can render the plan it was checked against, which requirements were
++       * enforceable, and — loudly — the lines the vocabulary could NOT check. A plan is not required
++       * to use the app: `no_plan` blocks nothing. `unavailable` does, because a plan that could not
++       * be read must never look like one that was satisfied. */
++      plan_gate: PlanGate.view(ctx.planGate, planEvals),
+       trading_window: ctx.tradingWindow ? { state: ctx.tradingWindow.state, start: (ctx.tradingWindow.window || {}).start || null,
+         end: (ctx.tradingWindow.window || {}).end || null, timezone: (ctx.tradingWindow.window || {}).timezone || null,
+         source: (ctx.tradingWindow.window || {}).source || null, local_time: (ctx.tradingWindow.window || {}).local_time || null,

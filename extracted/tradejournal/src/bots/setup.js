@@ -338,6 +338,7 @@ function targetPools(analysis, dir, entry, { magnets = true } = {}) {
  * @returns {{candidates:Array, verdict:object}}
  */
 const SMC = require('./smc');   // M38/M40: sessionAffinity
+const PlanGate = require('./plan-gate');   // M56: the written plan as a gate
 
 /** M33 — counter-HTF execution is reduced even with A-grade confirmation.
  * Reuse the existing counter-CRT policy too: it previously promised half size in
@@ -498,6 +499,7 @@ function buildSetups(analysis, ctx = {}) {
   const candidates = [];
   // M61: `const vetoes = []` lived here and was never read or returned — dead code. Removed.
 
+  const planEvals = [];
   for (const dir of [1, -1]) {
     const long = dir > 0;
     const side = long ? 'buy' : 'sell';
@@ -1023,6 +1025,44 @@ function buildSetups(analysis, ctx = {}) {
     if (counter && ctx.bias != null && Math.sign(Number(ctx.bias)) !== counter.htf_bias) {
       vetoes.push('The held daily bias disagrees with this HTF narrative — wait for its defining invalidation, not an MTF override.');
     }
+    /* M56 — the trader's OWN written plan, as a gate on this candidate. The plan's machine-checkable
+     * `require …` lines are evaluated here, against the SAME facts the vetoes above were built from,
+     * so the plan can only ever refuse something the model already knows. Facts the engine could not
+     * read are `unknown` and refuse nothing (M8/M111's rule) — while a plan line the trader wrote to
+     * gate and the vocabulary does NOT recognise is reported as unrecognised rather than passed, so a
+     * silent green is impossible. The refusal is an ordinary entry in `no_trade`, which is what makes
+     * the verdict, the Now guards, the toolbar and Copy plan obey it without any new plumbing. */
+    let planRules = null;
+    if (ctx.planGate && ctx.planGate.state === 'ready') {
+      const planFacts = PlanGate.facts({
+        sweep: PlanGate.read(hasTrigger, null),
+        market_shift: PlanGate.read(structureKnown ? !!marketShift : undefined, null),
+        zone: PlanGate.read(hasZone, null),
+        // M8 — the short-series sentinel leaves `in_killzone` undefined, and that is an UNKNOWN
+        // window, never "outside": a plan asking for a killzone must not be refused on a blind read.
+        killzone: PlanGate.read(sess.in_killzone === undefined ? undefined : !!sess.in_killzone,
+          sess.killzone ? `${sess.killzone} is open.` : null),
+        session: PlanGate.read(prefOpenBullet ? prefOpenBullet.key : (sess.in_killzone === false ? null : undefined), null),
+        timeframe: PlanGate.read(entryTf, null),
+        trend: PlanGate.read(analysis && analysis.structure ? analysis.structure.trend : undefined, null),
+        phase: PlanGate.read(phaseInfo && phaseInfo.phase !== 'unknown' ? phaseInfo.phase : undefined, null),
+        bias_aligned: PlanGate.read(bias ? (Math.sign(bias) === dir) : undefined, null),
+        no_news_blackout: PlanGate.read(newsUnknown ? undefined : !blackout, blackout ? String(blackout).slice(0, 160) : null),
+        grade: PlanGate.read(g.grade, `Setup grades ${g.grade} at ${score}/100.`),
+        // No computed levels yet is an UNKNOWN reward:risk, not a zero one.
+        min_rr: PlanGate.read(levels && Number.isFinite(Number(floorRR)) ? Number(floorRR) : undefined,
+          levels && Number.isFinite(Number(floorRR)) ? `The first target is ${r2(floorRR)}R${levels.stop ? ` against a ${levels.stop} stop` : ''}.` : null),
+        risk: PlanGate.read(Number.isFinite(Number(ctx.riskPct)) ? Number(ctx.riskPct) : undefined, null),
+      });
+      const verdict = PlanGate.evaluate(ctx.planGate, planFacts, dir);
+      /* The plan's refusal goes to the FRONT of the list, not the end: `no_trade[0]` is what the
+       * action line, the Now headline and the copy button say first, and the one refusal that is the
+       * trader's own written instruction outranks a mechanical veto about the market. (M3 sets the
+       * same precedent when it places the anti-chase line ahead of the zone veto.) */
+      vetoes.unshift(...verdict.vetoes);
+      planRules = { dir, refused: verdict.refused, unknown: verdict.unknown, rules: verdict.results };
+      planEvals.push(verdict);
+    }
     const tradeable = vetoes.length === 0 && g.grade !== 'no-trade';
 
     // M25's phaseInfo now lives above the loop (M3 gates on it before the vetoes are
@@ -1129,6 +1169,10 @@ function buildSetups(analysis, ctx = {}) {
       // the grade. `no_trade` says which one fired, so the refusal is explainable.
       ok: tradeable,
       no_trade: vetoes,
+      // M56 — which of the plan's machine-checkable requirements this candidate was measured against,
+      // and how each resolved. `null` when no plan was consulted, so the absence is visible rather
+      // than reported as an empty (and therefore perfect-looking) rule list.
+      plan_rules: planRules,
       checks,
       passed: checks.filter((c) => c.pass).length,
       total_checks: checks.length,
@@ -1243,6 +1287,12 @@ function buildSetups(analysis, ctx = {}) {
        * than only as a refusal, so a client can render "your window is 07:00-10:00 Africa/Lagos and
        * it is 13:41 there" without re-deriving it from the veto string. `not_selected` is its own
        * token: this app never defaults one. */
+      /* M56 — the written plan as a gate, stated as a filter beside the killzone and the trading
+       * window so a client can render the plan it was checked against, which requirements were
+       * enforceable, and — loudly — the lines the vocabulary could NOT check. A plan is not required
+       * to use the app: `no_plan` blocks nothing. `unavailable` does, because a plan that could not
+       * be read must never look like one that was satisfied. */
+      plan_gate: PlanGate.view(ctx.planGate, planEvals),
       trading_window: ctx.tradingWindow ? { state: ctx.tradingWindow.state, start: (ctx.tradingWindow.window || {}).start || null,
         end: (ctx.tradingWindow.window || {}).end || null, timezone: (ctx.tradingWindow.window || {}).timezone || null,
         source: (ctx.tradingWindow.window || {}).source || null, local_time: (ctx.tradingWindow.window || {}).local_time || null,

@@ -248,11 +248,12 @@ the methodology, the weights and the honest limitations.
 | Method | Path | Query / body | Returns |
 |---|---|---|---|
 | GET | `/bots/markets` | — | instruments (63), timeframes, killzone state, providers |
+| GET | `/bots/plan-gate` | `strategy_id` (optional — your own; defaults to your single ACTIVE plan) | `{ ok, version, vocabulary[], state, plan, note, reason, candidates, counts, lines, limits }` — `state` is `ready`, `no_plan`, `ambiguous` (>1 active plan, all named), `unavailable` or `not_consulted`; each `lines[]` entry is classified `machine`, `prose` or `unknown_fact`; `limits` states prose is not parsed, an unknown value never counts as met and no grade/score/cap/price is influenced |
 | GET | `/bots/candles` | `symbol`, `tf` (1m…1w), `limit` (50–1500), `force=1` | `{ candles:[{t,o,h,l,c,v}], meta:{provider,ticker,last_price,last_bar,cached,warnings} }` |
-| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1` | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
+| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1`, `strategy_id` | | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
 | GET | `/bots/topdown` | `symbol`, `tf`, `bars` | the video's method on its own: `{ method, layers, steps, checks, score, grade, status, direction, headline, playbook, blocked, conflicts[], crt_plan, levels, verdict }` |
-| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
-| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf` | `{ rows:[…ranked], errors:[…], actionable, killzone }` |
+| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id`, `strategy_id` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
+| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf`, `strategy_id` | `{ rows:[…ranked], errors:[…], actionable, killzone }` — every row carries the plan gate it was confirmed against (`plan_gate`) and whether that plan took the setup away (`plan_refused`) |
 | GET | `/bots/predict` | `symbol`, `tf`, `bars`, `step`, `horizon` | `{ direction, setups, buy, sell, model, backtest, summary }` — `backtest` carries the measured tables below |
 | GET | `/bots/backtest` | `symbol`, `tf`, `bars` (300–3000), `step` (1–6), `samples`, `entry`, `cost`, `force=1` | backtest detail + `trades[]` table + the measured blocks below |
 | GET | `/bots/correction` | `days`, `account_id`, `backfill=1` | `{ overall, behavior_score, mistakes[], guardrails, daily, grades[] }` |

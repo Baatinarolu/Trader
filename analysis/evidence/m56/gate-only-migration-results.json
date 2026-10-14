@@ -1,0 +1,92 @@
+{
+  "app": "/tmp/m56-gate-stage/app",
+  "pass": 21,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the plan gate (src/bots/plan-gate.js) (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the parent tree IS the committed release this milestone is built on: it carries the review periods and the clean-rep count, and no plan gate of its own",
+      "passed": true
+    },
+    {
+      "label": "the fixture is the SAME shape in both trees: the same four plans, the same stored bytes and the same trades",
+      "passed": true
+    },
+    {
+      "label": "the delivered tree creates exactly the parent’s schema: every table, index and trigger is byte-identical DDL, so this milestone adds NO schema object of any kind",
+      "passed": true
+    },
+    {
+      "label": "and on that fixture every table is byte-identical, so nothing was back-filled or rewritten at open time either",
+      "passed": true
+    },
+    {
+      "label": "there is no plan_gate/plan_rule table, index or trigger to find: the schema search the negative claim rests on is empty in both trees",
+      "passed": true
+    },
+    {
+      "label": "the four stored shapes really are the four shapes being measured, written by each tree’s own database layer",
+      "passed": true
+    },
+    {
+      "label": "the parent’s own second boot performs its M102 v1 backfill exactly once (four version rows) and a further boot changes not one byte",
+      "passed": true
+    },
+    {
+      "label": "and the parent stores every one of the four shapes without an opinion about any of them: an array, a double-encoded string, and prose all sit in the column, read by nobody on the decision path",
+      "passed": true
+    },
+    {
+      "label": "the parent’s own decision surface has NO plan keys at all — no `plan_rules` on a candidate and no `plan_gate` in the filter block, measured over a real analysis",
+      "passed": true
+    },
+    {
+      "label": "and the parent ships no plan-gate module — the absence is real, not a configuration of this probe",
+      "passed": true
+    },
+    {
+      "label": "the delivered tree reads the PARENT’s own plan: two machine lines enforced, one line of prose reported and never interpreted",
+      "passed": true
+    },
+    {
+      "label": "the prose-only plan enforces nothing and SAYS so (it does not look satisfied), and its free-text market-conditions field is not parsed",
+      "passed": true
+    },
+    {
+      "label": "a `require` line outside the vocabulary is surfaced as unrecognised with its reason, so a typo is named instead of silently passing",
+      "passed": true
+    },
+    {
+      "label": "the double-encoded value the parent stored is reported MALFORMED rather than read as a satisfied plan",
+      "passed": true
+    },
+    {
+      "label": "with no id named the gate uses the parent’s own `active` column: the one active plan, and only because it is the only one",
+      "passed": true
+    },
+    {
+      "label": "the version it reports is the parent’s own M102 row for that plan, so a refusal can name the rule set the trade was taken under",
+      "passed": true
+    },
+    {
+      "label": "reading the plan writes NOTHING: every table digest is identical before and after, and the versions table did not move",
+      "passed": true
+    },
+    {
+      "label": "and reading it a second way is stable: the same four rows produce the same verdicts as the parent’s file is re-opened and read again",
+      "passed": true
+    },
+    {
+      "label": "the vocabulary and the limits travel with the module itself — thirteen concrete lines and the read-only claim the refusal can be quoted against",
+      "passed": true
+    },
+    {
+      "label": "the parent’s own code still opens the file afterwards and sees exactly the four plans and two trades it left, with no row and no column this milestone added",
+      "passed": true
+    }
+  ],
+  "scope": "M56 migration: a plan the committed parent stored is read with no schema change and no write: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

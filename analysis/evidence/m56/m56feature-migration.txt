@@ -1,0 +1,22 @@
+ok this tree ships the plan gate (src/bots/plan-gate.js) (the committed parent does not, and that absence is this probe's control)
+ok the parent tree IS the committed release this milestone is built on: it carries the review periods and the clean-rep count, and no plan gate of its own
+ok the fixture is the SAME shape in both trees: the same four plans, the same stored bytes and the same trades
+ok the delivered tree creates exactly the parent’s schema: every table, index and trigger is byte-identical DDL, so this milestone adds NO schema object of any kind
+ok and on that fixture every table is byte-identical, so nothing was back-filled or rewritten at open time either
+ok there is no plan_gate/plan_rule table, index or trigger to find: the schema search the negative claim rests on is empty in both trees
+ok the four stored shapes really are the four shapes being measured, written by each tree’s own database layer
+ok the parent’s own second boot performs its M102 v1 backfill exactly once (four version rows) and a further boot changes not one byte
+ok and the parent stores every one of the four shapes without an opinion about any of them: an array, a double-encoded string, and prose all sit in the column, read by nobody on the decision path
+ok the parent’s own decision surface has NO plan keys at all — no `plan_rules` on a candidate and no `plan_gate` in the filter block, measured over a real analysis
+ok and the parent ships no plan-gate module — the absence is real, not a configuration of this probe
+ok the delivered tree reads the PARENT’s own plan: two machine lines enforced, one line of prose reported and never interpreted
+ok the prose-only plan enforces nothing and SAYS so (it does not look satisfied), and its free-text market-conditions field is not parsed
+ok a `require` line outside the vocabulary is surfaced as unrecognised with its reason, so a typo is named instead of silently passing
+ok the double-encoded value the parent stored is reported MALFORMED rather than read as a satisfied plan
+ok with no id named the gate uses the parent’s own `active` column: the one active plan, and only because it is the only one
+ok the version it reports is the parent’s own M102 row for that plan, so a refusal can name the rule set the trade was taken under
+ok reading the plan writes NOTHING: every table digest is identical before and after, and the versions table did not move
+ok and reading it a second way is stable: the same four rows produce the same verdicts as the parent’s file is re-opened and read again
+ok the vocabulary and the limits travel with the module itself — thirteen concrete lines and the read-only claim the refusal can be quoted against
+ok the parent’s own code still opens the file afterwards and sees exactly the four plans and two trades it left, with no row and no column this milestone added
+M56 migration: a plan the committed parent stored is read with no schema change and no write: 21 passed, 0 failed

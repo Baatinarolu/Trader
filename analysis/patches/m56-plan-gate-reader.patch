@@ -1,0 +1,80 @@
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 9bc744b..cd6a508 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -23,6 +23,9 @@ function createBotsRouter({ requireAuth }) {
+     if(err.code==='execution_review_invalid')return res.status(err.status).json({error:err.message,code:err.code});
+     if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
+     if (err.code?.startsWith('state_gate_')) return res.status(err.status).json({error:err.message,code:err.code,state_gate:err.state_gate});
++    /* M56 — the plan gate's own errors (an unowned plan id, a malformed one) carry their status:
++     * a 404 for somebody else's plan is a real answer, not an internal failure. */
++    if (err.code?.startsWith('plan_')) return res.status(err.status || 400).json({ error: err.message, code: err.code });
+     res.status(500).json({ error: err.message || 'Bot error' });
+   });
+   const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));
+@@ -97,6 +100,37 @@ router.get('/markets', requireAuth, (req, res) => {
+     });
+   }));
+ 
++  /* ------------------------------------------------------------- plan gate */
++
++  /**
++   * M56 — the written plan's gate: the vocabulary this app can actually enforce, and how each of the
++   * trader's own rule lines parses. The plan editor reads this so its hint can never drift from the
++   * grammar the engine runs, and the trader can see which of their lines are gating, which are prose
++   * and which the app does not understand (`unrecognised`) — the last of those is the one that must
++   * never look like a satisfied requirement.
++   */
++  router.get('/plan-gate', requireAuth, wrap(async (req, res) => {
++    const PlanGate = require('../bots/plan-gate');
++    const loaded = await PlanGate.safe(req.user.id, req.query.strategy_id || null);
++    res.json({
++      ok: true, version: PlanGate.VERSION, vocabulary: PlanGate.vocabulary(),
++      state: loaded.state, plan: loaded.plan || null, note: loaded.note || null, reason: loaded.reason || null,
++      candidates: loaded.candidates || null,
++      counts: loaded.counts || null,
++      // A stored value that cannot be read as a list of lines is a THIRD state the client must be able
++      // to name: an empty checklist and an unreadable one look identical in `lines`, so the flag rides
++      // beside them and the trader is told to re-save instead of reading a silent pass.
++      malformed: !!loaded.malformed,
++      lines: loaded.state === PlanGate.STATES.READY
++        ? loaded.rules.map((r) => ({ text: r.text, kind: r.kind, fact: r.fact || null, reason: r.reason || null }))
++        : [],
++      limits: {
++        prose_is_not_parsed: true, market_conditions_field_is_not_parsed: true, exit_rules_are_not_parsed: true,
++        unknown_is_never_met: true, grade_influence: false, score_influence: false, broker_verified: false,
++      },
++    });
++  }));
++
+   /* -------------------------------------------------------------- analyse */
+ 
+   router.get('/analyse', requireAuth, wrap(async (req, res) => {
+@@ -111,6 +145,10 @@ router.get('/markets', requireAuth, (req, res) => {
+       step: Math.min(Math.max(num(req.query.step, 2), 1), 6),
+       minRR: await floorOf(req),
+       sessionPref: await prefOf(req),                                  // M26
++      /* M56 — which written plan this analysis is confirmed against. Optional: omitted, the gate
++       * uses the trader's single active plan (and says so); a plan that is not theirs is a 404 from
++       * the gate itself, never a silent fallback to somebody else's rules. */
++      strategyId: req.query.strategy_id || null,
+       force: req.query.force === '1',
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),       // bar replay: drop the last N candles
+       as_of: req.query.as_of || null,                                  // bar replay: read as of this instant
+@@ -137,6 +175,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       accountId: req.query.account_id ? Number(req.query.account_id) : null,
+       minRR: await floorOf(req),
+       sessionPref: await prefOf(req),                                  // M26
++      strategyId: req.query.strategy_id || null,                       // M56
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),
+       as_of: req.query.as_of || null,
+     });
+@@ -176,7 +215,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       .split(',').map((s) => s.trim()).filter(Boolean);
+     if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
+     const tf = String(req.query.tf || '15m');
+-    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req) });  // M26
++    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req), strategyId: req.query.strategy_id || null });  // M26/M56
+     res.json(out);
+   }));
+ 

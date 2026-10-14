@@ -2,6 +2,19 @@
 (function (global) {
   'use strict';
   const Views = global.Views = global.Views || {};let renderEpoch=0;
+  /* M56 — the plan gate's vocabulary, fetched from the server so the editor's hint can never drift
+   * from the grammar the engine actually enforces (a hard-coded copy here would be a second source of
+   * truth, and the first time the two disagreed the trader would write rules that silently do nothing). */
+  function loadPlanVocabulary() {
+    if (global.PLAN_GATE_VOCABULARY) return Promise.resolve(global.PLAN_GATE_VOCABULARY);
+    if (global.PLAN_GATE_VOCABULARY_ASKED) return global.PLAN_GATE_VOCABULARY_ASKED;
+    const asked = global.API.get('/bots/plan-gate').then((r) => {
+      global.PLAN_GATE_VOCABULARY = (r && r.vocabulary) || [];
+      return global.PLAN_GATE_VOCABULARY;
+    }).catch(() => []);
+    global.PLAN_GATE_VOCABULARY_ASKED = asked;
+    return asked;
+  }
 
   Views.playbook = {
     title: 'Playbook',
@@ -70,6 +83,10 @@
   };
 
   async function strategyDialog(s, root) {
+    // M56 — the enforced-rule hint under the Entry rules field needs the engine's own vocabulary, and it
+    // has to be THERE when the editor opens: a hint reading "loading…" is the same as no hint for the
+    // one edit it exists to inform. The read is cached, so only the first dialog waits for it.
+    await loadPlanVocabulary();
     const R=Views.ruleChanges,context=R?.ctx(),number=R?.nextSerial();let discipline;
     if(s&&R){try{discipline=await API.get('/strategies/'+s.id+'/change-discipline');if(!R.same(context)||!R.current(number))return;s=discipline.strategy;}catch(e){if(R.same(context)&&R.current(number))global.App.toast(e.message,'err');return;}}
     let alive=true,stale=false;
@@ -84,6 +101,7 @@
       <label class="field"><span>Target R multiple</span><input id="s-target" type="number" step="0.1" value="${v.target_r_multiple}" /></label>
       <label class="field"><span>Colour</span><input id="s-colour" type="color" value="${v.colour}" style="height:38px" /></label>
       <label class="field span2"><span>Entry rules (one per line)</span><textarea id="s-entry" placeholder="One rule per line">${U.esc((v.entry_rules || []).join('\n'))}</textarea></label>
+      <div class="muted-2 small span2" data-plan-vocabulary="true">Lines beginning <b>require&nbsp;</b> are ENFORCED by the bots — a candidate that breaks one is refused, and nothing else in the app can overrule it. Everything else is context for you and is never interpreted.<br>Checkable so far (the app’s own list — hover a rule for its allowed values): ${(global.PLAN_GATE_VOCABULARY || []).map((x) => `<code title="${U.esc(x.label + (x.values ? ' — one of: ' + x.values.join(', ') : ''))}">${U.esc(x.line)}</code>`).join(' · ') || '<span class="muted">the app could not read its own rule list — reload the page before trusting a rule.</span>'}<br>A <code>require</code> line the app does not recognise is reported loudly on the bots page and in the payload rather than passing as though it were checked.</div>
       <label class="field span2"><span>Exit rules (one per line)</span><textarea id="s-exit">${U.esc((v.exit_rules || []).join('\n'))}</textarea></label>
       <label class="field span2"><span>Pre-trade checklist (one per line)</span><textarea id="s-check">${U.esc((v.checklist || []).join('\n'))}</textarea></label>
       <label class="field span2"><span>Risk rules</span><textarea id="s-risk" placeholder="Max risk, max trades, cooldowns…">${U.esc(v.risk_rules)}</textarea></label>

@@ -1,0 +1,28 @@
+ok this tree ships the plan gate (src/bots/plan-gate.js) (the committed parent does not, and that absence is this probe's control)
+ok the probe renders the states the server really sends: a refused candidate, an ambiguous choice, an auto-selected plan, no plan, and an unreadable stored value
+ok and the refusal the screen has to attribute is a real one: the plan sentence is the FIRST reason on the candidate
+ok the toolbar carries the choice of plan, with `my active plan` as the default rather than a silent pick
+ok and it offers exactly the trader’s ACTIVE plans by name — a paused plan is not a choice the screen makes for them
+ok choosing one re-runs the analysis WITH that plan on the request, so what the screen shows and what the engine checked cannot drift apart
+ok and the request the view then makes names it (`strategy_id`), rather than re-reading a plan it assumed
+ok a running plan is named with the version its rules were saved as, and how many requirements are enforced
+ok the screen says a candidate below is refused BY the plan, rather than leaving the trader to guess why nothing is tradeable
+ok the line that is not machine-checkable is reported as never enforced, and the `require` line the app does not recognise is printed as NOT CHECKED — neither can pass for a checked box
+ok the per-candidate block shows the trader’s own rule text beside its resolved state, with the measured detail that makes the refusal checkable
+ok a plan refusal is attributed on the card even when the trader’s own guardrail owns the action line: both reasons are visible, and the plan is not swallowed by the guardrail message
+ok a requirement whose fact could not be read is rendered as unreadable and says it refused nothing — it never appears as a satisfied box
+ok the plan block adds no control of its own: the gate is explanation, not a second decision surface with its own button
+ok with no active plan the screen says so out loud, tells the trader where a plan is published, and claims nothing was gated
+ok two active plans are named on screen with the way out, and the screen does not pick one for the trader
+ok with one active plan the screen names the plan it used, so the default is visible rather than silent
+ok a stored plan whose rules cannot be read is shown as a plan that needs re-saving — it does NOT render as an empty list of satisfied requirements
+ok an unreadable plan refuses every signal on screen and says every signal is refused until it can be read — a broken read is never shown as a clean, plan-less chart
+ok and a research path that consults no plan says nothing at all, because a research payload is not a claim about a trader’s plan
+ok the editor’s hint is populated on the FIRST open — it does not sit on `loading…` while the trader types the rules it is meant to inform
+ok and it lists the engine’s own vocabulary, line for line, from the server — there is no second copy in the browser to drift out of date
+ok an enumerated fact carries its allowed values on hover, so a trader can write a line the engine will accept rather than guessing
+ok and the hint states the deal: `require` lines are enforced and cannot be overruled, everything else is context that is never interpreted
+ok and the body it sends is an array (one entry per line), which is what the route stores and what the gate parses back — the editor and the gate cannot disagree about the shape
+M56 real DOM: the plan, its refusals and the vocabulary a trader edits against: 25 passed, 0 failed
+
+[candle-shim] served 3 fixture response(s)

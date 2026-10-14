@@ -1,0 +1,62 @@
+[
+  {
+    "name": "pure",
+    "script": "analysis/probe-m56-pure.js",
+    "pass": 43,
+    "fail": 0,
+    "expected_pass": 43,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m56feature-pure.txt",
+    "scope": "M56 pure: the plan gate\u2019s vocabulary, parse and evaluation: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "engine",
+    "script": "analysis/probe-m56-engine.js",
+    "pass": 25,
+    "fail": 0,
+    "expected_pass": 25,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m56feature-engine.txt",
+    "scope": "M56 engine: a written plan refuses a candidate at the decision surface, and only that: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "api",
+    "script": "analysis/probe-m56-api.js",
+    "pass": 37,
+    "fail": 0,
+    "expected_pass": 37,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m56feature-api.txt",
+    "scope": "M56 api: the written plan over the real routes, its ownership and its read-only proof: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "migration",
+    "script": "analysis/probe-m56-migration.js",
+    "pass": 21,
+    "fail": 0,
+    "expected_pass": 21,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m56feature-migration.txt",
+    "scope": "M56 migration: a plan the committed parent stored is read with no schema change and no write: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "ui",
+    "script": "analysis/probe-m56-ui.js",
+    "pass": 25,
+    "fail": 0,
+    "expected_pass": 25,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m56feature-ui.txt",
+    "scope": "M56 real DOM: the plan, its refusals and the vocabulary a trader edits against: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  }
+]

@@ -1,0 +1,504 @@
+{
+  "base_commit": "6cd59fb445f2e34ce4f243888ce6657836099c31",
+  "parent": "Actual 6cd59fb M115 clean-reps Git release tree (163 files) as the M56 parent: the milestone that added the rep count and the three docs corrections. It already stores the trader\u2019s plan (M102 versions included) and displays it; what it does not do is read it on the decision path, which is exactly the row. This milestone adds one FILE and no schema object.",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 114,
+    "partial": 3,
+    "todo": 15,
+    "no_action": 0,
+    "partition_groups": 8,
+    "partial_ids": [
+      "M30",
+      "M103",
+      "M115"
+    ],
+    "applied_ids": [
+      "M17",
+      "M18",
+      "M19",
+      "M56"
+    ]
+  },
+  "feature": {
+    "pass": 151,
+    "fail": 0,
+    "probes": 5,
+    "scope": "REPORTED completed assertions; literal clocks, saved rows, HTTP and a real DOM only. The trader\u2019s OWN written plan (strategies.entry_rules, stored as a list of lines and edited in the Playbook) read as a gate on the signal: a `require` line the engine can check is evaluated against facts the analysis already computed, a line that fails refuses the candidate through the ordinary no_trade/veto path with the trader\u2019s own sentence first, and a line the app cannot check is reported as unverifiable rather than shown as satisfied. NO new schema object, no backfill, no write on a read. No broker, provider, mental-state, pixel or production proof, and NO performance claim: the gate is boolean and the payload says it influences no grade, score, cap or price. RAW failures/early aborts and DECLARED assumptions stay separate. DECLARED NEGATIVE carried here by name: the inherited M99/M101 reviews cohort is STALE at this HEAD \u2014 157/3 against its committed 159/1, because the schema grew after M101; the three gaps are declared, not repaired in the probe."
+  },
+  "control": {
+    "delivered": {
+      "pass": 14,
+      "fail": 0
+    },
+    "parent": {
+      "pass": 14,
+      "fail": 0
+    },
+    "note": "The mode-aware control probe PASSES on all three trees on purpose: it measures the fault (module present or absent, payload gate present or absent, reader route present or absent, plans unchanged by a read) rather than failing on it."
+  },
+  "prior_cohorts_rerun": {
+    "m115": {
+      "pass": 116,
+      "fail": 0,
+      "probes": 4,
+      "evidence": "analysis/evidence/m115/feature-summary.json"
+    },
+    "m13": {
+      "pass": 94,
+      "fail": 0,
+      "probes": 4,
+      "evidence": "analysis/evidence/m13/feature-summary.json"
+    },
+    "m112": {
+      "pass": 181,
+      "fail": 0,
+      "probes": 6,
+      "evidence": "analysis/evidence/m112/feature-summary.json"
+    }
+  },
+  "inherited_records_read_not_rerun": {
+    "raw": {
+      "pass": 596,
+      "fail": 156,
+      "probes": 31,
+      "evidence": "analysis/evidence/m108/raw-summary.json",
+      "why": "Read from the committed evidence of the M108-era run rather than re-run in this session. This milestone changes no schema, no candle read and no entry-engine module, and the three suites it does touch (now/chart/bots/smoke) were re-run here with identical failure sets on both trees."
+    },
+    "declared": {
+      "pass": 824,
+      "fail": 4,
+      "probes": 31,
+      "evidence": "analysis/evidence/m108/declared-summary.json",
+      "why": "Read from the committed evidence of the M108-era run rather than re-run in this session. This milestone changes no schema, no candle read and no entry-engine module, and the three suites it does touch (now/chart/bots/smoke) were re-run here with identical failure sets on both trees."
+    },
+    "pure": {
+      "pass": 70,
+      "fail": 1,
+      "probes": 8,
+      "evidence": "analysis/evidence/m108/pure-summary.json",
+      "why": "Read from the committed evidence of the M108-era run rather than re-run in this session. This milestone changes no schema, no candle read and no entry-engine module, and the three suites it does touch (now/chart/bots/smoke) were re-run here with identical failure sets on both trees."
+    }
+  },
+  "environment_margins_rerun_this_session": {
+    "now-test": {
+      "delivered": "50/0",
+      "parent": "50/0"
+    },
+    "chart-test": {
+      "delivered": "36/0",
+      "parent": "36/0"
+    },
+    "bots-test": {
+      "delivered": "52 ok / 3 fail + crash at scripts/bots-test.js:180",
+      "parent": "identical"
+    },
+    "api-test": {
+      "delivered": "crash at scripts/api-test.js:50 (409 guardrail_stop on a fresh workspace)",
+      "parent": "identical"
+    },
+    "smoke-test": {
+      "delivered": "21/21 views, 0 UI-style failures, 0 console errors",
+      "parent": "identical"
+    },
+    "note": "smoke-test had not been run since the wiring; it is green on both trees. The bots-test and api-test crashes are pre-existing at the parent and are not this milestone\u2019s."
+  },
+  "declared_negatives": [
+    {
+      "cohort": "M99/M101 (reviews)",
+      "suite": "reviews/migration",
+      "pass": 12,
+      "fail": 3,
+      "committed_record": {
+        "pass": 14,
+        "fail": 1
+      },
+      "evidence": "analysis/evidence/m108/reviews/feature-migration.txt",
+      "why": "STALE at this HEAD and declared by name: the inherited M99/M101 cohort is 157/3 against its committed 159/1 because the schema grew after M101. This milestone changed no schema, so the gap is inherited, not caused here."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/engine",
+      "frozen_assertion": "M110 does not claim to fix M111: a failed calendar still reaches this rule as a QUIET one",
+      "evidence": "analysis/evidence/m110/m110feature-engine.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/engine",
+      "frozen_assertion": "the engine source keeps the M111 marker at that exact branch, so closing M111 later cannot be mistaken for a regression",
+      "evidence": "analysis/evidence/m110/m110feature-engine.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "the served payload has no top-level `window_min` any more",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "a genuinely empty week yields a clear payload that is distinguishable from a blocked one but not from an outage",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "an M111 outage reaches this consumer as silence",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/portable",
+      "frozen_assertion": "a backup carries the pair out, so a trader can see which window their own archive was taken under \u2014 as two columns, with no single knob beside them",
+      "evidence": "analysis/evidence/m110/m110feature-portable.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "every pre-existing account column keeps its name, declared type, nullability and default, and the two new columns are appended LAST",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "the ONLY difference in the inherited `accounts` rows is the two new columns \u2014 id, name, balance and policy fields are untouched",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "and the position difference is recorded instead of hidden: the inherited columns are appended LAST, the fresh DDL places them before the drawdown fields",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    }
+  ],
+  "regression_parents": {
+    "trees": 21,
+    "method": "Actual 9c88e0a M12 Git release as the M13/M65 parent (the milestone these periods sit on), plus the M112 cohort\u2019s and the inherited reviews cohort\u2019s own measured parent maps, inherited unchanged \u2014 no parent is re-derived here and no schema or module is read out of an older runner.",
+    "parents": {
+      "/tmp/m13-parent/app": {
+        "files": 159,
+        "byte_differences": 0
+      },
+      "/tmp/m112-parent/app": {
+        "files": 146,
+        "byte_differences": 0
+      },
+      "/tmp/m110-parent/app": {
+        "files": 145,
+        "byte_differences": 0
+      },
+      "/tmp/m109-parent/app": {
+        "files": 143,
+        "byte_differences": 0
+      },
+      "/tmp/m108-parent/app": {
+        "files": 141,
+        "byte_differences": 0
+      },
+      "/tmp/m107-parent/app": {
+        "files": 139,
+        "byte_differences": 0
+      },
+      "/tmp/m106-parent/app": {
+        "files": 137,
+        "byte_differences": 0
+      },
+      "/tmp/m105-parent/app": {
+        "files": 135,
+        "byte_differences": 0
+      },
+      "/tmp/m104-parent/app": {
+        "files": 133,
+        "byte_differences": 0
+      },
+      "/tmp/m100-parent/app": {
+        "files": 131,
+        "byte_differences": 0
+      },
+      "/tmp/m99-parent/app": {
+        "files": 129,
+        "byte_differences": 0
+      },
+      "/tmp/m93-parent/app": {
+        "files": 127,
+        "byte_differences": 0
+      },
+      "/tmp/m91-parent/app": {
+        "files": 125,
+        "byte_differences": 0
+      },
+      "/tmp/m89-parent/app": {
+        "files": 123,
+        "byte_differences": 0
+      },
+      "/tmp/m88-parent/app": {
+        "files": 121,
+        "byte_differences": 0
+      },
+      "/tmp/m87-parent/app": {
+        "files": 119,
+        "byte_differences": 0
+      },
+      "/tmp/m86-parent/app": {
+        "files": 117,
+        "byte_differences": 0
+      },
+      "/tmp/m64-parent/app": {
+        "files": 114,
+        "byte_differences": 0
+      },
+      "/tmp/m79-parent/extracted/tradejournal": {
+        "files": 110,
+        "byte_differences": 0
+      },
+      "/tmp/m84-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      },
+      "/tmp/m81-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      }
+    }
+  },
+  "controls": {
+    "parent_tree": "the committed 6cd59fb M115 release: no module, no payload gate, no reader route, and the three views/docs untouched \u2014 five probes 0/1 each, the mode-aware control 14/0",
+    "gate_only_tree": "the parent plus `src/bots/plan-gate.js` alone: the vocabulary, the parse and the per-direction evaluation can be computed and are measured working (pure 43/0, migration 21/0) while the engine, the API payload and the screen know nothing about them (engine 2/1, api 2/2, ui 1/1)",
+    "why": "The staged fault is a missing READING around a working module, not a missing rule: that is why the pure and migration arms pass on the gate-only tree while the engine, api and ui arms fail on the absence the milestone closes."
+  },
+  "arms": {
+    "gate-only/api": {
+      "exit_code": 1,
+      "fail": 2,
+      "pass": 2
+    },
+    "gate-only/control": {
+      "exit_code": 0,
+      "fail": 0,
+      "pass": 14
+    },
+    "gate-only/engine": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 2
+    },
+    "gate-only/migration": {
+      "exit_code": 0,
+      "fail": 0,
+      "pass": 21
+    },
+    "gate-only/pure": {
+      "exit_code": 0,
+      "fail": 0,
+      "pass": 43
+    },
+    "gate-only/ui": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 1
+    },
+    "parent/api": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 0
+    },
+    "parent/control": {
+      "exit_code": 0,
+      "fail": 0,
+      "pass": 14
+    },
+    "parent/engine": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 0
+    },
+    "parent/migration": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 0
+    },
+    "parent/pure": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 0
+    },
+    "parent/ui": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 0
+    }
+  },
+  "gate": {
+    "version": "plan-gate-v1",
+    "vocabulary": 13,
+    "states": [
+      "not_consulted",
+      "no_plan",
+      "ambiguous",
+      "ready",
+      "unavailable"
+    ],
+    "all_or_nothing": "every machine-checkable `require` line is evaluated per direction and any failing line refuses the candidate through the ordinary no_trade/veto path, unshifted so the plan sentence leads `action`, the verdict, the Now strip, Copy plan and the log button",
+    "prose_never_parsed": "non-`require` lines are reported as unverifiable and `exit_rules` / `checklist` / `market_conditions` stay displayed context: polarity cannot be read from free text",
+    "unknown_refuses_nothing": "a fact the app could not read is `unknown`; an unreadable PLAN is `unavailable` and refuses everything; no active plan blocks nothing",
+    "unrecognised_is_loud": "a `require` line outside the vocabulary is surfaced with its reason in the payload and on the screen, never passed silently",
+    "no_influence": "boolean gate only: no grade, score, cap or price is moved (measured), `broker_verified:false`, and the payload publishes the limits",
+    "storage": "read from the existing `strategies` rows and the M102 version rows; no table, no column, no index, no trigger, no backfill, and a read writes nothing"
+  },
+  "stages": [
+    {
+      "stage": "gate",
+      "source_manifest": "gate-source.json",
+      "source_files": 164,
+      "patch": "m56-plan-gate-gate.patch",
+      "files": 1,
+      "bytes": 22056,
+      "sha256": "4feed2d77a2178a1e8d4ef932bc25c799e9045daf7f3bbd636fe603127cea2d0",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "wired",
+      "source_manifest": "wired-source.json",
+      "source_files": 164,
+      "patch": "m56-plan-gate-wired.patch",
+      "files": 2,
+      "bytes": 14128,
+      "sha256": "0e580c0d21f2e42730d94cd93f8bab9a4a5846315628ccf22f55da1c322a3754",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "reader",
+      "source_manifest": "reader-source.json",
+      "source_files": 164,
+      "patch": "m56-plan-gate-reader.patch",
+      "files": 1,
+      "bytes": 5183,
+      "sha256": "5f7ea52a2a640fd9c3024495872f64ea1bb55fdec9c638b9f19ddfaa9f59e871",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "documentation",
+      "source_manifest": "documentation-source.json",
+      "source_files": 164,
+      "patch": "m56-plan-gate-documentation.patch",
+      "files": 5,
+      "bytes": 22397,
+      "sha256": "5bc815c2899a3b8d2ca5780300638d175e025510a18baee4b10ed740458efd65",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 9,
+    "bytes": 63764,
+    "sha256": "84276902376c81c5ce2d004e96518abdc6eee9f5b91fb066be0ed403cc681e96",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 105,
+    "bytes": 1925439,
+    "sha256": "53e0153554df99be7275aa27166ddea756115ed6eae41e5dd919bd0f6ce010be",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 164,
+    "application_byte_differences": 0,
+    "pristine_byte_differences": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/topdown.js",
+    "src/bots/smc.js",
+    "src/bots/momentum.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "newly_protected_from_m115": [
+    "src/challenge.js",
+    "src/routes/api.js",
+    "public/index.html",
+    "public/js/views/challenge.js",
+    "public/js/views/dashboard.js",
+    "docs/PLAYLIST-CURRICULUM.md",
+    "docs/NOT-IMPLEMENTED.md"
+  ],
+  "m56_touches_inside_the_protected_set": [
+    "src/bots/setup.js",
+    "src/bots/index.js",
+    "src/routes/bots.js",
+    "public/js/views/bots.js",
+    "public/js/views/playbook.js",
+    "docs/API.md",
+    "docs/NOT-IMPLEMENTED.md",
+    "docs/PLAYLIST-CURRICULUM.md"
+  ],
+  "other_protected_files": [
+    "README.md",
+    "package-lock.json",
+    "public/index.html",
+    "public/js/api.js",
+    "public/js/app.js",
+    "public/js/chart.js",
+    "public/js/store.js",
+    "public/js/util.js",
+    "public/js/views/analytics.js",
+    "public/js/views/ask.js",
+    "public/js/views/behavior-days.js",
+    "public/js/views/calendar.js",
+    "public/js/views/challenge.js",
+    "public/js/views/coach.js",
+    "public/js/views/confluences.js",
+    "public/js/views/dashboard.js",
+    "public/js/views/emotions.js",
+    "public/js/views/execution.js",
+    "public/js/views/identity.js",
+    "public/js/views/intention.js",
+    "public/js/views/journal.js",
+    "public/js/views/market.js",
+    "public/js/views/opportunities.js",
+    "public/js/views/period-reviews.js",
+    "public/js/views/practice.js",
+    "public/js/views/process-outcomes.js",
+    "public/js/views/review-periods.js",
+    "public/js/views/risk.js",
+    "public/js/views/routine.js",
+    "public/js/views/rule-changes.js",
+    "public/js/views/screenshots.js",
+    "public/js/views/settings.js",
+    "public/js/views/state-gate.js",
+    "public/js/views/trades.js",
+    "scripts/api-test.js",
+    "scripts/bots-test.js",
+    "scripts/smoke-test.js",
+    "scripts/test-cleanup.js",
+    "server.js",
+    "src/ask.js"
+  ],
+  "doc_corrections": {
+    "API": "docs/API.md gains the `GET /bots/plan-gate` row (states, per-line classification, limits) and `strategy_id` on analyse/chart/scan, with the scan row noting `plan_gate` + `plan_refused`",
+    "PLAYLIST-CURRICULUM row 16": "the Trading-plan row no longer reads as \"Playbook view + guardrails\": it now names the gate, the module, the all-or-nothing reading, the refusal shape, and the limits stated in the editor (only the listed lines are enforced; prose is never interpreted; an unrecognised `require` line is reported loudly)",
+    "NOT-IMPLEMENTED": "a new \"written plan as a gate\" row in \u00a73 names what works AND what is missing (prose is never parsed, `exit_rules`/`checklist`/`market_conditions` are not enforced, and the gate refuses SIGNALS rather than grading a logged trade), and \u00a75 item 5 now says so in the sentence that claims a plan-vs-execution grade is still missing"
+  },
+  "scope": "M56 the written plan as a gate: one read-only module (`src/bots/plan-gate.js`, plan-gate-v1), the three payload routes reading the trader\u2019s own plan (analyse, chart, scan), a reader route that publishes the vocabulary and the classification, and two views that make the refusal and the enforced lines visible. Explicitly NOT claimed: prose understanding, a performance or expectancy claim, a grade/score/cap/price influence, broker verification, a plan-vs-execution grade, a pixel proof, or anything about a real account."
+}

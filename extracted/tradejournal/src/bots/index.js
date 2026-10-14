@@ -30,6 +30,7 @@ const Now = require('./now');
 const Predict = require('./predict');
 const Cor = require('./correction');
 const Guards = require('./guardrails');
+const PlanGate = require('./plan-gate');   // M56: the trader's written plan, as a gate
 const StateGate = require('../state-gate');
 const NewsWindow = require('../news-window');
 const TradingWindow = require('../trading-window');   // M112   // M110 — two clocks, not one number
@@ -377,6 +378,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
    * is published as itself rather than being folded into either "inside" or "blocked". An explicit
    * clock is honoured when a caller supplies one; otherwise this is the server clock, never a
    * client's. */
+  /* M56 — the trader's OWN written plan, read once per analysis exactly like the window above, and
+   * for the same reason: the gate must be a function of the stored plan and the trader's own
+   * settings, not of which bot asked. `safe` never throws on an unreadable plan (it returns the
+   * `unavailable` state, which refuses rather than passing); an explicit strategy_id that is not
+   * theirs is the caller's error and surfaces. `opts.strategyId` is validated by the route. */
+  const writtenPlan = await PlanGate.safe(opts.userId, opts.strategyId);
   const windowNow = Number.isFinite(Number(opts.nowMs)) ? Number(opts.nowMs) : Date.now();
   const tradingWindow = TradingWindow.safeState({ start: account && account.window_start, end: account && account.window_end,
     timezone: account && account.window_timezone, ownedZone: account && account.routine_timezone, source: account && account.window_source, nowMs: windowNow });
@@ -419,6 +426,9 @@ async function analyse(symbol, tf = '15m', opts = {}) {
     // refusal names THEIR window (with the local time that produced it) next to the other
     // non-negotiables, instead of arriving later as a generic personal stop.
     tradingWindow,
+    // M56 — the plan travels into the setup model the same way, so the plan's requirements are
+    // evaluated at the point every other non-negotiable is, against the model's own facts.
+    planGate: writtenPlan,
   });
 
   let prediction = null;
@@ -626,11 +636,16 @@ async function chart(symbol, tf = '15m', opts = {}) {
   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
 
+  /* M56 — the chart confirms against the SAME written plan the analysis does, read here rather than
+   * taken from the caller: M124's rule is that the chart is not a second opinion, and a gate only one
+   * of the two surfaces obeyed would be exactly that. */
+  const chartPlan = await PlanGate.safe(opts.userId, opts.strategyId);
   let setups = Setup.buildSetups(entry.smc, {
     price: entry.price, atr: entry.atr, entrySeries: entry, observedAt: cut.asOf || opts.nowMs, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
     indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
     sessionPref: opts.sessionPref || null,   // M26
+    planGate: chartPlan,                     // M56
   });
 
   const daily = await personalState(opts.userId,opts.accountId,candidateTf(setups,td,tf));
@@ -735,17 +750,26 @@ async function chart(symbol, tf = '15m', opts = {}) {
     setups: {
       verdict: setups.verdict, method: setups.method, execution_permission:setups.execution_permission,
       candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok, market_ok:c.market_ok, personal_blocked:c.personal_blocked,
+        // M56 — the written plan and its per-side rules travel with the chart too: the chart is not a
+        // second opinion (M124), so a client that renders the chart's candidates can show the same
+        // refusal the analysis shows instead of having to ask again with different inputs.
+        plan_rules: c.plan_rules,
         // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
         // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
         entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence, entry_preference: c.entry_preference,
         no_trade: c.no_trade || [], levels: c.levels, action: c.action })),
+      filters: setups.filters,
     },
     quote: { price: entry.price, atr: entry.atr, change_pct: entry.candles.length > 1 ? r2(((entry.price - entry.candles[0].c) / entry.candles[0].c) * 100) : null },
   };
 }
 
-async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, sessionPref = null, useBreakers = false, entryModels } = {}) {
+async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, strategyId = null, sessionPref = null, useBreakers = false, entryModels } = {}) {
   const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
+  /* M56 — read the written plan ONCE for the whole scan, not once per symbol: the plan is a property
+   * of the trader, and re-reading it inside the worker could only ever produce a different answer for
+   * the same plan. A scan that offered symbols the plan refuses would be the same gap in a wider lens. */
+  const scanPlan = await PlanGate.safe(userId, strategyId);
   const rows = [];
   let cursor = 0;
   async function worker() {
@@ -764,8 +788,10 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
           price: series.price, atr: series.atr, entrySeries: series, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
           indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
           sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
+          planGate: scanPlan,   // M56 — the same written plan for every symbol in the scan
                          // No symbol on this path either, so the pair-conflict note stays
-                         // null rather than false.
+                         // null rather than false. (M56's plan is read once below, beside the
+                         // other per-user reads, and rides this ctx the same way.)
         });
         const daily = await personalState(userId,accountId,candidateTf(specs,momentum.topdown || {},tf));
         specs = Guards.applyToSetups(specs,daily);
@@ -802,6 +828,11 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
           provider: series.meta.provider, ticker: series.meta.ticker,
           headline: momentum.narrative && momentum.narrative[0] ? momentum.narrative[0].text : '',
           conflicts: momentum.conflicts,
+          // M56 — the written plan the row was confirmed against, and whether it took this row's
+          // setup away: a scan that silently listed a symbol the trader's own plan refuses would be
+          // the original gap in a wider lens.
+          plan_gate: specs.filters.plan_gate,
+          plan_refused: !!(best && best.plan_rules && best.plan_rules.refused > 0),
         });
       } catch (e) {
         rows.push({ symbol: sym, timeframe: tf, ok: false, error: e.message });

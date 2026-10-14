@@ -1,0 +1,45 @@
+ok this tree ships the plan gate (src/bots/plan-gate.js) (the committed parent does not, and that absence is this probe's control)
+ok the app’s own starter playbook is published active (the sample this section measures)
+ok with several active plans the gate reports `ambiguous` and names every candidate, and it NEVER picks one silently
+ok and the endpoint publishes the vocabulary this app enforces, with a concrete line per fact
+ok the limits travel with it, so a client cannot present the gate as a performance or broker claim
+ok an analysis run before the trader has decided is served `ambiguous` (with the names) and gates nothing
+ok pausing them all returns the analysis to `no_plan`, which blocks nothing — a plan is not required to use the app
+ok and the candidates are identical to the ones the ambiguous run produced: an unconsulted gate forbids nothing
+ok a published plan is read back with its lines classified: enforced, prose, unrecognised
+ok and it carries the M102 version the rules were saved as
+ok the analysis confirms against that plan: the payload names it, its version and how many requirements are enforced
+ok a requirement the candidate cannot meet REFUSES it, with the refusal as the first reason
+ok the candidate carries the rule-by-rule result beside the refusal, so the trader sees which box was not checked
+ok and the verdict does not arm the side the plan refused
+ok with exactly one active plan the gate uses it without being asked (and says which one)
+ok a requirement the candidate meets leaves it tradeable and does not touch its grade or score
+ok two plans really are active before the ambiguity is measured (the state being tested, not an assumption)
+ok two active plans are reported as `ambiguous` WITH both names, and NOTHING is gated on a guess
+ok naming one resolves it, so the ambiguity is a one-click fix rather than a dead end
+ok pausing every plan returns the gate to `no_plan` — a paused plan is not silently applied
+ok while naming a paused plan still works, because that is the trader asking for it by name
+BOT API error on GET /api/bots/plan-gate?strategy_id=8: No such plan in your playbook.
+ok another trader’s plan id is a 404 on the gate reader — never a fallback to their own plan
+BOT API error on GET /api/bots/analyse?symbol=EURUSD&tf=15m&prediction=0&bars=600&account_id=3&strategy_id=8: No such plan in your playbook.
+ok and the same id on the analyse route is refused too, so a signal cannot be confirmed against a plan the caller does not own
+BOT API error on GET /api/bots/analyse?symbol=EURUSD&tf=15m&prediction=0&bars=600&account_id=3&strategy_id=abc: strategy_id must be a positive integer.
+ok a malformed id is a 400 with the gate’s own code, not an internal error
+BOT API error on GET /api/bots/plan-gate?strategy_id=1.5: strategy_id must be a positive integer.
+BOT API error on GET /api/bots/plan-gate?strategy_id=-2: strategy_id must be a positive integer.
+ok and a fractional or negative id is refused the same way
+ok the chart endpoint confirms against the SAME plan the analysis did (M124’s rule: not a second opinion)
+ok a scan row carries the plan it was confirmed against and whether the plan took that setup away
+ok a plan written in prose has ZERO enforced requirements, and says so rather than looking satisfied
+ok and the prose plan refuses nothing: free text is never interpreted, in either direction
+ok the free-text `market_conditions` field is reported as NOT parsed — "ranging only" cannot silently become a rule
+ok rules stored double-encoded (a client echoing the stored string back at a route that stringifies its input) are reported as malformed, not shown as a satisfied plan
+ok and that plan refuses nothing while it cannot be read — the trader sees the reason to re-save instead of a silently empty checklist
+ok the app’s own starter rows are a list of lines, so the sample this probe measures is not itself the malformed case
+ok editing the rules changes what the gate enforces, and the M102 version moves with it
+ok analysing with a plan writes exactly what analysing without one writes — the gate adds no row of its own
+ok and reading the plan never rewrites it: `strategies` and its M102 history are byte-identical across the gate read
+ok the milestone adds NO table, index or trigger of its own — the plan lives in `strategies` exactly as before
+M56 api: the written plan over the real routes, its ownership and its read-only proof: 37 passed, 0 failed
+
+[candle-shim] served 5 fixture response(s)

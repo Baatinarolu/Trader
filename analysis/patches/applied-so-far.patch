@@ -1323,7 +1323,7 @@ index df9ae3c..3f04f90 100644
  
  * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.
 diff --git a/docs/API.md b/docs/API.md
-index 4475db3..4af3b0e 100644
+index 4475db3..3fdee5b 100644
 --- a/docs/API.md
 +++ b/docs/API.md
 @@ -1,5 +1,91 @@
@@ -1436,7 +1436,23 @@ index 4475db3..4af3b0e 100644
  | GET | `/accounts/:id/challenge` | `{ preset, status: { ok, passed, checks[4], progress_pct, drawdown_pct } }` — daily loss, max drawdown, profit target and consistency checked against the account's own trades |
  | GET/POST/PUT/DELETE | `/strategies` · `/strategies/:id` | `{ name, description, market_conditions, timeframes, entry_rules[], exit_rules[], checklist[], risk_rules, target_r_multiple, colour, active }`; GET also returns per-strategy performance stats |
  | GET/POST/DELETE | `/instruments` · `/instruments/:id` | instrument spec: `{ symbol, name, asset_class, exchange, currency, tick_size, pip_size, value_per_point, unit }` |
-@@ -179,7 +265,187 @@ the methodology, the weights and the honest limitations.
+@@ -162,11 +248,12 @@ the methodology, the weights and the honest limitations.
+ | Method | Path | Query / body | Returns |
+ |---|---|---|---|
+ | GET | `/bots/markets` | — | instruments (63), timeframes, killzone state, providers |
++| GET | `/bots/plan-gate` | `strategy_id` (optional — your own; defaults to your single ACTIVE plan) | `{ ok, version, vocabulary[], state, plan, note, reason, candidates, counts, lines, limits }` — `state` is `ready`, `no_plan`, `ambiguous` (>1 active plan, all named), `unavailable` or `not_consulted`; each `lines[]` entry is classified `machine`, `prose` or `unknown_fact`; `limits` states prose is not parsed, an unknown value never counts as met and no grade/score/cap/price is influenced |
+ | GET | `/bots/candles` | `symbol`, `tf` (1m…1w), `limit` (50–1500), `force=1` | `{ candles:[{t,o,h,l,c,v}], meta:{provider,ticker,last_price,last_bar,cached,warnings} }` |
+-| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1` | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
++| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1`, `strategy_id` | | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
+ | GET | `/bots/topdown` | `symbol`, `tf`, `bars` | the video's method on its own: `{ method, layers, steps, checks, score, grade, status, direction, headline, playbook, blocked, conflicts[], crt_plan, levels, verdict }` |
+-| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
+-| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf` | `{ rows:[…ranked], errors:[…], actionable, killzone }` |
++| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id`, `strategy_id` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
++| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf`, `strategy_id` | `{ rows:[…ranked], errors:[…], actionable, killzone }` — every row carries the plan gate it was confirmed against (`plan_gate`) and whether that plan took the setup away (`plan_refused`) |
+ | GET | `/bots/predict` | `symbol`, `tf`, `bars`, `step`, `horizon` | `{ direction, setups, buy, sell, model, backtest, summary }` — `backtest` carries the measured tables below |
+ | GET | `/bots/backtest` | `symbol`, `tf`, `bars` (300–3000), `step` (1–6), `samples`, `entry`, `cost`, `force=1` | backtest detail + `trades[]` table + the measured blocks below |
+ | GET | `/bots/correction` | `days`, `account_id`, `backfill=1` | `{ overall, behavior_score, mistakes[], guardrails, daily, grades[] }` |
+@@ -179,7 +266,187 @@ the methodology, the weights and the honest limitations.
  | POST | `/bots/signals/resolve` | `{ limit }` | resolves pending alerts against real candles → `{ checked, results[], stats }` |
  | GET | `/bots/signals/stats` | — | win rate / expectancy of tracked alerts, by grade |
  | GET | `/bots/sessions` | — | session + killzone windows and the active one |
@@ -1625,7 +1641,7 @@ index 4475db3..4af3b0e 100644
  
  ### Choosing what to measure on `/bots/backtest`
  
-@@ -383,3 +649,856 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
+@@ -383,3 +650,856 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
  | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
  | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
  | `DELETE /api/chart/drawings?symbol=…&tf=…` | clears that market |
@@ -3161,7 +3177,7 @@ index 0000000..6c01654
 +predictive/broker/provider/human/meditation/pixel/production proof. M89 capture, M64
 +morning check-in and M107 intention remain separate features.
 diff --git a/docs/NOT-IMPLEMENTED.md b/docs/NOT-IMPLEMENTED.md
-index 5071972..3bc01ac 100644
+index 5071972..d99e747 100644
 --- a/docs/NOT-IMPLEMENTED.md
 +++ b/docs/NOT-IMPLEMENTED.md
 @@ -77,7 +77,7 @@ kind of reason: a deploy should not silently lose a file.
@@ -3173,15 +3189,34 @@ index 5071972..3bc01ac 100644
  | 9 | i18n | English strings inline in views | One language |
  | 10 | ~~Browser E2E tests~~ — **built 2026-10-06** | `scripts/ui-browser-test.js` + `npm run test:browser` (playwright-core, Chromium). 27 assertions incl. chart size, painted pixels, the method panel, the stack, all 11 views, console cleanliness. Still **dev-only**: `playwright-core` is installed with `--no-save` and the system libs (`libnss3`, `libatk*`, …) must be present, so it is not part of `npm run test:all` | Screenshots in `docs/` are only as fresh as the last run — a deployed build is not smoke-tested by this |
  | 11 | Image → trade import (screenshot OCR) | — | Manual entry or CSV |
+@@ -88,6 +88,7 @@ kind of reason: a deploy should not silently lose a file.
+ |---|---|---|
+ | **MTF entry execution** (new) | Live LTF fetch, confirmation status (`live`/`recent`/`waiting`/`rejected`), refined plan with targets re-ruled from the confirmation, one-click save to signals, grading on resolution. Measured 2026-10-06 11:58 UTC: highest win rate of any entry rule (47.4 % pooled vs 35.1 % base, 1 902 / 1 696 fills) but −0.268R of expectancy against the base rule on the same 1 503 setups, and the 321 setups it refused averaged +0.157R under the base rule — so the entry is executable, and the evidence says it is not the better trade | The confirmation itself is now watched by the scheduler (cron + notifications shipped) and a saved refined plan is graded on resolve; what is *not* solved is that a 50 %-at-T1 plan is graded as one blended number (scale-*in* is still missing, §3 journal row) |
+ | **TradingView** | Charts in Market/Bots, webhook alerts with token rotation, alert history, bot verdict per alert, "save refined plan" from an alert | No position/order sync; an incoming alert is stored + analysed but does **not** create a journal trade automatically |
++| **The written plan as a gate** (new) | The plan's `require` lines are evaluated against facts the analysis already computed (sweep, market shift, zone, killzone, session, timeframe, trend, phase, bias alignment, news blackout, grade, risk:reward, account risk %) and a line that fails REFUSES the candidate through the ordinary no-trade path, with your own rule text and the measured detail first in the reason; the plan and its M102 version travel with the refusal, every scan row carries the same verdict, and reading the plan writes nothing. `GET /api/bots/plan-gate` publishes the enforced vocabulary, the per-line classification and the limits | **Prose is never parsed.** A plan written as sentences gates nothing and the app says so rather than guessing polarity ("no news trading" and "trade the news" share every word). `exit_rules`, `checklist` and `market_conditions` are stored and displayed, not enforced. The vocabulary is closed: a `require` line outside it is reported as unrecognised. And the gate refuses SIGNALS — it does not grade a trade you already logged against the rules you were shown (§5 item 5) |
+ | **Playlist coverage** | 40 episodes mapped: **27 ✔ fully implemented, 6 ◐ partial** ([PLAYLIST-CURRICULUM.md](PLAYLIST-CURRICULUM.md)) | The 6 partials are listed at the bottom of that document |
+ | **Prediction model** | Logistic regression trained in-process, calibrated buckets, `out_of_sample` block, measured gates (`stop_ge_06atr`, `runway3`) on every live setup | Per-market training sets are 60–250 resolved setups; no gradient boosting or alternative model families |
+ | **Tracked signals** | Save → resolve → self-grade with win rate/expectancy by grade, including refined MTF plans | Resolution is still triggered by a request: the daily `/api/cron/tick` resolves what it can, but there is no push, so a signal can sit unresolved until someone opens the app |
+@@ -155,7 +156,7 @@ Everything register #5 asked for now exists in the tree, so this list is what is
+    ~~cron~~ — **shipped** this tick (see the table at the top for each verification line and each caveat).
+ 5. ~~Correctional-bot adherence grading~~ — the bot has graded trades automatically since the first
+    version (`autograde()` → score/grade/reasons, exposed at `GET /api/bots/correction`, `POST
+-   /api/bots/correction/backfill`, per-trade at `GET /api/bots/feedback/:tradeId`). **What is still missing:** a *plan-vs-execution* grade — whether the trade you actually logged obeyed the gates of the plan the app showed you (same direction, stop where the plan put it, target ≥ 3R, no re-entry after the failure). `POST /api/bots/signals/resolve` already grades the plan itself against real candles (seen live: signal 68 resolved to `no_fill` via the scheduler), but that needs the scale-in path in §3 before a scaled entry can be compared to a one-shot plan.
++   /api/bots/correction/backfill`, per-trade at `GET /api/bots/feedback/:tradeId`). **What is still missing:** a *plan-vs-execution* grade — whether the trade you actually logged obeyed the gates of the plan the app showed you (same direction, stop where the plan put it, target ≥ 3R, no re-entry after the failure). Since M56 the plan's own `require` lines DO gate the signals the bots produce (`GET /api/bots/plan-gate`), so what remains ungraded is a trade you logged by hand. `POST /api/bots/signals/resolve` already grades the plan itself against real candles (seen live: signal 68 resolved to `no_fill` via the scheduler), but that needs the scale-in path in §3 before a scaled entry can be compared to a one-shot plan.
+ 6. **Replay the top-down method as a strategy** — the one measurement this app still owes. `tests` cover
+    the method structurally and every live read is honest, but "confirmed CRT ranges, entered at the
+    confirmation / on the retest, stop beyond the sweep, target the opposite edge" has never been replayed
 diff --git a/docs/PLAYLIST-CURRICULUM.md b/docs/PLAYLIST-CURRICULUM.md
-index 37e3d1c..26a50c0 100644
+index 37e3d1c..b193520 100644
 --- a/docs/PLAYLIST-CURRICULUM.md
 +++ b/docs/PLAYLIST-CURRICULUM.md
-@@ -67,7 +67,7 @@ judgement/habit lesson with no code surface (the app supports it through journal
+@@ -66,8 +66,8 @@ judgement/habit lesson with no code surface (the app supports it through journal
+ | 13 | Liquidity & inducement | Stops before the real move | `smc.js` → pools + `inducement` detector ✔ |
  | 14 | Flip zones / breakers | Failed zones reverse role | `smc.js` → `findBreakers()` ✔ |
  | 15 | Daily bias | The day's direction | Bots → Top-down method panel: `layers.bias` (daily/weekly read, CRT state, right candle, range) + headline ✔ |
- | 16 | Trading plan | Written rules | Playbook view + guardrails from `correction.js` ✔ |
+-| 16 | Trading plan | Written rules | Playbook view + guardrails from `correction.js` ✔ |
 -| 17 | Full SMC plan + routine | Daily routine | Journal + 21-day discipline tracking ◐ |
++| 16 | Trading plan | Written rules | Playbook view + guardrails from `correction.js` ✔ — and since M56 the written rules are a **gate**, not a note: `src/bots/plan-gate.js` reads the plan's `require` lines as an all-or-nothing checklist against facts the analysis has already computed, and a line that fails refuses the candidate through the ordinary no-trade path with your own rule text, and the measured detail, first in the reason. The limits are named in the editor itself: only the listed machine-checkable lines are enforced, everything else (prose, `exit_rules`, `checklist`, `market_conditions`) is context that is never interpreted, and a `require` line the app does not recognise is reported loudly rather than passing as checked. |
 +| 17 | Full SMC plan + routine | Daily routine | Journal + the clean-rep count of episode 32 (see row 32) ◐ |
  | 18 | **Entry models (sniper)** | Sweep → displacement → zone → retest | `setup.js` → `buildSetups()` ✔ (the core of the app), now **gated by the method**: aggressive (at confirmation) and safer (pullback to the mid / fresh FVG) entries from `topdown.js`, with conviction tiers A/B/watch |
  | 19 | When NOT to trade | Standing down is a skill | Score caps + vetoes + **NO TRADE** verdicts ✔ · the *now* strip states the stand-down and what would change it, with the clock (`now.js`) ✔ |
@@ -3828,7 +3863,7 @@ index 0000000..ad154de
 + };
 +})(window);
 diff --git a/public/js/views/bots.js b/public/js/views/bots.js
-index 2222ac3..a112c8e 100644
+index 2222ac3..80acc4f 100644
 --- a/public/js/views/bots.js
 +++ b/public/js/views/bots.js
 @@ -13,6 +13,11 @@
@@ -3890,7 +3925,7 @@ index 2222ac3..a112c8e 100644
      wrap.appendChild(sizeRow);
      return wrap;
    }
-@@ -141,6 +170,32 @@
+@@ -141,6 +170,69 @@
      symbols.forEach((s) => dl.appendChild(h('option', { value: s })));
      const tfSel = h('select', { class: 'input', style: 'max-width:110px' });
      tfs.forEach((t) => tfSel.appendChild(h('option', { value: t, text: t, selected: t === B.tf ? 'selected' : null })));
@@ -3920,10 +3955,47 @@ index 2222ac3..a112c8e 100644
 +      : sp.blocked_now ? `Outside your window (${sp.label}) — ${sp.open_now || 'no killzone open now'}; signals are refused.`
 +      : `Restricted to ${sp.label}${sp.phase ? ` · phase ${sp.phase}` : ''}${sp.phase_note ? ` — ${sp.phase_note}` : ''}`)
 +      + (twNote ? (sp ? ' · ' : '') + twNote : '') });
++    /* M56 — the written plan this analysis was confirmed against, beside the window note and for the
++     * same reason: a gate the trader cannot see is indistinguishable from no gate. `no_plan` says so
++     * out loud rather than rendering as an empty (and therefore perfect-looking) rule list, and the
++     * lines the vocabulary could NOT check are named here — a `require` line the engine did not
++     * understand must never look like a requirement that was satisfied. */
++    const pg = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.plan_gate) || null;
++    const pgUnknown = pg ? (pg.unrecognised_lines || []).map((u) => u.text) : [];
++    const pgProse = pg ? (pg.unverifiable_lines || []).length : 0;
++    const planNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:520px', dataset: { planGate: 'true' },
++      text: !pg ? ''
++      : pg.state === 'not_consulted' ? ''
++      : pg.state === 'no_plan' ? 'No active plan — nothing is gated on one. Publish a plan in the Playbook and its `require` lines will gate these signals.'
++      : pg.state === 'ambiguous' ? `More than one active plan (${(pg.candidates || []).map((c) => c.name).join(', ')}) — name one with ?strategy_id= or pause the others; nothing is gated until then.`
++      : pg.state === 'unavailable' ? `Your plan could not be read — every signal is refused until it can be. ${pg.reason || ''}`
++      : `Plan ${esc((pg.plan || {}).name || '')}${pg.plan && pg.plan.version ? ' v' + pg.plan.version : ''}: ${pg.enforced} requirement${pg.enforced === 1 ? '' : 's'} enforced`
++        + (pg.refused_now ? ' — one of them refuses a candidate below' : '')
++        + (pg.unknown_now ? ' · some facts could not be read and refused nothing' : '')
++        + (pgProse ? ` · ${pgProse} line${pgProse === 1 ? '' : 's'} not machine-checkable (never enforced)` : '')
++        + (pgUnknown.length ? ` · NOT CHECKED: ${pgUnknown.join(' · ')}` : '')
++        // M56 — a plan whose rules could not be READ must never render as an empty list of satisfied
++        // requirements: at zero enforced rules the plan's own note ("re-save the plan", "no
++        // machine-checkable requirements yet") is the sentence that says what to do about it.
++        + (pg.enforced ? '' : (pg.note ? ` · ${pg.note}` : '')) });
++    /* M56 — which written plan this analysis is confirmed against. The selector matters because
++     * WHICH plan applies is the trader's decision and this app never guesses between two: with no
++     * selection the gate uses their single active plan, and when several are active it says so here
++     * and gates nothing until one is chosen. The choice rides `strategy_id` on the request, so the
++     * refusal and the plan it came from travel together. */
++    const plans = ((global.Store && global.Store.strategies) || []).filter((x) => x.active);
++    const planSel = h('select', { class: 'input', style: 'max-width:190px', dataset: { planSelect: 'true' },
++      title: 'Confirm these signals against one of your written plans. Its `require` lines are enforced.' });
++    planSel.appendChild(h('option', { value: '', text: plans.length ? 'Plan: my active plan' : 'Plan: none published' }));
++    plans.forEach((x) => planSel.appendChild(h('option', { value: String(x.id), text: x.name, selected: String(x.id) === String(B.strategyId || '') ? 'selected' : null })));
++    planSel.addEventListener('change', () => {
++      B.strategyId = planSel.value || '';
++      if (runBtn && runBtn.click) runBtn.click(); else onChange();
++    });
      const predChk = h('label', { class: 'row gap-4 muted', style: 'align-items:center' });
      const predBox = h('input', { type: 'checkbox', checked: B.prediction ? 'checked' : null });
      predChk.appendChild(predBox); predChk.appendChild(document.createTextNode('prediction'));
-@@ -157,9 +212,45 @@
+@@ -157,9 +249,45 @@
        global.App.go('market');
      });
      const levelsBtn = h('button', { class: 'btn ghost sm', text: 'Copy plan', title: 'Copy entry / stop / targets as text — handy for a TradingView alert' });
@@ -3969,7 +4041,7 @@ index 2222ac3..a112c8e 100644
      predBox.addEventListener('change', () => { B.prediction = predBox.checked; });
      runBtn.addEventListener('click', async () => {
        B.symbol = symInput.value.trim().toUpperCase();
-@@ -168,7 +259,8 @@
+@@ -168,7 +296,8 @@
      });
      saveBtn.addEventListener('click', async () => {
        try {
@@ -3979,7 +4051,7 @@ index 2222ac3..a112c8e 100644
          global.App.toast(r.saved && r.saved.saved ? `Saved ${r.saved.saved} signal(s)` : 'No actionable setup to save', r.saved && r.saved.saved ? 'ok' : 'warn');
          if (r.saved && r.saved.saved) { B.signals = null; }
        } catch (e) { global.App.toast(e.message, 'err'); }
-@@ -184,11 +276,17 @@
+@@ -184,11 +313,18 @@
      });
  
      levelsBtn.addEventListener('click', () => {
@@ -3990,9 +4062,10 @@ index 2222ac3..a112c8e 100644
 +      copyPlan(copyCandidate);
      });
 -    [symInput, tfSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
-+    [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
++    [symInput, tfSel, winSel, planSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
 +    if (marketCopy && global.TV) row.appendChild(h('button',{class:'btn sm guardrail-stop',text:'Override & copy plan',onclick:()=>copyPlan(marketCopy)}));
 +    row.appendChild(winNote);
++    row.appendChild(planNote);
 +    /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
 +     * button will be blocked ... grayed out ... You physically can't press the trade
 +     * button." The nearest thing here is the control that hands you an order to place, so
@@ -4001,7 +4074,7 @@ index 2222ac3..a112c8e 100644
      const wrap = h('div', { class: 'card' });
      wrap.appendChild(row);
      wrap.appendChild(dl);
-@@ -201,7 +299,7 @@
+@@ -201,7 +337,7 @@
          line.appendChild(h('span', {
            class: 'chip ' + (hl.method_blocked ? 'warn' : 'pos'),
            text: `method ${hl.method_status}${hl.method_direction ? (hl.method_direction > 0 ? ' · long' : ' · short') : ''}`,
@@ -4010,7 +4083,7 @@ index 2222ac3..a112c8e 100644
          }));
        }
        line.appendChild(h('span', { class: 'chip', text: `mechanics ${hl.mechanics}` }));
-@@ -255,7 +353,7 @@
+@@ -255,7 +391,7 @@
        box.appendChild(h('div', { class: 'muted-2 td-layer-note', text: lay.role_note || '' }));
        if (key === 'bias') {
          box.appendChild(h('div', { class: 'kv', html: `<span>structure</span><b>${esc(lay.structure || 'ranging')}</b>` }));
@@ -4019,7 +4092,7 @@ index 2222ac3..a112c8e 100644
          if (lay.range) box.appendChild(h('div', { class: 'kv', html: `<span>range</span><b>${fmt(lay.range.low, 5)} – ${fmt(lay.range.high, 5)}</b>` }));
          if (lay.right_candle) {
            box.appendChild(h('div', { class: 'kv', html: `<span>right candle</span><b>${esc(lay.right_candle.level.label)} ${fmt(lay.right_candle.level.price, 5)}</b>` }));
-@@ -288,29 +386,51 @@
+@@ -288,29 +424,51 @@
        card.appendChild(pb);
      }
  
@@ -4078,7 +4151,7 @@ index 2222ac3..a112c8e 100644
          } catch (e) { global.App.toast(e.message, 'err'); }
        });
        box.appendChild(save);
-@@ -363,10 +483,14 @@
+@@ -363,10 +521,14 @@
      // a size is only claimed when the method has actually graded the setup:
      // "conviction none · half size" would be a promise the engine is not making
      const tier = n.conviction && String(n.conviction).toUpperCase();
@@ -4094,7 +4167,7 @@ index 2222ac3..a112c8e 100644
  
      // the four facts a decision needs, side by side
      const grid = h('div', { class: 'now-grid' });
-@@ -374,7 +498,7 @@
+@@ -374,7 +536,7 @@
        grid.appendChild(h('div', { class: 'now-cell' },
          h('span', { class: 'now-k', text: 'The order' }),
          h('b', { class: 'mono', text: `${n.order.side} ${fmt(n.order.entry, 5)}` }),
@@ -4103,7 +4176,7 @@ index 2222ac3..a112c8e 100644
      } else {
        grid.appendChild(h('div', { class: 'now-cell' },
          h('span', { class: 'now-k', text: 'The order' }),
-@@ -566,6 +690,9 @@
+@@ -566,6 +728,9 @@
        card.appendChild(h('div', { class: 'card-head', html: `<strong class="${c.dir > 0 ? 'pos' : 'neg'}">${heading} · ${esc(c.grade)}</strong> <span class="muted">${esc(c.grade_label || '')} — score ${c.score}/100 (${c.passed}/${c.total_checks} checks)${isCall ? '' : ' · the entry model only'}</span>` }));
        if (dirAllowed && c.dir !== dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: 'This side is not the one the higher timeframe permits — it is shown for context only, and no order belongs here.' }));
        else if (!dirAllowed) card.appendChild(h('div', { class: 'bot-warn', text: `The method has not permitted a side yet${(d.topdown && d.topdown.blocked) ? ' (it is blocking this market)' : ''}, so this is the entry model's best read rather than a trade. Nothing here is armed.` }));
@@ -4113,7 +4186,7 @@ index 2222ac3..a112c8e 100644
        if (c.levels) {
          const L = c.levels;
          const rows = (L.targets || []).map((t) => `<tr><td>${esc(t.role)}</td><td>${esc(t.label)}</td><td class="mono">${fmt(t.price, 5)}</td><td class="mono">${t.rr}R</td></tr>`).join('');
-@@ -577,6 +704,7 @@
+@@ -577,6 +742,7 @@
            </div>` }));
          card.appendChild(h('div', { class: 'table-wrap', html: `<table class="table"><thead><tr><th>Leg</th><th>Where</th><th>Price</th><th>R:R</th></tr></thead><tbody>${rows}</tbody></table>` }));
          if (L.management) card.appendChild(h('div', { class: 'muted bot-detail', text: 'Rules: ' + L.management.rule }));
@@ -4121,13 +4194,28 @@ index 2222ac3..a112c8e 100644
          if (L.risk_warning) card.appendChild(h('div', { class: 'bot-warn', text: 'Risk: ' + L.risk_warning }));
          card.appendChild(h('div', { class: 'muted bot-detail', text: L.invalidation }));
        }
-@@ -597,19 +725,24 @@
+@@ -597,19 +763,39 @@
          chk.appendChild(row);
        });
        card.appendChild(chk);
 +      if (c.levels && c.levels.rr_floor) {
 +        const f = c.levels.rr_floor;
 +        card.appendChild(h('div', { class: 'muted-2', text: `First-target RR floor: ${Number(f.rr).toFixed(4)}R / ${f.min_rr}R — ${f.passed ? 'met' : 'refused'}. Farther displayed targets cannot qualify the trade.` }));
++      }
++      /* M56 — the plan's own requirements for THIS candidate, each with its resolved state. The
++       * refusal already rides `action`/`no_trade` above (and therefore the verdict, Now, Copy plan and
++       * the save button), so this block is the explanation, not a second decision. */
++      if (c.plan_rules && c.plan_rules.rules && c.plan_rules.rules.length) {
++        const pr = h('div', { class: 'bot-checks', dataset: { planRules: 'true' } });
++        pr.appendChild(h('div', { class: 'muted-2', text: `Your plan's requirements for this side (${c.plan_rules.refused} refused · ${c.plan_rules.unknown} unreadable)` }));
++        c.plan_rules.rules.forEach((r) => {
++          const row2 = h('div', { class: 'bot-check ' + (r.state === 'met' ? 'ok' : r.state === 'refused' ? 'no' : 'no'), dataset: { planRule: r.fact, planState: r.state } });
++          row2.appendChild(h('span', { class: 'mark ' + (r.state === 'met' ? 'ok' : 'no'), text: r.state === 'met' ? 'ok' : r.state === 'refused' ? 'no' : '?' }));
++          row2.appendChild(h('span', { class: 'lbl', text: r.text + (r.state === 'unknown' ? ' — could not be read, so it refused nothing' : '') }));
++          if (r.detail) row2.appendChild(h('span', { class: 'muted-2 det', text: r.detail }));
++          pr.appendChild(row2);
++        });
++        card.appendChild(pr);
 +      }
        card.appendChild(h('div', { class: 'bot-action', text: c.action }));
        const btnRow = h('div', { class: 'row gap-8' });
@@ -4151,7 +4239,7 @@ index 2222ac3..a112c8e 100644
            tags: 'bot,smc', adherence: 5,
          });
        } });
-@@ -636,7 +769,7 @@
+@@ -636,7 +822,7 @@
      }
  
      /* --- prediction teaser inside mechanic panel --- */
@@ -4160,7 +4248,7 @@ index 2222ac3..a112c8e 100644
        const p = h('div', { class: 'card' });
        p.appendChild(h('div', { class: 'card-head', html: `<strong>Odds</strong> <span class="muted">from the historical replay</span>` }));
        (d.prediction.summary || []).forEach((x) => p.appendChild(h('div', { class: 'bot-detail', text: '• ' + x })));
-@@ -677,7 +810,14 @@
+@@ -677,7 +863,14 @@
  
    function panelPredict(pane) {
      const p = B.predict || (B.data && B.data.prediction);
@@ -4176,7 +4264,7 @@ index 2222ac3..a112c8e 100644
      if (p.ok === false) { pane.appendChild(h('div', { class: 'card', text: 'Prediction unavailable: ' + (p.error || 'unknown error') })); return; }
  
      const strip = h('div', { class: 'card' });
-@@ -761,7 +901,7 @@
+@@ -761,7 +954,7 @@
       * ------------------------------------------------------------------ */
      const views = bt.frontier_views || {};
      const plain = bt.target_frontier || [];
@@ -4185,7 +4273,7 @@ index 2222ac3..a112c8e 100644
      const hc = h('div', { class: 'card' });
      hc.appendChild(h('div', { class: 'card-head', html: `<strong>Win rate is a dial, not a skill badge</strong> <span class="muted">measured on ${esc(p.symbol || (B.data && B.data.symbol) || '')} with its own costs</span>` }));
      hc.appendChild(h('div', { class: 'bot-detail', text: `Every row below exits the whole position at that target. Two questions are separated on purpose: how often price reached the target before the stop (the mechanical hit rate) and how often the trade actually finished in profit after costs. On this market the round-trip cost is ${bt.meta && bt.meta.cost_r_median != null ? bt.meta.cost_r_median + 'R' : '—'} per trade (${bt.meta && bt.meta.cost_bps != null ? bt.meta.cost_bps + ' bp of price' : '—'}${bt.meta && bt.meta.cost_source ? ', ' + esc(bt.meta.cost_source) : ''}) — so a target smaller than the cost cannot win, however often it is touched.` }));
-@@ -821,6 +961,13 @@
+@@ -821,6 +1014,13 @@
      const grid = h('div', { class: 'bot-grid' });
      const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
  
@@ -4199,7 +4287,7 @@ index 2222ac3..a112c8e 100644
      /* live probabilities */
      const live = h('div', { class: 'card' });
      live.appendChild(h('div', { class: 'card-head', html: `<strong>Live setups</strong> <span class="muted">probability to reach the first target before the stop</span>` }));
-@@ -852,16 +999,18 @@
+@@ -852,16 +1052,18 @@
              const plan = m.plan;
              const tgt = (plan.targets || []).filter((t) => t.rr >= 0.9);
              row.appendChild(h('div', { class: 'bot-detail', html: `<strong>Refined plan (${esc(m.tf)} confirmation)</strong> — entry <b>${fmt(plan.entry, 5)}</b> · stop ${fmt(plan.stop, 5)} · risk ${fmt(plan.risk, 5)} (${plan.risk_atr} ATR) · ${tgt.length ? tgt.slice(0, 3).map((t) => `${t.label ? esc(t.label) + ' ' : ''}${fmt(t.price, 5)} (${t.rr}R)`).join(' → ') : 'no target ≥ 0.9R from here'}` }));
@@ -4221,7 +4309,7 @@ index 2222ac3..a112c8e 100644
                  global.App.toast(r.saved ? 'Refined plan saved — resolve it later to grade the bot' : (r.reason || 'Not saved'), r.saved ? 'ok' : 'warn');
                  if (r.saved) B.signals = null;
                } catch (e) { global.App.toast(e.message, 'err'); }
-@@ -1001,26 +1150,30 @@
+@@ -1001,26 +1203,30 @@
      const top = h('div', { class: 'card' });
      const summary = h('div', { style: 'flex:1;min-width:260px' });
      summary.appendChild(h('div', { html: `<b style="font-size:1.1rem">${esc(c.behavior_grade)}</b> <span class="muted">— ${c.sample.trades} closed trades analysed (${esc(c.sample.from || '')} → ${esc(c.sample.to || '')})</span>` }));
@@ -4256,7 +4344,7 @@ index 2222ac3..a112c8e 100644
  
      const grid = h('div', { class: 'bot-grid' });
      const left = h('div', { class: 'bot-col' }), right = h('div', { class: 'bot-col' });
-@@ -1039,18 +1192,8 @@
+@@ -1039,18 +1245,8 @@
        left.appendChild(card);
      });
  
@@ -4277,7 +4365,7 @@ index 2222ac3..a112c8e 100644
      right.appendChild(grades);
  
      const fb = h('div', { class: 'card' });
-@@ -1062,9 +1205,7 @@
+@@ -1062,9 +1258,7 @@
        try {
          const r = await global.API.get('/bots/feedback/' + Number(idIn.value));
          global.U.clear(fbOut);
@@ -4288,7 +4376,7 @@ index 2222ac3..a112c8e 100644
        } catch (e) { global.App.toast(e.message, 'err'); }
      });
      fb.appendChild(h('div', { class: 'row gap-8' }, idIn, fbBtn));
-@@ -1081,6 +1222,7 @@
+@@ -1081,6 +1275,7 @@
      const s = B.signals;
      if (!s) { pane.appendChild(h('div', { class: 'empty', text: 'Loading signals…' })); return; }
      const st = s.stats || {};
@@ -4296,7 +4384,7 @@ index 2222ac3..a112c8e 100644
      pane.appendChild(h('div', { class: 'card', html: `<div class="stat-strip">
        <div><div class="l">Tracked</div><div class="v">${st.total || 0}</div></div>
        <div><div class="l">Pending</div><div class="v">${st.pending || 0}</div></div>
-@@ -1094,13 +1236,16 @@
+@@ -1094,13 +1289,16 @@
        <td>#${g.id}</td><td><b>${esc(g.symbol)}</b> <span class="muted">${esc(g.timeframe)}</span></td>
        <td class="${g.dir > 0 ? 'pos' : 'neg'}">${esc(g.side.toUpperCase())}</td>
        <td>${esc(g.grade)} <span class="muted">${g.score}</span></td>
@@ -4315,7 +4403,7 @@ index 2222ac3..a112c8e 100644
      if ((st.by_grade || []).length) {
        pane.appendChild(h('div', { class: 'card', html: `<div class="card-head"><strong>Signal quality by grade</strong></div><div class="table-wrap"><table class="table"><thead><tr><th>Grade</th><th>Resolved</th><th>Win rate</th><th>Expectancy</th></tr></thead><tbody>${st.by_grade.map((x) => `<tr><td><b>${esc(x.grade)}</b></td><td class="mono">${x.resolved}</td><td class="mono">${x.win_rate}%</td><td class="mono ${x.expectancy_r > 0 ? 'pos' : 'neg'}">${x.expectancy_r}R</td></tr>`).join('')}</tbody></table></div>` }));
      }
-@@ -1112,6 +1257,11 @@
+@@ -1112,6 +1310,11 @@
    Views.bots = {
      title: 'Bots',
      render(root) {
@@ -4327,20 +4415,22 @@ index 2222ac3..a112c8e 100644
        root.innerHTML = '';                       // replace the shell's skeleton placeholder
        if (global.__botRequest) {                 // handed over from the Market chart panel
          B.symbol = String(global.__botRequest.symbol || B.symbol).toUpperCase();
-@@ -1161,8 +1311,10 @@
+@@ -1161,8 +1364,12 @@
          const sym = B.symbol, tf = B.tf;
          const trim = B.trim || 0;
          Promise.all([
 -          API.get('/bots/analyse', { symbol: sym, tf, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim }),
 -          API.get('/bots/chart', { symbol: sym, tf, bars: 600, min_rr: B.minRR, trim }).catch(() => null),
 +          API.get('/bots/analyse', { symbol: sym, tf, account_id:Store.accountId || null, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
++            ...(B.strategyId ? { strategy_id: B.strategyId } : {}),                          // M56
 +            ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }),                     // M26
 +          API.get('/bots/chart', { symbol: sym, tf, account_id:Store.accountId || null, bars: 600, min_rr: B.minRR, trim,
++            ...(B.strategyId ? { strategy_id: B.strategyId } : {}),                          // M56
 +            ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }).catch(() => null),    // M26
            API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
          ]).then(([d, ch, dr]) => {
            B.data = d; B.predict = d.prediction; B.chart = ch; B.candles = (ch && ch.candles) || [];
-@@ -1171,13 +1323,14 @@
+@@ -1171,13 +1378,14 @@
            global.App.refresh();
          }).catch((e) => { B.error = 'Analysis failed: ' + e.message; B.busy = ''; global.App.refresh(); });
        } else if (B.busy === 'scan') {
@@ -4359,7 +4449,7 @@ index 2222ac3..a112c8e 100644
        } else if (B.busy === 'backtest') {
          // handled inline below (predict tab)
        } else if (B.tab === 'predict' && B.data && !B.backtestTrades) {
-@@ -1186,12 +1339,12 @@
+@@ -1186,12 +1394,12 @@
            .then((bt) => { B.backtestTrades = bt.trades || []; B.busy = ''; global.App.refresh(); })
            .catch(() => { B.busy = ''; global.App.refresh(); });
        } else if (B.tab === 'signals' && !B.signals) {
@@ -5141,15 +5231,28 @@ index 0000000..cf8722f
 + };
 +})(window);
 diff --git a/public/js/views/playbook.js b/public/js/views/playbook.js
-index 8ff1135..471c8c8 100644
+index 8ff1135..fbd6500 100644
 --- a/public/js/views/playbook.js
 +++ b/public/js/views/playbook.js
-@@ -1,19 +1,20 @@
+@@ -1,19 +1,33 @@
  /* views/playbook.js — strategies, entry/exit rules, checklist runner, edge per setup */
  (function (global) {
    'use strict';
 -  const Views = global.Views = global.Views || {};
 +  const Views = global.Views = global.Views || {};let renderEpoch=0;
++  /* M56 — the plan gate's vocabulary, fetched from the server so the editor's hint can never drift
++   * from the grammar the engine actually enforces (a hard-coded copy here would be a second source of
++   * truth, and the first time the two disagreed the trader would write rules that silently do nothing). */
++  function loadPlanVocabulary() {
++    if (global.PLAN_GATE_VOCABULARY) return Promise.resolve(global.PLAN_GATE_VOCABULARY);
++    if (global.PLAN_GATE_VOCABULARY_ASKED) return global.PLAN_GATE_VOCABULARY_ASKED;
++    const asked = global.API.get('/bots/plan-gate').then((r) => {
++      global.PLAN_GATE_VOCABULARY = (r && r.vocabulary) || [];
++      return global.PLAN_GATE_VOCABULARY;
++    }).catch(() => []);
++    global.PLAN_GATE_VOCABULARY_ASKED = asked;
++    return asked;
++  }
  
    Views.playbook = {
      title: 'Playbook',
@@ -5168,7 +5271,7 @@ index 8ff1135..471c8c8 100644
  
        const grid = U.h('div', { class: 'grid g3' });
        root.appendChild(grid);
-@@ -44,7 +45,7 @@
+@@ -44,7 +58,7 @@
            ${s.risk_rules ? `<div class="tiny" style="margin-top:5px"><b style="color:var(--amber)">Risk</b> <span class="muted-2">${U.esc(s.risk_rules)}</span></div>` : ''}
            <div class="row" style="gap:6px;margin-top:12px">
              <button class="btn xs" data-check="${s.id}">Run checklist</button>
@@ -5177,7 +5280,7 @@ index 8ff1135..471c8c8 100644
              <button class="btn xs ghost" data-log="${s.id}">Log a trade</button>
              <button class="btn xs ghost danger" data-del="${s.id}" style="margin-left:auto">Delete</button>
            </div>`;
-@@ -53,6 +54,7 @@
+@@ -53,6 +67,7 @@
  
        grid.addEventListener('click', async (e) => {
          const b = e.target.closest('button'); if (!b) return;
@@ -5185,19 +5288,30 @@ index 8ff1135..471c8c8 100644
          if (b.dataset.edit) return strategyDialog(data.strategies.find((s) => s.id === Number(b.dataset.edit)), root);
          if (b.dataset.log) { const s = data.strategies.find((x) => x.id === Number(b.dataset.log)); return global.App.openTrade(null, { strategy_id: s.id }); }
          if (b.dataset.check) { const s = data.strategies.find((x) => x.id === Number(b.dataset.check)); return checklistRunner(s); }
-@@ -67,7 +69,10 @@
+@@ -67,7 +82,14 @@
      },
    };
  
 -  function strategyDialog(s, root) {
 +  async function strategyDialog(s, root) {
++    // M56 — the enforced-rule hint under the Entry rules field needs the engine's own vocabulary, and it
++    // has to be THERE when the editor opens: a hint reading "loading…" is the same as no hint for the
++    // one edit it exists to inform. The read is cached, so only the first dialog waits for it.
++    await loadPlanVocabulary();
 +    const R=Views.ruleChanges,context=R?.ctx(),number=R?.nextSerial();let discipline;
 +    if(s&&R){try{discipline=await API.get('/strategies/'+s.id+'/change-discipline');if(!R.same(context)||!R.current(number))return;s=discipline.strategy;}catch(e){if(R.same(context)&&R.current(number))global.App.toast(e.message,'err');return;}}
 +    let alive=true,stale=false;
      const isNew = !s;
      const v = s || { name: '', description: '', market_conditions: '', timeframes: '', entry_rules: [], exit_rules: [], checklist: [], risk_rules: '', target_r_multiple: 2, colour: '#4f8cff', active: 1 };
      const body = U.h('div');
-@@ -85,7 +90,8 @@
+@@ -79,13 +101,15 @@
+       <label class="field"><span>Target R multiple</span><input id="s-target" type="number" step="0.1" value="${v.target_r_multiple}" /></label>
+       <label class="field"><span>Colour</span><input id="s-colour" type="color" value="${v.colour}" style="height:38px" /></label>
+       <label class="field span2"><span>Entry rules (one per line)</span><textarea id="s-entry" placeholder="One rule per line">${U.esc((v.entry_rules || []).join('\n'))}</textarea></label>
++      <div class="muted-2 small span2" data-plan-vocabulary="true">Lines beginning <b>require&nbsp;</b> are ENFORCED by the bots — a candidate that breaks one is refused, and nothing else in the app can overrule it. Everything else is context for you and is never interpreted.<br>Checkable so far (the app’s own list — hover a rule for its allowed values): ${(global.PLAN_GATE_VOCABULARY || []).map((x) => `<code title="${U.esc(x.label + (x.values ? ' — one of: ' + x.values.join(', ') : ''))}">${U.esc(x.line)}</code>`).join(' · ') || '<span class="muted">the app could not read its own rule list — reload the page before trusting a rule.</span>'}<br>A <code>require</code> line the app does not recognise is reported loudly on the bots page and in the payload rather than passing as though it were checked.</div>
+       <label class="field span2"><span>Exit rules (one per line)</span><textarea id="s-exit">${U.esc((v.exit_rules || []).join('\n'))}</textarea></label>
+       <label class="field span2"><span>Pre-trade checklist (one per line)</span><textarea id="s-check">${U.esc((v.checklist || []).join('\n'))}</textarea></label>
+       <label class="field span2"><span>Risk rules</span><textarea id="s-risk" placeholder="Max risk, max trades, cooldowns…">${U.esc(v.risk_rules)}</textarea></label>
        <label class="field"><span>Status</span><select id="s-active"><option value="1" ${v.active ? 'selected' : ''}>Active</option><option value="0" ${!v.active ? 'selected' : ''}>Paused</option></select></label>
      </div>`;
      const lines = (id) => U.$('#' + id, body).value.split('\n').map((x) => x.trim()).filter(Boolean);
@@ -5207,7 +5321,7 @@ index 8ff1135..471c8c8 100644
        title: isNew ? 'New setup' : 'Edit setup',
        body,
        actions: [
-@@ -105,15 +111,19 @@
+@@ -105,15 +129,19 @@
                active: U.$('#s-active', body).value === '1',
              };
              if (!payload.name) return global.App.toast('Give the setup a name.', 'err');
@@ -8869,10 +8983,10 @@ index 0000000..dd6a036
 +module.exports = { parseProfitLimit, inputError, retainedState, retainState, DEFAULT_CAP, parseCap, configuredCap, dailyCap, dayKey, TF_MS, msOf,
 +  evaluate, unavailable, isBlocked, applyToSetups, admissionError, admit, observe, snapshotFields, logEvent, eventsForDay, record, overrideReason, actionPermission };
 diff --git a/src/bots/index.js b/src/bots/index.js
-index 0007b01..708b6c1 100644
+index 0007b01..532e59d 100644
 --- a/src/bots/index.js
 +++ b/src/bots/index.js
-@@ -16,16 +16,45 @@
+@@ -16,16 +16,46 @@
   *      so the bot's own hit rate is on the record (no vibes, no cherry-picking).
   */
  
@@ -8891,6 +9005,7 @@ index 0007b01..708b6c1 100644
  const Predict = require('./predict');
  const Cor = require('./correction');
 +const Guards = require('./guardrails');
++const PlanGate = require('./plan-gate');   // M56: the trader's written plan, as a gate
 +const StateGate = require('../state-gate');
 +const NewsWindow = require('../news-window');
 +const TradingWindow = require('../trading-window');   // M112   // M110 — two clocks, not one number
@@ -8919,7 +9034,7 @@ index 0007b01..708b6c1 100644
  
  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-@@ -48,32 +77,92 @@ function currenciesOf(symbol) {
+@@ -48,32 +78,92 @@ function currenciesOf(symbol) {
  }
  
  /**
@@ -9021,7 +9136,7 @@ index 0007b01..708b6c1 100644
    }
  }
  
-@@ -97,6 +186,175 @@ function specOf(symbol) {
+@@ -97,6 +187,175 @@ function specOf(symbol) {
  const floorRR = (v) => (Number(v) > 0 ? Number(v) : 1);   // the trader's minimum R:R
  const runRR = (v) => Math.max(2, floorRR(v));              // the setup model's 1:2 runway
  
@@ -9197,7 +9312,7 @@ index 0007b01..708b6c1 100644
  async function analyse(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const spec = specOf(sym);
-@@ -108,24 +366,59 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -108,24 +367,68 @@ async function analyse(symbol, tf = '15m', opts = {}) {
    const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null };
    const replay = trim > 0 || cut.asOf ? cut : null;
  
@@ -9212,6 +9327,12 @@ index 0007b01..708b6c1 100644
 +   * is published as itself rather than being folded into either "inside" or "blocked". An explicit
 +   * clock is honoured when a caller supplies one; otherwise this is the server clock, never a
 +   * client's. */
++  /* M56 — the trader's OWN written plan, read once per analysis exactly like the window above, and
++   * for the same reason: the gate must be a function of the stored plan and the trader's own
++   * settings, not of which bot asked. `safe` never throws on an unreadable plan (it returns the
++   * `unavailable` state, which refuses rather than passing); an explicit strategy_id that is not
++   * theirs is the caller's error and surfaces. `opts.strategyId` is validated by the route. */
++  const writtenPlan = await PlanGate.safe(opts.userId, opts.strategyId);
 +  const windowNow = Number.isFinite(Number(opts.nowMs)) ? Number(opts.nowMs) : Date.now();
 +  const tradingWindow = TradingWindow.safeState({ start: account && account.window_start, end: account && account.window_end,
 +    timezone: account && account.window_timezone, ownedZone: account && account.routine_timezone, source: account && account.window_source, nowMs: windowNow });
@@ -9264,10 +9385,13 @@ index 0007b01..708b6c1 100644
 +    // refusal names THEIR window (with the local time that produced it) next to the other
 +    // non-negotiables, instead of arriving later as a generic personal stop.
 +    tradingWindow,
++    // M56 — the plan travels into the setup model the same way, so the plan's requirements are
++    // evaluated at the point every other non-negotiable is, against the model's own facts.
++    planGate: writtenPlan,
    });
  
    let prediction = null;
-@@ -137,23 +430,39 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -137,23 +440,39 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      }
    }
  
@@ -9313,7 +9437,7 @@ index 0007b01..708b6c1 100644
      headline: td.headline || null,
      conviction: td.conviction || null,
      pending_step: (td.steps || []).find((s) => !s.done) || null,
-@@ -168,8 +477,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -168,8 +487,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      // build the *untrimmed* read as well, so a replay can say what happened after
      const L2 = Momentum.topdown.layersFor(tf);
      const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
@@ -9324,7 +9448,7 @@ index 0007b01..708b6c1 100644
      replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
    }
    const now = Now.build({
-@@ -189,7 +498,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -189,7 +508,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
      method_verdict: methodVerdict,
      topdown: td,
      momentum: {
@@ -9340,7 +9464,7 @@ index 0007b01..708b6c1 100644
        alignment: momentum.alignment, mechanics: momentum.mechanics,
        narrative: momentum.narrative, conflicts: momentum.conflicts,
        htf: momentum.htf, quote: momentum.quote, series: momentum.series,
-@@ -213,6 +529,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+@@ -213,6 +539,7 @@ async function analyse(symbol, tf = '15m', opts = {}) {
        direction: prediction.direction, setups: prediction.setups, buy: prediction.buy, sell: prediction.sell,
        model: prediction.model, backtest: prediction.backtest, summary: prediction.summary,
        current: predRow || null, error: prediction.error || null,
@@ -9348,7 +9472,7 @@ index 0007b01..708b6c1 100644
      } : null,
      news,
      daily,
-@@ -227,9 +544,12 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -227,9 +554,12 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
    parts.push(`${sym} ${tf}: ${v.action}${v.grade && v.grade !== 'no-trade' ? ` (${v.grade}, ${v.score}/100)` : ''} — ${v.headline}`);
    if (td.headline) parts.push(`${td.status === 'confirmed' ? 'Method: confirmed' : 'Method: waiting'} — ${td.headline}`);
    if (td.playbook && td.playbook.length) parts.push(`Next: ${td.playbook[0]}`);
@@ -9363,7 +9487,7 @@ index 0007b01..708b6c1 100644
    if (daily && daily.status !== 'clear') parts.push(`Personal guardrail: ${daily.message}`);
    if (momentum.conflicts.length) parts.push(`Caution: ${momentum.conflicts.join(' ')}`);
    return {
-@@ -242,7 +562,9 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -242,7 +572,9 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
      next_trigger: v.next_trigger,
      checks: {
        momentum: momentum.bias, sweep: !!(setups.candidates[0] && setups.candidates[0].levels),
@@ -9374,7 +9498,7 @@ index 0007b01..708b6c1 100644
        guardrails: daily ? daily.status : null,
      },
    };
-@@ -266,6 +588,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
+@@ -266,6 +598,7 @@ function buildHeadline({ sym, tf, momentum, setups, prediction, predRow, news, d
   * @param {string} tf
   * @param {{bars?:number, userId?:number, accountId?:number, minRR?:number, balance?:number, riskPct?:number}} opts
   */
@@ -9382,7 +9506,7 @@ index 0007b01..708b6c1 100644
  async function chart(symbol, tf = '15m', opts = {}) {
    const sym = String(symbol || '').toUpperCase();
    const bars = Math.min(Math.max(Number(opts.bars) || 400, 80), 1200);
-@@ -279,44 +602,56 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -279,44 +612,61 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // never disagree about the same market (they did once: the chart asked for 200
    // higher-timeframe candles and the method read a different range from them).
    const [entry, bias, triggerRaw] = await Promise.all([
@@ -9419,11 +9543,16 @@ index 0007b01..708b6c1 100644
 -    price: entry.price, atr: entry.atr, bias: momentum.bias, biasReason: td.headline,
 -    indicators: entry.ind, balance, riskPct, valuePerPoint: spec.value_per_point,
 -    assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td,
++  /* M56 — the chart confirms against the SAME written plan the analysis does, read here rather than
++   * taken from the caller: M124's rule is that the chart is not a second opinion, and a gate only one
++   * of the two surfaces obeyed would be exactly that. */
++  const chartPlan = await PlanGate.safe(opts.userId, opts.strategyId);
 +  let setups = Setup.buildSetups(entry.smc, {
 +    price: entry.price, atr: entry.atr, entrySeries: entry, observedAt: cut.asOf || opts.nowMs, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
 +    indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
 +    assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
 +    sessionPref: opts.sessionPref || null,   // M26
++    planGate: chartPlan,                     // M56
    });
  
 -  // The plan drawn on the chart: the method's own CRT plan when it has one,
@@ -9456,7 +9585,7 @@ index 0007b01..708b6c1 100644
        entry_status: td.status === 'confirmed' ? 'confirmed' : td.status,
        alternatives: { aggressive: crt.aggressive, safer: crt.safer },
        management: {
-@@ -325,9 +660,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -325,9 +675,9 @@ async function chart(symbol, tf = '15m', opts = {}) {
        },
        note: `${crt.side} after the ${crt.sweep.level} sweep failed to hold · ${crt.target_note}`,
      };
@@ -9468,7 +9597,7 @@ index 0007b01..708b6c1 100644
        ...best.levels,
        entry_status: best.levels.entry_status,
      };
-@@ -335,7 +670,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -335,7 +685,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const smc = {
      price: entry.smc.price, atr: entry.smc.atr, counts: entry.smc.counts,
@@ -9477,7 +9606,7 @@ index 0007b01..708b6c1 100644
      premium_discount: entry.smc.premium_discount, sessions: entry.smc.sessions,
      order_blocks: entry.smc.order_blocks.slice(0, 8), fvgs: entry.smc.fvgs.slice(0, 8),
      sweeps: entry.smc.sweeps.slice(0, 6), displacement: entry.smc.displacement.slice(0, 4),
-@@ -349,7 +684,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -349,7 +699,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
  
    const stack = {
      bias: {
@@ -9486,7 +9615,7 @@ index 0007b01..708b6c1 100644
        structure: bias.smc.structure ? bias.smc.structure.trend : null,
        state: td.layers.bias.state,
        level: td.layers.bias.range ? { low: td.layers.bias.range.low, high: td.layers.bias.range.high, label: 'CRT range' } : null,
-@@ -370,7 +705,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -370,7 +720,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
    // the same single answer the analysis strip shows, so the chart and the words
    // on screen can never disagree about what to do
    const now = Now.build({
@@ -9495,7 +9624,7 @@ index 0007b01..708b6c1 100644
      replay: cut.trim || cut.asOf ? { trim: cut.trim || null, since: null } : null,
      nowMs: opts.nowMs,
      minRR: opts.minRR,
-@@ -380,24 +715,36 @@ async function chart(symbol, tf = '15m', opts = {}) {
+@@ -380,25 +730,46 @@ async function chart(symbol, tf = '15m', opts = {}) {
      ok: true, symbol: sym, timeframe: tf, instrument: spec,
      generated_at: new Date().toISOString(),
      replay: cut.trim || cut.asOf ? { trim: cut.trim || null, as_of: cut.asOf ? new Date(cut.asOf).toISOString() : null } : null,
@@ -9523,21 +9652,31 @@ index 0007b01..708b6c1 100644
 -      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok, levels: c.levels, action: c.action })),
 +      verdict: setups.verdict, method: setups.method, execution_permission:setups.execution_permission,
 +      candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok, market_ok:c.market_ok, personal_blocked:c.personal_blocked,
++        // M56 — the written plan and its per-side rules travel with the chart too: the chart is not a
++        // second opinion (M124), so a client that renders the chart's candidates can show the same
++        // refusal the analysis shows instead of having to ask again with different inputs.
++        plan_rules: c.plan_rules,
 +        // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
 +        // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
 +        entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence, entry_preference: c.entry_preference,
 +        no_trade: c.no_trade || [], levels: c.levels, action: c.action })),
++      filters: setups.filters,
      },
      quote: { price: entry.price, atr: entry.atr, change_pct: entry.candles.length > 1 ? r2(((entry.price - entry.candles[0].c) / entry.candles[0].c) * 100) : null },
    };
  }
  
 -async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3 } = {}) {
-+async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, sessionPref = null, useBreakers = false, entryModels } = {}) {
++async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, strategyId = null, sessionPref = null, useBreakers = false, entryModels } = {}) {
    const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
++  /* M56 — read the written plan ONCE for the whole scan, not once per symbol: the plan is a property
++   * of the trader, and re-reading it inside the worker could only ever produce a different answer for
++   * the same plan. A scan that offered symbols the plan refuses would be the same gap in a wider lens. */
++  const scanPlan = await PlanGate.safe(userId, strategyId);
    const rows = [];
    let cursor = 0;
-@@ -406,13 +753,22 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+   async function worker() {
+@@ -406,13 +777,24 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
        const sym = list[cursor++];
        try {
          const [momentum, series] = await Promise.all([
@@ -9556,15 +9695,17 @@ index 0007b01..708b6c1 100644
 +          price: series.price, atr: series.atr, entrySeries: series, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
 +          indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
 +          sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
++          planGate: scanPlan,   // M56 — the same written plan for every symbol in the scan
 +                         // No symbol on this path either, so the pair-conflict note stays
-+                         // null rather than false.
++                         // null rather than false. (M56's plan is read once below, beside the
++                         // other per-user reads, and rides this ctx the same way.)
          });
 +        const daily = await personalState(userId,accountId,candidateTf(specs,momentum.topdown || {},tf));
 +        specs = Guards.applyToSetups(specs,daily);
          // one row per market: the side the method permits (a scan that lists both
          // a buy and a sell for the same symbol is not a scan, it is a coin toss)
          const best = (momentum.topdown && momentum.topdown.direction
-@@ -421,10 +777,21 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+@@ -421,10 +803,21 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
          rows.push({
            symbol: sym, timeframe: tf, ok: true,
            price: series.price, atr: series.atr,
@@ -9589,7 +9730,19 @@ index 0007b01..708b6c1 100644
            entry_status: best && best.levels ? best.levels.entry_status : null,
            entry: best && best.levels ? best.levels.entry : null,
            stop: best && best.levels ? best.levels.stop : null,
-@@ -469,6 +836,7 @@ async function ensureSignalsTable() {
+@@ -435,6 +828,11 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+           provider: series.meta.provider, ticker: series.meta.ticker,
+           headline: momentum.narrative && momentum.narrative[0] ? momentum.narrative[0].text : '',
+           conflicts: momentum.conflicts,
++          // M56 — the written plan the row was confirmed against, and whether it took this row's
++          // setup away: a scan that silently listed a symbol the trader's own plan refuses would be
++          // the original gap in a wider lens.
++          plan_gate: specs.filters.plan_gate,
++          plan_refused: !!(best && best.plan_rules && best.plan_rules.refused > 0),
+         });
+       } catch (e) {
+         rows.push({ symbol: sym, timeframe: tf, ok: false, error: e.message });
+@@ -469,6 +867,7 @@ async function ensureSignalsTable() {
      rr_primary REAL, rr_final REAL,
      mechanics REAL,
      sentiment TEXT,           -- the read-aloud headline at the time
@@ -9597,7 +9750,7 @@ index 0007b01..708b6c1 100644
      entry_mode TEXT,          -- entry | mid | deep | leg | ote | mtf
      mtf_tf TEXT,
      risk_atr REAL,
-@@ -486,7 +854,8 @@ async function ensureSignalsTable() {
+@@ -486,7 +885,8 @@ async function ensureSignalsTable() {
    const cols = await db.prepare('PRAGMA table_info(bot_signals)').all();
    const have = new Set((cols || []).map((c) => c.name));
    for (const [name, type] of [['entry_mode', 'TEXT'], ['mtf_tf', 'TEXT'], ['risk_atr', 'REAL'],
@@ -9607,7 +9760,7 @@ index 0007b01..708b6c1 100644
      if (!have.has(name)) await db.exec(`ALTER TABLE bot_signals ADD COLUMN ${name} ${type}`);
    }
  }
-@@ -497,55 +866,70 @@ async function ensureSignalsTable() {
+@@ -497,55 +897,70 @@ async function ensureSignalsTable() {
   * re-derive anything from a fresh analysis — it stores exactly what the
   * trader was shown, so the bot can be graded on it later.
   */
@@ -9693,7 +9846,7 @@ index 0007b01..708b6c1 100644
      const info = await ins.run(
        userId, payload.symbol, payload.timeframe, c.dir, c.side, c.grade, c.score,
        predRow ? predRow.p_win : null,
-@@ -553,8 +937,10 @@ async function saveSignals(userId, payload) {
+@@ -553,8 +968,10 @@ async function saveSignals(userId, payload) {
        L.targets.length > 1 ? L.targets[L.targets.length - 1].price : null,
        L.rr_primary, L.rr_final,
        payload.momentum ? payload.momentum.mechanics.score : null,
@@ -9705,7 +9858,7 @@ index 0007b01..708b6c1 100644
      );
      out.push(info.lastInsertRowid);
      saved++;
-@@ -562,6 +948,33 @@ async function saveSignals(userId, payload) {
+@@ -562,6 +979,33 @@ async function saveSignals(userId, payload) {
    return { saved, ids: out };
  }
  
@@ -9739,7 +9892,7 @@ index 0007b01..708b6c1 100644
  async function listSignals(userId, { status = null, limit = 50 } = {}) {
    await ensureSignalsTable();
    const rows = status
-@@ -633,9 +1046,13 @@ async function signalStats(userId) {
+@@ -633,9 +1077,13 @@ async function signalStats(userId) {
    const resolved = all.filter((s) => ['win', 'loss', 'expired'].includes(s.status));
    const wins = resolved.filter((s) => s.status === 'win');
    const byGrade = {};
@@ -9753,7 +9906,7 @@ index 0007b01..708b6c1 100644
    }
    return {
      total: all.length,
-@@ -646,6 +1063,8 @@ async function signalStats(userId) {
+@@ -646,6 +1094,8 @@ async function signalStats(userId) {
      win_rate: resolved.length ? r2((wins.length / resolved.length) * 100) : null,
      total_r: r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0)),
      expectancy_r: resolved.length ? r2(resolved.reduce((a, s) => a + (s.outcome_r || 0), 0) / resolved.length) : null,
@@ -10361,6 +10514,375 @@ index 66e0bbb..16afcbd 100644
      range: bias.range ? { low: num(bias.range.low), high: num(bias.range.high), mid: num(bias.range.mid) } : null,
      since,
    };
+diff --git a/src/bots/plan-gate.js b/src/bots/plan-gate.js
+new file mode 100644
+index 0000000..ccc864c
+--- /dev/null
++++ b/src/bots/plan-gate.js
+@@ -0,0 +1,363 @@
++'use strict';
++/**
++ * plan-gate.js — M56. The written plan as a gate.
++ *
++ * WHAT WAS MISSING: Ep 16 states the entry criteria as absolute — *"the non-negotiables that must be
++ * true before I even think about pressing the buy and sell button. And if every or any of these
++ * criteria is not met, I would just not trade… If even just one of these boxes are not being checked,
++ * I would still not trade."* The app stored all of it (`strategies.market_conditions`, `timeframes`,
++ * `entry_rules`, `exit_rules`, `checklist`, `risk_rules`, `target_r_multiple`) and no bot ever read
++ * any of it: the plan was documentation, not a gate. Ep 27 then makes that the load-bearing gap
++ * rather than a convenience, because editing the plan is the course's own mechanism for making a
++ * change stick — *"bake it into your system because the system is what keeps you consistent"* — and a
++ * changed rule that no signal ever consults makes the quarter-long experiment test nothing.
++ *
++ * WHAT THIS IS: a closed vocabulary of MACHINE-CHECKABLE plan requirements, evaluated against the
++ * facts the engine already computes, one rule line at a time. A line the trader writes as
++ *
++ *     require min_rr >= 2
++ *     require killzone
++ *     require session london
++ *
++ * is a HARD requirement: when the fact is known and false, the candidate is refused with a sentence
++ * that names the plan, its version and the trader's own rule text. A line that does not start with
++ * `require ` is **prose** — it is reported as unverifiable and never blocks, because interpreting
++ * free text is inventing an evaluator, and inventing one is how a "gate" starts refusing trades the
++ * trader never asked it to refuse. A line that DOES start with `require ` but names a fact outside the
++ * vocabulary is reported LOUDLY as an unrecognised requirement: the trader intended a gate, so the
++ * engine must never let it pass silently as though it were checked.
++ *
++ * UNKNOWN IS NEVER A PASS. Every fact read carries its own state. A rule is refused only when the
++ * fact is KNOWN and unmet; when the underlying read is unknown (the short-series session sentinel
++ * that M8 refuses to read as "outside", an unreadable news calendar, no computed levels yet) the rule
++ * is reported `unknown` and refuses nothing. A missing read is never silently upgraded to `met` — the
++ * fact normaliser in `facts()` defaults anything it was not handed to `unknown`, so a caller who
++ * forgets a fact gets a visible unknown rather than an accidental green.
++ *
++ * WHAT IT IS NOT: not a score. A refused plan rule vetoes the candidate as a boolean, exactly like
++ * every other non-negotiable, and changes no grade, weight, cap or price — `limits` says so and the
++ * probes measure it. Not a second opinion either: the facts are the setup model's OWN booleans, read
++ * at the same point the other vetoes are assembled, so the plan gate can only ever refuse something
++ * the engine already knows, never re-derive it.
++ *
++ * The plan is the trader's: the gate reads THEIR strategy (the name_id they pass, else their single
++ * active plan), and it never picks one silently. No active plan is `no_plan` and blocks nothing — a
++ * written plan is a discipline the course prescribes, not a precondition for using the app — while an
++ * unreadable one is `unavailable` and refuses, so a broken read can never read as compliance. Two
++ * active plans are `ambiguous` and are NOT secretly intersected (a London reversal plan and a NY
++ * continuation plan are alternatives, not a conjunction): the payload names both and says how to
++ * choose.
++ *
++ * STATED LIMITS, so this is not over-read: the gate enforces exactly the vocabulary below and nothing
++ * else; free-text rules, `exit_rules`, `checklist` text and the `market_conditions` field are NOT
++ * parsed for meaning (polarity cannot be read from prose — "no news trading" and "trade the news"
++ * contain the same word); the facts are the engine's own reads, not broker or price verification; and
++ * a plan is only as good as the trader who wrote it.
++ */
++const VERSION = 'plan-gate-v1';
++
++/* Where a plan came from, in the payload's own tokens. `not_consulted` is research (no user), and it
++ * blocks nothing because there is no trader whose plan could apply. */
++const STATES = Object.freeze({
++  NOT_CONSULTED: 'not_consulted',
++  NO_PLAN: 'no_plan',
++  AMBIGUOUS: 'ambiguous',
++  READY: 'ready',
++  UNAVAILABLE: 'unavailable',
++});
++
++/* The grade ladder, high to low. `no-trade` sits below D: a plan that asks for `>= C` may not be
++ * satisfied by a stood-down setup. */
++const GRADE_RANK = Object.freeze({ 'a+': 6, a: 5, b: 4, c: 3, d: 2, 'no-trade': 1 });
++
++/*
++ * THE VOCABULARY. Every fact here reads something the engine already computes and already shows the
++ * trader somewhere else in the app; nothing above is invented for the gate.
++ *
++ *   boolean facts  — `require <fact>`
++ *   enum facts     — `require <fact> <value>`
++ *   compare facts  — `require <fact> >= <n>` (min_rr) / `require <fact> <= <n>` (risk)
++ *
++ * `label` is what the refusal says the rule is about; `unit` is appended to numbers; `values` is the
++ * closed value set for enums, so a misspelling is an unrecognised request rather than a silent pass.
++ */
++const FACTS = Object.freeze({
++  sweep: { form: 'boolean', label: 'a liquidity sweep in the trade\u2019s direction' },
++  market_shift: { form: 'boolean', label: 'a market shift (a structural break) in the trade\u2019s direction' },
++  zone: { form: 'boolean', label: 'an order block or imbalance to trade against' },
++  killzone: { form: 'boolean', label: 'a killzone being open' },
++  bias_aligned: { form: 'boolean', label: 'the held bias agreeing with the trade\u2019s direction' },
++  no_news_blackout: { form: 'boolean', label: 'no news blackout on your window' },
++  session: { form: 'enum', label: 'the open killzone', values: ['asia', 'london', 'ny_am', 'london_close'] },
++  timeframe: { form: 'enum', label: 'the entry timeframe', values: ['1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'] },
++  trend: { form: 'enum', label: 'the structure trend', values: ['bullish', 'bearish', 'ranging'] },
++  phase: { form: 'enum', label: 'the market phase', values: ['balance', 'expansion', 'pullback'] },
++  grade: { form: 'compare', op: '>=', label: 'the setup grade', values: ['A+', 'A', 'B', 'C', 'D'] },
++  min_rr: { form: 'compare', op: '>=', label: 'the first-target risk:reward', unit: 'R', sample: 2 },
++  risk: { form: 'compare', op: '<=', label: 'the per-trade risk on your account', unit: '%', sample: 1 },
++});
++
++/* The trader-facing list of what CAN be enforced, for the plan editor's hint and the API payload. */
++function vocabulary() {
++  return Object.keys(FACTS).map((fact) => {
++    const f = FACTS[fact];
++    // `line` is a CONCRETE example that the engine really enforces (the first listed value for an
++    // enum or a graded comparison, the sample number for a numeric one), so the documented line and
++    // the parse can never disagree; `values` carries the full set for a client to render as choices.
++    const line = f.form === 'boolean' ? `require ${fact}`
++      : f.form === 'enum' ? `require ${fact} ${f.values[0]}`
++      : `require ${fact} ${f.op} ${f.values ? f.values[0] : f.sample}`;
++    return { fact, form: f.form, line, op: f.op || null, label: f.label, values: f.values || null, unit: f.unit || null };
++  });
++}
++
++/** Refusals and unreadable reads carry the same shape the other gates use, so a route can hand the
++ * object straight to the client without translation. */
++function invalid(message, status = 400, code = 'plan_gate_invalid') {
++  const e = new Error(message);
++  e.status = status; e.code = code;
++  return e;
++}
++
++function marked(state, note) { return { version: VERSION, state, note: note || null }; }
++
++/** An unreadable plan: the gate could not be consulted, and it REFUSES rather than passing, because a
++ * broken read must not be indistinguishable from compliance. */
++function unavailable(reason) {
++  return { ...marked(STATES.UNAVAILABLE, 'The plan gate could not be read, so no signal is confirmed against your written plan.'),
++    reason: reason ? String(reason).slice(0, 200) : null };
++}
++
++/**
++ * Normalise the fact reads into `{state, detail}`. `state` is `known` or `unknown`; the caller hands
++ * whatever it has, and ANYTHING IT DOES NOT HAND IS `unknown` — never `met`. That default is the
++ * whole anti-silent-pass rule, and it is why every read below is written as a possibly-undefined
++ * value passed through `read(v, detail)` rather than a bare boolean.
++ */
++function read(v, detail) {
++  if (v === undefined || v === null) return { state: 'unknown', value: null, detail: detail || null };
++  if (typeof v === 'number' && !Number.isFinite(v)) return { state: 'unknown', value: null, detail: detail || null };
++  return { state: 'known', value: v, detail: detail || null };
++}
++
++/** Build the fact set from the caller's reads. Only the facts handed in are populated; the rest are
++ * `unknown`. */
++function facts(reads = {}) {
++  const out = {};
++  for (const fact of Object.keys(FACTS)) out[fact] = reads[fact] || read(undefined);
++  return out;
++}
++
++/**
++ * Parse ONE rule line. Three outcomes, and the difference between them is the point:
++ *   - `machine`      — a `require ` line naming a vocabulary fact with a valid operator/value.
++ *   - `unknown_fact` — a `require ` line the vocabulary does not recognise. The trader asked for a
++ *                      gate; the engine must say it cannot enforce it rather than pretending.
++ *   - `prose`        — anything else. Context for the human, never a rule for the engine.
++ */
++function parseRule(text) {
++  const raw = String(text == null ? '' : text).trim();
++  if (!raw) return { text: raw, kind: 'prose', reason: 'empty line' };
++  const m = /^require\s+([A-Za-z_][A-Za-z0-9_]*)\s*(>=|<=|==|=|>|<)?\s*(.*)$/.exec(raw);
++  if (!m) return { text: raw, kind: 'prose', reason: 'does not start with `require `' };
++  const fact = m[1].toLowerCase();
++  const op = m[2] || null;
++  const value = (m[3] || '').trim();
++  const spec = FACTS[fact];
++  if (!spec) return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` is not a requirement this app can check` };
++  if (spec.form === 'boolean') {
++    if (op || value) return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` takes no operator or value` };
++    return { text: raw, kind: 'machine', fact, form: 'boolean' };
++  }
++  if (spec.form === 'enum') {
++    const v = String(value || '').toLowerCase();
++    if (op || !spec.values.includes(v)) {
++      return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` must be followed by one of ${spec.values.join(', ')}` };
++    }
++    return { text: raw, kind: 'machine', fact, form: 'enum', value: v };
++  }
++  // compare: the operator is the fact's own (a `require` line is a floor for min_rr and a ceiling for
++  // risk, and letting the trader invert it would silently make the plan mean the opposite).
++  if (op !== spec.op) {
++    return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` is written as \`require ${fact} ${spec.op} <value>\`` };
++  }
++  if (spec.values) {
++    const v = String(value || '').trim();
++    const hit = spec.values.find((x) => x.toLowerCase() === v.toLowerCase());
++    if (!hit) return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` must compare against one of ${spec.values.join(', ')}` };
++    return { text: raw, kind: 'machine', fact, form: 'compare', op, value: hit };
++  }
++  const n = Number(value);
++  if (!value || !Number.isFinite(n) || n <= 0) {
++    return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` must compare against a positive number` };
++  }
++  return { text: raw, kind: 'machine', fact, form: 'compare', op, value: n };
++}
++
++/** Parse a whole plan row (`strategies` row, `entry_rules` already JSON-parsed or still a string).
++ *
++ * The column is documented as a JSON array of strings, and that is the ONLY shape this engine treats
++ * as a rule set. A value that is not an array (a double-encoded string, an object from an import that
++ * went wrong, a number) yields no rules AND `malformed: true`, so the client can say "your rules could
++ * not be read" instead of rendering the absence of a rule list as a plan with nothing to enforce.
++ */
++function parse(row) {
++  const raw = row && row.entry_rules;
++  let rules = [];
++  let malformed = false;
++  if (Array.isArray(raw)) rules = raw;
++  else if (typeof raw === 'string' && raw.trim()) {
++    try { rules = JSON.parse(raw); } catch (e) { rules = []; malformed = true; }
++    if (!Array.isArray(rules)) { malformed = true; rules = []; }
++  } else if (raw !== undefined && raw !== null && raw !== '') malformed = true;
++  const parsed = (Array.isArray(rules) ? rules : []).map(parseRule).filter((r) => r.text);
++  const counts = {
++    machine: parsed.filter((r) => r.kind === 'machine').length,
++    unknown_fact: parsed.filter((r) => r.kind === 'unknown_fact').length,
++    prose: parsed.filter((r) => r.kind === 'prose').length,
++  };
++  return { rules: parsed, counts, malformed };
++}
++
++/** The comparison for one machine rule against one direction's facts. */
++function check(rule, f) {
++  const r = f[rule.fact] || read(undefined);
++  const unknown = { state: 'unknown', detail: r.detail };
++  if (rule.form === 'boolean') {
++    if (r.state !== 'known') return unknown;
++    return { state: r.value === true ? 'met' : 'refused', detail: r.detail };
++  }
++  if (rule.form === 'enum') {
++    if (r.state !== 'known') return unknown;
++    return { state: String(r.value).toLowerCase() === rule.value ? 'met' : 'refused', detail: r.detail };
++  }
++  if (rule.fact === 'grade') {
++    if (r.state !== 'known') return unknown;
++    const have = GRADE_RANK[String(r.value).toLowerCase()];
++    const want = GRADE_RANK[String(rule.value).toLowerCase()];
++    return { state: have >= want ? 'met' : 'refused', detail: r.detail };
++  }
++  if (r.state !== 'known' || !Number.isFinite(Number(r.value))) return unknown;
++  const have = Number(r.value);
++  return { state: rule.op === '<=' ? (have <= rule.value ? 'met' : 'refused') : (have >= rule.value ? 'met' : 'refused'), detail: r.detail };
++}
++
++/** The refusal sentence. It names the plan, its version, the trader's own rule text and the fact,
++ * then quotes the episode, because the reason a plan rule binds is that they wrote it. */
++function sentence(parsed, rule, result) {
++  const name = parsed.plan && parsed.plan.name ? `\u201c${parsed.plan.name}\u201d` : 'your written plan';
++  const v = parsed.plan && parsed.plan.version ? ` (v${parsed.plan.version})` : '';
++  const detail = result.detail ? ` ${result.detail}` : '';
++  // The rule is quoted without its `require ` keyword: the trader reads it as the requirement it is,
++  // and still finds the exact line in their editor (the full text travels in the payload).
++  const quoted = rule.text.replace(/^require\s+/i, '');
++  return `Your plan ${name}${v} requires \u201c${quoted}\u201d \u2014 ${FACTS[rule.fact].label} is not met.${detail}`
++    + ` \u201cIf even just one of these boxes are not being checked, I would still not trade.\u201d`;
++}
++
++/**
++ * Evaluate the parsed plan for ONE direction. `f` is that direction's fact set. Returns the per-rule
++ * results (machine rules only — prose and unrecognised lines are reported at plan level, not per
++ * direction) plus the veto sentences, ready to be appended to the candidate's `no_trade` list.
++ */
++function evaluate(parsed, f, dir) {
++  const results = [];
++  const vetoes = [];
++  for (const rule of parsed.rules) {
++    if (rule.kind !== 'machine') continue;
++    const result = check(rule, f);
++    results.push({ text: rule.text, fact: rule.fact, state: result.state, detail: result.detail || null });
++    if (result.state === 'refused') vetoes.push(sentence(parsed, rule, result));
++  }
++  return { dir, results, vetoes,
++    refused: results.filter((r) => r.state === 'refused').length,
++    unknown: results.filter((r) => r.state === 'unknown').length };
++}
++
++/** The plan-level block that rides `setups.filters`, built from the parse (direction-independent) and
++ * the per-direction evaluations. */
++function view(loaded, perDirection) {
++  if (!loaded) {
++    // No gate was handed to this path at all (the pure method/research callers, which have no
++    // trader). That is `not_consulted`, and it is NOT the same token as a plan that failed to read:
++    // research must never look like a broken plan, and a broken plan must never look like research.
++    return { version: VERSION, state: STATES.NOT_CONSULTED, plan: null,
++      note: 'No written plan was consulted on this path.', candidates: null, reason: null,
++      enforced: 0, machine: 0, prose: 0, unknown_fact: 0, refused_now: false,
++      enforced_lines: [], unverifiable_lines: [], unrecognised_lines: [] };
++  }
++  if (loaded.state !== STATES.READY) {
++    return { version: VERSION, state: loaded.state || STATES.UNAVAILABLE, plan: (loaded && loaded.plan) || null,
++      note: (loaded && loaded.note) || null, candidates: (loaded && loaded.candidates) || null,
++      reason: (loaded && loaded.reason) || null,
++      enforced: 0, machine: 0, prose: 0, unknown_fact: 0, refused_now: false, enforced_lines: [], unverifiable_lines: [], unrecognised_lines: [] };
++  }
++  const evals = perDirection || [];
++  return {
++    version: VERSION, state: STATES.READY, plan: loaded.plan, note: loaded.note || null, malformed: !!loaded.malformed,
++    machine: loaded.counts.machine, prose: loaded.counts.prose, unknown_fact: loaded.counts.unknown_fact,
++    enforced: loaded.counts.machine,
++    enforced_lines: loaded.rules.filter((r) => r.kind === 'machine').map((r) => r.text),
++    unverifiable_lines: loaded.rules.filter((r) => r.kind === 'prose').map((r) => r.text),
++    unrecognised_lines: loaded.rules.filter((r) => r.kind === 'unknown_fact').map((r) => ({ text: r.text, reason: r.reason })),
++    refused_now: evals.some((e) => e.refused > 0),
++    unknown_now: evals.some((e) => e.unknown > 0),
++    candidates: evals.map((e) => ({ dir: e.dir, refused: e.refused, unknown: e.unknown, rules: e.results })),
++    limits: {
++      enforced_vocabulary: vocabulary().map((v) => v.line),
++      prose_is_not_parsed: true, market_conditions_field_is_not_parsed: true, exit_rules_are_not_parsed: true,
++      grade_influence: false, score_influence: false, cap_influence: false, price_influence: false,
++      unknown_is_never_met: true, broker_verified: false,
++    },
++  };
++}
++
++/**
++ * Read the trader's plan. Explicit id first (and it must be THEIRS — anything else is a 404, never a
++ * silent fallback to another plan), else their single active plan. Multiple active plans are
++ * `ambiguous` and block nothing: the payload names them and says how to choose, because guessing which
++ * of two plans applies is exactly the kind of silent assumption this gate exists to remove.
++ */
++async function load(userId, strategyId) {
++  if (!userId) return marked(STATES.NOT_CONSULTED, 'Unsized research carries no plan claim, so no written plan is consulted.');
++  const { db } = require('../db');
++  let row = null;
++  if (strategyId !== undefined && strategyId !== null && strategyId !== '') {
++    const id = Number(strategyId);
++    if (!Number.isSafeInteger(id) || id <= 0) throw invalid('strategy_id must be a positive integer.', 400, 'plan_invalid');
++    row = await db.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id, userId);
++    if (!row) throw invalid('No such plan in your playbook.', 404, 'plan_not_found');
++  } else {
++    const rows = await db.prepare('SELECT * FROM strategies WHERE user_id=? AND active=1 ORDER BY id').all(userId);
++    if (!rows || !rows.length) return marked(STATES.NO_PLAN, 'No active written plan, so no signal is confirmed against one. Publish a plan in the Playbook to gate your entries with it.');
++    if (rows.length > 1) {
++      return { ...marked(STATES.AMBIGUOUS, 'More than one active plan — name the one this signal is confirmed against, or pause the others. Nothing is blocked until then.'),
++        candidates: rows.map((r) => ({ id: r.id, name: r.name })) };
++    }
++    row = rows[0];
++  }
++  const { currentStrategyVersion } = require('../db');
++  let version = null;
++  try { version = await currentStrategyVersion(row.id); } catch (e) { version = null; }
++  const parsed = parse(row);
++  return { version: VERSION, state: STATES.READY, plan: { id: row.id, name: row.name, active: !!row.active, version, source: 'strategies' },
++    counts: parsed.counts, rules: parsed.rules, malformed: parsed.malformed,
++    note: parsed.malformed ? 'Your plan’s rules could not be read as a list of lines, so nothing in it can gate a signal — re-save the plan.'
++      : parsed.counts.machine
++        ? `Checked against ${parsed.counts.machine} machine-checkable requirement${parsed.counts.machine === 1 ? '' : 's'} in your plan.`
++        : 'Your plan has no machine-checkable requirements yet, so nothing in it can gate a signal.' };
++}
++
++/** Never throws: an unreadable plan is `unavailable` (which refuses), so a broken read can never look
++ * like a satisfied plan. Ownership errors still surface — they are the caller's mistake, not a state. */
++async function safe(userId, strategyId) {
++  try { return await load(userId, strategyId); }
++  catch (e) {
++    if (e && e.code === 'plan_not_found') throw e;
++    if (e && e.code === 'plan_invalid') throw e;
++    return unavailable(e && e.message);
++  }
++}
++
++module.exports = { VERSION, STATES, FACTS, GRADE_RANK, vocabulary, invalid, marked, unavailable, read, facts,
++  parseRule, parse, check, evaluate, sentence, view, load, safe };
 diff --git a/src/bots/predict.js b/src/bots/predict.js
 index bacfca7..38ec2fa 100644
 --- a/src/bots/predict.js
@@ -10500,7 +11022,7 @@ index 0000000..f43d8e2
 +}
 +module.exports = { discover, scope, forSweep, annotate, unknown, TF_MS, number, samePrice };
 diff --git a/src/bots/setup.js b/src/bots/setup.js
-index 138beb4..4dc0651 100644
+index 138beb4..a5dc8ed 100644
 --- a/src/bots/setup.js
 +++ b/src/bots/setup.js
 @@ -15,13 +15,27 @@
@@ -10807,11 +11329,12 @@ index 138beb4..4dc0651 100644
    for (const p of outward) {
      const key = p.price.toFixed(5);
      if (seen.has(key)) continue;
-@@ -70,60 +337,242 @@ function targetPools(analysis, dir, entry) {
+@@ -70,60 +337,244 @@ function targetPools(analysis, dir, entry) {
   *                                    only that side can be armed.
   * @returns {{candidates:Array, verdict:object}}
   */
 +const SMC = require('./smc');   // M38/M40: sessionAffinity
++const PlanGate = require('./plan-gate');   // M56: the written plan as a gate
 +
 +/** M33 — counter-HTF execution is reduced even with A-grade confirmation.
 + * Reuse the existing counter-CRT policy too: it previously promised half size in
@@ -10973,6 +11496,7 @@ index 138beb4..4dc0651 100644
 -  const vetoes = [];
 +  // M61: `const vetoes = []` lived here and was never read or returned — dead code. Removed.
  
++  const planEvals = [];
    for (const dir of [1, -1]) {
      const long = dir > 0;
      const side = long ? 'buy' : 'sell';
@@ -11073,7 +11597,7 @@ index 138beb4..4dc0651 100644
  
      if (zone && zone.overlap) add('nested', 'Zone + imbalance overlap (confluence)', true, 8, 'The order block contains an unfilled FVG — two reasons for price to react at the same price.');
  
-@@ -135,10 +584,57 @@ function buildSetups(analysis, ctx = {}) {
+@@ -135,10 +586,57 @@ function buildSetups(analysis, ctx = {}) {
  
      /* ------------------------------------------------------------- 5. trend alignment */
      const trend = analysis && analysis.structure ? analysis.structure.trend : 'ranging';
@@ -11133,7 +11657,7 @@ index 138beb4..4dc0651 100644
      if (htfAligned !== null) add('htf', 'Higher-timeframe trend agrees', htfAligned, 10, `HTF structure reads ${htfTrend}.`);
  
      /* ------------------------------------------------------------- 6. higher-timeframe bias */
-@@ -155,12 +651,18 @@ function buildSetups(analysis, ctx = {}) {
+@@ -155,12 +653,18 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      /* ------------------------------------------------------- 8. session / killzone */
@@ -11155,7 +11679,7 @@ index 138beb4..4dc0651 100644
  
      /* ------------------------------------------------------------- 10. volatility */
      const atrRank = ind && ind.ind ? ind.ind.atr_rank : null;
-@@ -169,22 +671,68 @@ function buildSetups(analysis, ctx = {}) {
+@@ -169,22 +673,68 @@ function buildSetups(analysis, ctx = {}) {
  
      /* --------------------------------------------------------- 11. liquidity runway */
      let levels = null;
@@ -11233,7 +11757,7 @@ index 138beb4..4dc0651 100644
          const extreme = long ? pd.range_high : pd.range_low;
          const reward = Math.abs(extreme - entry);
          if (reward > 0) {
-@@ -194,28 +742,63 @@ function buildSetups(analysis, ctx = {}) {
+@@ -194,28 +744,63 @@ function buildSetups(analysis, ctx = {}) {
            }
          }
        }
@@ -11314,7 +11838,7 @@ index 138beb4..4dc0651 100644
  
        // entry status: are we at the zone, or chasing?
        let entryStatus, entryNote;
-@@ -230,38 +813,88 @@ function buildSetups(analysis, ctx = {}) {
+@@ -230,38 +815,88 @@ function buildSetups(analysis, ctx = {}) {
          else if (zone.bottom - price <= atr * 1.5) { entryStatus = 'approaching'; entryNote = 'Price is close, waiting for the pullback into the zone.'; }
          else { entryStatus = 'waiting'; entryNote = `Price is ${r2((zone.bottom - price) / atr)} ATR below the zone — do not chase; set an alert at ${r4(zone.bottom)}.`; }
        }
@@ -11418,7 +11942,7 @@ index 138beb4..4dc0651 100644
        };
      } else {
        add('runway', 'Open runway to opposing liquidity', false, 14, 'No zone, so no defined risk — the model needs a level to trade against.');
-@@ -271,37 +904,197 @@ function buildSetups(analysis, ctx = {}) {
+@@ -271,37 +906,235 @@ function buildSetups(analysis, ctx = {}) {
      const totalW = checks.reduce((s, c) => s + c.weight, 0) || 1;
      const got = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
      let score = (got / totalW) * 100;
@@ -11544,6 +12068,44 @@ index 138beb4..4dc0651 100644
 +    if (counter && ctx.bias != null && Math.sign(Number(ctx.bias)) !== counter.htf_bias) {
 +      vetoes.push('The held daily bias disagrees with this HTF narrative — wait for its defining invalidation, not an MTF override.');
 +    }
++    /* M56 — the trader's OWN written plan, as a gate on this candidate. The plan's machine-checkable
++     * `require …` lines are evaluated here, against the SAME facts the vetoes above were built from,
++     * so the plan can only ever refuse something the model already knows. Facts the engine could not
++     * read are `unknown` and refuse nothing (M8/M111's rule) — while a plan line the trader wrote to
++     * gate and the vocabulary does NOT recognise is reported as unrecognised rather than passed, so a
++     * silent green is impossible. The refusal is an ordinary entry in `no_trade`, which is what makes
++     * the verdict, the Now guards, the toolbar and Copy plan obey it without any new plumbing. */
++    let planRules = null;
++    if (ctx.planGate && ctx.planGate.state === 'ready') {
++      const planFacts = PlanGate.facts({
++        sweep: PlanGate.read(hasTrigger, null),
++        market_shift: PlanGate.read(structureKnown ? !!marketShift : undefined, null),
++        zone: PlanGate.read(hasZone, null),
++        // M8 — the short-series sentinel leaves `in_killzone` undefined, and that is an UNKNOWN
++        // window, never "outside": a plan asking for a killzone must not be refused on a blind read.
++        killzone: PlanGate.read(sess.in_killzone === undefined ? undefined : !!sess.in_killzone,
++          sess.killzone ? `${sess.killzone} is open.` : null),
++        session: PlanGate.read(prefOpenBullet ? prefOpenBullet.key : (sess.in_killzone === false ? null : undefined), null),
++        timeframe: PlanGate.read(entryTf, null),
++        trend: PlanGate.read(analysis && analysis.structure ? analysis.structure.trend : undefined, null),
++        phase: PlanGate.read(phaseInfo && phaseInfo.phase !== 'unknown' ? phaseInfo.phase : undefined, null),
++        bias_aligned: PlanGate.read(bias ? (Math.sign(bias) === dir) : undefined, null),
++        no_news_blackout: PlanGate.read(newsUnknown ? undefined : !blackout, blackout ? String(blackout).slice(0, 160) : null),
++        grade: PlanGate.read(g.grade, `Setup grades ${g.grade} at ${score}/100.`),
++        // No computed levels yet is an UNKNOWN reward:risk, not a zero one.
++        min_rr: PlanGate.read(levels && Number.isFinite(Number(floorRR)) ? Number(floorRR) : undefined,
++          levels && Number.isFinite(Number(floorRR)) ? `The first target is ${r2(floorRR)}R${levels.stop ? ` against a ${levels.stop} stop` : ''}.` : null),
++        risk: PlanGate.read(Number.isFinite(Number(ctx.riskPct)) ? Number(ctx.riskPct) : undefined, null),
++      });
++      const verdict = PlanGate.evaluate(ctx.planGate, planFacts, dir);
++      /* The plan's refusal goes to the FRONT of the list, not the end: `no_trade[0]` is what the
++       * action line, the Now headline and the copy button say first, and the one refusal that is the
++       * trader's own written instruction outranks a mechanical veto about the market. (M3 sets the
++       * same precedent when it places the anti-chase line ahead of the zone veto.) */
++      vetoes.unshift(...verdict.vetoes);
++      planRules = { dir, refused: verdict.refused, unknown: verdict.unknown, rules: verdict.results };
++      planEvals.push(verdict);
++    }
 +    const tradeable = vetoes.length === 0 && g.grade !== 'no-trade';
 +
 +    // M25's phaseInfo now lives above the loop (M3 gates on it before the vetoes are
@@ -11623,7 +12185,7 @@ index 138beb4..4dc0651 100644
            at_targets: (levels.targets || []).map((t) => ({ role: t.role, price: t.price, rr: t.rr, pnl: r2(perR * t.rr) })),
            managed: levels.management && levels.management.runner_target
              ? r2(perR * ((levels.rr_primary * 0.5) + (levels.rr_final * 0.5)))
-@@ -311,18 +1104,60 @@ function buildSetups(analysis, ctx = {}) {
+@@ -311,18 +1144,64 @@ function buildSetups(analysis, ctx = {}) {
      }
  
      candidates.push({
@@ -11653,6 +12215,10 @@ index 138beb4..4dc0651 100644
 +      // the grade. `no_trade` says which one fired, so the refusal is explainable.
 +      ok: tradeable,
 +      no_trade: vetoes,
++      // M56 — which of the plan's machine-checkable requirements this candidate was measured against,
++      // and how each resolved. `null` when no plan was consulted, so the absence is visible rather
++      // than reported as an empty (and therefore perfect-looking) rule list.
++      plan_rules: planRules,
        checks,
        passed: checks.filter((c) => c.pass).length,
        total_checks: checks.length,
@@ -11690,7 +12256,7 @@ index 138beb4..4dc0651 100644
        why: checks.filter((c) => c.pass).map((c) => c.detail).filter(Boolean),
        why_not: checks.filter((c) => !c.pass).map((c) => c.detail || c.label),
      });
-@@ -331,7 +1166,11 @@ function buildSetups(analysis, ctx = {}) {
+@@ -331,7 +1210,11 @@ function buildSetups(analysis, ctx = {}) {
    candidates.sort((a, b) => b.score - a.score);
  
    /* --------------------------------------------------------------- top verdict */
@@ -11703,7 +12269,7 @@ index 138beb4..4dc0651 100644
    const buy = candidates.find((c) => c.dir === 1);
    const sell = candidates.find((c) => c.dir === -1);
  
-@@ -350,8 +1189,7 @@ function buildSetups(analysis, ctx = {}) {
+@@ -350,8 +1233,7 @@ function buildSetups(analysis, ctx = {}) {
      const aligned = candidates.find((c) => c.dir === td.direction);
      if (aligned) best = aligned;                    // the higher timeframe chooses the side
    }
@@ -11713,7 +12279,7 @@ index 138beb4..4dc0651 100644
    const methodBlocked = !!(td && (td.blocked || (td.direction !== 0 && (!best || best.dir !== td.direction))));
  
    let verdict;
-@@ -367,20 +1205,22 @@ function buildSetups(analysis, ctx = {}) {
+@@ -367,20 +1249,22 @@ function buildSetups(analysis, ctx = {}) {
        detail: `${why}${pendingStep(td)}`,
        next_trigger: [td.playbook && td.playbook.length ? td.playbook[0] : null, nextTriggerHint(analysis)].filter(Boolean),
        source: 'topdown-gate', method, setup_action: setupAction,
@@ -11741,7 +12307,7 @@ index 138beb4..4dc0651 100644
        : `${best.grade} ${best.side} setup`;
      const methodOk = !td ? null : (td.direction !== 0 && td.direction === best.dir);
      verdict = {
-@@ -399,8 +1239,64 @@ function buildSetups(analysis, ctx = {}) {
+@@ -399,8 +1283,70 @@ function buildSetups(analysis, ctx = {}) {
      grade_scale: GRADES.map((g) => ({ grade: g.grade, label: g.label, min: g.min === -Infinity ? 0 : g.min })),
      filters: {
        killzone: sessions.killzone || 'outside killzone',
@@ -11749,6 +12315,12 @@ index 138beb4..4dc0651 100644
 +       * than only as a refusal, so a client can render "your window is 07:00-10:00 Africa/Lagos and
 +       * it is 13:41 there" without re-deriving it from the veto string. `not_selected` is its own
 +       * token: this app never defaults one. */
++      /* M56 — the written plan as a gate, stated as a filter beside the killzone and the trading
++       * window so a client can render the plan it was checked against, which requirements were
++       * enforceable, and — loudly — the lines the vocabulary could NOT check. A plan is not required
++       * to use the app: `no_plan` blocks nothing. `unavailable` does, because a plan that could not
++       * be read must never look like one that was satisfied. */
++      plan_gate: PlanGate.view(ctx.planGate, planEvals),
 +      trading_window: ctx.tradingWindow ? { state: ctx.tradingWindow.state, start: (ctx.tradingWindow.window || {}).start || null,
 +        end: (ctx.tradingWindow.window || {}).end || null, timezone: (ctx.tradingWindow.window || {}).timezone || null,
 +        source: (ctx.tradingWindow.window || {}).source || null, local_time: (ctx.tradingWindow.window || {}).local_time || null,
@@ -11806,7 +12378,7 @@ index 138beb4..4dc0651 100644
        min_rr: minRR,
      },
    };
-@@ -430,4 +1326,8 @@ function pendingStep(td) {
+@@ -430,4 +1376,8 @@ function pendingStep(td) {
    return open && open.title ? ` Outstanding step: ${open.title}.` : '';
  }
  
@@ -18441,10 +19013,10 @@ index 0bb768c..b6154e4 100644
  
  /**
 diff --git a/src/routes/bots.js b/src/routes/bots.js
-index 2c6ff6c..9bc744b 100644
+index 2c6ff6c..cd6a508 100644
 --- a/src/routes/bots.js
 +++ b/src/routes/bots.js
-@@ -10,12 +10,19 @@ const C = require('../candles');
+@@ -10,12 +10,22 @@ const C = require('../candles');
  const I = require('../instruments');
  const TV = require('../tradingview');
  const D = require('../db');
@@ -18461,10 +19033,13 @@ index 2c6ff6c..9bc744b 100644
 +    if(err.code==='execution_review_invalid')return res.status(err.status).json({error:err.message,code:err.code});
 +    if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
 +    if (err.code?.startsWith('state_gate_')) return res.status(err.status).json({error:err.message,code:err.code,state_gate:err.state_gate});
++    /* M56 — the plan gate's own errors (an unowned plan id, a malformed one) carry their status:
++     * a 404 for somebody else's plan is a real answer, not an internal failure. */
++    if (err.code?.startsWith('plan_')) return res.status(err.status || 400).json({ error: err.message, code: err.code });
      res.status(500).json({ error: err.message || 'Bot error' });
    });
    const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));
-@@ -28,11 +35,26 @@ function createBotsRouter({ requireAuth }) {
+@@ -28,11 +38,26 @@ function createBotsRouter({ requireAuth }) {
   * scenario". `?min_rr=` overrides it for a single request so a probe or a test
   * can measure the same plan against a different floor.
   */
@@ -18492,11 +19067,53 @@ index 2c6ff6c..9bc744b 100644
      const set = row && row.settings ? JSON.parse(row.settings) : {};
      const v = Number(set.min_rr);
      if (Number.isFinite(v) && v > 0) return Math.min(Math.max(v, 0.1), 10);
-@@ -88,12 +110,13 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -75,6 +100,37 @@ router.get('/markets', requireAuth, (req, res) => {
+     });
+   }));
+ 
++  /* ------------------------------------------------------------- plan gate */
++
++  /**
++   * M56 — the written plan's gate: the vocabulary this app can actually enforce, and how each of the
++   * trader's own rule lines parses. The plan editor reads this so its hint can never drift from the
++   * grammar the engine runs, and the trader can see which of their lines are gating, which are prose
++   * and which the app does not understand (`unrecognised`) — the last of those is the one that must
++   * never look like a satisfied requirement.
++   */
++  router.get('/plan-gate', requireAuth, wrap(async (req, res) => {
++    const PlanGate = require('../bots/plan-gate');
++    const loaded = await PlanGate.safe(req.user.id, req.query.strategy_id || null);
++    res.json({
++      ok: true, version: PlanGate.VERSION, vocabulary: PlanGate.vocabulary(),
++      state: loaded.state, plan: loaded.plan || null, note: loaded.note || null, reason: loaded.reason || null,
++      candidates: loaded.candidates || null,
++      counts: loaded.counts || null,
++      // A stored value that cannot be read as a list of lines is a THIRD state the client must be able
++      // to name: an empty checklist and an unreadable one look identical in `lines`, so the flag rides
++      // beside them and the trader is told to re-save instead of reading a silent pass.
++      malformed: !!loaded.malformed,
++      lines: loaded.state === PlanGate.STATES.READY
++        ? loaded.rules.map((r) => ({ text: r.text, kind: r.kind, fact: r.fact || null, reason: r.reason || null }))
++        : [],
++      limits: {
++        prose_is_not_parsed: true, market_conditions_field_is_not_parsed: true, exit_rules_are_not_parsed: true,
++        unknown_is_never_met: true, grade_influence: false, score_influence: false, broker_verified: false,
++      },
++    });
++  }));
++
+   /* -------------------------------------------------------------- analyse */
+ 
+   router.get('/analyse', requireAuth, wrap(async (req, res) => {
+@@ -88,12 +144,17 @@ router.get('/markets', requireAuth, (req, res) => {
        predictionBars: Math.min(Math.max(num(req.query.bars, 1200), 300), 3000),
        step: Math.min(Math.max(num(req.query.step, 2), 1), 6),
        minRR: await floorOf(req),
 +      sessionPref: await prefOf(req),                                  // M26
++      /* M56 — which written plan this analysis is confirmed against. Optional: omitted, the gate
++       * uses the trader's single active plan (and says so); a plan that is not theirs is a 404 from
++       * the gate itself, never a silent fallback to somebody else's rules. */
++      strategyId: req.query.strategy_id || null,
        force: req.query.force === '1',
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),       // bar replay: drop the last N candles
        as_of: req.query.as_of || null,                                  // bar replay: read as of this instant
@@ -18507,15 +19124,16 @@ index 2c6ff6c..9bc744b 100644
      res.json({ ...payload, saved });
    }));
  
-@@ -113,6 +136,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -113,6 +174,8 @@ router.get('/markets', requireAuth, (req, res) => {
        userId: req.user.id,
        accountId: req.query.account_id ? Number(req.query.account_id) : null,
        minRR: await floorOf(req),
 +      sessionPref: await prefOf(req),                                  // M26
++      strategyId: req.query.strategy_id || null,                       // M56
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),
        as_of: req.query.as_of || null,
      });
-@@ -128,6 +152,8 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -128,6 +191,8 @@ router.get('/markets', requireAuth, (req, res) => {
      const tf = String(req.query.tf || '15m');
      const out = await Bots.chart(symbol, tf, {
        bars: Math.min(Math.max(num(req.query.bars, 300), 80), 900), userId: req.user.id,
@@ -18524,7 +19142,7 @@ index 2c6ff6c..9bc744b 100644
        trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
      });
      res.json({
-@@ -137,8 +163,8 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -137,8 +202,8 @@ router.get('/markets', requireAuth, (req, res) => {
        checks: out.topdown.checks, score: out.topdown.score, grade: out.topdown.grade,
        status: out.topdown.status, direction: out.topdown.direction,
        headline: out.topdown.headline, playbook: out.topdown.playbook,
@@ -18535,16 +19153,16 @@ index 2c6ff6c..9bc744b 100644
        verdict: out.setups.verdict, meta: out.meta,
      });
    }));
-@@ -150,7 +176,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -150,7 +215,7 @@ router.get('/markets', requireAuth, (req, res) => {
        .split(',').map((s) => s.trim()).filter(Boolean);
      if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
      const tf = String(req.query.tf || '15m');
 -    const out = await Bots.scan(symbols, tf, { userId: req.user.id });
-+    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req) });  // M26
++    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req), strategyId: req.query.strategy_id || null });  // M26/M56
      res.json(out);
    }));
  
-@@ -211,18 +237,22 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -211,18 +276,22 @@ router.get('/markets', requireAuth, (req, res) => {
        days: Math.min(Math.max(num(req.query.days, 365), 7), 2000),
        backfill: req.query.backfill === '1',
      });
@@ -18570,7 +19188,7 @@ index 2c6ff6c..9bc744b 100644
      res.json({ ok: true, guardrails: g.guardrails, stats: g.stats, evidence: g.evidence, daily });
    }));
  
-@@ -240,7 +270,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -240,7 +309,7 @@ router.get('/markets', requireAuth, (req, res) => {
  
    router.get('/signals', requireAuth, wrap(async (req, res) => {
      const status = req.query.status ? String(req.query.status) : null;
@@ -18579,7 +19197,7 @@ index 2c6ff6c..9bc744b 100644
    }));
  
    router.post('/signals/save', requireAuth, wrap(async (req, res) => {
-@@ -252,8 +282,9 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -252,8 +321,9 @@ router.get('/markets', requireAuth, (req, res) => {
        accountId: (req.body && req.body.account_id) || null,
        includePrediction: req.body && req.body.prediction !== false,
      });
@@ -18591,7 +19209,7 @@ index 2c6ff6c..9bc744b 100644
    }));
  
    /**
-@@ -262,12 +293,30 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -262,12 +332,30 @@ router.get('/markets', requireAuth, (req, res) => {
     */
    router.post('/signals/save-plan', requireAuth, wrap(async (req, res) => {
      const b = req.body || {};
@@ -18624,7 +19242,7 @@ index 2c6ff6c..9bc744b 100644
    }));
  
    router.post('/signals/resolve', requireAuth, wrap(async (req, res) => {
-@@ -393,6 +442,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -393,6 +481,7 @@ router.get('/markets', requireAuth, (req, res) => {
          plan = summarise(payload, parsed);
          if (user.autocreate && payload.setups && payload.setups.verdict && payload.setups.verdict.action !== 'NO TRADE') {
            const saved = await Bots.saveSignals(user.id, payload);
@@ -18632,7 +19250,7 @@ index 2c6ff6c..9bc744b 100644
            signal = saved && saved.saved ? saved.saved[0] : (Array.isArray(saved) ? saved[0] : saved);
          }
        } catch (e) { error = e.message; }
-@@ -466,8 +516,102 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -466,8 +555,102 @@ router.get('/markets', requireAuth, (req, res) => {
  
    /* ---------------------------------------------------------------- misc */
  

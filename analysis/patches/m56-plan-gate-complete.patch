@@ -1,0 +1,832 @@
+diff --git a/docs/API.md b/docs/API.md
+index 4af3b0e..3fdee5b 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -248,11 +248,12 @@ the methodology, the weights and the honest limitations.
+ | Method | Path | Query / body | Returns |
+ |---|---|---|---|
+ | GET | `/bots/markets` | — | instruments (63), timeframes, killzone state, providers |
++| GET | `/bots/plan-gate` | `strategy_id` (optional — your own; defaults to your single ACTIVE plan) | `{ ok, version, vocabulary[], state, plan, note, reason, candidates, counts, lines, limits }` — `state` is `ready`, `no_plan`, `ambiguous` (>1 active plan, all named), `unavailable` or `not_consulted`; each `lines[]` entry is classified `machine`, `prose` or `unknown_fact`; `limits` states prose is not parsed, an unknown value never counts as met and no grade/score/cap/price is influenced |
+ | GET | `/bots/candles` | `symbol`, `tf` (1m…1w), `limit` (50–1500), `force=1` | `{ candles:[{t,o,h,l,c,v}], meta:{provider,ticker,last_price,last_bar,cached,warnings} }` |
+-| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1` | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
++| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1`, `strategy_id` | | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
+ | GET | `/bots/topdown` | `symbol`, `tf`, `bars` | the video's method on its own: `{ method, layers, steps, checks, score, grade, status, direction, headline, playbook, blocked, conflicts[], crt_plan, levels, verdict }` |
+-| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
+-| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf` | `{ rows:[…ranked], errors:[…], actionable, killzone }` |
++| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id`, `strategy_id` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
++| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf`, `strategy_id` | `{ rows:[…ranked], errors:[…], actionable, killzone }` — every row carries the plan gate it was confirmed against (`plan_gate`) and whether that plan took the setup away (`plan_refused`) |
+ | GET | `/bots/predict` | `symbol`, `tf`, `bars`, `step`, `horizon` | `{ direction, setups, buy, sell, model, backtest, summary }` — `backtest` carries the measured tables below |
+ | GET | `/bots/backtest` | `symbol`, `tf`, `bars` (300–3000), `step` (1–6), `samples`, `entry`, `cost`, `force=1` | backtest detail + `trades[]` table + the measured blocks below |
+ | GET | `/bots/correction` | `days`, `account_id`, `backfill=1` | `{ overall, behavior_score, mistakes[], guardrails, daily, grades[] }` |
+diff --git a/docs/NOT-IMPLEMENTED.md b/docs/NOT-IMPLEMENTED.md
+index 3bc01ac..d99e747 100644
+--- a/docs/NOT-IMPLEMENTED.md
++++ b/docs/NOT-IMPLEMENTED.md
+@@ -88,6 +88,7 @@ kind of reason: a deploy should not silently lose a file.
+ |---|---|---|
+ | **MTF entry execution** (new) | Live LTF fetch, confirmation status (`live`/`recent`/`waiting`/`rejected`), refined plan with targets re-ruled from the confirmation, one-click save to signals, grading on resolution. Measured 2026-10-06 11:58 UTC: highest win rate of any entry rule (47.4 % pooled vs 35.1 % base, 1 902 / 1 696 fills) but −0.268R of expectancy against the base rule on the same 1 503 setups, and the 321 setups it refused averaged +0.157R under the base rule — so the entry is executable, and the evidence says it is not the better trade | The confirmation itself is now watched by the scheduler (cron + notifications shipped) and a saved refined plan is graded on resolve; what is *not* solved is that a 50 %-at-T1 plan is graded as one blended number (scale-*in* is still missing, §3 journal row) |
+ | **TradingView** | Charts in Market/Bots, webhook alerts with token rotation, alert history, bot verdict per alert, "save refined plan" from an alert | No position/order sync; an incoming alert is stored + analysed but does **not** create a journal trade automatically |
++| **The written plan as a gate** (new) | The plan's `require` lines are evaluated against facts the analysis already computed (sweep, market shift, zone, killzone, session, timeframe, trend, phase, bias alignment, news blackout, grade, risk:reward, account risk %) and a line that fails REFUSES the candidate through the ordinary no-trade path, with your own rule text and the measured detail first in the reason; the plan and its M102 version travel with the refusal, every scan row carries the same verdict, and reading the plan writes nothing. `GET /api/bots/plan-gate` publishes the enforced vocabulary, the per-line classification and the limits | **Prose is never parsed.** A plan written as sentences gates nothing and the app says so rather than guessing polarity ("no news trading" and "trade the news" share every word). `exit_rules`, `checklist` and `market_conditions` are stored and displayed, not enforced. The vocabulary is closed: a `require` line outside it is reported as unrecognised. And the gate refuses SIGNALS — it does not grade a trade you already logged against the rules you were shown (§5 item 5) |
+ | **Playlist coverage** | 40 episodes mapped: **27 ✔ fully implemented, 6 ◐ partial** ([PLAYLIST-CURRICULUM.md](PLAYLIST-CURRICULUM.md)) | The 6 partials are listed at the bottom of that document |
+ | **Prediction model** | Logistic regression trained in-process, calibrated buckets, `out_of_sample` block, measured gates (`stop_ge_06atr`, `runway3`) on every live setup | Per-market training sets are 60–250 resolved setups; no gradient boosting or alternative model families |
+ | **Tracked signals** | Save → resolve → self-grade with win rate/expectancy by grade, including refined MTF plans | Resolution is still triggered by a request: the daily `/api/cron/tick` resolves what it can, but there is no push, so a signal can sit unresolved until someone opens the app |
+@@ -155,7 +156,7 @@ Everything register #5 asked for now exists in the tree, so this list is what is
+    ~~cron~~ — **shipped** this tick (see the table at the top for each verification line and each caveat).
+ 5. ~~Correctional-bot adherence grading~~ — the bot has graded trades automatically since the first
+    version (`autograde()` → score/grade/reasons, exposed at `GET /api/bots/correction`, `POST
+-   /api/bots/correction/backfill`, per-trade at `GET /api/bots/feedback/:tradeId`). **What is still missing:** a *plan-vs-execution* grade — whether the trade you actually logged obeyed the gates of the plan the app showed you (same direction, stop where the plan put it, target ≥ 3R, no re-entry after the failure). `POST /api/bots/signals/resolve` already grades the plan itself against real candles (seen live: signal 68 resolved to `no_fill` via the scheduler), but that needs the scale-in path in §3 before a scaled entry can be compared to a one-shot plan.
++   /api/bots/correction/backfill`, per-trade at `GET /api/bots/feedback/:tradeId`). **What is still missing:** a *plan-vs-execution* grade — whether the trade you actually logged obeyed the gates of the plan the app showed you (same direction, stop where the plan put it, target ≥ 3R, no re-entry after the failure). Since M56 the plan's own `require` lines DO gate the signals the bots produce (`GET /api/bots/plan-gate`), so what remains ungraded is a trade you logged by hand. `POST /api/bots/signals/resolve` already grades the plan itself against real candles (seen live: signal 68 resolved to `no_fill` via the scheduler), but that needs the scale-in path in §3 before a scaled entry can be compared to a one-shot plan.
+ 6. **Replay the top-down method as a strategy** — the one measurement this app still owes. `tests` cover
+    the method structurally and every live read is honest, but "confirmed CRT ranges, entered at the
+    confirmation / on the retest, stop beyond the sweep, target the opposite edge" has never been replayed
+diff --git a/docs/PLAYLIST-CURRICULUM.md b/docs/PLAYLIST-CURRICULUM.md
+index 26a50c0..b193520 100644
+--- a/docs/PLAYLIST-CURRICULUM.md
++++ b/docs/PLAYLIST-CURRICULUM.md
+@@ -66,7 +66,7 @@ judgement/habit lesson with no code surface (the app supports it through journal
+ | 13 | Liquidity & inducement | Stops before the real move | `smc.js` → pools + `inducement` detector ✔ |
+ | 14 | Flip zones / breakers | Failed zones reverse role | `smc.js` → `findBreakers()` ✔ |
+ | 15 | Daily bias | The day's direction | Bots → Top-down method panel: `layers.bias` (daily/weekly read, CRT state, right candle, range) + headline ✔ |
+-| 16 | Trading plan | Written rules | Playbook view + guardrails from `correction.js` ✔ |
++| 16 | Trading plan | Written rules | Playbook view + guardrails from `correction.js` ✔ — and since M56 the written rules are a **gate**, not a note: `src/bots/plan-gate.js` reads the plan's `require` lines as an all-or-nothing checklist against facts the analysis has already computed, and a line that fails refuses the candidate through the ordinary no-trade path with your own rule text, and the measured detail, first in the reason. The limits are named in the editor itself: only the listed machine-checkable lines are enforced, everything else (prose, `exit_rules`, `checklist`, `market_conditions`) is context that is never interpreted, and a `require` line the app does not recognise is reported loudly rather than passing as checked. |
+ | 17 | Full SMC plan + routine | Daily routine | Journal + the clean-rep count of episode 32 (see row 32) ◐ |
+ | 18 | **Entry models (sniper)** | Sweep → displacement → zone → retest | `setup.js` → `buildSetups()` ✔ (the core of the app), now **gated by the method**: aggressive (at confirmation) and safer (pullback to the mid / fresh FVG) entries from `topdown.js`, with conviction tiers A/B/watch |
+ | 19 | When NOT to trade | Standing down is a skill | Score caps + vetoes + **NO TRADE** verdicts ✔ · the *now* strip states the stand-down and what would change it, with the clock (`now.js`) ✔ |
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index a112c8e..80acc4f 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -196,6 +196,43 @@
+       : sp.blocked_now ? `Outside your window (${sp.label}) — ${sp.open_now || 'no killzone open now'}; signals are refused.`
+       : `Restricted to ${sp.label}${sp.phase ? ` · phase ${sp.phase}` : ''}${sp.phase_note ? ` — ${sp.phase_note}` : ''}`)
+       + (twNote ? (sp ? ' · ' : '') + twNote : '') });
++    /* M56 — the written plan this analysis was confirmed against, beside the window note and for the
++     * same reason: a gate the trader cannot see is indistinguishable from no gate. `no_plan` says so
++     * out loud rather than rendering as an empty (and therefore perfect-looking) rule list, and the
++     * lines the vocabulary could NOT check are named here — a `require` line the engine did not
++     * understand must never look like a requirement that was satisfied. */
++    const pg = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.plan_gate) || null;
++    const pgUnknown = pg ? (pg.unrecognised_lines || []).map((u) => u.text) : [];
++    const pgProse = pg ? (pg.unverifiable_lines || []).length : 0;
++    const planNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:520px', dataset: { planGate: 'true' },
++      text: !pg ? ''
++      : pg.state === 'not_consulted' ? ''
++      : pg.state === 'no_plan' ? 'No active plan — nothing is gated on one. Publish a plan in the Playbook and its `require` lines will gate these signals.'
++      : pg.state === 'ambiguous' ? `More than one active plan (${(pg.candidates || []).map((c) => c.name).join(', ')}) — name one with ?strategy_id= or pause the others; nothing is gated until then.`
++      : pg.state === 'unavailable' ? `Your plan could not be read — every signal is refused until it can be. ${pg.reason || ''}`
++      : `Plan ${esc((pg.plan || {}).name || '')}${pg.plan && pg.plan.version ? ' v' + pg.plan.version : ''}: ${pg.enforced} requirement${pg.enforced === 1 ? '' : 's'} enforced`
++        + (pg.refused_now ? ' — one of them refuses a candidate below' : '')
++        + (pg.unknown_now ? ' · some facts could not be read and refused nothing' : '')
++        + (pgProse ? ` · ${pgProse} line${pgProse === 1 ? '' : 's'} not machine-checkable (never enforced)` : '')
++        + (pgUnknown.length ? ` · NOT CHECKED: ${pgUnknown.join(' · ')}` : '')
++        // M56 — a plan whose rules could not be READ must never render as an empty list of satisfied
++        // requirements: at zero enforced rules the plan's own note ("re-save the plan", "no
++        // machine-checkable requirements yet") is the sentence that says what to do about it.
++        + (pg.enforced ? '' : (pg.note ? ` · ${pg.note}` : '')) });
++    /* M56 — which written plan this analysis is confirmed against. The selector matters because
++     * WHICH plan applies is the trader's decision and this app never guesses between two: with no
++     * selection the gate uses their single active plan, and when several are active it says so here
++     * and gates nothing until one is chosen. The choice rides `strategy_id` on the request, so the
++     * refusal and the plan it came from travel together. */
++    const plans = ((global.Store && global.Store.strategies) || []).filter((x) => x.active);
++    const planSel = h('select', { class: 'input', style: 'max-width:190px', dataset: { planSelect: 'true' },
++      title: 'Confirm these signals against one of your written plans. Its `require` lines are enforced.' });
++    planSel.appendChild(h('option', { value: '', text: plans.length ? 'Plan: my active plan' : 'Plan: none published' }));
++    plans.forEach((x) => planSel.appendChild(h('option', { value: String(x.id), text: x.name, selected: String(x.id) === String(B.strategyId || '') ? 'selected' : null })));
++    planSel.addEventListener('change', () => {
++      B.strategyId = planSel.value || '';
++      if (runBtn && runBtn.click) runBtn.click(); else onChange();
++    });
+     const predChk = h('label', { class: 'row gap-4 muted', style: 'align-items:center' });
+     const predBox = h('input', { type: 'checkbox', checked: B.prediction ? 'checked' : null });
+     predChk.appendChild(predBox); predChk.appendChild(document.createTextNode('prediction'));
+@@ -279,9 +316,10 @@
+       if (!copyCandidate) return global.App.toast(B.data ? 'No actionable plan — the bot says stand down' : 'Analyse a market first', 'warn');
+       copyPlan(copyCandidate);
+     });
+-    [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
++    [symInput, tfSel, winSel, planSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
+     if (marketCopy && global.TV) row.appendChild(h('button',{class:'btn sm guardrail-stop',text:'Override & copy plan',onclick:()=>copyPlan(marketCopy)}));
+     row.appendChild(winNote);
++    row.appendChild(planNote);
+     /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
+      * button will be blocked ... grayed out ... You physically can't press the trade
+      * button." The nearest thing here is the control that hands you an order to place, so
+@@ -729,6 +767,21 @@
+         const f = c.levels.rr_floor;
+         card.appendChild(h('div', { class: 'muted-2', text: `First-target RR floor: ${Number(f.rr).toFixed(4)}R / ${f.min_rr}R — ${f.passed ? 'met' : 'refused'}. Farther displayed targets cannot qualify the trade.` }));
+       }
++      /* M56 — the plan's own requirements for THIS candidate, each with its resolved state. The
++       * refusal already rides `action`/`no_trade` above (and therefore the verdict, Now, Copy plan and
++       * the save button), so this block is the explanation, not a second decision. */
++      if (c.plan_rules && c.plan_rules.rules && c.plan_rules.rules.length) {
++        const pr = h('div', { class: 'bot-checks', dataset: { planRules: 'true' } });
++        pr.appendChild(h('div', { class: 'muted-2', text: `Your plan's requirements for this side (${c.plan_rules.refused} refused · ${c.plan_rules.unknown} unreadable)` }));
++        c.plan_rules.rules.forEach((r) => {
++          const row2 = h('div', { class: 'bot-check ' + (r.state === 'met' ? 'ok' : r.state === 'refused' ? 'no' : 'no'), dataset: { planRule: r.fact, planState: r.state } });
++          row2.appendChild(h('span', { class: 'mark ' + (r.state === 'met' ? 'ok' : 'no'), text: r.state === 'met' ? 'ok' : r.state === 'refused' ? 'no' : '?' }));
++          row2.appendChild(h('span', { class: 'lbl', text: r.text + (r.state === 'unknown' ? ' — could not be read, so it refused nothing' : '') }));
++          if (r.detail) row2.appendChild(h('span', { class: 'muted-2 det', text: r.detail }));
++          pr.appendChild(row2);
++        });
++        card.appendChild(pr);
++      }
+       card.appendChild(h('div', { class: 'bot-action', text: c.action }));
+       const btnRow = h('div', { class: 'row gap-8' });
+       const marketEligible = (c.market_ok ?? c.ok)===true && !d.topdown?.blocked;
+@@ -1312,8 +1365,10 @@
+         const trim = B.trim || 0;
+         Promise.all([
+           API.get('/bots/analyse', { symbol: sym, tf, account_id:Store.accountId || null, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
++            ...(B.strategyId ? { strategy_id: B.strategyId } : {}),                          // M56
+             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }),                     // M26
+           API.get('/bots/chart', { symbol: sym, tf, account_id:Store.accountId || null, bars: 600, min_rr: B.minRR, trim,
++            ...(B.strategyId ? { strategy_id: B.strategyId } : {}),                          // M56
+             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }).catch(() => null),    // M26
+           API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
+         ]).then(([d, ch, dr]) => {
+diff --git a/public/js/views/playbook.js b/public/js/views/playbook.js
+index 471c8c8..fbd6500 100644
+--- a/public/js/views/playbook.js
++++ b/public/js/views/playbook.js
+@@ -2,6 +2,19 @@
+ (function (global) {
+   'use strict';
+   const Views = global.Views = global.Views || {};let renderEpoch=0;
++  /* M56 — the plan gate's vocabulary, fetched from the server so the editor's hint can never drift
++   * from the grammar the engine actually enforces (a hard-coded copy here would be a second source of
++   * truth, and the first time the two disagreed the trader would write rules that silently do nothing). */
++  function loadPlanVocabulary() {
++    if (global.PLAN_GATE_VOCABULARY) return Promise.resolve(global.PLAN_GATE_VOCABULARY);
++    if (global.PLAN_GATE_VOCABULARY_ASKED) return global.PLAN_GATE_VOCABULARY_ASKED;
++    const asked = global.API.get('/bots/plan-gate').then((r) => {
++      global.PLAN_GATE_VOCABULARY = (r && r.vocabulary) || [];
++      return global.PLAN_GATE_VOCABULARY;
++    }).catch(() => []);
++    global.PLAN_GATE_VOCABULARY_ASKED = asked;
++    return asked;
++  }
+ 
+   Views.playbook = {
+     title: 'Playbook',
+@@ -70,6 +83,10 @@
+   };
+ 
+   async function strategyDialog(s, root) {
++    // M56 — the enforced-rule hint under the Entry rules field needs the engine's own vocabulary, and it
++    // has to be THERE when the editor opens: a hint reading "loading…" is the same as no hint for the
++    // one edit it exists to inform. The read is cached, so only the first dialog waits for it.
++    await loadPlanVocabulary();
+     const R=Views.ruleChanges,context=R?.ctx(),number=R?.nextSerial();let discipline;
+     if(s&&R){try{discipline=await API.get('/strategies/'+s.id+'/change-discipline');if(!R.same(context)||!R.current(number))return;s=discipline.strategy;}catch(e){if(R.same(context)&&R.current(number))global.App.toast(e.message,'err');return;}}
+     let alive=true,stale=false;
+@@ -84,6 +101,7 @@
+       <label class="field"><span>Target R multiple</span><input id="s-target" type="number" step="0.1" value="${v.target_r_multiple}" /></label>
+       <label class="field"><span>Colour</span><input id="s-colour" type="color" value="${v.colour}" style="height:38px" /></label>
+       <label class="field span2"><span>Entry rules (one per line)</span><textarea id="s-entry" placeholder="One rule per line">${U.esc((v.entry_rules || []).join('\n'))}</textarea></label>
++      <div class="muted-2 small span2" data-plan-vocabulary="true">Lines beginning <b>require&nbsp;</b> are ENFORCED by the bots — a candidate that breaks one is refused, and nothing else in the app can overrule it. Everything else is context for you and is never interpreted.<br>Checkable so far (the app’s own list — hover a rule for its allowed values): ${(global.PLAN_GATE_VOCABULARY || []).map((x) => `<code title="${U.esc(x.label + (x.values ? ' — one of: ' + x.values.join(', ') : ''))}">${U.esc(x.line)}</code>`).join(' · ') || '<span class="muted">the app could not read its own rule list — reload the page before trusting a rule.</span>'}<br>A <code>require</code> line the app does not recognise is reported loudly on the bots page and in the payload rather than passing as though it were checked.</div>
+       <label class="field span2"><span>Exit rules (one per line)</span><textarea id="s-exit">${U.esc((v.exit_rules || []).join('\n'))}</textarea></label>
+       <label class="field span2"><span>Pre-trade checklist (one per line)</span><textarea id="s-check">${U.esc((v.checklist || []).join('\n'))}</textarea></label>
+       <label class="field span2"><span>Risk rules</span><textarea id="s-risk" placeholder="Max risk, max trades, cooldowns…">${U.esc(v.risk_rules)}</textarea></label>
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 708b6c1..532e59d 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -30,6 +30,7 @@ const Now = require('./now');
+ const Predict = require('./predict');
+ const Cor = require('./correction');
+ const Guards = require('./guardrails');
++const PlanGate = require('./plan-gate');   // M56: the trader's written plan, as a gate
+ const StateGate = require('../state-gate');
+ const NewsWindow = require('../news-window');
+ const TradingWindow = require('../trading-window');   // M112   // M110 — two clocks, not one number
+@@ -377,6 +378,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+    * is published as itself rather than being folded into either "inside" or "blocked". An explicit
+    * clock is honoured when a caller supplies one; otherwise this is the server clock, never a
+    * client's. */
++  /* M56 — the trader's OWN written plan, read once per analysis exactly like the window above, and
++   * for the same reason: the gate must be a function of the stored plan and the trader's own
++   * settings, not of which bot asked. `safe` never throws on an unreadable plan (it returns the
++   * `unavailable` state, which refuses rather than passing); an explicit strategy_id that is not
++   * theirs is the caller's error and surfaces. `opts.strategyId` is validated by the route. */
++  const writtenPlan = await PlanGate.safe(opts.userId, opts.strategyId);
+   const windowNow = Number.isFinite(Number(opts.nowMs)) ? Number(opts.nowMs) : Date.now();
+   const tradingWindow = TradingWindow.safeState({ start: account && account.window_start, end: account && account.window_end,
+     timezone: account && account.window_timezone, ownedZone: account && account.routine_timezone, source: account && account.window_source, nowMs: windowNow });
+@@ -419,6 +426,9 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+     // refusal names THEIR window (with the local time that produced it) next to the other
+     // non-negotiables, instead of arriving later as a generic personal stop.
+     tradingWindow,
++    // M56 — the plan travels into the setup model the same way, so the plan's requirements are
++    // evaluated at the point every other non-negotiable is, against the model's own facts.
++    planGate: writtenPlan,
+   });
+ 
+   let prediction = null;
+@@ -626,11 +636,16 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   const balance = account ? Number(account.current_balance || account.starting_balance || 0) : Number(opts.balance || 0);
+   const { riskPct, maxRiskPct } = riskPlan(account, opts);   // M9: clamped on read, not just on write
+ 
++  /* M56 — the chart confirms against the SAME written plan the analysis does, read here rather than
++   * taken from the caller: M124's rule is that the chart is not a second opinion, and a gate only one
++   * of the two surfaces obeyed would be exactly that. */
++  const chartPlan = await PlanGate.safe(opts.userId, opts.strategyId);
+   let setups = Setup.buildSetups(entry.smc, {
+     price: entry.price, atr: entry.atr, entrySeries: entry, observedAt: cut.asOf || opts.nowMs, bias: momentum.bias, biasReason: td.headline,   // M50: momentum.bias is the held bias
+     indicators: entry.ind, balance, riskPct, maxRiskPct, valuePerPoint: spec.value_per_point,
+     assetClass: spec.asset_class, symbol: sym, minRR: floorRR(opts.minRR), topdown: td, useBreakers: !!opts.useBreakers,
+     sessionPref: opts.sessionPref || null,   // M26
++    planGate: chartPlan,                     // M56
+   });
+ 
+   const daily = await personalState(opts.userId,opts.accountId,candidateTf(setups,td,tf));
+@@ -735,17 +750,26 @@ async function chart(symbol, tf = '15m', opts = {}) {
+     setups: {
+       verdict: setups.verdict, method: setups.method, execution_permission:setups.execution_permission,
+       candidates: setups.candidates.map((c) => ({ dir: c.dir, side: c.side, grade: c.grade, score: c.score, ok: c.ok, market_ok:c.market_ok, personal_blocked:c.personal_blocked,
++        // M56 — the written plan and its per-side rules travel with the chart too: the chart is not a
++        // second opinion (M124), so a client that renders the chart's candidates can show the same
++        // refusal the analysis shows instead of having to ask again with different inputs.
++        plan_rules: c.plan_rules,
+         // M7/M8/M35/M96: without this the refusal reason is computed in setup.js and then
+         // dropped here, leaving ok:false with no explanation. See the M61 dead-vetoes note.
+         entry_model: c.entry_model, entry_tf: c.entry_tf, entry_model_state: c.entry_model_state, entry_evidence: c.entry_evidence, entry_preference: c.entry_preference,
+         no_trade: c.no_trade || [], levels: c.levels, action: c.action })),
++      filters: setups.filters,
+     },
+     quote: { price: entry.price, atr: entry.atr, change_pct: entry.candles.length > 1 ? r2(((entry.price - entry.candles[0].c) / entry.candles[0].c) * 100) : null },
+   };
+ }
+ 
+-async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, sessionPref = null, useBreakers = false, entryModels } = {}) {
++async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, strategyId = null, sessionPref = null, useBreakers = false, entryModels } = {}) {
+   const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
++  /* M56 — read the written plan ONCE for the whole scan, not once per symbol: the plan is a property
++   * of the trader, and re-reading it inside the worker could only ever produce a different answer for
++   * the same plan. A scan that offered symbols the plan refuses would be the same gap in a wider lens. */
++  const scanPlan = await PlanGate.safe(userId, strategyId);
+   const rows = [];
+   let cursor = 0;
+   async function worker() {
+@@ -764,8 +788,10 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+           price: series.price, atr: series.atr, entrySeries: series, bias: scanHyst.bias, biasReason: momentum.alignment.reason,
+           indicators: series.ind, minRR: 2, topdown: momentum.topdown, useBreakers,
+           sessionPref,   // M26 — scan's params are destructured, so there is no `opts` here.
++          planGate: scanPlan,   // M56 — the same written plan for every symbol in the scan
+                          // No symbol on this path either, so the pair-conflict note stays
+-                         // null rather than false.
++                         // null rather than false. (M56's plan is read once below, beside the
++                         // other per-user reads, and rides this ctx the same way.)
+         });
+         const daily = await personalState(userId,accountId,candidateTf(specs,momentum.topdown || {},tf));
+         specs = Guards.applyToSetups(specs,daily);
+@@ -802,6 +828,11 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+           provider: series.meta.provider, ticker: series.meta.ticker,
+           headline: momentum.narrative && momentum.narrative[0] ? momentum.narrative[0].text : '',
+           conflicts: momentum.conflicts,
++          // M56 — the written plan the row was confirmed against, and whether it took this row's
++          // setup away: a scan that silently listed a symbol the trader's own plan refuses would be
++          // the original gap in a wider lens.
++          plan_gate: specs.filters.plan_gate,
++          plan_refused: !!(best && best.plan_rules && best.plan_rules.refused > 0),
+         });
+       } catch (e) {
+         rows.push({ symbol: sym, timeframe: tf, ok: false, error: e.message });
+diff --git a/src/bots/plan-gate.js b/src/bots/plan-gate.js
+new file mode 100644
+index 0000000..ccc864c
+--- /dev/null
++++ b/src/bots/plan-gate.js
+@@ -0,0 +1,363 @@
++'use strict';
++/**
++ * plan-gate.js — M56. The written plan as a gate.
++ *
++ * WHAT WAS MISSING: Ep 16 states the entry criteria as absolute — *"the non-negotiables that must be
++ * true before I even think about pressing the buy and sell button. And if every or any of these
++ * criteria is not met, I would just not trade… If even just one of these boxes are not being checked,
++ * I would still not trade."* The app stored all of it (`strategies.market_conditions`, `timeframes`,
++ * `entry_rules`, `exit_rules`, `checklist`, `risk_rules`, `target_r_multiple`) and no bot ever read
++ * any of it: the plan was documentation, not a gate. Ep 27 then makes that the load-bearing gap
++ * rather than a convenience, because editing the plan is the course's own mechanism for making a
++ * change stick — *"bake it into your system because the system is what keeps you consistent"* — and a
++ * changed rule that no signal ever consults makes the quarter-long experiment test nothing.
++ *
++ * WHAT THIS IS: a closed vocabulary of MACHINE-CHECKABLE plan requirements, evaluated against the
++ * facts the engine already computes, one rule line at a time. A line the trader writes as
++ *
++ *     require min_rr >= 2
++ *     require killzone
++ *     require session london
++ *
++ * is a HARD requirement: when the fact is known and false, the candidate is refused with a sentence
++ * that names the plan, its version and the trader's own rule text. A line that does not start with
++ * `require ` is **prose** — it is reported as unverifiable and never blocks, because interpreting
++ * free text is inventing an evaluator, and inventing one is how a "gate" starts refusing trades the
++ * trader never asked it to refuse. A line that DOES start with `require ` but names a fact outside the
++ * vocabulary is reported LOUDLY as an unrecognised requirement: the trader intended a gate, so the
++ * engine must never let it pass silently as though it were checked.
++ *
++ * UNKNOWN IS NEVER A PASS. Every fact read carries its own state. A rule is refused only when the
++ * fact is KNOWN and unmet; when the underlying read is unknown (the short-series session sentinel
++ * that M8 refuses to read as "outside", an unreadable news calendar, no computed levels yet) the rule
++ * is reported `unknown` and refuses nothing. A missing read is never silently upgraded to `met` — the
++ * fact normaliser in `facts()` defaults anything it was not handed to `unknown`, so a caller who
++ * forgets a fact gets a visible unknown rather than an accidental green.
++ *
++ * WHAT IT IS NOT: not a score. A refused plan rule vetoes the candidate as a boolean, exactly like
++ * every other non-negotiable, and changes no grade, weight, cap or price — `limits` says so and the
++ * probes measure it. Not a second opinion either: the facts are the setup model's OWN booleans, read
++ * at the same point the other vetoes are assembled, so the plan gate can only ever refuse something
++ * the engine already knows, never re-derive it.
++ *
++ * The plan is the trader's: the gate reads THEIR strategy (the name_id they pass, else their single
++ * active plan), and it never picks one silently. No active plan is `no_plan` and blocks nothing — a
++ * written plan is a discipline the course prescribes, not a precondition for using the app — while an
++ * unreadable one is `unavailable` and refuses, so a broken read can never read as compliance. Two
++ * active plans are `ambiguous` and are NOT secretly intersected (a London reversal plan and a NY
++ * continuation plan are alternatives, not a conjunction): the payload names both and says how to
++ * choose.
++ *
++ * STATED LIMITS, so this is not over-read: the gate enforces exactly the vocabulary below and nothing
++ * else; free-text rules, `exit_rules`, `checklist` text and the `market_conditions` field are NOT
++ * parsed for meaning (polarity cannot be read from prose — "no news trading" and "trade the news"
++ * contain the same word); the facts are the engine's own reads, not broker or price verification; and
++ * a plan is only as good as the trader who wrote it.
++ */
++const VERSION = 'plan-gate-v1';
++
++/* Where a plan came from, in the payload's own tokens. `not_consulted` is research (no user), and it
++ * blocks nothing because there is no trader whose plan could apply. */
++const STATES = Object.freeze({
++  NOT_CONSULTED: 'not_consulted',
++  NO_PLAN: 'no_plan',
++  AMBIGUOUS: 'ambiguous',
++  READY: 'ready',
++  UNAVAILABLE: 'unavailable',
++});
++
++/* The grade ladder, high to low. `no-trade` sits below D: a plan that asks for `>= C` may not be
++ * satisfied by a stood-down setup. */
++const GRADE_RANK = Object.freeze({ 'a+': 6, a: 5, b: 4, c: 3, d: 2, 'no-trade': 1 });
++
++/*
++ * THE VOCABULARY. Every fact here reads something the engine already computes and already shows the
++ * trader somewhere else in the app; nothing above is invented for the gate.
++ *
++ *   boolean facts  — `require <fact>`
++ *   enum facts     — `require <fact> <value>`
++ *   compare facts  — `require <fact> >= <n>` (min_rr) / `require <fact> <= <n>` (risk)
++ *
++ * `label` is what the refusal says the rule is about; `unit` is appended to numbers; `values` is the
++ * closed value set for enums, so a misspelling is an unrecognised request rather than a silent pass.
++ */
++const FACTS = Object.freeze({
++  sweep: { form: 'boolean', label: 'a liquidity sweep in the trade\u2019s direction' },
++  market_shift: { form: 'boolean', label: 'a market shift (a structural break) in the trade\u2019s direction' },
++  zone: { form: 'boolean', label: 'an order block or imbalance to trade against' },
++  killzone: { form: 'boolean', label: 'a killzone being open' },
++  bias_aligned: { form: 'boolean', label: 'the held bias agreeing with the trade\u2019s direction' },
++  no_news_blackout: { form: 'boolean', label: 'no news blackout on your window' },
++  session: { form: 'enum', label: 'the open killzone', values: ['asia', 'london', 'ny_am', 'london_close'] },
++  timeframe: { form: 'enum', label: 'the entry timeframe', values: ['1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'] },
++  trend: { form: 'enum', label: 'the structure trend', values: ['bullish', 'bearish', 'ranging'] },
++  phase: { form: 'enum', label: 'the market phase', values: ['balance', 'expansion', 'pullback'] },
++  grade: { form: 'compare', op: '>=', label: 'the setup grade', values: ['A+', 'A', 'B', 'C', 'D'] },
++  min_rr: { form: 'compare', op: '>=', label: 'the first-target risk:reward', unit: 'R', sample: 2 },
++  risk: { form: 'compare', op: '<=', label: 'the per-trade risk on your account', unit: '%', sample: 1 },
++});
++
++/* The trader-facing list of what CAN be enforced, for the plan editor's hint and the API payload. */
++function vocabulary() {
++  return Object.keys(FACTS).map((fact) => {
++    const f = FACTS[fact];
++    // `line` is a CONCRETE example that the engine really enforces (the first listed value for an
++    // enum or a graded comparison, the sample number for a numeric one), so the documented line and
++    // the parse can never disagree; `values` carries the full set for a client to render as choices.
++    const line = f.form === 'boolean' ? `require ${fact}`
++      : f.form === 'enum' ? `require ${fact} ${f.values[0]}`
++      : `require ${fact} ${f.op} ${f.values ? f.values[0] : f.sample}`;
++    return { fact, form: f.form, line, op: f.op || null, label: f.label, values: f.values || null, unit: f.unit || null };
++  });
++}
++
++/** Refusals and unreadable reads carry the same shape the other gates use, so a route can hand the
++ * object straight to the client without translation. */
++function invalid(message, status = 400, code = 'plan_gate_invalid') {
++  const e = new Error(message);
++  e.status = status; e.code = code;
++  return e;
++}
++
++function marked(state, note) { return { version: VERSION, state, note: note || null }; }
++
++/** An unreadable plan: the gate could not be consulted, and it REFUSES rather than passing, because a
++ * broken read must not be indistinguishable from compliance. */
++function unavailable(reason) {
++  return { ...marked(STATES.UNAVAILABLE, 'The plan gate could not be read, so no signal is confirmed against your written plan.'),
++    reason: reason ? String(reason).slice(0, 200) : null };
++}
++
++/**
++ * Normalise the fact reads into `{state, detail}`. `state` is `known` or `unknown`; the caller hands
++ * whatever it has, and ANYTHING IT DOES NOT HAND IS `unknown` — never `met`. That default is the
++ * whole anti-silent-pass rule, and it is why every read below is written as a possibly-undefined
++ * value passed through `read(v, detail)` rather than a bare boolean.
++ */
++function read(v, detail) {
++  if (v === undefined || v === null) return { state: 'unknown', value: null, detail: detail || null };
++  if (typeof v === 'number' && !Number.isFinite(v)) return { state: 'unknown', value: null, detail: detail || null };
++  return { state: 'known', value: v, detail: detail || null };
++}
++
++/** Build the fact set from the caller's reads. Only the facts handed in are populated; the rest are
++ * `unknown`. */
++function facts(reads = {}) {
++  const out = {};
++  for (const fact of Object.keys(FACTS)) out[fact] = reads[fact] || read(undefined);
++  return out;
++}
++
++/**
++ * Parse ONE rule line. Three outcomes, and the difference between them is the point:
++ *   - `machine`      — a `require ` line naming a vocabulary fact with a valid operator/value.
++ *   - `unknown_fact` — a `require ` line the vocabulary does not recognise. The trader asked for a
++ *                      gate; the engine must say it cannot enforce it rather than pretending.
++ *   - `prose`        — anything else. Context for the human, never a rule for the engine.
++ */
++function parseRule(text) {
++  const raw = String(text == null ? '' : text).trim();
++  if (!raw) return { text: raw, kind: 'prose', reason: 'empty line' };
++  const m = /^require\s+([A-Za-z_][A-Za-z0-9_]*)\s*(>=|<=|==|=|>|<)?\s*(.*)$/.exec(raw);
++  if (!m) return { text: raw, kind: 'prose', reason: 'does not start with `require `' };
++  const fact = m[1].toLowerCase();
++  const op = m[2] || null;
++  const value = (m[3] || '').trim();
++  const spec = FACTS[fact];
++  if (!spec) return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` is not a requirement this app can check` };
++  if (spec.form === 'boolean') {
++    if (op || value) return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` takes no operator or value` };
++    return { text: raw, kind: 'machine', fact, form: 'boolean' };
++  }
++  if (spec.form === 'enum') {
++    const v = String(value || '').toLowerCase();
++    if (op || !spec.values.includes(v)) {
++      return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` must be followed by one of ${spec.values.join(', ')}` };
++    }
++    return { text: raw, kind: 'machine', fact, form: 'enum', value: v };
++  }
++  // compare: the operator is the fact's own (a `require` line is a floor for min_rr and a ceiling for
++  // risk, and letting the trader invert it would silently make the plan mean the opposite).
++  if (op !== spec.op) {
++    return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` is written as \`require ${fact} ${spec.op} <value>\`` };
++  }
++  if (spec.values) {
++    const v = String(value || '').trim();
++    const hit = spec.values.find((x) => x.toLowerCase() === v.toLowerCase());
++    if (!hit) return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` must compare against one of ${spec.values.join(', ')}` };
++    return { text: raw, kind: 'machine', fact, form: 'compare', op, value: hit };
++  }
++  const n = Number(value);
++  if (!value || !Number.isFinite(n) || n <= 0) {
++    return { text: raw, kind: 'unknown_fact', fact, reason: `\`${fact}\` must compare against a positive number` };
++  }
++  return { text: raw, kind: 'machine', fact, form: 'compare', op, value: n };
++}
++
++/** Parse a whole plan row (`strategies` row, `entry_rules` already JSON-parsed or still a string).
++ *
++ * The column is documented as a JSON array of strings, and that is the ONLY shape this engine treats
++ * as a rule set. A value that is not an array (a double-encoded string, an object from an import that
++ * went wrong, a number) yields no rules AND `malformed: true`, so the client can say "your rules could
++ * not be read" instead of rendering the absence of a rule list as a plan with nothing to enforce.
++ */
++function parse(row) {
++  const raw = row && row.entry_rules;
++  let rules = [];
++  let malformed = false;
++  if (Array.isArray(raw)) rules = raw;
++  else if (typeof raw === 'string' && raw.trim()) {
++    try { rules = JSON.parse(raw); } catch (e) { rules = []; malformed = true; }
++    if (!Array.isArray(rules)) { malformed = true; rules = []; }
++  } else if (raw !== undefined && raw !== null && raw !== '') malformed = true;
++  const parsed = (Array.isArray(rules) ? rules : []).map(parseRule).filter((r) => r.text);
++  const counts = {
++    machine: parsed.filter((r) => r.kind === 'machine').length,
++    unknown_fact: parsed.filter((r) => r.kind === 'unknown_fact').length,
++    prose: parsed.filter((r) => r.kind === 'prose').length,
++  };
++  return { rules: parsed, counts, malformed };
++}
++
++/** The comparison for one machine rule against one direction's facts. */
++function check(rule, f) {
++  const r = f[rule.fact] || read(undefined);
++  const unknown = { state: 'unknown', detail: r.detail };
++  if (rule.form === 'boolean') {
++    if (r.state !== 'known') return unknown;
++    return { state: r.value === true ? 'met' : 'refused', detail: r.detail };
++  }
++  if (rule.form === 'enum') {
++    if (r.state !== 'known') return unknown;
++    return { state: String(r.value).toLowerCase() === rule.value ? 'met' : 'refused', detail: r.detail };
++  }
++  if (rule.fact === 'grade') {
++    if (r.state !== 'known') return unknown;
++    const have = GRADE_RANK[String(r.value).toLowerCase()];
++    const want = GRADE_RANK[String(rule.value).toLowerCase()];
++    return { state: have >= want ? 'met' : 'refused', detail: r.detail };
++  }
++  if (r.state !== 'known' || !Number.isFinite(Number(r.value))) return unknown;
++  const have = Number(r.value);
++  return { state: rule.op === '<=' ? (have <= rule.value ? 'met' : 'refused') : (have >= rule.value ? 'met' : 'refused'), detail: r.detail };
++}
++
++/** The refusal sentence. It names the plan, its version, the trader's own rule text and the fact,
++ * then quotes the episode, because the reason a plan rule binds is that they wrote it. */
++function sentence(parsed, rule, result) {
++  const name = parsed.plan && parsed.plan.name ? `\u201c${parsed.plan.name}\u201d` : 'your written plan';
++  const v = parsed.plan && parsed.plan.version ? ` (v${parsed.plan.version})` : '';
++  const detail = result.detail ? ` ${result.detail}` : '';
++  // The rule is quoted without its `require ` keyword: the trader reads it as the requirement it is,
++  // and still finds the exact line in their editor (the full text travels in the payload).
++  const quoted = rule.text.replace(/^require\s+/i, '');
++  return `Your plan ${name}${v} requires \u201c${quoted}\u201d \u2014 ${FACTS[rule.fact].label} is not met.${detail}`
++    + ` \u201cIf even just one of these boxes are not being checked, I would still not trade.\u201d`;
++}
++
++/**
++ * Evaluate the parsed plan for ONE direction. `f` is that direction's fact set. Returns the per-rule
++ * results (machine rules only — prose and unrecognised lines are reported at plan level, not per
++ * direction) plus the veto sentences, ready to be appended to the candidate's `no_trade` list.
++ */
++function evaluate(parsed, f, dir) {
++  const results = [];
++  const vetoes = [];
++  for (const rule of parsed.rules) {
++    if (rule.kind !== 'machine') continue;
++    const result = check(rule, f);
++    results.push({ text: rule.text, fact: rule.fact, state: result.state, detail: result.detail || null });
++    if (result.state === 'refused') vetoes.push(sentence(parsed, rule, result));
++  }
++  return { dir, results, vetoes,
++    refused: results.filter((r) => r.state === 'refused').length,
++    unknown: results.filter((r) => r.state === 'unknown').length };
++}
++
++/** The plan-level block that rides `setups.filters`, built from the parse (direction-independent) and
++ * the per-direction evaluations. */
++function view(loaded, perDirection) {
++  if (!loaded) {
++    // No gate was handed to this path at all (the pure method/research callers, which have no
++    // trader). That is `not_consulted`, and it is NOT the same token as a plan that failed to read:
++    // research must never look like a broken plan, and a broken plan must never look like research.
++    return { version: VERSION, state: STATES.NOT_CONSULTED, plan: null,
++      note: 'No written plan was consulted on this path.', candidates: null, reason: null,
++      enforced: 0, machine: 0, prose: 0, unknown_fact: 0, refused_now: false,
++      enforced_lines: [], unverifiable_lines: [], unrecognised_lines: [] };
++  }
++  if (loaded.state !== STATES.READY) {
++    return { version: VERSION, state: loaded.state || STATES.UNAVAILABLE, plan: (loaded && loaded.plan) || null,
++      note: (loaded && loaded.note) || null, candidates: (loaded && loaded.candidates) || null,
++      reason: (loaded && loaded.reason) || null,
++      enforced: 0, machine: 0, prose: 0, unknown_fact: 0, refused_now: false, enforced_lines: [], unverifiable_lines: [], unrecognised_lines: [] };
++  }
++  const evals = perDirection || [];
++  return {
++    version: VERSION, state: STATES.READY, plan: loaded.plan, note: loaded.note || null, malformed: !!loaded.malformed,
++    machine: loaded.counts.machine, prose: loaded.counts.prose, unknown_fact: loaded.counts.unknown_fact,
++    enforced: loaded.counts.machine,
++    enforced_lines: loaded.rules.filter((r) => r.kind === 'machine').map((r) => r.text),
++    unverifiable_lines: loaded.rules.filter((r) => r.kind === 'prose').map((r) => r.text),
++    unrecognised_lines: loaded.rules.filter((r) => r.kind === 'unknown_fact').map((r) => ({ text: r.text, reason: r.reason })),
++    refused_now: evals.some((e) => e.refused > 0),
++    unknown_now: evals.some((e) => e.unknown > 0),
++    candidates: evals.map((e) => ({ dir: e.dir, refused: e.refused, unknown: e.unknown, rules: e.results })),
++    limits: {
++      enforced_vocabulary: vocabulary().map((v) => v.line),
++      prose_is_not_parsed: true, market_conditions_field_is_not_parsed: true, exit_rules_are_not_parsed: true,
++      grade_influence: false, score_influence: false, cap_influence: false, price_influence: false,
++      unknown_is_never_met: true, broker_verified: false,
++    },
++  };
++}
++
++/**
++ * Read the trader's plan. Explicit id first (and it must be THEIRS — anything else is a 404, never a
++ * silent fallback to another plan), else their single active plan. Multiple active plans are
++ * `ambiguous` and block nothing: the payload names them and says how to choose, because guessing which
++ * of two plans applies is exactly the kind of silent assumption this gate exists to remove.
++ */
++async function load(userId, strategyId) {
++  if (!userId) return marked(STATES.NOT_CONSULTED, 'Unsized research carries no plan claim, so no written plan is consulted.');
++  const { db } = require('../db');
++  let row = null;
++  if (strategyId !== undefined && strategyId !== null && strategyId !== '') {
++    const id = Number(strategyId);
++    if (!Number.isSafeInteger(id) || id <= 0) throw invalid('strategy_id must be a positive integer.', 400, 'plan_invalid');
++    row = await db.prepare('SELECT * FROM strategies WHERE id=? AND user_id=?').get(id, userId);
++    if (!row) throw invalid('No such plan in your playbook.', 404, 'plan_not_found');
++  } else {
++    const rows = await db.prepare('SELECT * FROM strategies WHERE user_id=? AND active=1 ORDER BY id').all(userId);
++    if (!rows || !rows.length) return marked(STATES.NO_PLAN, 'No active written plan, so no signal is confirmed against one. Publish a plan in the Playbook to gate your entries with it.');
++    if (rows.length > 1) {
++      return { ...marked(STATES.AMBIGUOUS, 'More than one active plan — name the one this signal is confirmed against, or pause the others. Nothing is blocked until then.'),
++        candidates: rows.map((r) => ({ id: r.id, name: r.name })) };
++    }
++    row = rows[0];
++  }
++  const { currentStrategyVersion } = require('../db');
++  let version = null;
++  try { version = await currentStrategyVersion(row.id); } catch (e) { version = null; }
++  const parsed = parse(row);
++  return { version: VERSION, state: STATES.READY, plan: { id: row.id, name: row.name, active: !!row.active, version, source: 'strategies' },
++    counts: parsed.counts, rules: parsed.rules, malformed: parsed.malformed,
++    note: parsed.malformed ? 'Your plan’s rules could not be read as a list of lines, so nothing in it can gate a signal — re-save the plan.'
++      : parsed.counts.machine
++        ? `Checked against ${parsed.counts.machine} machine-checkable requirement${parsed.counts.machine === 1 ? '' : 's'} in your plan.`
++        : 'Your plan has no machine-checkable requirements yet, so nothing in it can gate a signal.' };
++}
++
++/** Never throws: an unreadable plan is `unavailable` (which refuses), so a broken read can never look
++ * like a satisfied plan. Ownership errors still surface — they are the caller's mistake, not a state. */
++async function safe(userId, strategyId) {
++  try { return await load(userId, strategyId); }
++  catch (e) {
++    if (e && e.code === 'plan_not_found') throw e;
++    if (e && e.code === 'plan_invalid') throw e;
++    return unavailable(e && e.message);
++  }
++}
++
++module.exports = { VERSION, STATES, FACTS, GRADE_RANK, vocabulary, invalid, marked, unavailable, read, facts,
++  parseRule, parse, check, evaluate, sentence, view, load, safe };
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index 4dc0651..a5dc8ed 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -338,6 +338,7 @@ function targetPools(analysis, dir, entry, { magnets = true } = {}) {
+  * @returns {{candidates:Array, verdict:object}}
+  */
+ const SMC = require('./smc');   // M38/M40: sessionAffinity
++const PlanGate = require('./plan-gate');   // M56: the written plan as a gate
+ 
+ /** M33 — counter-HTF execution is reduced even with A-grade confirmation.
+  * Reuse the existing counter-CRT policy too: it previously promised half size in
+@@ -498,6 +499,7 @@ function buildSetups(analysis, ctx = {}) {
+   const candidates = [];
+   // M61: `const vetoes = []` lived here and was never read or returned — dead code. Removed.
+ 
++  const planEvals = [];
+   for (const dir of [1, -1]) {
+     const long = dir > 0;
+     const side = long ? 'buy' : 'sell';
+@@ -1023,6 +1025,44 @@ function buildSetups(analysis, ctx = {}) {
+     if (counter && ctx.bias != null && Math.sign(Number(ctx.bias)) !== counter.htf_bias) {
+       vetoes.push('The held daily bias disagrees with this HTF narrative — wait for its defining invalidation, not an MTF override.');
+     }
++    /* M56 — the trader's OWN written plan, as a gate on this candidate. The plan's machine-checkable
++     * `require …` lines are evaluated here, against the SAME facts the vetoes above were built from,
++     * so the plan can only ever refuse something the model already knows. Facts the engine could not
++     * read are `unknown` and refuse nothing (M8/M111's rule) — while a plan line the trader wrote to
++     * gate and the vocabulary does NOT recognise is reported as unrecognised rather than passed, so a
++     * silent green is impossible. The refusal is an ordinary entry in `no_trade`, which is what makes
++     * the verdict, the Now guards, the toolbar and Copy plan obey it without any new plumbing. */
++    let planRules = null;
++    if (ctx.planGate && ctx.planGate.state === 'ready') {
++      const planFacts = PlanGate.facts({
++        sweep: PlanGate.read(hasTrigger, null),
++        market_shift: PlanGate.read(structureKnown ? !!marketShift : undefined, null),
++        zone: PlanGate.read(hasZone, null),
++        // M8 — the short-series sentinel leaves `in_killzone` undefined, and that is an UNKNOWN
++        // window, never "outside": a plan asking for a killzone must not be refused on a blind read.
++        killzone: PlanGate.read(sess.in_killzone === undefined ? undefined : !!sess.in_killzone,
++          sess.killzone ? `${sess.killzone} is open.` : null),
++        session: PlanGate.read(prefOpenBullet ? prefOpenBullet.key : (sess.in_killzone === false ? null : undefined), null),
++        timeframe: PlanGate.read(entryTf, null),
++        trend: PlanGate.read(analysis && analysis.structure ? analysis.structure.trend : undefined, null),
++        phase: PlanGate.read(phaseInfo && phaseInfo.phase !== 'unknown' ? phaseInfo.phase : undefined, null),
++        bias_aligned: PlanGate.read(bias ? (Math.sign(bias) === dir) : undefined, null),
++        no_news_blackout: PlanGate.read(newsUnknown ? undefined : !blackout, blackout ? String(blackout).slice(0, 160) : null),
++        grade: PlanGate.read(g.grade, `Setup grades ${g.grade} at ${score}/100.`),
++        // No computed levels yet is an UNKNOWN reward:risk, not a zero one.
++        min_rr: PlanGate.read(levels && Number.isFinite(Number(floorRR)) ? Number(floorRR) : undefined,
++          levels && Number.isFinite(Number(floorRR)) ? `The first target is ${r2(floorRR)}R${levels.stop ? ` against a ${levels.stop} stop` : ''}.` : null),
++        risk: PlanGate.read(Number.isFinite(Number(ctx.riskPct)) ? Number(ctx.riskPct) : undefined, null),
++      });
++      const verdict = PlanGate.evaluate(ctx.planGate, planFacts, dir);
++      /* The plan's refusal goes to the FRONT of the list, not the end: `no_trade[0]` is what the
++       * action line, the Now headline and the copy button say first, and the one refusal that is the
++       * trader's own written instruction outranks a mechanical veto about the market. (M3 sets the
++       * same precedent when it places the anti-chase line ahead of the zone veto.) */
++      vetoes.unshift(...verdict.vetoes);
++      planRules = { dir, refused: verdict.refused, unknown: verdict.unknown, rules: verdict.results };
++      planEvals.push(verdict);
++    }
+     const tradeable = vetoes.length === 0 && g.grade !== 'no-trade';
+ 
+     // M25's phaseInfo now lives above the loop (M3 gates on it before the vetoes are
+@@ -1129,6 +1169,10 @@ function buildSetups(analysis, ctx = {}) {
+       // the grade. `no_trade` says which one fired, so the refusal is explainable.
+       ok: tradeable,
+       no_trade: vetoes,
++      // M56 — which of the plan's machine-checkable requirements this candidate was measured against,
++      // and how each resolved. `null` when no plan was consulted, so the absence is visible rather
++      // than reported as an empty (and therefore perfect-looking) rule list.
++      plan_rules: planRules,
+       checks,
+       passed: checks.filter((c) => c.pass).length,
+       total_checks: checks.length,
+@@ -1243,6 +1287,12 @@ function buildSetups(analysis, ctx = {}) {
+        * than only as a refusal, so a client can render "your window is 07:00-10:00 Africa/Lagos and
+        * it is 13:41 there" without re-deriving it from the veto string. `not_selected` is its own
+        * token: this app never defaults one. */
++      /* M56 — the written plan as a gate, stated as a filter beside the killzone and the trading
++       * window so a client can render the plan it was checked against, which requirements were
++       * enforceable, and — loudly — the lines the vocabulary could NOT check. A plan is not required
++       * to use the app: `no_plan` blocks nothing. `unavailable` does, because a plan that could not
++       * be read must never look like one that was satisfied. */
++      plan_gate: PlanGate.view(ctx.planGate, planEvals),
+       trading_window: ctx.tradingWindow ? { state: ctx.tradingWindow.state, start: (ctx.tradingWindow.window || {}).start || null,
+         end: (ctx.tradingWindow.window || {}).end || null, timezone: (ctx.tradingWindow.window || {}).timezone || null,
+         source: (ctx.tradingWindow.window || {}).source || null, local_time: (ctx.tradingWindow.window || {}).local_time || null,
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 9bc744b..cd6a508 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -23,6 +23,9 @@ function createBotsRouter({ requireAuth }) {
+     if(err.code==='execution_review_invalid')return res.status(err.status).json({error:err.message,code:err.code});
+     if (err.code?.startsWith('guardrail_')) return res.status(err.status).json({error:err.message,code:err.code,daily:err.daily});
+     if (err.code?.startsWith('state_gate_')) return res.status(err.status).json({error:err.message,code:err.code,state_gate:err.state_gate});
++    /* M56 — the plan gate's own errors (an unowned plan id, a malformed one) carry their status:
++     * a 404 for somebody else's plan is a real answer, not an internal failure. */
++    if (err.code?.startsWith('plan_')) return res.status(err.status || 400).json({ error: err.message, code: err.code });
+     res.status(500).json({ error: err.message || 'Bot error' });
+   });
+   const num = (v, d) => (v === undefined || v === null || v === '' || isNaN(Number(v)) ? d : Number(v));
+@@ -97,6 +100,37 @@ router.get('/markets', requireAuth, (req, res) => {
+     });
+   }));
+ 
++  /* ------------------------------------------------------------- plan gate */
++
++  /**
++   * M56 — the written plan's gate: the vocabulary this app can actually enforce, and how each of the
++   * trader's own rule lines parses. The plan editor reads this so its hint can never drift from the
++   * grammar the engine runs, and the trader can see which of their lines are gating, which are prose
++   * and which the app does not understand (`unrecognised`) — the last of those is the one that must
++   * never look like a satisfied requirement.
++   */
++  router.get('/plan-gate', requireAuth, wrap(async (req, res) => {
++    const PlanGate = require('../bots/plan-gate');
++    const loaded = await PlanGate.safe(req.user.id, req.query.strategy_id || null);
++    res.json({
++      ok: true, version: PlanGate.VERSION, vocabulary: PlanGate.vocabulary(),
++      state: loaded.state, plan: loaded.plan || null, note: loaded.note || null, reason: loaded.reason || null,
++      candidates: loaded.candidates || null,
++      counts: loaded.counts || null,
++      // A stored value that cannot be read as a list of lines is a THIRD state the client must be able
++      // to name: an empty checklist and an unreadable one look identical in `lines`, so the flag rides
++      // beside them and the trader is told to re-save instead of reading a silent pass.
++      malformed: !!loaded.malformed,
++      lines: loaded.state === PlanGate.STATES.READY
++        ? loaded.rules.map((r) => ({ text: r.text, kind: r.kind, fact: r.fact || null, reason: r.reason || null }))
++        : [],
++      limits: {
++        prose_is_not_parsed: true, market_conditions_field_is_not_parsed: true, exit_rules_are_not_parsed: true,
++        unknown_is_never_met: true, grade_influence: false, score_influence: false, broker_verified: false,
++      },
++    });
++  }));
++
+   /* -------------------------------------------------------------- analyse */
+ 
+   router.get('/analyse', requireAuth, wrap(async (req, res) => {
+@@ -111,6 +145,10 @@ router.get('/markets', requireAuth, (req, res) => {
+       step: Math.min(Math.max(num(req.query.step, 2), 1), 6),
+       minRR: await floorOf(req),
+       sessionPref: await prefOf(req),                                  // M26
++      /* M56 — which written plan this analysis is confirmed against. Optional: omitted, the gate
++       * uses the trader's single active plan (and says so); a plan that is not theirs is a 404 from
++       * the gate itself, never a silent fallback to somebody else's rules. */
++      strategyId: req.query.strategy_id || null,
+       force: req.query.force === '1',
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),       // bar replay: drop the last N candles
+       as_of: req.query.as_of || null,                                  // bar replay: read as of this instant
+@@ -137,6 +175,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       accountId: req.query.account_id ? Number(req.query.account_id) : null,
+       minRR: await floorOf(req),
+       sessionPref: await prefOf(req),                                  // M26
++      strategyId: req.query.strategy_id || null,                       // M56
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),
+       as_of: req.query.as_of || null,
+     });
+@@ -176,7 +215,7 @@ router.get('/markets', requireAuth, (req, res) => {
+       .split(',').map((s) => s.trim()).filter(Boolean);
+     if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
+     const tf = String(req.query.tf || '15m');
+-    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req) });  // M26
++    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req), strategyId: req.query.strategy_id || null });  // M26/M56
+     res.json(out);
+   }));
+ 

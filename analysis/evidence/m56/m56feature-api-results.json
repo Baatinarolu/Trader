@@ -1,0 +1,156 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 37,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the plan gate (src/bots/plan-gate.js) (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the app’s own starter playbook is published active (the sample this section measures)",
+      "passed": true
+    },
+    {
+      "label": "with several active plans the gate reports `ambiguous` and names every candidate, and it NEVER picks one silently",
+      "passed": true
+    },
+    {
+      "label": "and the endpoint publishes the vocabulary this app enforces, with a concrete line per fact",
+      "passed": true
+    },
+    {
+      "label": "the limits travel with it, so a client cannot present the gate as a performance or broker claim",
+      "passed": true
+    },
+    {
+      "label": "an analysis run before the trader has decided is served `ambiguous` (with the names) and gates nothing",
+      "passed": true
+    },
+    {
+      "label": "pausing them all returns the analysis to `no_plan`, which blocks nothing — a plan is not required to use the app",
+      "passed": true
+    },
+    {
+      "label": "and the candidates are identical to the ones the ambiguous run produced: an unconsulted gate forbids nothing",
+      "passed": true
+    },
+    {
+      "label": "a published plan is read back with its lines classified: enforced, prose, unrecognised",
+      "passed": true
+    },
+    {
+      "label": "and it carries the M102 version the rules were saved as",
+      "passed": true
+    },
+    {
+      "label": "the analysis confirms against that plan: the payload names it, its version and how many requirements are enforced",
+      "passed": true
+    },
+    {
+      "label": "a requirement the candidate cannot meet REFUSES it, with the refusal as the first reason",
+      "passed": true
+    },
+    {
+      "label": "the candidate carries the rule-by-rule result beside the refusal, so the trader sees which box was not checked",
+      "passed": true
+    },
+    {
+      "label": "and the verdict does not arm the side the plan refused",
+      "passed": true
+    },
+    {
+      "label": "with exactly one active plan the gate uses it without being asked (and says which one)",
+      "passed": true
+    },
+    {
+      "label": "a requirement the candidate meets leaves it tradeable and does not touch its grade or score",
+      "passed": true
+    },
+    {
+      "label": "two plans really are active before the ambiguity is measured (the state being tested, not an assumption)",
+      "passed": true
+    },
+    {
+      "label": "two active plans are reported as `ambiguous` WITH both names, and NOTHING is gated on a guess",
+      "passed": true
+    },
+    {
+      "label": "naming one resolves it, so the ambiguity is a one-click fix rather than a dead end",
+      "passed": true
+    },
+    {
+      "label": "pausing every plan returns the gate to `no_plan` — a paused plan is not silently applied",
+      "passed": true
+    },
+    {
+      "label": "while naming a paused plan still works, because that is the trader asking for it by name",
+      "passed": true
+    },
+    {
+      "label": "another trader’s plan id is a 404 on the gate reader — never a fallback to their own plan",
+      "passed": true
+    },
+    {
+      "label": "and the same id on the analyse route is refused too, so a signal cannot be confirmed against a plan the caller does not own",
+      "passed": true
+    },
+    {
+      "label": "a malformed id is a 400 with the gate’s own code, not an internal error",
+      "passed": true
+    },
+    {
+      "label": "and a fractional or negative id is refused the same way",
+      "passed": true
+    },
+    {
+      "label": "the chart endpoint confirms against the SAME plan the analysis did (M124’s rule: not a second opinion)",
+      "passed": true
+    },
+    {
+      "label": "a scan row carries the plan it was confirmed against and whether the plan took that setup away",
+      "passed": true
+    },
+    {
+      "label": "a plan written in prose has ZERO enforced requirements, and says so rather than looking satisfied",
+      "passed": true
+    },
+    {
+      "label": "and the prose plan refuses nothing: free text is never interpreted, in either direction",
+      "passed": true
+    },
+    {
+      "label": "the free-text `market_conditions` field is reported as NOT parsed — \"ranging only\" cannot silently become a rule",
+      "passed": true
+    },
+    {
+      "label": "rules stored double-encoded (a client echoing the stored string back at a route that stringifies its input) are reported as malformed, not shown as a satisfied plan",
+      "passed": true
+    },
+    {
+      "label": "and that plan refuses nothing while it cannot be read — the trader sees the reason to re-save instead of a silently empty checklist",
+      "passed": true
+    },
+    {
+      "label": "the app’s own starter rows are a list of lines, so the sample this probe measures is not itself the malformed case",
+      "passed": true
+    },
+    {
+      "label": "editing the rules changes what the gate enforces, and the M102 version moves with it",
+      "passed": true
+    },
+    {
+      "label": "analysing with a plan writes exactly what analysing without one writes — the gate adds no row of its own",
+      "passed": true
+    },
+    {
+      "label": "and reading the plan never rewrites it: `strategies` and its M102 history are byte-identical across the gate read",
+      "passed": true
+    },
+    {
+      "label": "the milestone adds NO table, index or trigger of its own — the plan lives in `strategies` exactly as before",
+      "passed": true
+    }
+  ],
+  "scope": "M56 api: the written plan over the real routes, its ownership and its read-only proof: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

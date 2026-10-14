@@ -1,0 +1,190 @@
+diff --git a/docs/API.md b/docs/API.md
+index 4af3b0e..3fdee5b 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -248,11 +248,12 @@ the methodology, the weights and the honest limitations.
+ | Method | Path | Query / body | Returns |
+ |---|---|---|---|
+ | GET | `/bots/markets` | — | instruments (63), timeframes, killzone state, providers |
++| GET | `/bots/plan-gate` | `strategy_id` (optional — your own; defaults to your single ACTIVE plan) | `{ ok, version, vocabulary[], state, plan, note, reason, candidates, counts, lines, limits }` — `state` is `ready`, `no_plan`, `ambiguous` (>1 active plan, all named), `unavailable` or `not_consulted`; each `lines[]` entry is classified `machine`, `prose` or `unknown_fact`; `limits` states prose is not parsed, an unknown value never counts as met and no grade/score/cap/price is influenced |
+ | GET | `/bots/candles` | `symbol`, `tf` (1m…1w), `limit` (50–1500), `force=1` | `{ candles:[{t,o,h,l,c,v}], meta:{provider,ticker,last_price,last_bar,cached,warnings} }` |
+-| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1` | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
++| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1`, `strategy_id` | | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
+ | GET | `/bots/topdown` | `symbol`, `tf`, `bars` | the video's method on its own: `{ method, layers, steps, checks, score, grade, status, direction, headline, playbook, blocked, conflicts[], crt_plan, levels, verdict }` |
+-| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
+-| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf` | `{ rows:[…ranked], errors:[…], actionable, killzone }` |
++| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id`, `strategy_id` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
++| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf`, `strategy_id` | `{ rows:[…ranked], errors:[…], actionable, killzone }` — every row carries the plan gate it was confirmed against (`plan_gate`) and whether that plan took the setup away (`plan_refused`) |
+ | GET | `/bots/predict` | `symbol`, `tf`, `bars`, `step`, `horizon` | `{ direction, setups, buy, sell, model, backtest, summary }` — `backtest` carries the measured tables below |
+ | GET | `/bots/backtest` | `symbol`, `tf`, `bars` (300–3000), `step` (1–6), `samples`, `entry`, `cost`, `force=1` | backtest detail + `trades[]` table + the measured blocks below |
+ | GET | `/bots/correction` | `days`, `account_id`, `backfill=1` | `{ overall, behavior_score, mistakes[], guardrails, daily, grades[] }` |
+diff --git a/docs/NOT-IMPLEMENTED.md b/docs/NOT-IMPLEMENTED.md
+index 3bc01ac..d99e747 100644
+--- a/docs/NOT-IMPLEMENTED.md
++++ b/docs/NOT-IMPLEMENTED.md
+@@ -88,6 +88,7 @@ kind of reason: a deploy should not silently lose a file.
+ |---|---|---|
+ | **MTF entry execution** (new) | Live LTF fetch, confirmation status (`live`/`recent`/`waiting`/`rejected`), refined plan with targets re-ruled from the confirmation, one-click save to signals, grading on resolution. Measured 2026-10-06 11:58 UTC: highest win rate of any entry rule (47.4 % pooled vs 35.1 % base, 1 902 / 1 696 fills) but −0.268R of expectancy against the base rule on the same 1 503 setups, and the 321 setups it refused averaged +0.157R under the base rule — so the entry is executable, and the evidence says it is not the better trade | The confirmation itself is now watched by the scheduler (cron + notifications shipped) and a saved refined plan is graded on resolve; what is *not* solved is that a 50 %-at-T1 plan is graded as one blended number (scale-*in* is still missing, §3 journal row) |
+ | **TradingView** | Charts in Market/Bots, webhook alerts with token rotation, alert history, bot verdict per alert, "save refined plan" from an alert | No position/order sync; an incoming alert is stored + analysed but does **not** create a journal trade automatically |
++| **The written plan as a gate** (new) | The plan's `require` lines are evaluated against facts the analysis already computed (sweep, market shift, zone, killzone, session, timeframe, trend, phase, bias alignment, news blackout, grade, risk:reward, account risk %) and a line that fails REFUSES the candidate through the ordinary no-trade path, with your own rule text and the measured detail first in the reason; the plan and its M102 version travel with the refusal, every scan row carries the same verdict, and reading the plan writes nothing. `GET /api/bots/plan-gate` publishes the enforced vocabulary, the per-line classification and the limits | **Prose is never parsed.** A plan written as sentences gates nothing and the app says so rather than guessing polarity ("no news trading" and "trade the news" share every word). `exit_rules`, `checklist` and `market_conditions` are stored and displayed, not enforced. The vocabulary is closed: a `require` line outside it is reported as unrecognised. And the gate refuses SIGNALS — it does not grade a trade you already logged against the rules you were shown (§5 item 5) |
+ | **Playlist coverage** | 40 episodes mapped: **27 ✔ fully implemented, 6 ◐ partial** ([PLAYLIST-CURRICULUM.md](PLAYLIST-CURRICULUM.md)) | The 6 partials are listed at the bottom of that document |
+ | **Prediction model** | Logistic regression trained in-process, calibrated buckets, `out_of_sample` block, measured gates (`stop_ge_06atr`, `runway3`) on every live setup | Per-market training sets are 60–250 resolved setups; no gradient boosting or alternative model families |
+ | **Tracked signals** | Save → resolve → self-grade with win rate/expectancy by grade, including refined MTF plans | Resolution is still triggered by a request: the daily `/api/cron/tick` resolves what it can, but there is no push, so a signal can sit unresolved until someone opens the app |
+@@ -155,7 +156,7 @@ Everything register #5 asked for now exists in the tree, so this list is what is
+    ~~cron~~ — **shipped** this tick (see the table at the top for each verification line and each caveat).
+ 5. ~~Correctional-bot adherence grading~~ — the bot has graded trades automatically since the first
+    version (`autograde()` → score/grade/reasons, exposed at `GET /api/bots/correction`, `POST
+-   /api/bots/correction/backfill`, per-trade at `GET /api/bots/feedback/:tradeId`). **What is still missing:** a *plan-vs-execution* grade — whether the trade you actually logged obeyed the gates of the plan the app showed you (same direction, stop where the plan put it, target ≥ 3R, no re-entry after the failure). `POST /api/bots/signals/resolve` already grades the plan itself against real candles (seen live: signal 68 resolved to `no_fill` via the scheduler), but that needs the scale-in path in §3 before a scaled entry can be compared to a one-shot plan.
++   /api/bots/correction/backfill`, per-trade at `GET /api/bots/feedback/:tradeId`). **What is still missing:** a *plan-vs-execution* grade — whether the trade you actually logged obeyed the gates of the plan the app showed you (same direction, stop where the plan put it, target ≥ 3R, no re-entry after the failure). Since M56 the plan's own `require` lines DO gate the signals the bots produce (`GET /api/bots/plan-gate`), so what remains ungraded is a trade you logged by hand. `POST /api/bots/signals/resolve` already grades the plan itself against real candles (seen live: signal 68 resolved to `no_fill` via the scheduler), but that needs the scale-in path in §3 before a scaled entry can be compared to a one-shot plan.
+ 6. **Replay the top-down method as a strategy** — the one measurement this app still owes. `tests` cover
+    the method structurally and every live read is honest, but "confirmed CRT ranges, entered at the
+    confirmation / on the retest, stop beyond the sweep, target the opposite edge" has never been replayed
+diff --git a/docs/PLAYLIST-CURRICULUM.md b/docs/PLAYLIST-CURRICULUM.md
+index 26a50c0..b193520 100644
+--- a/docs/PLAYLIST-CURRICULUM.md
++++ b/docs/PLAYLIST-CURRICULUM.md
+@@ -66,7 +66,7 @@ judgement/habit lesson with no code surface (the app supports it through journal
+ | 13 | Liquidity & inducement | Stops before the real move | `smc.js` → pools + `inducement` detector ✔ |
+ | 14 | Flip zones / breakers | Failed zones reverse role | `smc.js` → `findBreakers()` ✔ |
+ | 15 | Daily bias | The day's direction | Bots → Top-down method panel: `layers.bias` (daily/weekly read, CRT state, right candle, range) + headline ✔ |
+-| 16 | Trading plan | Written rules | Playbook view + guardrails from `correction.js` ✔ |
++| 16 | Trading plan | Written rules | Playbook view + guardrails from `correction.js` ✔ — and since M56 the written rules are a **gate**, not a note: `src/bots/plan-gate.js` reads the plan's `require` lines as an all-or-nothing checklist against facts the analysis has already computed, and a line that fails refuses the candidate through the ordinary no-trade path with your own rule text, and the measured detail, first in the reason. The limits are named in the editor itself: only the listed machine-checkable lines are enforced, everything else (prose, `exit_rules`, `checklist`, `market_conditions`) is context that is never interpreted, and a `require` line the app does not recognise is reported loudly rather than passing as checked. |
+ | 17 | Full SMC plan + routine | Daily routine | Journal + the clean-rep count of episode 32 (see row 32) ◐ |
+ | 18 | **Entry models (sniper)** | Sweep → displacement → zone → retest | `setup.js` → `buildSetups()` ✔ (the core of the app), now **gated by the method**: aggressive (at confirmation) and safer (pullback to the mid / fresh FVG) entries from `topdown.js`, with conviction tiers A/B/watch |
+ | 19 | When NOT to trade | Standing down is a skill | Score caps + vetoes + **NO TRADE** verdicts ✔ · the *now* strip states the stand-down and what would change it, with the clock (`now.js`) ✔ |
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index a112c8e..80acc4f 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -196,6 +196,43 @@
+       : sp.blocked_now ? `Outside your window (${sp.label}) — ${sp.open_now || 'no killzone open now'}; signals are refused.`
+       : `Restricted to ${sp.label}${sp.phase ? ` · phase ${sp.phase}` : ''}${sp.phase_note ? ` — ${sp.phase_note}` : ''}`)
+       + (twNote ? (sp ? ' · ' : '') + twNote : '') });
++    /* M56 — the written plan this analysis was confirmed against, beside the window note and for the
++     * same reason: a gate the trader cannot see is indistinguishable from no gate. `no_plan` says so
++     * out loud rather than rendering as an empty (and therefore perfect-looking) rule list, and the
++     * lines the vocabulary could NOT check are named here — a `require` line the engine did not
++     * understand must never look like a requirement that was satisfied. */
++    const pg = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.plan_gate) || null;
++    const pgUnknown = pg ? (pg.unrecognised_lines || []).map((u) => u.text) : [];
++    const pgProse = pg ? (pg.unverifiable_lines || []).length : 0;
++    const planNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:520px', dataset: { planGate: 'true' },
++      text: !pg ? ''
++      : pg.state === 'not_consulted' ? ''
++      : pg.state === 'no_plan' ? 'No active plan — nothing is gated on one. Publish a plan in the Playbook and its `require` lines will gate these signals.'
++      : pg.state === 'ambiguous' ? `More than one active plan (${(pg.candidates || []).map((c) => c.name).join(', ')}) — name one with ?strategy_id= or pause the others; nothing is gated until then.`
++      : pg.state === 'unavailable' ? `Your plan could not be read — every signal is refused until it can be. ${pg.reason || ''}`
++      : `Plan ${esc((pg.plan || {}).name || '')}${pg.plan && pg.plan.version ? ' v' + pg.plan.version : ''}: ${pg.enforced} requirement${pg.enforced === 1 ? '' : 's'} enforced`
++        + (pg.refused_now ? ' — one of them refuses a candidate below' : '')
++        + (pg.unknown_now ? ' · some facts could not be read and refused nothing' : '')
++        + (pgProse ? ` · ${pgProse} line${pgProse === 1 ? '' : 's'} not machine-checkable (never enforced)` : '')
++        + (pgUnknown.length ? ` · NOT CHECKED: ${pgUnknown.join(' · ')}` : '')
++        // M56 — a plan whose rules could not be READ must never render as an empty list of satisfied
++        // requirements: at zero enforced rules the plan's own note ("re-save the plan", "no
++        // machine-checkable requirements yet") is the sentence that says what to do about it.
++        + (pg.enforced ? '' : (pg.note ? ` · ${pg.note}` : '')) });
++    /* M56 — which written plan this analysis is confirmed against. The selector matters because
++     * WHICH plan applies is the trader's decision and this app never guesses between two: with no
++     * selection the gate uses their single active plan, and when several are active it says so here
++     * and gates nothing until one is chosen. The choice rides `strategy_id` on the request, so the
++     * refusal and the plan it came from travel together. */
++    const plans = ((global.Store && global.Store.strategies) || []).filter((x) => x.active);
++    const planSel = h('select', { class: 'input', style: 'max-width:190px', dataset: { planSelect: 'true' },
++      title: 'Confirm these signals against one of your written plans. Its `require` lines are enforced.' });
++    planSel.appendChild(h('option', { value: '', text: plans.length ? 'Plan: my active plan' : 'Plan: none published' }));
++    plans.forEach((x) => planSel.appendChild(h('option', { value: String(x.id), text: x.name, selected: String(x.id) === String(B.strategyId || '') ? 'selected' : null })));
++    planSel.addEventListener('change', () => {
++      B.strategyId = planSel.value || '';
++      if (runBtn && runBtn.click) runBtn.click(); else onChange();
++    });
+     const predChk = h('label', { class: 'row gap-4 muted', style: 'align-items:center' });
+     const predBox = h('input', { type: 'checkbox', checked: B.prediction ? 'checked' : null });
+     predChk.appendChild(predBox); predChk.appendChild(document.createTextNode('prediction'));
+@@ -279,9 +316,10 @@
+       if (!copyCandidate) return global.App.toast(B.data ? 'No actionable plan — the bot says stand down' : 'Analyse a market first', 'warn');
+       copyPlan(copyCandidate);
+     });
+-    [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
++    [symInput, tfSel, winSel, planSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
+     if (marketCopy && global.TV) row.appendChild(h('button',{class:'btn sm guardrail-stop',text:'Override & copy plan',onclick:()=>copyPlan(marketCopy)}));
+     row.appendChild(winNote);
++    row.appendChild(planNote);
+     /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
+      * button will be blocked ... grayed out ... You physically can't press the trade
+      * button." The nearest thing here is the control that hands you an order to place, so
+@@ -729,6 +767,21 @@
+         const f = c.levels.rr_floor;
+         card.appendChild(h('div', { class: 'muted-2', text: `First-target RR floor: ${Number(f.rr).toFixed(4)}R / ${f.min_rr}R — ${f.passed ? 'met' : 'refused'}. Farther displayed targets cannot qualify the trade.` }));
+       }
++      /* M56 — the plan's own requirements for THIS candidate, each with its resolved state. The
++       * refusal already rides `action`/`no_trade` above (and therefore the verdict, Now, Copy plan and
++       * the save button), so this block is the explanation, not a second decision. */
++      if (c.plan_rules && c.plan_rules.rules && c.plan_rules.rules.length) {
++        const pr = h('div', { class: 'bot-checks', dataset: { planRules: 'true' } });
++        pr.appendChild(h('div', { class: 'muted-2', text: `Your plan's requirements for this side (${c.plan_rules.refused} refused · ${c.plan_rules.unknown} unreadable)` }));
++        c.plan_rules.rules.forEach((r) => {
++          const row2 = h('div', { class: 'bot-check ' + (r.state === 'met' ? 'ok' : r.state === 'refused' ? 'no' : 'no'), dataset: { planRule: r.fact, planState: r.state } });
++          row2.appendChild(h('span', { class: 'mark ' + (r.state === 'met' ? 'ok' : 'no'), text: r.state === 'met' ? 'ok' : r.state === 'refused' ? 'no' : '?' }));
++          row2.appendChild(h('span', { class: 'lbl', text: r.text + (r.state === 'unknown' ? ' — could not be read, so it refused nothing' : '') }));
++          if (r.detail) row2.appendChild(h('span', { class: 'muted-2 det', text: r.detail }));
++          pr.appendChild(row2);
++        });
++        card.appendChild(pr);
++      }
+       card.appendChild(h('div', { class: 'bot-action', text: c.action }));
+       const btnRow = h('div', { class: 'row gap-8' });
+       const marketEligible = (c.market_ok ?? c.ok)===true && !d.topdown?.blocked;
+@@ -1312,8 +1365,10 @@
+         const trim = B.trim || 0;
+         Promise.all([
+           API.get('/bots/analyse', { symbol: sym, tf, account_id:Store.accountId || null, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
++            ...(B.strategyId ? { strategy_id: B.strategyId } : {}),                          // M56
+             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }),                     // M26
+           API.get('/bots/chart', { symbol: sym, tf, account_id:Store.accountId || null, bars: 600, min_rr: B.minRR, trim,
++            ...(B.strategyId ? { strategy_id: B.strategyId } : {}),                          // M56
+             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }).catch(() => null),    // M26
+           API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
+         ]).then(([d, ch, dr]) => {
+diff --git a/public/js/views/playbook.js b/public/js/views/playbook.js
+index 471c8c8..fbd6500 100644
+--- a/public/js/views/playbook.js
++++ b/public/js/views/playbook.js
+@@ -2,6 +2,19 @@
+ (function (global) {
+   'use strict';
+   const Views = global.Views = global.Views || {};let renderEpoch=0;
++  /* M56 — the plan gate's vocabulary, fetched from the server so the editor's hint can never drift
++   * from the grammar the engine actually enforces (a hard-coded copy here would be a second source of
++   * truth, and the first time the two disagreed the trader would write rules that silently do nothing). */
++  function loadPlanVocabulary() {
++    if (global.PLAN_GATE_VOCABULARY) return Promise.resolve(global.PLAN_GATE_VOCABULARY);
++    if (global.PLAN_GATE_VOCABULARY_ASKED) return global.PLAN_GATE_VOCABULARY_ASKED;
++    const asked = global.API.get('/bots/plan-gate').then((r) => {
++      global.PLAN_GATE_VOCABULARY = (r && r.vocabulary) || [];
++      return global.PLAN_GATE_VOCABULARY;
++    }).catch(() => []);
++    global.PLAN_GATE_VOCABULARY_ASKED = asked;
++    return asked;
++  }
+ 
+   Views.playbook = {
+     title: 'Playbook',
+@@ -70,6 +83,10 @@
+   };
+ 
+   async function strategyDialog(s, root) {
++    // M56 — the enforced-rule hint under the Entry rules field needs the engine's own vocabulary, and it
++    // has to be THERE when the editor opens: a hint reading "loading…" is the same as no hint for the
++    // one edit it exists to inform. The read is cached, so only the first dialog waits for it.
++    await loadPlanVocabulary();
+     const R=Views.ruleChanges,context=R?.ctx(),number=R?.nextSerial();let discipline;
+     if(s&&R){try{discipline=await API.get('/strategies/'+s.id+'/change-discipline');if(!R.same(context)||!R.current(number))return;s=discipline.strategy;}catch(e){if(R.same(context)&&R.current(number))global.App.toast(e.message,'err');return;}}
+     let alive=true,stale=false;
+@@ -84,6 +101,7 @@
+       <label class="field"><span>Target R multiple</span><input id="s-target" type="number" step="0.1" value="${v.target_r_multiple}" /></label>
+       <label class="field"><span>Colour</span><input id="s-colour" type="color" value="${v.colour}" style="height:38px" /></label>
+       <label class="field span2"><span>Entry rules (one per line)</span><textarea id="s-entry" placeholder="One rule per line">${U.esc((v.entry_rules || []).join('\n'))}</textarea></label>
++      <div class="muted-2 small span2" data-plan-vocabulary="true">Lines beginning <b>require&nbsp;</b> are ENFORCED by the bots — a candidate that breaks one is refused, and nothing else in the app can overrule it. Everything else is context for you and is never interpreted.<br>Checkable so far (the app’s own list — hover a rule for its allowed values): ${(global.PLAN_GATE_VOCABULARY || []).map((x) => `<code title="${U.esc(x.label + (x.values ? ' — one of: ' + x.values.join(', ') : ''))}">${U.esc(x.line)}</code>`).join(' · ') || '<span class="muted">the app could not read its own rule list — reload the page before trusting a rule.</span>'}<br>A <code>require</code> line the app does not recognise is reported loudly on the bots page and in the payload rather than passing as though it were checked.</div>
+       <label class="field span2"><span>Exit rules (one per line)</span><textarea id="s-exit">${U.esc((v.exit_rules || []).join('\n'))}</textarea></label>
+       <label class="field span2"><span>Pre-trade checklist (one per line)</span><textarea id="s-check">${U.esc((v.checklist || []).join('\n'))}</textarea></label>
+       <label class="field span2"><span>Risk rules</span><textarea id="s-risk" placeholder="Max risk, max trades, cooldowns…">${U.esc(v.risk_rules)}</textarea></label>

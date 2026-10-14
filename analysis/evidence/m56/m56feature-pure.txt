@@ -1,0 +1,44 @@
+ok this tree ships the plan gate (src/bots/plan-gate.js) (the committed parent does not, and that absence is this probe's control)
+ok the vocabulary is a closed list of named facts, each with a documented line
+ok every documented line parses as a MACHINE rule — the documentation cannot drift from the engine
+ok and each fact appears exactly once
+ok the compare facts document their own operator, so a trader never has to guess the direction
+ok a fact with a closed value set publishes that set, so a client can render the choices
+ok a line that does not start with `require` is prose — context for the human, never a rule for the engine
+ok a `require` line naming a fact the vocabulary does not know is reported as unrecognised, NOT passed as satisfied
+ok an empty line is prose rather than an empty rule
+ok a floor cannot be written as a ceiling: `require min_rr <= 2` is unrecognised, not a rule
+ok and a ceiling cannot be written as a floor: `require risk >= 1` is unrecognised
+ok a boolean fact takes no operator or value
+ok an enum fact must be one of its own values (a misspelling is not a silent pass)
+ok a compare fact must have a positive number
+ok `min_rr >= 2` is met at the boundary (2.0R) and refused just below it
+ok `risk <= 1` is met at the boundary (1%) and refused above it
+ok the grade ladder is ordered A+ > A > B > C > D, so `>= B` is met by A+ and refused by C
+ok a stood-down setup cannot satisfy a plan that asked for a tradeable grade
+ok an enum comparison is case-insensitive on both sides
+ok a boolean fact is refused only when it is known false
+ok a fact the caller did not hand over is UNKNOWN — never `met`
+ok and every read that could not be made is unknown: undefined, null and NaN alike
+ok every documented line is a machine rule, so the sweep below covers the whole vocabulary
+ok with nothing readable, every rule is unknown and NOT ONE veto is fabricated
+ok and an unknown rule carries no sentence either (a refusal must always be a measured false)
+ok a refusal names the trader’s own plan, its version and its own rule text
+ok it states the fact that failed, and quotes the episode’s own non-negotiable
+ok and it is exactly one sentence per refused rule, in the plan’s own order
+ok a path with no trader is `not_consulted`, which is a different token from a plan that failed to read
+ok no plan is `no_plan` and blocks nothing, with the reason in the note
+ok two active plans are reported as ambiguous WITH both names, never silently intersected or picked
+ok an unreadable plan is `unavailable` and carries the reason, so a broken read can never look like compliance
+ok a ready plan reports what is enforced, what is prose and what is unrecognised — as three separate lists
+ok the per-direction results ride the view, so a client can explain which side a rule refused
+ok the limits name the vocabulary and deny every influence a gate could be mistaken for
+ok nothing in the gate is money-shaped: no amount, P&L, equity or goal key anywhere in the payload
+ok a plan whose rules were never written parses to zero rules, not to an error
+ok a stored value that is not an array (or not JSON at all) also yields zero rules — the gate can never crash a signal
+ok and it is reported as MALFORMED rather than as a plan with nothing to enforce
+ok an array of strings is parsed in order, and blank entries are dropped rather than counted
+ok and the counts a client renders are the parse’s own counts
+ok the gate exposes no way to change a grade, a score, a cap or a price: the module exports no such setter
+ok and it names that limit itself, so the refusal can never be quoted as a performance claim
+M56 pure: the plan gate’s vocabulary, parse and evaluation: 43 passed, 0 failed

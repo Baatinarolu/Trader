@@ -1,0 +1,108 @@
+{
+  "app": "/home/user/Trader/extracted/tradejournal",
+  "pass": 25,
+  "fail": 0,
+  "results": [
+    {
+      "label": "this tree ships the plan gate (src/bots/plan-gate.js) (the committed parent does not, and that absence is this probe's control)",
+      "passed": true
+    },
+    {
+      "label": "the probe renders the states the server really sends: a refused candidate, an ambiguous choice, an auto-selected plan, no plan, and an unreadable stored value",
+      "passed": true
+    },
+    {
+      "label": "and the refusal the screen has to attribute is a real one: the plan sentence is the FIRST reason on the candidate",
+      "passed": true
+    },
+    {
+      "label": "the toolbar carries the choice of plan, with `my active plan` as the default rather than a silent pick",
+      "passed": true
+    },
+    {
+      "label": "and it offers exactly the trader’s ACTIVE plans by name — a paused plan is not a choice the screen makes for them",
+      "passed": true
+    },
+    {
+      "label": "choosing one re-runs the analysis WITH that plan on the request, so what the screen shows and what the engine checked cannot drift apart",
+      "passed": true
+    },
+    {
+      "label": "and the request the view then makes names it (`strategy_id`), rather than re-reading a plan it assumed",
+      "passed": true
+    },
+    {
+      "label": "a running plan is named with the version its rules were saved as, and how many requirements are enforced",
+      "passed": true
+    },
+    {
+      "label": "the screen says a candidate below is refused BY the plan, rather than leaving the trader to guess why nothing is tradeable",
+      "passed": true
+    },
+    {
+      "label": "the line that is not machine-checkable is reported as never enforced, and the `require` line the app does not recognise is printed as NOT CHECKED — neither can pass for a checked box",
+      "passed": true
+    },
+    {
+      "label": "the per-candidate block shows the trader’s own rule text beside its resolved state, with the measured detail that makes the refusal checkable",
+      "passed": true
+    },
+    {
+      "label": "a plan refusal is attributed on the card even when the trader’s own guardrail owns the action line: both reasons are visible, and the plan is not swallowed by the guardrail message",
+      "passed": true
+    },
+    {
+      "label": "a requirement whose fact could not be read is rendered as unreadable and says it refused nothing — it never appears as a satisfied box",
+      "passed": true
+    },
+    {
+      "label": "the plan block adds no control of its own: the gate is explanation, not a second decision surface with its own button",
+      "passed": true
+    },
+    {
+      "label": "with no active plan the screen says so out loud, tells the trader where a plan is published, and claims nothing was gated",
+      "passed": true
+    },
+    {
+      "label": "two active plans are named on screen with the way out, and the screen does not pick one for the trader",
+      "passed": true
+    },
+    {
+      "label": "with one active plan the screen names the plan it used, so the default is visible rather than silent",
+      "passed": true
+    },
+    {
+      "label": "a stored plan whose rules cannot be read is shown as a plan that needs re-saving — it does NOT render as an empty list of satisfied requirements",
+      "passed": true
+    },
+    {
+      "label": "an unreadable plan refuses every signal on screen and says every signal is refused until it can be read — a broken read is never shown as a clean, plan-less chart",
+      "passed": true
+    },
+    {
+      "label": "and a research path that consults no plan says nothing at all, because a research payload is not a claim about a trader’s plan",
+      "passed": true
+    },
+    {
+      "label": "the editor’s hint is populated on the FIRST open — it does not sit on `loading…` while the trader types the rules it is meant to inform",
+      "passed": true
+    },
+    {
+      "label": "and it lists the engine’s own vocabulary, line for line, from the server — there is no second copy in the browser to drift out of date",
+      "passed": true
+    },
+    {
+      "label": "an enumerated fact carries its allowed values on hover, so a trader can write a line the engine will accept rather than guessing",
+      "passed": true
+    },
+    {
+      "label": "and the hint states the deal: `require` lines are enforced and cannot be overruled, everything else is context that is never interpreted",
+      "passed": true
+    },
+    {
+      "label": "and the body it sends is an array (one entry per line), which is what the route stores and what the gate parses back — the editor and the gate cannot disagree about the shape",
+      "passed": true
+    }
+  ],
+  "scope": "M56 real DOM: the plan, its refusals and the vocabulary a trader edits against: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

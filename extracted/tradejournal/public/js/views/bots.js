@@ -196,6 +196,43 @@
       : sp.blocked_now ? `Outside your window (${sp.label}) — ${sp.open_now || 'no killzone open now'}; signals are refused.`
       : `Restricted to ${sp.label}${sp.phase ? ` · phase ${sp.phase}` : ''}${sp.phase_note ? ` — ${sp.phase_note}` : ''}`)
       + (twNote ? (sp ? ' · ' : '') + twNote : '') });
+    /* M56 — the written plan this analysis was confirmed against, beside the window note and for the
+     * same reason: a gate the trader cannot see is indistinguishable from no gate. `no_plan` says so
+     * out loud rather than rendering as an empty (and therefore perfect-looking) rule list, and the
+     * lines the vocabulary could NOT check are named here — a `require` line the engine did not
+     * understand must never look like a requirement that was satisfied. */
+    const pg = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.plan_gate) || null;
+    const pgUnknown = pg ? (pg.unrecognised_lines || []).map((u) => u.text) : [];
+    const pgProse = pg ? (pg.unverifiable_lines || []).length : 0;
+    const planNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:520px', dataset: { planGate: 'true' },
+      text: !pg ? ''
+      : pg.state === 'not_consulted' ? ''
+      : pg.state === 'no_plan' ? 'No active plan — nothing is gated on one. Publish a plan in the Playbook and its `require` lines will gate these signals.'
+      : pg.state === 'ambiguous' ? `More than one active plan (${(pg.candidates || []).map((c) => c.name).join(', ')}) — name one with ?strategy_id= or pause the others; nothing is gated until then.`
+      : pg.state === 'unavailable' ? `Your plan could not be read — every signal is refused until it can be. ${pg.reason || ''}`
+      : `Plan ${esc((pg.plan || {}).name || '')}${pg.plan && pg.plan.version ? ' v' + pg.plan.version : ''}: ${pg.enforced} requirement${pg.enforced === 1 ? '' : 's'} enforced`
+        + (pg.refused_now ? ' — one of them refuses a candidate below' : '')
+        + (pg.unknown_now ? ' · some facts could not be read and refused nothing' : '')
+        + (pgProse ? ` · ${pgProse} line${pgProse === 1 ? '' : 's'} not machine-checkable (never enforced)` : '')
+        + (pgUnknown.length ? ` · NOT CHECKED: ${pgUnknown.join(' · ')}` : '')
+        // M56 — a plan whose rules could not be READ must never render as an empty list of satisfied
+        // requirements: at zero enforced rules the plan's own note ("re-save the plan", "no
+        // machine-checkable requirements yet") is the sentence that says what to do about it.
+        + (pg.enforced ? '' : (pg.note ? ` · ${pg.note}` : '')) });
+    /* M56 — which written plan this analysis is confirmed against. The selector matters because
+     * WHICH plan applies is the trader's decision and this app never guesses between two: with no
+     * selection the gate uses their single active plan, and when several are active it says so here
+     * and gates nothing until one is chosen. The choice rides `strategy_id` on the request, so the
+     * refusal and the plan it came from travel together. */
+    const plans = ((global.Store && global.Store.strategies) || []).filter((x) => x.active);
+    const planSel = h('select', { class: 'input', style: 'max-width:190px', dataset: { planSelect: 'true' },
+      title: 'Confirm these signals against one of your written plans. Its `require` lines are enforced.' });
+    planSel.appendChild(h('option', { value: '', text: plans.length ? 'Plan: my active plan' : 'Plan: none published' }));
+    plans.forEach((x) => planSel.appendChild(h('option', { value: String(x.id), text: x.name, selected: String(x.id) === String(B.strategyId || '') ? 'selected' : null })));
+    planSel.addEventListener('change', () => {
+      B.strategyId = planSel.value || '';
+      if (runBtn && runBtn.click) runBtn.click(); else onChange();
+    });
     const predChk = h('label', { class: 'row gap-4 muted', style: 'align-items:center' });
     const predBox = h('input', { type: 'checkbox', checked: B.prediction ? 'checked' : null });
     predChk.appendChild(predBox); predChk.appendChild(document.createTextNode('prediction'));
@@ -279,9 +316,10 @@
       if (!copyCandidate) return global.App.toast(B.data ? 'No actionable plan — the bot says stand down' : 'Analyse a market first', 'warn');
       copyPlan(copyCandidate);
     });
-    [symInput, tfSel, winSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
+    [symInput, tfSel, winSel, planSel, predChk, runBtn, saveBtn, resolveBtn, tvBtn, tvInApp, levelsBtn].forEach((n) => row.appendChild(n));
     if (marketCopy && global.TV) row.appendChild(h('button',{class:'btn sm guardrail-stop',text:'Override & copy plan',onclick:()=>copyPlan(marketCopy)}));
     row.appendChild(winNote);
+    row.appendChild(planNote);
     /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
      * button will be blocked ... grayed out ... You physically can't press the trade
      * button." The nearest thing here is the control that hands you an order to place, so
@@ -728,6 +766,21 @@
       if (c.levels && c.levels.rr_floor) {
         const f = c.levels.rr_floor;
         card.appendChild(h('div', { class: 'muted-2', text: `First-target RR floor: ${Number(f.rr).toFixed(4)}R / ${f.min_rr}R — ${f.passed ? 'met' : 'refused'}. Farther displayed targets cannot qualify the trade.` }));
+      }
+      /* M56 — the plan's own requirements for THIS candidate, each with its resolved state. The
+       * refusal already rides `action`/`no_trade` above (and therefore the verdict, Now, Copy plan and
+       * the save button), so this block is the explanation, not a second decision. */
+      if (c.plan_rules && c.plan_rules.rules && c.plan_rules.rules.length) {
+        const pr = h('div', { class: 'bot-checks', dataset: { planRules: 'true' } });
+        pr.appendChild(h('div', { class: 'muted-2', text: `Your plan's requirements for this side (${c.plan_rules.refused} refused · ${c.plan_rules.unknown} unreadable)` }));
+        c.plan_rules.rules.forEach((r) => {
+          const row2 = h('div', { class: 'bot-check ' + (r.state === 'met' ? 'ok' : r.state === 'refused' ? 'no' : 'no'), dataset: { planRule: r.fact, planState: r.state } });
+          row2.appendChild(h('span', { class: 'mark ' + (r.state === 'met' ? 'ok' : 'no'), text: r.state === 'met' ? 'ok' : r.state === 'refused' ? 'no' : '?' }));
+          row2.appendChild(h('span', { class: 'lbl', text: r.text + (r.state === 'unknown' ? ' — could not be read, so it refused nothing' : '') }));
+          if (r.detail) row2.appendChild(h('span', { class: 'muted-2 det', text: r.detail }));
+          pr.appendChild(row2);
+        });
+        card.appendChild(pr);
       }
       card.appendChild(h('div', { class: 'bot-action', text: c.action }));
       const btnRow = h('div', { class: 'row gap-8' });
@@ -1312,8 +1365,10 @@
         const trim = B.trim || 0;
         Promise.all([
           API.get('/bots/analyse', { symbol: sym, tf, account_id:Store.accountId || null, prediction: B.prediction ? 1 : 0, bars: B.bars, min_rr: B.minRR, trim,
+            ...(B.strategyId ? { strategy_id: B.strategyId } : {}),                          // M56
             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }),                     // M26
           API.get('/bots/chart', { symbol: sym, tf, account_id:Store.accountId || null, bars: 600, min_rr: B.minRR, trim,
+            ...(B.strategyId ? { strategy_id: B.strategyId } : {}),                          // M56
             ...(B.sessionPref ? { session_pref: B.sessionPref } : {}) }).catch(() => null),    // M26
           API.get('/chart/drawings', { symbol: sym, tf }).catch(() => ({ drawings: [] })),
         ]).then(([d, ch, dr]) => {
