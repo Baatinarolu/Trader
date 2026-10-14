@@ -18,7 +18,7 @@ const Screenshots = require('../screenshots');
 const Confluences = require('../confluences');
 const Emotions = require('../emotions');
 const RuleBreaks = require('../rule-breaks');   // M12 — the guardrail audit, aggregated for the review
-const PeriodReviews = require('../period-reviews');
+const PeriodReviews = require('../period-reviews'),Challenge=require('../challenge');
 const RuleChanges = require('../rule-changes');
 const Identity = require('../identity');
 const StateGate = require('../state-gate');
@@ -577,7 +577,11 @@ router.get('/process-outcomes',requireAuth,async(req,res)=>{
 });
 
 router.get('/analytics', requireAuth, async (req, res) => {
-  const tz = (await settingsOf(req)).timezone;
+  /* Read once: the rep count's start and target live in the SAME settings the payload already reads
+   * for the timezone, so the challenge can never be counted against a different start than the one
+   * the trader saved. */
+  const userSettings = await settingsOf(req);
+  const tz = userSettings.timezone;
   const f = tradeFilters(req);
   // analytics always include only closed trades, but respect every other filter
   const { where, params } = T.listQuery({ ...f, status: null, sort: 'closed' });
@@ -611,6 +615,12 @@ router.get('/analytics', requireAuth, async (req, res) => {
    * absent, that it is `not_recorded` rather than reviewed-and-forgotten. Read-only: it reads the
    * saved rows, writes nothing, and changes no grade, cap, permission or plan-change decision. */
   analytics.review_periods=await PeriodReviews.coverageOptional(req.user.id,{accountId:acc.id??null,week:analytics.weekly??null,quarter:analytics.quarterly??null,weeks:12,quarters:8});
+  /* M115 — the clean-rep count of Ep 32's 21-trade exercise, for the SAME resolved account. It reads
+   * the closed trades, their own checklist rows and their own journal acknowledgement, and the start
+   * and target the trader saved; it writes nothing, changes no grade, cap, permission, guardrail
+   * decision or plan-change permission, and reports no amount — the exercise counts a habit, not a
+   * result. An unstarted count is `not_started` with `counted:null`, never zero reps. */
+  analytics.challenge=await Challenge.inspectOptional(req.user.id,{accountId:acc.id??null,settings:userSettings});
   res.json(analytics);
 });
 
@@ -1446,6 +1456,27 @@ router.post('/import/json', requireAuth, async (req, res) => {
 router.put('/settings', requireAuth, async (req, res) => {
   const b = req.body || {};
   const cur = await settingsOf(req);
+  /* M115 — the clean-rep count's two declarations. Both are keyed only when the caller actually
+   * sends them (this route is called with partial bodies from several screens), and neither is ever
+   * defaulted onto history: an unset start means the count has not begun. The start is additionally
+   * locked once any closed trade sits inside its window, because from then on the count is a record
+   * and not a dial. */
+  let challengeStart = Object.prototype.hasOwnProperty.call(cur, 'challenge_start') ? (cur.challenge_start ?? null) : null;
+  if (Object.prototype.hasOwnProperty.call(b, 'challenge_start')) {
+    let proposed;
+    try { proposed = Challenge.startKey(b.challenge_start); }
+    catch (e) { return res.status(e.status || 400).json({ error: e.message, code: e.code || 'challenge_invalid' }); }
+    let guard;
+    try { guard = await Challenge.startGuard(req.user.id, { current: challengeStart, proposed }); }
+    catch (e) { return res.status(e.status || 400).json({ error: e.message, code: e.code || 'challenge_invalid' }); }
+    if (!guard.ok) return res.status(409).json({ error: guard.reason, code: 'challenge_start_locked', closed_in_window: guard.closed_in_window });
+    challengeStart = proposed;
+  }
+  let challengeTarget = Object.prototype.hasOwnProperty.call(cur, 'challenge_target') && cur.challenge_target !== null && cur.challenge_target !== undefined ? cur.challenge_target : Challenge.DEFAULT_TARGET;
+  if (Object.prototype.hasOwnProperty.call(b, 'challenge_target')) {
+    try { challengeTarget = Challenge.targetKey(b.challenge_target); }
+    catch (e) { return res.status(e.status || 400).json({ error: e.message, code: e.code || 'challenge_invalid' }); }
+  }
   const next = {
     ...cur,
     timezone: b.timezone || cur.timezone,
@@ -1468,6 +1499,8 @@ router.put('/settings', requireAuth, async (req, res) => {
     min_rr: Number.isFinite(Number(b.min_rr)) && Number(b.min_rr) > 0
       ? Math.min(Math.max(Number(b.min_rr), 0.1), 10)
       : (Number.isFinite(Number(cur.min_rr)) ? Number(cur.min_rr) : 1),
+    challenge_start: challengeStart,
+    challenge_target: challengeTarget,
   };
   await db.prepare('UPDATE users SET settings=?, name=COALESCE(?,name) WHERE id=?').run(JSON.stringify(next), b.name || null, req.user.id);
   res.json({ ok: true, settings: next });

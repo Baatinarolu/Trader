@@ -67,7 +67,7 @@ judgement/habit lesson with no code surface (the app supports it through journal
 | 14 | Flip zones / breakers | Failed zones reverse role | `smc.js` → `findBreakers()` ✔ |
 | 15 | Daily bias | The day's direction | Bots → Top-down method panel: `layers.bias` (daily/weekly read, CRT state, right candle, range) + headline ✔ |
 | 16 | Trading plan | Written rules | Playbook view + guardrails from `correction.js` ✔ |
-| 17 | Full SMC plan + routine | Daily routine | Journal + 21-day discipline tracking ◐ |
+| 17 | Full SMC plan + routine | Daily routine | Journal + the clean-rep count of episode 32 (see row 32) ◐ |
 | 18 | **Entry models (sniper)** | Sweep → displacement → zone → retest | `setup.js` → `buildSetups()` ✔ (the core of the app), now **gated by the method**: aggressive (at confirmation) and safer (pullback to the mid / fresh FVG) entries from `topdown.js`, with conviction tiers A/B/watch |
 | 19 | When NOT to trade | Standing down is a skill | Score caps + vetoes + **NO TRADE** verdicts ✔ · the *now* strip states the stand-down and what would change it, with the clock (`now.js`) ✔ |
 | 20 | Stop & target placement | Place behind the reason | `setup.js` → stop beyond sweep/zone + 0.18 ATR, target ladder ✔ · CRT plans: **stop beyond the candle that made the sweep, target the opposite side of the range** (`topdown.js:readRange`) ✔ |
@@ -82,7 +82,7 @@ judgement/habit lesson with no code surface (the app supports it through journal
 | 29 | Using AI | Assist, don't obey | The bots (this doc) — with sample sizes shown ✔ · one action per market, the other side named and unpriced ✔ |
 | 30 | High-impact news | Blackout windows | `bots/index.js` → `newsCheck()` (±45 min, currency-aware) ✔ |
 | 31 | Prop-firm challenges | Drawdown/target rules | Accounts (daily loss limit, max DD, target) + guardrails ✔ |
-| 32 | 21-day discipline | Habit building | Journal streaks / checklist logging ◐ |
+| 32 | 21-day discipline | Habit building | Checklist logging per trade ✔ (every trade carries its own `rule_checks` rows) · **the clean-rep count**: the exercise's three criteria — aligned with your written plan, executed cleanly, journalled on the close day — counted over closed **trades**, against your own start and target (`challenge.js`, `clean-reps-v1`) ✔ · **no day-counting habit streak exists**: `correction.js` counts consecutive *losses*, never consecutive days, and the count deliberately counts trades rather than days (skipping days is allowed, so nobody is pushed into a forced trade) · the upload's own content is **not verifiable from this workspace** — only playlist metadata is (`analysis/playlist-verified.json`: `verified_at`, `route`, `url`, `title`, `channel`, `video_count`, `views`, `last_updated`), so the count implements finding row **M115**, not a paraphrase of the episode ◐ |
 | 33 | Graduation | Where to go next | Docs + Playbook |
 | B1 | Reality transurfing | Mindset | — |
 | B2 | Live breakdown | Chart walk-throughs | Bots → narrative "read-aloud" mirrors this format |
@@ -129,6 +129,26 @@ management          → 50 % at T1, stop to break-even, runner to the ≥2R pool
 CRT                 → HTF candle range → sweep one side → fail to hold → opposite side
 never               → front-run the sweep, chase the entry, or trade out of boredom
 ```
+
+### The five all-or-nothing triggers: which are advisory, which are gating
+
+Episode 25 lists five conditions the mentor treats as non-negotiable. This table states, for each one,
+whether the app **gates** on it (`ok:false`, so the setup is refused) or merely **advises** (a score
+weight or a reported reading), as measured at this release rather than as intended:
+
+| All-or-nothing trigger | Where the code decides it | Advisory or gating (at this release) |
+|---|---|---|
+| **Timing** — a high-probability killzone | `setup.js`: `sess.in_killzone === false` pushes a `vetoes` entry (the trader's own window supersedes it, M26) | **Gating.** It was advisory-and-worse until M8: `quality` ran 0.30→1.00 across the day and multiplied the score, so the same candles graded **A+ 40 / A 157** at 08:30Z and **A+ 0 / A 40 / B 162** at 22:30Z — the grade described the hour. The multiplier is gone; session quality is still reported as `killzone_quality` for the trader to read. |
+| **Liquidity sweep** — the trigger to enter on | `setup.js`: `!hasTrigger` → `vetoes` | **Gating** — "the model has no trigger to enter on". |
+| **Market shift** — the sweep's twin (M69) | `setup.js`: `structureKnown && !marketShift` → `vetoes` (silent when the structure is unknown) | **Gating** — a 12-point weight would have left the twins asymmetric, and the course calls it *"the non-negotiable for each one of these entry models"*. |
+| **Zone / order block** — the level to trade against | `setup.js`: `!hasZone` → `vetoes` | **Gating** — "no level, so no defined risk". |
+| **Risk-to-reward** — the 2R floor | `setup.js`: a sub-`minRR` first target → `vetoes` (M7/M95, on unrounded geometry) | **Gating** — advisory until M7: the cap sat at **45**, one point above the C floor of 44, so a sub-2R idea was refused in spirit and accepted in fact. C now means an adequate-RR idea at quarter risk, never a sub-2R one. |
+
+Everything else in the checklist is **advisory**, and the app says as much in code: the remaining score
+caps (sweep 38, zone 34, invalid 20, news 40, waiting 66 in `setup.js`) exist to show *how far short* a
+setup fell and decide nothing; `waiting` is "a great idea, not yet valid"; `killzone_quality` and the
+session reading are information. What `ok` reflects is the `vetoes` list: the five triggers above plus an
+invalidated level, an undefined stop, a news blackout and the trader's own trading window (M112).
 
 ## What is *not* taken from the playlist
 

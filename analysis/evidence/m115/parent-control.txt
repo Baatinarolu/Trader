@@ -1,0 +1,14 @@
+ok the tree RECORDED all three criteria on an ordinary trade: the link, the checklist and the explicit acknowledgement — the facts the exercise counts were never missing
+ok the tree ships the rep count (clean-reps-v1) exactly when the count is the delivered one
+ok the analytics payload carries a rep count exactly when the tree serves it, and the parent serves NONE: one eligible trade, zero keys
+ok and the count the delivered tree serves is derived from those recorded rows rather than from a stored number: with an unset start it refuses to report a figure at all
+ok the settings route stores the trader’s two declarations exactly when it knows them, and the parent silently drops BOTH keys
+ok so on the parent tree there is nowhere at all to declare either: the exercise cannot even be STARTED, which is the first half of the fault
+ok the card exists as a shipped file exactly when the tree renders it
+ok and it is MOUNTED exactly when it renders: the dashboard calls it, and on the parent the call-site count is zero
+ok the page loads the card’s script exactly when it renders, so the mount cannot be a missing script
+ok the parent’s goal concept is a money target (`profit_target_pct`) and it is untouched here: the rep count adds a habit count beside it rather than redefining it
+ok and the count it adds is a count of TRADES: the only day-shaped thing it exposes is labelled as information in the module itself, and days are never the measure
+ok no tree here has a challenge/rep table: the declarations live in the settings object and the count is derived, which is why the parent needs no migration
+ok and in the delivered tree the ONLY writer of a declaration is the settings route the trader already owns — no endpoint of the count’s own, and on the parent, zero call sites
+M115 control (parent): the fault the delivered tree closes: 13 passed, 0 failed

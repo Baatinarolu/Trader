@@ -1,0 +1,50 @@
+[
+  {
+    "name": "pure",
+    "script": "analysis/probe-m115-pure.js",
+    "pass": 41,
+    "fail": 0,
+    "expected_pass": 41,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m115feature-pure.txt",
+    "scope": "M115 pure: the clean-rep count, its criteria and its refusals: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "api",
+    "script": "analysis/probe-m115-api.js",
+    "pass": 30,
+    "fail": 0,
+    "expected_pass": 30,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m115feature-api.txt",
+    "scope": "M115 api: the rep count over the real routes, its declarations and its read-only proof: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "migration",
+    "script": "analysis/probe-m115-migration.js",
+    "pass": 18,
+    "fail": 0,
+    "expected_pass": 18,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m115feature-migration.txt",
+    "scope": "M115 migration: no schema object added, and the parent\u2019s own file is read untouched: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "ui",
+    "script": "analysis/probe-m115-ui.js",
+    "pass": 27,
+    "fail": 0,
+    "expected_pass": 27,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m115feature-ui.txt",
+    "scope": "M115 real DOM: the clean-rep card the dashboard reads: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  }
+]

@@ -1,0 +1,60 @@
+{
+  "app": "/tmp/m115-parent/app",
+  "pass": 13,
+  "fail": 0,
+  "results": [
+    {
+      "label": "the tree RECORDED all three criteria on an ordinary trade: the link, the checklist and the explicit acknowledgement — the facts the exercise counts were never missing",
+      "passed": true
+    },
+    {
+      "label": "the tree ships the rep count (clean-reps-v1) exactly when the count is the delivered one",
+      "passed": true
+    },
+    {
+      "label": "the analytics payload carries a rep count exactly when the tree serves it, and the parent serves NONE: one eligible trade, zero keys",
+      "passed": true
+    },
+    {
+      "label": "and the count the delivered tree serves is derived from those recorded rows rather than from a stored number: with an unset start it refuses to report a figure at all",
+      "passed": true
+    },
+    {
+      "label": "the settings route stores the trader’s two declarations exactly when it knows them, and the parent silently drops BOTH keys",
+      "passed": true
+    },
+    {
+      "label": "so on the parent tree there is nowhere at all to declare either: the exercise cannot even be STARTED, which is the first half of the fault",
+      "passed": true
+    },
+    {
+      "label": "the card exists as a shipped file exactly when the tree renders it",
+      "passed": true
+    },
+    {
+      "label": "and it is MOUNTED exactly when it renders: the dashboard calls it, and on the parent the call-site count is zero",
+      "passed": true
+    },
+    {
+      "label": "the page loads the card’s script exactly when it renders, so the mount cannot be a missing script",
+      "passed": true
+    },
+    {
+      "label": "the parent’s goal concept is a money target (`profit_target_pct`) and it is untouched here: the rep count adds a habit count beside it rather than redefining it",
+      "passed": true
+    },
+    {
+      "label": "and the count it adds is a count of TRADES: the only day-shaped thing it exposes is labelled as information in the module itself, and days are never the measure",
+      "passed": true
+    },
+    {
+      "label": "no tree here has a challenge/rep table: the declarations live in the settings object and the count is derived, which is why the parent needs no migration",
+      "passed": true
+    },
+    {
+      "label": "and in the delivered tree the ONLY writer of a declaration is the settings route the trader already owns — no endpoint of the count’s own, and on the parent, zero call sites",
+      "passed": true
+    }
+  ],
+  "scope": "M115 control (parent): the fault the delivered tree closes: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+}

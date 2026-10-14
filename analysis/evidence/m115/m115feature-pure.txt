@@ -1,0 +1,42 @@
+ok this tree ships the clean-rep count (src/challenge.js) (the committed parent does not, and that absence is this probe's control)
+ok the count is versioned and names its three criteria in order, as the recorded facts they are
+ok the basis says it counts TRADES and never days, and that an empty day neither adds nor breaks
+ok the scope says a refused entry leaves no trade row (so it is neither a rep nor a failure) and that no record is not a clean record
+ok an unset start is `not_set`, a valid one is a real UTC day, and a corrupt one is `unusable` rather than silently replaced
+ok an unset target is the DEFAULT 21, a valid one is used, and a corrupt one is `unusable` (never silently 21)
+ok a target a caller wants to store is validated, not coerced: 3 and "3" pass, "seven"/0/1000/21.5 are refused with the module’s own code
+ok a start must be a real UTC day, and clearing it is a distinct, explicit value
+ok a trade that is plan-linked, checklist-clean and journalled on its own close day is a rep
+ok a trade with NO plan link is not a rep, and each failing criterion is named rather than summarised
+ok a plan link that points at somebody else’s strategy is NOT a plan link: ownership is re-read, never trusted from the row
+ok a trade with NO recorded checklist is not a rep: no record is not a clean record
+ok one FAILED checklist item is a recorded breach, and the count of recorded checks rides the verdict
+ok a recorded decision NOT to honour the stop is a breach even when every check passed
+ok a stop whose honour was never recorded is not a recorded breach — the criterion is literally `no_recorded_breach`
+ok a hand-written `journal_reviewed_at` with no matching hash does NOT count: the app’s own acknowledgement cannot be forged by filling the column
+ok the criterion is the CLOSE DAY, not merely a completed review: the same acknowledgement a day later completes the journal and still does not count
+ok and it is the UTC day at BOTH ends: a close and an acknowledgement 30 minutes apart across midnight UTC are two different days
+ok an OPEN trade is never a rep, whatever else it carries: the SAME row is a rep when closed and is not when open
+ok the window holds the trades from the start day on, and a trade closed BEFORE the start day is excluded — not counted and not a failure
+ok a day with no closed trade is simply absent: the run is over consecutive REPS, not consecutive days, and the payload says skipping days is permitted
+ok the run is consecutive reps NEWEST first: a failure after a rep leaves the count intact and restarts only the run
+ok and a failure OLDER than every rep does not break the run either: the run is scanned from the newest trade, not from the start day
+ok but a failure in the MIDDLE does break the run while leaving the count: the two numbers measure different things
+ok the oldest and newest counted reps are reported by their own close instants, and the count is a count of trades
+ok a trade with no usable close clock is counted in `undated_closes` rather than guessed onto a day
+ok open trades are excluded from the window AND reported, so an open position can never look like a failed rep
+ok each failure is attributed to its OWN criterion, a trade may fail several, and the reasons add up per criterion
+ok the trades with NO recorded checklist at all are counted by name, so the trader learns why they do not count
+ok the journal criterion reports the waiting trades by the fields the APP ITSELF says are missing, in the app’s own words
+ok the observed gap between the recorded close and the recorded acknowledgement is reported, median and worst, so the calendar proxy can be read for what it is
+ok `remaining` counts down to the target and `beyond_target` counts past it, both null when the stored target is unusable
+ok moving the target never moves the count: the same rows scored against 2 and against 30 report the same reps and the same run
+ok the newest trades in the window are listed with their own verdict and reasons, counted or not
+ok a bounded read says so: the truncation flag is reported rather than the old trades quietly disappearing
+ok an UNSTARTED count reports `not_started` with `counted:null` — never zero reps — and says starting it is the trader’s own act
+ok an unreadable count is UNKNOWN: `unavailable` with `counted:null`, never an empty challenge, and the default wording says so in as many words
+ok both shapes are read-only with zero writes and no influence on any grade, cap, permission, guardrail decision or plan change
+ok and the count is never joined to an outcome: `outcome_joined:false` with the sentence saying why the exercise counts a habit
+ok the payload carries NO money figure anywhere: nothing named for P&L, profit, amount, equity or a goal — the only `money` word is the note saying there is none
+ok an owner that is not a positive id is refused with the module’s own code before any read happens
+M115 pure: the clean-rep count, its criteria and its refusals: 41 passed, 0 failed

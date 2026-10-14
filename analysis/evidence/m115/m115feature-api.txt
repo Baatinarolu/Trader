@@ -1,0 +1,31 @@
+ok this tree ships the clean-rep count (src/challenge.js) (the committed parent does not, and that absence is this probe's control)
+ok the analytics payload carries the clean-rep count for the account it analyses
+ok an unstarted count is served on the payload as `not_started` with `counted:null`, the DEFAULT 21 target and no failed-trade tally
+ok and it is served for the SAME account the payload analyses, with the module’s version on it
+ok a real journalled trade taken BEFORE the start day does NOT make the count zero: it stays unstarted, and the trade is visible in the window tally as history rather than as a failed rep
+ok a target that is not a whole number 1–999 is refused by the settings route with the module’s own code, and nothing is stored
+ok and so is a start that is not a real UTC date
+ok a valid start and target are saved as the trader’s own settings and the count begins from the NEXT payload, not retroactively
+ok a trade closed on the current UTC day, linked to the trader’s own plan, checklist-clean and journalled through the app is COUNTED, and the count is a count of trades
+ok an unlinked trade is not a rep and says `plan_linked`
+ok a link to a plan the trader does NOT own is not a plan link either: ownership is re-read on the way out, so a foreign id in the column buys nothing
+ok a recorded FAILED checklist item is a recorded breach: the trade is not counted even though its plan link and its journal are fine
+ok a trade with NO recorded checklist at all is not counted either — no record is not a clean record — and the payload counts those trades by name
+ok a RECORDED decision not to honour the stop is a breach on its own, with every checklist item passed — and it is the trader’s own self-reported, hash-stamped acknowledgement that says so, which the payload states
+ok and the row really carries that decision as the app stores it (0, self_reported, with the review hash), so the criterion reads a recorded fact and not an inference
+ok a COMPLETE journal whose acknowledgement landed on the next UTC day is still not a rep, and the payload says which criterion failed rather than calling the trade unclean
+ok a closed trade with NO journal acknowledgement waits rather than counts, and the payload reports it as waiting with the app’s own missing-field list
+ok the count carries NO amount and NO goal figure, while the payload it rides on does report P&L — so the absence is the count’s choice, not the payload’s
+ok and the other trader’s stored settings are their own: their count is unstarted with the default target while this trader’s stands at three
+ok a rep on ANOTHER desk is not counted on this desk’s payload, and that desk’s own payload DOES count it: the count is scoped to the account the payload analyses, like every other figure on it
+ok narrowing the page’s date filter does NOT narrow the challenge window: the start day is the window the trader declared, so a record cannot be made to look smaller by a filter
+ok the start cannot be moved once closed trades sit in its window: BOTH a later and an earlier start are refused with 409 and the number of trades in the way
+ok re-sending the SAME start is accepted (a settings screen that posts the whole form must not be locked out of saving), and the count is unchanged
+ok moving the target changes the target and NOT the count, the run, or a single trade’s verdict
+ok clearing the start is refused for the same reason as moving it: un-starting a count that has trades in it would erase a record
+ok the settings screen’s own payload shape is preserved: an ordinary settings save still returns the settings it saved
+ok reading the count TWICE changes not one byte of any table, index or trigger in the database — the read is a read
+ok and the count cannot influence a decision: the payload’s limits say read-only with zero writes and no influence on grades, caps, permissions, guardrail decisions or plan changes
+ok the milestone added NO table of its own: the declarations live in the users’ settings and nowhere else
+ok and the two declarations are exactly two keys in that settings object, each of them an explicit value the trader set
+M115 api: the rep count over the real routes, its declarations and its read-only proof: 30 passed, 0 failed

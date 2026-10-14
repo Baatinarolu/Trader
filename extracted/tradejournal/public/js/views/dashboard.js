@@ -79,6 +79,9 @@
 
       if(Views.stateGate)root.appendChild(Views.stateGate.card(stateGateView));
       if(Views.intention)root.appendChild(Views.intention.card(intentionView));
+      /* M115 — Ep 32's clean-rep count, beside the day's process cards: the numbers the trader
+       * reads before the session. It carries its own workspace guard and reports no amount. */
+      if(Views.challenge)root.appendChild(Views.challenge.card(an.challenge));
       if(Views.practice)root.appendChild(Views.practice.card(practiceView||briefing.practice));
       if(Views.ask)root.appendChild(Views.ask.card(askTopics));
       if(Views.identity)root.appendChild(Views.identity.card(identityDay));
