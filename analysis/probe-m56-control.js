@@ -88,14 +88,31 @@ H.finish(`M56 control (${MODE}): the written plan that gated nothing`, async () 
   ok('a plan that belongs to somebody else is never read on the trader\u2019s behalf, on any tree',
     MODE !== 'delivered' || (foreign.status === 404 && foreign.data.code === 'plan_not_found'), { mode: MODE, status: foreign.status });
 
+  /* 4b. The alert surface: an incoming TradingView alert is an analysis like any other, so it must be
+   * gated and the alert it leaves behind must carry the gate. */
+  const token = (await u.req('/bots/webhook', undefined, 'GET')).data.token;
+  await u.req('/bots/webhook', { autocreate: true }, 'POST');
+  await u.req('/bots/webhook/tradingview?token=' + encodeURIComponent(token), { symbol: 'EURUSD', action: 'buy', price: 1.1, tf: '15m' }, 'POST');
+  const alertRow = (await u.req('/bots/webhook', undefined, 'GET')).data.alerts[0];
+  const alertGate = alertRow && alertRow.result && typeof alertRow.result === 'object' && alertRow.result.plan_gate;
+  ok('an incoming alert carries the plan gate back exactly when the tree has one, and on the parent the alert payload has no gate key at all',
+    (!alertGate) === (MODE === 'parent') && (!WIRED || !!alertGate),
+    { mode: MODE, keys: alertRow && alertRow.result && typeof alertRow.result === 'object' ? Object.keys(alertRow.result).filter((k) => /plan/.test(k)) : typeof alertRow.result });
+  ok('and the alert history serves its stored verdict as an object exactly when the tree parses it on the way out \u2014 the parent served raw JSON text, which is why the panel could never render a verdict',
+    (alertRow && typeof alertRow.result === 'object') === (MODE === 'delivered'),
+    { mode: MODE, type: alertRow && typeof alertRow.result });
+
   /* 5. The page: the editor's hint and the plan selector are the two places a trader meets the gate. */
   const pub = path.join(H.APP, 'public', 'js', 'views');
   const readPub = (f) => (fs.existsSync(path.join(pub, f)) ? fs.readFileSync(path.join(pub, f), 'utf8') : '');
   const bots = readPub('bots.js'), playbook = readPub('playbook.js');
   const carriesHint = /data-plan-vocabulary/.test(playbook) && /PLAN_GATE_VOCABULARY/.test(playbook);
   const carriesNote = /planGate:\s*'true'/.test(bots) && /planRules:\s*'true'/.test(bots);
+  const carriesAlertLine = /planLine\s*=/.test(readPub('settings.js')) && /refused this alert/.test(readPub('settings.js'));
   ok('the editor says which lines are enforced and the analysis page says which plan is being enforced, exactly when the tree ships the gate',
     carriesHint === (MODE === 'delivered') && carriesNote === (MODE === 'delivered'), { mode: MODE, carriesHint, carriesNote });
+  ok('and the alert history says which plan gated an incoming alert, exactly when the tree ships the gate',
+    carriesAlertLine === (MODE === 'delivered'), { mode: MODE, carriesAlertLine });
   ok('and none of it exists on the parent: no vocabulary hint, no plan note and no per-candidate rule block to find',
     MODE === 'delivered' || (!carriesHint && !carriesNote));
   ok('the milestone adds NO table, index or trigger of its own on any tree \u2014 the plan was already stored in `strategies`',

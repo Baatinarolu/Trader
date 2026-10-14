@@ -570,7 +570,7 @@ curl -s -H "x-session: $TOKEN" 'localhost:3000/api/bots/tv/config?symbol=ES&tf=4
 
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| GET | `/bots/webhook` | session | your webhook URL + token, options, counters and the last 8 alerts |
+| GET | `/bots/webhook` | session | your webhook URL + token, options, counters and the last 8 alerts, each with its `result` parsed (the bot verdict, its agreement and the plan gate that applied: `result.plan_gate`, `signal_id` when it created one) |
 | POST | `/bots/webhook` | session | `{ analyse, autocreate, label }` — what to do with incoming alerts |
 | POST | `/bots/webhook/rotate` | session | burns the token and returns a new URL |
 | POST | `/bots/webhook/tradingview` | **token only** | the receiver — `?token=<token>` (also `x-webhook-token:`, or `token`/`secret` in the body) |

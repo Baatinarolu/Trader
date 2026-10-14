@@ -273,6 +273,23 @@
                     <td>${r.action ? `<span class="chip ${r.action === 'BUY' ? 'pos' : r.action === 'SELL' ? 'neg' : ''}">${U.esc(r.action)}</span> ${r.grade ? U.esc(r.grade) + ' \u00b7 ' + r.score : ''}` : (a.error ? `<span class="neg tiny">${U.esc(a.error)}</span>` : '<span class="muted tiny">not analysed</span>')}</td>
                     <td class="tiny">${U.esc(r.agreement || '\u2014')}${r.rr ? ` \u00b7 ${r.rr}R` : ''}</td></tr>`;
                 }).join('')}</tbody></table></div>` : '<div class="empty">No alerts yet.</div>'}`;
+              /* M56 — an alert is analysed like any other read, so the trader's written plan gates it and
+               * the alert row has to say so: a `NO TRADE` the plan caused that names neither the plan nor a
+               * rule is the unattributed stand-down this milestone exists to remove. `no_plan` and
+               * `ambiguous` block nothing and say that too, so an empty verdict column is never read as a
+               * refusal. */
+              const planLine = (r) => {
+                const g = r.plan_gate;
+                if (!g || g.state === 'not_consulted') return '';
+                if (g.state === 'no_plan') return '<div class="tiny muted">No active plan — nothing gated</div>';
+                if (g.state === 'ambiguous') return `<div class="tiny muted">${(g.candidates || []).length} active plans — nothing gated until one is chosen</div>`;
+                if (g.state === 'unavailable') return '<div class="tiny neg">Your plan could not be read — every signal is refused</div>';
+                return `<div class="tiny ${g.refused_now ? 'neg' : 'muted'}">Plan ${U.esc((g.plan || {}).name || '')}${g.plan && g.plan.version ? ' v' + g.plan.version : ''}: ${g.enforced} rule${g.enforced === 1 ? '' : 's'} enforced${g.refused_now ? ' — refused this alert' : ''}</div>`;
+              };
+              [...alertsCard.querySelectorAll('tbody tr')].forEach((tr, i) => {
+                const r = (list[i] && list[i].result) || {};
+                const line = planLine(r); if (line) tr.cells[4].insertAdjacentHTML('beforeend', line);
+              });
             };
             paintAlerts(d.alerts || []);
             w.appendChild(alertsCard);

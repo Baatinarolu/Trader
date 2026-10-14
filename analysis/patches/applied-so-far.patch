@@ -1323,7 +1323,7 @@ index df9ae3c..3f04f90 100644
  
  * [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — how to actually use it, screen by screen, and the daily/weekly/monthly review routine.
 diff --git a/docs/API.md b/docs/API.md
-index 4475db3..3fdee5b 100644
+index 4475db3..b589f0e 100644
 --- a/docs/API.md
 +++ b/docs/API.md
 @@ -1,5 +1,91 @@
@@ -1641,6 +1641,15 @@ index 4475db3..3fdee5b 100644
  
  ### Choosing what to measure on `/bots/backtest`
  
+@@ -303,7 +570,7 @@ curl -s -H "x-session: $TOKEN" 'localhost:3000/api/bots/tv/config?symbol=ES&tf=4
+ 
+ | Method | Path | Auth | Notes |
+ |---|---|---|---|
+-| GET | `/bots/webhook` | session | your webhook URL + token, options, counters and the last 8 alerts |
++| GET | `/bots/webhook` | session | your webhook URL + token, options, counters and the last 8 alerts, each with its `result` parsed (the bot verdict, its agreement and the plan gate that applied: `result.plan_gate`, `signal_id` when it created one) |
+ | POST | `/bots/webhook` | session | `{ analyse, autocreate, label }` — what to do with incoming alerts |
+ | POST | `/bots/webhook/rotate` | session | burns the token and returns a new URL |
+ | POST | `/bots/webhook/tradingview` | **token only** | the receiver — `?token=<token>` (also `x-webhook-token:`, or `token`/`secret` in the body) |
 @@ -383,3 +650,856 @@ curl -s -X POST -H 'Content-Type: text/plain' --data 'BUY XAUUSD @ 4244.85 15m'
  | `GET /api/chart/drawings?symbol=EURUSD&tf=1h` | every drawing for that market + timeframe |
  | `PUT /api/chart/drawings` | body `{ symbol, timeframe, drawings:[{kind, points:[{t,p}], style}] }` — **replaces the set** (always send the full list); kinds `trend · hline · ray · rect · fib · measure · text`, max 400 drawings, max 8 points each |
@@ -5899,7 +5908,7 @@ index 0000000..061ffe4
 +  };
 +})(window);
 diff --git a/public/js/views/settings.js b/public/js/views/settings.js
-index b72afdb..360d5c4 100644
+index b72afdb..ac3ecd4 100644
 --- a/public/js/views/settings.js
 +++ b/public/js/views/settings.js
 @@ -31,6 +31,9 @@
@@ -5994,7 +6003,31 @@ index b72afdb..360d5c4 100644
              r.readAsText(f);
            });
            U.$('#reseed', w).addEventListener('click', async () => {
-@@ -312,11 +328,36 @@
+@@ -257,6 +273,23 @@
+                     <td>${r.action ? `<span class="chip ${r.action === 'BUY' ? 'pos' : r.action === 'SELL' ? 'neg' : ''}">${U.esc(r.action)}</span> ${r.grade ? U.esc(r.grade) + ' \u00b7 ' + r.score : ''}` : (a.error ? `<span class="neg tiny">${U.esc(a.error)}</span>` : '<span class="muted tiny">not analysed</span>')}</td>
+                     <td class="tiny">${U.esc(r.agreement || '\u2014')}${r.rr ? ` \u00b7 ${r.rr}R` : ''}</td></tr>`;
+                 }).join('')}</tbody></table></div>` : '<div class="empty">No alerts yet.</div>'}`;
++              /* M56 — an alert is analysed like any other read, so the trader's written plan gates it and
++               * the alert row has to say so: a `NO TRADE` the plan caused that names neither the plan nor a
++               * rule is the unattributed stand-down this milestone exists to remove. `no_plan` and
++               * `ambiguous` block nothing and say that too, so an empty verdict column is never read as a
++               * refusal. */
++              const planLine = (r) => {
++                const g = r.plan_gate;
++                if (!g || g.state === 'not_consulted') return '';
++                if (g.state === 'no_plan') return '<div class="tiny muted">No active plan — nothing gated</div>';
++                if (g.state === 'ambiguous') return `<div class="tiny muted">${(g.candidates || []).length} active plans — nothing gated until one is chosen</div>`;
++                if (g.state === 'unavailable') return '<div class="tiny neg">Your plan could not be read — every signal is refused</div>';
++                return `<div class="tiny ${g.refused_now ? 'neg' : 'muted'}">Plan ${U.esc((g.plan || {}).name || '')}${g.plan && g.plan.version ? ' v' + g.plan.version : ''}: ${g.enforced} rule${g.enforced === 1 ? '' : 's'} enforced${g.refused_now ? ' — refused this alert' : ''}</div>`;
++              };
++              [...alertsCard.querySelectorAll('tbody tr')].forEach((tr, i) => {
++                const r = (list[i] && list[i].result) || {};
++                const line = planLine(r); if (line) tr.cells[4].insertAdjacentHTML('beforeend', line);
++              });
+             };
+             paintAlerts(d.alerts || []);
+             w.appendChild(alertsCard);
+@@ -312,11 +345,36 @@
                <div class="field-note">This checklist appears on every new trade and in the briefing. Keep it short enough that you will actually use it.</div>
                <button class="btn primary sm" id="s-save-rules" style="margin-top:12px">Save checklist</button>
              </div>`;
@@ -6031,7 +6064,7 @@ index b72afdb..360d5c4 100644
                default_checklist: (Store.user.settings.default_checklist || []),
              });
              await Store.reloadAll(); global.App.toast('Preferences saved', 'ok');
-@@ -384,9 +425,62 @@
+@@ -384,9 +442,62 @@
  
        draw();
  
@@ -6095,7 +6128,7 @@ index b72afdb..360d5c4 100644
          const body = U.h('div');
          body.innerHTML = `<div class="form-grid" style="grid-template-columns:1fr 1fr">
            <label class="field span2"><span>Account name</span><input id="a-name" value="${U.esc(v.name)}" placeholder="e.g. FTMO 100k Challenge" /></label>
-@@ -394,12 +488,22 @@
+@@ -394,12 +505,22 @@
            <label class="field"><span>Type</span><select id="a-type">${['live', 'demo', 'prop'].map((t) => `<option value="${t}" ${v.account_type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
            <label class="field"><span>Currency</span><input id="a-ccy" value="${U.esc(v.currency)}" /></label>
            <label class="field"><span>Starting balance</span><input id="a-bal" type="number" step="any" value="${v.starting_balance}" /></label>
@@ -6120,7 +6153,7 @@ index b72afdb..360d5c4 100644
          global.App.modal({
            title: isNew ? 'New account' : 'Edit account', body, small: true,
            actions: [{ label: 'Cancel', ghost: true }, {
-@@ -407,10 +511,27 @@
+@@ -407,10 +528,27 @@
                const payload = {
                  name: U.$('#a-name', body).value, broker: U.$('#a-broker', body).value, account_type: U.$('#a-type', body).value,
                  currency: U.$('#a-ccy', body).value, starting_balance: U.$('#a-bal', body).value,
@@ -19013,7 +19046,7 @@ index 0bb768c..b6154e4 100644
  
  /**
 diff --git a/src/routes/bots.js b/src/routes/bots.js
-index 2c6ff6c..cd6a508 100644
+index 2c6ff6c..96e7e98 100644
 --- a/src/routes/bots.js
 +++ b/src/routes/bots.js
 @@ -10,12 +10,22 @@ const C = require('../candles');
@@ -19242,7 +19275,31 @@ index 2c6ff6c..cd6a508 100644
    }));
  
    router.post('/signals/resolve', requireAuth, wrap(async (req, res) => {
-@@ -393,6 +481,7 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -301,7 +389,7 @@ router.get('/markets', requireAuth, (req, res) => {
+   /** Everything the Settings → Integrations panel needs. */
+   router.get('/webhook', requireAuth, wrap(async (req, res) => {
+     const row = await D.getOrCreateWebhookToken(req.user.id);
+-    const alerts = await D.db.prepare('SELECT id, tv_symbol, symbol, action, price, timeframe, received_at, handled, error, result FROM tv_alerts WHERE user_id=? ORDER BY id DESC LIMIT 8').all(req.user.id);
++    const alerts = await D.db.prepare('SELECT id, tv_symbol, symbol, action, price, timeframe, received_at, handled, error, result, signal_id FROM tv_alerts WHERE user_id=? ORDER BY id DESC LIMIT 8').all(req.user.id);
+     const stats = await D.db.prepare(`SELECT COUNT(*) AS total, SUM(CASE WHEN error IS NULL THEN 1 ELSE 0 END) AS ok,
+       SUM(CASE WHEN result IS NOT NULL THEN 1 ELSE 0 END) AS analysed FROM tv_alerts WHERE user_id=?`).get(req.user.id);
+     const base = `${req.protocol}://${req.get('host')}`;
+@@ -314,9 +402,13 @@ router.get('/markets', requireAuth, (req, res) => {
+       label: row.label,
+       uses: row.uses, last_used_at: row.last_used_at,
+       stats: { total: stats.total || 0, ok: stats.ok || 0, analysed: stats.analysed || 0 },
++      // M56 — `result` is stored as JSON TEXT, and the Settings panel reads `r.action`, `r.grade` and now
++      // the plan gate off it. The sibling `/bots/alerts` route already parses it; leaving this one raw
++      // meant the alert-verdict column could never render anything but a dash, and a plan refusal stored
++      // here would have been invisible on the only screen that shows the alert history.
++      alerts: alerts.map((a) => ({ ...a, result: safeJson(a.result) })),
+       sample_text: 'BUY {{ticker}} @ {{close}} {{interval}}',
+       sample_json: '{"symbol":"{{ticker}}","action":"{{strategy.order.action}}","price":"{{close}}","tf":"{{interval}}","time":"{{timenow}}"}',
+-      alerts,
+     });
+   }));
+ 
+@@ -393,6 +485,7 @@ router.get('/markets', requireAuth, (req, res) => {
          plan = summarise(payload, parsed);
          if (user.autocreate && payload.setups && payload.setups.verdict && payload.setups.verdict.action !== 'NO TRADE') {
            const saved = await Bots.saveSignals(user.id, payload);
@@ -19250,7 +19307,19 @@ index 2c6ff6c..cd6a508 100644
            signal = saved && saved.saved ? saved.saved[0] : (Array.isArray(saved) ? saved[0] : saved);
          }
        } catch (e) { error = e.message; }
-@@ -466,8 +555,102 @@ router.get('/markets', requireAuth, (req, res) => {
+@@ -435,6 +528,11 @@ router.get('/markets', requireAuth, (req, res) => {
+       targets: best && best.levels ? best.levels.targets : [],
+       rr: best && best.levels ? best.levels.rr_final : null,
+       whynot: (v.why_not || []).slice(0, 4),
++      /* M56 — the incoming alert is analysed like any other read, so the trader's written plan gates it
++       * too. It travels WITH the alert (rather than only inside the analysis nobody stores): a NO TRADE in
++       * the alert history that the plan caused must name the plan, its version and the line that refused,
++       * or the trader is left reading an unattributed stand-down. `null` when no plan was consulted. */
++      plan_gate: (payload.setups && payload.setups.filters && payload.setups.filters.plan_gate) || null,
+       agreement: agreement(parsed, v.action, best),
+       generated_at: payload.generated_at || new Date().toISOString(),
+     };
+@@ -466,8 +564,102 @@ router.get('/markets', requireAuth, (req, res) => {
  
    /* ---------------------------------------------------------------- misc */
  

@@ -208,6 +208,41 @@ H.finish('M56 real DOM: the plan, its refusals and the vocabulary a trader edits
   ok('and the hint states the deal: `require` lines are enforced and cannot be overruled, everything else is context that is never interpreted',
     /are ENFORCED by the bots/.test(text(qs('[data-plan-vocabulary]'))) && /never interpreted/.test(text(qs('[data-plan-vocabulary]')))
     && /does not recognise is reported loudly/.test(text(qs('[data-plan-vocabulary]'))), text(qs('[data-plan-vocabulary]')));
+  /* ---------------------------------------------------------- 4. the alert history names the plan */
+  /* An incoming TradingView alert is an analysis the trader did not ask for at that moment. The Settings
+   * panel is the only place its verdict appears, so an alert the plan refused must name the plan there. */
+  const plugins = [];
+  w.Views.settings = undefined;
+  load('views/settings.js');
+  const hookAlert = { id: 1, symbol: 'EURUSD', tv_symbol: 'FX:EURUSD', action: 'buy', price: 1.1, timeframe: '15m',
+    received_at: '2026-10-14 10:00:00', handled: 1, error: null, signal_id: null,
+    result: { action: 'NO TRADE', grade: 'C', score: 41, agreement: 'against', whynot: [],
+      plan_gate: { version: 'plan-gate-v1', state: 'ready', plan: { id: withPlan.id, name: 'London reversal', version: 3, active: true },
+        enforced: 2, refused_now: true, unknown_now: false, enforced_lines: ['require min_rr >= 999', 'require session asia'],
+        unverifiable_lines: [], unrecognised_lines: [], candidates: [] } } };
+  const botsApi = w.API;                 // the settings pane needs its own reads; the bots API is restored after
+  w.API = { get: (url) => { plugins.push(url);
+    if (url === '/accounts') return Promise.resolve({ accounts: [], stats: {} });
+    if (url === '/bots/webhook') return Promise.resolve({ ok: true, token: 'tok', url: 'https://x/api/bots/webhook/tradingview?token=tok', analyse: true, autocreate: true,
+      stats: { total: 1, ok: 1, analysed: 1 }, alerts: [hookAlert], sample_text: '', sample_json: '' });
+    return Promise.resolve({}); },
+    post: () => Promise.resolve({ ok: true }), put: () => Promise.resolve({ ok: true }) };
+  w.localStorage.setItem('tj_token', 'tok');
+  await w.Views.settings.render(root);
+  const tab = [...root.querySelectorAll('button')].find((b) => text(b) === 'Integrations');
+  tab.dispatchEvent(new w.Event('click'));
+  await tick(80);
+  ok('the Settings alert history names the plan that gated an incoming alert, with the version and how many rules were enforced, and says it REFUSED this alert',
+    (() => { const cell = qsa('tbody tr').map((tr) => tr.cells[4]).find((c) => /London reversal/.test(text(c)));
+      return !!cell && /Plan London reversal v3: 2 rules enforced — refused this alert/.test(text(cell)) && /NO TRADE/.test(text(cell)); })(),
+    JSON.stringify(qsa('tbody tr').map((tr) => tr.cells[4] && text(tr.cells[4]))));
+  ok('and the alert row carries no signal id, so a refused alert is distinguishable from one that became a signal',
+    /NO TRADE/.test(text(qs('tbody tr'))) && hookAlert.signal_id === null, text(qs('tbody tr')));
+  ok('the alert history endpoint the panel reads is the one it needs, twice (the pane and its own refresh) \u2014 not a second source of truth',
+    plugins.filter((u) => u === '/bots/webhook').length >= 1 && plugins.includes('/accounts'), JSON.stringify(plugins));
+
+  w.API = botsApi;                // the editor underneath is the playbook's, not the settings pane's
+  root.appendChild(modal.body);   // the Settings pane replaced the root: put the open editor back in the page
   qs('#s-name').value = 'Probe setup';
   qs('#s-entry').value = 'require killzone\nWait for the sweep';
   await modal.actions.find((a) => a.primary).onClick(() => {});

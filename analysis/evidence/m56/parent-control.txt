@@ -8,10 +8,13 @@ ok the reader route serves the vocabulary and the classification exactly when th
 ok and the payload names the limits itself: prose is not parsed, a fact it cannot read is never met, and no grade or score is influenced
 ok and a malformed plan id is refused BY the reader exactly when the reader exists — the parent simply ignores the parameter it has never heard of
 ok a plan that belongs to somebody else is never read on the trader’s behalf, on any tree
+ok an incoming alert carries the plan gate back exactly when the tree has one, and on the parent the alert payload has no gate key at all
+ok and the alert history serves its stored verdict as an object exactly when the tree parses it on the way out — the parent served raw JSON text, which is why the panel could never render a verdict
 ok the editor says which lines are enforced and the analysis page says which plan is being enforced, exactly when the tree ships the gate
+ok and the alert history says which plan gated an incoming alert, exactly when the tree ships the gate
 ok and none of it exists on the parent: no vocabulary hint, no plan note and no per-candidate rule block to find
 ok the milestone adds NO table, index or trigger of its own on any tree — the plan was already stored in `strategies`
 ok and reading the plan — the reader route and an analysis against it — changes not one stored byte of the plan or its M102 history
-M56 control (parent): the written plan that gated nothing: 14 passed, 0 failed
+M56 control (parent): the written plan that gated nothing: 17 passed, 0 failed
 
 [candle-shim] served 3 fixture response(s)

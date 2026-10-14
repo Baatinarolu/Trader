@@ -22,7 +22,10 @@ ok the editor’s hint is populated on the FIRST open — it does not sit on `lo
 ok and it lists the engine’s own vocabulary, line for line, from the server — there is no second copy in the browser to drift out of date
 ok an enumerated fact carries its allowed values on hover, so a trader can write a line the engine will accept rather than guessing
 ok and the hint states the deal: `require` lines are enforced and cannot be overruled, everything else is context that is never interpreted
+ok the Settings alert history names the plan that gated an incoming alert, with the version and how many rules were enforced, and says it REFUSED this alert
+ok and the alert row carries no signal id, so a refused alert is distinguishable from one that became a signal
+ok the alert history endpoint the panel reads is the one it needs, twice (the pane and its own refresh) — not a second source of truth
 ok and the body it sends is an array (one entry per line), which is what the route stores and what the gate parses back — the editor and the gate cannot disagree about the shape
-M56 real DOM: the plan, its refusals and the vocabulary a trader edits against: 25 passed, 0 failed
+M56 real DOM: the plan, its refusals and the vocabulary a trader edits against: 28 passed, 0 failed
 
 [candle-shim] served 3 fixture response(s)

@@ -25,18 +25,18 @@
     ]
   },
   "feature": {
-    "pass": 151,
+    "pass": 160,
     "fail": 0,
     "probes": 5,
     "scope": "REPORTED completed assertions; literal clocks, saved rows, HTTP and a real DOM only. The trader\u2019s OWN written plan (strategies.entry_rules, stored as a list of lines and edited in the Playbook) read as a gate on the signal: a `require` line the engine can check is evaluated against facts the analysis already computed, a line that fails refuses the candidate through the ordinary no_trade/veto path with the trader\u2019s own sentence first, and a line the app cannot check is reported as unverifiable rather than shown as satisfied. NO new schema object, no backfill, no write on a read. No broker, provider, mental-state, pixel or production proof, and NO performance claim: the gate is boolean and the payload says it influences no grade, score, cap or price. RAW failures/early aborts and DECLARED assumptions stay separate. DECLARED NEGATIVE carried here by name: the inherited M99/M101 reviews cohort is STALE at this HEAD \u2014 157/3 against its committed 159/1, because the schema grew after M101; the three gaps are declared, not repaired in the probe."
   },
   "control": {
     "delivered": {
-      "pass": 14,
+      "pass": 17,
       "fail": 0
     },
     "parent": {
-      "pass": 14,
+      "pass": 17,
       "fail": 0
     },
     "note": "The mode-aware control probe PASSES on all three trees on purpose: it measures the fault (module present or absent, payload gate present or absent, reader route present or absent, plans unchanged by a read) rather than failing on it."
@@ -275,8 +275,8 @@
     }
   },
   "controls": {
-    "parent_tree": "the committed 6cd59fb M115 release: no module, no payload gate, no reader route, and the three views/docs untouched \u2014 five probes 0/1 each, the mode-aware control 14/0",
-    "gate_only_tree": "the parent plus `src/bots/plan-gate.js` alone: the vocabulary, the parse and the per-direction evaluation can be computed and are measured working (pure 43/0, migration 21/0) while the engine, the API payload and the screen know nothing about them (engine 2/1, api 2/2, ui 1/1)",
+    "parent_tree": "the committed 6cd59fb M115 release: no module, no payload gate, no reader route, and the three views/docs untouched \u2014 five probes 0/1 each, the mode-aware control 17/0",
+    "gate_only_tree": "the parent plus `src/bots/plan-gate.js` alone: the vocabulary, the parse and the per-direction evaluation can be computed and are measured working (pure 43/0, migration 21/0) while the engine, the API payload, the screen and the alert surface know nothing about them (engine 2/1, api 2/2, ui 1/1, control 16/1 on the alert row)",
     "why": "The staged fault is a missing READING around a working module, not a missing rule: that is why the pure and migration arms pass on the gate-only tree while the engine, api and ui arms fail on the absence the milestone closes."
   },
   "arms": {
@@ -286,9 +286,9 @@
       "pass": 2
     },
     "gate-only/control": {
-      "exit_code": 0,
-      "fail": 0,
-      "pass": 14
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 16
     },
     "gate-only/engine": {
       "exit_code": 1,
@@ -318,7 +318,7 @@
     "parent/control": {
       "exit_code": 0,
       "fail": 0,
-      "pass": 14
+      "pass": 17
     },
     "parent/engine": {
       "exit_code": 1,
@@ -387,8 +387,8 @@
       "source_files": 164,
       "patch": "m56-plan-gate-reader.patch",
       "files": 1,
-      "bytes": 5183,
-      "sha256": "5f7ea52a2a640fd9c3024495872f64ea1bb55fdec9c638b9f19ddfaa9f59e871",
+      "bytes": 8062,
+      "sha256": "146b55e55ca7d4cc50ea9076687125ced06716f3e625200f4bfbf627a3bd7cef",
       "forward_byte_differences": 0,
       "reverse_byte_differences": 0
     },
@@ -397,24 +397,24 @@
       "source_manifest": "documentation-source.json",
       "source_files": 164,
       "patch": "m56-plan-gate-documentation.patch",
-      "files": 5,
-      "bytes": 22397,
-      "sha256": "5bc815c2899a3b8d2ca5780300638d175e025510a18baee4b10ed740458efd65",
+      "files": 6,
+      "bytes": 25696,
+      "sha256": "8015844bd714b338f8f13ad361f2c62a59e8a1ad49e576c11bec54393623fe9f",
       "forward_byte_differences": 0,
       "reverse_byte_differences": 0
     }
   ],
   "combined": {
-    "files": 9,
-    "bytes": 63764,
-    "sha256": "84276902376c81c5ce2d004e96518abdc6eee9f5b91fb066be0ed403cc681e96",
+    "files": 10,
+    "bytes": 69942,
+    "sha256": "df3270ad00b5730f17de54fc71f10fef6c768110a4b009a2d3f894625e16a169",
     "forward_byte_differences": 0,
     "reverse_byte_differences": 0
   },
   "pristine_cumulative": {
     "files": 105,
-    "bytes": 1925439,
-    "sha256": "53e0153554df99be7275aa27166ddea756115ed6eae41e5dd919bd0f6ce010be",
+    "bytes": 1931448,
+    "sha256": "9f76e75a3103427a3e0a20c6433ada4b6af879fb2f32cf79b13efda2cc53e296",
     "forward_byte_differences": 0,
     "reverse_byte_differences": 0
   },
@@ -449,6 +449,7 @@
     "src/routes/bots.js",
     "public/js/views/bots.js",
     "public/js/views/playbook.js",
+    "public/js/views/settings.js",
     "docs/API.md",
     "docs/NOT-IMPLEMENTED.md",
     "docs/PLAYLIST-CURRICULUM.md"
@@ -485,7 +486,6 @@
     "public/js/views/routine.js",
     "public/js/views/rule-changes.js",
     "public/js/views/screenshots.js",
-    "public/js/views/settings.js",
     "public/js/views/state-gate.js",
     "public/js/views/trades.js",
     "scripts/api-test.js",
@@ -493,7 +493,8 @@
     "scripts/smoke-test.js",
     "scripts/test-cleanup.js",
     "server.js",
-    "src/ask.js"
+    "src/ask.js",
+    "src/behavior-days.js"
   ],
   "doc_corrections": {
     "API": "docs/API.md gains the `GET /bots/plan-gate` row (states, per-line classification, limits) and `strategy_id` on analyse/chart/scan, with the scan row noting `plan_gate` + `plan_refused`",

@@ -1,5 +1,5 @@
 diff --git a/docs/API.md b/docs/API.md
-index 4af3b0e..3fdee5b 100644
+index 4af3b0e..b589f0e 100644
 --- a/docs/API.md
 +++ b/docs/API.md
 @@ -248,11 +248,12 @@ the methodology, the weights and the honest limitations.
@@ -18,6 +18,15 @@ index 4af3b0e..3fdee5b 100644
  | GET | `/bots/predict` | `symbol`, `tf`, `bars`, `step`, `horizon` | `{ direction, setups, buy, sell, model, backtest, summary }` — `backtest` carries the measured tables below |
  | GET | `/bots/backtest` | `symbol`, `tf`, `bars` (300–3000), `step` (1–6), `samples`, `entry`, `cost`, `force=1` | backtest detail + `trades[]` table + the measured blocks below |
  | GET | `/bots/correction` | `days`, `account_id`, `backfill=1` | `{ overall, behavior_score, mistakes[], guardrails, daily, grades[] }` |
+@@ -569,7 +570,7 @@ curl -s -H "x-session: $TOKEN" 'localhost:3000/api/bots/tv/config?symbol=ES&tf=4
+ 
+ | Method | Path | Auth | Notes |
+ |---|---|---|---|
+-| GET | `/bots/webhook` | session | your webhook URL + token, options, counters and the last 8 alerts |
++| GET | `/bots/webhook` | session | your webhook URL + token, options, counters and the last 8 alerts, each with its `result` parsed (the bot verdict, its agreement and the plan gate that applied: `result.plan_gate`, `signal_id` when it created one) |
+ | POST | `/bots/webhook` | session | `{ analyse, autocreate, label }` — what to do with incoming alerts |
+ | POST | `/bots/webhook/rotate` | session | burns the token and returns a new URL |
+ | POST | `/bots/webhook/tradingview` | **token only** | the receiver — `?token=<token>` (also `x-webhook-token:`, or `token`/`secret` in the body) |
 diff --git a/docs/NOT-IMPLEMENTED.md b/docs/NOT-IMPLEMENTED.md
 index 3bc01ac..d99e747 100644
 --- a/docs/NOT-IMPLEMENTED.md
@@ -188,6 +197,34 @@ index 471c8c8..fbd6500 100644
        <label class="field span2"><span>Exit rules (one per line)</span><textarea id="s-exit">${U.esc((v.exit_rules || []).join('\n'))}</textarea></label>
        <label class="field span2"><span>Pre-trade checklist (one per line)</span><textarea id="s-check">${U.esc((v.checklist || []).join('\n'))}</textarea></label>
        <label class="field span2"><span>Risk rules</span><textarea id="s-risk" placeholder="Max risk, max trades, cooldowns…">${U.esc(v.risk_rules)}</textarea></label>
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index 360d5c4..ac3ecd4 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -273,6 +273,23 @@
+                     <td>${r.action ? `<span class="chip ${r.action === 'BUY' ? 'pos' : r.action === 'SELL' ? 'neg' : ''}">${U.esc(r.action)}</span> ${r.grade ? U.esc(r.grade) + ' \u00b7 ' + r.score : ''}` : (a.error ? `<span class="neg tiny">${U.esc(a.error)}</span>` : '<span class="muted tiny">not analysed</span>')}</td>
+                     <td class="tiny">${U.esc(r.agreement || '\u2014')}${r.rr ? ` \u00b7 ${r.rr}R` : ''}</td></tr>`;
+                 }).join('')}</tbody></table></div>` : '<div class="empty">No alerts yet.</div>'}`;
++              /* M56 — an alert is analysed like any other read, so the trader's written plan gates it and
++               * the alert row has to say so: a `NO TRADE` the plan caused that names neither the plan nor a
++               * rule is the unattributed stand-down this milestone exists to remove. `no_plan` and
++               * `ambiguous` block nothing and say that too, so an empty verdict column is never read as a
++               * refusal. */
++              const planLine = (r) => {
++                const g = r.plan_gate;
++                if (!g || g.state === 'not_consulted') return '';
++                if (g.state === 'no_plan') return '<div class="tiny muted">No active plan — nothing gated</div>';
++                if (g.state === 'ambiguous') return `<div class="tiny muted">${(g.candidates || []).length} active plans — nothing gated until one is chosen</div>`;
++                if (g.state === 'unavailable') return '<div class="tiny neg">Your plan could not be read — every signal is refused</div>';
++                return `<div class="tiny ${g.refused_now ? 'neg' : 'muted'}">Plan ${U.esc((g.plan || {}).name || '')}${g.plan && g.plan.version ? ' v' + g.plan.version : ''}: ${g.enforced} rule${g.enforced === 1 ? '' : 's'} enforced${g.refused_now ? ' — refused this alert' : ''}</div>`;
++              };
++              [...alertsCard.querySelectorAll('tbody tr')].forEach((tr, i) => {
++                const r = (list[i] && list[i].result) || {};
++                const line = planLine(r); if (line) tr.cells[4].insertAdjacentHTML('beforeend', line);
++              });
+             };
+             paintAlerts(d.alerts || []);
+             w.appendChild(alertsCard);
 diff --git a/src/bots/index.js b/src/bots/index.js
 index 708b6c1..532e59d 100644
 --- a/src/bots/index.js
@@ -751,7 +788,7 @@ index 4dc0651..a5dc8ed 100644
          end: (ctx.tradingWindow.window || {}).end || null, timezone: (ctx.tradingWindow.window || {}).timezone || null,
          source: (ctx.tradingWindow.window || {}).source || null, local_time: (ctx.tradingWindow.window || {}).local_time || null,
 diff --git a/src/routes/bots.js b/src/routes/bots.js
-index 9bc744b..cd6a508 100644
+index 9bc744b..96e7e98 100644
 --- a/src/routes/bots.js
 +++ b/src/routes/bots.js
 @@ -23,6 +23,9 @@ function createBotsRouter({ requireAuth }) {
@@ -830,3 +867,39 @@ index 9bc744b..cd6a508 100644
      res.json(out);
    }));
  
+@@ -350,7 +389,7 @@ router.get('/markets', requireAuth, (req, res) => {
+   /** Everything the Settings → Integrations panel needs. */
+   router.get('/webhook', requireAuth, wrap(async (req, res) => {
+     const row = await D.getOrCreateWebhookToken(req.user.id);
+-    const alerts = await D.db.prepare('SELECT id, tv_symbol, symbol, action, price, timeframe, received_at, handled, error, result FROM tv_alerts WHERE user_id=? ORDER BY id DESC LIMIT 8').all(req.user.id);
++    const alerts = await D.db.prepare('SELECT id, tv_symbol, symbol, action, price, timeframe, received_at, handled, error, result, signal_id FROM tv_alerts WHERE user_id=? ORDER BY id DESC LIMIT 8').all(req.user.id);
+     const stats = await D.db.prepare(`SELECT COUNT(*) AS total, SUM(CASE WHEN error IS NULL THEN 1 ELSE 0 END) AS ok,
+       SUM(CASE WHEN result IS NOT NULL THEN 1 ELSE 0 END) AS analysed FROM tv_alerts WHERE user_id=?`).get(req.user.id);
+     const base = `${req.protocol}://${req.get('host')}`;
+@@ -363,9 +402,13 @@ router.get('/markets', requireAuth, (req, res) => {
+       label: row.label,
+       uses: row.uses, last_used_at: row.last_used_at,
+       stats: { total: stats.total || 0, ok: stats.ok || 0, analysed: stats.analysed || 0 },
++      // M56 — `result` is stored as JSON TEXT, and the Settings panel reads `r.action`, `r.grade` and now
++      // the plan gate off it. The sibling `/bots/alerts` route already parses it; leaving this one raw
++      // meant the alert-verdict column could never render anything but a dash, and a plan refusal stored
++      // here would have been invisible on the only screen that shows the alert history.
++      alerts: alerts.map((a) => ({ ...a, result: safeJson(a.result) })),
+       sample_text: 'BUY {{ticker}} @ {{close}} {{interval}}',
+       sample_json: '{"symbol":"{{ticker}}","action":"{{strategy.order.action}}","price":"{{close}}","tf":"{{interval}}","time":"{{timenow}}"}',
+-      alerts,
+     });
+   }));
+ 
+@@ -485,6 +528,11 @@ router.get('/markets', requireAuth, (req, res) => {
+       targets: best && best.levels ? best.levels.targets : [],
+       rr: best && best.levels ? best.levels.rr_final : null,
+       whynot: (v.why_not || []).slice(0, 4),
++      /* M56 — the incoming alert is analysed like any other read, so the trader's written plan gates it
++       * too. It travels WITH the alert (rather than only inside the analysis nobody stores): a NO TRADE in
++       * the alert history that the plan caused must name the plan, its version and the line that refused,
++       * or the trader is left reading an unattributed stand-down. `null` when no plan was consulted. */
++      plan_gate: (payload.setups && payload.setups.filters && payload.setups.filters.plan_gate) || null,
+       agreement: agreement(parsed, v.action, best),
+       generated_at: payload.generated_at || new Date().toISOString(),
+     };

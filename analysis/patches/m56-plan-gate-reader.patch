@@ -1,5 +1,5 @@
 diff --git a/src/routes/bots.js b/src/routes/bots.js
-index 9bc744b..cd6a508 100644
+index 9bc744b..96e7e98 100644
 --- a/src/routes/bots.js
 +++ b/src/routes/bots.js
 @@ -23,6 +23,9 @@ function createBotsRouter({ requireAuth }) {
@@ -78,3 +78,39 @@ index 9bc744b..cd6a508 100644
      res.json(out);
    }));
  
+@@ -350,7 +389,7 @@ router.get('/markets', requireAuth, (req, res) => {
+   /** Everything the Settings → Integrations panel needs. */
+   router.get('/webhook', requireAuth, wrap(async (req, res) => {
+     const row = await D.getOrCreateWebhookToken(req.user.id);
+-    const alerts = await D.db.prepare('SELECT id, tv_symbol, symbol, action, price, timeframe, received_at, handled, error, result FROM tv_alerts WHERE user_id=? ORDER BY id DESC LIMIT 8').all(req.user.id);
++    const alerts = await D.db.prepare('SELECT id, tv_symbol, symbol, action, price, timeframe, received_at, handled, error, result, signal_id FROM tv_alerts WHERE user_id=? ORDER BY id DESC LIMIT 8').all(req.user.id);
+     const stats = await D.db.prepare(`SELECT COUNT(*) AS total, SUM(CASE WHEN error IS NULL THEN 1 ELSE 0 END) AS ok,
+       SUM(CASE WHEN result IS NOT NULL THEN 1 ELSE 0 END) AS analysed FROM tv_alerts WHERE user_id=?`).get(req.user.id);
+     const base = `${req.protocol}://${req.get('host')}`;
+@@ -363,9 +402,13 @@ router.get('/markets', requireAuth, (req, res) => {
+       label: row.label,
+       uses: row.uses, last_used_at: row.last_used_at,
+       stats: { total: stats.total || 0, ok: stats.ok || 0, analysed: stats.analysed || 0 },
++      // M56 — `result` is stored as JSON TEXT, and the Settings panel reads `r.action`, `r.grade` and now
++      // the plan gate off it. The sibling `/bots/alerts` route already parses it; leaving this one raw
++      // meant the alert-verdict column could never render anything but a dash, and a plan refusal stored
++      // here would have been invisible on the only screen that shows the alert history.
++      alerts: alerts.map((a) => ({ ...a, result: safeJson(a.result) })),
+       sample_text: 'BUY {{ticker}} @ {{close}} {{interval}}',
+       sample_json: '{"symbol":"{{ticker}}","action":"{{strategy.order.action}}","price":"{{close}}","tf":"{{interval}}","time":"{{timenow}}"}',
+-      alerts,
+     });
+   }));
+ 
+@@ -485,6 +528,11 @@ router.get('/markets', requireAuth, (req, res) => {
+       targets: best && best.levels ? best.levels.targets : [],
+       rr: best && best.levels ? best.levels.rr_final : null,
+       whynot: (v.why_not || []).slice(0, 4),
++      /* M56 — the incoming alert is analysed like any other read, so the trader's written plan gates it
++       * too. It travels WITH the alert (rather than only inside the analysis nobody stores): a NO TRADE in
++       * the alert history that the plan caused must name the plan, its version and the line that refused,
++       * or the trader is left reading an unattributed stand-down. `null` when no plan was consulted. */
++      plan_gate: (payload.setups && payload.setups.filters && payload.setups.filters.plan_gate) || null,
+       agreement: agreement(parsed, v.action, best),
+       generated_at: payload.generated_at || new Date().toISOString(),
+     };

@@ -23,9 +23,9 @@ PARENT = Path('/tmp/m56-parent/app')
 SHIM = ROOT / 'analysis/candle-shim.js'
 # (name, script, expected pass, needs the candle shim, needs TJ_PARENT)
 M56_FEATURE = [('pure', 'probe-m56-pure.js', 43, False, False), ('engine', 'probe-m56-engine.js', 25, False, True),
-               ('api', 'probe-m56-api.js', 37, True, False), ('migration', 'probe-m56-migration.js', 21, False, True),
-               ('ui', 'probe-m56-ui.js', 25, True, False)]
-M56_CONTROL = [('delivered', 14, 0), ('parent', 14, 0)]
+               ('api', 'probe-m56-api.js', 43, True, False), ('migration', 'probe-m56-migration.js', 21, False, True),
+               ('ui', 'probe-m56-ui.js', 28, True, False)]
+M56_CONTROL = [('delivered', 17, 0), ('parent', 17, 0)]
 DELEGATED = ['m13feature', 'm115feature', 'm112feature', 'm111feature', 'm110feature', 'm109feature', 'm108feature',
              'm107feature', 'm106feature', 'm105feature', 'raw', 'declared', 'pure', 'offline', 'market',
              'live-provider', 'reports', 'screenshots', 'confluences', 'emotions', 'process', 'behavior',

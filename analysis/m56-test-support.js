@@ -45,7 +45,9 @@ const planGate = (u, id) => u.req('/bots/plan-gate' + (id ? '?strategy_id=' + id
  * editor sends and what `strategyValues` stores. Echoing the stored STRING back double-encodes it —
  * that hazard is real, so it is written as its own deliberate case in the probe, never by accident. */
 const asPutBody = (row, active) => {
-  const arr = (v, fallback) => { try { const p = JSON.parse(typeof v === 'string' ? v : ''); return Array.isArray(p) ? p : fallback; } catch (e) { return fallback; } };
+  // A stored column arrives as a STRING and a helper's own body as an ARRAY: both are the same list,
+  // and treating the array as unparseable would silently blank the trader's rules on a mere status toggle.
+  const arr = (v, fallback) => { if (Array.isArray(v)) return v; try { const p = JSON.parse(typeof v === 'string' ? v : ''); return Array.isArray(p) ? p : fallback; } catch (e) { return fallback; } };
   return { ...row, entry_rules: arr(row.entry_rules, []), exit_rules: arr(row.exit_rules, ['exit when the plan invalidates']),
     checklist: arr(row.checklist, ['pre-trade checklist item']), ...(active === undefined ? {} : { active: active ? 1 : 0 }) };
 };

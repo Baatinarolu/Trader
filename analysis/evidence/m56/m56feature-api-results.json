@@ -1,6 +1,6 @@
 {
   "app": "/home/user/Trader/extracted/tradejournal",
-  "pass": 37,
+  "pass": 43,
   "fail": 0,
   "results": [
     {
@@ -109,6 +109,30 @@
     },
     {
       "label": "a scan row carries the plan it was confirmed against and whether the plan took that setup away",
+      "passed": true
+    },
+    {
+      "label": "the trader’s own webhook token is issued and analysis is on for it (the state this section measures)",
+      "passed": true
+    },
+    {
+      "label": "an alert analysed while a plan is active is confirmed against that plan, and the alert carries the gate back with it",
+      "passed": true
+    },
+    {
+      "label": "and the plan REFUSED the alert: no signal is created from it, because the refusal reaches the verdict the auto-create rule reads",
+      "passed": true
+    },
+    {
+      "label": "the alert history serves that gate as an OBJECT the panel can read (the stored JSON text is parsed on the way out, like the sibling alerts route)",
+      "passed": true
+    },
+    {
+      "label": "with a different plan active the same alert is confirmed against THAT plan — the alert is gated by the plan the trader is running now, not by a preference baked into the alert",
+      "passed": true
+    },
+    {
+      "label": "and with no plan active the alert says `no_plan` and blocks nothing — an incoming alert is not refused for the absence of a plan",
       "passed": true
     },
     {

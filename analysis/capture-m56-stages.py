@@ -14,9 +14,11 @@ a line of it. So the stages isolate the READING, file by file:
   `wired`         + `src/bots/setup.js` and `src/bots/index.js` — a failing `require` line now refuses
                   the candidate through the ordinary veto path and rides the analyse/chart/scan payloads
   `reader`        + `src/routes/bots.js` — `GET /bots/plan-gate` publishes the vocabulary, the per-line
-                  classification and the plan id validation (400/404) on the three payload routes
-  `documentation` + the two views and the three docs (the editor's enforced-rule hint, the analysis
-                  page's plan note and per-candidate rule block, the API row and the honesty rows)
+                  classification and the plan id validation (400/404) on the three payload routes, and the
+                  alert surface carries the gate (parsed `result`, `signal_id`) so a refused alert names it
+  `documentation` + the three views and the three docs (the editor's enforced-rule hint, the analysis
+                  page's plan note and per-candidate rule block, the alert-history plan line, the API row
+                  and the honesty rows)
 
 Every stage tree is rebuilt from the saved patches and must match its frozen `<stage>-source.json`
 byte-for-byte in BOTH directions; the delivered tree is 164 files against the parent's 163.
@@ -36,7 +38,7 @@ FILES = {
     'wired': ['src/bots/plan-gate.js', 'src/bots/setup.js', 'src/bots/index.js'],
     'reader': ['src/bots/plan-gate.js', 'src/bots/setup.js', 'src/bots/index.js', 'src/routes/bots.js'],
     'documentation': ['src/bots/plan-gate.js', 'src/bots/setup.js', 'src/bots/index.js', 'src/routes/bots.js',
-                      'public/js/views/bots.js', 'public/js/views/playbook.js',
+                      'public/js/views/bots.js', 'public/js/views/playbook.js', 'public/js/views/settings.js',
                       'docs/API.md', 'docs/NOT-IMPLEMENTED.md', 'docs/PLAYLIST-CURRICULUM.md'],
 }
 HARNESS = ['analysis/m56-test-support.js', 'analysis/m56-check.js', 'analysis/probe-m56-pure.js', 'analysis/probe-m56-engine.js',
@@ -122,7 +124,8 @@ def main():
     assert all(p not in guards['parent'] for p in ['src/bots/plan-gate.js']), 'the gate module must be NEW in this milestone'
     changed = {p for p in set(current) | set(guards['parent']) if guards['parent'].get(p) != current.get(p)}
     assert changed == {'src/bots/plan-gate.js', 'src/bots/setup.js', 'src/bots/index.js', 'src/routes/bots.js', 'public/js/views/bots.js',
-                       'public/js/views/playbook.js', 'docs/API.md', 'docs/NOT-IMPLEMENTED.md', 'docs/PLAYLIST-CURRICULUM.md'}, changed
+                       'public/js/views/playbook.js', 'public/js/views/settings.js',
+                       'docs/API.md', 'docs/NOT-IMPLEMENTED.md', 'docs/PLAYLIST-CURRICULUM.md'}, changed
     # stage ordering: each stage's files are the delivered ones and every later file is still the parent's
     for stage in STAGES:
         for rel in FILES[stage]:
@@ -132,10 +135,10 @@ def main():
     assert guards['gate']['src/bots/plan-gate.js'] == current['src/bots/plan-gate.js'], 'the gate stage is the module and nothing else'
     for rel in ['src/routes/bots.js', 'public/js/views/bots.js', 'public/js/views/playbook.js']:
         assert guards['wired'].get(rel) == guards['parent'].get(rel) and guards['wired'].get(rel) != current.get(rel), ('wired must not carry the reader route or the views', rel)
-    for rel in ['public/js/views/bots.js', 'public/js/views/playbook.js', 'docs/API.md', 'docs/NOT-IMPLEMENTED.md', 'docs/PLAYLIST-CURRICULUM.md']:
+    for rel in ['public/js/views/bots.js', 'public/js/views/playbook.js', 'public/js/views/settings.js', 'docs/API.md', 'docs/NOT-IMPLEMENTED.md', 'docs/PLAYLIST-CURRICULUM.md']:
         assert guards['reader'][rel] == guards['parent'][rel] and guards['reader'][rel] != current[rel], ('reader must not carry the views or the docs', rel)
     assert {p for p in set(current) | set(guards['reader']) if guards['reader'].get(p) != current.get(p)} == {
-        'public/js/views/bots.js', 'public/js/views/playbook.js', 'docs/API.md', 'docs/NOT-IMPLEMENTED.md', 'docs/PLAYLIST-CURRICULUM.md'}, 'Docs and views changed runtime'
+        'public/js/views/bots.js', 'public/js/views/playbook.js', 'public/js/views/settings.js', 'docs/API.md', 'docs/NOT-IMPLEMENTED.md', 'docs/PLAYLIST-CURRICULUM.md'}, 'Docs and views changed runtime'
     harness = read(E / 'harness-source.json')
     for p, h in harness.items():
         assert sha((ROOT / p).read_bytes()) == h, p

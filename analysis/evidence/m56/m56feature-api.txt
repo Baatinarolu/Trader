@@ -30,6 +30,12 @@ BOT API error on GET /api/bots/plan-gate?strategy_id=-2: strategy_id must be a p
 ok and a fractional or negative id is refused the same way
 ok the chart endpoint confirms against the SAME plan the analysis did (M124’s rule: not a second opinion)
 ok a scan row carries the plan it was confirmed against and whether the plan took that setup away
+ok the trader’s own webhook token is issued and analysis is on for it (the state this section measures)
+ok an alert analysed while a plan is active is confirmed against that plan, and the alert carries the gate back with it
+ok and the plan REFUSED the alert: no signal is created from it, because the refusal reaches the verdict the auto-create rule reads
+ok the alert history serves that gate as an OBJECT the panel can read (the stored JSON text is parsed on the way out, like the sibling alerts route)
+ok with a different plan active the same alert is confirmed against THAT plan — the alert is gated by the plan the trader is running now, not by a preference baked into the alert
+ok and with no plan active the alert says `no_plan` and blocks nothing — an incoming alert is not refused for the absence of a plan
 ok a plan written in prose has ZERO enforced requirements, and says so rather than looking satisfied
 ok and the prose plan refuses nothing: free text is never interpreted, in either direction
 ok the free-text `market_conditions` field is reported as NOT parsed — "ranging only" cannot silently become a rule
@@ -40,6 +46,6 @@ ok editing the rules changes what the gate enforces, and the M102 version moves 
 ok analysing with a plan writes exactly what analysing without one writes — the gate adds no row of its own
 ok and reading the plan never rewrites it: `strategies` and its M102 history are byte-identical across the gate read
 ok the milestone adds NO table, index or trigger of its own — the plan lives in `strategies` exactly as before
-M56 api: the written plan over the real routes, its ownership and its read-only proof: 37 passed, 0 failed
+M56 api: the written plan over the real routes, its ownership and its read-only proof: 43 passed, 0 failed
 
 [candle-shim] served 5 fixture response(s)

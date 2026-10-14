@@ -135,6 +135,46 @@ H.finish('M56 api: the written plan over the real routes, its ownership and its 
     && (scan.data.rows || []).every((r) => r.plan_gate && r.plan_gate.plan && r.plan_gate.plan.id === met.id && typeof r.plan_refused === 'boolean'),
     JSON.stringify((scan.data.rows || []).map((r) => ({ s: r.symbol, g: r.plan_gate && r.plan_gate.state, refused: r.plan_refused }))));
 
+  /* ------------------------------------------------ 7b. an incoming TradingView alert is gated too */
+  /* A webhook alert is an analysis the trader never asked for at that moment, which is exactly when an
+   * unattributed stand-down is least useful: the alert history has to carry the plan and the rule. */
+  const hook = (await u.req('/bots/webhook', undefined, 'GET')).data;
+  ok('the trader\u2019s own webhook token is issued and analysis is on for it (the state this section measures)',
+    !!hook.token && hook.analyse === true, JSON.stringify({ analyse: hook.analyse, autocreate: hook.autocreate }));
+  await u.req('/bots/webhook', { autocreate: true }, 'POST');
+  const alertBody = { symbol: 'EURUSD', action: 'buy', price: 1.1, tf: '15m' };
+  await H.setActive(u, impossible.id, impossible.body, 1);
+  await H.setActive(u, met.id, met.body, 0);
+  const alert = await u.req('/bots/webhook/tradingview?token=' + encodeURIComponent(hook.token), alertBody, 'POST');
+  const alertGate = alert.data.plan && alert.data.plan.plan_gate;
+  ok('an alert analysed while a plan is active is confirmed against that plan, and the alert carries the gate back with it',
+    alert.status === 200 && alert.data.ok === true && !!alertGate && alertGate.state === 'ready' && alertGate.plan.id === impossible.id
+    && alertGate.enforced === 1 && alertGate.refused_now === true,
+    JSON.stringify({ action: alert.data.plan && alert.data.plan.action, state: alertGate && alertGate.state, plan: alertGate && alertGate.plan, enforced: alertGate && alertGate.enforced }));
+  ok('and the plan REFUSED the alert: no signal is created from it, because the refusal reaches the verdict the auto-create rule reads',
+    alert.data.signal_id === null && alert.data.plan.action === 'NO TRADE',
+    JSON.stringify({ signal_id: alert.data.signal_id, action: alert.data.plan.action }));
+  const history = (await u.req('/bots/webhook', undefined, 'GET')).data.alerts;
+  ok('the alert history serves that gate as an OBJECT the panel can read (the stored JSON text is parsed on the way out, like the sibling alerts route)',
+    (() => { const top = history[0]; const r = top && top.result;
+      return !!r && typeof r === 'object' && !Array.isArray(r) && r.plan_gate && r.plan_gate.plan
+        && r.plan_gate.plan.id === impossible.id && r.plan_gate.enforced === 1 && top.signal_id === null; })(),
+    JSON.stringify({ type: typeof history[0].result, signal: history[0].signal_id, planned: impossible.id,
+      got: history[0].result && history[0].result.plan_gate && { id: history[0].result.plan_gate.plan && history[0].result.plan_gate.plan.id, enforced: history[0].result.plan_gate.enforced, state: history[0].result.plan_gate.state } }));
+  await H.setActive(u, impossible.id, impossible.body, 0);
+  await H.setActive(u, met.id, met.body, 1);
+  const second = await u.req('/bots/webhook/tradingview?token=' + encodeURIComponent(hook.token), alertBody, 'POST');
+  ok('with a different plan active the same alert is confirmed against THAT plan \u2014 the alert is gated by the plan the trader is running now, not by a preference baked into the alert',
+    second.data.plan.plan_gate.plan.id === met.id && second.data.plan.plan_gate.state === 'ready',
+    JSON.stringify(second.data.plan.plan_gate.plan));
+  await H.setActive(u, met.id, met.body, 0);
+  const unplanned = await u.req('/bots/webhook/tradingview?token=' + encodeURIComponent(hook.token), alertBody, 'POST');
+  ok('and with no plan active the alert says `no_plan` and blocks nothing \u2014 an incoming alert is not refused for the absence of a plan',
+    unplanned.data.plan.plan_gate.state === 'no_plan' && unplanned.data.plan.plan_gate.enforced === 0,
+    JSON.stringify({ state: unplanned.data.plan.plan_gate.state, signal: unplanned.data.signal_id }));
+  await H.setActive(u, met.id, met.body, 1);
+  await H.setActive(u, impossible.id, impossible.body, 1);
+
   /* ------------------------------------------------ 8. prose and the market-conditions field */
   const prose = await H.plan(u, { name: 'Prose only', rules: [], market_conditions: 'Ranging only \u2014 never news', entry_rules: ['Wait for the sweep', 'Only trade London'] });
   const proseRead = await H.planGate(u, prose.id);

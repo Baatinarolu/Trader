@@ -1,6 +1,6 @@
 {
   "app": "/home/user/Trader/extracted/tradejournal",
-  "pass": 25,
+  "pass": 28,
   "fail": 0,
   "results": [
     {
@@ -97,6 +97,18 @@
     },
     {
       "label": "and the hint states the deal: `require` lines are enforced and cannot be overruled, everything else is context that is never interpreted",
+      "passed": true
+    },
+    {
+      "label": "the Settings alert history names the plan that gated an incoming alert, with the version and how many rules were enforced, and says it REFUSED this alert",
+      "passed": true
+    },
+    {
+      "label": "and the alert row carries no signal id, so a refused alert is distinguishable from one that became a signal",
+      "passed": true
+    },
+    {
+      "label": "the alert history endpoint the panel reads is the one it needs, twice (the pane and its own refresh) — not a second source of truth",
       "passed": true
     },
     {

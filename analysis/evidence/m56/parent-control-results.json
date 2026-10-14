@@ -1,6 +1,6 @@
 {
   "app": "/tmp/m56-parent/app",
-  "pass": 14,
+  "pass": 17,
   "fail": 0,
   "results": [
     {
@@ -44,7 +44,19 @@
       "passed": true
     },
     {
+      "label": "an incoming alert carries the plan gate back exactly when the tree has one, and on the parent the alert payload has no gate key at all",
+      "passed": true
+    },
+    {
+      "label": "and the alert history serves its stored verdict as an object exactly when the tree parses it on the way out — the parent served raw JSON text, which is why the panel could never render a verdict",
+      "passed": true
+    },
+    {
       "label": "the editor says which lines are enforced and the analysis page says which plan is being enforced, exactly when the tree ships the gate",
+      "passed": true
+    },
+    {
+      "label": "and the alert history says which plan gated an incoming alert, exactly when the tree ships the gate",
       "passed": true
     },
     {

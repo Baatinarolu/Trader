@@ -44,7 +44,7 @@ M112_CHANGED = PRIOR['M112_TOUCHES']
 M13_CHANGED = M115['M13_CHANGED']
 M115_CHANGED = M115['M115_TOUCHES']
 M56_TOUCHES = ['src/bots/setup.js', 'src/bots/index.js', 'src/routes/bots.js', 'public/js/views/bots.js', 'public/js/views/playbook.js',
-               'docs/API.md', 'docs/NOT-IMPLEMENTED.md', 'docs/PLAYLIST-CURRICULUM.md']
+               'public/js/views/settings.js', 'docs/API.md', 'docs/NOT-IMPLEMENTED.md', 'docs/PLAYLIST-CURRICULUM.md']
 PROTECTED = sorted((set(PRIOR['PROTECTED']) | set(M111_CHANGED) | set(M112_CHANGED) | set(M13_CHANGED) | set(M115_CHANGED)) - set(M56_TOUCHES))
 CHANGED = set(M56_TOUCHES)
 ADDED = ['src/bots/plan-gate.js']
@@ -66,9 +66,11 @@ PRE_FAULTS = {
 DELIVERED_ANSWERS = {
     'pure': ['ok the vocabulary is a closed list of named facts, each with a documented line'],
     'engine': ['ok the same candidate that is tradeable with no plan is REFUSED by a plan rule it cannot meet'],
-    'api': ['ok a requirement the candidate cannot meet REFUSES it, with the refusal as the first reason'],
+    'api': ['ok a requirement the candidate cannot meet REFUSES it, with the refusal as the first reason',
+            'ok an alert analysed while a plan is active is confirmed against that plan, and the alert carries the gate back with it'],
     'migration': ['ok the delivered tree reads the PARENT\u2019s own plan: two machine lines enforced, one line of prose reported and never interpreted'],
-    'ui': ['ok a plan refusal is attributed on the card even when the trader\u2019s own guardrail owns the action line: both reasons are visible, and the plan is not swallowed by the guardrail message'],
+    'ui': ['ok a plan refusal is attributed on the card even when the trader\u2019s own guardrail owns the action line: both reasons are visible, and the plan is not swallowed by the guardrail message',
+           'ok the Settings alert history names the plan that gated an incoming alert, with the version and how many rules were enforced, and says it REFUSED this alert'],
 }
 
 
@@ -94,17 +96,17 @@ def main():
     for stage, _ in STAGES:
         for rel in FILES_FOR[stage]:
             assert guards[stage][rel] == current[rel], ('the stage must carry the delivered file', stage, rel)
-    assert {p for p in set(current) | set(guards['reader']) if guards['reader'].get(p) != current.get(p)} == DOCS | {'public/js/views/bots.js', 'public/js/views/playbook.js'}, 'Views or docs changed runtime'
+    assert {p for p in set(current) | set(guards['reader']) if guards['reader'].get(p) != current.get(p)} == DOCS | {'public/js/views/bots.js', 'public/js/views/playbook.js', 'public/js/views/settings.js'}, 'Views or docs changed runtime'
     harness = read('analysis/evidence/m56/harness-source.json')
     for p, h in harness.items():
         assert sha((ROOT / p).read_bytes()) == h, p
-    feature = gate('m56', 'feature', 151, 0, 5)
+    feature = gate('m56', 'feature', 160, 0, 5)
     expected = {r['name']: (r['expected_pass'], 0) for r in feature['runs']}
-    assert expected == {'pure': (43, 0), 'engine': (25, 0), 'api': (37, 0), 'migration': (21, 0), 'ui': (25, 0)}, expected
+    assert expected == {'pure': (43, 0), 'engine': (25, 0), 'api': (43, 0), 'migration': (21, 0), 'ui': (28, 0)}, expected
     for r in feature['runs']:
         assert counts(read('analysis/evidence/m56/m56feature-' + r['name'] + '-results.json')) == expected[r['name']] and r['exit_code'] == 0, r
     control = read('analysis/evidence/m56/control-results.json')
-    assert {(r['mode'], r['pass'], r['fail'], r['exit_code']) for r in control['runs']} == {('delivered', 14, 0, 0), ('parent', 14, 0, 0)}, control
+    assert {(r['mode'], r['pass'], r['fail'], r['exit_code']) for r in control['runs']} == {('delivered', 17, 0, 0), ('parent', 17, 0, 0)}, control
     # The milestones this one sits on, re-run on this tree in this session through the delegated chain.
     m115 = gate('m115', 'feature', 116, 0, 4)
     assert {r['name']: (r['pass'], r['fail'], r['exit_code']) for r in m115['runs']} == {'pure': (41, 0, 0), 'api': (30, 0, 0), 'migration': (18, 0, 0), 'ui': (27, 0, 0)}
@@ -143,14 +145,18 @@ def main():
         assert (controls[f'parent/{name}']['pass'], controls[f'parent/{name}']['fail']) == (0, 1) and controls[f'parent/{name}']['exit_code'] == 1, (name, controls[f'parent/{name}'])
         assert PARENT_GATE in (E / ('parent-' + name + '.txt')).read_text(), (name, PARENT_GATE)
         assert counts(read('analysis/evidence/m56/parent-' + name + '-results.json')) == (0, 1)
-    assert (controls['parent/control']['pass'], controls['parent/control']['fail'], controls['parent/control']['exit_code']) == (14, 0, 0)
+    assert (controls['parent/control']['pass'], controls['parent/control']['fail'], controls['parent/control']['exit_code']) == (17, 0, 0)
     assert 'FAIL' not in (E / 'parent-control.txt').read_text(), 'the mode-aware control probe measures the absence rather than failing on it'
     assert (controls['gate-only/pure']['pass'], controls['gate-only/pure']['fail']) == (43, 0), controls['gate-only/pure']
     assert (controls['gate-only/migration']['pass'], controls['gate-only/migration']['fail']) == (21, 0), controls['gate-only/migration']
     assert (controls['gate-only/engine']['fail'], controls['gate-only/engine']['exit_code']) == (1, 1)
     assert (controls['gate-only/api']['fail'], controls['gate-only/api']['exit_code']) == (2, 1)
     assert (controls['gate-only/ui']['fail'], controls['gate-only/ui']['exit_code']) == (1, 1)
-    assert (controls['gate-only/control']['pass'], controls['gate-only/control']['fail'], controls['gate-only/control']['exit_code']) == (14, 0, 0)
+    assert (controls['gate-only/control']['pass'], controls['gate-only/control']['fail'], controls['gate-only/control']['exit_code']) == (16, 1, 1)
+    assert 'FAIL an incoming alert carries the plan gate back exactly when the tree has one' in (E / 'gate-only-control.txt').read_text(), 'the gate-only arm must fail on the unwired alert surface'
+    # The gate-only api arm stops at the first missing surface (the payload has no gate at all), so the
+    # alert assertion is never reached there — asserted as a PRESENCE check rather than assumed.
+    assert DELIVERED_ANSWERS['api'][1] not in (E / 'gate-only-api.txt').read_text(), 'the gate-only api arm must stop before the alert section: there is no gate block to measure'
     for name, lines in PRE_FAULTS.items():
         pre_text = (E / ('gate-only-' + name + '.txt')).read_text(); delivered_text = (E / ('m56feature-' + name + '.txt')).read_text()
         for line in lines:
@@ -207,7 +213,7 @@ def main():
                     'parent': 'Actual 6cd59fb M115 clean-reps Git release tree (163 files) as the M56 parent: the milestone that added the rep count and the three docs corrections. It already stores the trader\u2019s plan (M102 versions included) and displays it; what it does not do is read it on the decision path, which is exactly the row. This milestone adds one FILE and no schema object.',
                     'pristine_zip': {'file': 'tradingpro-main.zip', 'sha256': sha((ROOT / 'tradingpro-main.zip').read_bytes())}, 'ledger': ledger,
                     'feature': {k: feature[k] for k in ['pass', 'fail', 'probes', 'scope']},
-                    'control': {'delivered': {'pass': 14, 'fail': 0}, 'parent': {'pass': 14, 'fail': 0},
+                    'control': {'delivered': {'pass': 17, 'fail': 0}, 'parent': {'pass': 17, 'fail': 0},
                                 'note': 'The mode-aware control probe PASSES on all three trees on purpose: it measures the fault (module present or absent, payload gate present or absent, reader route present or absent, plans unchanged by a read) rather than failing on it.'},
                     'prior_cohorts_rerun': {'m115': {'pass': 116, 'fail': 0, 'probes': 4, 'evidence': 'analysis/evidence/m115/feature-summary.json'},
                                             'm13': {'pass': 94, 'fail': 0, 'probes': 4, 'evidence': 'analysis/evidence/m13/feature-summary.json'},
@@ -221,8 +227,8 @@ def main():
                         'note': 'smoke-test had not been run since the wiring; it is green on both trees. The bots-test and api-test crashes are pre-existing at the parent and are not this milestone\u2019s.'},
                     'declared_negatives': declared,
                     'regression_parents': {'trees': len(parents['parents']), **parents},
-                    'controls': {'parent_tree': 'the committed 6cd59fb M115 release: no module, no payload gate, no reader route, and the three views/docs untouched \u2014 five probes 0/1 each, the mode-aware control 14/0',
-                                 'gate_only_tree': 'the parent plus `src/bots/plan-gate.js` alone: the vocabulary, the parse and the per-direction evaluation can be computed and are measured working (pure 43/0, migration 21/0) while the engine, the API payload and the screen know nothing about them (engine 2/1, api 2/2, ui 1/1)',
+                    'controls': {'parent_tree': 'the committed 6cd59fb M115 release: no module, no payload gate, no reader route, and the three views/docs untouched \u2014 five probes 0/1 each, the mode-aware control 17/0',
+                                 'gate_only_tree': 'the parent plus `src/bots/plan-gate.js` alone: the vocabulary, the parse and the per-direction evaluation can be computed and are measured working (pure 43/0, migration 21/0) while the engine, the API payload, the screen and the alert surface know nothing about them (engine 2/1, api 2/2, ui 1/1, control 16/1 on the alert row)',
                                  'why': 'The staged fault is a missing READING around a working module, not a missing rule: that is why the pure and migration arms pass on the gate-only tree while the engine, api and ui arms fail on the absence the milestone closes.'},
                     'arms': controls,
                     'gate': {'version': 'plan-gate-v1', 'vocabulary': 13,
@@ -256,7 +262,7 @@ def main():
             companion = {'file': archive.name, 'bytes': archive.stat().st_size, 'sha256': sha(archive.read_bytes()), 'source_files': 164, 'excluded_from_zip_to_avoid_self_hash': True}
             (E / 'archive-sha256.json').write_text(json.dumps(companion, indent=2) + '\n')
             print('Four constructed runtime stages + docs + actual M115 parent + pristine: forward/reverse 0 byte differences.')
-            print('Exact 132/114/3/15; M56 151/0, controls measured (parent 0/1 x5 + 14/0, gate-only 43/0 + 21/0 + 2/1 + 2/2 + 1/1 + 14/0).')
+            print('Exact 132/114/3/15; M56 160/0, controls measured (parent 0/1 x5 + 17/0, gate-only 43/0 + 21/0 + 2/1 + 2/2 + 1/1 + 16/1).')
             print(json.dumps(companion, indent=2))
             return
         # Replay-only: rebuild the stages from the saved patches (never from the work tree) and require

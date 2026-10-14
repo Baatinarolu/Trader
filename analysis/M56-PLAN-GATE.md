@@ -62,6 +62,7 @@ than keyword matching. A `require` line outside the vocabulary is surfaced **lou
 | `src/routes/bots.js` | `GET /bots/plan-gate` (vocabulary, state, classification, limits) and `strategy_id` on analyse/chart/scan; `plan_*` errors map to 400/404 inside `wrap()` |
 | `public/js/views/bots.js` | the plan note, the plan selector (default = *my active plan*), and the per-candidate rule rows with their resolved state and measured detail |
 | `public/js/views/playbook.js` | the editor's enforced-rule hint, fetched from the server so the hint cannot drift from the grammar the engine enforces |
+| `public/js/views/settings.js` | the alert history names the plan that gated an incoming TradingView alert, its version and whether it refused that alert |
 
 **No schema object, no backfill, no write on a read.** The plan is read from `strategies` exactly as the
 trader stored it, the version from the M102 rows, and `GET /settings`-style writes are not involved at all.
@@ -70,11 +71,11 @@ trader stored it, the version from the M102 rows, and `GET /settings`-style writ
 
 | arm | result |
 |---|---|
-| feature (5 probes) | **151/0** — pure 43 · engine 25 · api 37 · migration 21 · ui 25 |
-| control probe, delivered / parent | **14/0** each (mode-aware: it measures the fault rather than failing on it) |
+| feature (5 probes) | **160/0** — pure 43 · engine 25 · api 43 · migration 21 · ui 28 |
+| control probe, delivered / parent | **17/0** each (mode-aware: it measures the fault rather than failing on it) |
 | delivered tree vs the committed parent | candidate fields, grades, scores and levels identical with no plan; `plan_rules` is the only new key and is `null` when no plan was consulted |
 | parent arm (committed release) | pure/engine/api/migration/ui **0/1** each — the module is absent and the absence IS the control |
-| gate-only arm (module present, nothing consults it) | pure **43/0**, migration **21/0** — and engine/api/ui fail on the wiring that is missing |
+| gate-only arm (module present, nothing consults it) | pure **43/0**, migration **21/0**, control **17/0** — and engine (2/1), api (2/2) and ui (1/1) fail on the wiring that is missing |
 | prior cohorts re-run on this tree | M115 **116/0** · M13/M65 **94/0** · M112 **181/0** |
 
 The engine probe is the one that separates a vocabulary from a gate: every documented fact is driven to
@@ -83,6 +84,16 @@ The engine probe is the one that separates a vocabulary from a gate: every docum
 leaves grade/score/levels **byte-identical**, an unreadable killzone resolves `unknown` and refuses
 nothing, an unreadable news calendar can neither satisfy nor fail `no_news_blackout`, and with no plan the
 delivered tree's candidates are identical to the committed parent's with `plan_rules` the only new key.
+
+**The alert surface is the same gap in a wider lens**, and it is closed in the same tree: a TradingView
+alert is an analysis the trader did not ask for at that moment, so it is confirmed against their active
+plan like any other read, the refusal reaches the verdict the auto-create rule reads (so no signal is
+created from an alert the plan refused), and the stored alert carries the gate — `result.plan_gate` in the
+history the Settings panel renders. Reading that surface found a second, pre-existing fault: `GET
+/bots/webhook` served `result` as raw JSON text while the sibling `/bots/alerts` route parsed it, so the
+panel's verdict column could never render anything but a dash. It is parsed on the way out now, and the
+row carries `signal_id`, which is what distinguishes an alert that was refused from one that became a
+signal.
 
 The API probe runs the whole thing through the app's own routes: plans published and edited through
 `POST/PUT /strategies`, the analyse/chart/scan payloads over real candles, ownership (`404
