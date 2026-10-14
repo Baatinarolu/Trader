@@ -234,7 +234,7 @@ Every market endpoint degrades to `{ ok: false, error, …empty }` instead of fa
 | GET | `/export/json` | full backup: accounts, strategies, instruments, trades, journal, goals, watchlist |
 | POST | `/import/csv` | `{ csv, account_id }` → auto-detects columns; returns `{ inserted, skipped, detected }` |
 | POST | `/import/json` | `{ data: <backup object> }` → restores (accounts matched by name) |
-| PUT | `/settings` | `{ name, timezone, focus_symbols[], default_checklist[] }` |
+| PUT | `/settings` | `{ name, timezone, focus_symbols[], default_checklist[], min_rr, session_pref, zone_method }` |
 | POST | `/demo/seed` | regenerates demo trades for the default account |
 
 ---
@@ -250,10 +250,10 @@ the methodology, the weights and the honest limitations.
 | GET | `/bots/markets` | — | instruments (63), timeframes, killzone state, providers |
 | GET | `/bots/plan-gate` | `strategy_id` (optional — your own; defaults to your single ACTIVE plan) | `{ ok, version, vocabulary[], state, plan, note, reason, candidates, counts, lines, limits }` — `state` is `ready`, `no_plan`, `ambiguous` (>1 active plan, all named), `unavailable` or `not_consulted`; each `lines[]` entry is classified `machine`, `prose` or `unknown_fact`; `limits` states prose is not parsed, an unknown value never counts as met and no grade/score/cap/price is influenced |
 | GET | `/bots/candles` | `symbol`, `tf` (1m…1w), `limit` (50–1500), `force=1` | `{ candles:[{t,o,h,l,c,v}], meta:{provider,ticker,last_price,last_bar,cached,warnings} }` |
-| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1`, `strategy_id` | | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
+| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1`, `strategy_id`, `zone_method` | | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
 | GET | `/bots/topdown` | `symbol`, `tf`, `bars` | the video's method on its own: `{ method, layers, steps, checks, score, grade, status, direction, headline, playbook, blocked, conflicts[], crt_plan, levels, verdict }` |
-| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id`, `strategy_id` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
-| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf`, `strategy_id` | `{ rows:[…ranked], errors:[…], actionable, killzone }` — every row carries the plan gate it was confirmed against (`plan_gate`) and whether that plan took the setup away (`plan_refused`) |
+| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id`, `strategy_id`, `zone_method` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
+| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf`, `strategy_id`, `zone_method` | `{ rows:[…ranked], errors:[…], actionable, killzone }` — every row carries the plan gate it was confirmed against (`plan_gate`), whether that plan took the setup away (`plan_refused`) |
 | GET | `/bots/predict` | `symbol`, `tf`, `bars`, `step`, `horizon` | `{ direction, setups, buy, sell, model, backtest, summary }` — `backtest` carries the measured tables below |
 | GET | `/bots/backtest` | `symbol`, `tf`, `bars` (300–3000), `step` (1–6), `samples`, `entry`, `cost`, `force=1` | backtest detail + `trades[]` table + the measured blocks below |
 | GET | `/bots/correction` | `days`, `account_id`, `backfill=1` | `{ overall, behavior_score, mistakes[], guardrails, daily, grades[] }` |
@@ -378,6 +378,50 @@ not a claim about unrecorded behaviour.
 Two reads of the same scope are byte-identical. The card is `Views.ruleBreaks.card` on the analytics
 view above its existing tabs; it renders the total, the per-rule and per-day lines, the two warning
 lines for unreadable and unnamed rows, and the module's own `basis`/`scope` sentences.
+
+### The two zone methods — a chosen geometry, named on every read (M30)
+
+Ep 7 gives **two** ways to draw a supply/demand zone and says to test both over the trader's own 100
+trades: the **pivot method** (the single opposite candle before the displacement leg) and the **range
+method** (the whole consolidation high-to-low). The app shipped the pivot method hardcoded — the cost
+of which he states himself, *"you would have missed this entry … price did not mitigate your zone"* —
+with nothing anywhere saying **which** geometry a read had used.
+
+The geometry is now a **closed vocabulary** — `pivot` (the default) and `range` — and a read always
+names what it ran on. `?zone_method=` on `analyse`, `chart`, `topdown`, `scan` and `signals/save`
+wins for that one request; otherwise the trader's saved `zone_method` in their settings is used; if
+neither, the pivot method. The choice is stored in the existing settings JSON (`PUT /settings`),
+**no column, table or index was added**, and reading either geometry writes nothing.
+
+`setups.filters.zone_method` carries `{ method, requested, source, sources[], vocabulary[], read,
+applied_zones, base_fallbacks, error, note }`:
+
+| field | meaning |
+|---|---|
+| `method` | the geometry this read actually used |
+| `requested` | what the caller asked for, `null` when nothing was asked (a query and a stored choice are different facts) |
+| `source` | **where the method came from**: `request` (this call's query), `settings` (the trader's saved choice), `unspecified` (a caller handed a method with no provenance), `default` (nobody chose) |
+| `read` | `false` on the short-series sentinel: the read never reached the zone stage, so no zone is attributed to it |
+| `applied_zones` | how many zones on this read carry the range geometry |
+| `base_fallbacks` | zones whose consolidation could not be walked and stayed **pivot** — counted, never silently widened |
+| `error` | a request this app cannot plot: the sentence naming the vocabulary it can |
+| `note` | the trade-off in words: a wider zone means a **wider stop** |
+
+The range method is a **three-rule walk** over closed bars: it stops at a displacement bar (a leg is
+not part of a base), at a bar that does not overlap the envelope built so far (price left the base),
+and at a **cap of 3 ATR / 12 bars which is REPORTED** (`capped: true`, `width_cap`) rather than
+silently truncating. Each range zone carries its own walk (`base: {ok, from_i, bars, high, low,
+width_atr, capped, stopped, limits, applied}`); a walk shorter than two bars is not a consolidation
+and the zone stays pivot with its `reason` (`no_consolidation`, `no_pivot_candle`, `no_atr`).
+
+**What this does not claim.** Neither method is measured to be better here, and the app does not say
+so: the wider zone catches the pullback the candle misses **and** puts the stop further away — that
+is the trade-off, stated on the payload and on the screens. `PUT /settings {zone_method}` refuses a
+value outside the vocabulary with `400 zone_method_invalid` (a choice that silently did not apply
+would leave a screen naming one geometry while the zones were drawn in another), while a stray
+`?zone_method=` on a request runs the pivot method and reports it in `error` rather than 400-ing a
+read. An incoming TradingView alert is read on the trader's own geometry and the stored alert
+history carries it too.
 
 ### The trading window — a hard block, not a penalty (M112)
 

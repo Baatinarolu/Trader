@@ -1,0 +1,174 @@
+diff --git a/src/bots/index.js b/src/bots/index.js
+index 532e59d..5042c85 100644
+--- a/src/bots/index.js
++++ b/src/bots/index.js
+@@ -364,7 +364,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   // the same rules, no look-ahead.
+   const trim = Math.max(0, Math.min(400, Number(opts.trim) || 0));
+   const asOf = opts.as_of ? Date.parse(opts.as_of) : (opts.asOf ? Number(opts.asOf) : null);
+-  const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null };
++  /* M30 — `cut` is the analysis-options carrier the series loader already reads, so the zone
++   * method rides beside the replay window: every series this read builds (bias, entry, trigger)
++   * is plotted with the method the trader chose, and `SMC.analyse` is the single place that
++   * folds an unrecognised value onto the closed vocabulary. `zoneMethodSource` rides beside it: the
++   * route knows whether the string came from this request's query or the trader's saved choice, and
++   * the engine carries that answer rather than inventing one. */
++  const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null, zoneMethod: opts.zoneMethod || null,
++    zoneMethodSource: opts.zoneMethodSource || null };
+   const replay = trim > 0 || cut.asOf ? cut : null;
+ 
+   // M110: the news pair comes from the account's TWO settings, so the account is read
+@@ -486,8 +493,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+   if (replay) {
+     // build the *untrimmed* read as well, so a replay can say what happened after
+     const L2 = Momentum.topdown.layersFor(tf);
+-    const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
+-    const ltfRaw = L2.trigger_tf === tf ? null : await Momentum.series(sym, L2.trigger_tf, 400, { closedOnly: opts.entryModels !== false, observedAt: opts.nowMs });
++    const full = await Promise.all([Momentum.series(sym, tf, 600, cut), Momentum.series(sym, L2.bias_tf, 400, cut)]);   // M30
++    const ltfRaw = L2.trigger_tf === tf ? null : await Momentum.series(sym, L2.trigger_tf, 400, { ...cut, closedOnly: opts.entryModels !== false, observedAt: opts.nowMs });
+     const tdNow = Momentum.topdown.build({ symbol: sym, tf, series: full[0], biasSeries: full[1], triggerSeries: ltfRaw || full[0], opts: { minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.nowMs || undefined } });
+     replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
+   }
+@@ -521,6 +528,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
+       htf: momentum.htf, quote: momentum.quote, series: momentum.series,
+     },
+     smc: {
++      /* M30 — this payload ships `order_blocks`, so it has to name the geometry they were drawn
++       * with, exactly as the chart's slice does: a read that shows zones without naming the method
++       * cannot tell the trader which of Ep 7's two areas he is looking at. */
++      zone_method: series.smc.zone_method, zone_method_requested: series.smc.zone_method_requested,
++      zone_method_source: series.smc.zone_method_source, zone_method_applied: series.smc.zone_method_applied,
++      zone_method_fallback: series.smc.zone_method_fallback,
+       price: series.smc.price, atr: series.smc.atr, counts: series.smc.counts,
+       structure: series.smc.structure, htf_structure: series.smc.htf_structure,
+       premium_discount: series.smc.premium_discount, sessions: series.smc.sessions,
+@@ -606,7 +619,8 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   const L = Momentum.topdown.layersFor(tf);
+   const trim = Math.max(0, Math.min(400, Number(opts.trim) || 0));
+   const asOf = opts.as_of ? Date.parse(opts.as_of) : null;
+-  const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null };
++  const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null, zoneMethod: opts.zoneMethod || null,
++    zoneMethodSource: opts.zoneMethodSource || null };   // M30
+ 
+   // The same series lengths the analyse endpoint uses, so the two payloads can
+   // never disagree about the same market (they did once: the chart asked for 200
+@@ -684,6 +698,12 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   }
+ 
+   const smc = {
++    /* M30 — the chart is drawn on ONE geometry and slices its zones for display, so the method has
++     * to travel with the slice: a chart that draws "zones" without naming the method cannot tell the
++     * trader which of Ep 7's two areas he is looking at. */
++    zone_method: entry.smc.zone_method, zone_method_requested: entry.smc.zone_method_requested,
++    zone_method_source: entry.smc.zone_method_source, zone_method_applied: entry.smc.zone_method_applied,
++    zone_method_fallback: entry.smc.zone_method_fallback,
+     price: entry.smc.price, atr: entry.smc.atr, counts: entry.smc.counts,
+     structure: entry.smc.structure, structure_source: entry.smc.structure_source, htf_structure: entry.smc.htf_structure,
+     premium_discount: entry.smc.premium_discount, sessions: entry.smc.sessions,
+@@ -764,7 +784,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
+   };
+ }
+ 
+-async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, strategyId = null, sessionPref = null, useBreakers = false, entryModels } = {}) {
++async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, strategyId = null, sessionPref = null, zoneMethod = null, zoneMethodSource = null, useBreakers = false, entryModels } = {}) {
+   const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
+   /* M56 — read the written plan ONCE for the whole scan, not once per symbol: the plan is a property
+    * of the trader, and re-reading it inside the worker could only ever produce a different answer for
+@@ -777,8 +797,8 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+       const sym = list[cursor++];
+       try {
+         const [momentum, series] = await Promise.all([
+-          Momentum.analyse(sym, tf, { limit: 400, useBreakers, entryModels }),
+-          Momentum.series(sym, tf, 400),
++          Momentum.analyse(sym, tf, { limit: 400, useBreakers, entryModels, zoneMethod, zoneMethodSource }),   // M30
++          Momentum.series(sym, tf, 400, { zoneMethod, zoneMethodSource }),                                     // M30 — the zones the row is built from, not a second set
+         ]);
+         // M50: a scan is a real observation of the market, so it reads and updates the same state
+         // as analyse(). Without this a scan and an analyse of the same symbol could report
+@@ -833,6 +853,10 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
+           // the original gap in a wider lens.
+           plan_gate: specs.filters.plan_gate,
+           plan_refused: !!(best && best.plan_rules && best.plan_rules.refused > 0),
++          // M30 — the zone method every row of this scan was built with, on the row itself: a
++          // scan whose rectangles came from a method the trader did not choose is a different
++          // scan, and it has to be able to say which one it was.
++          zone_method: specs.filters.zone_method,
+         });
+       } catch (e) {
+         rows.push({ symbol: sym, timeframe: tf, ok: false, error: e.message });
+diff --git a/src/bots/momentum.js b/src/bots/momentum.js
+index 2376466..b3f3852 100644
+--- a/src/bots/momentum.js
++++ b/src/bots/momentum.js
+@@ -81,8 +81,14 @@ async function series(symbol, tf, limit = 500, opts = {}) {
+       last_price: lastKept ? lastKept.c : null, replayed_from: trimmedFrom };
+   }
+   const ind = Ind.snapshot(candles);
++  /* M30 — the zone method rides the SAME options object the replay cut does (`cut` in
++   * `analyse()` / `chart()`), so the analysis, the chart that draws it and the pair read from
++   * the scan cannot be showing two different sets of rectangles for one market. Absent or
++   * unrecognised, `SMC.analyse` folds it onto the closed vocabulary itself and reports what it
++   * did — this function never decides the geometry. */
+   const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null,
+-    observedAt: opts.asOf || opts.observedAt || Date.now() });
++    observedAt: opts.asOf || opts.observedAt || Date.now(),
++    zoneMethod: opts.zoneMethod || null, zoneMethodSource: opts.zoneMethodSource || null });
+   const last = candles[candles.length - 1];
+   return { tf, candles, meta, ind, smc, price: last ? last.c : null, atr: smc.atr || ind.atr || 0, bars: candles.length };
+ }
+@@ -526,7 +532,8 @@ function regimeOf(htf) {
+  */
+ async function analyse(symbol, tf = '15m', opts = {}) {
+   const L = TD.layersFor(tf);
+-  const cut = { trim: opts.trim || 0, asOf: opts.asOf || null };
++  const cut = { trim: opts.trim || 0, asOf: opts.asOf || null, zoneMethod: opts.zoneMethod || null,
++    zoneMethodSource: opts.zoneMethodSource || null };   // M30
+   const loadSeries = typeof opts.seriesLoader === 'function' ? opts.seriesLoader : series;
+   const [htf, mtf, ltfRaw] = await Promise.all([
+     loadSeries(symbol, L.bias_tf, opts.htfLimit || 400, cut),
+diff --git a/src/bots/setup.js b/src/bots/setup.js
+index a5dc8ed..3c91af3 100644
+--- a/src/bots/setup.js
++++ b/src/bots/setup.js
+@@ -1293,6 +1293,41 @@ function buildSetups(analysis, ctx = {}) {
+        * to use the app: `no_plan` blocks nothing. `unavailable` does, because a plan that could not
+        * be read must never look like one that was satisfied. */
+       plan_gate: PlanGate.view(ctx.planGate, planEvals),
++      /* M30 — WHICH zone method produced the rectangles this read scored. Ep 7 gives two — the
++       * pivot method (the single candle) and the range method (the whole consolidation
++       * high-to-low) — and his own advice is to test both, so the choice belongs to the trader
++       * and it must never be invisible: a screen that draws "zones" without naming the method
++       * cannot tell him which of the course's two areas he is looking at. A request this app
++       * cannot honour ran the pivot method and says so here; a range walk that could not be
++       * walked stayed pivot on that zone and is counted, not hidden. */
++      zone_method: (() => {
++        const used = analysis && analysis.zone_method === 'range' ? 'range' : 'pivot';
++        const obs = (analysis && Array.isArray(analysis.order_blocks)) ? analysis.order_blocks : [];
++        const baseFallbacks = obs.filter((z) => z.base && z.base.applied === false).length;
++        const requested = analysis && analysis.zone_method_requested ? analysis.zone_method_requested : null;
++        /* WHERE the geometry came from is carried out of the read rather than re-derived here:
++         * `request` is this call's query, `settings` is the trader's saved choice, `default` is nobody
++         * having chosen, and `unspecified` is a caller that handed a method without its provenance. A
++         * surface that prints a geometry without saying which of the four it was cannot tell a
++         * side-by-side test from a standing preference. */
++        const source = analysis && SMC.ZONE_METHOD_SOURCES.includes(analysis.zone_method_source) ? analysis.zone_method_source : 'default';
++        return {
++          method: used,
++          requested,
++          source,
++          sources: SMC.ZONE_METHOD_SOURCES.slice(),
++          vocabulary: SMC.ZONE_METHODS.slice(),
++          /* `false` when the read never reached the zone stage (the short-series sentinel): the
++           * filter still names the method that WOULD be used, and says the read did not run. */
++          read: !!(analysis && Array.isArray(analysis.order_blocks)),
++          applied_zones: obs.filter((z) => z.zone_method === 'range').length,
++          base_fallbacks: baseFallbacks,
++          error: analysis && analysis.zone_method_fallback ? analysis.zone_method_fallback : null,
++          note: used === 'range'
++            ? 'Range method (Ep 7): the zone is the whole consolidation high-to-low, so a pullback that only reaches the top of the consolidation still tests the zone. Wider zones mean wider stops — the pivot method finds the narrower entry and misses the one this catches.'
++            : 'Pivot method (Ep 7): the zone is the single pivot candle. A pullback that only reaches the top of the consolidation does not touch it — that is the entry the range method catches, and it is available as a choice rather than a default.',
++        };
++      })(),
+       trading_window: ctx.tradingWindow ? { state: ctx.tradingWindow.state, start: (ctx.tradingWindow.window || {}).start || null,
+         end: (ctx.tradingWindow.window || {}).end || null, timezone: (ctx.tradingWindow.window || {}).timezone || null,
+         source: (ctx.tradingWindow.window || {}).source || null, local_time: (ctx.tradingWindow.window || {}).local_time || null,

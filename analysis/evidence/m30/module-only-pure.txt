@@ -1,0 +1,28 @@
+ok this tree ships the zone-method vocabulary and the consolidation walk (src/bots/smc.js) (the committed parent does not, and that absence is this probe's control)
+ok the vocabulary is closed and published: exactly two methods, named
+ok the pivot method is the DEFAULT, so an analysis that says nothing about geometry moves nothing
+ok a requested method is folded case- and whitespace-insensitively, and `RANGE` really is the range method
+ok anything this app cannot plot falls back to the pivot method BY NAME rather than guessing a new geometry
+ok a pivot candle with nothing behind it is NOT a consolidation, and the walk says so
+ok with no ATR the walk cannot be bounded at all and reports that instead of guessing a width
+ok overlapping bars ARE the consolidation: the walk takes the run and reports its high-to-low
+ok and the width it reports is measured against the ATR it was given, not asserted
+ok a displacement bar stops the walk: the leg that created the zone is never counted as part of the base
+ok a bar that does not overlap the base is where price LEFT it: the walk stops there and names it
+ok a base that would grow past the cap is stopped AND the cap is reported, never silently applied
+ok every bar inside the base the walk returns really is inside it (the high-to-low bounds the run)
+ok the walk is deterministic: the same candles produce the same base, byte for byte
+ok a real analysis names its zone method, and an analysis that was never asked reports asked-nothing
+ok the default read plots zones with the pivot geometry and no consolidation walk attached
+ok and each pivot zone is the pivot candle itself: top and bottom are that bar (and not its body)
+ok the range method keeps every origin the pivot method found: it changes the BOX, not which legs exist
+ok every range box CONTAINS its pivot box (a superset, measured bar-key by bar-key, never assumed)
+ok every zone the walk COULD make carries its evidence: the bars walked, the width in ATR, what stopped it
+ok and a zone whose consolidation cannot be walked is NAMED as pivot with the reason, never silently widened
+ok and the count of zones actually plotted with the range geometry is published on the read
+ok the two reads agree about the market itself: same origins, same displacement legs, same price
+ok a method this app cannot plot runs the pivot method and NAMES the request and the vocabulary
+ok and that read is the pivot read: the boxes are identical to the default analysis
+ok asking for the pivot method explicitly is not an error (the vocabulary includes the default)
+ok a short series returns its sentinel and no zone-method claim beyond the default it would use
+M30 pure: the two zone methods and the consolidation walk: 27 passed, 0 failed

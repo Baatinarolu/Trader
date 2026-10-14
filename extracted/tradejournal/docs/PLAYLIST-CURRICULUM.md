@@ -57,7 +57,7 @@ judgement/habit lesson with no code surface (the app supports it through journal
 | 4 | Mindset foundations | Process over outcome | Coach insights, journal prompts |
 | 5 | Market structure | HH/HL/LH/LL, BOS, CHoCH | `smc.js` → `marketStructure()` ✔ |
 | 6 | Candlesticks | Wicks, bodies, rejection | `indicators.js` → 30 patterns + wick logic in sweeps |
-| 7 | Supply & demand zones | Where orders rest | `smc.js` → order blocks ✔ |
+| 7 | Supply & demand zones | Where orders rest | `smc.js` → order blocks, **both of his methods**: the **pivot** method (the single candle, the default) and the **range** method (the whole consolidation high-to-low, walked by three closed rules with its caps reported). The choice is the trader's (Settings → Zone method; `?zone_method=` for one request) and every read, scan row and alert names the geometry it used and where the choice came from ✔ |
 | 8 | Premium & discount | Buy cheap, sell expensive | `smc.js` → `premiumDiscount()` (0.62–0.79 OTE) ✔ |
 | 9 | FVG / imbalance | The void displacement leaves | `smc.js` → `findFvgs()` (50 % = consequent encroachment) ✔ |
 | 10 | Order blocks | Last opposing candle | `smc.js` → `findOrderBlocks()` (fresh/tests/breached) ✔ |

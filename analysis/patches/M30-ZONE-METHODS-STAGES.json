@@ -1,0 +1,511 @@
+{
+  "base_commit": "27fbb2acbd8574a7278d880d3654bc9706e39e90",
+  "parent": "Actual 27fbb2a M56 alert-surface Git release tree (164 files) as the M30 parent: the milestone that closed the written-plan gate and parsed the stored alert verdict. It already computes order blocks and stores the trader\u2019s settings; what it does not do is give the zone a second geometry, a way to choose it, or a name. This milestone adds no FILE and no schema object.",
+  "pristine_zip": {
+    "file": "tradingpro-main.zip",
+    "sha256": "7a511cabec5e4989d8ad20acd0fdf499ed4f6c21891d2b751b7fd66066852340"
+  },
+  "ledger": {
+    "total": 132,
+    "done": 115,
+    "partial": 2,
+    "todo": 15,
+    "no_action": 0,
+    "partition_groups": 8,
+    "partial_ids": [
+      "M103",
+      "M115"
+    ],
+    "applied_ids": [
+      "M17",
+      "M18",
+      "M19",
+      "M30",
+      "M56"
+    ]
+  },
+  "feature": {
+    "pass": 112,
+    "fail": 0,
+    "probes": 5,
+    "scope": "REPORTED completed assertions; literal clocks, saved rows, HTTP and a real DOM only. Ep 7 gives TWO zone methods \u2014 the PIVOT method (the single candle before the displacement) and the RANGE method (the whole consolidation high-to-low) \u2014 and the app shipped one of them, hardcoded, with no way to say which geometry a read used let alone choose the other. The range method is now computed by a closed three-rule walk (a displacement bar ends the base, a bar that does not overlap it is the departure, a 3-ATR cap is REPORTED), the method is a closed vocabulary (`pivot` default, `range`), a read NAMES the geometry it ran on and where the choice came from, and the choice is stored in the settings JSON that already exists. NO new schema object, no new file, no write on a read, no broker/mental/pixel/production proof, and NO performance claim: the wider zone is stated as a trade-off (wider zone, wider stop) in both the payload and the screens, never as a winner. RAW failures/early aborts and DECLARED assumptions stay separate. DECLARED NEGATIVE carried here by name: the inherited M99/M101 reviews cohort is STALE at this HEAD \u2014 157/3 against its committed 159/1, because the schema grew after M101; the three gaps are declared, not repaired in the probe."
+  },
+  "control": {
+    "delivered": {
+      "pass": 11,
+      "fail": 0
+    },
+    "parent": {
+      "pass": 11,
+      "fail": 0
+    },
+    "module": {
+      "pass": 11,
+      "fail": 0
+    },
+    "note": "The mode-aware control probe PASSES on all three trees on purpose: it measures the fault (no vocabulary at all; vocabulary present with nothing consulting it; the delivered wiring) rather than failing on it."
+  },
+  "prior_cohorts_rerun": {
+    "m56": {
+      "pass": 160,
+      "fail": 0,
+      "probes": 5,
+      "evidence": "analysis/evidence/m56/feature-summary.json"
+    },
+    "m115": {
+      "pass": 116,
+      "fail": 0,
+      "probes": 4,
+      "evidence": "analysis/evidence/m115/feature-summary.json"
+    },
+    "m13": {
+      "pass": 94,
+      "fail": 0,
+      "probes": 4,
+      "evidence": "analysis/evidence/m13/feature-summary.json"
+    },
+    "m112": {
+      "pass": 181,
+      "fail": 0,
+      "probes": 6,
+      "evidence": "analysis/evidence/m112/feature-summary.json"
+    }
+  },
+  "inherited_records_read_not_rerun": {
+    "raw": {
+      "pass": 596,
+      "fail": 156,
+      "probes": 31,
+      "evidence": "analysis/evidence/m108/raw-summary.json",
+      "why": "Read from the committed evidence of the M108-era run rather than re-run in this session. This milestone changes no schema, no candle read and no entry-engine module (the zone module was already the one the engine resolved), and the suites it does touch (now/chart/bots/api/smoke) were re-run here with identical failure sets on both trees."
+    },
+    "declared": {
+      "pass": 824,
+      "fail": 4,
+      "probes": 31,
+      "evidence": "analysis/evidence/m108/declared-summary.json",
+      "why": "Read from the committed evidence of the M108-era run rather than re-run in this session. This milestone changes no schema, no candle read and no entry-engine module (the zone module was already the one the engine resolved), and the suites it does touch (now/chart/bots/api/smoke) were re-run here with identical failure sets on both trees."
+    },
+    "pure": {
+      "pass": 70,
+      "fail": 1,
+      "probes": 8,
+      "evidence": "analysis/evidence/m108/pure-summary.json",
+      "why": "Read from the committed evidence of the M108-era run rather than re-run in this session. This milestone changes no schema, no candle read and no entry-engine module (the zone module was already the one the engine resolved), and the suites it does touch (now/chart/bots/api/smoke) were re-run here with identical failure sets on both trees."
+    }
+  },
+  "environment_margins_rerun_this_session": {
+    "now-test": {
+      "delivered": "50/0",
+      "parent": "50/0"
+    },
+    "chart-test": {
+      "delivered": "36/0 (candle shim on)",
+      "parent": "36/0 (candle shim on)"
+    },
+    "bots-test": {
+      "delivered": "52 ok / 3 fail + crash at scripts/bots-test.js:180",
+      "parent": "identical",
+      "why": "the 3 failures are the missing EURUSD-1d fixture this sandbox refuses on TLS, on both trees"
+    },
+    "api-test": {
+      "delivered": "crash at scripts/api-test.js:50 (409 guardrail_stop on a fresh workspace)",
+      "parent": "identical"
+    },
+    "smoke-test": {
+      "delivered": "21/21 views, 0 UI-style failures, 0 console errors",
+      "parent": "identical"
+    },
+    "note": "All five suites run against a real listening server on 3000 in this session, on both trees. The bots-test and api-test crashes are pre-existing at the parent and are not this milestone\u2019s."
+  },
+  "declared_negatives": [
+    {
+      "cohort": "M110",
+      "suite": "m110feature/engine",
+      "frozen_assertion": "M110 does not claim to fix M111: a failed calendar still reaches this rule as a QUIET one",
+      "evidence": "analysis/evidence/m110/m110feature-engine.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/engine",
+      "frozen_assertion": "the engine source keeps the M111 marker at that exact branch, so closing M111 later cannot be mistaken for a regression",
+      "evidence": "analysis/evidence/m110/m110feature-engine.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "the served payload has no top-level `window_min` any more",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "a genuinely empty week yields a clear payload that is distinguishable from a blocked one but not from an outage",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/consumers",
+      "frozen_assertion": "an M111 outage reaches this consumer as silence",
+      "evidence": "analysis/evidence/m110/m110feature-consumers.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/portable",
+      "frozen_assertion": "a backup carries the pair out, so a trader can see which window their own archive was taken under \u2014 as two columns, with no single knob beside them",
+      "evidence": "analysis/evidence/m110/m110feature-portable.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "every pre-existing account column keeps its name, declared type, nullability and default, and the two new columns are appended LAST",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "the ONLY difference in the inherited `accounts` rows is the two new columns \u2014 id, name, balance and policy fields are untouched",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    },
+    {
+      "cohort": "M110",
+      "suite": "m110feature/migration",
+      "frozen_assertion": "and the position difference is recorded instead of hidden: the inherited columns are appended LAST, the fresh DDL places them before the drawdown fields",
+      "evidence": "analysis/evidence/m110/m110feature-migration.txt",
+      "why": "Written against a schema that predates M111/M112/M115. A declaration mismatch in the probe, not a regression: named here, never edited."
+    }
+  ],
+  "regression_parents": {
+    "trees": 21,
+    "method": "Actual 9c88e0a M12 Git release as the M13/M65 parent (the milestone these periods sit on), plus the M112 cohort\u2019s and the inherited reviews cohort\u2019s own measured parent maps, inherited unchanged \u2014 no parent is re-derived here and no schema or module is read out of an older runner.",
+    "parents": {
+      "/tmp/m13-parent/app": {
+        "files": 159,
+        "byte_differences": 0
+      },
+      "/tmp/m112-parent/app": {
+        "files": 146,
+        "byte_differences": 0
+      },
+      "/tmp/m110-parent/app": {
+        "files": 145,
+        "byte_differences": 0
+      },
+      "/tmp/m109-parent/app": {
+        "files": 143,
+        "byte_differences": 0
+      },
+      "/tmp/m108-parent/app": {
+        "files": 141,
+        "byte_differences": 0
+      },
+      "/tmp/m107-parent/app": {
+        "files": 139,
+        "byte_differences": 0
+      },
+      "/tmp/m106-parent/app": {
+        "files": 137,
+        "byte_differences": 0
+      },
+      "/tmp/m105-parent/app": {
+        "files": 135,
+        "byte_differences": 0
+      },
+      "/tmp/m104-parent/app": {
+        "files": 133,
+        "byte_differences": 0
+      },
+      "/tmp/m100-parent/app": {
+        "files": 131,
+        "byte_differences": 0
+      },
+      "/tmp/m99-parent/app": {
+        "files": 129,
+        "byte_differences": 0
+      },
+      "/tmp/m93-parent/app": {
+        "files": 127,
+        "byte_differences": 0
+      },
+      "/tmp/m91-parent/app": {
+        "files": 125,
+        "byte_differences": 0
+      },
+      "/tmp/m89-parent/app": {
+        "files": 123,
+        "byte_differences": 0
+      },
+      "/tmp/m88-parent/app": {
+        "files": 121,
+        "byte_differences": 0
+      },
+      "/tmp/m87-parent/app": {
+        "files": 119,
+        "byte_differences": 0
+      },
+      "/tmp/m86-parent/app": {
+        "files": 117,
+        "byte_differences": 0
+      },
+      "/tmp/m64-parent/app": {
+        "files": 114,
+        "byte_differences": 0
+      },
+      "/tmp/m79-parent/extracted/tradejournal": {
+        "files": 110,
+        "byte_differences": 0
+      },
+      "/tmp/m84-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      },
+      "/tmp/m81-parent/app": {
+        "files": 112,
+        "byte_differences": 0
+      }
+    }
+  },
+  "controls": {
+    "parent_tree": "the committed 27fbb2a M56 release: no zone-method vocabulary, the `?zone_method=` query ignored, the settings write silently dropped, no picker and no note \u2014 five probes 0/1 each, the mode-aware control 11/0",
+    "module_only_tree": "the parent plus `src/bots/smc.js` alone: the vocabulary, the folding rule and the three-rule consolidation walk exist and are measured working (pure 27/0, control 11/0) while the filter block, the routes, the settings key and both screens know nothing about them (engine 8/3, api 3/2, ui 1/1, migration 15/7)",
+    "why": "The staged fault is a geometry nothing can CHOOSE or NAME around a working zone engine: that is why the pure and control arms pass on the module-only tree while the engine, api, ui and migration arms fail on the absence the milestone closes."
+  },
+  "arms": {
+    "module-only/api": {
+      "exit_code": 1,
+      "fail": 2,
+      "pass": 3
+    },
+    "module-only/control": {
+      "exit_code": 0,
+      "fail": 0,
+      "pass": 11
+    },
+    "module-only/engine": {
+      "exit_code": 1,
+      "fail": 3,
+      "pass": 8
+    },
+    "module-only/migration": {
+      "exit_code": 1,
+      "fail": 7,
+      "pass": 15
+    },
+    "module-only/pure": {
+      "exit_code": 0,
+      "fail": 0,
+      "pass": 27
+    },
+    "module-only/ui": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 1
+    },
+    "parent/api": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 0
+    },
+    "parent/control": {
+      "exit_code": 0,
+      "fail": 0,
+      "pass": 11
+    },
+    "parent/engine": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 0
+    },
+    "parent/migration": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 0
+    },
+    "parent/pure": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 0
+    },
+    "parent/ui": {
+      "exit_code": 1,
+      "fail": 1,
+      "pass": 0
+    }
+  },
+  "geometry": {
+    "vocabulary": [
+      "pivot",
+      "range"
+    ],
+    "default": "pivot",
+    "sources": [
+      "request",
+      "settings",
+      "unspecified",
+      "default"
+    ],
+    "walk": "backwards from the SAME pivot candle the pivot method anchors on, over closed bars, stopping on a displacement bar (range >= 1.2 x ATR and body/range >= 0.55), a bar that does not overlap the envelope (price left the base), a REPORTED cap (3 x ATR / 12 bars, `capped:true`), or the start of history",
+    "fallback": "a walk shorter than two bars is `no_consolidation` and the zone stays PIVOT with its reason; the count is published as `base_fallbacks`",
+    "no_influence": "no grade, score, cap or price is moved by the choice itself (measured: with nothing chosen the candidates are byte-identical to the parent\u2019s); the wider zone IS a wider stop, stated as a trade-off on the payload and on both screens",
+    "storage": "read from the existing `users.settings` JSON; no table, no column, no index, no trigger, no backfill, and a read writes nothing it did not write before (the read-write set over two reads is identical to the parent\u2019s own set)"
+  },
+  "strength_term": {
+    "term": "tests >= 2 ? 0.15 : 0",
+    "beside": "the fresh-zone bonus (tests === 0 ? 0.15 : 0)",
+    "fires_on": "21% of order blocks in the measured windows (54 of 259)"
+  },
+  "stages": [
+    {
+      "stage": "module",
+      "source_manifest": "module-source.json",
+      "source_files": 164,
+      "patch": "m30-zone-methods-module.patch",
+      "files": 1,
+      "bytes": 10663,
+      "sha256": "1fb1c9f72ea77865be711bc14185a7660cf35ef2fe494e66ab850c8adcbfefd8",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "engine",
+      "source_manifest": "engine-source.json",
+      "source_files": 164,
+      "patch": "m30-zone-methods-engine.patch",
+      "files": 3,
+      "bytes": 13009,
+      "sha256": "9d4a4d969a26eef410ad7ecd97ecad64123066ce91850ad9abe1f8a8d44ffa84",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "routes",
+      "source_manifest": "routes-source.json",
+      "source_files": 164,
+      "patch": "m30-zone-methods-routes.patch",
+      "files": 2,
+      "bytes": 14514,
+      "sha256": "90db7c997ec79f5799226b6f1fb0fbc3a7eef2471128b4502fcef4daae56a72d",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    },
+    {
+      "stage": "screens",
+      "source_manifest": "screens-source.json",
+      "source_files": 164,
+      "patch": "m30-zone-methods-screens.patch",
+      "files": 5,
+      "bytes": 19683,
+      "sha256": "541a8b45b9e1ac7394fb4e985a5e389246e29fda108d78d4e4ec7da9c1df2029",
+      "forward_byte_differences": 0,
+      "reverse_byte_differences": 0
+    }
+  ],
+  "combined": {
+    "files": 11,
+    "bytes": 57869,
+    "sha256": "7e41d7f7c52e5a220a48c82b06680fad9127656fbbe623939447cf5daae2aac7",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "pristine_cumulative": {
+    "files": 105,
+    "bytes": 1966222,
+    "sha256": "ef1c373a56332d5e6b733a9f427f4997a81b80f708b275c826e15b30ab41c974",
+    "forward_byte_differences": 0,
+    "reverse_byte_differences": 0
+  },
+  "fixed_zip": {
+    "source_files": 164,
+    "application_byte_differences": 0,
+    "pristine_byte_differences": 0
+  },
+  "engine_files_unchanged": [
+    "src/bots/topdown.js",
+    "src/bots/predict.js",
+    "src/bots/entry-models.js",
+    "src/bots/entry-preference.js",
+    "src/bots/targets.js",
+    "src/bots/stops.js",
+    "src/bots/protected.js"
+  ],
+  "newly_protected_from_m56": [
+    "src/bots/setup.js",
+    "src/bots/index.js",
+    "src/routes/bots.js",
+    "public/js/views/bots.js",
+    "public/js/views/playbook.js",
+    "public/js/views/settings.js",
+    "docs/API.md",
+    "docs/NOT-IMPLEMENTED.md",
+    "docs/PLAYLIST-CURRICULUM.md"
+  ],
+  "m30_touches_inside_the_protected_set": [
+    "src/bots/smc.js",
+    "src/bots/setup.js",
+    "src/bots/momentum.js",
+    "src/bots/index.js",
+    "src/routes/bots.js",
+    "src/routes/api.js",
+    "public/js/views/bots.js",
+    "public/js/views/settings.js",
+    "docs/API.md",
+    "docs/PLAYLIST-CURRICULUM.md",
+    "docs/NOT-IMPLEMENTED.md"
+  ],
+  "other_protected_files": [
+    "README.md",
+    "package-lock.json",
+    "public/index.html",
+    "public/js/api.js",
+    "public/js/app.js",
+    "public/js/chart.js",
+    "public/js/store.js",
+    "public/js/util.js",
+    "public/js/views/analytics.js",
+    "public/js/views/ask.js",
+    "public/js/views/behavior-days.js",
+    "public/js/views/calendar.js",
+    "public/js/views/challenge.js",
+    "public/js/views/coach.js",
+    "public/js/views/confluences.js",
+    "public/js/views/dashboard.js",
+    "public/js/views/emotions.js",
+    "public/js/views/execution.js",
+    "public/js/views/identity.js",
+    "public/js/views/intention.js",
+    "public/js/views/journal.js",
+    "public/js/views/market.js",
+    "public/js/views/opportunities.js",
+    "public/js/views/period-reviews.js",
+    "public/js/views/playbook.js",
+    "public/js/views/practice.js",
+    "public/js/views/process-outcomes.js",
+    "public/js/views/review-periods.js",
+    "public/js/views/risk.js",
+    "public/js/views/routine.js",
+    "public/js/views/rule-changes.js",
+    "public/js/views/screenshots.js",
+    "public/js/views/state-gate.js",
+    "public/js/views/trades.js",
+    "scripts/api-test.js",
+    "scripts/bots-test.js",
+    "scripts/smoke-test.js",
+    "scripts/test-cleanup.js",
+    "server.js",
+    "src/ask.js"
+  ],
+  "doc_corrections": {
+    "API": "docs/API.md gains the `zone_method` query on analyse/chart/scan, the settings key on `PUT /settings`, and a section naming the two geometries, the closed source vocabulary, the reported caps and the trade-off",
+    "PLAYLIST-CURRICULUM row 7": "the Supply & demand row no longer reads as one hardcoded rectangle: it names both of his methods, the default, where the choice lives and that every read names the geometry it used",
+    "NOT-IMPLEMENTED": "a new row names what works AND what is NOT claimed (the consolidation is this app\u2019s definition with reported caps; neither method is measured to be better; the stop behind a wider zone is further away)"
+  },
+  "scope": "M30 the two zone methods: Ep 7\u2019s range geometry built as a closed three-rule walk over the consolidation (caps reported), the pivot method kept as the DEFAULT, the geometry a closed vocabulary with a named provenance (`request`/`settings`/`unspecified`/`default`), the choice stored in the settings JSON that already exists, and the strength term for `tests >= 2` restored beside the fresh-zone bonus. Explicitly NOT claimed: that either geometry is better, that the mechanical consolidation is his discretionary range, a performance or expectancy claim from the strength term, a pixel proof, or anything about a real account."
+}

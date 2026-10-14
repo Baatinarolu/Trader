@@ -1,0 +1,14 @@
+ok this tree ships the zone-method vocabulary and the consolidation walk (src/bots/smc.js) (the committed parent does not, and that absence is this probe's control)
+ok the committed parent really does have only one geometry and no way to ask for another (the control is non-vacuous)
+ok real analyses were built for both methods (the comparison is not vacuous)
+ok with no method chosen, every candidate the model builds is byte-identical to the committed parent’s
+ok and no new candidate key appears at all: the choice is not a hidden field on a setup
+FAIL the filter block names the method on every read, so the geometry is never anonymous undefined
+FAIL and the range read names itself as range, with the number of zones actually plotted that way undefined
+ok over every analysed zone the two methods pair up by origin, and the range box contains the pivot box
+ok and the range method really does catch a return the pivot method never sees (price came back into the consolidation without touching the candle)
+ok the wider zone moves the stop on the setups it is used on: the distance from entry to stop is never smaller
+TypeError: Cannot read properties of undefined (reading 'note')
+    at /home/user/Trader/analysis/probe-m30-engine.js:107:113
+    at Object.finish (/home/user/Trader/analysis/m111-test-support.js:44:35)
+M30 engine: the two zone methods at the decision surface, against the committed parent: 8 passed, 3 failed

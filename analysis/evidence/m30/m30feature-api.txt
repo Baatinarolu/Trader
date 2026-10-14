@@ -1,0 +1,34 @@
+ok this tree ships the zone-method vocabulary and the consolidation walk (src/bots/smc.js) (the committed parent does not, and that absence is this probe's control)
+ok a new account has made no choice at all: the setting is absent rather than defaulted to a value it never picked
+ok an analysis with no choice made runs the pivot method, and says nobody chose rather than claiming it was asked for
+ok every zone it plotted is the pivot candle with no consolidation walk attached
+ok and the filter publishes the whole closed vocabulary, so a client can render the choice it is offering
+ok `?zone_method=range` really plots the consolidation: the method, the source of the choice and the applied count all say range
+ origin drift — pivot: ["416:418:-1","527:528:-1","437:438:-1","456:457:1","461:462:-1","551:552:-1","439:441:-1","587:588:-1"] 
+                  range: ["515:517:1","416:418:-1","527:528:-1","437:438:-1","456:457:1","461:462:-1","551:552:-1","434:436:-1"]
+ok and every origin the two runs BOTH plot is a superset: the range box contains the pivot box, box by box
+ok each range zone carries the walk that produced it (bars, width in ATR, what stopped it)
+ok the request is not stored by asking: one request cannot rewrite the trader’s preference
+ok the choice is saved through the app’s own settings route and reported back
+ok and it is the trader’s row, not a process-wide default: the next request reads it back
+ok an analysis that asks for NOTHING now runs the range method: the stored choice is consulted, not merely echoed
+ok and it is the same geometry the explicit request produced
+ok another account is not affected by this one’s choice: the preference is per user, not a process-wide default
+ok an explicit `?zone_method=pivot` overrides the stored range for that request, so both methods can be tested side by side
+ok and that single request did not move the stored choice
+ok the vocabulary is folded, not taken literally: a padded, upper-case request is the range method
+ok a method this app cannot plot runs the pivot geometry and NAMES the request and the vocabulary on the payload
+ok and the zones really are the pivot boxes, so the sentence and the picture agree
+ok saving a method this app cannot plot is REFUSED by name rather than quietly ignored
+ok and a refused save leaves the stored choice exactly as it was
+ok the choice can be released back to the default (empty clears it, and the analysis says asked-nothing again)
+ok the chart draws the same geometry the analysis used (M124: the chart is not a second opinion)
+ok and every zone the chart DOES draw names its own geometry: range where the consolidation was walked, pivot with the reason where it could not be
+ok a scan row carries the method it was built with, so a list of markets can never be read on an unnamed geometry
+ok an incoming TradingView alert is analysed with the trader’s own zone method, and the verdict carries it
+ok and the STORED alert history names the geometry too, so an unattended verdict can be attributed later without re-running it
+ok reading the range geometry writes exactly what reading the pivot geometry writes — a method adds no row of its own
+ok and the milestone adds NO table, index, trigger or column of its own: the choice lives in the settings JSON the app already stores
+M30 api: the zone-method choice over the real routes, its ownership and its read-only proof: 29 passed, 0 failed
+
+[candle-shim] served 5 fixture response(s)

@@ -219,6 +219,20 @@
         // requirements: at zero enforced rules the plan's own note ("re-save the plan", "no
         // machine-checkable requirements yet") is the sentence that says what to do about it.
         + (pg.enforced ? '' : (pg.note ? ` · ${pg.note}` : '')) });
+    /* M30 — the zone method this read ran on, named beside the window and the plan. Ep 7 gives TWO
+     * (the pivot candle and the whole consolidation high-to-low) and the choice is the trader's
+     * (Settings), so a screen that draws "zones" without saying which method produced them cannot
+     * tell him which of the two areas the course describes he is looking at — they are not the same
+     * rectangle, and the stop behind them is not the same distance. A read that never reached the
+     * zone stage (the short-series sentinel) says nothing rather than naming a method it did not use. */
+    const zm = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.zone_method) || null;
+    const zoneNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:460px', dataset: { zoneMethod: 'true' },
+      text: !zm || !zm.read ? '' : zm.error
+        ? `Zone method: ${zm.error}`
+        : zm.method === 'range'
+          ? `Zones: range method (Ep 7) — the whole consolidation high-to-low${zm.applied_zones ? `, ${zm.applied_zones} on this read` : ''}${zm.base_fallbacks ? `; ${zm.base_fallbacks} could not be walked and stayed pivot` : ''}.`
+          : 'Zones: pivot method (Ep 7) — the single candle. The range method is the other choice in Settings: it catches the pullback that never reaches the candle, with a wider zone.' });
+
     /* M56 — which written plan this analysis is confirmed against. The selector matters because
      * WHICH plan applies is the trader's decision and this app never guesses between two: with no
      * selection the gate uses their single active plan, and when several are active it says so here
@@ -320,6 +334,7 @@
     if (marketCopy && global.TV) row.appendChild(h('button',{class:'btn sm guardrail-stop',text:'Override & copy plan',onclick:()=>copyPlan(marketCopy)}));
     row.appendChild(winNote);
     row.appendChild(planNote);
+    row.appendChild(zoneNote);
     /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
      * button will be blocked ... grayed out ... You physically can't press the trade
      * button." The nearest thing here is the control that hands you an order to place, so

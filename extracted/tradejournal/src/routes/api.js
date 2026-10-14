@@ -9,6 +9,7 @@ const Coach = require('../coach');
 const M = require('../market');
 const T = require('../trades');
 const Guards = require('../bots/guardrails');
+const SMC = require('../bots/smc');   // M30 — the closed zone-method vocabulary
 const SessionTime = require('../session-time');
 const J = require('../journaling');
 const RR = require('../routine-records');
@@ -1477,8 +1478,23 @@ router.put('/settings', requireAuth, async (req, res) => {
     try { challengeTarget = Challenge.targetKey(b.challenge_target); }
     catch (e) { return res.status(e.status || 400).json({ error: e.message, code: e.code || 'challenge_invalid' }); }
   }
+  /* M30 — which of Ep 7's two zone methods this trader's analyses run on. `pivot` (the single
+   * candle, and the default) or `range` (the whole consolidation high-to-low); empty or null
+   * clears the choice back to the default. A closed vocabulary, and an unrecognised value is
+   * REFUSED by name rather than quietly dropped: a choice that silently did not apply would leave
+   * the screen naming one geometry while the zones were drawn in the other, which is exactly the
+   * class of fault this audit exists for. Absent from the body = unchanged (this route is called
+   * with partial bodies from several screens). */
+  let zoneMethod = Object.prototype.hasOwnProperty.call(cur, 'zone_method') ? (cur.zone_method ?? null) : null;
+  if (Object.prototype.hasOwnProperty.call(b, 'zone_method')) {
+    const v = b.zone_method == null ? '' : String(b.zone_method).trim().toLowerCase();
+    if (v === '' || v === 'default' || v === 'unset') zoneMethod = null;
+    else if (SMC.ZONE_METHODS.indexOf(v) !== -1) zoneMethod = v;
+    else return res.status(400).json({ error: `"${v}" is not a zone method this app can plot. Expected one of: ${SMC.ZONE_METHODS.join(', ')}, or empty to use the default (${SMC.ZONE_METHOD_DEFAULT}).`, code: 'zone_method_invalid' });
+  }
   const next = {
     ...cur,
+    zone_method: zoneMethod,   // M30
     timezone: b.timezone || cur.timezone,
     default_checklist: Array.isArray(b.default_checklist) ? b.default_checklist : (cur.default_checklist || DEFAULT_CHECKLIST),
     focus_symbols: Array.isArray(b.focus_symbols) ? b.focus_symbols.map((s) => String(s).toUpperCase()) : (cur.focus_symbols || []),

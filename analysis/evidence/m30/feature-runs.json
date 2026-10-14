@@ -1,0 +1,62 @@
+[
+  {
+    "name": "pure",
+    "script": "analysis/probe-m30-pure.js",
+    "pass": 27,
+    "fail": 0,
+    "expected_pass": 27,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m30feature-pure.txt",
+    "scope": "M30 pure: the two zone methods and the consolidation walk: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "engine",
+    "script": "analysis/probe-m30-engine.js",
+    "pass": 14,
+    "fail": 0,
+    "expected_pass": 14,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m30feature-engine.txt",
+    "scope": "M30 engine: the two zone methods at the decision surface, against the committed parent: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "api",
+    "script": "analysis/probe-m30-api.js",
+    "pass": 29,
+    "fail": 0,
+    "expected_pass": 29,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m30feature-api.txt",
+    "scope": "M30 api: the zone-method choice over the real routes, its ownership and its read-only proof: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "ui",
+    "script": "analysis/probe-m30-ui.js",
+    "pass": 20,
+    "fail": 0,
+    "expected_pass": 20,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m30feature-ui.txt",
+    "scope": "M30 real DOM: the zone-method choice and the geometry every screen names: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  },
+  {
+    "name": "migration",
+    "script": "analysis/probe-m30-migration.js",
+    "pass": 22,
+    "fail": 0,
+    "expected_pass": 22,
+    "expected_fail": 0,
+    "exit_code": 0,
+    "status": "completed",
+    "output": "m30feature-migration.txt",
+    "scope": "M30 migration: a settings row the committed parent wrote is read with no migration and no write: actual runtime/auth/SQL/HTTP with a frozen UTC clock, a synthetic calendar fed through the app's own parser and a patched market module for the thrown-read path; M111 calendar-read states (blocked/clear/unknown), no provider/broker/pixel/human proof and no claim about what a release does to price"
+  }
+]

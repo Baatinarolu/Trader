@@ -81,8 +81,14 @@ async function series(symbol, tf, limit = 500, opts = {}) {
       last_price: lastKept ? lastKept.c : null, replayed_from: trimmedFrom };
   }
   const ind = Ind.snapshot(candles);
+  /* M30 — the zone method rides the SAME options object the replay cut does (`cut` in
+   * `analyse()` / `chart()`), so the analysis, the chart that draws it and the pair read from
+   * the scan cannot be showing two different sets of rectangles for one market. Absent or
+   * unrecognised, `SMC.analyse` folds it onto the closed vocabulary itself and reports what it
+   * did — this function never decides the geometry. */
   const smc = SMC.analyse(candles, { tf, htfCandles: opts.htfCandles || null,
-    observedAt: opts.asOf || opts.observedAt || Date.now() });
+    observedAt: opts.asOf || opts.observedAt || Date.now(),
+    zoneMethod: opts.zoneMethod || null, zoneMethodSource: opts.zoneMethodSource || null });
   const last = candles[candles.length - 1];
   return { tf, candles, meta, ind, smc, price: last ? last.c : null, atr: smc.atr || ind.atr || 0, bars: candles.length };
 }
@@ -526,7 +532,8 @@ function regimeOf(htf) {
  */
 async function analyse(symbol, tf = '15m', opts = {}) {
   const L = TD.layersFor(tf);
-  const cut = { trim: opts.trim || 0, asOf: opts.asOf || null };
+  const cut = { trim: opts.trim || 0, asOf: opts.asOf || null, zoneMethod: opts.zoneMethod || null,
+    zoneMethodSource: opts.zoneMethodSource || null };   // M30
   const loadSeries = typeof opts.seriesLoader === 'function' ? opts.seriesLoader : series;
   const [htf, mtf, ltfRaw] = await Promise.all([
     loadSeries(symbol, L.bias_tf, opts.htfLimit || 400, cut),

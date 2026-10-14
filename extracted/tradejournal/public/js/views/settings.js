@@ -369,9 +369,41 @@
             note.textContent = 'Pick one window and the bots refuse signals outside it — a refusal, not a downgrade. "Just stick to one."';
             grid.parentNode.insertBefore(note, grid.nextSibling);
           })();
+          /* M30 — Ep 7 gives TWO zone methods and says to test both (over 100 trades of your own,
+           * not over this app's opinion), so the choice is offered here with the trade-off stated
+           * rather than baked in. `pivot` is the single candle and the default; `range` is the whole
+           * consolidation high-to-low, which catches the pullback that never reaches the candle —
+           * at the price of a wider zone and therefore a wider stop. The engine names the method it
+           * used on every analysis (`setups.filters.zone_method`), so the choice can never be made
+           * invisibly from here. */
+          (function addZoneMethodPref() {
+            const grid = U.$('.form-grid', w); if (!grid) return;
+            const lab = document.createElement('label');
+            lab.className = 'field';
+            lab.innerHTML = '<span>Zone method</span>';
+            const sel = document.createElement('select');
+            sel.id = 's-zone';
+            sel.dataset.zoneMethod = 'true';
+            [['', 'Pivot method \u2014 the single candle (default)'],
+             ['range', 'Range method \u2014 the whole consolidation high-to-low']]
+              .forEach((o) => {
+                const op = document.createElement('option');
+                op.value = o[0]; op.textContent = o[1];
+                if (String(s.zone_method || '') === o[0]) op.selected = true;
+                sel.appendChild(op);
+              });
+            lab.appendChild(sel);
+            grid.appendChild(lab);
+            const note = document.createElement('div');
+            note.className = 'field-note';
+            note.dataset.zoneMethodNote = 'true';
+            note.textContent = 'How the bots draw a supply/demand zone. Pivot: the last opposite candle before the displacement \u2014 narrow, and a pullback that only reaches the top of the consolidation never touches it. Range: the whole consolidation high-to-low \u2014 it catches that entry, but the zone (and the stop behind it) is wider. Test both on your own 100 trades; every analysis names the method it used.';
+            grid.parentNode.insertBefore(note, grid.nextSibling);
+          })();
           U.$('#s-save', w).addEventListener('click', async () => {
             await API.put('/settings', {
               name: U.$('#s-name', w).value, timezone: U.$('#s-tz', w).value,
+              zone_method: U.$('#s-zone', w) ? U.$('#s-zone', w).value : undefined,   // M30
               focus_symbols: U.$('#s-focus', w).value.split(',').map((x) => x.trim().toUpperCase()).filter(Boolean),
               min_rr: Number(U.$('#s-minrr', w).value) || 1,
               session_pref: U.$('#s-window', w) ? U.$('#s-window', w).value : undefined,   // M26

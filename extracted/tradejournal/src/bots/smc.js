@@ -283,7 +283,60 @@ function breakReference(event, candles) {
     level: event.level, close: b.c, confirmed: true };
 }
 
-function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, maxBlocks = 14, fvgs = null, requireFvg = false } = {}) {
+/* M30 — Ep 7's SECOND zone method. He gives two: the PIVOT method — the single pivot
+ * candle, `ob.h`/`ob.l` — and the RANGE method, where the zone is the whole consolidation
+ * high-to-low. He states the cost of the pivot method himself: with it "you would have missed
+ * this entry ... price did not mitigate your zone", because a pullback that only reaches the
+ * top of the consolidation never touches the single candle. Both are now computable; which one
+ * an analysis runs on is a CHOICE the trader makes (settings `zone_method`, or `?zone_method=`
+ * on one request) and the choice is always NAMED in the read.
+ *
+ * The consolidation is defined by three closed rules — no pattern name, no prose:
+ *   1. it stops at a displacement bar: a leg is not part of a base;
+ *   2. it stops where price LEFT the range: a bar that does not overlap the envelope built so
+ *      far is the departure, not the consolidation;
+ *   3. it never grows past `maxAtr` (3 ATR) or `maxBars` (12), and CAPS ARE REPORTED (`capped`,
+ *      `stopped`) rather than silently truncating the range.
+ * A run shorter than two bars is not a consolidation and says so.
+ */
+const BASE_MAX_BARS = 12, BASE_MAX_ATR = 3;
+const ZONE_METHODS = Object.freeze(['pivot', 'range']);
+/** Where a method came from, closed the same way the methods are. */
+const ZONE_METHOD_SOURCES = Object.freeze(['request', 'settings', 'unspecified', 'default']);
+const ZONE_METHOD_DEFAULT = 'pivot';
+/** Fold a requested method onto the closed vocabulary. Never guesses: anything that is not
+ * `range` is the pivot method, and the request is carried beside the answer so a caller that
+ * asked for something this app cannot do is told so instead of being quietly given a default. */
+function zoneMethodOf(v) { return v != null && String(v).trim().toLowerCase() === 'range' ? 'range' : ZONE_METHOD_DEFAULT; }
+function consolidationBase(candles, idx, atr, { maxBars = BASE_MAX_BARS, maxAtr = BASE_MAX_ATR } = {}) {
+  const pivot = candles && candles[idx];
+  if (!pivot) return { ok: false, reason: 'no_pivot_candle', bars: 0, from_i: idx, stopped: 'no_pivot_candle' };
+  const step = Number(atr);
+  if (!Number.isFinite(step) || step <= 0) {
+    return { ok: false, reason: 'no_atr', bars: 1, from_i: idx, stopped: 'no_atr' };
+  }
+  let high = pivot.h, low = pivot.l, from = idx, bars = 1, capped = false, stopped = 'start_of_history';
+  for (let j = idx - 1; j >= Math.max(0, idx - maxBars); j--) {
+    const b = candles[j];
+    const range = b.h - b.l, body = Math.abs(b.c - b.o);
+    // (1) an expansion bar is a leg: the base ends before it, it does not contain it
+    if (range >= step * 1.2 && range > 0 && body / range >= 0.55) { stopped = 'displacement'; break; }
+    // (2) no overlap with the envelope so far = price already left the base
+    if (b.l > high || b.h < low) { stopped = 'price_left_the_base'; break; }
+    const nh = Math.max(high, b.h), nl = Math.min(low, b.l);
+    // (3) a cap is a report, not a rule change
+    if (nh - nl > step * maxAtr) { capped = true; stopped = 'width_cap'; break; }
+    high = nh; low = nl; from = j; bars++;
+  }
+  if (bars < 2) return { ok: false, reason: 'no_consolidation', bars, from_i: idx, stopped };
+  return {
+    ok: true, from_i: from, from_t: candles[from].t, to_i: idx, bars,
+    high: r4(high), low: r4(low), width_atr: r2((high - low) / step), width: r4(high - low),
+    capped, stopped, limits: { max_bars: maxBars, max_atr: maxAtr },
+  };
+}
+
+function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, maxBlocks = 14, fvgs = null, requireFvg = false, zoneMethod = ZONE_METHOD_DEFAULT } = {}) {
   const out = [];
   const n = candles.length;
   // M31 - the dealing range the zone's depth is measured against. Ep 8: "the more extreme the
@@ -306,7 +359,16 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
     if (idx < 0) continue;
     const ob = candles[idx];
     const dir = d.dir > 0 ? 1 : -1; // 1 = demand (bullish OB), -1 = supply
-    const top = ob.h, bottom = ob.l;
+    /* M30 — the geometry is the CHOICE, and it is one of two closed methods. The pivot method
+     * (default) is the single candle, exactly as it always was. The range method stretches the
+     * zone to the consolidation the pivot candle closes: same origin bar, same displacement leg,
+     * a wider area — which is the entry the pivot method misses. `base` carries the walk's own
+     * evidence (bars, width, whether a cap stopped it) so the difference is auditable rather
+     * than a redrawn rectangle; the candle BODY stays the pivot candle's, because the body is a
+     * fact about that bar and not about the consolidation. */
+    const base = zoneMethod === 'range' ? consolidationBase(candles, idx, atr) : null;
+    const usesRange = !!(base && base.ok);
+    const top = usesRange ? base.high : ob.h, bottom = usesRange ? base.low : ob.l;
     const bodyTop = Math.max(ob.o, ob.c), bodyBottom = Math.min(ob.o, ob.c);
 
     // mitigation: how has price interacted with the zone SINCE the displacement leg?
@@ -386,6 +448,10 @@ function findOrderBlocks(candles, atr, displacement, breaks, { maxAge = 250, max
     const firstTouch = firstTest;
     out.push({
       kind: 'OB', dir, side: dir > 0 ? 'demand' : 'supply',
+      zone_method: usesRange ? 'range' : ZONE_METHOD_DEFAULT,
+      /* A requested `range` that could not be walked stays PIVOT on the zone and says why
+       * (`base.reason`) — the fallback is named, never silent. */
+      base: base ? { ...base, applied: usesRange } : null,
       top: r4(top), bottom: r4(bottom), mid: r4((top + bottom) / 2),
       body_top: r4(bodyTop), body_bottom: r4(bodyBottom), body_mid: r4((bodyTop + bodyBottom) / 2),
       i: idx, t: ob.t, displacement_i: d.i, displacement_t: candles[d.i].t, displacement_atr: d.rangeAtr,
@@ -1282,7 +1348,17 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
   swingMode = 'bos', nested = true,
   // M32 stays OPT-IN by the same decision: it cuts trades 190 -> 18, and the headline A+
   // figure rested on three trades.
-  obRequiresFvg = false, allSwings = false, observedAt = null } = {}) {
+  // M30 — Ep 7's zone-method CHOICE (`pivot`, the long-standing geometry and the default so
+  // nothing moves unless it is chosen; `range`, the whole consolidation high-to-low). Only the
+  // closed word `range` switches it; anything else is the pivot method and the request is
+  // carried beside the answer so an unrecognised value is visible instead of silently defaulted.
+  // `zoneMethodSource` is the ROUTE's answer to "where did that string come from?" — `request` (the
+  // query on this call), `settings` (the trader's saved choice) or absent. It is carried rather than
+  // re-derived, because the engine cannot tell a stored preference from a query, and a payload that
+  // guessed would be claiming something it never measured.
+  obRequiresFvg = false, allSwings = false, observedAt = null, zoneMethod = null, zoneMethodSource = null } = {}) {
+  const zoneRequested = zoneMethod == null ? null : String(zoneMethod).trim().toLowerCase();
+  const zoneUsed = zoneMethodOf(zoneMethod);
   const out = { ok: false, tf };
   if (!candles || candles.length < 30) {
     out.protected_levels = Protected.unknown(tf, observedAt, 'Not enough candles for protection analysis.');
@@ -1324,7 +1400,7 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
   // prerequisite could not be enforced.
   const fvgs = findFvgs(candles, atr);
   const orderBlocks = findOrderBlocks(candles, atr, displacement, structure.breaks,
-    { fvgs, requireFvg: obRequiresFvg });
+    { fvgs, requireFvg: obRequiresFvg, zoneMethod: zoneUsed });
   const breakers = findBreakers(orderBlocks, candles, atr, structure.breaks);
   const liq = liquidity(candles, majorSwings.length ? majorSwings : minorSwings, atr, { tf, allSwings });
   const sweeps = findSweeps(candles, liq.pools, atr);
@@ -1405,6 +1481,20 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
   out.ok = true;
   out.price = r4(price);
   out.atr = r4(atr);
+  /* M30 — the method this read used, and what a caller asked for when the two differ. Both
+   * always present: a surface that shows zones with no method named is a surface that cannot
+   * tell the trader which of the two rectangles the course allows it is looking at. */
+  out.zone_method = zoneUsed;
+  out.zone_method_requested = zoneRequested;
+  /* WHERE the geometry came from: `request` (this call's own query), `settings` (the trader's saved
+   * choice), `unspecified` (a caller handed a method but not its provenance — an internal caller, and
+   * saying "default" there would be a claim the engine cannot make) or `default` (nobody chose). */
+  out.zone_method_source = ['request', 'settings', 'unspecified'].includes(zoneMethodSource) ? zoneMethodSource
+    : (zoneRequested ? 'unspecified' : 'default');
+  out.zone_method_applied = orderBlocks.filter((z) => z.zone_method === 'range').length;
+  out.zone_method_fallback = zoneRequested !== null && zoneRequested !== 'range' && zoneRequested !== 'pivot'
+    ? `"${zoneRequested}" is not a zone method this app can plot — the pivot method was used. Expected one of: ${ZONE_METHODS.join(', ')}.`
+    : null;
   // M22: report the tier `structure` was actually built from, not the raw minor tier. Without
   // this the output would claim swings the internal read never saw whenever nested is on.
   out.swings = { minor: Protected.annotate(nestedSwings.slice(-14), protectedLevels),
@@ -1446,6 +1536,7 @@ function analyse(candles, { tf = '15m', htfCandles = null, now = null,
 
 module.exports = {
   findSwings, alternate, bosSwings, marketStructure, findDisplacement, findOrderBlocks, findFvgs, findBreakers,
+  consolidationBase, zoneMethodOf, ZONE_METHODS, ZONE_METHOD_SOURCES, ZONE_METHOD_DEFAULT, BASE_MAX_BARS, BASE_MAX_ATR,
   liquidity, findSweeps, premiumDiscount, crt, sessionState, analyse, clusterLevels,
   SESSIONS, SILVER_BULLETS, dayKey, weekKey, sessionAffinity, asiaRange,
   WINDOW_BY_KEY, WINDOW_KEYS, windowLabel, normalizeWindowPref, pairCountsFor, legsOf,

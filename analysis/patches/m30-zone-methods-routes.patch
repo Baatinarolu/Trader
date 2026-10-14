@@ -1,0 +1,210 @@
+diff --git a/src/routes/api.js b/src/routes/api.js
+index b6154e4..54918e1 100644
+--- a/src/routes/api.js
++++ b/src/routes/api.js
+@@ -9,6 +9,7 @@ const Coach = require('../coach');
+ const M = require('../market');
+ const T = require('../trades');
+ const Guards = require('../bots/guardrails');
++const SMC = require('../bots/smc');   // M30 — the closed zone-method vocabulary
+ const SessionTime = require('../session-time');
+ const J = require('../journaling');
+ const RR = require('../routine-records');
+@@ -1477,8 +1478,23 @@ router.put('/settings', requireAuth, async (req, res) => {
+     try { challengeTarget = Challenge.targetKey(b.challenge_target); }
+     catch (e) { return res.status(e.status || 400).json({ error: e.message, code: e.code || 'challenge_invalid' }); }
+   }
++  /* M30 — which of Ep 7's two zone methods this trader's analyses run on. `pivot` (the single
++   * candle, and the default) or `range` (the whole consolidation high-to-low); empty or null
++   * clears the choice back to the default. A closed vocabulary, and an unrecognised value is
++   * REFUSED by name rather than quietly dropped: a choice that silently did not apply would leave
++   * the screen naming one geometry while the zones were drawn in the other, which is exactly the
++   * class of fault this audit exists for. Absent from the body = unchanged (this route is called
++   * with partial bodies from several screens). */
++  let zoneMethod = Object.prototype.hasOwnProperty.call(cur, 'zone_method') ? (cur.zone_method ?? null) : null;
++  if (Object.prototype.hasOwnProperty.call(b, 'zone_method')) {
++    const v = b.zone_method == null ? '' : String(b.zone_method).trim().toLowerCase();
++    if (v === '' || v === 'default' || v === 'unset') zoneMethod = null;
++    else if (SMC.ZONE_METHODS.indexOf(v) !== -1) zoneMethod = v;
++    else return res.status(400).json({ error: `"${v}" is not a zone method this app can plot. Expected one of: ${SMC.ZONE_METHODS.join(', ')}, or empty to use the default (${SMC.ZONE_METHOD_DEFAULT}).`, code: 'zone_method_invalid' });
++  }
+   const next = {
+     ...cur,
++    zone_method: zoneMethod,   // M30
+     timezone: b.timezone || cur.timezone,
+     default_checklist: Array.isArray(b.default_checklist) ? b.default_checklist : (cur.default_checklist || DEFAULT_CHECKLIST),
+     focus_symbols: Array.isArray(b.focus_symbols) ? b.focus_symbols.map((s) => String(s).toUpperCase()) : (cur.focus_symbols || []),
+diff --git a/src/routes/bots.js b/src/routes/bots.js
+index 96e7e98..85e3a86 100644
+--- a/src/routes/bots.js
++++ b/src/routes/bots.js
+@@ -53,6 +53,23 @@ async function prefOf(req) {
+   return null;
+ }
+ 
++/* M30 — the trader's zone method: Ep 7 gives TWO (the pivot candle and the whole consolidation
++ * high-to-low) and advises testing both, so WHICH one this analysis runs on is a choice. The query
++ * wins (that is the selector on the bot screen, and it is what a probe measures with), then the
++ * saved preference, exactly as prefOf reads the window and floorOf reads min_rr. An unrecognised
++ * value is never silently applied: the pivot method runs and `setups.filters.zone_method` carries
++ * the request and the sentence naming what this app can plot. */
++async function zoneMethodFor(userId, requested) {
++  if (requested != null && String(requested).trim() !== '') return { method: String(requested).trim(), source: 'request' };
++  try {
++    const row = await D.db.prepare('SELECT settings FROM users WHERE id=?').get(userId);
++    const set = row && row.settings ? JSON.parse(row.settings) : {};
++    if (set.zone_method != null && String(set.zone_method).trim() !== '') return { method: String(set.zone_method).trim(), source: 'settings' };
++  } catch (e) { /* no row, no settings — the default geometry */ }
++  return { method: null, source: 'default' };
++}
++const zoneMethodOf = (req) => zoneMethodFor(req.user.id, req.query.zone_method);
++
+ async function floorOf(req) {
+   const q = Number(req.query.min_rr);
+   if (Number.isFinite(q) && q > 0) return Math.min(Math.max(q, 0.1), 10);
+@@ -145,6 +162,8 @@ router.get('/markets', requireAuth, (req, res) => {
+       step: Math.min(Math.max(num(req.query.step, 2), 1), 6),
+       minRR: await floorOf(req),
+       sessionPref: await prefOf(req),                                  // M26
++      zoneMethod: (await zoneMethodOf(req)).method,                    // M30
++      zoneMethodSource: (await zoneMethodOf(req)).source,               // M30 — request, settings or default
+       /* M56 — which written plan this analysis is confirmed against. Optional: omitted, the gate
+        * uses the trader's single active plan (and says so); a plan that is not theirs is a 404 from
+        * the gate itself, never a silent fallback to somebody else's rules. */
+@@ -175,6 +194,8 @@ router.get('/markets', requireAuth, (req, res) => {
+       accountId: req.query.account_id ? Number(req.query.account_id) : null,
+       minRR: await floorOf(req),
+       sessionPref: await prefOf(req),                                  // M26
++      zoneMethod: (await zoneMethodOf(req)).method,                    // M30
++      zoneMethodSource: (await zoneMethodOf(req)).source,               // M30
+       strategyId: req.query.strategy_id || null,                       // M56
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400),
+       as_of: req.query.as_of || null,
+@@ -193,6 +214,8 @@ router.get('/markets', requireAuth, (req, res) => {
+       bars: Math.min(Math.max(num(req.query.bars, 300), 80), 900), userId: req.user.id,
+       accountId:req.query.account_id ? Number(req.query.account_id) : null,
+       sessionPref: await prefOf(req),                                  // M26
++      zoneMethod: (await zoneMethodOf(req)).method,                    // M30
++      zoneMethodSource: (await zoneMethodOf(req)).source,               // M30
+       trim: Math.min(Math.max(num(req.query.trim, 0), 0), 400), as_of: req.query.as_of || null,
+     });
+     res.json({
+@@ -215,7 +238,8 @@ router.get('/markets', requireAuth, (req, res) => {
+       .split(',').map((s) => s.trim()).filter(Boolean);
+     if (!symbols.length) return res.status(400).json({ error: 'symbols is required (comma separated)' });
+     const tf = String(req.query.tf || '15m');
+-    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req), strategyId: req.query.strategy_id || null });  // M26/M56
++    const zm = await zoneMethodOf(req);                                                                                          // M30
++    const out = await Bots.scan(symbols, tf, { userId: req.user.id, accountId:req.query.account_id ? Number(req.query.account_id) : null, sessionPref: await prefOf(req), strategyId: req.query.strategy_id || null, zoneMethod: zm.method, zoneMethodSource: zm.source });  // M26/M56/M30
+     res.json(out);
+   }));
+ 
+@@ -320,6 +344,11 @@ router.get('/markets', requireAuth, (req, res) => {
+       userId: req.user.id,
+       accountId: (req.body && req.body.account_id) || null,
+       includePrediction: req.body && req.body.prediction !== false,
++      /* M30 — saving a signal stores the read that was made, so it is made with the trader's own
++       * zone method. Reading the preference here (rather than taking the client's word for it) is
++       * the same rule the window and the plan already follow on this route. */
++      zoneMethod: (await zoneMethodOf(req)).method,
++      zoneMethodSource: (await zoneMethodOf(req)).source,
+     });
+     const saved = await Bots.saveSignals(req.user.id, payload, {accountId:req.body?.account_id || null,research_only:req.body?.research_only === true,override_reason:req.body?.override_reason});
+     Object.assign(saved,await Opportunities.observeSaved(req.user.id,saved,'app_analysis'));
+@@ -481,7 +510,11 @@ router.get('/markets', requireAuth, (req, res) => {
+     let plan = null, signal = null, error = null;
+     if (user.analyse && !/^close$/i.test(parsed.action)) {
+       try {
+-        const payload = await Bots.analyse(parsed.symbol, tf, { userId: user.id, includePrediction: false, bars: 600 });
++        /* M30 — an incoming alert is read with the trader's own zone method too: the alert does not
++         * carry a geometry, and the signal it may create is the same signal the bot screen would. */
++        const alertZone = await zoneMethodFor(user.id, null);
++        const payload = await Bots.analyse(parsed.symbol, tf, { userId: user.id, includePrediction: false, bars: 600,
++          zoneMethod: alertZone.method, zoneMethodSource: alertZone.source });
+         plan = summarise(payload, parsed);
+         if (user.autocreate && payload.setups && payload.setups.verdict && payload.setups.verdict.action !== 'NO TRADE') {
+           const saved = await Bots.saveSignals(user.id, payload);
+@@ -492,7 +525,7 @@ router.get('/markets', requireAuth, (req, res) => {
+     }
+     const result = plan || (error ? { error } : { skipped: 'analysis off' });
+     await D.db.prepare('UPDATE tv_alerts SET handled=1, error=?, signal_id=?, result=? WHERE id=?')
+-      .run(error, signal && signal.id ? signal.id : null, JSON.stringify(result).slice(0, 4000), info.lastInsertRowid);
++      .run(error, signal && signal.id ? signal.id : null, boundedResult(result), info.lastInsertRowid);
+ 
+     res.json({
+       ok: true, alert_id: Number(info.lastInsertRowid),
+@@ -504,6 +537,62 @@ router.get('/markets', requireAuth, (req, res) => {
+   }));
+ 
+   /** Helpers used by the two routes above. */
++  /* A stored verdict must always be PARSEABLE. This column used to be `JSON.stringify(result).slice(0, 4000)`,
++   * which is not a cap on a payload: it is a cap on a JSON DOCUMENT, and a payload that crossed it was
++   * written as text nothing could read back — this route's own `safeJson`, and therefore the Settings
++   * verdict column, silently went blank (measured: a refusal carrying both the plan gate and the zone
++   * method serialises past 4 000 characters). The cap stays — a row is not a data store — but what
++   * shrinks is the DETAIL, never the document: optional blocks are dropped one at a time, largest and
++   * most verbose first, each drop is named in `truncated_fields`, and the keys a verdict is read by
++   * (`action`, `grade`, `plan_gate.state`, `zone_method.method`) are never among them. If even the bare
++   * verdict could not fit, that is SAID rather than stored as unparseable text. */
++  function boundedResult(result, limit = 4000) {
++    /* Which keys may be dropped, by NAME and wherever they sit: a verdict's optional verbosity lives in
++     * sentences and lists (`note`, `sources`, `enforced_lines`, `candidates`, …), while the facts it is
++     * read by — `action`, `grade`, `state`, `method`, `plan`, `refused_now` — are never in this set. The
++     * chooser is mechanical and terminates: the largest optional branch is dropped first, then the next,
++     * and every drop is named in `truncated_fields`. */
++    const OPTIONAL_KEYS = new Set(['note', 'notes', 'basis', 'sources', 'vocabulary', 'enforced_lines', 'unverifiable_lines',
++      'unrecognised_lines', 'candidates', 'counts', 'targets', 'whynot', 'playbook', 'lines', 'rules', 'detail', 'text',
++      'limits', 'conflicts', 'checks', 'steps', 'blocks', 'samples']);
++    const copy = JSON.parse(JSON.stringify(result || {}));
++    const paths = [];
++    (function walk(node, path) {
++      if (!node || typeof node !== 'object') return;
++      for (const k of Object.keys(node)) {
++        let v; try { v = node[k]; } catch (e) { continue; }
++        const p = path.concat(k);
++        if (OPTIONAL_KEYS.has(k)) { let size = 0; try { size = JSON.stringify(v === undefined ? null : v).length; } catch (e) { size = 0; } paths.push({ p, size }); }
++        walk(v, p);
++      }
++    })(copy, []);
++    paths.sort((a, b) => b.size - a.size);
++    const dropped = [];
++    let text = JSON.stringify(copy);
++    for (const { p } of paths) {
++      if (text.length <= limit) break;
++      let node = copy;
++      for (const k of p.slice(0, -1)) node = node && typeof node === 'object' ? node[k] : null;
++      if (!node || typeof node !== 'object' || !(p[p.length - 1] in node)) continue;
++      delete node[p[p.length - 1]];
++      dropped.push(p.join('.'));
++      text = JSON.stringify(copy);
++    }
++    if (dropped.length) copy.truncated_fields = dropped;
++    text = JSON.stringify(copy);
++    if (text.length > limit) {
++      /* Nothing optional left to drop: keep the facts a verdict is read by and say the rest was dropped. */
++      const bare = { action: copy.action || null, grade: copy.grade == null ? null : copy.grade,
++        error: 'the stored verdict exceeded the column and was reduced to its verdict fields',
++        truncated_fields: dropped.concat(['__all_optional__']) };
++      if (copy.plan_gate) bare.plan_gate = { state: copy.plan_gate.state || null, enforced: copy.plan_gate.enforced == null ? null : copy.plan_gate.enforced,
++        refused_now: !!copy.plan_gate.refused_now, plan: copy.plan_gate.plan || null };
++      if (copy.zone_method) bare.zone_method = { method: copy.zone_method.method || null, source: copy.zone_method.source || null };
++      text = JSON.stringify(bare);
++    }
++    return text.slice(0, limit);
++  }
++
+   function summarise(payload, parsed) {
+     const h = payload.headline || {};
+     const v = (payload.setups && payload.setups.verdict) || {};
+@@ -533,6 +622,11 @@ router.get('/markets', requireAuth, (req, res) => {
+        * the alert history that the plan caused must name the plan, its version and the line that refused,
+        * or the trader is left reading an unattributed stand-down. `null` when no plan was consulted. */
+       plan_gate: (payload.setups && payload.setups.filters && payload.setups.filters.plan_gate) || null,
++      /* M30 — and the GEOMETRY it was read on. An alert is the one analysis the trader did not watch
++       * being made, so the alert history is exactly where "which zone method produced this verdict?"
++       * must be answerable without re-running anything: the method travels with the stored result,
++       * `null` when the read never reached the zone stage. */
++      zone_method: (payload.setups && payload.setups.filters && payload.setups.filters.zone_method) || null,
+       agreement: agreement(parsed, v.action, best),
+       generated_at: payload.generated_at || new Date().toISOString(),
+     };

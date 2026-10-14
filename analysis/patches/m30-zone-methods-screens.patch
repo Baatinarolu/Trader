@@ -1,0 +1,182 @@
+diff --git a/docs/API.md b/docs/API.md
+index b589f0e..ff53500 100644
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -234,7 +234,7 @@ Every market endpoint degrades to `{ ok: false, error, …empty }` instead of fa
+ | GET | `/export/json` | full backup: accounts, strategies, instruments, trades, journal, goals, watchlist |
+ | POST | `/import/csv` | `{ csv, account_id }` → auto-detects columns; returns `{ inserted, skipped, detected }` |
+ | POST | `/import/json` | `{ data: <backup object> }` → restores (accounts matched by name) |
+-| PUT | `/settings` | `{ name, timezone, focus_symbols[], default_checklist[] }` |
++| PUT | `/settings` | `{ name, timezone, focus_symbols[], default_checklist[], min_rr, session_pref, zone_method }` |
+ | POST | `/demo/seed` | regenerates demo trades for the default account |
+ 
+ ---
+@@ -250,10 +250,10 @@ the methodology, the weights and the honest limitations.
+ | GET | `/bots/markets` | — | instruments (63), timeframes, killzone state, providers |
+ | GET | `/bots/plan-gate` | `strategy_id` (optional — your own; defaults to your single ACTIVE plan) | `{ ok, version, vocabulary[], state, plan, note, reason, candidates, counts, lines, limits }` — `state` is `ready`, `no_plan`, `ambiguous` (>1 active plan, all named), `unavailable` or `not_consulted`; each `lines[]` entry is classified `machine`, `prose` or `unknown_fact`; `limits` states prose is not parsed, an unknown value never counts as met and no grade/score/cap/price is influenced |
+ | GET | `/bots/candles` | `symbol`, `tf` (1m…1w), `limit` (50–1500), `force=1` | `{ candles:[{t,o,h,l,c,v}], meta:{provider,ticker,last_price,last_bar,cached,warnings} }` |
+-| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1`, `strategy_id` | | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
++| GET | `/bots/analyse` | `symbol`, `tf`, `prediction=0/1`, `bars`, `step`, `min_rr`, `save=1`, `strategy_id`, `zone_method` | | `{ headline, method_verdict, topdown, momentum, smc, indicators, setups, prediction, news, daily, account, instrument }` |
+ | GET | `/bots/topdown` | `symbol`, `tf`, `bars` | the video's method on its own: `{ method, layers, steps, checks, score, grade, status, direction, headline, playbook, blocked, conflicts[], crt_plan, levels, verdict }` |
+-| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id`, `strategy_id` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
+-| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf`, `strategy_id` | `{ rows:[…ranked], errors:[…], actionable, killzone }` — every row carries the plan gate it was confirmed against (`plan_gate`) and whether that plan took the setup away (`plan_refused`) |
++| GET | `/bots/chart` | `symbol`, `tf`, `bars` (80–1200), `min_rr`, `account_id`, `strategy_id`, `zone_method` | everything the desk chart draws: `{ candles[], smc{structure,premium_discount,order_blocks,fvgs,sweeps,liquidity,crt}, plan, topdown, stack{bias,location,trigger}, setups, quote, meta{sources} }` |
++| GET | `/bots/scan` | `symbols` (comma separated, ≤24), `tf`, `strategy_id`, `zone_method` | `{ rows:[…ranked], errors:[…], actionable, killzone }` — every row carries the plan gate it was confirmed against (`plan_gate`), whether that plan took the setup away (`plan_refused`) |
+ | GET | `/bots/predict` | `symbol`, `tf`, `bars`, `step`, `horizon` | `{ direction, setups, buy, sell, model, backtest, summary }` — `backtest` carries the measured tables below |
+ | GET | `/bots/backtest` | `symbol`, `tf`, `bars` (300–3000), `step` (1–6), `samples`, `entry`, `cost`, `force=1` | backtest detail + `trades[]` table + the measured blocks below |
+ | GET | `/bots/correction` | `days`, `account_id`, `backfill=1` | `{ overall, behavior_score, mistakes[], guardrails, daily, grades[] }` |
+@@ -379,6 +379,50 @@ Two reads of the same scope are byte-identical. The card is `Views.ruleBreaks.ca
+ view above its existing tabs; it renders the total, the per-rule and per-day lines, the two warning
+ lines for unreadable and unnamed rows, and the module's own `basis`/`scope` sentences.
+ 
++### The two zone methods — a chosen geometry, named on every read (M30)
++
++Ep 7 gives **two** ways to draw a supply/demand zone and says to test both over the trader's own 100
++trades: the **pivot method** (the single opposite candle before the displacement leg) and the **range
++method** (the whole consolidation high-to-low). The app shipped the pivot method hardcoded — the cost
++of which he states himself, *"you would have missed this entry … price did not mitigate your zone"* —
++with nothing anywhere saying **which** geometry a read had used.
++
++The geometry is now a **closed vocabulary** — `pivot` (the default) and `range` — and a read always
++names what it ran on. `?zone_method=` on `analyse`, `chart`, `topdown`, `scan` and `signals/save`
++wins for that one request; otherwise the trader's saved `zone_method` in their settings is used; if
++neither, the pivot method. The choice is stored in the existing settings JSON (`PUT /settings`),
++**no column, table or index was added**, and reading either geometry writes nothing.
++
++`setups.filters.zone_method` carries `{ method, requested, source, sources[], vocabulary[], read,
++applied_zones, base_fallbacks, error, note }`:
++
++| field | meaning |
++|---|---|
++| `method` | the geometry this read actually used |
++| `requested` | what the caller asked for, `null` when nothing was asked (a query and a stored choice are different facts) |
++| `source` | **where the method came from**: `request` (this call's query), `settings` (the trader's saved choice), `unspecified` (a caller handed a method with no provenance), `default` (nobody chose) |
++| `read` | `false` on the short-series sentinel: the read never reached the zone stage, so no zone is attributed to it |
++| `applied_zones` | how many zones on this read carry the range geometry |
++| `base_fallbacks` | zones whose consolidation could not be walked and stayed **pivot** — counted, never silently widened |
++| `error` | a request this app cannot plot: the sentence naming the vocabulary it can |
++| `note` | the trade-off in words: a wider zone means a **wider stop** |
++
++The range method is a **three-rule walk** over closed bars: it stops at a displacement bar (a leg is
++not part of a base), at a bar that does not overlap the envelope built so far (price left the base),
++and at a **cap of 3 ATR / 12 bars which is REPORTED** (`capped: true`, `width_cap`) rather than
++silently truncating. Each range zone carries its own walk (`base: {ok, from_i, bars, high, low,
++width_atr, capped, stopped, limits, applied}`); a walk shorter than two bars is not a consolidation
++and the zone stays pivot with its `reason` (`no_consolidation`, `no_pivot_candle`, `no_atr`).
++
++**What this does not claim.** Neither method is measured to be better here, and the app does not say
++so: the wider zone catches the pullback the candle misses **and** puts the stop further away — that
++is the trade-off, stated on the payload and on the screens. `PUT /settings {zone_method}` refuses a
++value outside the vocabulary with `400 zone_method_invalid` (a choice that silently did not apply
++would leave a screen naming one geometry while the zones were drawn in another), while a stray
++`?zone_method=` on a request runs the pivot method and reports it in `error` rather than 400-ing a
++read. An incoming TradingView alert is read on the trader's own geometry and the stored alert
++history carries it too.
++
+ ### The trading window — a hard block, not a penalty (M112)
+ 
+ The window is the trader's **own** best-hours boundary, and `src/trading-window.js` owns its
+diff --git a/docs/NOT-IMPLEMENTED.md b/docs/NOT-IMPLEMENTED.md
+index d99e747..6dda2b1 100644
+--- a/docs/NOT-IMPLEMENTED.md
++++ b/docs/NOT-IMPLEMENTED.md
+@@ -88,6 +88,7 @@ kind of reason: a deploy should not silently lose a file.
+ |---|---|---|
+ | **MTF entry execution** (new) | Live LTF fetch, confirmation status (`live`/`recent`/`waiting`/`rejected`), refined plan with targets re-ruled from the confirmation, one-click save to signals, grading on resolution. Measured 2026-10-06 11:58 UTC: highest win rate of any entry rule (47.4 % pooled vs 35.1 % base, 1 902 / 1 696 fills) but −0.268R of expectancy against the base rule on the same 1 503 setups, and the 321 setups it refused averaged +0.157R under the base rule — so the entry is executable, and the evidence says it is not the better trade | The confirmation itself is now watched by the scheduler (cron + notifications shipped) and a saved refined plan is graded on resolve; what is *not* solved is that a 50 %-at-T1 plan is graded as one blended number (scale-*in* is still missing, §3 journal row) |
+ | **TradingView** | Charts in Market/Bots, webhook alerts with token rotation, alert history, bot verdict per alert, "save refined plan" from an alert | No position/order sync; an incoming alert is stored + analysed but does **not** create a journal trade automatically |
++| **Two zone methods** (new) | Ep 7's **second** method is built: the range method draws the zone across the whole consolidation high-to-low, by a three-rule walk (a displacement bar ends the base, a bar that does not overlap it is the departure, a 3 ATR / 12 bar cap is **reported** as `capped`), while the pivot method stays the **default**. The geometry is a closed vocabulary (`pivot`, `range`), the choice is stored in the existing settings JSON and can be overridden per request, and every read names **which** method it used **and where the choice came from** (`request` / `settings` / `unspecified` / `default`). A zone whose consolidation cannot be walked stays pivot **with its reason**, the count of those is published, and a value outside the vocabulary is refused by name on `PUT /settings` rather than silently ignored | **Not measured to be better.** The range method catches the pullback the single candle misses (measured: price returns into the consolidation without touching the candle) — and the stop behind a wider zone is further away; the app states that trade-off and never claims the wider geometry wins. The consolidation itself is this app's **definition** (overlapping closed bars, capped at 3 ATR / 12 bars) and the caps are reported rather than hidden, but it is a mechanical reading of "the consolidation", not his discretionary range. No result, expectancy or win-rate claim is made for either method, and the default is unchanged |
+ | **The written plan as a gate** (new) | The plan's `require` lines are evaluated against facts the analysis already computed (sweep, market shift, zone, killzone, session, timeframe, trend, phase, bias alignment, news blackout, grade, risk:reward, account risk %) and a line that fails REFUSES the candidate through the ordinary no-trade path, with your own rule text and the measured detail first in the reason; the plan and its M102 version travel with the refusal, every scan row carries the same verdict, and reading the plan writes nothing. `GET /api/bots/plan-gate` publishes the enforced vocabulary, the per-line classification and the limits | **Prose is never parsed.** A plan written as sentences gates nothing and the app says so rather than guessing polarity ("no news trading" and "trade the news" share every word). `exit_rules`, `checklist` and `market_conditions` are stored and displayed, not enforced. The vocabulary is closed: a `require` line outside it is reported as unrecognised. And the gate refuses SIGNALS — it does not grade a trade you already logged against the rules you were shown (§5 item 5) |
+ | **Playlist coverage** | 40 episodes mapped: **27 ✔ fully implemented, 6 ◐ partial** ([PLAYLIST-CURRICULUM.md](PLAYLIST-CURRICULUM.md)) | The 6 partials are listed at the bottom of that document |
+ | **Prediction model** | Logistic regression trained in-process, calibrated buckets, `out_of_sample` block, measured gates (`stop_ge_06atr`, `runway3`) on every live setup | Per-market training sets are 60–250 resolved setups; no gradient boosting or alternative model families |
+diff --git a/docs/PLAYLIST-CURRICULUM.md b/docs/PLAYLIST-CURRICULUM.md
+index b193520..a09c6b2 100644
+--- a/docs/PLAYLIST-CURRICULUM.md
++++ b/docs/PLAYLIST-CURRICULUM.md
+@@ -57,7 +57,7 @@ judgement/habit lesson with no code surface (the app supports it through journal
+ | 4 | Mindset foundations | Process over outcome | Coach insights, journal prompts |
+ | 5 | Market structure | HH/HL/LH/LL, BOS, CHoCH | `smc.js` → `marketStructure()` ✔ |
+ | 6 | Candlesticks | Wicks, bodies, rejection | `indicators.js` → 30 patterns + wick logic in sweeps |
+-| 7 | Supply & demand zones | Where orders rest | `smc.js` → order blocks ✔ |
++| 7 | Supply & demand zones | Where orders rest | `smc.js` → order blocks, **both of his methods**: the **pivot** method (the single candle, the default) and the **range** method (the whole consolidation high-to-low, walked by three closed rules with its caps reported). The choice is the trader's (Settings → Zone method; `?zone_method=` for one request) and every read, scan row and alert names the geometry it used and where the choice came from ✔ |
+ | 8 | Premium & discount | Buy cheap, sell expensive | `smc.js` → `premiumDiscount()` (0.62–0.79 OTE) ✔ |
+ | 9 | FVG / imbalance | The void displacement leaves | `smc.js` → `findFvgs()` (50 % = consequent encroachment) ✔ |
+ | 10 | Order blocks | Last opposing candle | `smc.js` → `findOrderBlocks()` (fresh/tests/breached) ✔ |
+diff --git a/public/js/views/bots.js b/public/js/views/bots.js
+index 80acc4f..8b819fa 100644
+--- a/public/js/views/bots.js
++++ b/public/js/views/bots.js
+@@ -219,6 +219,20 @@
+         // requirements: at zero enforced rules the plan's own note ("re-save the plan", "no
+         // machine-checkable requirements yet") is the sentence that says what to do about it.
+         + (pg.enforced ? '' : (pg.note ? ` · ${pg.note}` : '')) });
++    /* M30 — the zone method this read ran on, named beside the window and the plan. Ep 7 gives TWO
++     * (the pivot candle and the whole consolidation high-to-low) and the choice is the trader's
++     * (Settings), so a screen that draws "zones" without saying which method produced them cannot
++     * tell him which of the two areas the course describes he is looking at — they are not the same
++     * rectangle, and the stop behind them is not the same distance. A read that never reached the
++     * zone stage (the short-series sentinel) says nothing rather than naming a method it did not use. */
++    const zm = (B.data && B.data.setups && B.data.setups.filters && B.data.setups.filters.zone_method) || null;
++    const zoneNote = h('span', { class: 'muted', style: 'font-size:12px;max-width:460px', dataset: { zoneMethod: 'true' },
++      text: !zm || !zm.read ? '' : zm.error
++        ? `Zone method: ${zm.error}`
++        : zm.method === 'range'
++          ? `Zones: range method (Ep 7) — the whole consolidation high-to-low${zm.applied_zones ? `, ${zm.applied_zones} on this read` : ''}${zm.base_fallbacks ? `; ${zm.base_fallbacks} could not be walked and stayed pivot` : ''}.`
++          : 'Zones: pivot method (Ep 7) — the single candle. The range method is the other choice in Settings: it catches the pullback that never reaches the candle, with a wider zone.' });
++
+     /* M56 — which written plan this analysis is confirmed against. The selector matters because
+      * WHICH plan applies is the trader's decision and this app never guesses between two: with no
+      * selection the gate uses their single active plan, and when several are active it says so here
+@@ -320,6 +334,7 @@
+     if (marketCopy && global.TV) row.appendChild(h('button',{class:'btn sm guardrail-stop',text:'Override & copy plan',onclick:()=>copyPlan(marketCopy)}));
+     row.appendChild(winNote);
+     row.appendChild(planNote);
++    row.appendChild(zoneNote);
+     /* Ep 12's version of this rule is a trade button that cannot be pressed: "this trade
+      * button will be blocked ... grayed out ... You physically can't press the trade
+      * button." The nearest thing here is the control that hands you an order to place, so
+diff --git a/public/js/views/settings.js b/public/js/views/settings.js
+index ac3ecd4..3d9d0fc 100644
+--- a/public/js/views/settings.js
++++ b/public/js/views/settings.js
+@@ -369,9 +369,41 @@
+             note.textContent = 'Pick one window and the bots refuse signals outside it — a refusal, not a downgrade. "Just stick to one."';
+             grid.parentNode.insertBefore(note, grid.nextSibling);
+           })();
++          /* M30 — Ep 7 gives TWO zone methods and says to test both (over 100 trades of your own,
++           * not over this app's opinion), so the choice is offered here with the trade-off stated
++           * rather than baked in. `pivot` is the single candle and the default; `range` is the whole
++           * consolidation high-to-low, which catches the pullback that never reaches the candle —
++           * at the price of a wider zone and therefore a wider stop. The engine names the method it
++           * used on every analysis (`setups.filters.zone_method`), so the choice can never be made
++           * invisibly from here. */
++          (function addZoneMethodPref() {
++            const grid = U.$('.form-grid', w); if (!grid) return;
++            const lab = document.createElement('label');
++            lab.className = 'field';
++            lab.innerHTML = '<span>Zone method</span>';
++            const sel = document.createElement('select');
++            sel.id = 's-zone';
++            sel.dataset.zoneMethod = 'true';
++            [['', 'Pivot method \u2014 the single candle (default)'],
++             ['range', 'Range method \u2014 the whole consolidation high-to-low']]
++              .forEach((o) => {
++                const op = document.createElement('option');
++                op.value = o[0]; op.textContent = o[1];
++                if (String(s.zone_method || '') === o[0]) op.selected = true;
++                sel.appendChild(op);
++              });
++            lab.appendChild(sel);
++            grid.appendChild(lab);
++            const note = document.createElement('div');
++            note.className = 'field-note';
++            note.dataset.zoneMethodNote = 'true';
++            note.textContent = 'How the bots draw a supply/demand zone. Pivot: the last opposite candle before the displacement \u2014 narrow, and a pullback that only reaches the top of the consolidation never touches it. Range: the whole consolidation high-to-low \u2014 it catches that entry, but the zone (and the stop behind it) is wider. Test both on your own 100 trades; every analysis names the method it used.';
++            grid.parentNode.insertBefore(note, grid.nextSibling);
++          })();
+           U.$('#s-save', w).addEventListener('click', async () => {
+             await API.put('/settings', {
+               name: U.$('#s-name', w).value, timezone: U.$('#s-tz', w).value,
++              zone_method: U.$('#s-zone', w) ? U.$('#s-zone', w).value : undefined,   // M30
+               focus_symbols: U.$('#s-focus', w).value.split(',').map((x) => x.trim().toUpperCase()).filter(Boolean),
+               min_rr: Number(U.$('#s-minrr', w).value) || 1,
+               session_pref: U.$('#s-window', w) ? U.$('#s-window', w).value : undefined,   // M26

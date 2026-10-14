@@ -1293,6 +1293,41 @@ function buildSetups(analysis, ctx = {}) {
        * to use the app: `no_plan` blocks nothing. `unavailable` does, because a plan that could not
        * be read must never look like one that was satisfied. */
       plan_gate: PlanGate.view(ctx.planGate, planEvals),
+      /* M30 — WHICH zone method produced the rectangles this read scored. Ep 7 gives two — the
+       * pivot method (the single candle) and the range method (the whole consolidation
+       * high-to-low) — and his own advice is to test both, so the choice belongs to the trader
+       * and it must never be invisible: a screen that draws "zones" without naming the method
+       * cannot tell him which of the course's two areas he is looking at. A request this app
+       * cannot honour ran the pivot method and says so here; a range walk that could not be
+       * walked stayed pivot on that zone and is counted, not hidden. */
+      zone_method: (() => {
+        const used = analysis && analysis.zone_method === 'range' ? 'range' : 'pivot';
+        const obs = (analysis && Array.isArray(analysis.order_blocks)) ? analysis.order_blocks : [];
+        const baseFallbacks = obs.filter((z) => z.base && z.base.applied === false).length;
+        const requested = analysis && analysis.zone_method_requested ? analysis.zone_method_requested : null;
+        /* WHERE the geometry came from is carried out of the read rather than re-derived here:
+         * `request` is this call's query, `settings` is the trader's saved choice, `default` is nobody
+         * having chosen, and `unspecified` is a caller that handed a method without its provenance. A
+         * surface that prints a geometry without saying which of the four it was cannot tell a
+         * side-by-side test from a standing preference. */
+        const source = analysis && SMC.ZONE_METHOD_SOURCES.includes(analysis.zone_method_source) ? analysis.zone_method_source : 'default';
+        return {
+          method: used,
+          requested,
+          source,
+          sources: SMC.ZONE_METHOD_SOURCES.slice(),
+          vocabulary: SMC.ZONE_METHODS.slice(),
+          /* `false` when the read never reached the zone stage (the short-series sentinel): the
+           * filter still names the method that WOULD be used, and says the read did not run. */
+          read: !!(analysis && Array.isArray(analysis.order_blocks)),
+          applied_zones: obs.filter((z) => z.zone_method === 'range').length,
+          base_fallbacks: baseFallbacks,
+          error: analysis && analysis.zone_method_fallback ? analysis.zone_method_fallback : null,
+          note: used === 'range'
+            ? 'Range method (Ep 7): the zone is the whole consolidation high-to-low, so a pullback that only reaches the top of the consolidation still tests the zone. Wider zones mean wider stops — the pivot method finds the narrower entry and misses the one this catches.'
+            : 'Pivot method (Ep 7): the zone is the single pivot candle. A pullback that only reaches the top of the consolidation does not touch it — that is the entry the range method catches, and it is available as a choice rather than a default.',
+        };
+      })(),
       trading_window: ctx.tradingWindow ? { state: ctx.tradingWindow.state, start: (ctx.tradingWindow.window || {}).start || null,
         end: (ctx.tradingWindow.window || {}).end || null, timezone: (ctx.tradingWindow.window || {}).timezone || null,
         source: (ctx.tradingWindow.window || {}).source || null, local_time: (ctx.tradingWindow.window || {}).local_time || null,

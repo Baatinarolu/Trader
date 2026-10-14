@@ -364,7 +364,14 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   // the same rules, no look-ahead.
   const trim = Math.max(0, Math.min(400, Number(opts.trim) || 0));
   const asOf = opts.as_of ? Date.parse(opts.as_of) : (opts.asOf ? Number(opts.asOf) : null);
-  const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null };
+  /* M30 — `cut` is the analysis-options carrier the series loader already reads, so the zone
+   * method rides beside the replay window: every series this read builds (bias, entry, trigger)
+   * is plotted with the method the trader chose, and `SMC.analyse` is the single place that
+   * folds an unrecognised value onto the closed vocabulary. `zoneMethodSource` rides beside it: the
+   * route knows whether the string came from this request's query or the trader's saved choice, and
+   * the engine carries that answer rather than inventing one. */
+  const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null, zoneMethod: opts.zoneMethod || null,
+    zoneMethodSource: opts.zoneMethodSource || null };
   const replay = trim > 0 || cut.asOf ? cut : null;
 
   // M110: the news pair comes from the account's TWO settings, so the account is read
@@ -486,8 +493,8 @@ async function analyse(symbol, tf = '15m', opts = {}) {
   if (replay) {
     // build the *untrimmed* read as well, so a replay can say what happened after
     const L2 = Momentum.topdown.layersFor(tf);
-    const full = await Promise.all([Momentum.series(sym, tf, 600), Momentum.series(sym, L2.bias_tf, 400)]);
-    const ltfRaw = L2.trigger_tf === tf ? null : await Momentum.series(sym, L2.trigger_tf, 400, { closedOnly: opts.entryModels !== false, observedAt: opts.nowMs });
+    const full = await Promise.all([Momentum.series(sym, tf, 600, cut), Momentum.series(sym, L2.bias_tf, 400, cut)]);   // M30
+    const ltfRaw = L2.trigger_tf === tf ? null : await Momentum.series(sym, L2.trigger_tf, 400, { ...cut, closedOnly: opts.entryModels !== false, observedAt: opts.nowMs });
     const tdNow = Momentum.topdown.build({ symbol: sym, tf, series: full[0], biasSeries: full[1], triggerSeries: ltfRaw || full[0], opts: { minRR: floorRR(opts.minRR), useBreakers: opts.useBreakers, entryModels: opts.entryModels, observedAt: opts.nowMs || undefined } });
     replayCtx = { trim: replay.trim || null, since: { price: full[0].price, atr: full[0].atr, verdict: tdNow.status } };
   }
@@ -521,6 +528,12 @@ async function analyse(symbol, tf = '15m', opts = {}) {
       htf: momentum.htf, quote: momentum.quote, series: momentum.series,
     },
     smc: {
+      /* M30 — this payload ships `order_blocks`, so it has to name the geometry they were drawn
+       * with, exactly as the chart's slice does: a read that shows zones without naming the method
+       * cannot tell the trader which of Ep 7's two areas he is looking at. */
+      zone_method: series.smc.zone_method, zone_method_requested: series.smc.zone_method_requested,
+      zone_method_source: series.smc.zone_method_source, zone_method_applied: series.smc.zone_method_applied,
+      zone_method_fallback: series.smc.zone_method_fallback,
       price: series.smc.price, atr: series.smc.atr, counts: series.smc.counts,
       structure: series.smc.structure, htf_structure: series.smc.htf_structure,
       premium_discount: series.smc.premium_discount, sessions: series.smc.sessions,
@@ -606,7 +619,8 @@ async function chart(symbol, tf = '15m', opts = {}) {
   const L = Momentum.topdown.layersFor(tf);
   const trim = Math.max(0, Math.min(400, Number(opts.trim) || 0));
   const asOf = opts.as_of ? Date.parse(opts.as_of) : null;
-  const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null };
+  const cut = { trim, asOf: Number.isFinite(asOf) && asOf ? asOf : null, zoneMethod: opts.zoneMethod || null,
+    zoneMethodSource: opts.zoneMethodSource || null };   // M30
 
   // The same series lengths the analyse endpoint uses, so the two payloads can
   // never disagree about the same market (they did once: the chart asked for 200
@@ -684,6 +698,12 @@ async function chart(symbol, tf = '15m', opts = {}) {
   }
 
   const smc = {
+    /* M30 — the chart is drawn on ONE geometry and slices its zones for display, so the method has
+     * to travel with the slice: a chart that draws "zones" without naming the method cannot tell the
+     * trader which of Ep 7's two areas he is looking at. */
+    zone_method: entry.smc.zone_method, zone_method_requested: entry.smc.zone_method_requested,
+    zone_method_source: entry.smc.zone_method_source, zone_method_applied: entry.smc.zone_method_applied,
+    zone_method_fallback: entry.smc.zone_method_fallback,
     price: entry.smc.price, atr: entry.smc.atr, counts: entry.smc.counts,
     structure: entry.smc.structure, structure_source: entry.smc.structure_source, htf_structure: entry.smc.htf_structure,
     premium_discount: entry.smc.premium_discount, sessions: entry.smc.sessions,
@@ -764,7 +784,7 @@ async function chart(symbol, tf = '15m', opts = {}) {
   };
 }
 
-async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, strategyId = null, sessionPref = null, useBreakers = false, entryModels } = {}) {
+async function scan(symbols, tf = '15m', { userId = null, accountId = null, concurrency = 3, strategyId = null, sessionPref = null, zoneMethod = null, zoneMethodSource = null, useBreakers = false, entryModels } = {}) {
   const list = [...new Set((symbols || []).map((s) => String(s || '').toUpperCase()).filter(Boolean))].slice(0, 24);
   /* M56 — read the written plan ONCE for the whole scan, not once per symbol: the plan is a property
    * of the trader, and re-reading it inside the worker could only ever produce a different answer for
@@ -777,8 +797,8 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
       const sym = list[cursor++];
       try {
         const [momentum, series] = await Promise.all([
-          Momentum.analyse(sym, tf, { limit: 400, useBreakers, entryModels }),
-          Momentum.series(sym, tf, 400),
+          Momentum.analyse(sym, tf, { limit: 400, useBreakers, entryModels, zoneMethod, zoneMethodSource }),   // M30
+          Momentum.series(sym, tf, 400, { zoneMethod, zoneMethodSource }),                                     // M30 — the zones the row is built from, not a second set
         ]);
         // M50: a scan is a real observation of the market, so it reads and updates the same state
         // as analyse(). Without this a scan and an analyse of the same symbol could report
@@ -833,6 +853,10 @@ async function scan(symbols, tf = '15m', { userId = null, accountId = null, conc
           // the original gap in a wider lens.
           plan_gate: specs.filters.plan_gate,
           plan_refused: !!(best && best.plan_rules && best.plan_rules.refused > 0),
+          // M30 — the zone method every row of this scan was built with, on the row itself: a
+          // scan whose rectangles came from a method the trader did not choose is a different
+          // scan, and it has to be able to say which one it was.
+          zone_method: specs.filters.zone_method,
         });
       } catch (e) {
         rows.push({ symbol: sym, timeframe: tf, ok: false, error: e.message });
